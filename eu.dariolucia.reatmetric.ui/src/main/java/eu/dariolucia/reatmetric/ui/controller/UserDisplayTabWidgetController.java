@@ -1,0 +1,596 @@
+/*
+ * Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
+ * All rights reserved
+ *
+ * Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes
+ * shall be granted by the author in writing.
+ */
+
+
+package eu.dariolucia.reatmetric.ui.controller;
+
+import java.io.IOException;
+import java.net.URL;
+import java.time.Instant;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
+import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.udd.AbstractChartManager;
+import eu.dariolucia.reatmetric.ui.udd.InstantAxis;
+import eu.dariolucia.reatmetric.ui.udd.XYBarChartManager;
+import eu.dariolucia.reatmetric.ui.udd.XYTimeChartManager;
+import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.fxml.Initializable;
+import javafx.geometry.Bounds;
+import javafx.geometry.Insets;
+import javafx.print.PageLayout;
+import javafx.print.PageOrientation;
+import javafx.print.Paper;
+import javafx.print.Printer;
+import javafx.print.PrinterAttributes;
+import javafx.print.PrinterJob;
+import javafx.scene.Parent;
+import javafx.scene.chart.AreaChart;
+import javafx.scene.chart.BarChart;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
+import javafx.scene.control.Button;
+import javafx.scene.control.Control;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.scene.transform.Scale;
+import javafx.stage.Popup;
+
+/**
+ * FXML Controller class
+ *
+ * @author dario
+ */
+public class UserDisplayTabWidgetController implements Initializable {
+
+	// TODO: scatter chart for events
+	// TODO: bar charts for parameters
+	// TODO: ANDs for parameters (name, eng. value, gen. time, alarm state)
+	// TODO: scrollables for parameters (name, eng. value, gen. time, alarm state)
+
+	// Live/retrieval controls
+	@FXML
+	protected ToggleButton liveTgl;
+	@FXML
+	protected Button goToStartBtn;
+	@FXML
+	protected Button goBackFastBtn;
+	@FXML
+	protected Button goBackOneBtn;
+	@FXML
+	protected Button goToEndBtn;
+	@FXML
+	protected Button goForwardFastBtn;
+	@FXML
+	protected Button goForwardOneBtn;
+	@FXML
+	protected Button selectTimeBtn;
+
+	@FXML
+	protected VBox innerBox;
+
+	// Progress indicator for data retrieval
+	@FXML
+	protected ProgressIndicator progressIndicator;
+
+	// Popup selector for date/time
+	protected final Popup dateTimePopup = new Popup();
+
+	// Time selector controller
+	protected DateTimePickerWidgetController dateTimePickerController;
+
+	//
+	protected final List<AbstractChartManager> charts = new CopyOnWriteArrayList<>();
+
+	protected volatile ParameterDataFilter currentFilter = new ParameterDataFilter(new LinkedList<>());
+
+	// TODO: make it configurable
+	protected final int timeWindowSize = 60000;
+
+	// TODO: make it configurable
+	protected final int timeUnit = 5000;
+
+	private Instant currentMin = null;
+	private Instant currentMax = null;
+
+	private Timer timer = null;
+
+	private volatile boolean live = false;
+	private UserDisplayViewController controller;
+
+	private HBox lineBox = null;
+
+	@Override
+	public void initialize(URL url, ResourceBundle rb) {
+		if (this.liveTgl != null) {
+			this.goToStartBtn.disableProperty().bind(this.liveTgl.selectedProperty());
+			this.goBackFastBtn.disableProperty().bind(this.liveTgl.selectedProperty());
+			this.goBackOneBtn.disableProperty().bind(this.liveTgl.selectedProperty());
+			this.goToEndBtn.disableProperty().bind(this.liveTgl.selectedProperty());
+			this.goForwardFastBtn.disableProperty().bind(this.liveTgl.selectedProperty());
+			this.goForwardOneBtn.disableProperty().bind(this.liveTgl.selectedProperty());
+			this.selectTimeBtn.disableProperty().bind(this.liveTgl.selectedProperty());
+		}
+
+		this.dateTimePopup.setAutoHide(true);
+		this.dateTimePopup.setHideOnEscape(true);
+
+		try {
+			URL datePickerUrl = getClass().getClassLoader()
+					.getResource("eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
+			FXMLLoader loader = new FXMLLoader(datePickerUrl);
+			Parent dateTimePicker = loader.load();
+			this.dateTimePickerController = (DateTimePickerWidgetController) loader.getController();
+			this.dateTimePopup.getContent().addAll(dateTimePicker);
+			// Load the controller hide with select
+			this.dateTimePickerController.setActionAfterSelection(() -> {
+				this.dateTimePopup.hide();
+				Instant theTime = this.dateTimePickerController.getSelectedTime();
+				fetchRecords(theTime.minusMillis(getTimeWindowSize()), theTime, true);
+			});
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		this.live = true;
+	}
+
+	@FXML
+	protected void addLineChartMenuItemSelected(ActionEvent e) {
+		addLineChart();
+	}
+
+	@FXML
+	protected void addAreaChartMenuItemSelected(ActionEvent e) {
+		addAreaChart();
+	}
+
+	@FXML
+	protected void addBarChartMenuItemSelected(ActionEvent e) {
+		addBarChart();
+	}
+
+	private void fetchRecords(final Instant minTime, final Instant maxTime, final boolean clear) {
+		final ParameterDataFilter pdf = getCurrentFilter();
+		// Retrieve the next one and add it on top
+		markProgressBusy();
+		ReatmetricUI.threadPool(getClass()).execute(() -> {
+			try {
+				List<ParameterData> messages = ReatmetricUI.selectedSystem().getSystem()
+						.getParameterDataMonitorService().retrieve(minTime, 100, RetrievalDirection.TO_FUTURE, pdf);
+				// Repeat until endTime is reached
+				if (messages.size() > 0 && messages.get(messages.size() - 1).getGenerationTime().isBefore(maxTime)) {
+					List<ParameterData> newMessages = ReatmetricUI.selectedSystem().getSystem()
+							.getParameterDataMonitorService()
+							.retrieve(messages.get(messages.size() - 1), 100, RetrievalDirection.TO_FUTURE, pdf);
+					messages.addAll(newMessages);
+				}
+				for (Iterator<ParameterData> it = messages.iterator(); it.hasNext();) {
+					if (it.next().getGenerationTime().isAfter(maxTime)) {
+						it.remove();
+					}
+				}
+
+				setData(minTime, maxTime, messages, clear);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			markProgressReady();
+		});
+	}
+
+	protected void setData(Instant minTime, Instant maxTime, List<ParameterData> messages, boolean clear) {
+		Platform.runLater(() -> {
+			if (clear) {
+				clearCharts();
+			}
+			this.currentMin = minTime;
+			this.currentMax = maxTime;
+			this.charts.stream().forEach(a -> a.setBoundaries(minTime, maxTime));
+			this.charts.stream().forEach(a -> a.plot(messages));
+		});
+	}
+
+	public void updateDataItems(List<ParameterData> messages) {
+		// TODO Partition the messages
+		if (this.live) {
+			this.charts.stream().forEach(a -> a.plot(messages));
+		}
+	}
+
+	@FXML
+	protected void liveToggleSelected(ActionEvent e) {
+		if (this.liveTgl.isSelected()) {
+			Instant now = Instant.now();
+			fetchRecords(now.minusMillis(getTimeWindowSize()), now, true);
+			startSubscription();
+		} else {
+			stopSubscription();
+		}
+	}
+
+	private void clearCharts() {
+		this.charts.forEach(a -> a.clear());
+	}
+
+	private int getTimeWindowSize() {
+		return this.timeWindowSize;
+	}
+
+	@FXML
+	protected void goToStart(ActionEvent e) {
+		if (!isProgressBusy()) {
+			moveToTimeBeginning();
+		}
+	}
+
+	private void moveToTimeEnd() {
+		final ParameterDataFilter pdf = getCurrentFilter();
+		final int timeWindow = getTimeWindowSize();
+		// Retrieve the next one and add it on top
+		markProgressBusy();
+		ReatmetricUI.threadPool(getClass()).execute(() -> {
+			try {
+				List<ParameterData> messages = ReatmetricUI.selectedSystem().getSystem()
+						.getParameterDataMonitorService().retrieve(Instant.MAX, 100, RetrievalDirection.TO_PAST, pdf);
+				// Repeat until endTime is reached
+				Instant minTime = null;
+				if (messages.size() > 0) {
+					minTime = messages.get(0).getGenerationTime().minusMillis(timeWindow);
+				}
+				if (messages.size() > 0 && messages.get(messages.size() - 1).getGenerationTime().isAfter(minTime)) {
+					List<ParameterData> newMessages = ReatmetricUI.selectedSystem().getSystem()
+							.getParameterDataMonitorService()
+							.retrieve(messages.get(messages.size() - 1), 100, RetrievalDirection.TO_PAST, pdf);
+					messages.addAll(newMessages);
+				}
+				for (Iterator<ParameterData> it = messages.iterator(); it.hasNext();) {
+					if (it.next().getGenerationTime().isBefore(minTime)) {
+						it.remove();
+					}
+				}
+				setData(minTime, messages.get(0).getGenerationTime(), messages, false);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			markProgressReady();
+		});
+	}
+
+	private void moveToTimeBeginning() {
+		final ParameterDataFilter pdf = getCurrentFilter();
+		final int timeWindow = getTimeWindowSize();
+		// Retrieve the next one and add it on top
+		markProgressBusy();
+		ReatmetricUI.threadPool(getClass()).execute(() -> {
+			try {
+				List<ParameterData> messages = ReatmetricUI.selectedSystem().getSystem()
+						.getParameterDataMonitorService().retrieve(Instant.MIN, 100, RetrievalDirection.TO_FUTURE, pdf);
+				// Repeat until endTime is reached
+				Instant maxTime = null;
+				if (messages.size() > 0) {
+					maxTime = messages.get(0).getGenerationTime().plusMillis(timeWindow);
+				}
+				if (messages.size() > 0 && messages.get(messages.size() - 1).getGenerationTime().isBefore(maxTime)) {
+					List<ParameterData> newMessages = ReatmetricUI.selectedSystem().getSystem()
+							.getParameterDataMonitorService()
+							.retrieve(messages.get(messages.size() - 1), 100, RetrievalDirection.TO_FUTURE, pdf);
+					messages.addAll(newMessages);
+				}
+				for (Iterator<ParameterData> it = messages.iterator(); it.hasNext();) {
+					if (it.next().getGenerationTime().isAfter(maxTime)) {
+						it.remove();
+					}
+				}
+				setData(messages.get(0).getGenerationTime(), maxTime, messages, false);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			markProgressReady();
+		});
+	}
+
+	@FXML
+	protected void goBackFast(ActionEvent e) {
+		if (!isProgressBusy()) {
+			fetchRecords(getCurrentMinTime().minusMillis(getTimeWindowSize()), getCurrentMinTime(), false);
+		}
+	}
+
+	private Instant getCurrentMinTime() {
+		return this.currentMin;
+	}
+
+	@FXML
+	protected void goBackOne(ActionEvent e) {
+		if (!isProgressBusy()) {
+			fetchRecords(getCurrentMinTime().minusMillis(getTimeUnit()), getCurrentMaxTime().minusMillis(getTimeUnit()),
+					false);
+		}
+	}
+
+	private Instant getCurrentMaxTime() {
+		return this.currentMax;
+	}
+
+	private int getTimeUnit() {
+		return this.timeUnit;
+	}
+
+	@FXML
+	protected void goToEnd(ActionEvent e) {
+		if (!isProgressBusy()) {
+			moveToTimeEnd();
+		}
+	}
+
+	@FXML
+	protected void goForwardFast(ActionEvent e) {
+		if (!isProgressBusy()) {
+			fetchRecords(getCurrentMaxTime(), getCurrentMaxTime().plusMillis(getTimeWindowSize()), false);
+		}
+	}
+
+	@FXML
+	protected void goForwardOne(ActionEvent e) {
+		if (!isProgressBusy()) {
+			fetchRecords(getCurrentMinTime().plusMillis(getTimeUnit()), getCurrentMaxTime().plusMillis(getTimeUnit()),
+					false);
+		}
+	}
+
+	@FXML
+	protected void selectTimeButtonSelected(ActionEvent e) {
+		if (this.dateTimePopup.isShowing()) {
+			this.dateTimePopup.hide();
+		} else {
+			Bounds b = this.selectTimeBtn.localToScreen(this.selectTimeBtn.getBoundsInLocal());
+			this.dateTimePopup.setX(b.getMinX());
+			this.dateTimePopup.setY(b.getMaxY());
+			this.dateTimePopup.getScene().getRoot().getStylesheets().add(getClass().getClassLoader()
+					.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+			this.dateTimePopup.show(this.innerBox.getScene().getWindow());
+		}
+	}
+
+	public boolean isLive() {
+		return this.live;
+	}
+
+	public void doUserDisconnected(String system, String user) {
+		if (this.liveTgl != null) {
+			this.liveTgl.setSelected(false);
+		}
+		this.innerBox.getParent().getParent().setDisable(true);
+	}
+
+	public void doUserConnected(String system, String user) {
+		if (this.liveTgl != null) {
+			this.liveTgl.setSelected(true);
+		}
+		this.innerBox.getParent().getParent().setDisable(false);
+	}
+
+	public void doUserConnectionFailed(String system, String user, String reason) {
+		if (this.liveTgl != null) {
+			this.liveTgl.setSelected(false);
+		}
+		this.innerBox.getParent().getParent().setDisable(true);
+	}
+
+	public void doServiceDisconnected(boolean oldState) {
+		stopSubscription();
+		clearCharts();
+	}
+
+	public void doServiceConnected(boolean oldState) {
+		// Start subscription if there
+		if (this.liveTgl == null || this.liveTgl.isSelected()) {
+			clearCharts();
+			startSubscription();
+		}
+	}
+
+	private void markProgressBusy() {
+		this.progressIndicator.setVisible(true);
+	}
+
+	private void markProgressReady() {
+		Platform.runLater(() -> {
+			this.progressIndicator.setVisible(false);
+		});
+	}
+
+	private boolean isProgressBusy() {
+		return this.progressIndicator.isVisible();
+	}
+
+	protected final void startSubscription() {
+		this.live = true;
+		if (this.currentMin == null) {
+			this.currentMax = Instant.now().plusMillis(getTimeUnit());
+			this.currentMin = this.currentMax.minusMillis(getTimeWindowSize());
+			this.charts.stream().forEach(a -> a.setBoundaries(this.currentMin, this.currentMax));
+		}
+		if (this.timer != null) {
+			this.timer.cancel();
+		}
+		this.timer = new Timer(true);
+		this.timer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				Platform.runLater(() -> {
+					currentMax = Instant.now().plusMillis(getTimeUnit());
+					currentMin = currentMax.minusMillis(getTimeWindowSize());
+					charts.stream().forEach(a -> a.setBoundaries(currentMin, currentMax));
+				});
+			}
+		}, getTimeUnit(), getTimeUnit());
+	}
+
+	public ParameterDataFilter getCurrentFilter() {
+		return this.currentFilter;
+	}
+
+	protected final void stopSubscription() {
+		if (this.timer != null) {
+			this.timer.cancel();
+		}
+		this.timer = null;
+
+		this.live = false;
+	}
+
+	@FXML
+	protected void printButtonSelected(ActionEvent e) {
+		final Control n = doBuildNodeForPrinting();
+		if (n != null) {
+			ReatmetricUI.threadPool(getClass()).execute(() -> {
+				Printer printer = Printer.getDefaultPrinter();
+				PageLayout pageLayout = printer.createPageLayout(Paper.A4, PageOrientation.PORTRAIT,
+						Printer.MarginType.HARDWARE_MINIMUM);
+				PrinterAttributes attr = printer.getPrinterAttributes();
+				PrinterJob job = PrinterJob.createPrinterJob();
+
+				double scaleX = pageLayout.getPrintableWidth() / n.getPrefWidth();
+				Scale scale = new Scale(scaleX, scaleX); // Homogeneus scale, assuming width larger than height ...
+				n.getTransforms().add(scale);
+
+				if (job != null && job.showPrintDialog(this.innerBox.getScene().getWindow())) {
+					boolean success = job.printPage(pageLayout, n);
+					if (success) {
+						ReatmetricUI.setStatusLabel("Job printed successfully");
+						job.endJob();
+					} else {
+						ReatmetricUI
+								.setStatusLabel("Error while printing job on printer " + job.getPrinter().getName());
+					}
+				}
+			});
+		} else {
+			ReatmetricUI.setStatusLabel("Printing not supported on this display");
+		}
+	}
+
+	protected Control doBuildNodeForPrinting() {
+		// TODO
+		return null;
+	}
+
+	private void addLineChart() {
+		LineChart<Instant, Number> l = new LineChart<>(new InstantAxis(), new NumberAxis());
+		initialiseTimeChart(l);
+	}
+
+	private void addAreaChart() {
+		AreaChart<Instant, Number> l = new AreaChart<>(new InstantAxis(), new NumberAxis());
+		initialiseTimeChart(l);
+	}
+
+	private void addBarChart() {
+		BarChart<String, Number> l = new BarChart<>(new CategoryAxis(), new NumberAxis());
+		initialiseBarChart(l);
+	}
+
+	private void initialiseBarChart(BarChart<String, Number> l) {
+		l.setAnimated(false);
+		l.getXAxis().setTickLabelsVisible(true);
+
+		// Add to list
+		AbstractChartManager udd = new XYBarChartManager(new Observer() {
+			@Override
+			public void update(Observable o, Object arg) {
+				updateFilter();
+			}
+		}, l);
+		// l.setPrefHeight(200);
+		addToPane(l);
+		// l.prefWidthProperty().bind(this.innerBox.widthProperty());
+		// this.innerBox.getChildren().add(l);
+		this.charts.add(udd);
+		this.innerBox.getParent().layout();
+	}
+
+	private void addToPane(XYChart<?, ?> l) {
+		if (this.lineBox == null) {
+			this.lineBox = new HBox();
+			this.lineBox.setPrefHeight(250);
+			this.lineBox.setPadding(new Insets(10, 10, 10, 10));
+			this.lineBox.setSpacing(10);
+			this.lineBox.prefWidthProperty().bind(this.innerBox.widthProperty());
+			this.innerBox.getChildren().add(this.lineBox);
+			this.lineBox.getChildren().add(l);
+			HBox.setHgrow(l, Priority.ALWAYS);
+		} else {
+			this.lineBox.getChildren().add(l);
+			HBox.setHgrow(l, Priority.ALWAYS);
+			this.lineBox.layout();
+			this.lineBox = null;
+		}
+	}
+
+	private void initialiseTimeChart(XYChart<Instant, Number> l) {
+		l.setAnimated(false);
+		l.getXAxis().setTickLabelsVisible(true);
+
+		((InstantAxis) l.getXAxis()).setAutoRanging(false);
+		((InstantAxis) l.getXAxis()).setLowerBound(Instant.now().minusMillis(getTimeWindowSize() - getTimeUnit()));
+		((InstantAxis) l.getXAxis()).setUpperBound(Instant.now().plusMillis(getTimeUnit()));
+
+		// Add to list
+		XYTimeChartManager udd = new XYTimeChartManager(new Observer() {
+			@Override
+			public void update(Observable o, Object arg) {
+				updateFilter();
+			}
+		}, l);
+
+		addToPane(l);
+		// l.setPrefHeight(200);
+		// l.prefWidthProperty().bind(this.innerBox.widthProperty());
+		// this.innerBox.getChildren().add(l);
+		this.charts.add(udd);
+		this.innerBox.getParent().layout();
+	}
+
+	protected void updateFilter() {
+		Set<SystemEntityPath> selected = new LinkedHashSet<>();
+		for (AbstractChartManager acm : this.charts) {
+			selected.addAll(acm.getPlottedParameters());
+		}
+		this.currentFilter = new ParameterDataFilter(new LinkedList<>(selected));
+
+		this.controller.filterUpdated(this, this.currentFilter);
+	}
+
+	public void setParentController(UserDisplayViewController userDisplayViewController) {
+		this.controller = userDisplayViewController;
+	}
+}

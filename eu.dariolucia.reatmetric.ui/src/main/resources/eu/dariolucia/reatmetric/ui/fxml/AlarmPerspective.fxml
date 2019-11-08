@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.SplitPane?>
+
+<!--
+  ~ Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
+  ~ All rights reserved
+  ~
+  ~ Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes
+  ~ shall be granted by the author in writing.
+  -->
+
+<SplitPane fx:id="alarmPerspective" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1">
+   <items>
+       <fx:include source="AlarmParameterDataView.fxml" />
+   </items>
+</SplitPane>

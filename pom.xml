@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~   Copyright (c) 2019 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~   Licensed under the Apache License, Version 2.0 (the "License");
+  ~   you may not use this file except in compliance with the License.
+  ~   You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~   Unless required by applicable law or agreed to in writing, software
+  ~   distributed under the License is distributed on an "AS IS" BASIS,
+  ~   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~   See the License for the specific language governing permissions and
+  ~   limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>eu.dariolucia.reatmetric</groupId>
+    <artifactId>eu.dariolucia.reatmetric</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>REATMETRIC</name>
+    <description>Utility and framework for CCSDS/ECSS spacecraft and ground elements monitoring &amp; control.</description>
+    <url>https://www.github.com/dariol83/reatmetric</url>
+
+    <developers>
+        <developer>
+            <name>Dario Lucia</name>
+            <email>dario.lucia@gmail.com</email>
+            <url>https://www.dariolucia.eu</url>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/dariol83/reatmetric.git</url>
+        <connection>scm:git:git@github.com:dariol83/reatmetric.git</connection>
+        <developerConnection>scm:git:git@github.com:dariol83/reatmetric.git</developerConnection>
+    </scm>
+
+    <properties>
+        <!-- Encoding -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <!-- Java version -->
+        <java.version>11</java.version>
+        <!-- External libraries versions -->
+        <junit.version>5.5.0-M1</junit.version>
+        <openjfx.version>11.0.2</openjfx.version>
+        <jaxb.version>2.3.2</jaxb.version>
+        <ccsds.version>0.2.0</ccsds.version>
+        <!-- Maven plugin versions -->
+        <maven.jacoco.version>0.8.2</maven.jacoco.version>
+        <maven.javadoc.version>3.1.0</maven.javadoc.version>
+        <maven.source.version>3.1.0</maven.source.version>
+        <maven.surefire.version>2.22.2</maven.surefire.version>
+        <maven.compiler.version>3.8.1</maven.compiler.version>
+        <maven.gpg.version>1.6</maven.gpg.version>
+        <maven.version>2.5</maven.version>
+    </properties>
+
+    <modules>
+        <module>eu.dariolucia.reatmetric.api</module>
+        <module>eu.dariolucia.reatmetric.processing</module>
+        <module>eu.dariolucia.reatmetric.core</module>
+        <module>eu.dariolucia.reatmetric.ui</module>
+    </modules>
+
+    <build>
+        <plugins>
+            <!-- Maven version to use -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>${maven.version}</version>
+                <configuration>
+                    <generateBackupPoms>false</generateBackupPoms>
+                </configuration>
+            </plugin>
+            <!-- Set the source file version to Java 11-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compiler.version}</version>
+                <configuration>
+                    <release>${java.version}</release>
+                </configuration>
+            </plugin>
+            <!-- Run tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.version}</version>
+            </plugin>
+            <!-- Source JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven.source.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Javadoc -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven.javadoc.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <show>package</show>
+                    <nohelp>true</nohelp>
+                </configuration>
+            </plugin>
+            <!-- JaCoCo -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${maven.jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <!-- attached to Maven test phase -->
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>release</id>
+            <distributionManagement>
+                <repository>
+                    <id>ossrh</id>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+            </distributionManagement>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven.gpg.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

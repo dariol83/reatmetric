@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.effect.ColorAdjust?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+
+<!--
+  ~ Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
+  ~ All rights reserved
+  ~
+  ~ Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes
+  ~ shall be granted by the author in writing.
+  -->
+
+<BorderPane fx:id="nullPerspective" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.NullPerspectiveController">
+   <center>
+      <ImageView fx:id="nullPerspectiveBgImage" fitHeight="395.0" fitWidth="574.0" pickOnBounds="true">
+         <image>
+            <Image url="@images/bg-image-antenna.png" />
+         </image>
+         <effect>
+            <ColorAdjust brightness="-0.69" contrast="1.0" saturation="-1.0" />
+         </effect>
+      </ImageView>
+   </center>
+</BorderPane>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+
+<!--
+  ~ Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
+  ~ All rights reserved
+  ~
+  ~ Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes
+  ~ shall be granted by the author in writing.
+  -->
+
+<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.UserDisplayTabWidgetController">
+	<children>
+		<ToolBar prefHeight="32.0">
+			<items>
+				<MenuButton mnemonicParsing="false" text="Add">
+                <items>
+                	<MenuItem mnemonicParsing="false" onAction="#addLineChartMenuItemSelected" text="Line Chart" />
+                	<MenuItem mnemonicParsing="false" onAction="#addAreaChartMenuItemSelected" text="Area Chart" />
+                	<MenuItem mnemonicParsing="false" onAction="#addBarChartMenuItemSelected" text="Bar Chart" />
+                </items>
+                </MenuButton>
+				<ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" prefHeight="25.0" prefWidth="91.0" selected="true" text="Live" />
+				<Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart" text="|&lt;" />
+				<Button fx:id="goBackFastBtn" disable="true" mnemonicParsing="false" onAction="#goBackFast" text="&lt;&lt;" />
+				<Button fx:id="goBackOneBtn" disable="true" mnemonicParsing="false" onAction="#goBackOne" text="&lt;" />
+				<Button fx:id="selectTimeBtn" disable="true" mnemonicParsing="false" onAction="#selectTimeButtonSelected" prefHeight="25.0" prefWidth="180.0" text="---" />
+				<Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne" text="&gt;" />
+				<Button fx:id="goForwardFastBtn" disable="true" mnemonicParsing="false" onAction="#goForwardFast" text="&gt;&gt;" />
+				<Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd" text="&gt;|" />
+				<Label text=" " />
+                <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
+                <Label text=" " />
+                <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected" text="Print..." />
+			</items>
+		</ToolBar>
+      <ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" pannable="true" VBox.vgrow="ALWAYS">
+         <content>
+            <VBox fx:id="innerBox" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
+         </content>
+      </ScrollPane>
+	</children>
+</VBox>

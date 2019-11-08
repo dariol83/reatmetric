@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ContextMenu?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+
+<!--
+  ~ Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
+  ~ All rights reserved
+  ~
+  ~ Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes
+  ~ shall be granted by the author in writing.
+  -->
+
+<TitledPane fx:id="displayTitledPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Raw Data" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.RawDataViewController">
+   <content>
+      <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
+         <children>
+            <ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
+               <items>
+                  <Circle fx:id="serviceHealthStatus" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
+                  <Label text=" " />
+                  <ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" prefHeight="25.0" prefWidth="91.0" selected="true" text="Live" />
+                  <Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart" text="|&lt;" />
+                  <Button fx:id="goBackFastBtn" disable="true" mnemonicParsing="false" onAction="#goBackFast" text="&lt;&lt;" />
+                  <Button fx:id="goBackOneBtn" disable="true" mnemonicParsing="false" onAction="#goBackOne" text="&lt;" />
+                  <Button fx:id="selectTimeBtn" disable="true" mnemonicParsing="false" onAction="#selectTimeButtonSelected" prefHeight="25.0" prefWidth="180.0" text="---" />
+                  <Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne" text="&gt;" />
+                  <Button fx:id="goForwardFastBtn" disable="true" mnemonicParsing="false" onAction="#goForwardFast" text="&gt;&gt;" />
+                  <Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd" text="&gt;|" />
+                  <Label text=" " />
+                  <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
+                  <Label text=" " />
+                  <Button fx:id="filterBtn" mnemonicParsing="false" onAction="#filterButtonSelected" text="Filter..." />
+                  <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected" text="Print..." />
+               </items>
+            </ToolBar>
+            <TableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" VBox.vgrow="ALWAYS">
+              <columns>
+                <TableColumn fx:id="nameCol" editable="false" prefWidth="130.0" sortable="false" text="Name" />
+                  <TableColumn fx:id="typeCol" editable="false" prefWidth="75.0" sortable="false" text="Type" />
+                <TableColumn fx:id="routeCol" editable="false" prefWidth="100.0" sortable="false" text="Route" />
+                <TableColumn fx:id="genTimeCol" editable="false" prefWidth="100.0" sortable="false" text="Gen. Time" />
+                <TableColumn fx:id="recTimeCol" editable="false" prefWidth="100.0" sortable="false" text="Rec. Time" />
+                <TableColumn fx:id="qualityCol" editable="false" prefWidth="100.0" sortable="false" text="Quality" />
+                <TableColumn fx:id="sourceCol" editable="false" prefWidth="100.0" sortable="false" text="Source" />
+              </columns>
+               <contextMenu>
+                  <ContextMenu>
+                    <items>
+                      <MenuItem mnemonicParsing="false" onAction="#inspectItemAction" text="Inspect..." />
+                    </items>
+                  </ContextMenu>
+               </contextMenu>
+            </TableView>
+         </children>
+         <padding>
+            <Insets top="0.01" />
+         </padding>
+      </VBox>
+   </content>
+</TitledPane>

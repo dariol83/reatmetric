@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.text.Font?>
+
+<!--
+  ~ Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
+  ~ All rights reserved
+  ~
+  ~ Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes
+  ~ shall be granted by the author in writing.
+  -->
+
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="767.0" prefWidth="1079.0" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.MainViewController">
+   <children>
+      <MenuBar>
+        <menus>
+          <Menu mnemonicParsing="false" text="Monitoring Centre">
+            <items>
+                  <MenuItem fx:id="connectMenuItem" mnemonicParsing="false" onAction="#connectMenuAction" text="Connect..." />
+                  <MenuItem fx:id="disconnectMenuItem" disable="true" mnemonicParsing="false" onAction="#disconnectMenuAction" text="Disconnect..." />
+              <MenuItem mnemonicParsing="false" onAction="#exitMenuAction" text="Exit" />
+            </items>
+          </Menu>
+          <Menu mnemonicParsing="false" text="Help">
+            <items>
+              <MenuItem mnemonicParsing="false" text="About" />
+            </items>
+          </Menu>
+        </menus>
+      </MenuBar>
+      <ToolBar prefHeight="40.0" prefWidth="200.0">
+         <items>
+            <ToggleButton fx:id="parameterTgl" disable="true" mnemonicParsing="false" onAction="#toolbarToggleButtonAction" prefWidth="90.0" text="Parameters">
+               <toggleGroup>
+                  <ToggleGroup fx:id="perspectiveGroup" />
+               </toggleGroup>
+            </ToggleButton>
+            <ToggleButton fx:id="eventTgl" disable="true" mnemonicParsing="false" onAction="#toolbarToggleButtonAction" prefWidth="90.0" text="Events" toggleGroup="$perspectiveGroup" />
+            <ToggleButton fx:id="rawDataTgl" disable="true" mnemonicParsing="false" onAction="#toolbarToggleButtonAction" prefWidth="90.0" text="Raw Data" toggleGroup="$perspectiveGroup" />
+            <ToggleButton fx:id="alarmsTgl" disable="true" mnemonicParsing="false" onAction="#toolbarToggleButtonAction" prefWidth="90.0" text="Alarms" toggleGroup="$perspectiveGroup" />
+            <ToggleButton fx:id="userDisplaysTgl" disable="true" mnemonicParsing="false" onAction="#toolbarToggleButtonAction" prefWidth="90.0" text="User Displays" toggleGroup="$perspectiveGroup" />
+            <Label prefHeight="17.0" prefWidth="24.0" />
+            <Label fx:id="systemTextLbl" disable="true" prefHeight="17.0" prefWidth="44.0" text="System" />
+            <Label fx:id="systemLbl" alignment="CENTER" disable="true" prefHeight="17.0" prefWidth="141.0" style="-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;" text="---" />
+            <Label fx:id="usernameTextLbl" alignment="CENTER" disable="true" maxWidth="1.7976931348623157E308" prefHeight="17.0" prefWidth="72.0" text="Username" />
+            <Label fx:id="usernameLbl" alignment="CENTER" disable="true" prefHeight="17.0" prefWidth="141.0" style="-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;" text="---" />
+         </items>
+      </ToolBar>
+      <SplitPane dividerPositions="0.7" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" VBox.vgrow="ALWAYS">
+         <items>
+            <SplitPane dividerPositions="0.17" prefHeight="160.0" prefWidth="200.0">
+              <items>
+                  <fx:include source="ModelBrowserView.fxml" />
+                  <StackPane fx:id="perspectiveStackPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
+                      <children>
+                          <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="ParameterPerspective.fxml" />
+                          <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="EventPerspective.fxml" />
+                          <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="RawDataPerspective.fxml" />
+                          <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="AlarmPerspective.fxml" />
+                          <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="UserDisplayPerspective.fxml" />
+                          <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="NullPerspective.fxml" />
+                      </children>
+                  </StackPane>
+              </items>
+            </SplitPane>
+            <fx:include source="OperationalMessageView.fxml" />
+         </items>
+      </SplitPane>
+      <ToolBar prefHeight="24.0">
+         <items>
+            <Circle fx:id="nominalCrl" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
+            <Circle fx:id="warningCrl" fill="#382700" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
+            <Circle fx:id="alarmCrl" fill="#360000" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
+            <Label fx:id="statusLbl" prefHeight="17.0" prefWidth="600.0">
+               <font>
+                  <Font size="11.0" />
+               </font>
+            </Label>
+         </items>
+      </ToolBar>
+   </children>
+</VBox>
