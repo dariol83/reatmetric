@@ -16,6 +16,11 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     }
 
     @Override
+    protected void initTables(Connection storeConnection) {
+        // TODO: create the necessary tables?
+    }
+
+    @Override
     protected void doStore(Connection connection, List<OperationalMessage> itemsToStore) {
         // https://stackoverflow.com/questions/18134561/how-to-insert-list-products-into-database
     }
