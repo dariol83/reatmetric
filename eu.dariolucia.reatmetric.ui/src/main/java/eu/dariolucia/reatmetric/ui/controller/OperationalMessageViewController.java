@@ -12,7 +12,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.ServiceType;
-import eu.dariolucia.reatmetric.api.common.exceptions.MonitoringCentreException;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageSubscriber;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
@@ -94,22 +94,22 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
     }
 
     @Override
-    protected void doServiceSubscribe(OperationalMessageFilter selectedFilter) throws MonitoringCentreException {
+    protected void doServiceSubscribe(OperationalMessageFilter selectedFilter) throws ReatmetricException {
         ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().subscribe(this, selectedFilter);
     }
 
     @Override
-    protected void doServiceUnsubscribe() throws MonitoringCentreException {
+    protected void doServiceUnsubscribe() throws ReatmetricException {
         ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().unsubscribe(this);
     }
 
     @Override
-    protected List<OperationalMessage> doRetrieve(OperationalMessage om, int n, RetrievalDirection direction, OperationalMessageFilter filter) throws MonitoringCentreException {
+    protected List<OperationalMessage> doRetrieve(OperationalMessage om, int n, RetrievalDirection direction, OperationalMessageFilter filter) throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().retrieve(om, n, direction, filter);
     }
 
     @Override
-    protected List<OperationalMessage> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, OperationalMessageFilter filter) throws MonitoringCentreException {
+    protected List<OperationalMessage> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, OperationalMessageFilter filter) throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().retrieve(selectedTime, n, direction, filter);
     }
 
@@ -119,7 +119,7 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
     }
 
     @Override
-    protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws MonitoringCentreException {
+    protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().getAdditionalFieldDescriptors();
     }
 

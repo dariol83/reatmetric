@@ -12,7 +12,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.ServiceType;
-import eu.dariolucia.reatmetric.api.common.exceptions.MonitoringCentreException;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
@@ -76,7 +76,7 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
                         this.dataInspectionPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
                         this.dataInspectionPopup.show(this.displayTitledPane.getScene().getWindow());
                     });
-                } catch(MonitoringCentreException e) {
+                } catch(ReatmetricException e) {
                     ReatmetricUI.setStatusLabel("Retrieve of raw data contents failed: " + selectedRawData.getName());
                 }
             });
@@ -143,22 +143,22 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
     }
 
     @Override
-    protected void doServiceSubscribe(RawDataFilter selectedFilter) throws MonitoringCentreException {
+    protected void doServiceSubscribe(RawDataFilter selectedFilter) throws ReatmetricException {
         ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().subscribe(this, selectedFilter);
     }
 
     @Override
-    protected void doServiceUnsubscribe() throws MonitoringCentreException {
+    protected void doServiceUnsubscribe() throws ReatmetricException {
         ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().unsubscribe(this);
     }
 
     @Override
-    protected List<RawData> doRetrieve(RawData om, int n, RetrievalDirection direction, RawDataFilter filter) throws MonitoringCentreException {
+    protected List<RawData> doRetrieve(RawData om, int n, RetrievalDirection direction, RawDataFilter filter) throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().retrieve(om, n, direction, filter);
     }
 
     @Override
-    protected List<RawData> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, RawDataFilter filter) throws MonitoringCentreException {
+    protected List<RawData> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, RawDataFilter filter) throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().retrieve(selectedTime, n, direction, filter);
     }
 
@@ -168,7 +168,7 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
     }
 
     @Override
-    protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws MonitoringCentreException {
+    protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().getAdditionalFieldDescriptors();
     }
 

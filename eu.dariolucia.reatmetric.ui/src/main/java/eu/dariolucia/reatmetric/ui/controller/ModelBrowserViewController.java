@@ -21,7 +21,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import eu.dariolucia.reatmetric.api.common.ServiceType;
-import eu.dariolucia.reatmetric.api.common.exceptions.MonitoringCentreException;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.ISystemModelSubscriber;
 import eu.dariolucia.reatmetric.api.model.Status;
@@ -217,7 +217,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 buildTreeModel();
-            } catch (MonitoringCentreException e) {
+            } catch (ReatmetricException e) {
                 e.printStackTrace();
             }
         });
@@ -242,7 +242,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         this.delegator.delegate(objects);
     }
 
-    private void buildTreeModel() throws MonitoringCentreException {
+    private void buildTreeModel() throws ReatmetricException {
         // First lock
         this.mapLock.lock();
         try {
@@ -277,7 +277,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
     }
 
-    private void removeItemFromTree(SystemEntity toRemove) throws MonitoringCentreException {
+    private void removeItemFromTree(SystemEntity toRemove) throws ReatmetricException {
         TreeItem<SystemEntity> item = this.path2item.get(toRemove.getPath());
         if(item != null) {
             // Remove from map
@@ -291,7 +291,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
     }
     
-    private TreeItem<SystemEntity> addOrUpdateItemToTree(SystemEntity toAdd) throws MonitoringCentreException {
+    private TreeItem<SystemEntity> addOrUpdateItemToTree(SystemEntity toAdd) throws ReatmetricException {
         // If there is already an item in the map, update the item
         TreeItem<SystemEntity> item = this.path2item.get(toAdd.getPath());
         if(item == null) {
@@ -320,7 +320,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
     }
     
-    private void addToParent(TreeItem<SystemEntity> item) throws MonitoringCentreException {
+    private void addToParent(TreeItem<SystemEntity> item) throws ReatmetricException {
         SystemEntityPath parentPath = item.getValue().getPath().getParent();
         if(parentPath == null) {
             // This is the root, do not do anything
@@ -348,7 +348,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                             case DELETION:
                                 removeItemFromTree(seu.getElement());
                         }
-                    } catch(MonitoringCentreException e) {
+                    } catch(ReatmetricException e) {
                         e.printStackTrace();
                     }
                 }

@@ -21,7 +21,7 @@ import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.ServiceType;
-import eu.dariolucia.reatmetric.api.common.exceptions.MonitoringCentreException;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
@@ -250,25 +250,25 @@ public class AlarmParameterDataViewController
 	}
 
 	@Override
-	protected void doServiceSubscribe(AlarmParameterDataFilter selectedFilter) throws MonitoringCentreException {
+	protected void doServiceSubscribe(AlarmParameterDataFilter selectedFilter) throws ReatmetricException {
 		ReatmetricUI.selectedSystem().getSystem().getAlarmParameterDataMonitorService().subscribe(this, selectedFilter);
 	}
 
 	@Override
-	protected void doServiceUnsubscribe() throws MonitoringCentreException {
+	protected void doServiceUnsubscribe() throws ReatmetricException {
 		ReatmetricUI.selectedSystem().getSystem().getAlarmParameterDataMonitorService().unsubscribe(this);
 	}
 
 	@Override
 	protected List<AlarmParameterData> doRetrieve(AlarmParameterData om, int n, RetrievalDirection direction, AlarmParameterDataFilter filter)
-			throws MonitoringCentreException {
+			throws ReatmetricException {
 		return ReatmetricUI.selectedSystem().getSystem().getAlarmParameterDataMonitorService().retrieve(om, n, direction,
 				filter);
 	}
 
 	@Override
 	protected List<AlarmParameterData> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction,
-			AlarmParameterDataFilter filter) throws MonitoringCentreException {
+			AlarmParameterDataFilter filter) throws ReatmetricException {
 		return ReatmetricUI.selectedSystem().getSystem().getAlarmParameterDataMonitorService().retrieve(selectedTime, n,
 				direction, filter);
 	}
@@ -279,7 +279,7 @@ public class AlarmParameterDataViewController
 	}
 
 	@Override
-	protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws MonitoringCentreException {
+	protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException {
 		return ReatmetricUI.selectedSystem().getSystem().getAlarmParameterDataMonitorService()
 				.getAdditionalFieldDescriptors();
 	}

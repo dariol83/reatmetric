@@ -17,7 +17,7 @@ import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.common.IServiceMonitorCallback;
 import eu.dariolucia.reatmetric.api.common.IUserMonitorCallback;
 import eu.dariolucia.reatmetric.api.common.ServiceType;
-import eu.dariolucia.reatmetric.api.common.exceptions.MonitoringCentreException;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService;
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
@@ -62,59 +62,59 @@ public class TestSystem implements IServiceFactory {
     }
 
     @Override
-    public IOperationalMessageProvisionService getOperationalMessageMonitorService() throws MonitoringCentreException {
+    public IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException {
         if(this.username != null) {
             return this.operationalMessageService;
         }
-        throw new MonitoringCentreException("User not connected");
+        throw new ReatmetricException("User not connected");
     }
 
     @Override
-    public IRawDataProvisionService getRawDataMonitorService() throws MonitoringCentreException {
+    public IRawDataProvisionService getRawDataMonitorService() throws ReatmetricException {
         if(this.username != null) {
             return this.rawDataService;
         }
-        throw new MonitoringCentreException("User not connected");
+        throw new ReatmetricException("User not connected");
     }
     
     @Override
-    public IParameterDataProvisionService getParameterDataMonitorService() throws MonitoringCentreException {
+    public IParameterDataProvisionService getParameterDataMonitorService() throws ReatmetricException {
         if(this.username != null) {
             return this.parameterDataService;
         }
-        throw new MonitoringCentreException("User not connected");
+        throw new ReatmetricException("User not connected");
     }
     
     @Override
-    public ISystemModelProvisionService getSystemModelMonitorService() throws MonitoringCentreException {
+    public ISystemModelProvisionService getSystemModelMonitorService() throws ReatmetricException {
         if(this.username != null) {
             return this.systemModelService;
         }
-        throw new MonitoringCentreException("User not connected");
+        throw new ReatmetricException("User not connected");
     }
     
     @Override
-    public IEventDataProvisionService getEventDataMonitorService() throws MonitoringCentreException {
+    public IEventDataProvisionService getEventDataMonitorService() throws ReatmetricException {
         if(this.username != null) {
             return this.eventDataService;
         }
-        throw new MonitoringCentreException("User not connected");
+        throw new ReatmetricException("User not connected");
     }
     
     @Override
-    public IAlarmParameterDataProvisionService getAlarmParameterDataMonitorService() throws MonitoringCentreException {       
+    public IAlarmParameterDataProvisionService getAlarmParameterDataMonitorService() throws ReatmetricException {
     	if(this.username != null) {
             return this.alarmDataService;
         }
-        throw new MonitoringCentreException("User not connected");
+        throw new ReatmetricException("User not connected");
     }
     
     @Override
-    public void login(String username, String password) throws MonitoringCentreException {
+    public void login(String username, String password) throws ReatmetricException {
         if(this.username != null) {
             String reason = "User already connected";
             this.userListeners.stream().forEach((o) -> o.userConnectionFailed(getSystem(), username, reason));
-            throw new MonitoringCentreException(reason);
+            throw new ReatmetricException(reason);
         }
         this.username = username;
         this.userListeners.stream().forEach((o) -> o.userConnected(getSystem(), username));

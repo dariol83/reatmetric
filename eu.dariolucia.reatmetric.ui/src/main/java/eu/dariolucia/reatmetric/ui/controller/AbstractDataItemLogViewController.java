@@ -22,7 +22,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.common.exceptions.MonitoringCentreException;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.TableViewUtil;
@@ -380,7 +380,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         	this.delegator.resume();
             try {
                 doServiceSubscribe(getCurrentFilter());
-            } catch (MonitoringCentreException e) {
+            } catch (ReatmetricException e) {
                 e.printStackTrace();
             }
         });
@@ -390,7 +390,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         ReatmetricUI.threadPool(getClass()).execute(() -> {
         	try {
                 doServiceUnsubscribe();
-            } catch (MonitoringCentreException e) {
+            } catch (ReatmetricException e) {
                 e.printStackTrace();
             }
         	this.delegator.suspend();
@@ -549,17 +549,17 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     	return this.dataItemFilterController != null ? this.dataItemFilterController.getSelectedFilter() : null; 
     }
 
-    protected abstract void doServiceSubscribe(V selectedFilter) throws MonitoringCentreException;
+    protected abstract void doServiceSubscribe(V selectedFilter) throws ReatmetricException;
     
-    protected abstract void doServiceUnsubscribe() throws MonitoringCentreException;
+    protected abstract void doServiceUnsubscribe() throws ReatmetricException;
     
-    protected abstract List<T> doRetrieve(T om, int n, RetrievalDirection direction, V filter) throws MonitoringCentreException;
+    protected abstract List<T> doRetrieve(T om, int n, RetrievalDirection direction, V filter) throws ReatmetricException;
 
-    protected abstract List<T> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, V filter) throws MonitoringCentreException;
+    protected abstract List<T> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, V filter) throws ReatmetricException;
 
     protected abstract Instant doGetGenerationTime(T om);
 
-    protected abstract List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws MonitoringCentreException;;
+    protected abstract List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException;;
 
     protected abstract URL doGetFilterWidget();
     

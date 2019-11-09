@@ -1,9 +1,8 @@
 /*
  * Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
- * All rights reserved
+ * All rights reserved.
  *
- * Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes
- * shall be granted by the author in writing.
+ * Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes shall be granted by the author in writing.
  */
 
 
@@ -61,13 +60,7 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
 
     @Override
     public int hashCode() {
-        int hash = super.hashCode();
-        hash = 59 * hash + Objects.hashCode(this.id);
-        hash = 59 * hash + Objects.hashCode(this.generationTime);
-        hash = 59 * hash + Objects.hashCode(this.message);
-        hash = 59 * hash + Objects.hashCode(this.source);
-        hash = 59 * hash + Objects.hashCode(this.severity);
-        return hash;
+        return internalId.hashCode();
     }
 
     @Override
@@ -82,6 +75,9 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
             return false;
         }
         final OperationalMessage other = (OperationalMessage) obj;
+        if (!Objects.equals(this.internalId, other.internalId)) {
+            return false;
+        }
         if (!Objects.equals(this.id, other.id)) {
             return false;
         }
@@ -97,7 +93,7 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
         if (!Objects.equals(this.message, other.message)) {
             return false;
         }
-        return super.equals(obj);
+        return true;
     }
 
     @Override

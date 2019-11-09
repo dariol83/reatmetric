@@ -17,7 +17,7 @@ import java.util.ResourceBundle;
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.ServiceType;
-import eu.dariolucia.reatmetric.api.common.exceptions.MonitoringCentreException;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.IEventDataSubscriber;
@@ -158,25 +158,25 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
 	}
 
 	@Override
-	protected void doServiceSubscribe(EventDataFilter selectedFilter) throws MonitoringCentreException {
+	protected void doServiceSubscribe(EventDataFilter selectedFilter) throws ReatmetricException {
 		ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().subscribe(this, selectedFilter);
 	}
 
 	@Override
-	protected void doServiceUnsubscribe() throws MonitoringCentreException {
+	protected void doServiceUnsubscribe() throws ReatmetricException {
 		ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().unsubscribe(this);
 	}
 
 	@Override
 	protected List<EventData> doRetrieve(EventData om, int n, RetrievalDirection direction, EventDataFilter filter)
-			throws MonitoringCentreException {
+			throws ReatmetricException {
 		return ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().retrieve(om, n, direction,
 				filter);
 	}
 
 	@Override
 	protected List<EventData> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction,
-			EventDataFilter filter) throws MonitoringCentreException {
+			EventDataFilter filter) throws ReatmetricException {
 		return ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().retrieve(selectedTime, n,
 				direction, filter);
 	}
@@ -187,7 +187,7 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
 	}
 
 	@Override
-	protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws MonitoringCentreException {
+	protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException {
 		return ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService()
 				.getAdditionalFieldDescriptors();
 	}

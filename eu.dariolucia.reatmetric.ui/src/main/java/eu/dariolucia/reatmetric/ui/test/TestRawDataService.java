@@ -13,7 +13,7 @@ import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.FieldFilterStrategy;
 import eu.dariolucia.reatmetric.api.common.FieldType;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.common.exceptions.MonitoringCentreException;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import java.time.Instant;
 import java.util.List;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
@@ -117,7 +117,7 @@ public class TestRawDataService extends DataGenerationService<RawData, RawDataFi
     }
 
     @Override
-    public byte[] getRawDataContents(RawData data) throws MonitoringCentreException {
+    public byte[] getRawDataContents(RawData data) throws ReatmetricException {
         return new byte[] {
           0x02,0x01,(byte) 0xF5,(byte) 0xAA,0x00,0x01,  
           0x01,

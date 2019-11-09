@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.ServiceType;
-import eu.dariolucia.reatmetric.api.common.exceptions.MonitoringCentreException;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
@@ -404,7 +404,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 doServiceSubscribe(pdf);
-            } catch (MonitoringCentreException e) {
+            } catch (ReatmetricException e) {
                 e.printStackTrace();
             }
         });
@@ -414,7 +414,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 doServiceUnsubscribe();
-            } catch (MonitoringCentreException e) {
+            } catch (ReatmetricException e) {
                 e.printStackTrace();
             }
         });
@@ -519,23 +519,23 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         }
     }
     
-    protected void doServiceSubscribe(ParameterDataFilter selectedFilter) throws MonitoringCentreException {
+    protected void doServiceSubscribe(ParameterDataFilter selectedFilter) throws ReatmetricException {
         ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().subscribe(this, selectedFilter);
     }
 
-    protected void doServiceUnsubscribe() throws MonitoringCentreException {
+    protected void doServiceUnsubscribe() throws ReatmetricException {
         ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().unsubscribe(this);
     }
 
-    protected List<ParameterData> doRetrieve(ParameterData om, int n, RetrievalDirection direction, ParameterDataFilter filter) throws MonitoringCentreException {
+    protected List<ParameterData> doRetrieve(ParameterData om, int n, RetrievalDirection direction, ParameterDataFilter filter) throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(om, n, direction, filter);
     }
 
-    protected List<ParameterData> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, ParameterDataFilter filter) throws MonitoringCentreException {
+    protected List<ParameterData> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, ParameterDataFilter filter) throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(selectedTime, n, direction, filter);
     }
     
-    protected List<ParameterData> doRetrieve(Instant selectedTime, ParameterDataFilter filter) throws MonitoringCentreException {
+    protected List<ParameterData> doRetrieve(Instant selectedTime, ParameterDataFilter filter) throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(selectedTime, filter);
     }
 
@@ -543,7 +543,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         return om.getReceptionTime();
     }
 
-    protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws MonitoringCentreException {
+    protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().getAdditionalFieldDescriptors();
     }
 

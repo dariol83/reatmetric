@@ -19,7 +19,7 @@ import java.util.ResourceBundle;
 
 import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.common.IUserMonitorCallback;
-import eu.dariolucia.reatmetric.api.common.exceptions.MonitoringCentreException;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IMonitoringCentreServiceListener;
@@ -180,7 +180,7 @@ public class MainViewController implements Initializable, IMonitoringCentreServi
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
-		} catch (MonitoringCentreException e) {
+		} catch (ReatmetricException e) {
 			e.printStackTrace();
 		}
 	}

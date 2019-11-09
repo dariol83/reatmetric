@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import eu.dariolucia.reatmetric.api.common.ServiceType;
-import eu.dariolucia.reatmetric.api.common.exceptions.MonitoringCentreException;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
@@ -199,7 +199,7 @@ public class UserDisplayViewController extends AbstractDisplayController
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
             	ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().subscribe(this, currentFilter);
-            } catch (MonitoringCentreException e) {
+            } catch (ReatmetricException e) {
                 e.printStackTrace();
             }
         });
@@ -217,7 +217,7 @@ public class UserDisplayViewController extends AbstractDisplayController
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
             	ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().unsubscribe(this);
-            } catch (MonitoringCentreException e) {
+            } catch (ReatmetricException e) {
                 e.printStackTrace();
             }
         });

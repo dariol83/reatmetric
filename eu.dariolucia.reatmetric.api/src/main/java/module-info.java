@@ -1,4 +1,4 @@
-module eu.dariolucia.reatmetric.api {
+open module eu.dariolucia.reatmetric.api {
 
     requires java.logging;
 
@@ -11,4 +11,6 @@ module eu.dariolucia.reatmetric.api {
     exports eu.dariolucia.reatmetric.api.model;
     exports eu.dariolucia.reatmetric.api.parameters;
     exports eu.dariolucia.reatmetric.api.rawdata;
+    exports eu.dariolucia.reatmetric.api.archive;
+    exports eu.dariolucia.reatmetric.api.archive.exceptions;
 }
