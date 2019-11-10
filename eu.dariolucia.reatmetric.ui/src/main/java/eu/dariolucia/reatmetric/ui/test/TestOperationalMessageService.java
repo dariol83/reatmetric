@@ -9,10 +9,7 @@
 
 package eu.dariolucia.reatmetric.ui.test;
 
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
-import eu.dariolucia.reatmetric.api.common.FieldFilterStrategy;
-import eu.dariolucia.reatmetric.api.common.FieldType;
-import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageSubscriber;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
@@ -40,7 +37,7 @@ public class TestOperationalMessageService extends DataGenerationService<Operati
     @Override
     protected OperationalMessage generateItem() {
         OperationalMessage om = new OperationalMessage(
-                new UniqueIdImpl(UUID.randomUUID()),
+                new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()),
                 String.valueOf(this.sequencer.incrementAndGet()),
                 "Test Message", 
                 Instant.now(), 

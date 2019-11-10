@@ -11,6 +11,7 @@ package eu.dariolucia.reatmetric.ui.test;
 
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
@@ -47,15 +48,15 @@ public class TestParameterDataService extends DataGenerationService<ParameterDat
    
     @Override
     protected void generateMessages() {
-        this.path2uuid.put("mcmRoot.a.param1", new UniqueIdImpl(UUID.randomUUID()));
-        this.path2uuid.put("mcmRoot.a.param3", new UniqueIdImpl(UUID.randomUUID()));
-        this.path2uuid.put("mcmRoot.a.param4", new UniqueIdImpl(UUID.randomUUID()));
-        this.path2uuid.put("mcmRoot.a.param5", new UniqueIdImpl(UUID.randomUUID()));
-        this.path2uuid.put("mcmRoot.a.param6", new UniqueIdImpl(UUID.randomUUID()));
-        this.path2uuid.put("mcmRoot.b.param7", new UniqueIdImpl(UUID.randomUUID()));
-        this.path2uuid.put("mcmRoot.b.param8", new UniqueIdImpl(UUID.randomUUID()));
-        this.path2uuid.put("mcmRoot.b.param9", new UniqueIdImpl(UUID.randomUUID()));
-        this.path2uuid.put("mcmRoot.param2", new UniqueIdImpl(UUID.randomUUID()));
+        this.path2uuid.put("mcmRoot.a.param1", new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()));
+        this.path2uuid.put("mcmRoot.a.param3", new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()));
+        this.path2uuid.put("mcmRoot.a.param4", new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()));
+        this.path2uuid.put("mcmRoot.a.param5", new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()));
+        this.path2uuid.put("mcmRoot.a.param6", new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()));
+        this.path2uuid.put("mcmRoot.b.param7", new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()));
+        this.path2uuid.put("mcmRoot.b.param8", new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()));
+        this.path2uuid.put("mcmRoot.b.param9", new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()));
+        this.path2uuid.put("mcmRoot.param2", new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()));
         
         // Create initial model
         this.messages.add(new ParameterData(this.path2uuid.get("mcmRoot.a.param1"), "param1", 

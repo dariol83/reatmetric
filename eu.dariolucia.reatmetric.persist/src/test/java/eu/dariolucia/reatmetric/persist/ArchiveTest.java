@@ -21,8 +21,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ArchiveTest {
@@ -42,16 +44,44 @@ class ArchiveTest {
             Thread.sleep(2000);
             List<OperationalMessage> messages = messageArchive.retrieve(t.minusMillis(200), 10, RetrievalDirection.TO_FUTURE, null);
             assertEquals(1, messages.size());
-            messageArchive.store(new OperationalMessage(new LongUniqueId(1), "msgId1", "Text message", t, "Source1", Severity.ALARM, new Object[0]));
+            assertEquals(0L, messages.get(0).getInternalId().asLong());
+            assertEquals("Text message", messages.get(0).getMessage());
+            assertEquals(Severity.ALARM, messages.get(0).getSeverity());
+            messageArchive.store(new OperationalMessage(new LongUniqueId(1), "msgId2", "Text message", t, "Source2", Severity.ALARM, new Object[] { "test", 13, Instant.ofEpochMilli(1000)}));
             Thread.sleep(2000);
             messages = messageArchive.retrieve(t.minusMillis(200), 10, RetrievalDirection.TO_FUTURE, null);
             assertEquals(2, messages.size());
+            assertEquals(1L, messages.get(1).getInternalId().asLong());
+            assertEquals("msgId2", messages.get(1).getId());
+            assertEquals("Source2", messages.get(1).getSource());
+            assertArrayEquals(new Object[] {"test", 13, Instant.ofEpochMilli(1000)}, messages.get(1).getAdditionalFields());
+            archive.dispose();
+            // Create a new one and retrieve the data
+            archive = af.buildArchive(tempLocation.toString());
+            archive.connect();
+            messageArchive = archive.getOperationalMessageArchive();
+            messages = messageArchive.retrieve(t.minusMillis(200), 10, RetrievalDirection.TO_FUTURE, null);
+            assertEquals(2, messages.size());
+            assertEquals(1L, messages.get(1).getInternalId().asLong());
+            assertEquals("msgId2", messages.get(1).getId());
+            assertEquals("Source2", messages.get(1).getSource());
+            assertArrayEquals(new Object[] {"test", 13, Instant.ofEpochMilli(1000)}, messages.get(1).getAdditionalFields());
+            assertEquals(1, messageArchive.retrieveLastId().asLong());
+            messageArchive.store(new OperationalMessage(new LongUniqueId(2), "msgId3", "Text message", t.plusSeconds(1), "Source2", Severity.ALARM, new Object[] { "test", 13, Instant.ofEpochMilli(1000)}));
+            Thread.sleep(2000);
+            messages = messageArchive.retrieve(Instant.now(), 10, RetrievalDirection.TO_PAST, null);
+            assertEquals(3, messages.size());
+            assertEquals(2L, messages.get(0).getInternalId().asLong());
+            assertEquals("msgId3", messages.get(0).getId());
             archive.dispose();
         } finally {
-            // TODO: this below fails - need recursive delete
-            // if(tempLocation.toFile().exists()) {
-            //    Files.deleteIfExists(tempLocation);
-            // }
+            // Delete all
+            Files.walk(tempLocation)
+                    .sorted(Comparator.reverseOrder())
+                    .map(Path::toFile)
+                    .forEach(File::delete);
         }
     }
+
+
 }

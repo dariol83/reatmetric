@@ -11,15 +11,14 @@ package eu.dariolucia.reatmetric.processing.util;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.core.common.UniqueIdImpl;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class UniqueIdUtil {
@@ -40,6 +39,6 @@ public class UniqueIdUtil {
 
     public static IUniqueId generateNextId(Class<? extends AbstractDataItem> type) {
         long id = SEQUENCERS.get(type).getAndIncrement();
-        return new UniqueIdImpl(new UUID(START_TIME, id));
+        return new LongUniqueId(id);
     }
 }

@@ -9,10 +9,7 @@
 
 package eu.dariolucia.reatmetric.ui.test;
 
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
-import eu.dariolucia.reatmetric.api.common.FieldFilterStrategy;
-import eu.dariolucia.reatmetric.api.common.FieldType;
-import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import java.time.Instant;
 import java.util.List;
@@ -41,7 +38,7 @@ public class TestRawDataService extends DataGenerationService<RawData, RawDataFi
     @Override
     protected RawData generateItem() {
         RawData om = new RawData(
-                new UniqueIdImpl(UUID.randomUUID()),
+                new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()),
                 "PKT" + String.valueOf(this.sequencer.incrementAndGet()),
                 "TM",
                 "Route A", 

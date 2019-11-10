@@ -17,10 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
-import eu.dariolucia.reatmetric.api.common.FieldFilterStrategy;
-import eu.dariolucia.reatmetric.api.common.FieldType;
-import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
@@ -56,7 +53,7 @@ public class TestEventDataService extends DataGenerationService<EventData, Event
     	SystemEntity toGenerate =this.events.get(idxToGenerate);
     	
     	EventData om = new EventData(
-                new UniqueIdImpl(UUID.randomUUID()),
+                new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()),
                 toGenerate.getName(),
                 toGenerate.getPath(),
                 "qualifier" + sequencer.incrementAndGet(),

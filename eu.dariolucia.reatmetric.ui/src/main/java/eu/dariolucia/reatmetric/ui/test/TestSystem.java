@@ -11,6 +11,7 @@ package eu.dariolucia.reatmetric.ui.test;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 
 import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
@@ -29,6 +30,8 @@ import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
  * @author dario
  */
 public class TestSystem implements IServiceFactory {
+
+    public static final AtomicLong SEQUENCER = new AtomicLong(0);
 
     private final List<IUserMonitorCallback> userListeners = new CopyOnWriteArrayList<>();
     private final List<IServiceMonitorCallback> serviceListeners = new CopyOnWriteArrayList<>();

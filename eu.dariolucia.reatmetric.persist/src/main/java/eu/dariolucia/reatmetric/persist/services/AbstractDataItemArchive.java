@@ -1,25 +1,25 @@
 package eu.dariolucia.reatmetric.persist.services;
 
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
-import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.*;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K extends AbstractDataItemFilter> {
+
+    private static final Logger LOG = Logger.getLogger(AbstractDataItemArchive.class.getName());
 
     protected static final int MAX_STORAGE_QUEUE = 1000; // items
     protected static final int STORAGE_QUEUE_FLUSH_LIMIT = MAX_STORAGE_QUEUE - 100; // size for flush
@@ -29,13 +29,17 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected final Archive controller;
 
     protected final Timer latencyStoreTimer = new Timer();
-    protected TimerTask latencyTask = null;
+    protected TimerTask latencyTask;
 
     protected final BlockingQueue<T> storageQueue = new ArrayBlockingQueue<>(MAX_STORAGE_QUEUE);
     protected final List<T> drainingQueue = new ArrayList<>(MAX_STORAGE_QUEUE);
 
     private Connection storeConnection;
+    private PreparedStatement storeStatement;
+
     private Connection retrieveConnection;
+
+    private volatile boolean disposed;
 
     protected AbstractDataItemArchive(Archive controller) throws SQLException {
         this.controller = controller;
@@ -50,11 +54,16 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             }
         };
         this.latencyStoreTimer.schedule(this.latencyTask, 0, MAX_LATENCY_TIME);
-        System.out.println("Constructor is over");
+        this.disposed = false;
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.fine(this + " instance - parent constructor completed");
+        }
     }
 
     protected void storeBuffer() {
-        System.out.println("storeBuffer called");
+        if(LOG.isLoggable(Level.FINEST)) {
+            LOG.finest(this + " - storeBuffer called: storageQueue.size() = " + storageQueue.size());
+        }
         drainingQueue.clear();
         if(!storageQueue.isEmpty()) {
             storageQueue.drainTo(drainingQueue);
@@ -62,37 +71,83 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
                 doStore(storeConnection, drainingQueue);
                 storeConnection.commit();
             } catch (Exception e) {
-                // TODO: severe
-                e.printStackTrace();
+                LOG.log(Level.SEVERE, this + " - exception on data storage", e);
                 try {
                     storeConnection.rollback();
                 } catch (SQLException ex) {
-                    // TODO: severe
-                    ex.printStackTrace();
+                    LOG.log(Level.SEVERE, this + " - exception on rollback", e);
                 }
             }
         }
     }
 
-    public void store(List<T> items) {
-        // Close to full: try storage
-        if(storageQueue.size() > STORAGE_QUEUE_FLUSH_LIMIT) {
-            this.latencyStoreTimer.schedule(this.latencyTask, 0);
+    protected void doStore(Connection connection, List<T> itemsToStore) throws SQLException, IOException {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - request to store " + itemsToStore.size() + " items");
         }
+        if(storeStatement == null) {
+            storeStatement = createStoreStatement(connection);
+        }
+        storeStatement.clearBatch();
+        for(T item : itemsToStore) {
+            setItemPropertiesToStatement(storeStatement, item);
+            storeStatement.addBatch();
+        }
+        int[] numUpdates = storeStatement.executeBatch();
+        if(LOG.isLoggable(Level.FINEST)) {
+            for (int i = 0; i < numUpdates.length; i++) {
+                if (numUpdates[i] == -2) {
+                    LOG.finest("Execution " + i +
+                            ": unknown number of rows updated");
+                } else {
+                    LOG.finest("Execution " + i +
+                            "successful: " + numUpdates[i] + " rows updated");
+                }
+            }
+        }
+        storeStatement.clearBatch();
+    }
+
+    protected abstract void setItemPropertiesToStatement(PreparedStatement storeStatement, T item) throws SQLException, IOException;
+
+    protected abstract PreparedStatement createStoreStatement(Connection connection) throws SQLException;
+
+    public void store(List<T> items) throws ArchiveException {
+        if(LOG.isLoggable(Level.FINEST)) {
+            LOG.finest(this + " - store(List) called: items.size() = " + items.size());
+        }
+        checkDisposed();
+        checkStorageQueueFull();
         storageQueue.addAll(items);
     }
 
-    public void store(T item) {
-        // Close to full: try storage
-        if(storageQueue.size() > STORAGE_QUEUE_FLUSH_LIMIT) {
-            this.latencyStoreTimer.schedule(this.latencyTask, 0);
+    public void store(T item) throws ArchiveException {
+        if(LOG.isLoggable(Level.FINEST)) {
+            LOG.finest(this + " - store(T) called");
         }
+        checkDisposed();
+        checkStorageQueueFull();
         storageQueue.add(item);
     }
 
-    protected abstract void doStore(Connection connection, List<T> itemsToStore) throws SQLException, IOException;
+    protected void checkDisposed() throws ArchiveException {
+        if(this.disposed) {
+            throw new ArchiveException("Archive disposed");
+        }
+    }
+
+    private void checkStorageQueueFull() {
+        // Close to full: try storage
+        if (storageQueue.size() > STORAGE_QUEUE_FLUSH_LIMIT) {
+            if (LOG.isLoggable(Level.FINEST)) {
+                LOG.finest(this + " - storageQueue almost full: storageQueue.size() = " + storageQueue.size());
+            }
+            this.latencyStoreTimer.schedule(this.latencyTask, 0);
+        }
+    }
 
     public synchronized List<T> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, K filter) throws ArchiveException {
+        checkDisposed();
         try {
             return doRetrieve(retrieveConnection, startTime, numRecords, direction, filter);
         } catch (SQLException e) {
@@ -100,9 +155,34 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
     }
 
-    protected abstract List<T> doRetrieve(Connection connection, Instant startTime, int numRecords, RetrievalDirection direction, K filter) throws SQLException;
+    protected List<T> doRetrieve(Connection connection, Instant startTime, int numRecords, RetrievalDirection direction, K filter) throws SQLException {
+        String finalQuery = buildRetrieveQuery(startTime, numRecords, direction, filter);
+        List<T> result = new ArrayList<>(numRecords);
+        try (Statement prepStmt = connection.createStatement()) {
+            if(LOG.isLoggable(Level.FINEST)) {
+                LOG.finest(this + " - retrieve statement: " + finalQuery);
+            }
+            try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
+                while (rs.next()) {
+                    try {
+                        T object = mapToItem(rs);
+                        result.add(object);
+                    } catch (IOException | ClassNotFoundException e) {
+                        throw new SQLException(e);
+                    }
+                }
+            }
+            connection.commit();
+        }
+        return result;
+    }
+
+    protected abstract T mapToItem(ResultSet rs) throws IOException, SQLException, ClassNotFoundException;
+
+    protected abstract String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, K filter);
 
     public synchronized List<T> retrieve(T startItem, int numRecords, RetrievalDirection direction, K filter) throws ArchiveException {
+        checkDisposed();
         try {
             return doRetrieve(retrieveConnection, startItem, numRecords, direction, filter);
         } catch (SQLException e) {
@@ -110,9 +190,20 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
     }
 
-    protected abstract List<T> doRetrieve(Connection connection, T startItem, int numRecords, RetrievalDirection direction, K filter) throws SQLException;
+    protected List<T> doRetrieve(Connection connection, T startItem, int numRecords, RetrievalDirection direction, K filter) throws SQLException {
+        // Use the startItem generationTime to retrieve all the items from that point in time: increase limit by 100
+        List<T> largeSize = doRetrieve(connection, startItem.getGenerationTime(), numRecords + LOOK_AHEAD_SPAN, direction, filter);
+        // Now scan and get rid of the startItem object
+        int position = largeSize.indexOf(startItem);
+        if(position == -1) {
+            return largeSize.subList(0, Math.min(numRecords, largeSize.size()));
+        } else {
+            return largeSize.subList(position + 1, position + 1 + Math.min(numRecords, largeSize.size() - position - 1));
+        }
+    }
 
     public IUniqueId retrieveLastId() throws ArchiveException {
+        checkDisposed();
         try {
             return doRetrieveLastId(retrieveConnection);
         } catch (SQLException e) {
@@ -120,10 +211,56 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
     }
 
-    protected abstract IUniqueId doRetrieveLastId(Connection connection) throws SQLException;
+    protected IUniqueId doRetrieveLastId(Connection connection) throws SQLException {
+        try (Statement prepStmt = connection.createStatement()) {
+            try (ResultSet rs = prepStmt.executeQuery(getLastIdQuery())) {
+                if (rs.next()) {
+                    return new LongUniqueId(rs.getLong(1));
+                }
+            }
+            connection.commit();
+        }
+        throw new SQLException("Cannot retrieve last ID from " + this);
+    }
 
-    public void dispose() {
-        // TODO
+    /**
+     * This method must return a SELECT query, delivering only a single result and a single field. The calling method
+     * will read the associated ID (as long) using: resultSet.getLong(1).
+     *
+     * @return the SELECT query to retrieve the last stored unique ID (as long) for the specific data item
+     */
+    protected abstract String getLastIdQuery();
+
+    /**
+     * This method closes all connections and disposes the internal resources, if any. The class is marked as disposed
+     * and cannot be used anymore.
+     */
+    public void dispose() throws ArchiveException {
+        if(LOG.isLoggable(Level.FINEST)) {
+            LOG.finest(this + " - dispose() called");
+        }
+        checkDisposed();
+        this.disposed = true;
+        this.latencyTask.cancel();
+        this.latencyTask = null;
+        this.latencyStoreTimer.cancel();
+        if(storeConnection != null) {
+            try {
+                this.storeConnection.close();
+            } catch (SQLException e) {
+                LOG.log(Level.WARNING, this + " - exception when closing store connection", e);
+            }
+        }
+        this.storeConnection = null;
+        if(retrieveConnection != null) {
+            try {
+                this.retrieveConnection.close();
+            } catch (SQLException e) {
+                LOG.log(Level.WARNING, this + " - exception when closing retrieve connection", e);
+            }
+        }
+        this.retrieveConnection = null;
+        this.storageQueue.clear();
     }
 
     /**************************************************************************************************
@@ -166,5 +303,4 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
         return sb.toString();
     }
-
 }

@@ -1,6 +1,5 @@
 package eu.dariolucia.reatmetric.persist.services;
 
-import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
@@ -13,11 +12,12 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.sql.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class OperationalMessageArchive extends AbstractDataItemArchive<OperationalMessage, OperationalMessageFilter> implements IOperationalMessageArchive {
+
+    private static final Logger LOG = Logger.getLogger(OperationalMessageArchive.class.getName());
 
     private static final String STORE_STATEMENT = "INSERT INTO OPERATIONAL_MESSAGE_TABLE(UniqueId,GenerationTime,MessageId,MessageText,MessageSource,MessageSeverity,AdditionalData) VALUES (?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM OPERATIONAL_MESSAGE_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
@@ -27,36 +27,26 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     }
 
     @Override
-    protected void doStore(Connection connection, List<OperationalMessage> itemsToStore) throws SQLException, IOException {
-        System.out.println("Execute: " + STORE_STATEMENT);
-        try (PreparedStatement prepStmt = connection.prepareStatement(STORE_STATEMENT)) {
-            Iterator<OperationalMessage> it = itemsToStore.iterator();
-            while (it.hasNext()) {
-                OperationalMessage p = it.next();
-                prepStmt.setLong(1, p.getInternalId().asLong());
-                prepStmt.setTimestamp(2, toTimestamp(p.getGenerationTime()));
-                prepStmt.setString(3, p.getId());
-                prepStmt.setString(4, p.getMessage());
-                prepStmt.setString(5, p.getSource());
-                prepStmt.setShort(6, (short) p.getSeverity().ordinal());
-                prepStmt.setBlob(7, toInputstream(p.getAdditionalFields()));
-                prepStmt.addBatch();
-            }
-            int[] numUpdates = prepStmt.executeBatch();
-            for (int i = 0; i < numUpdates.length; i++) {
-                if (numUpdates[i] == -2) {
-                    System.out.println("Execution " + i +
-                            ": unknown number of rows updated");
-                } else {
-                    System.out.println("Execution " + i +
-                            "successful: " + numUpdates[i] + " rows updated");
-                }
-            }
-        }
+    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, OperationalMessage item) throws SQLException, IOException {
+        storeStatement.setLong(1, item.getInternalId().asLong());
+        storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
+        storeStatement.setString(3, item.getId());
+        storeStatement.setString(4, item.getMessage());
+        storeStatement.setString(5, item.getSource());
+        storeStatement.setShort(6, (short) item.getSeverity().ordinal());
+        storeStatement.setBlob(7, toInputstream(item.getAdditionalFields()));
     }
 
     @Override
-    protected List<OperationalMessage> doRetrieve(Connection connection, Instant startTime, int numRecords, RetrievalDirection direction, OperationalMessageFilter filter) throws SQLException {
+    protected PreparedStatement createStoreStatement(Connection connection) throws SQLException {
+        if(LOG.isLoggable(Level.FINEST)) {
+            LOG.finest(this + " - preparing store statement: " + STORE_STATEMENT);
+        }
+        return connection.prepareStatement(STORE_STATEMENT);
+    }
+
+    @Override
+    protected String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, OperationalMessageFilter filter) {
         StringBuilder query = new StringBuilder("SELECT * FROM OPERATIONAL_MESSAGE_TABLE WHERE ");
         // add time info
         if(direction == RetrievalDirection.TO_FUTURE) {
@@ -78,29 +68,15 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
         }
         // order by and limit
         if(direction == RetrievalDirection.TO_FUTURE) {
-            query.append("ORDER BY GenerationTime ASC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
+            query.append("ORDER BY GenerationTime ASC, UniqueId ASC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
         } else {
-            query.append("ORDER BY GenerationTime DESC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
+            query.append("ORDER BY GenerationTime DESC, UniqueId DESC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
         }
-
-        List<OperationalMessage> result = new ArrayList<>(numRecords);
-        try (Statement prepStmt = connection.createStatement()) {
-            System.out.println("Query: " + query.toString());
-            try (ResultSet rs = prepStmt.executeQuery(query.toString())) {
-                while (rs.next()) {
-                    try {
-                        OperationalMessage object = map(rs);
-                        result.add(object);
-                    } catch (IOException | ClassNotFoundException e) {
-                        throw new SQLException(e);
-                    }
-                }
-            }
-        }
-        return result;
+        return query.toString();
     }
 
-    private OperationalMessage map(ResultSet rs) throws SQLException, IOException, ClassNotFoundException {
+    @Override
+    protected OperationalMessage mapToItem(ResultSet rs) throws SQLException, IOException, ClassNotFoundException {
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
         String messageId = rs.getString(3);
@@ -118,27 +94,12 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     }
 
     @Override
-    protected List<OperationalMessage> doRetrieve(Connection connection, OperationalMessage startItem, int numRecords, RetrievalDirection direction, OperationalMessageFilter filter) throws SQLException {
-        // Use the startItem generationTime to retrieve all the items from that point in time: increase limit by 100
-        List<OperationalMessage> largeSize = doRetrieve(connection, startItem.getGenerationTime(), numRecords + LOOK_AHEAD_SPAN, direction, filter);
-        // Now scan and get rid of the startItem object
-        int position = largeSize.indexOf(startItem);
-        if(position == -1) {
-            return largeSize.subList(0, Math.min(numRecords, largeSize.size()));
-        } else {
-            return largeSize.subList(position + 1, position + 1 + Math.min(numRecords, largeSize.size() - position - 1));
-        }
+    protected String getLastIdQuery() {
+        return LAST_ID_QUERY;
     }
 
     @Override
-    protected IUniqueId doRetrieveLastId(Connection connection) throws SQLException {
-        try (Statement prepStmt = connection.createStatement()) {
-            try (ResultSet rs = prepStmt.executeQuery(LAST_ID_QUERY)) {
-                while (rs.next()) {
-                    return new LongUniqueId(rs.getLong(1));
-                }
-            }
-        }
-        throw new SQLException("Cannot retrieve last ID for OperationalMessage objects");
+    public String toString() {
+        return "Operational Message Archive";
     }
 }

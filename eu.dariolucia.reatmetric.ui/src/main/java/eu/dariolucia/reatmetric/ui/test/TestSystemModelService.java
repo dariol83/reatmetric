@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.model.ISystemModelSubscriber;
@@ -68,7 +69,7 @@ public class TestSystemModelService implements ISystemModelProvisionService {
     }
 
     private void generateModel() {
-        this.root = new SystemEntity(new UniqueIdImpl(UUID.randomUUID()), new SystemEntityPath("mcmRoot"), "mcmRoot", Status.ENABLED, AlarmState.NOMINAL, SystemEntityType.CONTAINER);
+        this.root = new SystemEntity(new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()), new SystemEntityPath("mcmRoot"), "mcmRoot", Status.ENABLED, AlarmState.NOMINAL, SystemEntityType.CONTAINER);
         addToMaps(this.root);
         SystemEntity c1 = generateChildElement(this.root, "a", SystemEntityType.CONTAINER);
         SystemEntity c2 = generateChildElement(this.root, "b", SystemEntityType.CONTAINER);
@@ -112,7 +113,7 @@ public class TestSystemModelService implements ISystemModelProvisionService {
     }
 
     private SystemEntity generateChildElement(SystemEntity parent, String name, SystemEntityType type) {
-        SystemEntity se = new SystemEntity(new UniqueIdImpl(UUID.randomUUID()), parent.getPath().append(name), name, Status.ENABLED, AlarmState.UNKNOWN, type);
+        SystemEntity se = new SystemEntity(new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()), parent.getPath().append(name), name, Status.ENABLED, AlarmState.UNKNOWN, type);
         addToMaps(se);
         return se;
     }

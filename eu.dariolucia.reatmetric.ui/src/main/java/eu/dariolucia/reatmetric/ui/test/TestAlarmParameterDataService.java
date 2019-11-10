@@ -24,10 +24,7 @@ import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterDataFilter;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataSubscriber;
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
-import eu.dariolucia.reatmetric.api.common.FieldFilterStrategy;
-import eu.dariolucia.reatmetric.api.common.FieldType;
-import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
@@ -61,7 +58,7 @@ public class TestAlarmParameterDataService extends DataGenerationService<AlarmPa
     	SystemEntity toGenerate =this.parameters.get(idxToGenerate);
     	
     	AlarmParameterData om = new AlarmParameterData(
-                new UniqueIdImpl(UUID.randomUUID()),
+                new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()),
                 toGenerate.getName(),
                 toGenerate.getPath(),
                 AlarmState.values()[(int) Math.floor(Math.random() * AlarmState.values().length)],
