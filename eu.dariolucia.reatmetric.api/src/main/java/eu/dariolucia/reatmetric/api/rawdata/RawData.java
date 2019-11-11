@@ -24,7 +24,7 @@ public final class RawData extends AbstractDataItem implements Serializable {
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = -4888757815934729601L;
+	private static final long serialVersionUID = 1L;
 
 	private final String name;
 
@@ -38,7 +38,7 @@ public final class RawData extends AbstractDataItem implements Serializable {
 
     private final Quality quality;
 
-    public RawData(IUniqueId internalId, String name, String type, String route, Instant generationTime, Instant receptionTime, String source, Quality quality, Object[] additionalFields) {
+    public RawData(IUniqueId internalId, Instant generationTime, String name, String type, String route, String source, Quality quality, Instant receptionTime, Object[] additionalFields) {
         super(internalId, generationTime, additionalFields);
         this.name = name;
         this.type = type;
@@ -123,7 +123,15 @@ public final class RawData extends AbstractDataItem implements Serializable {
 
     @Override
     public String toString() {
-        return "RawData [" + "name=" + name + ", type=" + type + ", route=" + route + ", generationTime=" + generationTime + ", receptionTime=" + receptionTime + ", source=" + source + ", quality=" + quality + ']';
+        return "RawData{" +
+                "name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                ", route='" + route + '\'' +
+                ", receptionTime=" + receptionTime +
+                ", source='" + source + '\'' +
+                ", quality=" + quality +
+                ", generationTime=" + generationTime +
+                ", internalId=" + internalId +
+                '}';
     }
-    
 }

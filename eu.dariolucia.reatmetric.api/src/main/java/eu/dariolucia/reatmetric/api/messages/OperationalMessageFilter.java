@@ -23,16 +23,23 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter imple
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = 1626449016479916750L;
+	private static final long serialVersionUID = 1L;
 
-	private final String messageRegExp;
-    
+	private final String messageTextContains;
+
+	private final List<String> idList;
+
     private final List<String> sourceList;
     
     private final List<Severity> severityList;
 
-    public OperationalMessageFilter(String messageRegExp, List<String> sourceList, List<Severity> severityList) {
-        this.messageRegExp = messageRegExp;
+    public OperationalMessageFilter(String messageTextContains, List<String> idList, List<String> sourceList, List<Severity> severityList) {
+        this.messageTextContains = messageTextContains;
+        if(idList != null) {
+            this.idList = new ArrayList<>(idList);
+        } else {
+            this.idList = null;
+        }
         if(sourceList != null) {
             this.sourceList = new ArrayList<>(sourceList);
         } else {
@@ -45,8 +52,8 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter imple
         }
     }
 
-    public String getMessageRegExp() {
-        return messageRegExp;
+    public String getMessageTextContains() {
+        return messageTextContains;
     }
 
     public List<String> getSourceList() {
@@ -54,6 +61,13 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter imple
             return null;
         }
         return new ArrayList<>(sourceList);
+    }
+
+    public List<String> getIdList() {
+        if(idList == null) {
+            return null;
+        }
+        return new ArrayList<>(idList);
     }
 
     public List<Severity> getSeverityList() {
@@ -65,13 +79,14 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter imple
     
     @Override
     public boolean isClear() {
-        return this.messageRegExp == null && this.severityList == null && this.sourceList == null;
+        return this.messageTextContains == null && this.idList == null && this.severityList == null && this.sourceList == null;
     }
 
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 19 * hash + Objects.hashCode(this.messageRegExp);
+        hash = 19 * hash + Objects.hashCode(this.messageTextContains);
+        hash = 19 * hash + Objects.hashCode(this.idList);
         hash = 19 * hash + Objects.hashCode(this.sourceList);
         hash = 19 * hash + Objects.hashCode(this.severityList);
         return hash;
@@ -89,7 +104,10 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter imple
             return false;
         }
         final OperationalMessageFilter other = (OperationalMessageFilter) obj;
-        if (!Objects.equals(this.messageRegExp, other.messageRegExp)) {
+        if (!Objects.equals(this.messageTextContains, other.messageTextContains)) {
+            return false;
+        }
+        if (!Objects.equals(this.idList, other.idList)) {
             return false;
         }
         if (!Objects.equals(this.sourceList, other.sourceList)) {
@@ -103,7 +121,7 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter imple
 
     @Override
     public String toString() {
-        return "OperationalMessageFilter [" + "messageRegExp=" + messageRegExp + ", sourceList=" + sourceList + ", severityList=" + severityList + ']';
+        return "OperationalMessageFilter [" + "messageRegExp=" + messageTextContains + ", sourceList=" + sourceList + ", severityList=" + severityList + ']';
     }
 
 }

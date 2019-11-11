@@ -26,7 +26,7 @@ public final class EventDataFilter extends AbstractDataItemFilter implements Ser
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = -2061173278990530507L;
+	private static final long serialVersionUID = 1L;
 
 	private final SystemEntityPath parentPath;
     

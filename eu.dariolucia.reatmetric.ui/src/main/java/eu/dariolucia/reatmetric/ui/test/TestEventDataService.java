@@ -54,11 +54,11 @@ public class TestEventDataService extends DataGenerationService<EventData, Event
     	
     	EventData om = new EventData(
                 new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()),
+                Instant.now(),
+                toGenerate.getName().hashCode(),
                 toGenerate.getName(),
                 toGenerate.getPath(),
                 "qualifier" + sequencer.incrementAndGet(),
-                Instant.now(),
-                toGenerate.getPath().getParent(),
                 "ANOMALY",
                 "routeA",
                 "sourceA",

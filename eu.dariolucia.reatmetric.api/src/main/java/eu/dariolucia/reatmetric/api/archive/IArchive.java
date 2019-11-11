@@ -8,7 +8,9 @@
 package eu.dariolucia.reatmetric.api.archive;
 
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
+import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
+import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 
 import java.io.IOException;
 
@@ -19,4 +21,8 @@ public interface IArchive {
     void dispose() throws ArchiveException;
 
     IOperationalMessageArchive getOperationalMessageArchive();
+
+    IEventDataArchive getEventDataArchive();
+
+    IRawDataArchive getRawDataArchive();
 }

@@ -34,7 +34,7 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
 
     private final Severity severity;
 
-    public OperationalMessage(IUniqueId internalId, String id, String message, Instant generationTime, String source, Severity severity, Object[] additionalFields) {
+    public OperationalMessage(IUniqueId internalId, Instant generationTime, String id, String message, String source, Severity severity, Object[] additionalFields) {
         super(internalId, generationTime, additionalFields);
         this.id = id;
         this.message = message;
@@ -98,7 +98,13 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
 
     @Override
     public String toString() {
-        return "OperationalMessage [" + "id=" + id + ", message=" + message + ", source=" + source + ", severity=" + severity + ']';
+        return "OperationalMessage{" +
+                "id='" + id + '\'' +
+                ", message='" + message + '\'' +
+                ", source='" + source + '\'' +
+                ", severity=" + severity +
+                ", generationTime=" + generationTime +
+                ", internalId=" + internalId +
+                '}';
     }
-    
 }

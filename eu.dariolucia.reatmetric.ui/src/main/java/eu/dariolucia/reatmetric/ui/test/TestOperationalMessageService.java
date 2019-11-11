@@ -18,7 +18,6 @@ import java.time.Instant;
 import java.util.List;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService;
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -38,9 +37,8 @@ public class TestOperationalMessageService extends DataGenerationService<Operati
     protected OperationalMessage generateItem() {
         OperationalMessage om = new OperationalMessage(
                 new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()),
-                String.valueOf(this.sequencer.incrementAndGet()),
-                "Test Message", 
-                Instant.now(), 
+                Instant.now(), String.valueOf(this.sequencer.incrementAndGet()),
+                "Test Message",
                 "Test System 1",
                 Severity.values()[(int) Math.floor(Math.random() * 3)],
                 new Object[] { "Value 1", Instant.now(), 3213L, true, 3232.21312, Severity.ALARM });
@@ -57,8 +55,8 @@ public class TestOperationalMessageService extends DataGenerationService<Operati
                 return false;
             }
         }
-        if(value.getMessageRegExp() != null) {
-            if(!om.getMessage().matches(value.getMessageRegExp())) {
+        if(value.getMessageTextContains() != null) {
+            if(!om.getMessage().matches(value.getMessageTextContains())) {
                 return false;
             }
         }

@@ -41,9 +41,8 @@ public class MessageProcessor implements IMessageProcessor {
     public void raiseMessage(String message, String source, Severity severity) {
         OperationalMessage om = new OperationalMessage(
                 UniqueIdUtil.generateNextId(OperationalMessage.class),
-                "",
+                Instant.now(), "",
                 message,
-                Instant.now(),
                 source,
                 severity,
                 additionalValues

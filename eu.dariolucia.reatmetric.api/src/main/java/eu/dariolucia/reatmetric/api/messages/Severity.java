@@ -14,6 +14,7 @@ package eu.dariolucia.reatmetric.api.messages;
  */
 public enum Severity {
     ALARM,
+    ERROR,
     WARN,
     INFO
 }

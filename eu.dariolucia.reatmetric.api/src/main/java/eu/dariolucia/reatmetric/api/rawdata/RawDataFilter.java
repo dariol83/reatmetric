@@ -24,7 +24,7 @@ public final class RawDataFilter extends AbstractDataItemFilter implements Seria
 	 */
 	private static final long serialVersionUID = -3381513283926701964L;
 
-	private final String nameRegExp;
+	private final String nameContains;
     
     private final List<String> routeList;
     
@@ -34,8 +34,8 @@ public final class RawDataFilter extends AbstractDataItemFilter implements Seria
     
     private final List<Quality> qualityList;
 
-    public RawDataFilter(String nameRegExp, List<String> routeList, List<String> typeList, List<String> sourceList, List<Quality> qualityList) {
-        this.nameRegExp = nameRegExp;
+    public RawDataFilter(String nameContains, List<String> routeList, List<String> typeList, List<String> sourceList, List<Quality> qualityList) {
+        this.nameContains = nameContains;
         if(sourceList != null) {
             this.sourceList = new ArrayList<>(sourceList);
         } else {
@@ -58,8 +58,8 @@ public final class RawDataFilter extends AbstractDataItemFilter implements Seria
         }
     }
 
-    public String getNameRegExp() {
-        return nameRegExp;
+    public String getNameContains() {
+        return nameContains;
     }
 
     public List<String> getSourceList() {
@@ -92,7 +92,7 @@ public final class RawDataFilter extends AbstractDataItemFilter implements Seria
     
     @Override
     public boolean isClear() {
-        return this.qualityList == null && this.nameRegExp == null && this.sourceList == null && this.typeList == null && this.routeList == null;
+        return this.qualityList == null && this.nameContains == null && this.sourceList == null && this.typeList == null && this.routeList == null;
     }
 
 }

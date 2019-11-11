@@ -115,14 +115,14 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
         } else {
             this.qualityCheckbox.setSelected(this.selectedFilter.getQualityList() != null);
             this.sourceCheckbox.setSelected(this.selectedFilter.getSourceList() != null);
-            this.nameCheckbox.setSelected(this.selectedFilter.getNameRegExp() != null);
+            this.nameCheckbox.setSelected(this.selectedFilter.getNameContains() != null);
             this.routeCheckbox.setSelected(this.selectedFilter.getTypeList() != null);
             this.typeCheckbox.setSelected(this.selectedFilter.getRouteList() != null);
              
             this.sourceText.setText(IFilterController.toStringList(this.selectedFilter.getSourceList()));
             this.routeText.setText(IFilterController.toStringList(this.selectedFilter.getRouteList()));
             this.typeText.setText(IFilterController.toStringList(this.selectedFilter.getTypeList()));
-            this.nameText.setText(this.selectedFilter.getNameRegExp() != null ? this.selectedFilter.getNameRegExp() : "");
+            this.nameText.setText(this.selectedFilter.getNameContains() != null ? this.selectedFilter.getNameContains() : "");
             this.qualityList.getSelectionModel().clearSelection();
             if(this.selectedFilter.getQualityList() != null) {    
             	this.selectedFilter.getQualityList().stream().forEach((s) -> this.qualityList.getSelectionModel().select(s));

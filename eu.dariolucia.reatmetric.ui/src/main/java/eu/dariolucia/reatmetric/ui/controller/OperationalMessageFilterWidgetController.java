@@ -101,10 +101,10 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
         } else {
             this.severityCheckbox.setSelected(this.selectedFilter.getSeverityList() != null);
             this.sourceCheckbox.setSelected(this.selectedFilter.getSourceList() != null);
-            this.messageCheckbox.setSelected(this.selectedFilter.getMessageRegExp() != null);
+            this.messageCheckbox.setSelected(this.selectedFilter.getMessageTextContains() != null);
             // TODO complete 
             this.sourceText.setText(IFilterController.toStringList(this.selectedFilter.getSourceList()));
-            this.messageText.setText(this.selectedFilter.getMessageRegExp() != null ? this.selectedFilter.getMessageRegExp() : "");
+            this.messageText.setText(this.selectedFilter.getMessageTextContains() != null ? this.selectedFilter.getMessageTextContains() : "");
             this.severityList.getSelectionModel().clearSelection();
             if(this.selectedFilter.getSeverityList() != null) {    
             	this.selectedFilter.getSeverityList().stream().forEach((s) -> this.severityList.getSelectionModel().select(s));
@@ -115,8 +115,9 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
     private OperationalMessageFilter deriveFromWidgets() {
         List<Severity> sevList = deriveSelectedSeverity();
         List<String> sourceList = deriveSelectedSource();
+        List<String> idList = null; // TODO: implement support in UI field
         String messageRegExp = deriveRegExpMessage();
-        return new OperationalMessageFilter(messageRegExp, sourceList, sevList);
+        return new OperationalMessageFilter(messageRegExp, idList, sourceList, sevList);
     }
 
     private List<String> deriveSelectedSource() {

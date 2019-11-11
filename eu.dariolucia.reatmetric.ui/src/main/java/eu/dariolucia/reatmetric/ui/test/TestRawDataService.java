@@ -19,7 +19,6 @@ import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -39,13 +38,13 @@ public class TestRawDataService extends DataGenerationService<RawData, RawDataFi
     protected RawData generateItem() {
         RawData om = new RawData(
                 new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()),
+                Instant.now(),
                 "PKT" + String.valueOf(this.sequencer.incrementAndGet()),
                 "TM",
-                "Route A", 
-                Instant.now(), 
-                Instant.now(), 
+                "Route A",
                 "Test System 1",
                 Quality.values()[(int) Math.floor(Math.random() * 3)],
+                Instant.now(),
                 new Object[] { 3, 123, 3, 25 });
         return om;
     }
@@ -75,8 +74,8 @@ public class TestRawDataService extends DataGenerationService<RawData, RawDataFi
                 return false;
             }
         }
-        if(value.getNameRegExp() != null) {
-            if(!om.getName().matches(value.getNameRegExp())) {
+        if(value.getNameContains() != null) {
+            if(!om.getName().matches(value.getNameContains())) {
                 return false;
             }
         }

@@ -28,6 +28,8 @@ public final class EventData extends AbstractDataItem implements Serializable {
 	 */
 	private static final long serialVersionUID = -5430913687538935943L;
 
+	private final int externalId;
+
 	private final String name;
 
     private final SystemEntityPath path;
@@ -35,8 +37,6 @@ public final class EventData extends AbstractDataItem implements Serializable {
     private final String qualifier;
     
     private final Instant receptionTime;
-    
-    private final SystemEntityPath parent;
 
     private final String type;
     
@@ -46,22 +46,26 @@ public final class EventData extends AbstractDataItem implements Serializable {
     
     private final Severity severity;
 
-	public EventData(IUniqueId internalId, String name,
-			SystemEntityPath path, String qualifier, Instant receptionTime, SystemEntityPath parent, String type,
-			String route, String source, Severity severity, Instant generationTime, Object[] additionalFields) {
+	public EventData(IUniqueId internalId, Instant generationTime, int externalId, String name,
+                     SystemEntityPath path, String qualifier, String type, String route, String source, Severity severity, Instant receptionTime,
+                     Object[] additionalFields) {
 		super(internalId, generationTime, additionalFields);
+		this.externalId = externalId;
 		this.name = name;
 		this.path = path;
 		this.qualifier = qualifier;
 		this.receptionTime = receptionTime;
-		this.parent = parent;
 		this.type = type;
 		this.route = route;
 		this.source = source;
 		this.severity = severity;
 	}
 
-	public String getName() {
+    public int getExternalId() {
+        return externalId;
+    }
+
+    public String getName() {
 		return name;
 	}
 
@@ -75,10 +79,6 @@ public final class EventData extends AbstractDataItem implements Serializable {
 
 	public Instant getReceptionTime() {
 		return receptionTime;
-	}
-
-	public SystemEntityPath getParent() {
-		return parent;
 	}
 
 	public String getType() {
@@ -100,6 +100,7 @@ public final class EventData extends AbstractDataItem implements Serializable {
     @Override
     public int hashCode() {
         int hash = 5;
+        hash = 59 * hash + Objects.hashCode(this.externalId);
         hash = 59 * hash + Objects.hashCode(this.path);
         hash = 59 * hash + Objects.hashCode(this.qualifier);
         hash = 59 * hash + Objects.hashCode(this.type);
@@ -123,6 +124,9 @@ public final class EventData extends AbstractDataItem implements Serializable {
             return false;
         }
         final EventData other = (EventData) obj;
+        if (!Objects.equals(this.externalId, other.externalId)) {
+            return false;
+        }
         if (!Objects.equals(this.path, other.path)) {
             return false;
         }
@@ -150,10 +154,20 @@ public final class EventData extends AbstractDataItem implements Serializable {
         return true;
     }
 
-	@Override
-	public String toString() {
-		return "EventData [name=" + name + ", path=" + path + ", qualifier=" + qualifier + ", receptionTime="
-				+ receptionTime + ", parent=" + parent + ", type=" + type + ", route=" + route + ", source=" + source
-				+ ", severity=" + severity + "]";
-	}
+    @Override
+    public String toString() {
+        return "EventData{" +
+                "externalId=" + externalId +
+                ", name='" + name + '\'' +
+                ", path=" + path +
+                ", qualifier='" + qualifier + '\'' +
+                ", receptionTime=" + receptionTime +
+                ", type='" + type + '\'' +
+                ", route='" + route + '\'' +
+                ", source='" + source + '\'' +
+                ", severity=" + severity +
+                ", generationTime=" + generationTime +
+                ", internalId=" + internalId +
+                '}';
+    }
 }

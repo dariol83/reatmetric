@@ -19,7 +19,7 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
 
     private static final Logger LOG = Logger.getLogger(OperationalMessageArchive.class.getName());
 
-    private static final String STORE_STATEMENT = "INSERT INTO OPERATIONAL_MESSAGE_TABLE(UniqueId,GenerationTime,MessageId,MessageText,MessageSource,MessageSeverity,AdditionalData) VALUES (?,?,?,?,?,?,?)";
+    private static final String STORE_STATEMENT = "INSERT INTO OPERATIONAL_MESSAGE_TABLE(UniqueId,GenerationTime,Id,Text,Source,Severity,AdditionalData) VALUES (?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM OPERATIONAL_MESSAGE_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
 
     public OperationalMessageArchive(Archive controller) throws SQLException {
@@ -56,14 +56,17 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
         }
         // process filter
         if(filter != null && !filter.isClear()) {
-            if(filter.getMessageRegExp() != null) {
-                query.append("AND MessageText LIKE %").append(filter.getMessageRegExp()).append("% ");
+            if(filter.getMessageTextContains() != null) {
+                query.append("AND Text LIKE '%").append(filter.getMessageTextContains()).append("%' ");
+            }
+            if(filter.getIdList() != null && !filter.getIdList().isEmpty()) {
+                query.append("AND Id IN (").append(toFilterListString(filter.getIdList(), o -> o, "'")).append(") ");
             }
             if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
-                query.append("AND MessageSource IN (").append(toFilterListString(filter.getSourceList(), o -> o)).append(") ");
+                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
             }
             if(filter.getSeverityList() != null && !filter.getSeverityList().isEmpty()) {
-                query.append("AND MessageSeverity IN (").append(toEnumFilterListString(filter.getSeverityList())).append(") ");
+                query.append("AND Severity IN (").append(toEnumFilterListString(filter.getSeverityList())).append(") ");
             }
         }
         // order by and limit
@@ -90,7 +93,7 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
             additionalDataArray = (Object[]) ois.readObject();
         }
 
-        return new OperationalMessage(new LongUniqueId(uniqueId), messageId, messageText, toInstant(genTime), messageSource, severity, additionalDataArray);
+        return new OperationalMessage(new LongUniqueId(uniqueId), toInstant(genTime), messageId, messageText, messageSource, severity, additionalDataArray);
     }
 
     @Override

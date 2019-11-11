@@ -67,8 +67,8 @@ public class TmTcSubscription {
                 return false;
             }
         }
-        if(filter.getNameRegExp() != null) {
-            if(!om.getName().matches(filter.getNameRegExp())) {
+        if(filter.getNameContains() != null) {
+            if(!om.getName().matches(filter.getNameContains())) {
                 return false;
             }
         }

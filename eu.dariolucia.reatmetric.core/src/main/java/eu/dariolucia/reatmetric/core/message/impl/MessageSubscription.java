@@ -52,8 +52,8 @@ public class MessageSubscription {
                 return false;
             }
         }
-        if(filter.getMessageRegExp() != null) {
-            if(!om.getMessage().matches(filter.getMessageRegExp())) {
+        if(filter.getMessageTextContains() != null) {
+            if(!om.getMessage().matches(filter.getMessageTextContains())) {
                 return false;
             }
         }

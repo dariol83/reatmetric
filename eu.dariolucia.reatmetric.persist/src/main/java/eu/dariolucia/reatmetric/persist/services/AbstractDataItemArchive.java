@@ -97,11 +97,11 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         if(LOG.isLoggable(Level.FINEST)) {
             for (int i = 0; i < numUpdates.length; i++) {
                 if (numUpdates[i] == -2) {
-                    LOG.finest("Execution " + i +
-                            ": unknown number of rows updated");
+                    LOG.finest("Batch job[" + i +
+                            "]: unknown number of rows added/updated");
                 } else {
-                    LOG.finest("Execution " + i +
-                            "successful: " + numUpdates[i] + " rows updated");
+                    LOG.finest("Batch job[" + i +
+                            "]: " + numUpdates[i] + " rows added/updated");
                 }
             }
         }
@@ -290,13 +290,19 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     protected <E extends Enum<E>> String toEnumFilterListString(List<E> enumList) {
-        return toFilterListString(enumList, Enum::ordinal);
+        return toFilterListString(enumList, Enum::ordinal, null);
     }
 
-    protected <E> String toFilterListString(List<E> list, Function<E, Object> extractor) {
+    protected <E> String toFilterListString(List<E> list, Function<E, Object> extractor, String delimiter) {
         StringBuilder sb = new StringBuilder();
         for(int i = 0; i < list.size(); ++i) {
+            if(delimiter != null) {
+                sb.append(delimiter);
+            }
             sb.append(extractor.apply(list.get(i)));
+            if(delimiter != null) {
+                sb.append(delimiter);
+            }
             if(i != list.size() - 1) {
                 sb.append(",");
             }
