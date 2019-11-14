@@ -34,6 +34,7 @@ CREATE TABLE RAW_DATA_TABLE (
    Route VARCHAR(32),
    Source VARCHAR(32),
    Quality SMALLINT NOT NULL,
+   Contents BLOB,
    AdditionalData BLOB,
    PRIMARY KEY (UniqueId)
 )

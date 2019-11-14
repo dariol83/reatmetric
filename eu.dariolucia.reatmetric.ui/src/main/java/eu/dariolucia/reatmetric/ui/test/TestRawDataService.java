@@ -44,6 +44,7 @@ public class TestRawDataService extends DataGenerationService<RawData, RawDataFi
                 "Route A",
                 "Test System 1",
                 Quality.values()[(int) Math.floor(Math.random() * 3)],
+                new byte[20],
                 Instant.now(),
                 new Object[] { 3, 123, 3, 25 });
         return om;

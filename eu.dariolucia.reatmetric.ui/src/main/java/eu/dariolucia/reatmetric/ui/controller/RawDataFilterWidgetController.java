@@ -136,7 +136,7 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
         List<String> typeList = deriveSelectedType();
         List<String> routeList = deriveSelectedRoute();
         String nameRegExp = deriveRegExpName();
-        return new RawDataFilter(nameRegExp, routeList, typeList, sourceList, qList);
+        return new RawDataFilter(false, nameRegExp, routeList, typeList, sourceList, qList);
     }
 
     private List<String> deriveSelectedSource() {

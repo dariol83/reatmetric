@@ -2,17 +2,13 @@ package eu.dariolucia.reatmetric.persist.services;
 
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.events.EventData;
-import eu.dariolucia.reatmetric.api.events.EventDataFilter;
-import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
-import eu.dariolucia.reatmetric.api.messages.Severity;
-import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.persist.Archive;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.sql.*;
@@ -24,8 +20,10 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     private static final Logger LOG = Logger.getLogger(RawDataArchive.class.getName());
 
-    private static final String STORE_STATEMENT = "INSERT INTO RAW_DATA_TABLE(UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?)";
+    private static final String STORE_STATEMENT = "INSERT INTO RAW_DATA_TABLE(UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,Contents,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM RAW_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,Contents,AdditionalData FROM RAW_DATA_TABLE WHERE UniqueId=?";
+
 
     public RawDataArchive(Archive controller) throws SQLException {
         super(controller);
@@ -41,7 +39,8 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         storeStatement.setString(6, item.getRoute());
         storeStatement.setString(7, item.getSource());
         storeStatement.setShort(8, (short) item.getQuality().ordinal());
-        storeStatement.setBlob(9, toInputstream(item.getAdditionalFields()));
+        storeStatement.setBlob(9, item.isContentsSet() ? new ByteArrayInputStream(item.getContents()) : null);
+        storeStatement.setBlob(10, toInputstream(item.getAdditionalFields()));
     }
 
     @Override
@@ -53,8 +52,17 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
     }
 
     @Override
+    protected String buildRetrieveByIdQuery() {
+        return RETRIEVE_BY_ID_QUERY;
+    }
+
+    @Override
     protected String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, RawDataFilter filter) {
-        StringBuilder query = new StringBuilder("SELECT * FROM RAW_DATA_TABLE WHERE ");
+        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,AdditionalData");
+        if(filter == null || filter.isWithData()) {
+            query.append(",Contents");
+        }
+        query.append(" FROM RAW_DATA_TABLE WHERE ");
         // add time info
         if(direction == RetrievalDirection.TO_FUTURE) {
             query.append("GenerationTime >= '").append(toTimestamp(startTime).toString()).append("' ");
@@ -104,8 +112,12 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
             ObjectInputStream ois = new ObjectInputStream(additionalData.getBinaryStream());
             additionalDataArray = (Object[]) ois.readObject();
         }
-
-        return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, toInstant(receptionTime), additionalDataArray);
+        // retrieve Contents if present
+        byte[] contents = null;
+        if(rs.getFetchSize() >= 10) {
+            contents = rs.getBlob(10).getBytes(0, (int) rs.getBlob(10).length());
+        }
+        return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, contents, toInstant(receptionTime), additionalDataArray);
     }
 
     @Override

@@ -24,6 +24,8 @@ public final class RawDataFilter extends AbstractDataItemFilter implements Seria
 	 */
 	private static final long serialVersionUID = -3381513283926701964L;
 
+	private final boolean withData;
+
 	private final String nameContains;
     
     private final List<String> routeList;
@@ -34,7 +36,8 @@ public final class RawDataFilter extends AbstractDataItemFilter implements Seria
     
     private final List<Quality> qualityList;
 
-    public RawDataFilter(String nameContains, List<String> routeList, List<String> typeList, List<String> sourceList, List<Quality> qualityList) {
+    public RawDataFilter(boolean withData, String nameContains, List<String> routeList, List<String> typeList, List<String> sourceList, List<Quality> qualityList) {
+        this.withData = withData;
         this.nameContains = nameContains;
         if(sourceList != null) {
             this.sourceList = new ArrayList<>(sourceList);
@@ -56,6 +59,10 @@ public final class RawDataFilter extends AbstractDataItemFilter implements Seria
         } else {
             this.qualityList = null;
         }
+    }
+
+    public boolean isWithData() {
+        return withData;
     }
 
     public String getNameContains() {

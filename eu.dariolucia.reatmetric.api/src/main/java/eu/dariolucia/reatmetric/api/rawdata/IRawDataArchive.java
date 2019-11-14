@@ -8,6 +8,8 @@
 package eu.dariolucia.reatmetric.api.rawdata;
 
 import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
+import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 

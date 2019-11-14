@@ -15,6 +15,8 @@ public interface IDataItemArchive<T extends AbstractDataItem, K extends Abstract
 
     List<T> retrieve(T startItem, int numRecords, RetrievalDirection direction, K filter) throws ArchiveException;
 
+    T retrieve(IUniqueId uniqueId) throws ArchiveException;
+
     void store(T message) throws ArchiveException;
 
     void store(List<T> messages) throws ArchiveException;

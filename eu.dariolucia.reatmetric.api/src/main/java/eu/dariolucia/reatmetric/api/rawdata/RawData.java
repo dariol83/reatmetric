@@ -38,7 +38,9 @@ public final class RawData extends AbstractDataItem implements Serializable {
 
     private final Quality quality;
 
-    public RawData(IUniqueId internalId, Instant generationTime, String name, String type, String route, String source, Quality quality, Instant receptionTime, Object[] additionalFields) {
+    private final byte[] contents;
+
+    public RawData(IUniqueId internalId, Instant generationTime, String name, String type, String route, String source, Quality quality, byte[] contents, Instant receptionTime, Object[] additionalFields) {
         super(internalId, generationTime, additionalFields);
         this.name = name;
         this.type = type;
@@ -46,6 +48,7 @@ public final class RawData extends AbstractDataItem implements Serializable {
         this.receptionTime = receptionTime;
         this.source = source;
         this.quality = quality;
+        this.contents = contents;
     }
 
     public String getName() {
@@ -70,6 +73,14 @@ public final class RawData extends AbstractDataItem implements Serializable {
 
     public Quality getQuality() {
         return quality;
+    }
+
+    public byte[] getContents() {
+        return contents;
+    }
+
+    public boolean isContentsSet() {
+        return contents != null;
     }
 
     @Override

@@ -21,6 +21,7 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
 
     private static final String STORE_STATEMENT = "INSERT INTO OPERATIONAL_MESSAGE_TABLE(UniqueId,GenerationTime,Id,Text,Source,Severity,AdditionalData) VALUES (?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM OPERATIONAL_MESSAGE_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,Id,Text,Source,Severity,AdditionalData FROM OPERATIONAL_MESSAGE_TABLE WHERE UniqueId=?";
 
     public OperationalMessageArchive(Archive controller) throws SQLException {
         super(controller);
@@ -43,6 +44,11 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
             LOG.finest(this + " - preparing store statement: " + STORE_STATEMENT);
         }
         return connection.prepareStatement(STORE_STATEMENT);
+    }
+
+    @Override
+    protected String buildRetrieveByIdQuery() {
+        return RETRIEVE_BY_ID_QUERY;
     }
 
     @Override

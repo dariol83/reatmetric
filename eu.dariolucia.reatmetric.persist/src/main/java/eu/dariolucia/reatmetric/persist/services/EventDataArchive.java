@@ -22,6 +22,7 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
 
     private static final String STORE_STATEMENT = "INSERT INTO EVENT_DATA_TABLE(UniqueId,GenerationTime,ExternalId,Name,Path,Qualifier,ReceptionTime,Type,Route,Source,Severity,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM EVENT_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ExternalId,Name,Path,Qualifier,ReceptionTime,Type,Route,Source,Severity,AdditionalData FROM EVENT_DATA_TABLE WHERE UniqueId=?";
 
     public EventDataArchive(Archive controller) throws SQLException {
         super(controller);
@@ -49,6 +50,11 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
             LOG.finest(this + " - preparing store statement: " + STORE_STATEMENT);
         }
         return connection.prepareStatement(STORE_STATEMENT);
+    }
+
+    @Override
+    protected String buildRetrieveByIdQuery() {
+        return RETRIEVE_BY_ID_QUERY;
     }
 
     @Override

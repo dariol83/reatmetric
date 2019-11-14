@@ -146,6 +146,41 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
     }
 
+    public synchronized T retrieve(IUniqueId uniqueId) throws ArchiveException {
+        checkDisposed();
+        try {
+            return doRetrieve(retrieveConnection, uniqueId);
+        } catch(SQLException e) {
+            throw new ArchiveException(e);
+        }
+    }
+
+    protected T doRetrieve(Connection connection, IUniqueId uniqueId) throws SQLException {
+        String finalQuery = buildRetrieveByIdQuery();
+        T result = null;
+        try (PreparedStatement prepStmt = connection.prepareStatement(finalQuery)) {
+            if(LOG.isLoggable(Level.FINEST)) {
+                LOG.finest(this + " - retrieve statement: " + finalQuery);
+            }
+            prepStmt.setLong(1, uniqueId.asLong());
+            try (ResultSet rs = prepStmt.executeQuery()) {
+                if (rs.next()) {
+                    try {
+                        T object = mapToItem(rs);
+                        result = object;
+                    } catch (IOException | ClassNotFoundException e) {
+                        throw new SQLException(e);
+                    }
+                }
+            } finally {
+                connection.commit();
+            }
+        }
+        return result;
+    }
+
+    protected abstract String buildRetrieveByIdQuery();
+
     public synchronized List<T> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, K filter) throws ArchiveException {
         checkDisposed();
         try {
@@ -171,8 +206,9 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
                         throw new SQLException(e);
                     }
                 }
+            } finally {
+                connection.commit();
             }
-            connection.commit();
         }
         return result;
     }
@@ -217,8 +253,9 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
                 if (rs.next()) {
                     return new LongUniqueId(rs.getLong(1));
                 }
+            } finally {
+                connection.commit();
             }
-            connection.commit();
         }
         throw new SQLException("Cannot retrieve last ID from " + this);
     }

@@ -9,6 +9,7 @@
 package eu.dariolucia.reatmetric.api.rawdata;
 
 import eu.dariolucia.reatmetric.api.common.IDataItemProvisionService;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
 /**
@@ -17,6 +18,6 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
  */
 public interface IRawDataProvisionService extends IDataItemProvisionService<IRawDataSubscriber, RawDataFilter, RawData> {
 
-    public byte[] getRawDataContents(RawData data) throws ReatmetricException;
+    RawData getRawDataContents(IUniqueId uniqueId) throws ReatmetricException;
     
 }
