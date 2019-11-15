@@ -38,3 +38,19 @@ CREATE TABLE RAW_DATA_TABLE (
    AdditionalData BLOB,
    PRIMARY KEY (UniqueId)
 )
+-- SEPARATOR
+CREATE TABLE PARAMETER_DATA_TABLE (
+   UniqueId BIGINT NOT NULL,
+   GenerationTime TIMESTAMP NOT NULL,
+   ExternalId INT NOT NULL,
+   Name VARCHAR(32) NOT NULL,
+   Path VARCHAR(255) NOT NULL,
+   EngValue BLOB NOT NULL,
+   SourceValue BLOB NOT NULL,
+   ReceptionTime TIMESTAMP NOT NULL,
+   Route VARCHAR(32),
+   Validity SMALLINT NOT NULL,
+   AlarmState SMALLINT NOT NULL,
+   AdditionalData BLOB,
+   PRIMARY KEY (UniqueId)
+)

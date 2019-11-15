@@ -166,7 +166,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             try (ResultSet rs = prepStmt.executeQuery()) {
                 if (rs.next()) {
                     try {
-                        T object = mapToItem(rs);
+                        T object = mapToItem(rs, null);
                         result = object;
                     } catch (IOException | ClassNotFoundException e) {
                         throw new SQLException(e);
@@ -180,6 +180,10 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     protected abstract String buildRetrieveByIdQuery();
+
+    public synchronized List<T> retrieve(Instant time, K filter) throws ArchiveException {
+        throw new UnsupportedOperationException("This operation is not supported by this archive service");
+    }
 
     public synchronized List<T> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, K filter) throws ArchiveException {
         checkDisposed();
@@ -200,7 +204,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
                 while (rs.next()) {
                     try {
-                        T object = mapToItem(rs);
+                        T object = mapToItem(rs, filter);
                         result.add(object);
                     } catch (IOException | ClassNotFoundException e) {
                         throw new SQLException(e);
@@ -213,7 +217,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         return result;
     }
 
-    protected abstract T mapToItem(ResultSet rs) throws IOException, SQLException, ClassNotFoundException;
+    protected abstract T mapToItem(ResultSet rs, K usedFilter) throws IOException, SQLException, ClassNotFoundException;
 
     protected abstract String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, K filter);
 
@@ -314,7 +318,8 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         return Instant.ofEpochSecond(genTime.getTime() / 1000, genTime.getNanos());
     }
 
-    protected InputStream toInputstream(Object[] data) throws IOException {
+    // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
+    protected InputStream toInputstreamArray(Object[] data) throws IOException {
         if(data == null) {
             return null;
         }
@@ -324,6 +329,23 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         oos.flush();
         oos.close();
         return new ByteArrayInputStream(bos.toByteArray());
+    }
+
+    // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
+    protected InputStream toInputstream(Object data) throws IOException {
+        if(data == null) {
+            return null;
+        }
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(data);
+        oos.flush();
+        oos.close();
+        return new ByteArrayInputStream(bos.toByteArray());
+    }
+
+    protected byte[] toByteArray(InputStream is) throws IOException {
+        return is.readAllBytes();
     }
 
     protected <E extends Enum<E>> String toEnumFilterListString(List<E> enumList) {

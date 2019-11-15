@@ -20,6 +20,6 @@ import java.util.List;
  */
 public interface IDataItemStateProvisionService<T extends IDataItemSubscriber<K>, R extends AbstractDataItemFilter, K extends UniqueItem> extends IDataItemProvisionService<T, R, K> {
     
-    List<K> retrieve(Instant startTime, R filter);
+    List<K> retrieve(Instant time, R filter);
     
 }

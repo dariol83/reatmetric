@@ -273,7 +273,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(new ArrayList<>(this.path2wrapper.keySet())));
+                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(new ArrayList<>(this.path2wrapper.keySet()), , ));
                 updateDataItems(messages);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -306,7 +306,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_PAST, new ParameterDataFilter(Collections.singletonList(om.getPath())));
+                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_PAST, new ParameterDataFilter(Collections.singletonList(om.getPath()), , ));
                 updateDataItems(messages);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -320,7 +320,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         markProgressBusy();
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<ParameterData> messages = doRetrieve(selectedTime, new ParameterDataFilter(new ArrayList<>(this.path2wrapper.keySet())));
+                List<ParameterData> messages = doRetrieve(selectedTime, new ParameterDataFilter(new ArrayList<>(this.path2wrapper.keySet()), , ));
                 updateDataItems(messages);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -400,7 +400,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
     
     private void startSubscription() {
-        ParameterDataFilter pdf = new ParameterDataFilter(new ArrayList<>(this.path2wrapper.keySet()));
+        ParameterDataFilter pdf = new ParameterDataFilter(new ArrayList<>(this.path2wrapper.keySet()), , );
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 doServiceSubscribe(pdf);
@@ -644,15 +644,12 @@ public class ParameterDataViewController extends AbstractDisplayController imple
                     ParameterDataWrapper pdw = new ParameterDataWrapper(
                             new ParameterData(
                             		null,
-                                    systemEntity.getName(), 
+                                    null, systemEntity.getName(),
                                     systemEntity.getPath(), 
                                     null, 
                                     null, 
-                                    null, 
-                                    systemEntity.getPath().getParent(), 
-                                    Validity.UNKNOWN, 
-                                    AlarmState.UNKNOWN, 
-                                    null, 
+                                    null,
+                                    Validity.UNKNOWN, AlarmState.UNKNOWN, systemEntity.getPath().getParent(),
                                     null),
                             systemEntity.getPath()
                     );
@@ -680,15 +677,12 @@ public class ParameterDataViewController extends AbstractDisplayController imple
                 ParameterDataWrapper pdw = new ParameterDataWrapper(
                         new ParameterData(
                         		null,
-                                sep.getLastPathElement(), 
+                                null, sep.getLastPathElement(),
                                 sep, 
                                 null, 
                                 null, 
-                                null, 
-                                sep.getParent(), 
-                                Validity.UNKNOWN, 
-                                AlarmState.UNKNOWN, 
-                                null, 
+                                null,
+                                Validity.UNKNOWN, AlarmState.UNKNOWN, sep.getParent(),
                                 null),
                         sep
                 );

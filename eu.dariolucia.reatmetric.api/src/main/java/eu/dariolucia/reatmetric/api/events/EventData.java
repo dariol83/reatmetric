@@ -26,7 +26,7 @@ public final class EventData extends AbstractDataItem implements Serializable {
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = -5430913687538935943L;
+	private static final long serialVersionUID = 1L;
 
 	private final int externalId;
 

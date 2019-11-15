@@ -40,7 +40,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         storeStatement.setString(7, item.getSource());
         storeStatement.setShort(8, (short) item.getQuality().ordinal());
         storeStatement.setBlob(9, item.isContentsSet() ? new ByteArrayInputStream(item.getContents()) : null);
-        storeStatement.setBlob(10, toInputstream(item.getAdditionalFields()));
+        storeStatement.setBlob(10, toInputstreamArray(item.getAdditionalFields()));
     }
 
     @Override
@@ -97,7 +97,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
     }
 
     @Override
-    protected RawData mapToItem(ResultSet rs) throws SQLException, IOException, ClassNotFoundException {
+    protected RawData mapToItem(ResultSet rs, RawDataFilter usedFilter) throws SQLException, IOException, ClassNotFoundException {
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
         String name = rs.getString(3);
@@ -114,8 +114,9 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         }
         // retrieve Contents if present
         byte[] contents = null;
-        if(rs.getFetchSize() >= 10) {
-            contents = rs.getBlob(10).getBytes(0, (int) rs.getBlob(10).length());
+        if(usedFilter == null || usedFilter.isWithData()) {
+            Blob blob = rs.getBlob(10);
+            contents = toByteArray(blob.getBinaryStream());
         }
         return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, contents, toInstant(receptionTime), additionalDataArray);
     }

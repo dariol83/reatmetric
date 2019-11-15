@@ -5,8 +5,12 @@ import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
+import eu.dariolucia.reatmetric.api.parameters.IParameterDataArchive;
+import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.persist.services.EventDataArchive;
 import eu.dariolucia.reatmetric.persist.services.OperationalMessageArchive;
+import eu.dariolucia.reatmetric.persist.services.ParameterDataArchive;
+import eu.dariolucia.reatmetric.persist.services.RawDataArchive;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -47,7 +51,7 @@ public class Archive implements IArchive {
             LOG.fine("connect() invoked: archiveFolder set to " + archiveFolder);
         }
         // if the parent folder does not exist, create it
-        verifyParentFolderExistance();
+        verifyParentFolderExistence();
         // now create-and-ignore tables
         createSchema();
         // initialise storage services
@@ -58,6 +62,8 @@ public class Archive implements IArchive {
         try {
             registeredArchives.put(IOperationalMessageArchive.class, new OperationalMessageArchive(this));
             registeredArchives.put(IEventDataArchive.class, new EventDataArchive(this));
+            registeredArchives.put(IRawDataArchive.class, new RawDataArchive(this));
+            registeredArchives.put(IParameterDataArchive.class, new ParameterDataArchive(this));
         } catch (SQLException e) {
             throw new ArchiveException(e);
         }
@@ -116,7 +122,7 @@ public class Archive implements IArchive {
         }
     }
 
-    private void verifyParentFolderExistance() throws ArchiveException {
+    private void verifyParentFolderExistence() throws ArchiveException {
         File dataFolder = new File(archiveFolder);
         if (!dataFolder.getParentFile().exists() && !dataFolder.getParentFile().mkdirs()) {
             throw new ArchiveException("Cannot create archive data parent folder " + archiveFolder);
@@ -143,6 +149,11 @@ public class Archive implements IArchive {
     @Override
     public IEventDataArchive getEventDataArchive() {
         return (IEventDataArchive) registeredArchives.get(IEventDataArchive.class);
+    }
+
+    @Override
+    public IRawDataArchive getRawDataArchive() {
+        return (IRawDataArchive) registeredArchives.get(IRawDataArchive.class);
     }
 
     private List<String> readSchemaContents() throws IOException {

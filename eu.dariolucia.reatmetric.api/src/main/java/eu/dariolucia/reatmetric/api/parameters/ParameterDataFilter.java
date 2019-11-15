@@ -9,9 +9,10 @@
 package eu.dariolucia.reatmetric.api.parameters;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
+import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -23,27 +24,64 @@ public final class ParameterDataFilter extends AbstractDataItemFilter implements
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = -4775979580773316995L;
-	
+	private static final long serialVersionUID = 1L;
+
+    private final SystemEntityPath parentPath;
+
 	private final List<SystemEntityPath> parameterPathList;
-    
-    public ParameterDataFilter(List<SystemEntityPath> pathList) {
+
+    private final List<String> routeList;
+
+    private final List<Validity> validityList;
+
+    private final List<AlarmState> alarmStateList;
+
+    public ParameterDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> pathList, List<String> routeList, List<Validity> validityList, List<AlarmState> alarmStateList) {
+        this.parentPath = parentPath;
         if(pathList != null) {
-            this.parameterPathList = new ArrayList<>(pathList);
+            this.parameterPathList = List.copyOf(pathList);
         } else {
             this.parameterPathList = null;
         }
+        if(routeList != null) {
+            this.routeList = List.copyOf(routeList);
+        } else {
+            this.routeList = null;
+        }
+        if(validityList != null) {
+            this.validityList = List.copyOf(validityList);
+        } else {
+            this.validityList = null;
+        }
+        if(alarmStateList != null) {
+            this.alarmStateList = List.copyOf(alarmStateList);
+        } else {
+            this.alarmStateList = null;
+        }
+    }
+
+    public SystemEntityPath getParentPath() {
+        return parentPath;
     }
 
     public List<SystemEntityPath> getParameterPathList() {
-        if(parameterPathList == null) {
-            return null;
-        }
-        return new ArrayList<>(parameterPathList);
+        return parameterPathList;
     }
-    
+
+    public List<AlarmState> getAlarmStateList() {
+        return alarmStateList;
+    }
+
+    public List<Validity> getValidityList() {
+        return validityList;
+    }
+
+    public List<String> getRouteList() {
+        return routeList;
+    }
+
     @Override
     public boolean isClear() {
-        return this.parameterPathList == null;
+        return this.parentPath == null && this.parameterPathList == null && this.routeList == null && this.alarmStateList == null && this.validityList == null;
     }
 }

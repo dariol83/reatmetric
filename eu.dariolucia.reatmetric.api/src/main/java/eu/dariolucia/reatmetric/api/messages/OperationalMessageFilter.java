@@ -36,17 +36,17 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter imple
     public OperationalMessageFilter(String messageTextContains, List<String> idList, List<String> sourceList, List<Severity> severityList) {
         this.messageTextContains = messageTextContains;
         if(idList != null) {
-            this.idList = new ArrayList<>(idList);
+            this.idList = List.copyOf(idList);
         } else {
             this.idList = null;
         }
         if(sourceList != null) {
-            this.sourceList = new ArrayList<>(sourceList);
+            this.sourceList = List.copyOf(sourceList);
         } else {
             this.sourceList = null;
         }
         if(severityList != null) {
-            this.severityList = new ArrayList<>(severityList);
+            this.severityList = List.copyOf(severityList);
         } else {
             this.severityList = null;
         }
@@ -57,24 +57,15 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter imple
     }
 
     public List<String> getSourceList() {
-        if(sourceList == null) {
-            return null;
-        }
-        return new ArrayList<>(sourceList);
+        return sourceList;
     }
 
     public List<String> getIdList() {
-        if(idList == null) {
-            return null;
-        }
-        return new ArrayList<>(idList);
+        return idList;
     }
 
     public List<Severity> getSeverityList() {
-        if(severityList == null) {
-            return null;
-        }
-        return new ArrayList<>(severityList);
+        return severityList;
     }
     
     @Override

@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -59,55 +58,40 @@ public class TestParameterDataService extends DataGenerationService<ParameterDat
         this.path2uuid.put("mcmRoot.param2", new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()));
         
         // Create initial model
-        this.messages.add(new ParameterData(this.path2uuid.get("mcmRoot.a.param1"), "param1", 
+        this.messages.add(new ParameterData(this.path2uuid.get("mcmRoot.a.param1"), Instant.now(), "param1",
                 new SystemEntityPath("mcmRoot", "a", "param1"), 
                 "TEXT_VALUE", 
                 12,
-                Instant.now(), 
-                new SystemEntityPath("mcmRoot","a"), 
-                Validity.VALID, 
-                AlarmState.NOMINAL,
-                Instant.now(), 
+                Instant.now(),
+                Validity.VALID, AlarmState.NOMINAL, new SystemEntityPath("mcmRoot","a"),
                 null));
-        this.messages.add(new ParameterData(this.path2uuid.get("mcmRoot.a.param3"), "param3", 
+        this.messages.add(new ParameterData(this.path2uuid.get("mcmRoot.a.param3"), Instant.now(), "param3",
                 new SystemEntityPath("mcmRoot", "a", "param3"), 
                 0.0, 
                 0.0,
-                Instant.now(), 
-                new SystemEntityPath("mcmRoot", "a"), 
-                Validity.VALID, 
-                AlarmState.NOMINAL,
-                Instant.now(), 
+                Instant.now(),
+                Validity.VALID, AlarmState.NOMINAL, new SystemEntityPath("mcmRoot", "a"),
                 null));
-        this.messages.add(new ParameterData(this.path2uuid.get("mcmRoot.param2"), "param2", 
+        this.messages.add(new ParameterData(this.path2uuid.get("mcmRoot.param2"), Instant.now(), "param2",
                 new SystemEntityPath("mcmRoot", "param2"), 
                 23322, 
                 4322,
-                Instant.now(), 
-                new SystemEntityPath("mcmRoot"), 
-                Validity.VALID, 
-                AlarmState.NOMINAL, 
-                Instant.now(), 
+                Instant.now(),
+                Validity.VALID, AlarmState.NOMINAL, new SystemEntityPath("mcmRoot"),
                 null));
-        this.messages.add(new ParameterData(this.path2uuid.get("mcmRoot.a.param4"), "param4", 
+        this.messages.add(new ParameterData(this.path2uuid.get("mcmRoot.a.param4"), Instant.now(), "param4",
                 new SystemEntityPath("mcmRoot", "a", "param4"), 
                 0.0, 
                 0.0,
-                Instant.now(), 
-                new SystemEntityPath("mcmRoot", "a"), 
-                Validity.VALID, 
-                AlarmState.NOMINAL,
-                Instant.now(), 
+                Instant.now(),
+                Validity.VALID, AlarmState.NOMINAL, new SystemEntityPath("mcmRoot", "a"),
                 null));
-        this.messages.add(new ParameterData(this.path2uuid.get("mcmRoot.a.param5"), "param5", 
+        this.messages.add(new ParameterData(this.path2uuid.get("mcmRoot.a.param5"), Instant.now(), "param5",
                 new SystemEntityPath("mcmRoot", "a", "param5"), 
                 0.0, 
                 0.0,
-                Instant.now(), 
-                new SystemEntityPath("mcmRoot", "a"), 
-                Validity.VALID, 
-                AlarmState.NOMINAL,
-                Instant.now(), 
+                Instant.now(),
+                Validity.VALID, AlarmState.NOMINAL, new SystemEntityPath("mcmRoot", "a"),
                 null));
         super.generateMessages();
     }
@@ -117,63 +101,48 @@ public class TestParameterDataService extends DataGenerationService<ParameterDat
         int param = (int) Math.floor(Math.random() * 5);
         switch(param) {
             case 1:
-                return new ParameterData(this.path2uuid.get("mcmRoot.a.param1"), "param1", 
+                return new ParameterData(this.path2uuid.get("mcmRoot.a.param1"), Instant.now(), "param1",
                 new SystemEntityPath("mcmRoot", "a", "param1"), 
                 "TEXT_VALUE" + this.sequencer.incrementAndGet(), 
                 12,
-                Instant.now(), 
-                new SystemEntityPath("mcmRoot","a"), 
-                Validity.VALID, 
-                AlarmState.NOMINAL,
-                Instant.now(), 
-                null);
+                Instant.now(),
+                        Validity.VALID, AlarmState.NOMINAL, new SystemEntityPath("mcmRoot","a"),
+                        null);
             case 2:
                 this.clock += 10;
-                return new ParameterData(this.path2uuid.get("mcmRoot.a.param3"), "param3", 
+                return new ParameterData(this.path2uuid.get("mcmRoot.a.param3"), Instant.now(), "param3",
                 new SystemEntityPath("mcmRoot", "a", "param3"), 
                 Math.sin(Math.toRadians(this.clock)), 
                 Math.sin(Math.toRadians(this.clock)), 
-                Instant.now(), 
-                new SystemEntityPath("mcmRoot","a"), 
-                Validity.VALID, 
-                AlarmState.NOMINAL,
-                Instant.now(), 
-                null);
+                Instant.now(),
+                        Validity.VALID, AlarmState.NOMINAL, new SystemEntityPath("mcmRoot","a"),
+                        null);
             case 3:
                 this.clock += 10;
-                return new ParameterData(this.path2uuid.get("mcmRoot.a.param4"), "param4", 
+                return new ParameterData(this.path2uuid.get("mcmRoot.a.param4"), Instant.now(), "param4",
                 new SystemEntityPath("mcmRoot", "a", "param4"), 
                 Math.cos(Math.toRadians(this.clock)), 
                 Math.cos(Math.toRadians(this.clock)), 
-                Instant.now(), 
-                new SystemEntityPath("mcmRoot","a"), 
-                Validity.VALID, 
-                AlarmState.NOMINAL,
-                Instant.now(), 
-                null);
+                Instant.now(),
+                        Validity.VALID, AlarmState.NOMINAL, new SystemEntityPath("mcmRoot","a"),
+                        null);
             case 4:
                 this.clock += 10;
-                return new ParameterData(this.path2uuid.get("mcmRoot.a.param5"), "param5", 
+                return new ParameterData(this.path2uuid.get("mcmRoot.a.param5"), Instant.now(), "param5",
                 new SystemEntityPath("mcmRoot", "a", "param5"), 
                 cap(Math.tan(Math.toRadians(this.clock)), 3.0), 
                 cap(Math.tan(Math.toRadians(this.clock)), 3.0), 
-                Instant.now(), 
-                new SystemEntityPath("mcmRoot","a"), 
-                Validity.VALID, 
-                AlarmState.WARNING,
-                Instant.now(), 
-                null);
+                Instant.now(),
+                        Validity.VALID, AlarmState.WARNING, new SystemEntityPath("mcmRoot","a"),
+                        null);
             default:
-                return new ParameterData(this.path2uuid.get("mcmRoot.param2"), "param2", 
+                return new ParameterData(this.path2uuid.get("mcmRoot.param2"), Instant.now(), "param2",
                 new SystemEntityPath("mcmRoot", "param2"), 
                 5 + this.sequencer.incrementAndGet(), 
                 3 + this.sequencer.get(),
-                Instant.now(), 
-                new SystemEntityPath("mcmRoot"), 
-                Validity.VALID, 
-                AlarmState.NOMINAL,
-                Instant.now(), 
-                null);
+                Instant.now(),
+                        Validity.VALID, AlarmState.NOMINAL, new SystemEntityPath("mcmRoot"),
+                        null);
         }
     }
 

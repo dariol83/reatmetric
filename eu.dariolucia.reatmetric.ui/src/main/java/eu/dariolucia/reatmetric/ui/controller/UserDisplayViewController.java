@@ -210,7 +210,7 @@ public class UserDisplayViewController extends AbstractDisplayController
 		for(UserDisplayTabWidgetController c : this.tab2contents.values()) {
 			params.addAll(c.getCurrentFilter().getParameterPathList());
 		}
-		return new ParameterDataFilter(new ArrayList<>(params));
+		return new ParameterDataFilter(new ArrayList<>(params), , );
 	}
 
 	private void stopSubscription() {

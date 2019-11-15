@@ -35,7 +35,7 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
         storeStatement.setString(4, item.getMessage());
         storeStatement.setString(5, item.getSource());
         storeStatement.setShort(6, (short) item.getSeverity().ordinal());
-        storeStatement.setBlob(7, toInputstream(item.getAdditionalFields()));
+        storeStatement.setBlob(7, toInputstreamArray(item.getAdditionalFields()));
     }
 
     @Override
@@ -85,7 +85,7 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     }
 
     @Override
-    protected OperationalMessage mapToItem(ResultSet rs) throws SQLException, IOException, ClassNotFoundException {
+    protected OperationalMessage mapToItem(ResultSet rs, OperationalMessageFilter usedFilder) throws SQLException, IOException, ClassNotFoundException {
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
         String messageId = rs.getString(3);

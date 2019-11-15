@@ -109,7 +109,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 	//
 	protected final List<AbstractChartManager> charts = new CopyOnWriteArrayList<>();
 
-	protected volatile ParameterDataFilter currentFilter = new ParameterDataFilter(new LinkedList<>());
+	protected volatile ParameterDataFilter currentFilter = new ParameterDataFilter(new LinkedList<>(), , );
 
 	// TODO: make it configurable
 	protected final int timeWindowSize = 60000;
@@ -585,7 +585,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 		for (AbstractChartManager acm : this.charts) {
 			selected.addAll(acm.getPlottedParameters());
 		}
-		this.currentFilter = new ParameterDataFilter(new LinkedList<>(selected));
+		this.currentFilter = new ParameterDataFilter(new LinkedList<>(selected), , );
 
 		this.controller.filterUpdated(this, this.currentFilter);
 	}

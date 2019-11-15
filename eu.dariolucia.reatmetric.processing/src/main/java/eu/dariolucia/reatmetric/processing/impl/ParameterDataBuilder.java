@@ -79,6 +79,6 @@ public class ParameterDataBuilder {
     }
 
     public ParameterData build() {
-        return new ParameterData(id, name, path, engValue, sourceValue, receptionTime, parent, validity, alarmState, generationTime, new Object[0]);
+        return new ParameterData(id, generationTime, name, path, engValue, sourceValue, receptionTime, validity, alarmState, parent, new Object[0]);
     }
 }

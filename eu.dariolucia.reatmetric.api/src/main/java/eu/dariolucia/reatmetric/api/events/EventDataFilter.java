@@ -41,22 +41,22 @@ public final class EventDataFilter extends AbstractDataItemFilter implements Ser
     public EventDataFilter(SystemEntityPath parentPath, List<String> routeList, List<String> typeList, List<String> sourceList, List<Severity> severityList) {
         this.parentPath = parentPath;
         if(routeList != null) {
-            this.routeList = new ArrayList<>(routeList);
+            this.routeList = List.copyOf(routeList);
         } else {
             this.routeList = null;
         }
         if(typeList != null) {
-            this.typeList = new ArrayList<>(typeList);
+            this.typeList = List.copyOf(typeList);
         } else {
             this.typeList = null;
         }
         if(sourceList != null) {
-            this.sourceList = new ArrayList<>(sourceList);
+            this.sourceList = List.copyOf(sourceList);
         } else {
             this.sourceList = null;
         }
         if(severityList != null) {
-            this.severityList = new ArrayList<>(severityList);
+            this.severityList = List.copyOf(severityList);
         } else {
             this.severityList = null;
         }
@@ -67,31 +67,19 @@ public final class EventDataFilter extends AbstractDataItemFilter implements Ser
     }
 
     public List<String> getSourceList() {
-        if(sourceList == null) {
-            return null;
-        }
-        return new ArrayList<>(sourceList);
+        return sourceList;
     }
 
     public List<Severity> getSeverityList() {
-        if(severityList == null) {
-            return null;
-        }
-        return new ArrayList<>(severityList);
+        return severityList;
     }
     
     public List<String> getRouteList() {
-        if(routeList == null) {
-            return null;
-        }
-        return new ArrayList<>(routeList);
+        return routeList;
     }
     
     public List<String> getTypeList() {
-        if(typeList == null) {
-            return null;
-        }
-        return new ArrayList<>(typeList);
+        return typeList;
     }
     
     @Override

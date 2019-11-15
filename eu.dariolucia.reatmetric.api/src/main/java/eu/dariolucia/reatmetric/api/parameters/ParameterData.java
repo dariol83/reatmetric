@@ -26,7 +26,9 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = -6541375067096461705L;
+	private static final long serialVersionUID = 1L;
+
+    private final int externalId;
 
 	private final String name;
 
@@ -37,23 +39,28 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
     private final Object sourceValue;
     
     private final Instant receptionTime;
-    
-    private final SystemEntityPath parent;
+
+    private final String route;
 
     private final Validity validity;
     
     private final AlarmState alarmState;
 
-    public ParameterData(IUniqueId internalId, String name, SystemEntityPath path, Object engValue, Object sourceValue, Instant receptionTime, SystemEntityPath parent, Validity validity, AlarmState alarmState, Instant generationTime, Object[] additionalFields) {
+    public ParameterData(IUniqueId internalId, Instant generationTime, int externalId, String name, SystemEntityPath path, Object engValue, Object sourceValue, String route, Validity validity, AlarmState alarmState, Instant receptionTime, Object[] additionalFields) {
         super(internalId, generationTime, additionalFields);
         this.name = name;
+        this.externalId = externalId;
         this.path = path;
         this.engValue = engValue;
         this.sourceValue = sourceValue;
         this.receptionTime = receptionTime;
-        this.parent = parent;
         this.validity = validity;
         this.alarmState = alarmState;
+        this.route = route;
+    }
+
+    public int getExternalId() {
+        return externalId;
     }
 
     public String getName() {
@@ -76,10 +83,6 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
         return receptionTime;
     }
 
-    public SystemEntityPath getParent() {
-        return parent;
-    }
-
     public Validity getValidity() {
         return validity;
     }
@@ -88,9 +91,14 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
         return alarmState;
     }
 
+    public String getRoute() {
+        return route;
+    }
+
     @Override
     public int hashCode() {
         int hash = 5;
+        hash = 59 * hash + Objects.hashCode(this.externalId);
         hash = 59 * hash + Objects.hashCode(this.path);
         hash = 59 * hash + Objects.hashCode(this.engValue);
         hash = 59 * hash + Objects.hashCode(this.sourceValue);
@@ -98,6 +106,7 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
         hash = 59 * hash + Objects.hashCode(this.generationTime);
         hash = 59 * hash + Objects.hashCode(this.validity);
         hash = 59 * hash + Objects.hashCode(this.alarmState);
+        hash = 59 * hash + Objects.hashCode(this.route);
         return hash;
     }
 
@@ -113,6 +122,9 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
             return false;
         }
         final ParameterData other = (ParameterData) obj;
+        if (!Objects.equals(this.externalId, other.externalId)) {
+            return false;
+        }
         if (!Objects.equals(this.path, other.path)) {
             return false;
         }
@@ -128,6 +140,9 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
         if (!Objects.equals(this.sourceValue, other.sourceValue)) {
             return false;
         }
+        if (!Objects.equals(this.route, other.route)) {
+            return false;
+        }
         if (this.validity != other.validity) {
             return false;
         }
@@ -137,11 +152,18 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
         return true;
     }
 
-	@Override
-	public String toString() {
-		return "ParameterData [name=" + name + ", path=" + path + ", engValue=" + engValue + ", sourceValue="
-				+ sourceValue + ", receptionTime=" + receptionTime + ", parent=" + parent + ", validity=" + validity
-				+ ", alarmState=" + alarmState + "]";
-	}
-	
+    @Override
+    public String toString() {
+        return "ParameterData{" +
+                "externalId=" + externalId +
+                ", name='" + name + '\'' +
+                ", path=" + path +
+                ", engValue=" + engValue +
+                ", sourceValue=" + sourceValue +
+                ", receptionTime=" + receptionTime +
+                ", route='" + route + '\'' +
+                ", validity=" + validity +
+                ", alarmState=" + alarmState +
+                '}';
+    }
 }

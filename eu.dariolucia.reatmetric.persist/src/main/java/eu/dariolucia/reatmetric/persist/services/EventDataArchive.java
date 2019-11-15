@@ -41,7 +41,7 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
         storeStatement.setString(9, item.getRoute());
         storeStatement.setString(10, item.getSource());
         storeStatement.setShort(11, (short) item.getSeverity().ordinal());
-        storeStatement.setBlob(12, toInputstream(item.getAdditionalFields()));
+        storeStatement.setBlob(12, toInputstreamArray(item.getAdditionalFields()));
     }
 
     @Override
@@ -94,7 +94,7 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
     }
 
     @Override
-    protected EventData mapToItem(ResultSet rs) throws SQLException, IOException, ClassNotFoundException {
+    protected EventData mapToItem(ResultSet rs, EventDataFilter usedFilter) throws SQLException, IOException, ClassNotFoundException {
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
         int externalId = rs.getInt(3);
