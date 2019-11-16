@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.sql.*;
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,6 +27,12 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
     private static final String STORE_STATEMENT = "INSERT INTO PARAMETER_DATA_TABLE(UniqueId,GenerationTime,ExternalId,Name,Path,EngValue,SourceValue,ReceptionTime,Route,Validity,AlarmState,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM PARAMETER_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
     private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ExternalId,Name,Path,EngValue,SourceValue,ReceptionTime,Route,Validity,AlarmState,AdditionalData FROM PARAMETER_DATA_TABLE WHERE UniqueId=?";
+    private static final String RETRIEVE_LATEST_STATE_QUERY = "SELECT PARAMETER_DATA_TABLE.* " +
+            "FROM (" +
+            "SELECT DISTINCT Path, MAX(GenerationTime) as LatestTime FROM PARAMETER_DATA_TABLE WHERE GenerationTime <= '?' GROUP BY Path" +
+            ") AS LATEST_SAMPLES " +
+            "INNER JOIN PARAMETER_DATA_TABLE " +
+            "ON PARAMETER_DATA_TABLE.Path = LATEST_SAMPLES.Path AND PARAMETER_DATA_TABLE.GenerationTime = LATEST_SAMPLES.LatestTime";
 
     public ParameterDataArchive(Archive controller) throws SQLException {
         super(controller);
@@ -121,7 +128,41 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
 
     @Override
     public synchronized List<ParameterData> retrieve(Instant time, ParameterDataFilter filter) throws ArchiveException {
+        checkDisposed();
+        try {
+            return doRetrieve(retrieveConnection, time, filter);
+        } catch (SQLException e) {
+            throw new ArchiveException(e);
+        }
+    }
 
+    private List<ParameterData> doRetrieve(Connection connection, Instant time, ParameterDataFilter filter) throws SQLException {
+        // TODO: add additional filters
+        String finalQuery = "SELECT PARAMETER_DATA_TABLE.* " +
+                "FROM (" +
+                "SELECT DISTINCT Path, MAX(GenerationTime) as LatestTime FROM PARAMETER_DATA_TABLE WHERE GenerationTime <= '" + toTimestamp(time) + "' GROUP BY Path" +
+                ") AS LATEST_SAMPLES " +
+                "INNER JOIN PARAMETER_DATA_TABLE " +
+                "ON PARAMETER_DATA_TABLE.Path = LATEST_SAMPLES.Path AND PARAMETER_DATA_TABLE.GenerationTime = LATEST_SAMPLES.LatestTime";
+        List<ParameterData> result = new LinkedList<>();
+        try (Statement prepStmt = connection.createStatement()) {
+            if(LOG.isLoggable(Level.FINEST)) {
+                LOG.finest(this + " - retrieve statement: " + finalQuery);
+            }
+            try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
+                while (rs.next()) {
+                    try {
+                        ParameterData object = mapToItem(rs, filter);
+                        result.add(object);
+                    } catch (IOException | ClassNotFoundException e) {
+                        throw new SQLException(e);
+                    }
+                }
+            } finally {
+                connection.commit();
+            }
+        }
+        return result;
     }
 
     @Override

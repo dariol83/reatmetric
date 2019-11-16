@@ -37,7 +37,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     private Connection storeConnection;
     private PreparedStatement storeStatement;
 
-    private Connection retrieveConnection;
+    protected Connection retrieveConnection; // subclasses should access this field in a synchronized block/method
 
     private volatile boolean disposed;
 

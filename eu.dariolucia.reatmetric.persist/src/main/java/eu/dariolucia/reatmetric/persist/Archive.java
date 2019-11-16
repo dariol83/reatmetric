@@ -3,6 +3,8 @@ package eu.dariolucia.reatmetric.persist;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataArchive;
@@ -154,6 +156,16 @@ public class Archive implements IArchive {
     @Override
     public IRawDataArchive getRawDataArchive() {
         return (IRawDataArchive) registeredArchives.get(IRawDataArchive.class);
+    }
+
+    @Override
+    public IParameterDataArchive getParameterDataArchive() {
+        return (IParameterDataArchive) registeredArchives.get(IParameterDataArchive.class);
+    }
+
+    @Override
+    public <U extends IDataItemArchive<J,K>,J extends AbstractDataItem,K extends AbstractDataItemFilter> U getArchive(Class<U> clazz) {
+        return (U) this.registeredArchives.get(clazz);
     }
 
     private List<String> readSchemaContents() throws IOException {
