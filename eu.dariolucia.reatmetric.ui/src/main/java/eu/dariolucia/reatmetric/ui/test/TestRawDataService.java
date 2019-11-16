@@ -114,32 +114,32 @@ public class TestRawDataService extends DataGenerationService<RawData, RawDataFi
     }
 
     @Override
-    public byte[] getRawDataContents(RawData data) throws ReatmetricException {
-        return new byte[] {
-          0x02,0x01,(byte) 0xF5,(byte) 0xAA,0x00,0x01,  
-          0x01,
-          0x00,
-          0x30,
-          0x20,
-          0x10,
-          0x70,
-          0x50,
-          0x00,
-          0x70,
-          (byte) 0xA0,
-          0x12,
-          0x02,0x01,(byte) 0xF5,(byte) 0xAA,0x00,0x01,  
-          0x01,
-          0x00,
-          0x30,
-          0x20,
-          0x10,
-          0x70,
-          0x50,
-          0x00,
-          0x70,
-          (byte) 0xA0,
-          0x12
-        };
+    public RawData getRawDataContents(IUniqueId id) throws ReatmetricException {
+        return new RawData(id, null, "", "", null, null, Quality.GOOD, new byte[] {
+                0x02,0x01,(byte) 0xF5,(byte) 0xAA,0x00,0x01,
+                0x01,
+                0x00,
+                0x30,
+                0x20,
+                0x10,
+                0x70,
+                0x50,
+                0x00,
+                0x70,
+                (byte) 0xA0,
+                0x12,
+                0x02,0x01,(byte) 0xF5,(byte) 0xAA,0x00,0x01,
+                0x01,
+                0x00,
+                0x30,
+                0x20,
+                0x10,
+                0x70,
+                0x50,
+                0x00,
+                0x70,
+                (byte) 0xA0,
+                0x12
+        }, null, null);
     }
 }

@@ -67,9 +67,14 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
         if(selectedRawData != null) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
-                    byte[] data = ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().getRawDataContents(selectedRawData);
+                    byte[] data = null;
+                    RawData rd = ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().getRawDataContents(selectedRawData.getInternalId());
+                    if(rd != null) {
+                        data = rd.getContents();
+                    }
+                    final byte[] fdata = data;
                     Platform.runLater(() -> {
-                        this.dataInspectionController.setData(selectedRawData.getName() + " - Gen. Time " + selectedRawData.getGenerationTime(),data);
+                        this.dataInspectionController.setData(selectedRawData.getName() + " - Gen. Time " + selectedRawData.getGenerationTime(),fdata);
                         // Bounds b = this.dataItemTableView.localToScreen(this.dataItemTableView.getBoundsInLocal());
                         this.dataInspectionPopup.setX(((MenuItem)event.getSource()).getParentPopup().getAnchorX());
                         this.dataInspectionPopup.setY(((MenuItem)event.getSource()).getParentPopup().getAnchorY());

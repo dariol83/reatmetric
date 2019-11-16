@@ -59,12 +59,12 @@ public class TestAlarmParameterDataService extends DataGenerationService<AlarmPa
     	
     	AlarmParameterData om = new AlarmParameterData(
                 new LongUniqueId(TestSystem.SEQUENCER.getAndIncrement()),
+                null,
+                0,
                 toGenerate.getName(),
                 toGenerate.getPath(),
                 AlarmState.values()[(int) Math.floor(Math.random() * AlarmState.values().length)],
                 100,
-                Instant.now(),
-                toGenerate.getPath().getParent(),
                 120,
                 Instant.now(),
                 Instant.now(),

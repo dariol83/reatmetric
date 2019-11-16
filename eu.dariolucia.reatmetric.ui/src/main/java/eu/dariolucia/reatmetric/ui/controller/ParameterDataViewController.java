@@ -178,7 +178,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getGenerationTime()));
         this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getReceptionTime()));
         this.alarmStateCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getAlarmState()));
-        this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getParent().asString()));
+        this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getPath().getParent().asString()));
     }
 
     protected Consumer<List<ParameterData>> buildIncomingDataDelegatorAction() {
@@ -273,7 +273,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(new ArrayList<>(this.path2wrapper.keySet()), , ));
+                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()),null,null,null));
                 updateDataItems(messages);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -306,7 +306,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_PAST, new ParameterDataFilter(Collections.singletonList(om.getPath()), , ));
+                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_PAST, new ParameterDataFilter(null, Collections.singletonList(om.getPath()),null,null,null ));
                 updateDataItems(messages);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -320,7 +320,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         markProgressBusy();
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<ParameterData> messages = doRetrieve(selectedTime, new ParameterDataFilter(new ArrayList<>(this.path2wrapper.keySet()), , ));
+                List<ParameterData> messages = doRetrieve(selectedTime, new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()),null,null,null));
                 updateDataItems(messages);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -400,7 +400,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
     
     private void startSubscription() {
-        ParameterDataFilter pdf = new ParameterDataFilter(new ArrayList<>(this.path2wrapper.keySet()), , );
+        ParameterDataFilter pdf = new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()),null,null ,null );
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 doServiceSubscribe(pdf);
@@ -644,12 +644,14 @@ public class ParameterDataViewController extends AbstractDisplayController imple
                     ParameterDataWrapper pdw = new ParameterDataWrapper(
                             new ParameterData(
                             		null,
-                                    null, systemEntity.getName(),
+                                    null,
+                                    0,
+                                    systemEntity.getName(),
                                     systemEntity.getPath(), 
                                     null, 
                                     null, 
                                     null,
-                                    Validity.UNKNOWN, AlarmState.UNKNOWN, systemEntity.getPath().getParent(),
+                                    Validity.UNKNOWN, AlarmState.UNKNOWN, null,
                                     null),
                             systemEntity.getPath()
                     );
@@ -677,12 +679,14 @@ public class ParameterDataViewController extends AbstractDisplayController imple
                 ParameterDataWrapper pdw = new ParameterDataWrapper(
                         new ParameterData(
                         		null,
-                                null, sep.getLastPathElement(),
+                                null,
+                                0,
+                                sep.getLastPathElement(),
                                 sep, 
                                 null, 
                                 null, 
                                 null,
-                                Validity.UNKNOWN, AlarmState.UNKNOWN, sep.getParent(),
+                                Validity.UNKNOWN, AlarmState.UNKNOWN, null,
                                 null),
                         sep
                 );

@@ -78,7 +78,7 @@ public class AlarmParameterDataViewController
 				o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().getLastNominalValue())));
 		this.lastNomValueTimeCol
 				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getLastNominalValueTime()));
-		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getParent().asString()));
+		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));
 
 		this.currentAlarmStateCol.setCellFactory(column -> {
 			return new TableCell<AlarmParameterData, AlarmState>() {
@@ -153,9 +153,9 @@ public class AlarmParameterDataViewController
 			// Get the first
 			AlarmParameterDataFilter filter = getCurrentFilter();
 			if (filter == null) {
-				filter = new AlarmParameterDataFilter(null, null);
+				filter = new AlarmParameterDataFilter(null, null,null);
 			}
-			AlarmParameterDataFilter newFilter = new AlarmParameterDataFilter(entities.get(0).getPath(),
+			AlarmParameterDataFilter newFilter = new AlarmParameterDataFilter(entities.get(0).getPath(), null,
 					filter.getAlarmStateList());
 			applyFilter(newFilter);
 			success = true;
