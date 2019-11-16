@@ -41,6 +41,8 @@ import javafx.scene.paint.Color;
 /**
  * FXML Controller class
  *
+ * FIXME: wrong assumption with InternaId (can change!), use ExternalId, to be fixed
+ *
  * @author dario
  */
 public class AlarmParameterDataViewController

@@ -68,6 +68,8 @@ import javafx.stage.Popup;
 /**
  * FXML Controller class
  *
+ * FIXME: wrong assumption with InternaId (can change!), use ExternalId, to be fixed
+ *
  * @author dario
  */
 public class ParameterDataViewController extends AbstractDisplayController implements IParameterDataSubscriber {

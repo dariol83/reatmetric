@@ -32,6 +32,8 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 /**
  *
+ * FIXME: wrong assumption with InternaId (can change!), use ExternalId, to be fixed
+ *
  * @author dario
  */
 public class TestAlarmParameterDataService extends DataGenerationService<AlarmParameterData, AlarmParameterDataFilter, IAlarmParameterDataSubscriber> implements IAlarmParameterDataProvisionService {
