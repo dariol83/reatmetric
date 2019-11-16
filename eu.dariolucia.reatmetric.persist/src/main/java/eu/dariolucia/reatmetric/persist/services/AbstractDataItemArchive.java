@@ -309,13 +309,33 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
      **************************************************************************************************/
 
     protected Timestamp toTimestamp(Instant t) {
-        Timestamp ts = new Timestamp(t.toEpochMilli());
-        ts.setNanos(t.getNano());
-        return ts;
+        return t == null ? null : Timestamp.from(t);
     }
 
     protected Instant toInstant(Timestamp genTime) {
-        return Instant.ofEpochSecond(genTime.getTime() / 1000, genTime.getNanos());
+        return genTime == null ? null : genTime.toInstant();
+    }
+
+    // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
+    protected Object toObject(Blob b) throws IOException, ClassNotFoundException, SQLException {
+        Object toReturn = null;
+        if(b != null) {
+            ObjectInputStream ois = new ObjectInputStream(b.getBinaryStream());
+            toReturn = ois.readObject();
+            ois.close();
+        }
+        return toReturn;
+    }
+
+    // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
+    protected Object[] toObjectArray(Blob b) throws IOException, ClassNotFoundException, SQLException {
+        Object[] toReturn = null;
+        if(b != null) {
+            ObjectInputStream ois = new ObjectInputStream(b.getBinaryStream());
+            toReturn = (Object[]) ois.readObject();
+            ois.close();
+        }
+        return toReturn;
     }
 
     // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available

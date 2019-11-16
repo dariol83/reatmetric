@@ -26,15 +26,21 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter imple
 	 */
 	private static final long serialVersionUID = -3013429180944834538L;
 
-	private final SystemEntityPath parentPath;  
-	
+	private final SystemEntityPath parentPath;
+
+    private final List<SystemEntityPath> parameterPathList;
+
     private final List<AlarmState> alarmStateList;
 
-    public AlarmParameterDataFilter(SystemEntityPath parentPath, List<AlarmState> alarmStateList) {
+    public AlarmParameterDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> pathList, List<AlarmState> alarmStateList) {
         this.parentPath = parentPath;
-        
+        if(pathList != null) {
+            this.parameterPathList = List.copyOf(pathList);
+        } else {
+            this.parameterPathList = null;
+        }
         if(alarmStateList != null) {
-            this.alarmStateList = new ArrayList<>(alarmStateList);
+            this.alarmStateList = List.copyOf(alarmStateList);
         } else {
             this.alarmStateList = null;
         }
@@ -43,51 +49,17 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter imple
     public SystemEntityPath getParentPath() {
         return parentPath;
     }
-    
+
+    public List<SystemEntityPath> getParameterPathList() {
+        return parameterPathList;
+    }
+
     public List<AlarmState> getAlarmStateList() {
-        if(alarmStateList == null) {
-            return null;
-        }
-        return new ArrayList<>(alarmStateList);
+        return alarmStateList;
     }
     
     @Override
     public boolean isClear() {
-        return this.parentPath == null && this.alarmStateList == null;
+        return this.parentPath == null && this.parameterPathList == null && this.alarmStateList == null;
     }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 19 * hash + Objects.hashCode(this.parentPath);
-        hash = 19 * hash + Objects.hashCode(this.alarmStateList);
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final AlarmParameterDataFilter other = (AlarmParameterDataFilter) obj;
-        if (!Objects.equals(this.parentPath, other.parentPath)) {
-            return false;
-        }
-        if (!Objects.equals(this.alarmStateList, other.alarmStateList)) {
-            return false;
-        }
-        return true;
-    }
-
-	@Override
-	public String toString() {
-		return "AlarmParameterDataFilter [parentPath=" + parentPath + ", alarmStateList=" + alarmStateList + "]";
-	}
-
 }

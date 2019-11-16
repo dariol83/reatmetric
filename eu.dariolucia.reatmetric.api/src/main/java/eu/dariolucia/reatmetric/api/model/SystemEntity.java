@@ -23,7 +23,7 @@ public final class SystemEntity extends UniqueItem implements Serializable {
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = 3185410564655416991L;
+	private static final long serialVersionUID = 1L;
 
 	private final SystemEntityPath path;
     

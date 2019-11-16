@@ -106,17 +106,14 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         String route = rs.getString(6);
         String source = rs.getString(7);
         Quality quality = Quality.values()[rs.getShort(8)];
-        Blob additionalData = rs.getBlob(9);
-        Object[] additionalDataArray = null;
-        if(additionalData != null) {
-            ObjectInputStream ois = new ObjectInputStream(additionalData.getBinaryStream());
-            additionalDataArray = (Object[]) ois.readObject();
-        }
+        Object[] additionalDataArray = toObjectArray(rs.getBlob(9));
         // retrieve Contents if present
         byte[] contents = null;
         if(usedFilter == null || usedFilter.isWithData()) {
             Blob blob = rs.getBlob(10);
-            contents = toByteArray(blob.getBinaryStream());
+            if(blob != null) {
+                contents = toByteArray(blob.getBinaryStream());
+            }
         }
         return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, contents, toInstant(receptionTime), additionalDataArray);
     }

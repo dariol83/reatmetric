@@ -22,7 +22,7 @@ public final class SystemEntityUpdate extends UniqueItem implements Serializable
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = -17050372263098762L;
+	private static final long serialVersionUID = 1L;
 
 	private final SystemEntity element;
     

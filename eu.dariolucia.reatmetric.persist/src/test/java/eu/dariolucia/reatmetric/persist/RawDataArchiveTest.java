@@ -11,10 +11,6 @@ import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.events.EventData;
-import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
-import eu.dariolucia.reatmetric.api.messages.Severity;
-import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
@@ -56,7 +52,7 @@ class RawDataArchiveTest {
             ArchiveFactory af = new ArchiveFactory();
             IArchive archive = af.buildArchive(tempLocation.toString());
             archive.connect();
-            IRawDataArchive rawDataArchive = archive.getRawDataArchive();
+            IRawDataArchive rawDataArchive = archive.getArchive(IRawDataArchive.class);
             Instant t = Instant.now();
             // store one raw data
             rawDataArchive.store(new RawData(new LongUniqueId(0), t, "nameAA1", "TCPacket", "Route1", "Source1", Quality.GOOD, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]));

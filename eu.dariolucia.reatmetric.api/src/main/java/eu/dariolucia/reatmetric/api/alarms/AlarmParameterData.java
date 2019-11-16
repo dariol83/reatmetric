@@ -24,7 +24,9 @@ public final class AlarmParameterData extends AbstractDataItem implements Serial
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 8068791311138022456L;
+	private static final long serialVersionUID = 1L;
+
+	private final int externalId;
 
 	private final String name;
 
@@ -36,22 +38,20 @@ public final class AlarmParameterData extends AbstractDataItem implements Serial
 
 	private final Instant receptionTime;
 
-	private final SystemEntityPath parent;
-
 	private final Object lastNominalValue;
 
 	private final Instant lastNominalValueTime;
 
-	public AlarmParameterData(IUniqueId internalId, String name, SystemEntityPath path, AlarmState currentAlarmState,
-			Object currentValue, Instant receptionTime, SystemEntityPath parent, Object lastNominalValue,
-			Instant lastNominalValueTime, Instant generationTime, Object[] additionalFields) {
+	public AlarmParameterData(IUniqueId internalId, Instant generationTime, int externalId, String name, SystemEntityPath path, AlarmState currentAlarmState,
+			Object currentValue, Object lastNominalValue,
+			Instant lastNominalValueTime, Instant receptionTime, Object[] additionalFields) {
 		super(internalId, generationTime, additionalFields);
 		this.name = name;
 		this.path = path;
 		this.currentAlarmState = currentAlarmState;
 		this.currentValue = currentValue;
 		this.receptionTime = receptionTime;
-		this.parent = parent;
+		this.externalId = externalId;
 		this.lastNominalValue = lastNominalValue;
 		this.lastNominalValueTime = lastNominalValueTime;
 	}
@@ -76,8 +76,8 @@ public final class AlarmParameterData extends AbstractDataItem implements Serial
 		return receptionTime;
 	}
 
-	public SystemEntityPath getParent() {
-		return parent;
+	public int getExternalId() {
+		return externalId;
 	}
 
 	public Object getLastNominalValue() {
@@ -91,6 +91,7 @@ public final class AlarmParameterData extends AbstractDataItem implements Serial
 	@Override
 	public int hashCode() {
 		int hash = 5;
+		hash = 59 * hash + Objects.hashCode(this.externalId);
 		hash = 59 * hash + Objects.hashCode(this.path);
 		hash = 59 * hash + Objects.hashCode(this.currentAlarmState);
 		hash = 59 * hash + Objects.hashCode(this.currentValue);
@@ -113,6 +114,9 @@ public final class AlarmParameterData extends AbstractDataItem implements Serial
 			return false;
 		}
 		final AlarmParameterData other = (AlarmParameterData) obj;
+		if (!Objects.equals(this.externalId, other.externalId)) {
+			return false;
+		}
 		if (!Objects.equals(this.path, other.path)) {
 			return false;
 		}
@@ -139,9 +143,15 @@ public final class AlarmParameterData extends AbstractDataItem implements Serial
 
 	@Override
 	public String toString() {
-		return "AlarmParameterData [name=" + name + ", path=" + path + ", currentAlarmState=" + currentAlarmState
-				+ ", currentValue=" + currentValue + ", receptionTime=" + receptionTime + ", parent=" + parent
-				+ ", lastNominalValue=" + lastNominalValue + ", lastNominalValueTime=" + lastNominalValueTime + "]";
+		return "AlarmParameterData{" +
+				"externalId=" + externalId +
+				", name='" + name + '\'' +
+				", path=" + path +
+				", currentAlarmState=" + currentAlarmState +
+				", currentValue=" + currentValue +
+				", receptionTime=" + receptionTime +
+				", lastNominalValue=" + lastNominalValue +
+				", lastNominalValueTime=" + lastNominalValueTime +
+				'}';
 	}
-
 }

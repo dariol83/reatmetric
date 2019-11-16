@@ -54,7 +54,7 @@ class OperationalMessageArchiveTest {
             ArchiveFactory af = new ArchiveFactory();
             IArchive archive = af.buildArchive(tempLocation.toString());
             archive.connect();
-            IOperationalMessageArchive messageArchive = archive.getOperationalMessageArchive();
+            IOperationalMessageArchive messageArchive = archive.getArchive(IOperationalMessageArchive.class);
             Instant t = Instant.now();
             // store one item
             messageArchive.store(new OperationalMessage(new LongUniqueId(0), t, "msgId1", "Text message", "Source1", Severity.ALARM, new Object[0]));
@@ -80,7 +80,7 @@ class OperationalMessageArchiveTest {
             // create a new connection and retrieve the data
             archive = af.buildArchive(tempLocation.toString());
             archive.connect();
-            messageArchive = archive.getOperationalMessageArchive();
+            messageArchive = archive.getArchive(IOperationalMessageArchive.class);
             // retrieve: expected two items
             messages = messageArchive.retrieve(t.minusMillis(200), 10, RetrievalDirection.TO_FUTURE, null);
             assertEquals(2, messages.size());

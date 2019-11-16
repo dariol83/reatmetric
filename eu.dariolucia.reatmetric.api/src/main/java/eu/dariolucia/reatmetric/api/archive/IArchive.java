@@ -21,13 +21,5 @@ public interface IArchive {
 
     void dispose() throws ArchiveException;
 
-    IOperationalMessageArchive getOperationalMessageArchive();
-
-    IEventDataArchive getEventDataArchive();
-
-    IRawDataArchive getRawDataArchive();
-
-    IParameterDataArchive getParameterDataArchive();
-
     <U extends IDataItemArchive<J,K>,J extends AbstractDataItem,K extends AbstractDataItemFilter> U getArchive(Class<U> clazz);
 }

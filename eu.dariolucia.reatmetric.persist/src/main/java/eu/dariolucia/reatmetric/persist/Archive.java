@@ -1,5 +1,6 @@
 package eu.dariolucia.reatmetric.persist;
 
+import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
@@ -9,10 +10,7 @@ import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
-import eu.dariolucia.reatmetric.persist.services.EventDataArchive;
-import eu.dariolucia.reatmetric.persist.services.OperationalMessageArchive;
-import eu.dariolucia.reatmetric.persist.services.ParameterDataArchive;
-import eu.dariolucia.reatmetric.persist.services.RawDataArchive;
+import eu.dariolucia.reatmetric.persist.services.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -66,6 +64,7 @@ public class Archive implements IArchive {
             registeredArchives.put(IEventDataArchive.class, new EventDataArchive(this));
             registeredArchives.put(IRawDataArchive.class, new RawDataArchive(this));
             registeredArchives.put(IParameterDataArchive.class, new ParameterDataArchive(this));
+            registeredArchives.put(IAlarmParameterDataArchive.class, new AlarmParameterDataArchive(this));
         } catch (SQLException e) {
             throw new ArchiveException(e);
         }
@@ -141,26 +140,6 @@ public class Archive implements IArchive {
                 LOG.log(Level.SEVERE, "Cannot dispose " + archive, e);
             }
         }
-    }
-
-    @Override
-    public IOperationalMessageArchive getOperationalMessageArchive() {
-        return (IOperationalMessageArchive) registeredArchives.get(IOperationalMessageArchive.class);
-    }
-
-    @Override
-    public IEventDataArchive getEventDataArchive() {
-        return (IEventDataArchive) registeredArchives.get(IEventDataArchive.class);
-    }
-
-    @Override
-    public IRawDataArchive getRawDataArchive() {
-        return (IRawDataArchive) registeredArchives.get(IRawDataArchive.class);
-    }
-
-    @Override
-    public IParameterDataArchive getParameterDataArchive() {
-        return (IParameterDataArchive) registeredArchives.get(IParameterDataArchive.class);
     }
 
     @Override

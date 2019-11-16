@@ -10,7 +10,6 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.sql.*;
 import java.time.Instant;
 import java.util.logging.Level;
@@ -75,7 +74,7 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
                 query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
             }
             if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
-                query.append("AND Type IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
             }
             if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
                 query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
@@ -106,12 +105,7 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
         String route = rs.getString(9);
         String source = rs.getString(10);
         Severity severity = Severity.values()[rs.getShort(11)];
-        Blob additionalData = rs.getBlob(12);
-        Object[] additionalDataArray = null;
-        if(additionalData != null) {
-            ObjectInputStream ois = new ObjectInputStream(additionalData.getBinaryStream());
-            additionalDataArray = (Object[]) ois.readObject();
-        }
+        Object[] additionalDataArray = toObjectArray(rs.getBlob(12));
 
         return new EventData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), qualifier, type, route, source, severity, toInstant(receptionTime), additionalDataArray);
     }

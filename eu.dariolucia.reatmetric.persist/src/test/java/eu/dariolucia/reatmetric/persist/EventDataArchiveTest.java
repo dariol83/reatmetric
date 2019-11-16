@@ -29,7 +29,6 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class EventDataArchiveTest {
@@ -52,7 +51,7 @@ class EventDataArchiveTest {
             ArchiveFactory af = new ArchiveFactory();
             IArchive archive = af.buildArchive(tempLocation.toString());
             archive.connect();
-            IEventDataArchive eventDataArchive = archive.getEventDataArchive();
+            IEventDataArchive eventDataArchive = archive.getArchive(IEventDataArchive.class);
             Instant t = Instant.now();
             // store one event data
             eventDataArchive.store(new EventData(new LongUniqueId(0), t, 12,"eventA", SystemEntityPath.fromString("root.eventA"), "q1", "type1", "routeA", "Source1", Severity.ALARM, t, new Object[0]));

@@ -9,7 +9,6 @@ import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.sql.*;
 import java.time.Instant;
 import java.util.logging.Level;
@@ -92,12 +91,7 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
         String messageText = rs.getString(4);
         String messageSource = rs.getString(5);
         Severity severity = Severity.values()[rs.getShort(6)];
-        Blob additionalData = rs.getBlob(7);
-        Object[] additionalDataArray = null;
-        if(additionalData != null) {
-            ObjectInputStream ois = new ObjectInputStream(additionalData.getBinaryStream());
-            additionalDataArray = (Object[]) ois.readObject();
-        }
+        Object[] additionalDataArray = toObjectArray(rs.getBlob(7));
 
         return new OperationalMessage(new LongUniqueId(uniqueId), toInstant(genTime), messageId, messageText, messageSource, severity, additionalDataArray);
     }

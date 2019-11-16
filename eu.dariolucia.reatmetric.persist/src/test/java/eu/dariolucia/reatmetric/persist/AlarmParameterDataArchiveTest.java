@@ -7,16 +7,15 @@
 
 package eu.dariolucia.reatmetric.persist;
 
+import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
+import eu.dariolucia.reatmetric.api.alarms.AlarmParameterDataFilter;
+import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.parameters.IParameterDataArchive;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
-import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
-import eu.dariolucia.reatmetric.api.parameters.Validity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +34,7 @@ import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ParameterDataArchiveTest {
+class AlarmParameterDataArchiveTest {
 
     @BeforeEach
     void setup() {
@@ -46,7 +45,7 @@ class ParameterDataArchiveTest {
     }
 
     @Test
-    void testParameterDataStoreRetrieve() throws IOException, ArchiveException, InterruptedException, SQLException {
+    void testAlarmParameterDataStoreRetrieve() throws IOException, ArchiveException, InterruptedException {
         Path tempLocation = Files.createTempDirectory("reatmetric_");
         // Now delete it
         Files.delete(tempLocation);
@@ -55,53 +54,53 @@ class ParameterDataArchiveTest {
             ArchiveFactory af = new ArchiveFactory();
             IArchive archive = af.buildArchive(tempLocation.toString());
             archive.connect();
-            IParameterDataArchive parameterDataArchive = archive.getArchive(IParameterDataArchive.class);
+            IAlarmParameterDataArchive alarmDataArchive = archive.getArchive(IAlarmParameterDataArchive.class);
             Instant t = Instant.ofEpochSecond(3600);
             // store some parameter data
-            parameterDataArchive.store(Arrays.asList(
-                    new ParameterData(new LongUniqueId(0), t.plusMillis(0), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), 1, 1, "R1", Validity.VALID, AlarmState.NOMINAL, t, new Object[0]),
-                    new ParameterData(new LongUniqueId(1), t.plusMillis(100), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), 2, 2, "R1", Validity.VALID, AlarmState.NOMINAL, t, new Object[0]),
-                    new ParameterData(new LongUniqueId(2), t.plusMillis(20), 1001, "PARAM2", SystemEntityPath.fromString("TEST.PARAM2"), 10, 10, "R1", Validity.VALID, AlarmState.NOMINAL, t, new Object[0]),
-                    new ParameterData(new LongUniqueId(3), t.plusMillis(100), 1001, "PARAM2", SystemEntityPath.fromString("TEST.PARAM2"), 11, 11, "R1", Validity.VALID, AlarmState.VIOLATED, t, new Object[0]),
-                    new ParameterData(new LongUniqueId(4), t.plusMillis(0), 1002, "PARAM3", SystemEntityPath.fromString("TEST.PARAM3"), 100, 100, "R1", Validity.VALID, AlarmState.NOMINAL, t, new Object[0]),
-                    new ParameterData(new LongUniqueId(5), t.plusMillis(300), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), 3, 3, "R1", Validity.VALID, AlarmState.ALARM, t, new Object[0])
+            alarmDataArchive.store(Arrays.asList(
+                    new AlarmParameterData(new LongUniqueId(0), t.plusMillis(0), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), AlarmState.ERROR, 1, null, null, t, new Object[0]),
+                    new AlarmParameterData(new LongUniqueId(1), t.plusMillis(100), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), AlarmState.NOMINAL, 0, 0, t.plusMillis(100), t, new Object[0]),
+                    new AlarmParameterData(new LongUniqueId(2), t.plusMillis(20), 1001, "PARAM2", SystemEntityPath.fromString("TEST.PARAM2"), AlarmState.WARNING, 11, null, null, t, new Object[0]),
+                    new AlarmParameterData(new LongUniqueId(3), t.plusMillis(100), 1001, "PARAM2", SystemEntityPath.fromString("TEST.PARAM2"), AlarmState.NOMINAL, 10, 10, t.plusMillis(100), t, new Object[0]),
+                    new AlarmParameterData(new LongUniqueId(4), t.plusMillis(0), 1002, "PARAM3", SystemEntityPath.fromString("TEST.PARAM3"),  AlarmState.WARNING, 11, null, null, t, new Object[0]),
+                    new AlarmParameterData(new LongUniqueId(5), t.plusMillis(300), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), AlarmState.ALARM, 2, 0, t.plusMillis(100), t, new Object[0])
             ));
             Thread.sleep(2000);
             // Retrieve at t + 250 ms
-            List<ParameterData> params = parameterDataArchive.retrieve(t.plusMillis(250), null);
+            List<AlarmParameterData> params = alarmDataArchive.retrieve(t.plusMillis(250), null);
             assertEquals(3, params.size());
-            for (ParameterData pd : params) {
+            for (AlarmParameterData pd : params) {
                 if (pd.getPath().asString().equals("TEST.PARAM1")) {
                     assertEquals(1L, pd.getInternalId().asLong());
-                    assertEquals(2, pd.getEngValue());
+                    assertEquals(AlarmState.NOMINAL, pd.getCurrentAlarmState());
                 }
             }
             // Retrieve 1 item
-            ParameterData d = parameterDataArchive.retrieve(new LongUniqueId(3));
+            AlarmParameterData d = alarmDataArchive.retrieve(new LongUniqueId(3));
             assertEquals("PARAM2", d.getName());
             // Retrieve no item
-            d = parameterDataArchive.retrieve(new LongUniqueId(31));
+            d = alarmDataArchive.retrieve(new LongUniqueId(31));
             assertNull(d);
-            // Retrieve at t + 250 ms in AlarmState ALARM or VIOLATED
-            params = parameterDataArchive.retrieve(t.plusMillis(250), new ParameterDataFilter(null, null, Arrays.asList("R1", "R2"), null, Arrays.asList(AlarmState.ALARM, AlarmState.VIOLATED)));
+            // Retrieve at t + 250 ms in AlarmState ALARM or WARNING
+            params = alarmDataArchive.retrieve(t.plusMillis(250), new AlarmParameterDataFilter(null, null, Arrays.asList(AlarmState.ALARM, AlarmState.WARNING)));
             assertEquals(1, params.size());
-            for (ParameterData pd : params) {
-                if (pd.getPath().asString().equals("TEST.PARAM2")) {
-                    assertEquals(3L, pd.getInternalId().asLong());
-                    assertEquals(AlarmState.VIOLATED, pd.getAlarmState());
+            for (AlarmParameterData pd : params) {
+                if (pd.getPath().asString().equals("TEST.PARAM3")) {
+                    assertEquals(4L, pd.getInternalId().asLong());
+                    assertEquals(AlarmState.WARNING, pd.getCurrentAlarmState());
                 } else {
-                    fail("PARAM2 expected");
+                    fail("PARAM3 expected");
                 }
             }
             // Retrieve all samples of PARAM1 and PARAM2
-            params = parameterDataArchive.retrieve(t, 20, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(SystemEntityPath.fromString("TEST"), Arrays.asList(
+            params = alarmDataArchive.retrieve(t, 20, RetrievalDirection.TO_FUTURE, new AlarmParameterDataFilter(SystemEntityPath.fromString("TEST"), Arrays.asList(
                     SystemEntityPath.fromString("TEST.PARAM1"),
                     SystemEntityPath.fromString("TEST.PARAM2")
-            ), Arrays.asList("R1", "R2"), Arrays.asList(Validity.ERROR, Validity.VALID), Arrays.asList(AlarmState.VIOLATED, AlarmState.ALARM, AlarmState.NOMINAL)));
+            ), Arrays.asList(AlarmState.VIOLATED, AlarmState.ALARM, AlarmState.NOMINAL)));
             int p1count = 0;
             int p2count = 0;
-            assertEquals(5, params.size());
-            for (ParameterData pd : params) {
+            assertEquals(3, params.size());
+            for (AlarmParameterData pd : params) {
                 switch (pd.getName()) {
                     case "PARAM1":
                         p1count++;
@@ -113,8 +112,8 @@ class ParameterDataArchiveTest {
                         fail("Unexpected parameter retrieved: " + pd.getName());
                 }
             }
-            assertEquals(3, p1count);
-            assertEquals(2, p2count);
+            assertEquals(2, p1count);
+            assertEquals(1, p2count);
             archive.dispose();
         } finally {
             // Delete all
