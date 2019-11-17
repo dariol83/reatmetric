@@ -22,7 +22,7 @@ public abstract class CheckDefinition {
     private String name;
 
     @XmlAttribute
-    private CheckSeverity severity;
+    private CheckSeverity severity = CheckSeverity.ALARM;
 
     @XmlAttribute
     private int numViolations = 1;

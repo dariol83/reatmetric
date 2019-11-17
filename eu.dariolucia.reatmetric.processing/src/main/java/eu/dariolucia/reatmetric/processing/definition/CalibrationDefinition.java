@@ -8,6 +8,7 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
+import eu.dariolucia.reatmetric.api.common.ValueTypeEnum;
 import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;
 
 import javax.xml.bind.annotation.XmlAccessType;

@@ -16,7 +16,7 @@ import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
 
-@XmlRootElement(name = "processing", namespace = "http://dariolucia.eu/monitoringcentre/core/model")
+@XmlRootElement(name = "processing", namespace = "http://dariolucia.eu/reatmetric/processing/definition")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ProcessingDefinition {
 

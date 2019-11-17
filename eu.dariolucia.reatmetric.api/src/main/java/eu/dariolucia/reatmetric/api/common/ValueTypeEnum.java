@@ -1,0 +1,107 @@
+/*
+ * Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
+ * All rights reserved.
+ *
+ * Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes shall be granted by the author in writing.
+ */
+
+
+package eu.dariolucia.reatmetric.api.common;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.function.Function;
+
+/**
+ * @author dario
+ */
+public enum ValueTypeEnum {
+    /**
+     * Boolean
+     */
+    BOOLEAN(1, Boolean.class, o -> Boolean.toString(o), Boolean::parseBoolean),
+    /**
+     * Enumerated value
+     */
+    ENUMERATED(2, Enum.class, Enum::name, null),
+    /**
+     * Unsigned integer
+     */
+    UNSIGNED_INTEGER(3, Long.class, String::valueOf, Long::parseLong),
+    /**
+     * Signed integer (two complement)
+     */
+    SIGNED_INTEGER(4, Long.class, String::valueOf, Long::parseLong),
+    /**
+     * Real number
+     */
+    REAL(5, Double.class, String::valueOf, Double::parseDouble),
+    /**
+     * Sequence of bits
+     */
+    BIT_STRING(6, BitString.class, ValueTypeEnum::toString, ValueTypeEnum::parseBitString),
+    /**
+     * Sequence of bytes (8 bits)
+     */
+    OCTET_STRING(7, byte[].class, ValueTypeEnum::toString, ValueTypeEnum::parseByteArray),
+    /**
+     * Sequence of ASCII characters
+     */
+    CHARACTER_STRING(8, String.class, Function.identity(), Function.identity()),
+    /**
+     * Absolute time
+     */
+    ABSOLUTE_TIME(9, Instant.class, ValueTypeEnum::toString, ValueTypeEnum::parseInstant),
+    /**
+     * Relative time
+     */
+    RELATIVE_TIME(10, Duration.class, ValueTypeEnum::toString, ValueTypeEnum::parseDuration),
+    /**
+     * Extension
+     */
+    EXTENSION(11, Object.class, null, null);
+
+    private int code;
+    private Class<?> assignedClass;
+    private Function<?, String> toString;
+    private Function<String, ?> toObject;
+
+    <T> ValueTypeEnum(int code, Class<T> assignedClass, Function<T, String> toString, Function<String, T> toObject) {
+        this.code = code;
+        this.assignedClass = assignedClass;
+        this.toString = toString;
+        this.toObject = toObject;
+    }
+
+    /**
+     * This method returns the code linked to the enumeration literal.
+     *
+     * @return the code
+     */
+    public int getCode() {
+        return code;
+    }
+
+    /**
+     * This method returns the class that can used for the type identified by the enumeration literal.
+     *
+     * @return the class
+     */
+    public Class<?> getAssignedClass() {
+        return assignedClass;
+    }
+
+    /**
+     * This function maps the provided code to the corresponding enumeration literal.
+     *
+     * @param code the code to map
+     * @return the corresponding literal
+     * @throws IllegalArgumentException if no literal corresponds to the provided code
+     */
+    public static ValueTypeEnum fromCode(int code) {
+        if(code <= 0 || code >= 12) {
+            throw new IllegalArgumentException("Value type code " + code + " not supported");
+        }
+        return ValueTypeEnum.values()[code - 1];
+    }
+}

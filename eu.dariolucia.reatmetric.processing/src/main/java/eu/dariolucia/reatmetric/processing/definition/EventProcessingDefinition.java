@@ -18,10 +18,7 @@ public class EventProcessingDefinition {
 
     @XmlID
     @XmlAttribute(required = true)
-    private String id;
-
-    @XmlAttribute(required = true)
-    private String name;
+    private int id;
 
     @XmlAttribute
     private String description = "";
@@ -35,28 +32,19 @@ public class EventProcessingDefinition {
     public EventProcessingDefinition() {
     }
 
-    public EventProcessingDefinition(String id, String name, String description, String location, EventSeverity severity) {
+    public EventProcessingDefinition(int id, String description, String location, EventSeverity severity) {
         this.id = id;
-        this.name = name;
         this.description = description;
         this.location = location;
         this.severity = severity;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getDescription() {

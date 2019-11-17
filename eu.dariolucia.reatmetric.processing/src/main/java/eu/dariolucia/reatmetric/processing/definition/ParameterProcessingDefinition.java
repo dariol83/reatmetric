@@ -8,9 +8,10 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.ccsds.encdec.definition.DataTypeEnum;
+import eu.dariolucia.reatmetric.api.common.ValueTypeEnum;
 
 import javax.xml.bind.annotation.*;
+import java.util.LinkedList;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -18,24 +19,21 @@ public class ParameterProcessingDefinition {
 
     @XmlID
     @XmlAttribute(required = true)
-    private String id;
-
-    @XmlAttribute(required = true)
-    private String name;
-
-    @XmlAttribute
-    private String description = "";
+    private int id;
 
     @XmlAttribute(required = true)
     private String location;
 
+    @XmlAttribute
+    private String description = "";
+
     @XmlAttribute(name = "raw_type",required = true)
-    private DataTypeEnum rawType;
+    private ValueTypeEnum rawType;
 
     @XmlAttribute(name = "eng_type", required = true)
-    private DataTypeEnum engineeringType;
+    private ValueTypeEnum engineeringType;
 
-    @XmlAttribute
+    @XmlAttribute(name = "eng_unit", required = false)
     private String unit;
 
     @XmlElement
@@ -60,17 +58,17 @@ public class ParameterProcessingDefinition {
             @XmlElement(name="expression",type=ExpressionCheck.class),
             @XmlElement(name="external",type=ExternalCheck.class),
     })
-    private List<CheckDefinition> checks;
+    private List<CheckDefinition> checks = new LinkedList<>();
 
     @XmlElement(name = "expression")
     private ExpressionDefinition expression;
 
     public ParameterProcessingDefinition() {
+        // For deserialisation
     }
 
-    public ParameterProcessingDefinition(String id, String name, String description, String location, DataTypeEnum rawType, DataTypeEnum engineeringType, String unit, ValidityDefinition validity, CalibrationDefinition calibration, List<CheckDefinition> checks, ExpressionDefinition expression) {
+    public ParameterProcessingDefinition(int id, String description, String location, ValueTypeEnum rawType, ValueTypeEnum engineeringType, String unit, ValidityDefinition validity, CalibrationDefinition calibration, List<CheckDefinition> checks, ExpressionDefinition expression) {
         this.id = id;
-        this.name = name;
         this.description = description;
         this.location = location;
         this.rawType = rawType;
@@ -82,20 +80,12 @@ public class ParameterProcessingDefinition {
         this.expression = expression;
     }
 
-    public String getId() {
+    public int getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(int id) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getDescription() {
@@ -114,19 +104,19 @@ public class ParameterProcessingDefinition {
         this.location = location;
     }
 
-    public DataTypeEnum getRawType() {
+    public ValueTypeEnum getRawType() {
         return rawType;
     }
 
-    public void setRawType(DataTypeEnum rawType) {
+    public void setRawType(ValueTypeEnum rawType) {
         this.rawType = rawType;
     }
 
-    public DataTypeEnum getEngineeringType() {
+    public ValueTypeEnum getEngineeringType() {
         return engineeringType;
     }
 
-    public void setEngineeringType(DataTypeEnum engineeringType) {
+    public void setEngineeringType(ValueTypeEnum engineeringType) {
         this.engineeringType = engineeringType;
     }
 

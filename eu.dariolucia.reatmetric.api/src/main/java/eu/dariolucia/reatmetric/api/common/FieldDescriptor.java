@@ -18,7 +18,7 @@ public final class FieldDescriptor implements Serializable {
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = -1718926415678429625L;
+	private static final long serialVersionUID = 1L;
 
 	private final String name;
     

@@ -9,6 +9,7 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.ccsds.encdec.definition.DataTypeEnum;
+import eu.dariolucia.reatmetric.api.common.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;
 
@@ -22,7 +23,7 @@ import java.util.List;
 public class ExpectedCheck extends CheckDefinition {
 
     @XmlAttribute(required = true)
-    private DataTypeEnum type;
+    private ValueTypeEnum type;
 
     @XmlElement(name = "value", required = true)
     private List<String> expectedValues;
@@ -30,17 +31,17 @@ public class ExpectedCheck extends CheckDefinition {
     public ExpectedCheck() {
     }
 
-    public ExpectedCheck(String name, CheckSeverity severity, int numViolations, DataTypeEnum type, List<String> expectedValues) {
+    public ExpectedCheck(String name, CheckSeverity severity, int numViolations, ValueTypeEnum type, List<String> expectedValues) {
         super(name, severity, numViolations);
         this.type = type;
         this.expectedValues = expectedValues;
     }
 
-    public DataTypeEnum getType() {
+    public ValueTypeEnum getType() {
         return type;
     }
 
-    public void setType(DataTypeEnum type) {
+    public void setType(ValueTypeEnum type) {
         this.type = type;
     }
 
