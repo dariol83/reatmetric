@@ -22,7 +22,14 @@ public interface ISystemModelProvisionService {
     
     public SystemEntity getRoot();
     
-    public List<SystemEntity> getChildren(SystemEntityPath se);
+    public List<SystemEntity> getContainedEntities(SystemEntityPath se);
     
     public SystemEntity getSystemEntityAt(SystemEntityPath path);
+
+    public SystemEntity getSystemEntityOf(int externalId);
+
+    public int getExternalIdOf(SystemEntityPath path);
+
+    public SystemEntityPath getPathOf(int externalId);
+
 }

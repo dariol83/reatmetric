@@ -15,17 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ParameterProcessingDefinition {
-
-    @XmlID
-    @XmlAttribute(required = true)
-    private int id;
-
-    @XmlAttribute(required = true)
-    private String location;
-
-    @XmlAttribute
-    private String description = "";
+public class ParameterProcessingDefinition extends AbstractProcessingDefinition {
 
     @XmlAttribute(name = "raw_type",required = true)
     private ValueTypeEnum rawType;
@@ -33,8 +23,8 @@ public class ParameterProcessingDefinition {
     @XmlAttribute(name = "eng_type", required = true)
     private ValueTypeEnum engineeringType;
 
-    @XmlAttribute(name = "eng_unit", required = false)
-    private String unit;
+    @XmlAttribute(name = "eng_unit")
+    private String unit = "";
 
     @XmlElement
     private ValidityDefinition validity;
@@ -64,13 +54,11 @@ public class ParameterProcessingDefinition {
     private ExpressionDefinition expression;
 
     public ParameterProcessingDefinition() {
-        // For deserialisation
+        super();
     }
 
     public ParameterProcessingDefinition(int id, String description, String location, ValueTypeEnum rawType, ValueTypeEnum engineeringType, String unit, ValidityDefinition validity, CalibrationDefinition calibration, List<CheckDefinition> checks, ExpressionDefinition expression) {
-        this.id = id;
-        this.description = description;
-        this.location = location;
+        super(id, description, location);
         this.rawType = rawType;
         this.engineeringType = engineeringType;
         this.unit = unit;
@@ -78,30 +66,6 @@ public class ParameterProcessingDefinition {
         this.calibration = calibration;
         this.checks = checks;
         this.expression = expression;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
     }
 
     public ValueTypeEnum getRawType() {

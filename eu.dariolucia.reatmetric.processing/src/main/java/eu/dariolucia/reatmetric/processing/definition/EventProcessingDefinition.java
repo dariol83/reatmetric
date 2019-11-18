@@ -8,59 +8,25 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlID;
+import javax.xml.bind.annotation.*;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class EventProcessingDefinition {
-
-    @XmlID
-    @XmlAttribute(required = true)
-    private int id;
-
-    @XmlAttribute
-    private String description = "";
-
-    @XmlAttribute(required = true)
-    private String location;
+public class EventProcessingDefinition extends AbstractProcessingDefinition {
 
     @XmlAttribute
     private EventSeverity severity = EventSeverity.INFO;
 
+    @XmlElement(name = "expression")
+    private ExpressionDefinition expression;
+
     public EventProcessingDefinition() {
+        super();
     }
 
-    public EventProcessingDefinition(int id, String description, String location, EventSeverity severity) {
-        this.id = id;
-        this.description = description;
-        this.location = location;
+    public EventProcessingDefinition(int id, String description, String location, EventSeverity severity, ExpressionDefinition expression) {
+        super(id, description, location);
         this.severity = severity;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
+        this.expression = expression;
     }
 
     public EventSeverity getSeverity() {
@@ -69,5 +35,13 @@ public class EventProcessingDefinition {
 
     public void setSeverity(EventSeverity severity) {
         this.severity = severity;
+    }
+
+    public ExpressionDefinition getExpression() {
+        return expression;
+    }
+
+    public void setExpression(ExpressionDefinition expression) {
+        this.expression = expression;
     }
 }

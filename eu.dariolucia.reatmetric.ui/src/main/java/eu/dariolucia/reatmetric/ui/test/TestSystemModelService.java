@@ -59,7 +59,7 @@ public class TestSystemModelService implements ISystemModelProvisionService {
     }
 
     @Override
-    public List<SystemEntity> getChildren(SystemEntityPath se) {
+    public List<SystemEntity> getContainedEntities(SystemEntityPath se) {
         return this.path2children.get(se);
     }
 

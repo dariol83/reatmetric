@@ -6,40 +6,39 @@
  * shall be granted by the author in writing.
  */
 
-package eu.dariolucia.reatmetric.processing;
+package eu.dariolucia.reatmetric.processing.input;
 
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 import java.time.Instant;
 import java.util.Objects;
 
-public final class EventOccurrence {
+public final class EventOccurrence extends AbstractInputDataItem {
 
-    public static EventOccurrence of(SystemEntityPath id) {
+    public static EventOccurrence of(int id) {
         return new EventOccurrence(id, null, null, null, null, null);
     }
 
-    public static EventOccurrence of(SystemEntityPath id, String qualifier, String type) {
+    public static EventOccurrence of(int id, String qualifier, String type) {
         return new EventOccurrence(id, null, null, null, qualifier, type);
     }
 
-    public static EventOccurrence of(SystemEntityPath id, Instant generationTime, Instant receptionTime, String qualifier, String type) {
+    public static EventOccurrence of(int id, Instant generationTime, Instant receptionTime, String qualifier, String type) {
         return new EventOccurrence(id, generationTime, receptionTime, null, qualifier, type);
     }
 
-    public static EventOccurrence of(SystemEntityPath id, Instant generationTime, Instant receptionTime, IUniqueId container, String qualifier, String type) {
+    public static EventOccurrence of(int id, Instant generationTime, Instant receptionTime, IUniqueId container, String qualifier, String type) {
         return new EventOccurrence(id, generationTime, receptionTime, container, qualifier, type);
     }
 
-    private final SystemEntityPath id;
+    private final int id;
     private final Instant generationTime;
     private final Instant receptionTime;
     private final String qualifier;
     private final String type;
     private final IUniqueId container;
 
-    private EventOccurrence(SystemEntityPath id, Instant generationTime, Instant receptionTime, IUniqueId container, String qualifier, String type) {
+    private EventOccurrence(int id, Instant generationTime, Instant receptionTime, IUniqueId container, String qualifier, String type) {
         this.id = id;
         this.generationTime = generationTime;
         this.receptionTime = receptionTime;
@@ -48,7 +47,7 @@ public final class EventOccurrence {
         this.container = container;
     }
 
-    public SystemEntityPath getId() {
+    public int getId() {
         return id;
     }
 
@@ -77,7 +76,7 @@ public final class EventOccurrence {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         EventOccurrence that = (EventOccurrence) o;
-        return id.equals(that.id) &&
+        return Objects.equals(this.id, that.id) &&
                 Objects.equals(generationTime, that.generationTime) &&
                 Objects.equals(receptionTime, that.receptionTime) &&
                 Objects.equals(qualifier, that.qualifier) &&

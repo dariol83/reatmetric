@@ -12,6 +12,6 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 
 public interface IParameterResolver {
 
-    ParameterData resolve(String parameterId);
+    ParameterData resolve(int parameterExternalId);
 
 }

@@ -6,35 +6,35 @@
  * shall be granted by the author in writing.
  */
 
-package eu.dariolucia.reatmetric.processing;
+package eu.dariolucia.reatmetric.processing.input;
 
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 import java.time.Instant;
 import java.util.Objects;
 
-public final class ParameterSample {
+public final class ParameterSample extends AbstractInputDataItem {
 
-    public static final ParameterSample of(SystemEntityPath id, Object value) {
-        return new ParameterSample(id, null, null, null, value);
+    public static final ParameterSample of(int id, Object value) {
+        return new ParameterSample(id, null, null, null, value, null);
     }
 
-    public static final ParameterSample of(SystemEntityPath id, Instant generationTime, Instant receptionTime, Object value) {
-        return new ParameterSample(id, generationTime, receptionTime, null, value);
+    public static final ParameterSample of(int id, Instant generationTime, Instant receptionTime, Object value) {
+        return new ParameterSample(id, generationTime, receptionTime, null, value, null);
     }
 
-    public static final ParameterSample of(SystemEntityPath id, Instant generationTime, Instant receptionTime, IUniqueId container, Object value) {
-        return new ParameterSample(id, generationTime, receptionTime, container, value);
+    public static final ParameterSample of(int id, Instant generationTime, Instant receptionTime, IUniqueId container, Object value, String route) {
+        return new ParameterSample(id, generationTime, receptionTime, container, value, route);
     }
 
-    private final SystemEntityPath id;
+    private final int id;
     private final Instant generationTime;
     private final Instant receptionTime;
     private final Object value;
-    private final IUniqueId container;
+    private final IUniqueId parameterContainerId;
+    private final String route;
 
-    private ParameterSample(SystemEntityPath id, Instant generationTime, Instant receptionTime, IUniqueId container, Object value) {
+    private ParameterSample(int id, Instant generationTime, Instant receptionTime, IUniqueId parameterContainerId, Object value, String route) {
         this.id = id;
         if(generationTime == null) {
             generationTime = Instant.now();
@@ -45,10 +45,11 @@ public final class ParameterSample {
         }
         this.receptionTime = receptionTime;
         this.value = value;
-        this.container = container;
+        this.parameterContainerId = parameterContainerId;
+        this.route = route;
     }
 
-    public SystemEntityPath getId() {
+    public int getId() {
         return id;
     }
 
@@ -64,8 +65,12 @@ public final class ParameterSample {
         return value;
     }
 
-    public IUniqueId getContainer() {
-        return container;
+    public IUniqueId getParameterContainerId() {
+        return parameterContainerId;
+    }
+
+    public String getRoute() {
+        return route;
     }
 
     @Override
@@ -73,16 +78,17 @@ public final class ParameterSample {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ParameterSample that = (ParameterSample) o;
-        return id.equals(that.id) &&
+        return Objects.equals(this.id, that.id) &&
                 generationTime.equals(that.generationTime) &&
                 receptionTime.equals(that.receptionTime) &&
                 Objects.equals(value, that.value) &&
-                Objects.equals(container, that.container);
+                Objects.equals(route, that.route) &&
+                Objects.equals(parameterContainerId, that.parameterContainerId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, generationTime, receptionTime, value, container);
+        return Objects.hash(id, generationTime, receptionTime, value, route, parameterContainerId);
     }
 
     @Override
@@ -92,7 +98,8 @@ public final class ParameterSample {
                 ", generationTime=" + generationTime +
                 ", receptionTime=" + receptionTime +
                 ", value=" + value +
-                ", container=" + container +
+                ", route=" + route +
+                ", container=" + parameterContainerId +
                 '}';
     }
 }

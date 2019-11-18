@@ -8,18 +8,22 @@
 
 package eu.dariolucia.reatmetric.processing;
 
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
+import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
+import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
 import java.util.List;
 
-public interface IProcessingModel {
+public interface IProcessingModel extends ISystemModelProvisionService {
 
     void injectParameters(List<ParameterSample> sampleList);
 
     void raiseEvent(EventOccurrence event, List<ParameterSample> attachedParameters);
 
-    int startAction();
+    IUniqueId startAction(); // TODO
 
     void enable(SystemEntityPath path, boolean recursive);
 

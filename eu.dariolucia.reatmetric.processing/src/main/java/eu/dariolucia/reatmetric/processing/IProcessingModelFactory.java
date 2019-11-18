@@ -9,11 +9,13 @@
 package eu.dariolucia.reatmetric.processing;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
-import java.util.List;
+import java.util.Map;
 
-public interface IProcessingModelOutput {
+public interface IProcessingModelFactory {
 
-    void notifyUpdate(List<AbstractDataItem> items);
+    void setCommandHandler(String commandType, IActionHandler handler);
 
+    IProcessingModel build(ProcessingDefinition definitionDatabase, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters);
 }

@@ -6,7 +6,7 @@
  * shall be granted by the author in writing.
  */
 
-package eu.dariolucia.reatmetric.processing.impl;
+package eu.dariolucia.reatmetric.processing.impl.processors;
 
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -18,11 +18,11 @@ import java.time.Instant;
 
 public class ParameterDataBuilder {
 
-    private IUniqueId id;
+    private IUniqueId updateId;
+
+    private int id;
 
     private Instant generationTime;
-
-    private String name;
 
     private SystemEntityPath path;
 
@@ -30,24 +30,24 @@ public class ParameterDataBuilder {
 
     private Object sourceValue;
 
-    private Instant receptionTime;
+    private String route;
 
-    private SystemEntityPath parent;
+    private Instant receptionTime;
 
     private Validity validity = Validity.UNKNOWN;
 
     private AlarmState alarmState = AlarmState.UNKNOWN;
 
-    public void setId(IUniqueId id) {
+    public void setUpdateId(IUniqueId updateId) {
+        this.updateId = updateId;
+    }
+
+    public void setId(int id) {
         this.id = id;
     }
 
     public void setGenerationTime(Instant generationTime) {
         this.generationTime = generationTime;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public void setPath(SystemEntityPath path) {
@@ -58,16 +58,16 @@ public class ParameterDataBuilder {
         this.engValue = engValue;
     }
 
+    public void setRoute(String route) {
+        this.route = route;
+    }
+
     public void setSourceValue(Object sourceValue) {
         this.sourceValue = sourceValue;
     }
 
     public void setReceptionTime(Instant receptionTime) {
         this.receptionTime = receptionTime;
-    }
-
-    public void setParent(SystemEntityPath parent) {
-        this.parent = parent;
     }
 
     public void setValidity(Validity validity) {
@@ -79,6 +79,6 @@ public class ParameterDataBuilder {
     }
 
     public ParameterData build() {
-        return new ParameterData(id, generationTime, name, path, engValue, sourceValue, receptionTime, validity, alarmState, parent, new Object[0]);
+        return new ParameterData(updateId, generationTime, id, path.getLastPathElement(), path, engValue, sourceValue, route, validity, alarmState, receptionTime, new Object[0]);
     }
 }

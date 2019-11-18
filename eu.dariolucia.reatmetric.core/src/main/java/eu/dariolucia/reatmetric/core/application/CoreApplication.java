@@ -20,7 +20,7 @@ import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
 import eu.dariolucia.reatmetric.core.message.IMessageProcessor;
-import eu.dariolucia.reatmetric.processing.impl.ParameterProcessor;
+import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.core.tmtc.ITmTcProcessor;
 
 import java.util.List;
@@ -39,7 +39,7 @@ public class CoreApplication implements IServiceFactory {
 
     private ISystemModelProvisionService systemModelService;
 
-    private ParameterProcessor parameterDataService;
+    private ProcessingModelImpl parameterDataService;
 
     private IEventDataProvisionService eventDataService;
 

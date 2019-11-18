@@ -9,12 +9,13 @@
 package eu.dariolucia.reatmetric.processing;
 
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 import java.util.Map;
 
-public interface ICommandHandler {
+public interface IActionHandler {
 
-    IUniqueId startCommand(SystemEntityPath command, List<CommandArgument> argumentList, Map<String, String> properties);
+    void executeAction(IUniqueId actionOccurrenceId, SystemEntity actionEntity, List<ActionArgument> argumentList, Map<String, Object> properties);
 
 }
