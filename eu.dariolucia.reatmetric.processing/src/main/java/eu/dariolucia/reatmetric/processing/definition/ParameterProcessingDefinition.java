@@ -29,14 +29,13 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlElement(name = "validity")
     private ExpressionDefinition validity;
 
-    @XmlElementWrapper(name = "calibration")
     @XmlElements({
-            @XmlElement(name="xy",type=XYCalibration.class),
-            @XmlElement(name="poly",type=PolyCalibration.class),
-            @XmlElement(name="log",type=LogCalibration.class),
-            @XmlElement(name="enum",type=EnumCalibration.class),
-            @XmlElement(name="expression",type=ExpressionCalibration.class),
-            @XmlElement(name="external",type=ExternalCalibration.class),
+            @XmlElement(name="calib_xy",type=XYCalibration.class),
+            @XmlElement(name="calib_poly",type=PolyCalibration.class),
+            @XmlElement(name="calib_log",type=LogCalibration.class),
+            @XmlElement(name="calib_enum",type=EnumCalibration.class),
+            @XmlElement(name="calib_expression",type=ExpressionCalibration.class),
+            @XmlElement(name="calib_external",type=ExternalCalibration.class),
     })
     private CalibrationDefinition calibration;
 

@@ -12,13 +12,15 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlID;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public abstract class AbstractProcessingDefinition {
 
     @XmlID
     @XmlAttribute(required = true)
-    private int id;
+    @XmlJavaTypeAdapter(IntToStringAdapter.class)
+    private Integer id;
 
     @XmlAttribute(required = true)
     private String location;

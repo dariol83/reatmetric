@@ -8,8 +8,6 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.ccsds.encdec.definition.ParameterDefinition;
-
 import javax.xml.bind.annotation.*;
 
 @XmlAccessorType(XmlAccessType.FIELD)

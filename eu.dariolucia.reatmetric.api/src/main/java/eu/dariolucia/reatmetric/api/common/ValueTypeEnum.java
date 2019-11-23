@@ -39,11 +39,11 @@ public enum ValueTypeEnum {
     /**
      * Sequence of bits
      */
-    BIT_STRING(6, BitString.class, BitString::toString, BitString::parseBitString),
+    BIT_STRING(6, BitString.class, BitString::toString, BitString::parse),
     /**
      * Sequence of bytes (8 bits)
      */
-    OCTET_STRING(7, byte[].class, StringUtil::toString, StringUtil::parseByteArray),
+    OCTET_STRING(7, byte[].class, StringUtil::toHexDump, StringUtil::toByteArray),
     /**
      * Sequence of ASCII characters
      */
@@ -51,11 +51,11 @@ public enum ValueTypeEnum {
     /**
      * Absolute time
      */
-    ABSOLUTE_TIME(9, Instant.class, TimeUtil::toString, TimeUtil::parseInstant),
+    ABSOLUTE_TIME(9, Instant.class, Instant::toString, Instant::parse),
     /**
      * Relative time
      */
-    RELATIVE_TIME(10, Duration.class, TimeUtil::toString, TimeUtil::parseDuration),
+    RELATIVE_TIME(10, Duration.class, Duration::toString, Duration::parse),
     /**
      * Extension
      */
@@ -66,7 +66,7 @@ public enum ValueTypeEnum {
     private Function<?, String> toString;
     private Function<String, ?> toObject;
 
-    <T> ValueTypeEnum(int code, Class<T> assignedClass, Function<T, String> toString, Function<String, T> toObject) {
+    <T extends Object> ValueTypeEnum(int code, Class<T> assignedClass, Function<T, String> toString, Function<String, T> toObject) {
         this.code = code;
         this.assignedClass = assignedClass;
         this.toString = toString;
@@ -89,6 +89,14 @@ public enum ValueTypeEnum {
      */
     public Class<?> getAssignedClass() {
         return assignedClass;
+    }
+
+    public <T> T parse(String s) {
+        return (T) toObject.apply(s);
+    }
+
+    public String toString(Object object) {
+        return ((Function<Object, String>)toString).apply(object);
     }
 
     /**

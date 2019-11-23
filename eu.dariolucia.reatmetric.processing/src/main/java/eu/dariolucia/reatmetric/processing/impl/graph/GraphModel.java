@@ -83,8 +83,6 @@ public class GraphModel {
             }
             navigate(next, new HashSet<>(), alreadyProcessed, result);
         }
-        // Reverse the list
-        Collections.reverse(result);
         // Iterate and set the orderingId
         for(int i = 0; i < result.size(); ++i) {
             EntityVertex ev = result.get(i);
@@ -112,7 +110,7 @@ public class GraphModel {
         result.add(next);
         alreadyProcessed.add(next);
         // Remove yourself from the alreadyInPath
-        alreadyProcessed.remove(next);
+        alreadyInPath.remove(next);
     }
 
     private void addParentDependencies(AbstractProcessingDefinition originatingChild) {

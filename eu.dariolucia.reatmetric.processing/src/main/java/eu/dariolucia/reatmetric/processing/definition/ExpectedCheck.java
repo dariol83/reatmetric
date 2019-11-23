@@ -8,7 +8,6 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.ccsds.encdec.definition.DataTypeEnum;
 import eu.dariolucia.reatmetric.api.common.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;

@@ -1,6 +1,7 @@
 package eu.dariolucia.reatmetric.processing.impl.processors;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
@@ -26,7 +27,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
 
     protected volatile T state;
 
-    protected volatile boolean enabled;
+    protected volatile boolean enabled = true;
 
     protected final ProcessingModelImpl processor;
 
@@ -43,6 +44,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         this.systemEntityBuilder = new SystemEntityBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()), type);
         this.systemEntityBuilder.setStatus(Status.ENABLED);
         this.systemEntityBuilder.setAlarmState(AlarmState.UNKNOWN);
+        this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
     }
 
     protected final SystemEntityPath getPath() {
