@@ -58,6 +58,7 @@ public class GraphModel {
                     addEdges(param, ((ExpressionCheck) cd).getDefinition());
                 }
             }
+            // TODO: check if this is really needed: if kept, there is zero parallelisation, since the root node will be always blocked
             addParentDependencies(param);
         }
         for(EventProcessingDefinition event : definition.getEventDefinitions()) {
@@ -132,9 +133,9 @@ public class GraphModel {
     }
 
     private void addEdges(AbstractProcessingDefinition owner, ExpressionDefinition expression) throws ProcessingModelException {
-        // owner is affected, if any of the bindings in the expression definition is updated
-        // relationship is 'depends on' -> owner must be evaluated if one successor changes
-        // in other words: if an entity changes, all predecessors (direct and indirect) must be evaluated
+        // owner is affected, if any of the bindings in the expression definition is updated;
+        // relationship is 'depends on' -> owner must be evaluated if one successor changes;
+        // in other words: if an entity changes, all predecessors (direct and indirect) must be evaluated.
         EntityVertex source = getVertexOf(owner.getId());
         for(SymbolDefinition sd : expression.getSymbols()) {
             EntityVertex destination = getVertexOf(sd.getReference().getId());
@@ -161,20 +162,30 @@ public class GraphModel {
         // Add the containers, recursively
         location = location.getParent();
         while(location != null) {
+            ContainerProcessor processor;
+            // If processor for the path was not created, create it
             if(!pathMap.containsKey(location)) {
+                // Create a new processor
                 int containerId = generateContainerId(location);
-                ContainerProcessor processor = new ContainerProcessor(new ContainerProcessor.Definition(containerId, "", location.asString()), processingModel);
+                processor = new ContainerProcessor(new ContainerProcessor.Definition(containerId, "", location.asString()), processingModel);
                 EntityVertex c = new EntityVertex(processor);
                 pathMap.put(location, c);
                 idMap.put(containerId, c);
+            } else {
+                // Get the existing processor: if it is not a ContainerProcessor then there is a bug
+                processor = (ContainerProcessor) pathMap.get(location).getProcessor();
             }
-            // TODO add child processor to container, remember the previous!
+            // Add child processor to container, remember the previous!
+            processor.addChildProcessor(definitionProcessor);
+            definitionProcessor = processor;
+            // Move one level up
             location = location.getParent();
         }
     }
 
     private int generateContainerId(SystemEntityPath location) {
         String locationString = location.asString();
+        // The id for container is negative, and it is set equals to the hashcode of the path (negated if needed)
         int derivedId = -Math.abs(locationString.hashCode());
         while(idMap.containsKey(derivedId)) {
             // Add a space to the locationString at the end, and keep going
@@ -196,7 +207,7 @@ public class GraphModel {
             // Add the affected processors for evaluation
             List<AbstractModelOperation> updateOperationsForProvidedOperation = entityVertex.getUpdateOperationsForAffectedEntities();
             for(AbstractModelOperation updateOperation : updateOperationsForProvidedOperation) {
-                if(!alreadyPresent.contains(updateOperation.getSystemEntityId())) { // FIXME: for containers this does not work
+                if(!alreadyPresent.contains(updateOperation.getSystemEntityId())) {
                     alreadyPresent.add(updateOperation.getSystemEntityId());
                     extendedOperations.add(updateOperation);
                 }

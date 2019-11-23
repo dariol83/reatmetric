@@ -24,17 +24,18 @@ import eu.dariolucia.reatmetric.processing.impl.operations.ParameterSampleProces
 import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ProcessingModelImpl implements IParameterResolver, IProcessingModel {
 
     private static final Logger LOG = Logger.getLogger(ProcessingModelImpl.class.getName());
-
-    public static final String SOURCE_ID = "Processor Model";
 
     private final List<ISystemModelSubscriber> listeners = new CopyOnWriteArrayList<>();
 
@@ -46,7 +47,7 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
 
     private final GraphModel graphModel;
 
-    private final BlockingQueue<ProcessingTask> updateTaskQueue = new ArrayBlockingQueue<ProcessingTask>();
+    private final BlockingQueue<ProcessingTask> updateTaskQueue = new ArrayBlockingQueue<ProcessingTask>(1000); // TODO: parametric
 
     private final ExecutorService taskProcessors = Executors.newFixedThreadPool(2); // TODO: parametric
 
@@ -81,14 +82,20 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
     }
 
     private void doDispatch() {
-        // Get the task
-        ProcessingTask toProcess = this.updateTaskQueue.take();
-        // Prepare the task
-        toProcess.prepareTask(graphModel);
-        // Check if the working set allows the processing of the items (blocking call)
-        this.workingSet.add(toProcess.getAffectedItems());
-        // Ready to be processed, submit the task
-        this.taskProcessors.submit(toProcess);
+        while(!dispatcher.isShutdown()) {
+            try {
+                // Get the task
+                ProcessingTask toProcess = this.updateTaskQueue.take();
+                // Prepare the task
+                toProcess.prepareTask(graphModel);
+                // Check if the working set allows the processing of the items (blocking call)
+                this.workingSet.add(toProcess.getAffectedItems());
+                // Ready to be processed, submit the task
+                this.taskProcessors.submit(toProcess);
+            } catch(Exception e) {
+                LOG.log(Level.SEVERE, "Exception when dispatching processing tasks: " + e.getMessage(), e);
+            }
+        }
     }
 
     public long getNextId(Class<? extends AbstractDataItem> type) {
@@ -113,22 +120,25 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
     @Override
     public void raiseEvent(EventOccurrence event, List<ParameterSample> attachedParameters) {
         // TODO
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IUniqueId startAction() {
         // TODO
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void enable(SystemEntityPath path, boolean recursive) {
         // TODO
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void disable(SystemEntityPath path, boolean recursive) {
         // TODO
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -142,42 +152,42 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
 
     @Override
     public void subscribe(ISystemModelSubscriber subscriber) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void unsubscribe(ISystemModelSubscriber subscriber) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public SystemEntity getRoot() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public List<SystemEntity> getContainedEntities(SystemEntityPath se) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public SystemEntity getSystemEntityAt(SystemEntityPath path) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public SystemEntity getSystemEntityOf(int externalId) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int getExternalIdOf(SystemEntityPath path) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public SystemEntityPath getPathOf(int externalId) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     /*
@@ -186,6 +196,6 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
 
     @Override
     public ParameterData resolve(int parameterExternalId) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }

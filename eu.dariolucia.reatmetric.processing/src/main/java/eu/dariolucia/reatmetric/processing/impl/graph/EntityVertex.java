@@ -4,7 +4,10 @@ import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperatio
 import eu.dariolucia.reatmetric.processing.impl.operations.SystemEntityUpdateOperation;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 public class EntityVertex {
 
@@ -36,10 +39,6 @@ public class EntityVertex {
 
     public AbstractModelOperation getUpdateOperation() {
         return updateOperation;
-    }
-
-    public int getOrderingId() {
-        return orderingId;
     }
 
     public void setOrderingId(int orderingId) {
@@ -85,4 +84,7 @@ public class EntityVertex {
         return processor == obj;
     }
 
+    public AbstractSystemEntityProcessor getProcessor() {
+        return processor;
+    }
 }

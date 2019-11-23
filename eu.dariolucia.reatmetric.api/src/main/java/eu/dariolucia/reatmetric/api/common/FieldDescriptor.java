@@ -22,11 +22,11 @@ public final class FieldDescriptor implements Serializable {
 
 	private final String name;
     
-    private final FieldType type;
+    private final ValueTypeEnum type;
     
     private final FieldFilterStrategy filterStrategy;
 
-    public FieldDescriptor(String name, FieldType type, FieldFilterStrategy filterStrategy) {
+    public FieldDescriptor(String name, ValueTypeEnum type, FieldFilterStrategy filterStrategy) {
         this.name = name;
         this.type = type;
         this.filterStrategy = filterStrategy;
@@ -36,7 +36,7 @@ public final class FieldDescriptor implements Serializable {
         return name;
     }
 
-    public FieldType getType() {
+    public ValueTypeEnum getType() {
         return type;
     }
 

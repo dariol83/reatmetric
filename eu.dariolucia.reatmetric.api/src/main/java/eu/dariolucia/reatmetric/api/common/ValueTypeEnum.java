@@ -39,11 +39,11 @@ public enum ValueTypeEnum {
     /**
      * Sequence of bits
      */
-    BIT_STRING(6, BitString.class, ValueTypeEnum::toString, ValueTypeEnum::parseBitString),
+    BIT_STRING(6, BitString.class, BitString::toString, BitString::parseBitString),
     /**
      * Sequence of bytes (8 bits)
      */
-    OCTET_STRING(7, byte[].class, ValueTypeEnum::toString, ValueTypeEnum::parseByteArray),
+    OCTET_STRING(7, byte[].class, StringUtil::toString, StringUtil::parseByteArray),
     /**
      * Sequence of ASCII characters
      */
@@ -51,11 +51,11 @@ public enum ValueTypeEnum {
     /**
      * Absolute time
      */
-    ABSOLUTE_TIME(9, Instant.class, ValueTypeEnum::toString, ValueTypeEnum::parseInstant),
+    ABSOLUTE_TIME(9, Instant.class, TimeUtil::toString, TimeUtil::parseInstant),
     /**
      * Relative time
      */
-    RELATIVE_TIME(10, Duration.class, ValueTypeEnum::toString, ValueTypeEnum::parseDuration),
+    RELATIVE_TIME(10, Duration.class, TimeUtil::toString, TimeUtil::parseDuration),
     /**
      * Extension
      */
@@ -104,4 +104,6 @@ public enum ValueTypeEnum {
         }
         return ValueTypeEnum.values()[code - 1];
     }
+
+
 }

@@ -31,30 +31,27 @@ public class ProcessingTask implements Callable<List<AbstractDataItem>> {
         // and order by topological sort
         operations = graphModel.finalizeOperationList(operations);
         // Build the set of affected items by ID
-        for(AbstractModelOperation amo : operations) {
+        for (AbstractModelOperation amo : operations) {
             this.affectedItems.add(amo.getSystemEntityId());
         }
     }
 
     @Override
     public List<AbstractDataItem> call() {
-        try {
-            List<AbstractDataItem> result = new ArrayList<>(operations.size());
-            for (AbstractModelOperation amo : operations) {
-                try {
-                    result.add(amo.get());
-                } catch (Exception e) {
-                    // You need to survive here!
-                    LOG.log(Level.SEVERE, "Cannot process model operation " + amo + " due to: " + e.getMessage(), e);
-                }
+        List<AbstractDataItem> result = new ArrayList<>(operations.size());
+        for (AbstractModelOperation amo : operations) {
+            try {
+                amo.get().addToList(result);
+            } catch (Exception e) {
+                // You need to survive here!
+                LOG.log(Level.SEVERE, "Cannot process model operation " + amo + " due to: " + e.getMessage(), e);
             }
-            // Notify
-            output.accept(result);
-            // Return the result
-            return result;
-        } finally {
-            workingSet.remove(affectedItems);
         }
+        workingSet.remove(affectedItems);
+        // Notify
+        output.accept(result);
+        // Return the result
+        return result;
     }
 
     Set<Integer> getAffectedItems() {

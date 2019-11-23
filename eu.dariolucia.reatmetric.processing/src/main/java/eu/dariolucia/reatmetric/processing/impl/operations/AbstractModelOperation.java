@@ -1,11 +1,13 @@
 package eu.dariolucia.reatmetric.processing.impl.operations;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 
 import java.util.function.Supplier;
 // TODO: we might need to have a field of type Instant to support supersampled parameters
-public abstract class AbstractModelOperation<T extends AbstractDataItem, K extends AbstractSystemEntityProcessor> implements Supplier<T> {
+public abstract class AbstractModelOperation<T extends AbstractDataItem, K extends AbstractSystemEntityProcessor> implements Supplier<Pair<T, SystemEntity>> {
 
     private int orderingId;
 
@@ -20,11 +22,11 @@ public abstract class AbstractModelOperation<T extends AbstractDataItem, K exten
     }
 
     @Override
-    public T get() {
+    public Pair<T, SystemEntity> get() {
         return doProcess();
     }
 
-    protected abstract T doProcess();
+    protected abstract Pair<T, SystemEntity> doProcess();
 
     public abstract int getSystemEntityId();
 
