@@ -5,6 +5,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
+import eu.dariolucia.reatmetric.processing.impl.processors.builders.SystemEntityBuilder;
 import eu.dariolucia.reatmetric.processing.input.AbstractInputDataItem;
 
 /**

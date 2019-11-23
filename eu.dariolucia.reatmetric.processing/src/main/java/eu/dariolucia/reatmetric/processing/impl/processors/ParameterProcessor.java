@@ -16,6 +16,7 @@ import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.processing.definition.CheckDefinition;
 import eu.dariolucia.reatmetric.processing.definition.ParameterProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
+import eu.dariolucia.reatmetric.processing.impl.processors.builders.ParameterDataBuilder;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
 import java.util.Map;
