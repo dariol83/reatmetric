@@ -28,15 +28,12 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     private static final Logger LOG = Logger.getLogger(ParameterProcessor.class.getName());
 
-    private final ProcessingModelImpl processor;
-
     private final Map<String, AtomicInteger> checkViolationNumber = new TreeMap<>();
 
     private final ParameterDataBuilder builder;
 
     public ParameterProcessor(ParameterProcessingDefinition definition, ProcessingModelImpl processor) {
-        super(definition);
-        this.processor = processor;
+        super(definition, processor);
         for(CheckDefinition cd : definition.getChecks()) {
             this.checkViolationNumber.put(cd.getName(), new AtomicInteger(0));
         }

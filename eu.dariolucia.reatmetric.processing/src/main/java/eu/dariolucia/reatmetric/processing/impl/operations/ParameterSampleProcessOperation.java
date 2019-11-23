@@ -4,23 +4,21 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.processing.impl.processors.ParameterProcessor;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
-public class ParameterSampleProcessOperation extends AbstractModelOperation<ParameterData> {
+public class ParameterSampleProcessOperation extends AbstractModelOperation<ParameterData, ParameterProcessor> {
 
     private final ParameterSample input;
-    private final ParameterProcessor processor;
 
-    public ParameterSampleProcessOperation(ParameterSample input, ParameterProcessor processor) {
+    public ParameterSampleProcessOperation(ParameterSample input) {
         this.input = input;
-        this.processor = processor;
     }
 
     @Override
     protected ParameterData doProcess() {
-        return processor.process(input);
+        return getProcessor().process(input);
     }
 
     @Override
     public int getSystemEntityId() {
-        return processor.getId();
+        return input.getId();
     }
 }

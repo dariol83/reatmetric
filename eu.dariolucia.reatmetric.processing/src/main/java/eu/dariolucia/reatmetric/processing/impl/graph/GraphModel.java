@@ -1,13 +1,15 @@
 package eu.dariolucia.reatmetric.processing.impl.graph;
 
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
+import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
+import eu.dariolucia.reatmetric.processing.impl.processors.ContainerProcessor;
 import eu.dariolucia.reatmetric.processing.impl.processors.ParameterProcessor;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
 
 public class GraphModel {
@@ -24,7 +26,7 @@ public class GraphModel {
         this.processingModel = processingModel;
     }
 
-    public void build() {
+    public void build() throws ProcessingModelException {
         // Navigate the model and add all the system entity nodes:
         // - parameters
         // - events
@@ -32,9 +34,11 @@ public class GraphModel {
         for(ParameterProcessingDefinition param : definition.getParameterDefinitions()) {
             addEntities(param, () -> new ParameterProcessor(param, processingModel));
         }
-        for(EventProcessingDefinition event : definition.getEventDefinitions()) {
-            addEntities(event, () -> new EventProcessor(event, processingModel));
-        }
+        // TODO
+        // for(EventProcessingDefinition event : definition.getEventDefinitions()) {
+        //     addEntities(event, () -> new EventProcessor(event, processingModel));
+        // }
+
         // Now add the links for:
         // - expressions (source value computation, validity, expression calibration, expression checks)
         // - parent/child relationship (error propagation)
@@ -62,6 +66,89 @@ public class GraphModel {
             }
             addParentDependencies(event);
         }
+
+        // Topological sort now and assignment of the orderingIds
+        computeTopologicalOrdering();
+    }
+
+    private void computeTopologicalOrdering() throws ProcessingModelException {
+        List<EntityVertex> result = new LinkedList<>();
+        Set<EntityVertex> alreadyProcessed = new HashSet<>();
+        List<EntityVertex> toProcess = new LinkedList<>(this.idMap.values());
+        while(!toProcess.isEmpty()) {
+            EntityVertex next = toProcess.remove(0);
+            if(alreadyProcessed.contains(next)) {
+                continue;
+            }
+            navigate(next, new HashSet<>(), alreadyProcessed, result);
+        }
+        // Reverse the list
+        Collections.reverse(result);
+        // Iterate and set the orderingId
+        for(int i = 0; i < result.size(); ++i) {
+            EntityVertex ev = result.get(i);
+            ev.setOrderingId(i);
+        }
+        // Done
+    }
+
+    private void navigate(EntityVertex next, Set<EntityVertex> alreadyInPath, Set<EntityVertex> alreadyProcessed, List<EntityVertex> result) throws ProcessingModelException {
+        // Cycle-check
+        if(alreadyInPath.contains(next)) {
+            throw new ProcessingModelException("Cycle detected containing definition " + next.getSystemEntityId());
+        }
+        // If already processed, nothing to do
+        if(alreadyProcessed.contains(next)) {
+            return;
+        }
+        // Add yourself to the alreadyInPath
+        alreadyInPath.add(next);
+        // Navigate all your children recursively
+        for(DependencyEdge de : next.getSuccessors()) {
+            navigate(de.getDestination(), alreadyInPath, alreadyProcessed, result);
+        }
+        // Then add yourself to the result list
+        result.add(next);
+        alreadyProcessed.add(next);
+        // Remove yourself from the alreadyInPath
+        alreadyProcessed.remove(next);
+    }
+
+    private void addParentDependencies(AbstractProcessingDefinition originatingChild) {
+        String location = originatingChild.getLocation();
+        SystemEntityPath path = SystemEntityPath.fromString(location);
+        EntityVertex child = getVertexOf(originatingChild.getId());
+        while((path = path.getParent()) != null) {
+            EntityVertex ev = getVertexOf(path);
+            // ev depends on child (I know, this looks ugly)
+            new DependencyEdge(ev, child);
+            // For the next cycle, ev becomes the child
+            child = ev;
+        }
+    }
+
+    private EntityVertex getVertexOf(SystemEntityPath path) {
+        return this.pathMap.get(path);
+    }
+
+    private void addEdges(AbstractProcessingDefinition owner, ExpressionDefinition expression) throws ProcessingModelException {
+        // owner is affected, if any of the bindings in the expression definition is updated
+        // relationship is 'depends on' -> owner must be evaluated if one successor changes
+        // in other words: if an entity changes, all predecessors (direct and indirect) must be evaluated
+        EntityVertex source = getVertexOf(owner.getId());
+        for(SymbolDefinition sd : expression.getSymbols()) {
+            EntityVertex destination = getVertexOf(sd.getReference().getId());
+            if(source == null || destination == null) {
+                // Definition error
+                throw new ProcessingModelException("In definition " + owner.getLocation() + ", referenced item " + sd.getReference().getLocation() + " not found");
+            }
+            // Auto-add to source and destination
+            new DependencyEdge(source, destination);
+        }
+    }
+
+    private EntityVertex getVertexOf(int id) {
+        return idMap.get(id);
     }
 
     private void addEntities(AbstractProcessingDefinition param, Supplier<AbstractSystemEntityProcessor> processorBuilder) {
@@ -74,9 +161,52 @@ public class GraphModel {
         // Add the containers, recursively
         location = location.getParent();
         while(location != null) {
-            EntityVertex c = new EntityVertex(new ContainerProcessor(null, processingModel));
-            pathMap.putIfAbsent(location, c);
+            if(!pathMap.containsKey(location)) {
+                int containerId = generateContainerId(location);
+                ContainerProcessor processor = new ContainerProcessor(new ContainerProcessor.Definition(containerId, "", location.asString()), processingModel);
+                EntityVertex c = new EntityVertex(processor);
+                pathMap.put(location, c);
+                idMap.put(containerId, c);
+            }
+            // TODO add child processor to container, remember the previous!
             location = location.getParent();
         }
+    }
+
+    private int generateContainerId(SystemEntityPath location) {
+        String locationString = location.asString();
+        int derivedId = -Math.abs(locationString.hashCode());
+        while(idMap.containsKey(derivedId)) {
+            // Add a space to the locationString at the end, and keep going
+            locationString += " ";
+            derivedId = -Math.abs(locationString.hashCode());
+        }
+        return derivedId;
+    }
+
+    public List<AbstractModelOperation> finalizeOperationList(List<AbstractModelOperation> operations) {
+        Set<Integer> alreadyPresent = new HashSet<>();
+        List<AbstractModelOperation> extendedOperations = new LinkedList<>();
+        // Add the entity IDs to the alreadyPresent set
+        operations.forEach(o -> alreadyPresent.add(o.getSystemEntityId()));
+        for(AbstractModelOperation operation : operations) {
+            EntityVertex entityVertex = getVertexOf(operation.getSystemEntityId());
+            // Set the correct processors to the provided operations
+            entityVertex.assignProcessor(operation);
+            // Add the affected processors for evaluation
+            List<AbstractModelOperation> updateOperationsForProvidedOperation = entityVertex.getUpdateOperationsForAffectedEntities();
+            for(AbstractModelOperation updateOperation : updateOperationsForProvidedOperation) {
+                if(!alreadyPresent.contains(updateOperation.getSystemEntityId())) { // FIXME: for containers this does not work
+                    alreadyPresent.add(updateOperation.getSystemEntityId());
+                    extendedOperations.add(updateOperation);
+                }
+            }
+        }
+        // Now add to extendedOperations all the operations provided in the list
+        extendedOperations.addAll(operations);
+        // Re-order according to topological sort
+        extendedOperations.sort(Comparator.comparingInt(AbstractModelOperation::getOrderingId));
+        // Return
+        return extendedOperations;
     }
 }

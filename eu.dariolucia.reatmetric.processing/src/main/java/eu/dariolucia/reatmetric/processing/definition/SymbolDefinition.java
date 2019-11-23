@@ -20,12 +20,12 @@ public class SymbolDefinition {
 
     @XmlIDREF
     @XmlAttribute(name = "reference", required = true)
-    private ParameterDefinition reference;
+    private AbstractProcessingDefinition reference;
 
     public SymbolDefinition() {
     }
 
-    public SymbolDefinition(String name, ParameterDefinition reference) {
+    public SymbolDefinition(String name, AbstractProcessingDefinition reference) {
         this.name = name;
         this.reference = reference;
     }
@@ -38,11 +38,11 @@ public class SymbolDefinition {
         this.name = name;
     }
 
-    public ParameterDefinition getReference() {
+    public AbstractProcessingDefinition getReference() {
         return reference;
     }
 
-    public void setReference(ParameterDefinition reference) {
+    public void setReference(AbstractProcessingDefinition reference) {
         this.reference = reference;
     }
 }

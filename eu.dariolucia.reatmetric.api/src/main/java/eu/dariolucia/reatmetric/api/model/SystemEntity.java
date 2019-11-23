@@ -11,6 +11,7 @@ package eu.dariolucia.reatmetric.api.model;
 import java.io.Serializable;
 import java.util.Objects;
 
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.UniqueItem;
 
@@ -18,30 +19,30 @@ import eu.dariolucia.reatmetric.api.common.UniqueItem;
  *
  * @author dario
  */
-public final class SystemEntity extends UniqueItem implements Serializable {
+public final class SystemEntity extends AbstractDataItem implements Serializable {
     
     /**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 
+	private final int externalId;
+
 	private final SystemEntityPath path;
-    
-    private final String name;
-    
+
     private final Status status;
     
     private final AlarmState alarmState;
     
     private final SystemEntityType type;
 
-    public SystemEntity(IUniqueId internalId, SystemEntityPath path, String name, Status status, AlarmState alarmState, SystemEntityType type) {
-        super(internalId, null);
+    public SystemEntity(IUniqueId internalId, int externalId, SystemEntityPath path, Status status, AlarmState alarmState, SystemEntityType type) {
+        super(internalId, null, null);
         this.path = path;
-        this.name = name;
         this.status = status;
         this.alarmState = alarmState;
         this.type = type;
+        this.externalId = externalId;
     }
 
     public SystemEntityPath getPath() {
@@ -49,7 +50,7 @@ public final class SystemEntity extends UniqueItem implements Serializable {
     }
 
     public String getName() {
-        return name;
+        return path.getLastPathElement();
     }
 
     public Status getStatus() {
@@ -67,9 +68,8 @@ public final class SystemEntity extends UniqueItem implements Serializable {
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 19 * hash + Objects.hashCode(this.internalId);
+        hash = 19 * hash + Objects.hashCode(this.externalId);
         hash = 19 * hash + Objects.hashCode(this.path);
-        hash = 19 * hash + Objects.hashCode(this.name);
         hash = 19 * hash + Objects.hashCode(this.status);
         hash = 19 * hash + Objects.hashCode(this.alarmState);
         hash = 19 * hash + Objects.hashCode(this.type);
@@ -88,13 +88,10 @@ public final class SystemEntity extends UniqueItem implements Serializable {
             return false;
         }
         final SystemEntity other = (SystemEntity) obj;
-        if (!Objects.equals(this.internalId, other.internalId)) {
+        if (!Objects.equals(this.externalId, other.externalId)) {
             return false;
         }
         if (!Objects.equals(this.path, other.path)) {
-            return false;
-        }
-        if (!Objects.equals(this.name, other.name)) {
             return false;
         }
         if (this.status != other.status) {
@@ -108,7 +105,7 @@ public final class SystemEntity extends UniqueItem implements Serializable {
 
     @Override
     public String toString() {
-        return "SystemEntity{" + "path=" + path + ", name=" + name + ", status=" + status + ", alarmState=" + alarmState + ", type=" + type + '}';
+        return "SystemEntity{" + "path=" + path + ", status=" + status + ", alarmState=" + alarmState + ", type=" + type + '}';
     }
     
 }

@@ -2,6 +2,7 @@ package eu.dariolucia.reatmetric.processing.impl.processors;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
+import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.input.AbstractInputDataItem;
 
 /**
@@ -18,14 +19,17 @@ import eu.dariolucia.reatmetric.processing.input.AbstractInputDataItem;
  */
 public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessingDefinition, T extends AbstractDataItem, K extends AbstractInputDataItem> {
 
+    protected final ProcessingModelImpl processor;
+
     protected volatile T state;
 
     protected volatile boolean enabled;
 
     protected final J definition;
 
-    protected AbstractSystemEntityProcessor(J definition) {
+    protected AbstractSystemEntityProcessor(J definition, ProcessingModelImpl processor) {
         this.definition = definition;
+        this.processor = processor;
     }
 
     public final J getDefinition() {
@@ -48,7 +52,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
 
     public abstract T evaluate();
 
-    public final int getId() {
+    public int getSystemEntityId() {
         return definition.getId();
     }
 
