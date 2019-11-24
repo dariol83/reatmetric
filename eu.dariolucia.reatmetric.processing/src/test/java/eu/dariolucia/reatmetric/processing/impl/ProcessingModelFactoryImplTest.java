@@ -29,7 +29,8 @@ class ProcessingModelFactoryImplTest {
 
         ParameterSample p1 = ParameterSample.of(101, true);
         ParameterSample p2 = ParameterSample.of(102, AlarmState.UNKNOWN);
-        model.injectParameters(Arrays.asList(p1, p2));
+        ParameterSample p3 = ParameterSample.of(101, false);
+        model.injectParameters(Arrays.asList(p1, p2, p3));
 
         Thread.sleep(1000);
     }

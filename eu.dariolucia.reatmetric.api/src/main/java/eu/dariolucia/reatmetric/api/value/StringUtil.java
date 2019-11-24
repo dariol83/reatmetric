@@ -5,7 +5,7 @@
  * Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes shall be granted by the author in writing.
  */
 
-package eu.dariolucia.reatmetric.api.common;
+package eu.dariolucia.reatmetric.api.value;
 
 /**
  * This class contains a set of utility functions to work with String objects.

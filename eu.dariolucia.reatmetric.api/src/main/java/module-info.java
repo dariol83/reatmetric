@@ -13,4 +13,5 @@ open module eu.dariolucia.reatmetric.api {
     exports eu.dariolucia.reatmetric.api.rawdata;
     exports eu.dariolucia.reatmetric.api.archive;
     exports eu.dariolucia.reatmetric.api.archive.exceptions;
+    exports eu.dariolucia.reatmetric.api.value;
 }

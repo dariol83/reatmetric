@@ -27,7 +27,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
 
     protected volatile T state;
 
-    protected volatile boolean enabled = true;
+    protected volatile Status entityStatus;
 
     protected final ProcessingModelImpl processor;
 
@@ -41,8 +41,9 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         this.definition = definition;
         this.processor = processor;
         this.path = SystemEntityPath.fromString(definition.getLocation());
+        this.entityStatus = Status.ENABLED;
         this.systemEntityBuilder = new SystemEntityBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()), type);
-        this.systemEntityBuilder.setStatus(Status.ENABLED);
+        this.systemEntityBuilder.setStatus(entityStatus);
         this.systemEntityBuilder.setAlarmState(AlarmState.UNKNOWN);
         this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
     }
@@ -55,16 +56,18 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         return definition;
     }
 
-    public final boolean isEnabled() {
-        return enabled;
+    public final Status getEntityStatus() {
+        return entityStatus;
     }
 
-    public final void enable() {
-        this.enabled = true;
+    public final Pair<T, SystemEntity> enable() {
+        this.entityStatus = Status.ENABLED;
+        return evaluate();
     }
 
-    public final void disable() {
-        this.enabled = false;
+    public final Pair<T, SystemEntity> disable() {
+        this.entityStatus = Status.DISABLED;
+        return evaluate();
     }
 
     public abstract Pair<T, SystemEntity> process(K input);

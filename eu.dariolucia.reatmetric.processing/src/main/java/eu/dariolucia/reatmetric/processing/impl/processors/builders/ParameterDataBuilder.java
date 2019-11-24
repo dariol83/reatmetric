@@ -15,16 +15,14 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 
 import java.time.Instant;
+import java.util.Objects;
 
-public class ParameterDataBuilder {
-
-    private IUniqueId updateId;
-
-    private int id;
+/**
+ * This helper class is used to build a {@link ParameterData} instance.
+ */
+public class ParameterDataBuilder extends AbstractDataItemBuilder<ParameterData> {
 
     private Instant generationTime;
-
-    private SystemEntityPath path;
 
     private Object engValue;
 
@@ -38,47 +36,61 @@ public class ParameterDataBuilder {
 
     private AlarmState alarmState = AlarmState.UNKNOWN;
 
-    public void setUpdateId(IUniqueId updateId) {
-        this.updateId = updateId;
-    }
-
-    public void setId(int id) {
-        this.id = id;
+    public ParameterDataBuilder(int id, SystemEntityPath path) {
+        super(id, path);
     }
 
     public void setGenerationTime(Instant generationTime) {
-        this.generationTime = generationTime;
-    }
-
-    public void setPath(SystemEntityPath path) {
-        this.path = path;
+        if (!Objects.equals(this.generationTime, generationTime)) {
+            this.generationTime = generationTime;
+            this.changedSinceLastBuild = true;
+        }
     }
 
     public void setEngValue(Object engValue) {
-        this.engValue = engValue;
+        if (!Objects.equals(this.engValue, engValue)) {
+            this.engValue = engValue;
+            this.changedSinceLastBuild = true;
+        }
     }
 
     public void setRoute(String route) {
-        this.route = route;
+        if (!Objects.equals(this.route, route)) {
+            this.route = route;
+            this.changedSinceLastBuild = true;
+        }
     }
 
     public void setSourceValue(Object sourceValue) {
-        this.sourceValue = sourceValue;
+        if (!Objects.equals(this.sourceValue, sourceValue)) {
+            this.sourceValue = sourceValue;
+            this.changedSinceLastBuild = true;
+        }
     }
 
     public void setReceptionTime(Instant receptionTime) {
-        this.receptionTime = receptionTime;
+        if (!Objects.equals(this.receptionTime, receptionTime)) {
+            this.receptionTime = receptionTime;
+            this.changedSinceLastBuild = true;
+        }
     }
 
     public void setValidity(Validity validity) {
-        this.validity = validity;
+        if (!Objects.equals(this.validity, validity)) {
+            this.validity = validity;
+            this.changedSinceLastBuild = true;
+        }
     }
 
     public void setAlarmState(AlarmState alarmState) {
-        this.alarmState = alarmState;
+        if (!Objects.equals(this.alarmState, alarmState)) {
+            this.alarmState = alarmState;
+            this.changedSinceLastBuild = true;
+        }
     }
 
-    public ParameterData build() {
-        return new ParameterData(updateId, generationTime, id, path.getLastPathElement(), path, engValue, sourceValue, route, validity, alarmState, receptionTime, new Object[0]);
+    @Override
+    public ParameterData build(IUniqueId updateId) {
+        return new ParameterData(updateId, generationTime, id, path.getLastPathElement(), path, engValue, sourceValue, route, validity, alarmState, receptionTime, null);
     }
 }

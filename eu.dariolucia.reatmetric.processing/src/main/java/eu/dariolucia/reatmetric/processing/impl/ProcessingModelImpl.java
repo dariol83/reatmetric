@@ -130,6 +130,11 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
     }
 
     @Override
+    public void reportActionProgress() {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+    @Override
     public void enable(SystemEntityPath path, boolean recursive) {
         // TODO
         throw new UnsupportedOperationException();

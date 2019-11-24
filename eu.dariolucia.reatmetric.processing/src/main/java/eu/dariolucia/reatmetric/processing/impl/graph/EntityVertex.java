@@ -11,7 +11,7 @@ import java.util.Set;
 
 public class EntityVertex {
 
-    private volatile List<AbstractModelOperation> updateOperationsForAffectedEntities = null;
+    private List<AbstractModelOperation> updateOperationsForAffectedEntities = null;
     private int orderingId;
 
     private final AbstractSystemEntityProcessor processor;

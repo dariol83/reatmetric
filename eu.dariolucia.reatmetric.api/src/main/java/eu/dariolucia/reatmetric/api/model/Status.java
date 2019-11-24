@@ -15,7 +15,6 @@ package eu.dariolucia.reatmetric.api.model;
 public enum Status {
     ENABLED,
     DISABLED,
-    ABSENT,
     UNKNOWN,
     NOT_APPLICABLE
 }

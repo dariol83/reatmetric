@@ -33,8 +33,8 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
 
     @Override
     public Pair<SystemEntity, SystemEntity> process(VoidInputDataItem input) {
-        this.systemEntityBuilder.setStatus(isEnabled() ? Status.ENABLED : Status.DISABLED);
-        this.systemEntityBuilder.setAlarmState(isEnabled() ? deriveAlarmState() : AlarmState.NOT_CHECKED);
+        this.systemEntityBuilder.setStatus(entityStatus);
+        this.systemEntityBuilder.setAlarmState(entityStatus == Status.ENABLED ? deriveAlarmState() : AlarmState.NOT_CHECKED);
         if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
             this.state = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
             this.entityState = this.state;

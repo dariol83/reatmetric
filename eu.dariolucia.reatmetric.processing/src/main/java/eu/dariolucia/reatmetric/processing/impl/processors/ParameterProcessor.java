@@ -24,7 +24,9 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+/**
+ * This class is used to process a system entity of type PARAMETER.
+ */
 public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterProcessingDefinition, ParameterData, ParameterSample> {
 
     private static final Logger LOG = Logger.getLogger(ParameterProcessor.class.getName());
@@ -38,29 +40,29 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         for(CheckDefinition cd : definition.getChecks()) {
             this.checkViolationNumber.put(cd.getName(), new AtomicInteger(0));
         }
-        this.builder = new ParameterDataBuilder();
-        this.builder.setId(definition.getId());
-        this.builder.setPath(SystemEntityPath.fromString(definition.getLocation()));
+        this.builder = new ParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
     }
 
     @Override
     public synchronized Pair<ParameterData, SystemEntity> process(ParameterSample newValue) {
-        AlarmState currentAlarmState = this.state == null ? AlarmState.UNKNOWN : this.state.getAlarmState();
-        if(isEnabled()) {
-            this.builder.setUpdateId(new LongUniqueId(processor.getNextId(ParameterData.class)));
+        boolean stateChanged = false;
+        boolean entityStateChanged = false;
+        // If the object is enabled, then you have to process it as usual
+        if(entityStatus == Status.ENABLED) {
+            // Derive the source value to use
+            Object sourceValue = newValue != null ? newValue.getValue() : this.state.getSourceValue();
             // Set times and value (if you have a new one)
             if(newValue != null) {
                 this.builder.setGenerationTime(newValue.getGenerationTime());
                 this.builder.setReceptionTime(newValue.getReceptionTime());
-                this.builder.setSourceValue(newValue.getValue());
+                this.builder.setSourceValue(sourceValue);
             }
             // Validity check
             Validity validity = deriveValidity();
             this.builder.setValidity(validity);
             // If valid, calibrate
             if(validity == Validity.VALID) {
-                // TODO: if there is an expression, derive the source value from the expression and also the times
-                Object sourceValue = newValue != null ? newValue.getValue() : state.getSourceValue();
+                // TODO: if there is an expression, derive the sourceValue from the expression and also the times
                 Object engValue = calibrate(sourceValue);
                 this.builder.setEngValue(engValue);
                 // Then run checks
@@ -79,30 +81,25 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 this.builder.setRoute(state.getRoute());
             }
             // Replace the state
-            this.state = this.builder.build();
-            // Recompute the entity
-            if(this.state.getAlarmState() != currentAlarmState) {
-                this.systemEntityBuilder.setAlarmState(this.state.getAlarmState());
+            if(this.builder.isChangedSinceLastBuild()) {
+                this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
+                stateChanged = true;
             }
         } else {
+            // Completely ignore the processing
             LOG.log(Level.FINE, "Parameter sample not computed for parameter " + definition.getLocation() + ": parameter processing is disabled");
         }
         // Finalize entity state
-        this.systemEntityBuilder.setStatus(isEnabled() ? Status.ENABLED : Status.DISABLED);
-        // Return the pair
-        if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
-            // Both changed
-            this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
-            return Pair.of(this.state, this.entityState);
-        } else {
-            // Entity not changed, so if the parameter is not enabled, also the state did not change
-            if(isEnabled()) {
-                // TODO: if the state did not change, we should not return the state here
-                return Pair.of(this.state, null);
-            } else {
-                return Pair.of(null, null);
-            }
+        if(stateChanged) {
+            this.systemEntityBuilder.setAlarmState(this.state.getAlarmState());
         }
+        this.systemEntityBuilder.setStatus(entityStatus);
+        if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
+            this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+            entityStateChanged = true;
+        }
+        // Return the pair
+        return Pair.of(stateChanged ? this.state : null, entityStateChanged ? this.entityState : null);
     }
 
     private Object calibrate(Object value) {

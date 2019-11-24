@@ -50,7 +50,7 @@ public class GraphModel {
             if(param.getValidity() != null) {
                 addEdges(param, param.getValidity());
             }
-            if(param.getCalibration() != null && param.getCalibration() instanceof ExpressionCalibration) {
+            if(param.getCalibration() instanceof ExpressionCalibration) {
                 addEdges(param, ((ExpressionCalibration) param.getCalibration()).getDefinition());
             }
             for(CheckDefinition cd : param.getChecks()) {
@@ -58,13 +58,18 @@ public class GraphModel {
                     addEdges(param, ((ExpressionCheck) cd).getDefinition());
                 }
             }
-            // TODO: check if this is really needed: if kept, there is zero parallelisation, since the root node will be always blocked
+            // TODO: the following shall be removed: if kept, there is zero parallelisation, since the root node will be always blocked.
+            // It can be kept only if propagation is for a single level above (i.e. not to root), but better to remove. Propagation can be
+            // done at UI level.
             addParentDependencies(param);
         }
         for(EventProcessingDefinition event : definition.getEventDefinitions()) {
             if(event.getExpression() != null) {
                 addEdges(event, event.getExpression());
             }
+            // TODO: the following shall be removed: if kept, there is zero parallelisation, since the root node will be always blocked
+            // It can be kept only if propagation is for a single level above (i.e. not to root), but better to remove. Propagation can be
+            // done at UI level.
             addParentDependencies(event);
         }
 
@@ -193,6 +198,13 @@ public class GraphModel {
         return derivedId;
     }
 
+    /**
+     * This method expands the provided list of operations adding the required object re-evaluations, depending on the
+     * dependencies of the affected processors.
+     *
+     * @param operations the list of operations to be performed
+     * @return the extended list of operations to be performed, including dependency re-evaluation
+     */
     public List<AbstractModelOperation> finalizeOperationList(List<AbstractModelOperation> operations) {
         Set<Integer> alreadyPresent = new HashSet<>();
         List<AbstractModelOperation> extendedOperations = new LinkedList<>();
@@ -213,8 +225,16 @@ public class GraphModel {
         }
         // Now add to extendedOperations all the operations provided in the list
         extendedOperations.addAll(operations);
-        // Re-order according to topological sort
-        extendedOperations.sort(Comparator.comparingInt(AbstractModelOperation::getOrderingId));
+        // Re-order according to topological sort and generation time in case of equal ordering ID
+        extendedOperations.sort((a,b) -> {
+            if(a.getOrderingId() < b.getOrderingId()) {
+                return -1;
+            } else if(a.getOrderingId() > b.getOrderingId()) {
+                return 1;
+            } else {
+                return a.getTime().compareTo(b.getTime());
+            }
+        });
         // Return
         return extendedOperations;
     }

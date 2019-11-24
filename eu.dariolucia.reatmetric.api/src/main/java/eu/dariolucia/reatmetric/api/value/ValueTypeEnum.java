@@ -6,7 +6,7 @@
  */
 
 
-package eu.dariolucia.reatmetric.api.common;
+package eu.dariolucia.reatmetric.api.value;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -92,11 +92,36 @@ public enum ValueTypeEnum {
     }
 
     public <T> T parse(String s) {
+        if (this == EXTENSION) {
+            throw new IllegalStateException("Extension values cannot be parsed by this class");
+        }
+        if (this == ENUMERATED) {
+            throw new IllegalStateException("Enumeration values requires a class type to be parsed. Use getAssignedClass(String, Class)");
+        }
         return (T) toObject.apply(s);
     }
 
+    public <T extends Enum<T>> T parse(String s, Class<T> classResult) {
+        if (this == EXTENSION) {
+            throw new IllegalStateException("Extension values cannot be parsed by this class");
+        }
+        if (this != ENUMERATED) {
+            throw new IllegalStateException("This method may be called only to parse enumeration literals to the corresponding object");
+        }
+        if (classResult == null) {
+            throw new IllegalStateException("Enumeration values requires a class type to be parsed");
+        }
+        if (!classResult.isEnum()) {
+            throw new IllegalArgumentException("Provided enumeration class " + classResult.getName() + " is not an enumeration");
+        }
+        return Enum.valueOf(classResult, s);
+    }
+
     public String toString(Object object) {
-        return ((Function<Object, String>)toString).apply(object);
+        if (this == EXTENSION) {
+            throw new IllegalStateException("Extension values cannot be formatted as string by this class");
+        }
+        return ((Function<Object, String>) toString).apply(object);
     }
 
     /**
@@ -107,7 +132,7 @@ public enum ValueTypeEnum {
      * @throws IllegalArgumentException if no literal corresponds to the provided code
      */
     public static ValueTypeEnum fromCode(int code) {
-        if(code <= 0 || code >= 12) {
+        if (code <= 0 || code >= 12) {
             throw new IllegalArgumentException("Value type code " + code + " not supported");
         }
         return ValueTypeEnum.values()[code - 1];

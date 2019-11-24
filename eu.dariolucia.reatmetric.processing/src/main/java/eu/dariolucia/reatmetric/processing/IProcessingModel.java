@@ -25,6 +25,8 @@ public interface IProcessingModel extends ISystemModelProvisionService {
 
     IUniqueId startAction(); // TODO
 
+    void reportActionProgress(); // TODO
+
     void enable(SystemEntityPath path, boolean recursive);
 
     void disable(SystemEntityPath path, boolean recursive);

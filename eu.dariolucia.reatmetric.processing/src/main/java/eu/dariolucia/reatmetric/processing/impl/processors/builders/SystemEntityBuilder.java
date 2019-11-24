@@ -3,29 +3,20 @@ package eu.dariolucia.reatmetric.processing.impl.processors.builders;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.model.*;
 
-public class SystemEntityBuilder {
-
-    final private int id;
-
-    final private SystemEntityPath path;
+/**
+ * This helper class is used to build a {@link SystemEntity} instance.
+ */
+public class SystemEntityBuilder extends AbstractDataItemBuilder<SystemEntity> {
 
     private Status status;
 
     private AlarmState alarmState = AlarmState.UNKNOWN;
 
-    private boolean changedSinceLastBuild;
-
-    final private SystemEntityType type;
+    private final SystemEntityType type;
 
     public SystemEntityBuilder(int id, SystemEntityPath path, SystemEntityType type) {
-        this.id = id;
-        this.path = path;
+        super(id, path);
         this.type = type;
-        this.changedSinceLastBuild = false;
-    }
-
-    public boolean isChangedSinceLastBuild() {
-        return changedSinceLastBuild;
     }
 
     public void setStatus(Status status) {
@@ -42,6 +33,7 @@ public class SystemEntityBuilder {
         }
     }
 
+    @Override
     public SystemEntity build(IUniqueId updateId) {
         SystemEntity se = new SystemEntity(updateId, id, path, status, alarmState, type);
         this.changedSinceLastBuild = false;
