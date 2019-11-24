@@ -8,6 +8,7 @@
 package eu.dariolucia.reatmetric.processing.impl;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
@@ -30,9 +31,33 @@ class ProcessingModelFactoryImplTest {
         ParameterSample p1 = ParameterSample.of(101, true);
         ParameterSample p2 = ParameterSample.of(102, AlarmState.UNKNOWN);
         ParameterSample p3 = ParameterSample.of(101, false);
+        System.out.println("Injection - Batch 1");
         model.injectParameters(Arrays.asList(p1, p2, p3));
 
         Thread.sleep(1000);
+        System.out.println("Disable");
+        model.disable(SystemEntityPath.fromString("ROOT.ELEMENT1"));
+
+        Thread.sleep(1000);
+        System.out.println("Injection - Batch 2");
+        p1 = ParameterSample.of(101, true);
+        p2 = ParameterSample.of(102, AlarmState.WARNING);
+        p3 = ParameterSample.of(101, false);
+        model.injectParameters(Arrays.asList(p1, p2, p3));
+
+        Thread.sleep(1000);
+        System.out.println("Enable");
+        model.enable(SystemEntityPath.fromString("ROOT.ELEMENT1"));
+
+        Thread.sleep(1000);
+        System.out.println("Injection - Batch 3");
+        p1 = ParameterSample.of(101, true);
+        p2 = ParameterSample.of(102, AlarmState.ALARM);
+        p3 = ParameterSample.of(101, false);
+        model.injectParameters(Arrays.asList(p1, p2, p3));
+
+        Thread.sleep(1000);
+
     }
 
 }

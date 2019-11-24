@@ -1,5 +1,6 @@
 package eu.dariolucia.reatmetric.processing.impl.graph;
 
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
@@ -20,6 +21,8 @@ public class GraphModel {
 
     private final Map<SystemEntityPath, EntityVertex> pathMap = new HashMap<>();
     private final Map<Integer, EntityVertex> idMap = new HashMap<>();
+
+    private EntityVertex root;
 
     public GraphModel(ProcessingDefinition processingDefinition, ProcessingModelImpl processingModel) {
         this.definition = processingDefinition;
@@ -58,19 +61,11 @@ public class GraphModel {
                     addEdges(param, ((ExpressionCheck) cd).getDefinition());
                 }
             }
-            // TODO: the following shall be removed: if kept, there is zero parallelisation, since the root node will be always blocked.
-            // It can be kept only if propagation is for a single level above (i.e. not to root), but better to remove. Propagation can be
-            // done at UI level.
-            addParentDependencies(param);
         }
         for(EventProcessingDefinition event : definition.getEventDefinitions()) {
             if(event.getExpression() != null) {
                 addEdges(event, event.getExpression());
             }
-            // TODO: the following shall be removed: if kept, there is zero parallelisation, since the root node will be always blocked
-            // It can be kept only if propagation is for a single level above (i.e. not to root), but better to remove. Propagation can be
-            // done at UI level.
-            addParentDependencies(event);
         }
 
         // Topological sort now and assignment of the orderingIds
@@ -118,19 +113,6 @@ public class GraphModel {
         alreadyInPath.remove(next);
     }
 
-    private void addParentDependencies(AbstractProcessingDefinition originatingChild) {
-        String location = originatingChild.getLocation();
-        SystemEntityPath path = SystemEntityPath.fromString(location);
-        EntityVertex child = getVertexOf(originatingChild.getId());
-        while((path = path.getParent()) != null) {
-            EntityVertex ev = getVertexOf(path);
-            // ev depends on child (I know, this looks ugly)
-            new DependencyEdge(ev, child);
-            // For the next cycle, ev becomes the child
-            child = ev;
-        }
-    }
-
     private EntityVertex getVertexOf(SystemEntityPath path) {
         return this.pathMap.get(path);
     }
@@ -155,7 +137,7 @@ public class GraphModel {
         return idMap.get(id);
     }
 
-    private void addEntities(AbstractProcessingDefinition param, Supplier<AbstractSystemEntityProcessor> processorBuilder) {
+    private void addEntities(AbstractProcessingDefinition param, Supplier<AbstractSystemEntityProcessor> processorBuilder) throws ProcessingModelException {
         SystemEntityPath location = SystemEntityPath.fromString(param.getLocation());
         // Add the parameter
         AbstractSystemEntityProcessor definitionProcessor = processorBuilder.get();
@@ -181,6 +163,16 @@ public class GraphModel {
             // Add child processor to container, remember the previous!
             processor.addChildProcessor(definitionProcessor);
             definitionProcessor = processor;
+            // Check: if we are the root, then keep it
+            if(location.getPathLength() == 1) {
+                EntityVertex potentialRoot = pathMap.get(location);
+                if(this.root != null && this.root != potentialRoot) {
+                    // Problem
+                    throw new ProcessingModelException("Double root defined: " + location.asString() + " and " + this.root.getProcessor().getEntityState().getPath().asString());
+                } else {
+                    this.root = potentialRoot;
+                }
+            }
             // Move one level up
             location = location.getParent();
         }
@@ -238,4 +230,46 @@ public class GraphModel {
         // Return
         return extendedOperations;
     }
+
+    public SystemEntity getRoot() {
+        return this.root.getProcessor().getEntityState();
+    }
+
+    public SystemEntity getSystemEntityOf(int id) throws ProcessingModelException {
+        EntityVertex ev = this.idMap.get(id);
+        if(ev != null) {
+            return ev.getProcessor().getEntityState();
+        } else {
+            throw new ProcessingModelException("ID " + id + " unknown");
+        }
+    }
+
+    public List<SystemEntity> getContainedEntities(int id) throws ProcessingModelException {
+        EntityVertex ev = this.idMap.get(id);
+        if(ev.getProcessor() instanceof ContainerProcessor) {
+            return ((ContainerProcessor) ev.getProcessor()).getContainedEntities();
+        } else {
+            throw new ProcessingModelException("ID " + id + " does not map to a container");
+        }
+    }
+
+    public SystemEntityPath getPathOf(int id) throws ProcessingModelException {
+        EntityVertex ev = this.idMap.get(id);
+        if(ev != null) {
+            return ev.getProcessor().getEntityState().getPath();
+        } else {
+            throw new ProcessingModelException("ID " + id + " unknown");
+        }
+    }
+
+    public int getIdOf(SystemEntityPath path) throws ProcessingModelException {
+        EntityVertex ev = this.pathMap.get(path);
+        if(ev != null) {
+            return ev.getProcessor().getSystemEntityId();
+        } else {
+            throw new ProcessingModelException("Path " + path + " unknown");
+        }
+    }
+
+
 }

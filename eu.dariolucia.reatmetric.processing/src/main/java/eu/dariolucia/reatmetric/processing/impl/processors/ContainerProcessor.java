@@ -8,9 +8,12 @@ import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
+import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
+import eu.dariolucia.reatmetric.processing.impl.operations.EnableDisableOperation;
 import eu.dariolucia.reatmetric.processing.input.VoidInputDataItem;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -34,7 +37,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
     @Override
     public Pair<SystemEntity, SystemEntity> process(VoidInputDataItem input) {
         this.systemEntityBuilder.setStatus(entityStatus);
-        this.systemEntityBuilder.setAlarmState(entityStatus == Status.ENABLED ? deriveAlarmState() : AlarmState.NOT_CHECKED);
+        this.systemEntityBuilder.setAlarmState(AlarmState.NOT_APPLICABLE);
         if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
             this.state = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
             this.entityState = this.state;
@@ -45,19 +48,43 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
         }
     }
 
-    private AlarmState deriveAlarmState() {
-        AlarmState result = AlarmState.NOMINAL;
-        for(AbstractSystemEntityProcessor child : childProcessors) {
-            if(child.getEntityState().getAlarmState().ordinal() < result.ordinal()) {
-                result = child.getEntityState().getAlarmState();
-            }
-        }
-        return result;
-    }
-
     @Override
     public Pair<SystemEntity, SystemEntity> evaluate() {
         return process(VoidInputDataItem.instance());
+    }
+
+    @Override
+    public Pair<SystemEntity, SystemEntity> enable() {
+        // Propagate
+        propagateEnablement(true);
+        // Process now
+        return super.enable();
+    }
+
+    private void propagateEnablement(boolean enable) {
+        // One layer only
+        List<AbstractModelOperation> ops = new ArrayList<>(childProcessors.size());
+        for(AbstractSystemEntityProcessor proc : childProcessors) {
+            ops.add(new EnableDisableOperation(proc.getSystemEntityId(), enable));
+        }
+        // Schedule operation
+        processor.scheduleTask(ops);
+    }
+
+    @Override
+    public Pair<SystemEntity, SystemEntity> disable() {
+        // Propagate
+        propagateEnablement(false);
+        // Process now
+        return super.disable();
+    }
+
+    public List<SystemEntity> getContainedEntities() {
+        List<SystemEntity> states = new ArrayList<>(childProcessors.size());
+        for(AbstractSystemEntityProcessor proc : childProcessors) {
+            states.add(proc.getEntityState());
+        }
+        return states;
     }
 
     /**

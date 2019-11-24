@@ -60,12 +60,12 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         return entityStatus;
     }
 
-    public final Pair<T, SystemEntity> enable() {
+    public Pair<T, SystemEntity> enable() {
         this.entityStatus = Status.ENABLED;
         return evaluate();
     }
 
-    public final Pair<T, SystemEntity> disable() {
+    public Pair<T, SystemEntity> disable() {
         this.entityStatus = Status.DISABLED;
         return evaluate();
     }

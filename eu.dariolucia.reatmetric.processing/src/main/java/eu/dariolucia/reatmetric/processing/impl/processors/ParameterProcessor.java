@@ -50,7 +50,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         // If the object is enabled, then you have to process it as usual
         if(entityStatus == Status.ENABLED) {
             // Derive the source value to use
-            Object sourceValue = newValue != null ? newValue.getValue() : this.state.getSourceValue();
+            Object sourceValue = newValue != null ? newValue.getValue() : this.state == null ? null : this.state.getSourceValue();
             // Set times and value (if you have a new one)
             if(newValue != null) {
                 this.builder.setGenerationTime(newValue.getGenerationTime());
@@ -78,7 +78,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             if(newValue != null) {
                 this.builder.setRoute(newValue.getRoute());
             } else {
-                this.builder.setRoute(state.getRoute());
+                this.builder.setRoute(state == null ? null : state.getRoute());
             }
             // Replace the state
             if(this.builder.isChangedSinceLastBuild()) {

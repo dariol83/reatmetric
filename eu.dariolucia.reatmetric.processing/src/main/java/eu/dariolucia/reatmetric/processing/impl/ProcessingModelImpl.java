@@ -20,10 +20,12 @@ import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.graph.GraphModel;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
+import eu.dariolucia.reatmetric.processing.impl.operations.EnableDisableOperation;
 import eu.dariolucia.reatmetric.processing.impl.operations.ParameterSampleProcessOperation;
 import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +104,14 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
         return updateSequencerMap.computeIfAbsent(type, o -> new AtomicLong(0)).getAndIncrement();
     }
 
+    public void scheduleTask(List<AbstractModelOperation> operations) {
+        // Create the processing task
+        ProcessingTask taskToRun = new ProcessingTask(operations, outputRedirector, workingSet);
+        // Add the task to be done to the queue
+        updateTaskQueue.add(taskToRun);
+        // Done
+    }
+
     @Override
     public void injectParameters(List<ParameterSample> sampleList) {
         // Build the list of operations to be performed
@@ -110,11 +120,8 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
             ParameterSampleProcessOperation injectOperation = new ParameterSampleProcessOperation(ps);
             operations.add(injectOperation);
         }
-        // Create the processing task
-        ProcessingTask taskToRun = new ProcessingTask(operations, outputRedirector, workingSet);
-        // Add the task to be done to the queue
-        updateTaskQueue.add(taskToRun);
-        // Done
+        // Schedule task
+        scheduleTask(operations);
     }
 
     @Override
@@ -134,16 +141,24 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
         // TODO
         throw new UnsupportedOperationException();
     }
+
     @Override
-    public void enable(SystemEntityPath path, boolean recursive) {
-        // TODO
-        throw new UnsupportedOperationException();
+    public void enable(SystemEntityPath path) throws ProcessingModelException {
+        doEnable(path, true);
     }
 
     @Override
-    public void disable(SystemEntityPath path, boolean recursive) {
-        // TODO
-        throw new UnsupportedOperationException();
+    public void disable(SystemEntityPath path) throws ProcessingModelException {
+        doEnable(path, false);
+    }
+
+    private void doEnable(SystemEntityPath path, boolean b) throws ProcessingModelException {
+        // Map the path to the entity ID
+        int id = getExternalIdOf(path);
+        // Build the list of operations to be performed
+        List<AbstractModelOperation> operations = Collections.singletonList(new EnableDisableOperation(id, b));
+        // Schedule task
+        scheduleTask(operations);
     }
 
     @Override
@@ -151,48 +166,34 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
         return this.processingDefinition;
     }
 
-    /*
-     * ISystemModelProvisionService implementation
-     */
-
     @Override
-    public void subscribe(ISystemModelSubscriber subscriber) {
-        throw new UnsupportedOperationException();
+    public SystemEntity getRoot() throws ProcessingModelException {
+        return graphModel.getRoot();
     }
 
     @Override
-    public void unsubscribe(ISystemModelSubscriber subscriber) {
-        throw new UnsupportedOperationException();
+    public List<SystemEntity> getContainedEntities(SystemEntityPath path) throws ProcessingModelException {
+        return graphModel.getContainedEntities(getExternalIdOf(path));
     }
 
     @Override
-    public SystemEntity getRoot() {
-        throw new UnsupportedOperationException();
+    public SystemEntity getSystemEntityAt(SystemEntityPath path) throws ProcessingModelException {
+        return getSystemEntityOf(graphModel.getIdOf(path));
     }
 
     @Override
-    public List<SystemEntity> getContainedEntities(SystemEntityPath se) {
-        throw new UnsupportedOperationException();
+    public SystemEntity getSystemEntityOf(int externalId) throws ProcessingModelException {
+        return graphModel.getSystemEntityOf(externalId);
     }
 
     @Override
-    public SystemEntity getSystemEntityAt(SystemEntityPath path) {
-        throw new UnsupportedOperationException();
+    public int getExternalIdOf(SystemEntityPath path) throws ProcessingModelException {
+        return graphModel.getIdOf(path);
     }
 
     @Override
-    public SystemEntity getSystemEntityOf(int externalId) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getExternalIdOf(SystemEntityPath path) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SystemEntityPath getPathOf(int externalId) {
-        throw new UnsupportedOperationException();
+    public SystemEntityPath getPathOf(int externalId) throws ProcessingModelException {
+        return graphModel.getPathOf(externalId);
     }
 
     /*
