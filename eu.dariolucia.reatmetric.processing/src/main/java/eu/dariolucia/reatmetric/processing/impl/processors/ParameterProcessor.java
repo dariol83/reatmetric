@@ -13,6 +13,8 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.CheckDefinition;
 import eu.dariolucia.reatmetric.processing.definition.ParameterProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
@@ -44,13 +46,14 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     @Override
-    public synchronized Pair<ParameterData, SystemEntity> process(ParameterSample newValue) {
+    public synchronized Pair<ParameterData, SystemEntity> process(ParameterSample newValue) throws ProcessingModelException {
         boolean stateChanged = false;
         boolean entityStateChanged = false;
         // If the object is enabled, then you have to process it as usual
         if(entityStatus == Status.ENABLED) {
             // Derive the source value to use
-            Object sourceValue = newValue != null ? newValue.getValue() : this.state == null ? null : this.state.getSourceValue();
+            Object previousSourceValue =  this.state == null ? null : this.state.getSourceValue();
+            Object sourceValue = newValue != null ? verifySourceValue(newValue.getValue()) : previousSourceValue;
             // Set times and value (if you have a new one)
             if(newValue != null) {
                 this.builder.setGenerationTime(newValue.getGenerationTime());
@@ -102,7 +105,38 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         return Pair.of(stateChanged ? this.state : null, entityStateChanged ? this.entityState : null);
     }
 
+    private Object verifySourceValue(Object value) throws ProcessingModelException {
+        // If the value is null, then set to null (no value)
+        if(value == null) {
+            return null;
+        }
+        // Check type compliance
+        if(definition.getRawType().getAssignedClass().isAssignableFrom(value.getClass())) {
+            return value;
+        } else {
+            // Try to see if you can get any compliance, especially with numeric types
+            if((definition.getRawType() == ValueTypeEnum.UNSIGNED_INTEGER ||
+                    definition.getRawType() == ValueTypeEnum.SIGNED_INTEGER ||
+                    definition.getRawType() == ValueTypeEnum.ENUMERATED) && value instanceof Number) {
+                return ((Number) value).longValue();
+            }
+            if(definition.getRawType() == ValueTypeEnum.REAL && value instanceof Number) {
+                return ((Number) value).doubleValue();
+            }
+            if(definition.getRawType() == ValueTypeEnum.BOOLEAN && value instanceof Number) {
+                return ((Number) value).intValue() != 0;
+            }
+            // At this stage, there is not much you can do
+            throw new ProcessingModelException("Source value " + value + " does not match declared source type " + definition.getRawType() + " and cannot be automatically converted");
+        }
+    }
+
     private Object calibrate(Object value) {
+        // If the value is null, then set to null (no value)
+        if(value == null) {
+            return null;
+        }
+        // Otherwise, calibrate it
         if(this.definition.getCalibration() != null) {
             return this.definition.getCalibration().calibrate(value, this.processor);
         } else {
@@ -111,8 +145,17 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     private AlarmState check(Object engValue) {
-        // TODO
-        return AlarmState.NOMINAL;
+        AlarmState result = AlarmState.NOMINAL;
+        for(CheckDefinition cd : definition.getChecks()) {
+            AlarmState state = cd.check(engValue, checkViolationNumber.computeIfAbsent(cd.getName(), k -> new AtomicInteger(0)).get(), processor);
+            if(state != AlarmState.NOMINAL) {
+                result = state.ordinal() < result.ordinal() ? state : result;
+                checkViolationNumber.get(cd.getName()).incrementAndGet();
+            } else {
+                checkViolationNumber.get(cd.getName()).set(0);
+            }
+        }
+        return result;
     }
 
     private Validity deriveValidity() {
@@ -121,7 +164,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     @Override
-    public Pair<ParameterData, SystemEntity> evaluate() {
+    public Pair<ParameterData, SystemEntity> evaluate() throws ProcessingModelException {
         return process(null);
     }
 }

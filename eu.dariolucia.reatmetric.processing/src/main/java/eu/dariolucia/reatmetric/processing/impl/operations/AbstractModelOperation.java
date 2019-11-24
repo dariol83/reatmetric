@@ -3,12 +3,13 @@ package eu.dariolucia.reatmetric.processing.impl.operations;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
+import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 
 import java.time.Instant;
 import java.util.function.Supplier;
 
-public abstract class AbstractModelOperation<T extends AbstractDataItem, K extends AbstractSystemEntityProcessor> implements Supplier<Pair<T, SystemEntity>> {
+public abstract class AbstractModelOperation<T extends AbstractDataItem, K extends AbstractSystemEntityProcessor> {
 
     private int orderingId;
 
@@ -22,12 +23,11 @@ public abstract class AbstractModelOperation<T extends AbstractDataItem, K exten
         this.processor = processor;
     }
 
-    @Override
-    public Pair<T, SystemEntity> get() {
+    public Pair<T, SystemEntity> execute() throws ProcessingModelException {
         return doProcess();
     }
 
-    protected abstract Pair<T, SystemEntity> doProcess();
+    protected abstract Pair<T, SystemEntity> doProcess() throws ProcessingModelException;
 
     public abstract int getSystemEntityId();
 

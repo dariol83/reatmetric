@@ -3,6 +3,7 @@ package eu.dariolucia.reatmetric.processing.impl.operations;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.impl.processors.ParameterProcessor;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
@@ -22,7 +23,7 @@ public class ParameterSampleProcessOperation extends AbstractModelOperation<Para
     }
 
     @Override
-    protected Pair<ParameterData, SystemEntity> doProcess() {
+    protected Pair<ParameterData, SystemEntity> doProcess() throws ProcessingModelException {
         return getProcessor().process(input);
     }
 

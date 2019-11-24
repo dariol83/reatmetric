@@ -6,6 +6,7 @@ import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.Status;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
@@ -54,7 +55,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
     }
 
     @Override
-    public Pair<SystemEntity, SystemEntity> enable() {
+    public Pair<SystemEntity, SystemEntity> enable() throws ProcessingModelException {
         // Propagate
         propagateEnablement(true);
         // Process now
@@ -72,7 +73,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
     }
 
     @Override
-    public Pair<SystemEntity, SystemEntity> disable() {
+    public Pair<SystemEntity, SystemEntity> disable() throws ProcessingModelException {
         // Propagate
         propagateEnablement(false);
         // Process now

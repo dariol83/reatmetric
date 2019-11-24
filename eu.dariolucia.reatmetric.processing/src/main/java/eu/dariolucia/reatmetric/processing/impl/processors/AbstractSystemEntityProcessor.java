@@ -4,6 +4,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.*;
+import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.SystemEntityBuilder;
@@ -60,19 +61,19 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         return entityStatus;
     }
 
-    public Pair<T, SystemEntity> enable() {
+    public Pair<T, SystemEntity> enable() throws ProcessingModelException {
         this.entityStatus = Status.ENABLED;
         return evaluate();
     }
 
-    public Pair<T, SystemEntity> disable() {
+    public Pair<T, SystemEntity> disable() throws ProcessingModelException {
         this.entityStatus = Status.DISABLED;
         return evaluate();
     }
 
-    public abstract Pair<T, SystemEntity> process(K input);
+    public abstract Pair<T, SystemEntity> process(K input) throws ProcessingModelException;
 
-    public abstract Pair<T, SystemEntity> evaluate();
+    public abstract Pair<T, SystemEntity> evaluate() throws ProcessingModelException;
 
     public final int getSystemEntityId() {
         return definition.getId();

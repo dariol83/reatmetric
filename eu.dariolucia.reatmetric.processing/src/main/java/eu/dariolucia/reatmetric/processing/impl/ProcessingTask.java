@@ -41,7 +41,7 @@ public class ProcessingTask implements Callable<List<AbstractDataItem>> {
         List<AbstractDataItem> result = new ArrayList<>(operations.size());
         for (AbstractModelOperation amo : operations) {
             try {
-                amo.get().addToList(result);
+                amo.execute().addToList(result);
             } catch (Exception e) {
                 // You need to survive here!
                 LOG.log(Level.SEVERE, "Cannot process model operation " + amo + " due to: " + e.getMessage(), e);
