@@ -1,4 +1,5 @@
 open module eu.dariolucia.reatmetric.api {
+    uses eu.dariolucia.reatmetric.api.value.Value.IValueExtensionHandler;
 
     requires java.logging;
 

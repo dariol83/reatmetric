@@ -29,7 +29,13 @@ public class BitString {
             throw new IllegalArgumentException("Number of bits in provided array is less than the length in bits of the " +
                     "BitStream: data length " + data.length + ", BitStream length " + length);
         }
-        this.data = data;
+        // Compute how many bytes are needed to store length bits, and truncate the byte array (by making a copy)
+        int requiredBytes = length/8 + (length % 8 == 0 ? 0 : 1);
+        if(data.length != requiredBytes) {
+            this.data = Arrays.copyOfRange(data, 0, requiredBytes);
+        } else {
+            this.data = data;
+        }
         this.length = length;
     }
 

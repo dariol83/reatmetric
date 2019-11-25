@@ -23,7 +23,7 @@ public enum ValueTypeEnum {
     /**
      * Enumerated value
      */
-    ENUMERATED(2, Enum.class, Enum::name, null),
+    ENUMERATED(2, Integer.class, String::valueOf, Integer::parseInt),
     /**
      * Unsigned integer
      */
@@ -95,26 +95,7 @@ public enum ValueTypeEnum {
         if (this == EXTENSION) {
             throw new IllegalStateException("Extension values cannot be parsed by this class");
         }
-        if (this == ENUMERATED) {
-            throw new IllegalStateException("Enumeration values requires a class type to be parsed. Use getAssignedClass(String, Class)");
-        }
         return (T) toObject.apply(s);
-    }
-
-    public <T extends Enum<T>> T parse(String s, Class<T> classResult) {
-        if (this == EXTENSION) {
-            throw new IllegalStateException("Extension values cannot be parsed by this class");
-        }
-        if (this != ENUMERATED) {
-            throw new IllegalStateException("This method may be called only to parse enumeration literals to the corresponding object");
-        }
-        if (classResult == null) {
-            throw new IllegalStateException("Enumeration values requires a class type to be parsed");
-        }
-        if (!classResult.isEnum()) {
-            throw new IllegalArgumentException("Provided enumeration class " + classResult.getName() + " is not an enumeration");
-        }
-        return Enum.valueOf(classResult, s);
     }
 
     public String toString(Object object) {
@@ -122,6 +103,15 @@ public enum ValueTypeEnum {
             throw new IllegalStateException("Extension values cannot be formatted as string by this class");
         }
         return ((Function<Object, String>) toString).apply(object);
+    }
+
+    public static ValueTypeEnum fromClass(Class<?> assignedClass) {
+        for(ValueTypeEnum vte : values()) {
+            if(vte.getAssignedClass().isAssignableFrom(assignedClass)) {
+                return vte;
+            }
+        }
+        return EXTENSION;
     }
 
     /**
