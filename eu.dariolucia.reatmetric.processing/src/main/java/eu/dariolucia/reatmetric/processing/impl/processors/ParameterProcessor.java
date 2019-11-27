@@ -51,22 +51,22 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         boolean entityStateChanged = false;
         // If the object is enabled, then you have to process it as usual
         if(entityStatus == Status.ENABLED) {
-            // Derive the source value to use
-            Object previousSourceValue =  this.state == null ? null : this.state.getSourceValue();
-            Object sourceValue = newValue != null ? verifySourceValue(newValue.getValue()) : previousSourceValue;
-            // Set times and value (if you have a new one)
-            if(newValue != null) {
-                this.builder.setGenerationTime(newValue.getGenerationTime());
-                this.builder.setReceptionTime(newValue.getReceptionTime());
-                this.builder.setSourceValue(sourceValue);
-                this.builder.setContainerId(newValue.getContainerId());
-            }
             // Validity check
             Validity validity = deriveValidity();
             this.builder.setValidity(validity);
             // If valid, calibrate
             if(validity == Validity.VALID) {
+                // Derive the source value to use
+                Object previousSourceValue =  this.state == null ? null : this.state.getSourceValue();
+                Object sourceValue = newValue != null ? verifySourceValue(newValue.getValue()) : previousSourceValue;
                 // TODO: if there is an expression, derive the sourceValue from the expression and also the times
+                // Set times and value (if you have a new one)
+                if(newValue != null) {
+                    this.builder.setGenerationTime(newValue.getGenerationTime());
+                    this.builder.setReceptionTime(newValue.getReceptionTime());
+                    this.builder.setSourceValue(sourceValue);
+                    this.builder.setContainerId(newValue.getContainerId());
+                }
                 Object engValue = calibrate(sourceValue);
                 this.builder.setEngValue(engValue);
                 // Then run checks
@@ -117,9 +117,11 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         } else {
             // Try to see if you can get any compliance, especially with numeric types
             if((definition.getRawType() == ValueTypeEnum.UNSIGNED_INTEGER ||
-                    definition.getRawType() == ValueTypeEnum.SIGNED_INTEGER ||
-                    definition.getRawType() == ValueTypeEnum.ENUMERATED) && value instanceof Number) {
+                    definition.getRawType() == ValueTypeEnum.SIGNED_INTEGER) && value instanceof Number) {
                 return ((Number) value).longValue();
+            }
+            if(definition.getRawType() == ValueTypeEnum.ENUMERATED && value instanceof Number) {
+                return ((Number) value).intValue();
             }
             if(definition.getRawType() == ValueTypeEnum.REAL && value instanceof Number) {
                 return ((Number) value).doubleValue();

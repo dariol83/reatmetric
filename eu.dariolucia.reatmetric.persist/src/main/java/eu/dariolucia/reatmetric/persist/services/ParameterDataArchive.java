@@ -56,10 +56,10 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
         }
         storeStatement.setShort(10, (short) item.getValidity().ordinal());
         storeStatement.setShort(11, (short) item.getAlarmState().ordinal());
-        if(item.getContainerId() == null) {
+        if(item.getRawDataContainerId() == null) {
             storeStatement.setNull(12, Types.BIGINT);
         } else {
-            storeStatement.setLong(12, item.getContainerId().asLong());
+            storeStatement.setLong(12, item.getRawDataContainerId().asLong());
         }
         storeStatement.setBlob(13, toInputstreamArray(item.getAdditionalFields()));
     }

@@ -47,4 +47,8 @@ public class ExpressionDefinition {
     public void setSymbols(List<SymbolDefinition> symbols) {
         this.symbols = symbols;
     }
+
+    public void compile() {
+        // TODO
+    }
 }
