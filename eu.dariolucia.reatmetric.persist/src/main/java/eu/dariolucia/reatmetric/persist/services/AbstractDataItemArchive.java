@@ -2,6 +2,7 @@ package eu.dariolucia.reatmetric.persist.services;
 
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.*;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.*;
@@ -316,13 +317,11 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         return genTime == null ? null : genTime.toInstant();
     }
 
-    // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
     protected Object toObject(Blob b) throws IOException, ClassNotFoundException, SQLException {
         Object toReturn = null;
         if(b != null) {
-            ObjectInputStream ois = new ObjectInputStream(b.getBinaryStream());
-            toReturn = ois.readObject();
-            ois.close();
+            InputStream ois = b.getBinaryStream();
+            toReturn = ValueUtil.deserialize(ois.readAllBytes());
         }
         return toReturn;
     }
@@ -331,37 +330,24 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected Object[] toObjectArray(Blob b) throws IOException, ClassNotFoundException, SQLException {
         Object[] toReturn = null;
         if(b != null) {
-            ObjectInputStream ois = new ObjectInputStream(b.getBinaryStream());
-            toReturn = (Object[]) ois.readObject();
-            ois.close();
+            InputStream ois = b.getBinaryStream();
+            toReturn = (Object[]) ValueUtil.deserialize(ois.readAllBytes());
         }
         return toReturn;
     }
 
-    // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
     protected InputStream toInputstreamArray(Object[] data) throws IOException {
         if(data == null) {
             return null;
         }
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(bos);
-        oos.writeObject(data);
-        oos.flush();
-        oos.close();
-        return new ByteArrayInputStream(bos.toByteArray());
+        return new ByteArrayInputStream(ValueUtil.serialize(data));
     }
 
-    // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
-    protected InputStream toInputstream(Object data) throws IOException {
+    protected InputStream toInputstream(Object data) {
         if(data == null) {
             return null;
         }
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutputStream oos = new ObjectOutputStream(bos);
-        oos.writeObject(data);
-        oos.flush();
-        oos.close();
-        return new ByteArrayInputStream(bos.toByteArray());
+        return new ByteArrayInputStream(ValueUtil.serialize(data));
     }
 
     protected byte[] toByteArray(InputStream is) throws IOException {

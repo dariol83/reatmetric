@@ -36,6 +36,8 @@ public class ParameterDataBuilder extends AbstractDataItemBuilder<ParameterData>
 
     private AlarmState alarmState = AlarmState.UNKNOWN;
 
+    private IUniqueId containerId = null;
+
     public ParameterDataBuilder(int id, SystemEntityPath path) {
         super(id, path);
     }
@@ -68,6 +70,13 @@ public class ParameterDataBuilder extends AbstractDataItemBuilder<ParameterData>
         }
     }
 
+    public void setContainerId(IUniqueId containerId) {
+        if (!Objects.equals(this.containerId, containerId)) {
+            this.containerId = containerId;
+            this.changedSinceLastBuild = true;
+        }
+    }
+
     public void setReceptionTime(Instant receptionTime) {
         if (!Objects.equals(this.receptionTime, receptionTime)) {
             this.receptionTime = receptionTime;
@@ -91,6 +100,6 @@ public class ParameterDataBuilder extends AbstractDataItemBuilder<ParameterData>
 
     @Override
     public ParameterData build(IUniqueId updateId) {
-        return new ParameterData(updateId, generationTime, id, path.getLastPathElement(), path, engValue, sourceValue, route, validity, alarmState, receptionTime, null);
+        return new ParameterData(updateId, generationTime, id, path.getLastPathElement(), path, engValue, sourceValue, route, validity, alarmState, containerId, receptionTime, null);
     }
 }

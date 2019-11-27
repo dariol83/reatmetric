@@ -31,10 +31,10 @@ public final class ParameterSample extends AbstractInputDataItem {
     private final Instant generationTime;
     private final Instant receptionTime;
     private final Object value;
-    private final IUniqueId parameterContainerId;
+    private final IUniqueId containerId;
     private final String route;
 
-    private ParameterSample(int id, Instant generationTime, Instant receptionTime, IUniqueId parameterContainerId, Object value, String route) {
+    private ParameterSample(int id, Instant generationTime, Instant receptionTime, IUniqueId containerId, Object value, String route) {
         this.id = id;
         if(generationTime == null) {
             generationTime = Instant.now();
@@ -45,7 +45,7 @@ public final class ParameterSample extends AbstractInputDataItem {
         }
         this.receptionTime = receptionTime;
         this.value = value;
-        this.parameterContainerId = parameterContainerId;
+        this.containerId = containerId;
         this.route = route;
     }
 
@@ -65,8 +65,8 @@ public final class ParameterSample extends AbstractInputDataItem {
         return value;
     }
 
-    public IUniqueId getParameterContainerId() {
-        return parameterContainerId;
+    public IUniqueId getContainerId() {
+        return containerId;
     }
 
     public String getRoute() {
@@ -83,12 +83,12 @@ public final class ParameterSample extends AbstractInputDataItem {
                 receptionTime.equals(that.receptionTime) &&
                 Objects.equals(value, that.value) &&
                 Objects.equals(route, that.route) &&
-                Objects.equals(parameterContainerId, that.parameterContainerId);
+                Objects.equals(containerId, that.containerId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, generationTime, receptionTime, value, route, parameterContainerId);
+        return Objects.hash(id, generationTime, receptionTime, value, route, containerId);
     }
 
     @Override
@@ -99,7 +99,7 @@ public final class ParameterSample extends AbstractInputDataItem {
                 ", receptionTime=" + receptionTime +
                 ", value=" + value +
                 ", route=" + route +
-                ", container=" + parameterContainerId +
+                ", containerId=" + containerId +
                 '}';
     }
 }

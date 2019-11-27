@@ -51,6 +51,7 @@ CREATE TABLE PARAMETER_DATA_TABLE (
    Route VARCHAR(32),
    Validity SMALLINT NOT NULL,
    AlarmState SMALLINT NOT NULL,
+   ContainerId BIGINT,
    AdditionalData BLOB,
    PRIMARY KEY (UniqueId)
 )

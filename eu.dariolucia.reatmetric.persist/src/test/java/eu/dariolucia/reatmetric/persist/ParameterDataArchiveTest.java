@@ -59,12 +59,12 @@ class ParameterDataArchiveTest {
             Instant t = Instant.ofEpochSecond(3600);
             // store some parameter data
             parameterDataArchive.store(Arrays.asList(
-                    new ParameterData(new LongUniqueId(0), t.plusMillis(0), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), 1, 1, "R1", Validity.VALID, AlarmState.NOMINAL, t, new Object[0]),
-                    new ParameterData(new LongUniqueId(1), t.plusMillis(100), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), 2, 2, "R1", Validity.VALID, AlarmState.NOMINAL, t, new Object[0]),
-                    new ParameterData(new LongUniqueId(2), t.plusMillis(20), 1001, "PARAM2", SystemEntityPath.fromString("TEST.PARAM2"), 10, 10, "R1", Validity.VALID, AlarmState.NOMINAL, t, new Object[0]),
-                    new ParameterData(new LongUniqueId(3), t.plusMillis(100), 1001, "PARAM2", SystemEntityPath.fromString("TEST.PARAM2"), 11, 11, "R1", Validity.VALID, AlarmState.VIOLATED, t, new Object[0]),
-                    new ParameterData(new LongUniqueId(4), t.plusMillis(0), 1002, "PARAM3", SystemEntityPath.fromString("TEST.PARAM3"), 100, 100, "R1", Validity.VALID, AlarmState.NOMINAL, t, new Object[0]),
-                    new ParameterData(new LongUniqueId(5), t.plusMillis(300), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), 3, 3, "R1", Validity.VALID, AlarmState.ALARM, t, new Object[0])
+                    new ParameterData(new LongUniqueId(0), t.plusMillis(0), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), 1, 1, "R1", Validity.VALID, AlarmState.NOMINAL, null, t, new Object[0]),
+                    new ParameterData(new LongUniqueId(1), t.plusMillis(100), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), 2, 2, "R1", Validity.VALID, AlarmState.NOMINAL, null, t, new Object[0]),
+                    new ParameterData(new LongUniqueId(2), t.plusMillis(20), 1001, "PARAM2", SystemEntityPath.fromString("TEST.PARAM2"), 10, 10, "R1", Validity.VALID, AlarmState.NOMINAL, null, t, new Object[0]),
+                    new ParameterData(new LongUniqueId(3), t.plusMillis(100), 1001, "PARAM2", SystemEntityPath.fromString("TEST.PARAM2"), 11, 11, "R1", Validity.VALID, AlarmState.VIOLATED, null, t, new Object[0]),
+                    new ParameterData(new LongUniqueId(4), t.plusMillis(0), 1002, "PARAM3", SystemEntityPath.fromString("TEST.PARAM3"), 100, 100, "R1", Validity.VALID, AlarmState.NOMINAL, null, t, new Object[0]),
+                    new ParameterData(new LongUniqueId(5), t.plusMillis(300), 1000, "PARAM1", SystemEntityPath.fromString("TEST.PARAM1"), 3, 3, null, Validity.VALID, AlarmState.ALARM, null, t, new Object[0])
             ));
             Thread.sleep(2000);
             // Retrieve at t + 250 ms
@@ -100,7 +100,7 @@ class ParameterDataArchiveTest {
             ), Arrays.asList("R1", "R2"), Arrays.asList(Validity.ERROR, Validity.VALID), Arrays.asList(AlarmState.VIOLATED, AlarmState.ALARM, AlarmState.NOMINAL)));
             int p1count = 0;
             int p2count = 0;
-            assertEquals(5, params.size());
+            assertEquals(4, params.size());
             for (ParameterData pd : params) {
                 switch (pd.getName()) {
                     case "PARAM1":
@@ -113,7 +113,7 @@ class ParameterDataArchiveTest {
                         fail("Unexpected parameter retrieved: " + pd.getName());
                 }
             }
-            assertEquals(3, p1count);
+            assertEquals(2, p1count);
             assertEquals(2, p2count);
             archive.dispose();
         } finally {

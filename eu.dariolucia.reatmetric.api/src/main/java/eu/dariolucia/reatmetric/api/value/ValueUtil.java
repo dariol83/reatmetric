@@ -19,7 +19,7 @@ import java.util.ServiceLoader;
 
 public class ValueUtil {
 
-    public String toString(ValueTypeEnum type, Object valueObject) {
+    public static String toString(ValueTypeEnum type, Object valueObject) {
         if(type != ValueTypeEnum.EXTENSION || valueObject == null) {
             return valueObject == null ? null : type.toString(valueObject);
         } else {
@@ -58,8 +58,7 @@ public class ValueUtil {
 
     public static Object deserialize(byte[] dump) {
         // Type
-        int ctype = dump[0] & 0x7F;
-        ValueTypeEnum type = ValueTypeEnum.fromCode(ctype);
+        ValueTypeEnum type = ValueTypeEnum.fromCode(dump[0] & 0x7F);
         boolean nullValue = (dump[0] & 0x80) != 0;
         if(nullValue) {
             return null;
@@ -77,7 +76,7 @@ public class ValueUtil {
                 return ByteBuffer.wrap(dump, 1, 8).getDouble();
             }
             case ENUMERATED: {
-                return ByteBuffer.wrap(dump, 1, 8).getInt();
+                return ByteBuffer.wrap(dump, 1, 4).getInt();
             }
             case CHARACTER_STRING: {
                 return new String(dump, 1, dump.length - 1, StandardCharsets.US_ASCII);
@@ -126,6 +125,15 @@ public class ValueUtil {
         }
     }
 
+    public static byte[] serialize(Object valueObject) {
+        for(ValueTypeEnum vte : ValueTypeEnum.values()) {
+            if(vte.getAssignedClass().equals(valueObject.getClass())) {
+                return serialize(vte, valueObject);
+            }
+        }
+        return serialize(ValueTypeEnum.EXTENSION, valueObject);
+    }
+
     /**
      * The serialisation is based on the 'type'-'value' approach:
      * <ul>
@@ -140,7 +148,7 @@ public class ValueUtil {
      *
      * @return the serialized {@link Value}
      */
-    public byte[] serialize(ValueTypeEnum type, Object valueObject) {
+    public static byte[] serialize(ValueTypeEnum type, Object valueObject) {
         if(valueObject == null) {
             return new byte[]{(byte) (type.getCode() | 0x80)};
         }

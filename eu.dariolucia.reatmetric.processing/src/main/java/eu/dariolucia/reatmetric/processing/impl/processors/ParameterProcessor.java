@@ -59,6 +59,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 this.builder.setGenerationTime(newValue.getGenerationTime());
                 this.builder.setReceptionTime(newValue.getReceptionTime());
                 this.builder.setSourceValue(sourceValue);
+                this.builder.setContainerId(newValue.getContainerId());
             }
             // Validity check
             Validity validity = deriveValidity();

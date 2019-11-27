@@ -29,7 +29,7 @@ class ProcessingModelFactoryImplTest {
         IProcessingModel model = factory.build(pd, output, null);
 
         ParameterSample p1 = ParameterSample.of(101, true);
-        ParameterSample p2 = ParameterSample.of(102, AlarmState.UNKNOWN);
+        ParameterSample p2 = ParameterSample.of(102, 1);
         ParameterSample p3 = ParameterSample.of(101, false);
         System.out.println("Injection - Batch 1");
         model.injectParameters(Arrays.asList(p1, p2, p3));
@@ -41,7 +41,7 @@ class ProcessingModelFactoryImplTest {
         Thread.sleep(1000);
         System.out.println("Injection - Batch 2");
         p1 = ParameterSample.of(101, true);
-        p2 = ParameterSample.of(102, AlarmState.WARNING);
+        p2 = ParameterSample.of(102, 2);
         p3 = ParameterSample.of(101, false);
         model.injectParameters(Arrays.asList(p1, p2, p3));
 
@@ -52,7 +52,7 @@ class ProcessingModelFactoryImplTest {
         Thread.sleep(1000);
         System.out.println("Injection - Batch 3");
         p1 = ParameterSample.of(101, true);
-        p2 = ParameterSample.of(102, AlarmState.ALARM);
+        p2 = ParameterSample.of(102, 3);
         p3 = ParameterSample.of(101, false);
         model.injectParameters(Arrays.asList(p1, p2, p3));
 

@@ -43,10 +43,12 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
     private final String route;
 
     private final Validity validity;
-    
+
+    private final IUniqueId containerId;
+
     private final AlarmState alarmState;
 
-    public ParameterData(IUniqueId internalId, Instant generationTime, int externalId, String name, SystemEntityPath path, Object engValue, Object sourceValue, String route, Validity validity, AlarmState alarmState, Instant receptionTime, Object[] additionalFields) {
+    public ParameterData(IUniqueId internalId, Instant generationTime, int externalId, String name, SystemEntityPath path, Object engValue, Object sourceValue, String route, Validity validity, AlarmState alarmState, IUniqueId containerId, Instant receptionTime, Object[] additionalFields) {
         super(internalId, generationTime, additionalFields);
         this.name = name;
         this.externalId = externalId;
@@ -57,6 +59,7 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
         this.validity = validity;
         this.alarmState = alarmState;
         this.route = route;
+        this.containerId = containerId;
     }
 
     public int getExternalId() {
@@ -95,6 +98,10 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
         return route;
     }
 
+    public IUniqueId getContainerId() {
+        return containerId;
+    }
+
     @Override
     public int hashCode() {
         int hash = 5;
@@ -107,6 +114,7 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
         hash = 59 * hash + Objects.hashCode(this.validity);
         hash = 59 * hash + Objects.hashCode(this.alarmState);
         hash = 59 * hash + Objects.hashCode(this.route);
+        hash = 59 * hash + Objects.hashCode(this.containerId);
         return hash;
     }
 
@@ -143,6 +151,9 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
         if (!Objects.equals(this.route, other.route)) {
             return false;
         }
+        if (!Objects.equals(this.containerId, other.containerId)) {
+            return false;
+        }
         if (this.validity != other.validity) {
             return false;
         }
@@ -164,6 +175,7 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
                 ", route='" + route + '\'' +
                 ", validity=" + validity +
                 ", alarmState=" + alarmState +
+                ", containerId=" + containerId +
                 '}';
     }
 }

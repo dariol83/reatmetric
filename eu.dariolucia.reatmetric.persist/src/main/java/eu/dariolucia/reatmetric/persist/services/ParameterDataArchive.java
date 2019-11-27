@@ -12,7 +12,6 @@ import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.sql.*;
 import java.time.Instant;
 import java.util.LinkedList;
@@ -24,9 +23,9 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
 
     private static final Logger LOG = Logger.getLogger(ParameterDataArchive.class.getName());
 
-    private static final String STORE_STATEMENT = "INSERT INTO PARAMETER_DATA_TABLE(UniqueId,GenerationTime,ExternalId,Name,Path,EngValue,SourceValue,ReceptionTime,Route,Validity,AlarmState,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+    private static final String STORE_STATEMENT = "INSERT INTO PARAMETER_DATA_TABLE(UniqueId,GenerationTime,ExternalId,Name,Path,EngValue,SourceValue,ReceptionTime,Route,Validity,AlarmState,ContainerId,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM PARAMETER_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
-    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ExternalId,Name,Path,EngValue,SourceValue,ReceptionTime,Route,Validity,AlarmState,AdditionalData FROM PARAMETER_DATA_TABLE WHERE UniqueId=?";
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ExternalId,Name,Path,EngValue,SourceValue,ReceptionTime,Route,Validity,AlarmState,ContainerId,AdditionalData FROM PARAMETER_DATA_TABLE WHERE UniqueId=?";
 
     public ParameterDataArchive(Archive controller) throws SQLException {
         super(controller);
@@ -39,13 +38,30 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
         storeStatement.setInt(3, item.getExternalId());
         storeStatement.setString(4, item.getName());
         storeStatement.setString(5, item.getPath().asString());
-        storeStatement.setBlob(6, toInputstream(item.getEngValue()));
-        storeStatement.setBlob(7, toInputstream(item.getSourceValue()));
+        if(item.getEngValue() == null) {
+            storeStatement.setNull(6, Types.BLOB);
+        } else {
+            storeStatement.setBlob(6, toInputstream(item.getEngValue()));
+        }
+        if(item.getSourceValue() == null) {
+            storeStatement.setNull(7, Types.BLOB);
+        } else {
+            storeStatement.setBlob(7, toInputstream(item.getSourceValue()));
+        }
         storeStatement.setTimestamp(8, toTimestamp(item.getReceptionTime()));
-        storeStatement.setString(9, item.getRoute());
+        if(item.getRoute() == null) {
+            storeStatement.setNull(9, Types.VARCHAR);
+        } else {
+            storeStatement.setString(9, item.getRoute());
+        }
         storeStatement.setShort(10, (short) item.getValidity().ordinal());
         storeStatement.setShort(11, (short) item.getAlarmState().ordinal());
-        storeStatement.setBlob(12, toInputstreamArray(item.getAdditionalFields()));
+        if(item.getContainerId() == null) {
+            storeStatement.setNull(12, Types.BIGINT);
+        } else {
+            storeStatement.setLong(12, item.getContainerId().asLong());
+        }
+        storeStatement.setBlob(13, toInputstreamArray(item.getAdditionalFields()));
     }
 
     @Override
@@ -110,9 +126,13 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
         String route = rs.getString(9);
         Validity validity = Validity.values()[rs.getShort(10)];
         AlarmState alarmState = AlarmState.values()[rs.getShort(11)];
-        Object[] additionalDataArray = toObjectArray(rs.getBlob(12));
+        Long containerId = rs.getLong(12);
+        if(rs.wasNull()) {
+            containerId = null;
+        }
+        Object[] additionalDataArray = toObjectArray(rs.getBlob(13));
         
-        return new ParameterData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), engValue, sourceValue, route, validity, alarmState, toInstant(receptionTime), additionalDataArray);
+        return new ParameterData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), engValue, sourceValue, route, validity, alarmState, containerId == null ? null : new LongUniqueId(containerId), toInstant(receptionTime), additionalDataArray);
     }
 
     @Override
