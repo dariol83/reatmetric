@@ -8,8 +8,10 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;
+import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
+import javax.script.ScriptEngine;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -36,7 +38,7 @@ public class ExternalCalibration extends CalibrationDefinition {
     }
 
     @Override
-    public Object calibrate(Object valueToCalibrate, IParameterResolver resolver) {
+    public Object calibrate(Object valueToCalibrate, ScriptEngine engine, IBindingResolver resolver) {
         // TODO
         return valueToCalibrate;
     }

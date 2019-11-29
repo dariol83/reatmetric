@@ -10,13 +10,19 @@ package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
+import javax.script.ScriptEngine;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ExpectedCheck extends CheckDefinition {
@@ -52,10 +58,25 @@ public class ExpectedCheck extends CheckDefinition {
         this.expectedValues = expectedValues;
     }
 
+    // ----------------------------------------------------------------------------------------------------------------
+    // Transient objects
+    // ----------------------------------------------------------------------------------------------------------------
+
+    private transient Set<Object> values = new HashSet<>();
 
     @Override
-    public AlarmState check(Object currentValue, int currentViolations, IParameterResolver resolver) {
-        // TODO
-        return AlarmState.NOMINAL;
+    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, ScriptEngine engine, IBindingResolver resolver) {
+        // Prepare transient state
+        prepareMapping();
+        // Other transients
+        if(values.isEmpty()) {
+            for(String s : expectedValues) {
+                values.add(ValueUtil.parse(type, s));
+            }
+        }
+        // Check
+        boolean violated = !values.contains(currentValue);
+        // Return result
+        return deriveState(violated, currentViolations);
     }
 }

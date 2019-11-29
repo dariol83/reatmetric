@@ -8,14 +8,19 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import java.util.Collections;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ExpressionCalibration extends CalibrationDefinition {
+
+    public static final String INPUT_BINDING = "x";
 
     @XmlElement(required = true)
     private ExpressionDefinition definition;
@@ -36,8 +41,11 @@ public class ExpressionCalibration extends CalibrationDefinition {
     }
 
     @Override
-    public Object calibrate(Object valueToCalibrate, IParameterResolver resolver) {
-        // TODO
-        return valueToCalibrate;
+    public Object calibrate(Object valueToCalibrate, ScriptEngine engine, IBindingResolver resolver) throws CalibrationException {
+        try {
+            return definition.execute(engine, resolver, Collections.singletonMap(INPUT_BINDING, valueToCalibrate));
+        } catch (ScriptException e) {
+            throw new CalibrationException("Cannot calibrate value " + valueToCalibrate + " using expression", e);
+        }
     }
 }

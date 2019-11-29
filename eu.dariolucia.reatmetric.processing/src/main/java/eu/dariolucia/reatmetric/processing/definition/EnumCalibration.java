@@ -8,13 +8,17 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;
+import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
+import javax.script.ScriptEngine;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -50,9 +54,27 @@ public class EnumCalibration extends CalibrationDefinition {
         this.points = points;
     }
 
+    // ----------------------------------------------------------------------------------------------------------------
+    // Transient objects
+    // ----------------------------------------------------------------------------------------------------------------
+
+    private transient Map<Long, String> point2values = new HashMap<>();
+
     @Override
-    public Object calibrate(Object valueToCalibrate, IParameterResolver resolver) {
-        // TODO
-        return Objects.toString(valueToCalibrate, "null");
+    public Object calibrate(Object valueToCalibrate, ScriptEngine engine, IBindingResolver resolver) throws CalibrationException {
+        // If the valueToCalibrate can become an integer number somehow, then calibrate, otherwise error
+        long valueToUse = convertToLong(valueToCalibrate);
+        if(point2values.isEmpty()) {
+            for(EnumCalibrationPoint p : points) {
+                point2values.put(p.getInput(), p.getValue());
+            }
+        }
+        String calibratedValue =  point2values.getOrDefault(valueToUse, defaultValue);
+        if(defaultValue == null && calibratedValue == null) {
+            // Not found and no default: calibration failed
+            throw new CalibrationException("Cannot calibrate " + valueToCalibrate + " using enumeration calibration: no correspondence found and no default value defined");
+        } else {
+            return calibratedValue;
+        }
     }
 }

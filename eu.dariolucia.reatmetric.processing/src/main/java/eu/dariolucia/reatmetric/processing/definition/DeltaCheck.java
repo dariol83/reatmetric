@@ -9,11 +9,16 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;
+import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
+import javax.script.ScriptEngine;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class DeltaCheck extends CheckDefinition {
@@ -62,9 +67,38 @@ public class DeltaCheck extends CheckDefinition {
         this.absolute = absolute;
     }
 
+    // ----------------------------------------------------------------------------------------------------------------
+    // Transient objects
+    // ----------------------------------------------------------------------------------------------------------------
+
+    private transient Double previousValue;
+    private transient Instant previousGenerationTime;
+    private transient AlarmState previousResult;
+
     @Override
-    public AlarmState check(Object currentValue, int currentViolations, IParameterResolver resolver) {
-        // TODO
-        return AlarmState.NOMINAL;
+    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, ScriptEngine engine, IBindingResolver resolver) throws CheckException {
+        // Prepare transient state
+        prepareMapping();
+        // Check
+        double toCheck = convertToDouble(currentValue);
+        boolean violated = false;
+        if(previousGenerationTime == null) {
+            previousValue = toCheck;
+            previousGenerationTime = generationTime;
+        } else if(previousGenerationTime.equals(generationTime)) {
+            // Same sample, return the result of the previous check
+            return previousResult;
+        } else {
+            // Different sample
+            double delta = toCheck - previousValue;
+            if(absolute) {
+                delta = Math.abs(delta);
+            }
+            violated = delta < lowLimit || delta > highLimit;
+        }
+        // Return result
+        AlarmState result = deriveState(violated, currentViolations);
+        previousResult = result;
+        return result;
     }
 }

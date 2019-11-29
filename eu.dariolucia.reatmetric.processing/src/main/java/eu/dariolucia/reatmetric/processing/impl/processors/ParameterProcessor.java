@@ -17,10 +17,12 @@ import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.CheckDefinition;
 import eu.dariolucia.reatmetric.processing.definition.ParameterProcessingDefinition;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IParameterBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.ParameterDataBuilder;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,7 +31,7 @@ import java.util.logging.Logger;
 /**
  * This class is used to process a system entity of type PARAMETER.
  */
-public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterProcessingDefinition, ParameterData, ParameterSample> {
+public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterProcessingDefinition, ParameterData, ParameterSample> implements IParameterBinding {
 
     private static final Logger LOG = Logger.getLogger(ParameterProcessor.class.getName());
 
@@ -59,6 +61,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 // Derive the source value to use
                 Object previousSourceValue =  this.state == null ? null : this.state.getSourceValue();
                 Object sourceValue = newValue != null ? verifySourceValue(newValue.getValue()) : previousSourceValue;
+                Instant generationTime = this.state == null ? null : this.state.getGenerationTime();
+                generationTime = newValue != null ? newValue.getGenerationTime() : generationTime;
                 // TODO: if there is an expression, derive the sourceValue from the expression and also the times
                 // Set times and value (if you have a new one)
                 if(newValue != null) {
@@ -70,7 +74,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 Object engValue = calibrate(sourceValue);
                 this.builder.setEngValue(engValue);
                 // Then run checks
-                AlarmState alarmState = check(engValue);
+                AlarmState alarmState = check(engValue, generationTime);
                 this.builder.setAlarmState(alarmState);
             } else {
                 // If not valid, the engineering value is not computed
@@ -141,16 +145,17 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         }
         // Otherwise, calibrate it
         if(this.definition.getCalibration() != null) {
-            return this.definition.getCalibration().calibrate(value, this.processor);
+            return this.definition.getCalibration().calibrate(value, this.processor.getScriptEngine(), this.processor);
         } else {
             return value;
         }
     }
 
-    private AlarmState check(Object engValue) {
+    private AlarmState check(Object engValue, Instant generationTime) {
+        // TODO: consider that, in case of re-evaluation, the number of violations should not increase, if the parameter was already VIOLATED. Only in case of new value (add boolean argument).
         AlarmState result = AlarmState.NOMINAL;
         for(CheckDefinition cd : definition.getChecks()) {
-            AlarmState state = cd.check(engValue, checkViolationNumber.computeIfAbsent(cd.getName(), k -> new AtomicInteger(0)).get(), processor);
+            AlarmState state = cd.check(engValue, generationTime, checkViolationNumber.computeIfAbsent(cd.getName(), k -> new AtomicInteger(0)).get(), processor.getScriptEngine(), processor);
             if(state != AlarmState.NOMINAL) {
                 result = state.ordinal() < result.ordinal() ? state : result;
                 checkViolationNumber.get(cd.getName()).incrementAndGet();
@@ -169,5 +174,65 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     @Override
     public Pair<ParameterData, SystemEntity> evaluate() throws ProcessingModelException {
         return process(null);
+    }
+
+    @Override
+    public Object sourceValue() {
+        return this.state == null ? null : this.state.getSourceValue();
+    }
+
+    @Override
+    public Object value() {
+        return this.state == null ? null : this.state.getEngValue();
+    }
+
+    @Override
+    public AlarmState alarmState() {
+        return this.state == null ? AlarmState.UNKNOWN : this.state.getAlarmState();
+    }
+
+    @Override
+    public boolean inAlarm() {
+        return this.state != null &&
+                (this.state.getAlarmState() != AlarmState.NOMINAL &&
+                        this.state.getAlarmState() != AlarmState.NOT_APPLICABLE &&
+                        this.state.getAlarmState() != AlarmState.NOT_CHECKED &&
+                        this.state.getAlarmState() != AlarmState.UNKNOWN &&
+                        this.state.getAlarmState() != AlarmState.VIOLATED);
+    }
+
+    @Override
+    public boolean valid() {
+        return this.state != null && this.state.getValidity() == Validity.VALID;
+    }
+
+    @Override
+    public Validity validity() {
+        return null;
+    }
+
+    @Override
+    public long containerId() {
+        return 0;
+    }
+
+    @Override
+    public long id() {
+        return 0;
+    }
+
+    @Override
+    public String path() {
+        return null;
+    }
+
+    @Override
+    public Instant generationTime() {
+        return null;
+    }
+
+    @Override
+    public Instant receptionTime() {
+        return null;
     }
 }

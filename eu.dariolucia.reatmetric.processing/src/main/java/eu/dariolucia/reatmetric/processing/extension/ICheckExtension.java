@@ -9,7 +9,7 @@
 package eu.dariolucia.reatmetric.processing.extension;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;
+import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
 
 /**
  * Use of the {@link eu.dariolucia.ccsds.encdec.extension.ExtensionId} annotation on implementations to indicate
@@ -17,5 +17,5 @@ import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;
  */
 public interface ICheckExtension {
 
-    AlarmState check(Object currentValue, int currentViolations, IParameterResolver resolver);
+    AlarmState check(Object currentValue, int currentViolations, IDataItemStateResolver resolver);
 }

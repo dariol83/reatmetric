@@ -6,12 +6,12 @@
  * shall be granted by the author in writing.
  */
 
-package eu.dariolucia.reatmetric.processing.impl;
+package eu.dariolucia.reatmetric.processing;
 
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 
-public interface IParameterResolver {
+public interface IDataItemStateResolver {
 
-    ParameterData resolve(int parameterExternalId);
+    AbstractDataItem resolve(int systemEntityId);
 
 }

@@ -9,14 +9,24 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ExpressionCheck extends CheckDefinition{
+
+    public static final String INPUT_BINDING = "x";
 
     @XmlElement(required = true)
     private ExpressionDefinition definition;
@@ -37,10 +47,20 @@ public class ExpressionCheck extends CheckDefinition{
         this.definition = definition;
     }
 
-
     @Override
-    public AlarmState check(Object currentValue, int currentViolations, IParameterResolver resolver) {
-        // TODO
-        return AlarmState.NOMINAL;
+    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, ScriptEngine engine, IBindingResolver resolver) throws CheckException {
+        // Prepare transient state
+        prepareMapping();
+        // Check
+        boolean violated;
+        try {
+            violated = (Boolean) definition.execute(engine, resolver, Collections.singletonMap(INPUT_BINDING, currentValue));
+        } catch (ScriptException e) {
+            throw new CheckException("Cannot check value " + currentValue + " using expression", e);
+        } catch (ClassCastException e) {
+            throw new CheckException("Cannot check value " + currentValue + " using expression: wrong return type", e);
+        }
+        // Return result
+        return deriveState(violated, currentViolations);
     }
 }

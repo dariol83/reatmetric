@@ -14,10 +14,13 @@ import eu.dariolucia.reatmetric.api.model.ISystemModelSubscriber;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
 import eu.dariolucia.reatmetric.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IEntityBinding;
 import eu.dariolucia.reatmetric.processing.impl.graph.GraphModel;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
 import eu.dariolucia.reatmetric.processing.impl.operations.EnableDisableOperation;
@@ -25,6 +28,8 @@ import eu.dariolucia.reatmetric.processing.impl.operations.ParameterSampleProces
 import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -35,7 +40,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ProcessingModelImpl implements IParameterResolver, IProcessingModel {
+public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private static final Logger LOG = Logger.getLogger(ProcessingModelImpl.class.getName());
 
@@ -59,6 +64,8 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
 
     private final WorkingSet workingSet = new WorkingSet();
 
+    private final ScriptEngine scriptEngine;
+
     private final Consumer<List<AbstractDataItem>> outputRedirector;
 
     public ProcessingModelImpl(ProcessingDefinition processingDefinition, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialSequencerMap) throws ProcessingModelException {
@@ -75,6 +82,8 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
         graphModel.build();
         // Activate the dispatcher
         dispatcher.submit(this::doDispatch);
+        // Create shared script engine: use Graal JS
+        scriptEngine = new ScriptEngineManager().getEngineByName("graal.js");
         // Create redirector that uses the asynchronous notifier
         outputRedirector = createOutputRedirector();
     }
@@ -98,6 +107,10 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
                 LOG.log(Level.SEVERE, "Exception when dispatching processing tasks: " + e.getMessage(), e);
             }
         }
+    }
+
+    public ScriptEngine getScriptEngine() {
+        return scriptEngine;
     }
 
     public long getNextId(Class<? extends AbstractDataItem> type) {
@@ -197,11 +210,12 @@ public class ProcessingModelImpl implements IParameterResolver, IProcessingModel
     }
 
     /*
-     * IParameterResolver implementation
+     * IBindingResolver implementation
      */
 
     @Override
-    public ParameterData resolve(int parameterExternalId) {
+    public IEntityBinding resolve(int systemEntityId) {
+        // TODO
         throw new UnsupportedOperationException();
     }
 }

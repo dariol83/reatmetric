@@ -9,11 +9,14 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.processing.impl.IParameterResolver;
+import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
+import javax.script.ScriptEngine;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import java.time.Instant;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public abstract class CheckDefinition {
@@ -60,5 +63,38 @@ public abstract class CheckDefinition {
         this.numViolations = numViolations;
     }
 
-    public abstract AlarmState check(Object currentValue, int currentViolations, IParameterResolver resolver);
+    public abstract AlarmState check(Object currentValue, Instant valueGenerationTime, int currentViolations, ScriptEngine engine, IBindingResolver resolver) throws CheckException;
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Transient objects
+    // ----------------------------------------------------------------------------------------------------------------
+
+    private transient AlarmState mappedAlarmState;
+
+    protected final void prepareMapping() {
+        if(mappedAlarmState == null) {
+            // default is ALARM
+            if (getSeverity() == CheckSeverity.WARNING) {
+                mappedAlarmState = AlarmState.WARNING;
+            } else {
+                mappedAlarmState = AlarmState.ALARM;
+            }
+        }
+    }
+
+    protected final AlarmState deriveState(boolean violated, int currentViolations) {
+        AlarmState toReturn = violated ? AlarmState.VIOLATED : AlarmState.NOMINAL;
+        if(violated && ++currentViolations >= getNumViolations()) {
+            toReturn = mappedAlarmState;
+        }
+        return toReturn;
+    }
+
+    protected final double convertToDouble(Object valueToCheck) throws CheckException {
+        if(valueToCheck instanceof Number) {
+            return ((Number) valueToCheck).doubleValue();
+        } else {
+            throw new CheckException("Cannot check " + valueToCheck + " as input to limit check: value cannot be converted to double");
+        }
+    }
 }
