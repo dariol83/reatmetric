@@ -17,6 +17,6 @@ public interface IParameterBinding extends IEntityBinding {
 
     Validity validity();
 
-    long containerId();
+    Long containerId();
 
 }

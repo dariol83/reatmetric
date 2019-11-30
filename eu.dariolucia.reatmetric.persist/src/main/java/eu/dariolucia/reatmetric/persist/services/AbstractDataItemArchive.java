@@ -336,6 +336,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         return toReturn;
     }
 
+    // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
     protected InputStream toInputstreamArray(Object[] data) throws IOException {
         if(data == null) {
             return null;

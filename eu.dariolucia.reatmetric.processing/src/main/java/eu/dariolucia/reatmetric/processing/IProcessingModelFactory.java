@@ -14,8 +14,5 @@ import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import java.util.Map;
 
 public interface IProcessingModelFactory {
-
-    void setCommandHandler(String commandType, IActionHandler handler);
-
     IProcessingModel build(ProcessingDefinition definitionDatabase, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters) throws ProcessingModelException;
 }

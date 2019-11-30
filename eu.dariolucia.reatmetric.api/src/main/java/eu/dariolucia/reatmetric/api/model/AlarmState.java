@@ -16,9 +16,9 @@ public enum AlarmState {
     ALARM,
     WARNING,
     VIOLATED,
+    ERROR,
     NOMINAL,
     NOT_CHECKED,
-    UNKNOWN,
     NOT_APPLICABLE,
-    ERROR
+    UNKNOWN
 }

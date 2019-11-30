@@ -215,7 +215,6 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public IEntityBinding resolve(int systemEntityId) {
-        // TODO
-        throw new UnsupportedOperationException();
+        return graphModel.getBinding(systemEntityId);
     }
 }

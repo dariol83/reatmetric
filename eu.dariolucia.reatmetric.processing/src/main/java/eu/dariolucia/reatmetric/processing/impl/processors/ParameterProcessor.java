@@ -15,13 +15,13 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
-import eu.dariolucia.reatmetric.processing.definition.CheckDefinition;
-import eu.dariolucia.reatmetric.processing.definition.ParameterProcessingDefinition;
+import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IParameterBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.ParameterDataBuilder;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
+import javax.script.ScriptException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.TreeMap;
@@ -41,21 +41,22 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     public ParameterProcessor(ParameterProcessingDefinition definition, ProcessingModelImpl processor) {
         super(definition, processor, SystemEntityType.PARAMETER);
-        for(CheckDefinition cd : definition.getChecks()) {
-            this.checkViolationNumber.put(cd.getName(), new AtomicInteger(0));
-        }
         this.builder = new ParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
     }
 
     @Override
     public synchronized Pair<ParameterData, SystemEntity> process(ParameterSample newValue) throws ProcessingModelException {
+        // Guard condition: if this parameter has an expression, newValue must be null
+        if(definition.getExpression() != null && newValue != null) {
+            LOG.log(Level.SEVERE, "Parameter " + definition.getId() + " (" + definition.getLocation() + ") is a synthetic parameter, but a sample was injected. Processing ignored.");
+            return Pair.of(null, null);
+        }
         boolean stateChanged = false;
         boolean entityStateChanged = false;
         // If the object is enabled, then you have to process it as usual
         if(entityStatus == Status.ENABLED) {
             // Validity check
             Validity validity = deriveValidity();
-            this.builder.setValidity(validity);
             // If valid, calibrate
             if(validity == Validity.VALID) {
                 // Derive the source value to use
@@ -63,24 +64,68 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 Object sourceValue = newValue != null ? verifySourceValue(newValue.getValue()) : previousSourceValue;
                 Instant generationTime = this.state == null ? null : this.state.getGenerationTime();
                 generationTime = newValue != null ? newValue.getGenerationTime() : generationTime;
-                // TODO: if there is an expression, derive the sourceValue from the expression and also the times
-                // Set times and value (if you have a new one)
+                // If there is an expression, derive the sourceValue from the expression and also the generation time
+                if(definition.getExpression() != null) {
+                    // Check if re-evalutation is needed: for each mapping item in the expression, get the newest generation time
+                    Instant latestGenerationTime = null;
+                    for(SymbolDefinition sd : definition.getExpression().getSymbols()) {
+                        Instant theGenTime = processor.resolve(sd.getReference().getId()).generationTime();
+                        if(latestGenerationTime == null || theGenTime.isAfter(latestGenerationTime)) {
+                            latestGenerationTime = theGenTime;
+                        }
+                    }
+                    // If latestGenerationTime is after the current generation time, then expression shall be re-evaluated
+                    if(generationTime == null || (latestGenerationTime != null && latestGenerationTime.isAfter(generationTime))) {
+                        try {
+                            sourceValue = definition.getExpression().execute(processor.getScriptEngine(), processor, null);
+                        } catch (ScriptException e) {
+                            LOG.log(Level.SEVERE, "Error when computing value of parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
+                            // Overrule validity to be INVALID
+                            validity = Validity.INVALID;
+                            // Put source value to be null
+                            sourceValue = null;
+                        }
+                    } else {
+                        // Effectively, as there is no change in the depending elements, the processing can end here
+                        return Pair.of(null, null);
+                    }
+                }
+                // Set the source value and the generation time
+                this.builder.setSourceValue(sourceValue);
+                this.builder.setGenerationTime(generationTime);
+                // Set times and value (if you have a new one) - this block is skipped if the parameter is synthetic
                 if(newValue != null) {
-                    this.builder.setGenerationTime(newValue.getGenerationTime());
                     this.builder.setReceptionTime(newValue.getReceptionTime());
-                    this.builder.setSourceValue(sourceValue);
                     this.builder.setContainerId(newValue.getContainerId());
                 }
-                Object engValue = calibrate(sourceValue);
+                AlarmState alarmState = AlarmState.UNKNOWN;
+                Object engValue = null;
+                if(validity == Validity.VALID) {
+                    try {
+                        // Calibrate the source value
+                        engValue = calibrate(sourceValue);
+                        // Then run checks
+                        alarmState = check(engValue, generationTime, newValue == null);
+                    } catch (CalibrationException e) {
+                        LOG.log(Level.SEVERE, "Error when calibrating parameter " + definition.getId() + " (" + definition.getLocation() + ") with source value " + sourceValue + ": " + e.getMessage(), e);
+                        // Validity is INVALID, to prevent other processors to take the null eng. value as good value
+                        validity = Validity.INVALID;
+                        // Alarm state is set to UNKNOWN
+                        alarmState = AlarmState.UNKNOWN;
+                    }
+                }
+                // Set the validity
+                this.builder.setValidity(validity);
+                // Set the engineering value
                 this.builder.setEngValue(engValue);
-                // Then run checks
-                AlarmState alarmState = check(engValue, generationTime);
+                // Set the alarm state
                 this.builder.setAlarmState(alarmState);
             } else {
+                this.builder.setValidity(validity);
                 // If not valid, the engineering value is not computed
                 this.builder.setEngValue(null);
                 // The checks are not run
-                this.builder.setAlarmState(AlarmState.NOT_CHECKED);
+                this.builder.setAlarmState(AlarmState.UNKNOWN);
             }
             // Build final state, set it and return it
             if(newValue != null) {
@@ -138,7 +183,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         }
     }
 
-    private Object calibrate(Object value) {
+    private Object calibrate(Object value) throws CalibrationException {
         // If the value is null, then set to null (no value)
         if(value == null) {
             return null;
@@ -151,24 +196,58 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         }
     }
 
-    private AlarmState check(Object engValue, Instant generationTime) {
-        // TODO: consider that, in case of re-evaluation, the number of violations should not increase, if the parameter was already VIOLATED. Only in case of new value (add boolean argument).
+    private AlarmState check(Object engValue, Instant generationTime, boolean reevaluation) {
+        // If there are no checks, then value is NOT_CHECKED
+        if(definition.getChecks().isEmpty()) {
+            return AlarmState.NOT_CHECKED;
+        }
+        // Otherwise evaluate the checks and derive the result
         AlarmState result = AlarmState.NOMINAL;
         for(CheckDefinition cd : definition.getChecks()) {
-            AlarmState state = cd.check(engValue, generationTime, checkViolationNumber.computeIfAbsent(cd.getName(), k -> new AtomicInteger(0)).get(), processor.getScriptEngine(), processor);
+            // violationCounter is in the checkViolationNumber map after the next instruction
+            AtomicInteger violationCounter = checkViolationNumber.computeIfAbsent(cd.getName(), k -> new AtomicInteger(0));
+            AlarmState state;
+            try {
+                state = cd.check(engValue, generationTime, violationCounter.get(), processor.getScriptEngine(), processor);
+            } catch (CheckException e) {
+                LOG.log(Level.SEVERE, "Error when evaluating check " + cd.getName() + " on parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
+                // Return immediately (fail fast)
+                return AlarmState.ERROR;
+            }
             if(state != AlarmState.NOMINAL) {
+                if(!reevaluation || violationCounter.get() == 0) {
+                    // New sample: always increase; Re-evaluation: increase the violation number only if the alarm was not violated before (checkViolationNumber == 0)
+                    violationCounter.incrementAndGet();
+                }
                 result = state.ordinal() < result.ordinal() ? state : result;
-                checkViolationNumber.get(cd.getName()).incrementAndGet();
             } else {
-                checkViolationNumber.get(cd.getName()).set(0);
+                violationCounter.set(0);
             }
         }
         return result;
     }
 
     private Validity deriveValidity() {
-        // TODO
-        return Validity.VALID;
+        if(definition.getValidity() == null) {
+            return Validity.VALID;
+        } else {
+            try {
+                Object obj = definition.getValidity().execute(processor.getScriptEngine(), processor, null);
+                if(obj instanceof Boolean) {
+                    if((Boolean) obj) {
+                        return Validity.VALID;
+                    } else {
+                        return Validity.INVALID;
+                    }
+                } else {
+                    LOG.log(Level.SEVERE, "Error when computing validity of parameter " + definition.getId() + " (" + definition.getLocation() + "): expression did not return a boolean, but " + obj);
+                    return Validity.ERROR;
+                }
+            } catch(ScriptException e) {
+                LOG.log(Level.SEVERE, "Error when computing validity of parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
+                return Validity.ERROR;
+            }
+        }
     }
 
     @Override
@@ -208,31 +287,31 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     @Override
     public Validity validity() {
-        return null;
+        return this.state == null ? Validity.UNKNOWN : this.state.getValidity();
     }
 
     @Override
-    public long containerId() {
-        return 0;
+    public Long containerId() {
+        return this.state == null || this.state.getRawDataContainerId() == null ? null : this.state.getRawDataContainerId().asLong();
     }
 
     @Override
     public long id() {
-        return 0;
+        return definition.getId();
     }
 
     @Override
     public String path() {
-        return null;
+        return definition.getLocation();
     }
 
     @Override
     public Instant generationTime() {
-        return null;
+        return this.state == null ? null : this.state.getGenerationTime();
     }
 
     @Override
     public Instant receptionTime() {
-        return null;
+        return this.state == null ? null : this.state.getReceptionTime();
     }
 }

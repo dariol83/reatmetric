@@ -4,6 +4,7 @@ import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IEntityBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
@@ -111,10 +112,6 @@ public class GraphModel {
         alreadyProcessed.add(next);
         // Remove yourself from the alreadyInPath
         alreadyInPath.remove(next);
-    }
-
-    private EntityVertex getVertexOf(SystemEntityPath path) {
-        return this.pathMap.get(path);
     }
 
     private void addEdges(AbstractProcessingDefinition owner, ExpressionDefinition expression) throws ProcessingModelException {
@@ -271,5 +268,12 @@ public class GraphModel {
         }
     }
 
-
+    public IEntityBinding getBinding(int systemEntityId) {
+        EntityVertex ev = idMap.get(systemEntityId);
+        if(ev == null) {
+            return null;
+        } else {
+            return (IEntityBinding) ev.getProcessor();
+        }
+    }
 }
