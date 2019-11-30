@@ -83,7 +83,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Activate the dispatcher
         dispatcher.submit(this::doDispatch);
         // Create shared script engine: use Graal JS
-        scriptEngine = new ScriptEngineManager().getEngineByName("graal.js");
+        scriptEngine = new ScriptEngineManager().getEngineByName("graal.js"); // TODO check if singletone engine can be supported
         // Create redirector that uses the asynchronous notifier
         outputRedirector = createOutputRedirector();
     }

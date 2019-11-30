@@ -7,7 +7,6 @@
 
 package eu.dariolucia.reatmetric.processing.impl;
 
-import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.processing.IProcessingModelOutput;
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.JAXBException;
 import java.util.Arrays;
+import java.util.Collections;
 
 class ProcessingModelFactoryImplTest {
 
@@ -55,6 +55,21 @@ class ProcessingModelFactoryImplTest {
         p2 = ParameterSample.of(102, 3);
         p3 = ParameterSample.of(101, false);
         model.injectParameters(Arrays.asList(p1, p2, p3));
+
+        Thread.sleep(1000);
+
+        ParameterSample p4 = ParameterSample.of(121, true);
+        model.injectParameters(Collections.singletonList(p4));
+
+        // AlarmState to ALARM
+        Thread.sleep(1000);
+        p4 = ParameterSample.of(121, false);
+        model.injectParameters(Collections.singletonList(p4));
+
+        // Validity to INVALID
+        Thread.sleep(1000);
+        p1 = ParameterSample.of(101, true);
+        model.injectParameters(Collections.singletonList(p1));
 
         Thread.sleep(1000);
 

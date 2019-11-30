@@ -17,5 +17,18 @@
         <parameter id="#108" location="ROOT.ELEMENT2.PARAM3" description="Parameter 8" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
         <parameter id="#109" location="ROOT.ELEMENT2.PARAM4" description="Parameter 9" raw_type="ABSOLUTE_TIME" eng_type="ABSOLUTE_TIME" eng_unit="" />
         <parameter id="#110" location="ROOT.ELEMENT2.PARAM5" description="Parameter 10" raw_type="RELATIVE_TIME" eng_type="RELATIVE_TIME" eng_unit="" />
+
+        <parameter id="#121" location="ROOT.ELEMENT3.PARAM1" description="Boolean parameter with validity" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="">
+            <validity>
+                <expression>PARAM1.value() == true</expression>
+                <symbol name="PARAM1" reference="#101" />
+            </validity>
+            <checks>
+                <expected name="EXPCHK1" type="BOOLEAN">
+                    <value>true</value>
+                </expected>
+            </checks>
+        </parameter>
+
     </parameters>
 </ns1:processing>

@@ -1,4 +1,4 @@
-module eu.dariolucia.reatmetric.processing {
+open module eu.dariolucia.reatmetric.processing {
 
     requires java.logging;
     requires java.xml.bind;
