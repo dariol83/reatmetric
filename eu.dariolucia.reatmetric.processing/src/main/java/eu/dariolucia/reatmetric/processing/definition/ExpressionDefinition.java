@@ -14,6 +14,7 @@ import javax.script.*;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -28,7 +29,7 @@ public class ExpressionDefinition {
     private String expression;
 
     @XmlElement(name="symbol")
-    private List<SymbolDefinition> symbols;
+    private List<SymbolDefinition> symbols = new LinkedList<>();
 
     public ExpressionDefinition() {
     }

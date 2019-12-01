@@ -22,7 +22,7 @@ public class ExpressionCalibration extends CalibrationDefinition {
 
     public static final String INPUT_BINDING = "input";
 
-    @XmlElement(required = true)
+    @XmlElement(name = "definition", required = true)
     private ExpressionDefinition definition;
 
     public ExpressionCalibration() {

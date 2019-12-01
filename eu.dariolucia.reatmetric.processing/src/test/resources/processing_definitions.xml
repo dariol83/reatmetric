@@ -46,8 +46,10 @@
                 <symbol name="BATTERY_TENSION" reference="#1002" />
             </validity>
             <calib_expression>
-                <expression>input + BATTERY_TENSION.value()/300.0</expression>
-                <symbol name="BATTERY_TENSION" reference="#1002" /><!-- input is added automatically (source value) -->
+                <definition>
+                    <expression>input + BATTERY_TENSION.value()/300.0</expression>
+                    <symbol name="BATTERY_TENSION" reference="#1002" /><!-- input is added automatically (source value) -->
+                </definition>
             </calib_expression>
             <checks>
                 <limit name="BCURRLIMIT" type="REAL" severity="ALARM" high="1.8" low="0.5"/>

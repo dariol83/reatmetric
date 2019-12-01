@@ -28,7 +28,7 @@ public class ExpressionCheck extends CheckDefinition{
 
     public static final String INPUT_BINDING = "input";
 
-    @XmlElement(required = true)
+    @XmlElement(name = "definition", required = true)
     private ExpressionDefinition definition;
 
     public ExpressionCheck() {
