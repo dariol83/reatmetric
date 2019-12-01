@@ -38,7 +38,7 @@ public class ExternalCalibration extends CalibrationDefinition {
     }
 
     @Override
-    public Object calibrate(Object valueToCalibrate, ScriptEngine engine, IBindingResolver resolver) {
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) {
         // TODO
         return valueToCalibrate;
     }

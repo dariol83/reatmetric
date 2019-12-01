@@ -63,7 +63,7 @@ public abstract class CheckDefinition {
         this.numViolations = numViolations;
     }
 
-    public abstract AlarmState check(Object currentValue, Instant valueGenerationTime, int currentViolations, ScriptEngine engine, IBindingResolver resolver) throws CheckException;
+    public abstract AlarmState check(Object currentValue, Instant valueGenerationTime, int currentViolations, IBindingResolver resolver) throws CheckException;
 
     // ----------------------------------------------------------------------------------------------------------------
     // Transient objects

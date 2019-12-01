@@ -48,13 +48,13 @@ public class ExpressionCheck extends CheckDefinition{
     }
 
     @Override
-    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, ScriptEngine engine, IBindingResolver resolver) throws CheckException {
+    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, IBindingResolver resolver) throws CheckException {
         // Prepare transient state
         prepareMapping();
         // Check
         boolean violated;
         try {
-            violated = (Boolean) definition.execute(engine, resolver, Collections.singletonMap(INPUT_BINDING, currentValue));
+            violated = (Boolean) definition.execute(resolver, Collections.singletonMap(INPUT_BINDING, currentValue));
         } catch (ScriptException e) {
             throw new CheckException("Cannot check value " + currentValue + " using expression", e);
         } catch (ClassCastException e) {

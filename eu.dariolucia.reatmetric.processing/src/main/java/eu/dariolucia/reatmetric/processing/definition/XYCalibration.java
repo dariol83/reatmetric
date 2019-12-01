@@ -10,7 +10,6 @@ package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
-import javax.script.ScriptEngine;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -59,7 +58,7 @@ public class XYCalibration extends CalibrationDefinition {
     private transient List<XYSegment> segments = new ArrayList<>();
 
     @Override
-    public Object calibrate(Object valueToCalibrate, ScriptEngine engine, IBindingResolver resolver) throws CalibrationException {
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
         if(segments.isEmpty()) {
             for(int i = 0; i < points.size() - 1; ++i) {
                 segments.add(new XYSegment(

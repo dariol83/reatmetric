@@ -8,14 +8,11 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
-import javax.script.ScriptEngine;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
-import java.util.concurrent.Flow;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class PolyCalibration extends CalibrationDefinition{
@@ -99,7 +96,7 @@ public class PolyCalibration extends CalibrationDefinition{
     }
 
     @Override
-    public Object calibrate(Object valueToCalibrate, ScriptEngine engine, IBindingResolver resolver) throws CalibrationException {
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
         double val = convertToDouble(valueToCalibrate);
         return a0 + a1*val + a2*Math.pow(val, 2) + a3*Math.pow(val, 3) + a4*Math.pow(val, 4) + a5*Math.pow(val, 5);
     }

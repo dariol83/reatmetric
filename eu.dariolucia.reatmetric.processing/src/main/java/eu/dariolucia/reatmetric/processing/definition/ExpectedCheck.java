@@ -65,7 +65,7 @@ public class ExpectedCheck extends CheckDefinition {
     private transient Set<Object> values = new HashSet<>();
 
     @Override
-    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, ScriptEngine engine, IBindingResolver resolver) {
+    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, IBindingResolver resolver) {
         // Prepare transient state
         prepareMapping();
         // Other transients

@@ -64,8 +64,6 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private final WorkingSet workingSet = new WorkingSet();
 
-    private final ScriptEngine scriptEngine;
-
     private final Consumer<List<AbstractDataItem>> outputRedirector;
 
     public ProcessingModelImpl(ProcessingDefinition processingDefinition, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialSequencerMap) throws ProcessingModelException {
@@ -82,8 +80,6 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         graphModel.build();
         // Activate the dispatcher
         dispatcher.submit(this::doDispatch);
-        // Create shared script engine: use Graal JS
-        scriptEngine = new ScriptEngineManager().getEngineByName("graal.js"); // TODO check if singletone engine can be supported
         // Create redirector that uses the asynchronous notifier
         outputRedirector = createOutputRedirector();
     }
@@ -107,10 +103,6 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 LOG.log(Level.SEVERE, "Exception when dispatching processing tasks: " + e.getMessage(), e);
             }
         }
-    }
-
-    public ScriptEngine getScriptEngine() {
-        return scriptEngine;
     }
 
     public long getNextId(Class<? extends AbstractDataItem> type) {

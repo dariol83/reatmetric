@@ -17,7 +17,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 @XmlAccessorType(XmlAccessType.FIELD)
 public abstract class CalibrationDefinition {
 
-    public abstract Object calibrate(Object valueToCalibrate, ScriptEngine engine, IBindingResolver resolver) throws CalibrationException;
+    public abstract Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException;
 
     protected final double convertToDouble(Object valueToCheck) throws CalibrationException {
         if(valueToCheck instanceof Number) {

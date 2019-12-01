@@ -61,7 +61,7 @@ public class EnumCalibration extends CalibrationDefinition {
     private transient Map<Long, String> point2values = new HashMap<>();
 
     @Override
-    public Object calibrate(Object valueToCalibrate, ScriptEngine engine, IBindingResolver resolver) throws CalibrationException {
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
         // If the valueToCalibrate can become an integer number somehow, then calibrate, otherwise error
         long valueToUse = convertToLong(valueToCalibrate);
         if(point2values.isEmpty()) {

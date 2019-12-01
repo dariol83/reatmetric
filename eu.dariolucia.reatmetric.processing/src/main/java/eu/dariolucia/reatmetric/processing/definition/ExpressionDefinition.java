@@ -14,8 +14,6 @@ import javax.script.*;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
-
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -65,8 +63,9 @@ public class ExpressionDefinition {
     private transient Bindings bindings;
     private transient ScriptEngine engine;
 
-    public Object execute(ScriptEngine externalEngine, IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
-        if(engine == null) { // TODO check singletone engine
+    public Object execute(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
+        // One engine per expression, to avoid concurrent access: might not be wise from a memory POV...
+        if(engine == null) {
             engine = new ScriptEngineManager().getEngineByName("graal.js");
             bindings = engine.getBindings(ScriptContext.ENGINE_SCOPE);
             bindings.put("polyglot.js.allowAllAccess", true);
@@ -86,10 +85,7 @@ public class ExpressionDefinition {
                 canBeCompiled = false;
             }
         }
-        // Create/update the bindings
-        if(bindings == null) {
-            // TODO remove
-        }
+        // Update the bindings
         for(SymbolDefinition sd : symbols) {
             bindings.put(sd.getName(), resolver.resolve(sd.getReference().getId()));
         }

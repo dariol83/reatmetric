@@ -76,7 +76,7 @@ public class DeltaCheck extends CheckDefinition {
     private transient AlarmState previousResult;
 
     @Override
-    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, ScriptEngine engine, IBindingResolver resolver) throws CheckException {
+    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, IBindingResolver resolver) throws CheckException {
         // Prepare transient state
         prepareMapping();
         // Check

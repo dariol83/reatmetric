@@ -41,7 +41,7 @@ public class ExternalCheck extends CheckDefinition {
 
 
     @Override
-    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, ScriptEngine engine, IBindingResolver resolver) {
+    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, IBindingResolver resolver) {
         // TODO
         return AlarmState.NOMINAL;
     }

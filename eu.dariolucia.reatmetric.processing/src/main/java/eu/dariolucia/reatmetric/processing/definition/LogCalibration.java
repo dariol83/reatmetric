@@ -98,7 +98,7 @@ public class LogCalibration extends CalibrationDefinition{
     }
 
     @Override
-    public Object calibrate(Object valueToCalibrate, ScriptEngine engine, IBindingResolver resolver) throws CalibrationException {
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
         double val = convertToDouble(valueToCalibrate);
         return 1/(a0 + a1*Math.log(val) + a2*Math.pow(Math.log(val), 2) + a3*Math.pow(Math.log(val), 3) + a4*Math.pow(Math.log(val), 4) + a5*Math.pow(Math.log(val), 5));
     }
