@@ -24,7 +24,7 @@ import java.util.Objects;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class EnumCalibration extends CalibrationDefinition {
 
-    @XmlAttribute
+    @XmlAttribute(name = "default")
     private String defaultValue;
 
     @XmlElement(name = "point", required = true)

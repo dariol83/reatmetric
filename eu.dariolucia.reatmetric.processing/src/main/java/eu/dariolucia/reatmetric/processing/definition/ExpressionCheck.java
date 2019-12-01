@@ -26,7 +26,7 @@ import java.util.Set;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ExpressionCheck extends CheckDefinition{
 
-    public static final String INPUT_BINDING = "x";
+    public static final String INPUT_BINDING = "input";
 
     @XmlElement(required = true)
     private ExpressionDefinition definition;

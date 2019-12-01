@@ -13,7 +13,8 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
-import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+import eu.dariolucia.reatmetric.api.value.ValueException;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IParameterBinding;
@@ -163,21 +164,12 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             return value;
         } else {
             // Try to see if you can get any compliance, especially with numeric types
-            if((definition.getRawType() == ValueTypeEnum.UNSIGNED_INTEGER ||
-                    definition.getRawType() == ValueTypeEnum.SIGNED_INTEGER) && value instanceof Number) {
-                return ((Number) value).longValue();
+            try {
+                return ValueUtil.convert(value, definition.getRawType());
+            } catch(ValueException e) {
+                // At this stage, there is not much you can do
+                throw new ProcessingModelException("Source value " + value + " does not match declared source type " + definition.getRawType() + " and cannot be automatically converted", e);
             }
-            if(definition.getRawType() == ValueTypeEnum.ENUMERATED && value instanceof Number) {
-                return ((Number) value).intValue();
-            }
-            if(definition.getRawType() == ValueTypeEnum.REAL && value instanceof Number) {
-                return ((Number) value).doubleValue();
-            }
-            if(definition.getRawType() == ValueTypeEnum.BOOLEAN && value instanceof Number) {
-                return ((Number) value).intValue() != 0;
-            }
-            // At this stage, there is not much you can do
-            throw new ProcessingModelException("Source value " + value + " does not match declared source type " + definition.getRawType() + " and cannot be automatically converted");
         }
     }
 
@@ -186,12 +178,19 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         if(value == null) {
             return null;
         }
+        Object result = value;
         // Otherwise, calibrate it
         if(this.definition.getCalibration() != null) {
-            return this.definition.getCalibration().calibrate(value, this.processor);
-        } else {
-            return value;
+            result = this.definition.getCalibration().calibrate(value, this.processor);
         }
+        // Sanitize, if possible, based on type
+        try {
+            result = ValueUtil.convert(result, definition.getEngineeringType());
+        } catch(ValueException ve) {
+            throw new CalibrationException("Conversion of value " + result + " to output type " + definition.getEngineeringType() + " failed: " + ve.getMessage(), ve);
+        }
+        // Return the result
+        return result;
     }
 
     private AlarmState check(Object engValue, Instant generationTime, boolean reevaluation) {

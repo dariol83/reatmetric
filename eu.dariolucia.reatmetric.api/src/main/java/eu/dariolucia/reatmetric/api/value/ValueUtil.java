@@ -264,4 +264,72 @@ public class ValueUtil {
             TYPE2HANDLER.put(typeId, cp);
         }
     }
+
+    public static int compare(Object o1, Object o2) {
+        return ((Comparable) o1).compareTo(o2);
+    }
+
+    public static Object convert(Object result, ValueTypeEnum type) throws ValueException {
+        if(result == null) {
+            return null;
+        }
+        if(result.getClass().equals(type.getAssignedClass())) {
+            return result;
+        }
+        try {
+            // If the result is a string, then try to parse it
+            if (result instanceof String) {
+                return ValueUtil.parse(type, (String) result);
+            }
+            // If the result is a byte array, then try to deserialize it
+            if (result instanceof byte[]) {
+                return ValueUtil.deserialize((byte[]) result);
+            }
+            // Try to adapt the specified result to the specified type
+            if(type == ValueTypeEnum.BOOLEAN) {
+                if (result instanceof Number) {
+                    return ((Number) result).doubleValue() != 0.0;
+                }
+            }
+            if (type == ValueTypeEnum.UNSIGNED_INTEGER || type == ValueTypeEnum.SIGNED_INTEGER) {
+                if (result instanceof Number) {
+                    return ((Number) result).longValue();
+                }
+                if (result instanceof Boolean) {
+                    return ((Boolean) result) ? 1L : 0L;
+                }
+            }
+            if (type == ValueTypeEnum.ENUMERATED) {
+                if (result instanceof Number) {
+                    return ((Number) result).intValue();
+                }
+                if (result instanceof Boolean) {
+                    return ((Boolean) result) ? 1 : 0;
+                }
+            }
+            if (type == ValueTypeEnum.REAL) {
+                if (result instanceof Number) {
+                    return ((Number) result).doubleValue();
+                }
+                if (result instanceof Boolean) {
+                    return ((Boolean) result) ? 1.0 : 0.0;
+                }
+            }
+            if (type == ValueTypeEnum.ABSOLUTE_TIME) {
+                if (result instanceof Number) {
+                    // Assume number of milliseconds since epoch
+                    return Instant.ofEpochMilli(((Number) result).longValue());
+                }
+            }
+            if (type == ValueTypeEnum.RELATIVE_TIME) {
+                if (result instanceof Number) {
+                    // Assume number of milliseconds
+                    return Duration.ofMillis(((Number) result).longValue());
+                }
+            }
+        } catch (Exception e) {
+            throw new ValueException("Object " + result + " cannot be converted to " + type + ": " + e.getMessage(), e);
+        }
+        throw new ValueException("Object " + result + " cannot be converted to " + type);
+    }
 }

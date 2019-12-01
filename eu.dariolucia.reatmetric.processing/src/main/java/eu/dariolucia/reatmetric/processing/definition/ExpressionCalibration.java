@@ -20,7 +20,7 @@ import java.util.Collections;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ExpressionCalibration extends CalibrationDefinition {
 
-    public static final String INPUT_BINDING = "x";
+    public static final String INPUT_BINDING = "input";
 
     @XmlElement(required = true)
     private ExpressionDefinition definition;

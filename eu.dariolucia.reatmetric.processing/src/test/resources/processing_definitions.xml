@@ -18,14 +18,54 @@
         <parameter id="#109" location="ROOT.ELEMENT2.PARAM4" description="Parameter 9" raw_type="ABSOLUTE_TIME" eng_type="ABSOLUTE_TIME" eng_unit="" />
         <parameter id="#110" location="ROOT.ELEMENT2.PARAM5" description="Parameter 10" raw_type="RELATIVE_TIME" eng_type="RELATIVE_TIME" eng_unit="" />
 
-        <parameter id="#121" location="ROOT.ELEMENT3.PARAM1" description="Boolean parameter with validity" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="">
+
+        <parameter id="#1001" location="ROOT.BATTERY.BATTERY_STATE" description="Battery state" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="">
             <validity>
-                <expression>PARAM1.value() == true</expression>
-                <symbol name="PARAM1" reference="#101" />
+                <expression>true</expression>
             </validity>
             <checks>
                 <expected name="EXPCHK1" type="BOOLEAN">
                     <value>true</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#1002" location="ROOT.BATTERY.BATTERY_TENSION" description="Battery tension" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="mV">
+            <validity>
+                <expression>BATTERY_STATE.value() == true</expression>
+                <symbol name="BATTERY_STATE" reference="#1001" />
+            </validity>
+            <calib_poly ao="10" a1="2" />
+            <checks>
+                <limit name="BTENSLIMIT" type="UNSIGNED_INTEGER" severity="WARNING" high="3000" low="1000"/>
+            </checks>
+        </parameter>
+        <parameter id="#1003" location="ROOT.BATTERY.BATTERY_CURRENT" description="Battery current" raw_type="UNSIGNED_INTEGER" eng_type="REAL" eng_unit="A">
+            <validity>
+                <expression>BATTERY_STATE.value() == true &amp;&amp; !BATTERY_TENSION.inAlarm()</expression>
+                <symbol name="BATTERY_STATE" reference="#1001" />
+                <symbol name="BATTERY_TENSION" reference="#1002" />
+            </validity>
+            <calib_expression>
+                <expression>input + BATTERY_TENSION.value()/300.0</expression>
+                <symbol name="BATTERY_TENSION" reference="#1002" /><!-- input is added automatically (source value) -->
+            </calib_expression>
+            <checks>
+                <limit name="BCURRLIMIT" type="REAL" severity="ALARM" high="1.8" low="0.5"/>
+                <delta name="BCURRDELTA" type="REAL" severity="ALARM" numViolations="2" high="0.2" low="-0.2"/>
+            </checks>
+        </parameter>
+        <parameter id="#1004" location="ROOT.BATTERY.BATTERY_STATE_EN" description="Battery state as enum" raw_type="ENUMERATED" eng_type="CHARACTER_STRING">
+            <synthetic>
+                <expression>BATTERY_STATE.value() ? 1 : 0</expression>
+                <symbol name="BATTERY_STATE" reference="#1001" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
                 </expected>
             </checks>
         </parameter>

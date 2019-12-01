@@ -29,6 +29,9 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlElement(name = "validity")
     private ExpressionDefinition validity;
 
+    @XmlElement(name = "synthetic")
+    private ExpressionDefinition expression;
+
     @XmlElements({
             @XmlElement(name="calib_xy",type=XYCalibration.class),
             @XmlElement(name="calib_poly",type=PolyCalibration.class),
@@ -48,9 +51,6 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
             @XmlElement(name="external",type=ExternalCheck.class),
     })
     private List<CheckDefinition> checks = new LinkedList<>();
-
-    @XmlElement(name = "expression")
-    private ExpressionDefinition expression;
 
     public ParameterProcessingDefinition() {
         super();

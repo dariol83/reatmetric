@@ -15,10 +15,10 @@ import javax.xml.bind.annotation.XmlAttribute;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class EnumCalibrationPoint {
 
-    @XmlAttribute(required = true)
+    @XmlAttribute(name = "x", required = true)
     private long input;
 
-    @XmlAttribute(required = true)
+    @XmlAttribute(name = "y", required = true)
     private String value;
 
     public EnumCalibrationPoint() {

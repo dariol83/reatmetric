@@ -127,6 +127,4 @@ public enum ValueTypeEnum {
         }
         return ValueTypeEnum.values()[code - 1];
     }
-
-
 }

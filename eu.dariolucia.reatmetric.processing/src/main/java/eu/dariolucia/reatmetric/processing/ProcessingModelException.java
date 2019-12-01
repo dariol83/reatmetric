@@ -8,4 +8,8 @@ public class ProcessingModelException extends Exception {
     public ProcessingModelException(Throwable cause) {
         super(cause);
     }
+
+    public ProcessingModelException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
