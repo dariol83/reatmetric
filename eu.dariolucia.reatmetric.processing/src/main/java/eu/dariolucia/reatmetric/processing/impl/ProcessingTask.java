@@ -44,7 +44,7 @@ public class ProcessingTask implements Callable<List<AbstractDataItem>> {
                 amo.execute().addToList(result);
             } catch (Exception e) {
                 // You need to survive here!
-                LOG.log(Level.SEVERE, "Cannot process model operation " + amo + " due to: " + e.getMessage(), e);
+                LOG.log(Level.SEVERE, "Cannot process model operation " + amo + ": " + e.getMessage(), e);
             }
         }
         workingSet.remove(affectedItems);

@@ -52,7 +52,7 @@
                 </definition>
             </calib_expression>
             <checks>
-                <limit name="BCURRLIMIT" type="REAL" severity="ALARM" high="1.8" low="0.5"/>
+                <limit name="BCURRLIMIT" type="REAL" severity="ALARM" high="3.8" low="0.5"/>
                 <delta name="BCURRDELTA" type="REAL" severity="ALARM" numViolations="2" high="0.2" low="-0.2"/>
             </checks>
         </parameter>

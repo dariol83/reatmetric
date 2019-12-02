@@ -13,8 +13,12 @@ import eu.dariolucia.reatmetric.processing.impl.processors.ParameterProcessor;
 
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class GraphModel {
+
+    private static final Logger LOG = Logger.getLogger(GraphModel.class.getName());
 
     private final ProcessingDefinition definition;
 
@@ -201,6 +205,10 @@ public class GraphModel {
         operations.forEach(o -> alreadyPresent.add(o.getSystemEntityId()));
         for(AbstractModelOperation operation : operations) {
             EntityVertex entityVertex = getVertexOf(operation.getSystemEntityId());
+            if(entityVertex == null) {
+                LOG.log(Level.SEVERE, "Cannot locate entity with ID " + operation.getSystemEntityId() + ", processing skipped");
+                continue;
+            }
             // Set the correct processors to the provided operations
             entityVertex.assignProcessor(operation);
             // Add the affected processors for evaluation

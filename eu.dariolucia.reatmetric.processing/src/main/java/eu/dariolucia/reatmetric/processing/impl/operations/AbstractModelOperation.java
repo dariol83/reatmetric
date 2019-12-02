@@ -24,6 +24,10 @@ public abstract class AbstractModelOperation<T extends AbstractDataItem, K exten
     }
 
     public Pair<T, SystemEntity> execute() throws ProcessingModelException {
+        // A processor is required: if it is not set, exception
+        if(processor == null) {
+            throw new ProcessingModelException("Processor not set on operation " + getClass().getSimpleName() + " for entity " + getSystemEntityId());
+        }
         return doProcess();
     }
 
