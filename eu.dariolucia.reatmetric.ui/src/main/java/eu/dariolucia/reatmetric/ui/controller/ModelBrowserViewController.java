@@ -141,11 +141,6 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                                 setStyle("-fx-font-weight: bold");
                                 // setStyle("-fx-font-weight: bold; -fx-background-color: LightGray");
                                 break;
-                            case ABSENT:
-                                setTextFill(Color.GRAY);
-                                setStyle("-fx-font-weight: bold");
-                                // setStyle("-fx-font-weight: bold -fx-background-color: DarkSlateGray");
-                                break;
                             case UNKNOWN:
                                 setTextFill(Color.DARKORANGE);
                                 setStyle("-fx-font-weight: bold");

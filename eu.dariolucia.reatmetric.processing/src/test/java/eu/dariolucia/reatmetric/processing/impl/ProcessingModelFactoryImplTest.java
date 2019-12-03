@@ -80,7 +80,19 @@ class ProcessingModelFactoryImplTest {
         testLogger.info("Injection - Batch 1");
         model.injectParameters(Arrays.asList(batteryCurrent, batteryState, batteryTension));
 
-        Thread.sleep(1000);
+        Thread.sleep(5000);
+        // TODO: Verify: 1001, 1002, 1003
+        System.out.println("List size: " + outList.size());
+        outList.forEach(System.out::println);
+
+        batteryState = ParameterSample.of(1001, false);
+        batteryTension = ParameterSample.of(1002, 1100L);
+        batteryCurrent = ParameterSample.of(1003, 2L);
+
+        testLogger.info("Injection - Batch 2");
+        model.injectParameters(Arrays.asList(batteryCurrent, batteryState, batteryTension));
+
+        Thread.sleep(5000);
         // TODO: Verify: 1001, 1002, 1003
         System.out.println("List size: " + outList.size());
         outList.forEach(System.out::println);

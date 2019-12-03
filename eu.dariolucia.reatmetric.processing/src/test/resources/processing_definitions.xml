@@ -18,7 +18,6 @@
         <parameter id="#109" location="ROOT.ELEMENT2.PARAM4" description="Parameter 9" raw_type="ABSOLUTE_TIME" eng_type="ABSOLUTE_TIME" eng_unit="" />
         <parameter id="#110" location="ROOT.ELEMENT2.PARAM5" description="Parameter 10" raw_type="RELATIVE_TIME" eng_type="RELATIVE_TIME" eng_unit="" />
 
-
         <parameter id="#1001" location="ROOT.BATTERY.BATTERY_STATE" description="Battery state" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="">
             <validity>
                 <expression>true</expression>
