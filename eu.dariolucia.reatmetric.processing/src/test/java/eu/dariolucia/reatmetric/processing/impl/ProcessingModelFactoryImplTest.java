@@ -121,6 +121,45 @@ class ProcessingModelFactoryImplTest {
         assertEquals("OFF", ((ParameterData)outList.get(6)).getEngValue());
         assertEquals(Validity.VALID, ((ParameterData)outList.get(6)).getValidity());
         assertEquals(AlarmState.ALARM, ((ParameterData)outList.get(6)).getAlarmState());
+
+        testLogger.info("Injection - Batch 3");
+        outList.clear();
+
+        batteryState = ParameterSample.of(1001, true);
+
+        model.injectParameters(Collections.singletonList(batteryState));
+
+        Thread.sleep(5000);
+        assertEquals(7, outList.size());
+        // Battery state
+        assertEquals(1001, ((ParameterData)outList.get(0)).getExternalId());
+        assertEquals("BATTERY_STATE", ((SystemEntity)outList.get(1)).getName());
+        assertEquals(true, ((ParameterData)outList.get(0)).getSourceValue());
+        assertEquals(true, ((ParameterData)outList.get(0)).getEngValue());
+        assertEquals(Validity.VALID, ((ParameterData)outList.get(0)).getValidity());
+        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(0)).getAlarmState());
+        // Battery tension
+        assertEquals(1002, ((ParameterData)outList.get(2)).getExternalId());
+        assertEquals("BATTERY_TENSION", ((SystemEntity)outList.get(3)).getName());
+        assertEquals(300L, ((ParameterData)outList.get(2)).getSourceValue());
+        assertEquals(610L, ((ParameterData)outList.get(2)).getEngValue());
+        assertEquals(Validity.VALID, ((ParameterData)outList.get(2)).getValidity());
+        assertEquals(AlarmState.WARNING, ((ParameterData)outList.get(2)).getAlarmState());
+        // Battery current
+        assertEquals(1003, ((ParameterData)outList.get(4)).getExternalId());
+        assertEquals(2L, ((ParameterData)outList.get(4)).getSourceValue());
+        assertEquals(null, ((ParameterData)outList.get(4)).getEngValue());
+        assertEquals(Validity.INVALID, ((ParameterData)outList.get(4)).getValidity());
+        assertEquals(AlarmState.UNKNOWN, ((ParameterData)outList.get(4)).getAlarmState());
+        // Battery state (enumeration)
+        assertEquals(1004, ((ParameterData)outList.get(5)).getExternalId());
+        assertEquals("BATTERY_STATE_EN", ((SystemEntity)outList.get(6)).getName());
+        assertEquals(1, ((ParameterData)outList.get(5)).getSourceValue());
+        assertEquals("ON", ((ParameterData)outList.get(5)).getEngValue());
+        assertEquals(Validity.VALID, ((ParameterData)outList.get(5)).getValidity());
+        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(5)).getAlarmState());
+
+        // TODO: inject CURRENT
     }
 
 }
