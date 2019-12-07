@@ -33,7 +33,7 @@
                 <expression>BATTERY_STATE.value() == true</expression>
                 <symbol name="BATTERY_STATE" reference="#1001" />
             </validity>
-            <calib_poly ao="10" a1="2" />
+            <calib_poly a0="10" a1="2" />
             <checks>
                 <limit name="BTENSLIMIT" type="UNSIGNED_INTEGER" severity="WARNING" high="3000" low="1000"/>
             </checks>

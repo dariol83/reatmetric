@@ -33,44 +33,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ProcessingModelFactoryImplTest {
 
     @Test
-    void loadModel() throws JAXBException, ProcessingModelException, InterruptedException {
-        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions.xml"));
-        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
-        IProcessingModelOutput output = items -> items.forEach(System.out::println);
-        IProcessingModel model = factory.build(pd, output, null);
-
-        ParameterSample p1 = ParameterSample.of(101, true);
-        ParameterSample p2 = ParameterSample.of(102, 1);
-        ParameterSample p3 = ParameterSample.of(101, false);
-        System.out.println("Injection - Batch 1");
-        model.injectParameters(Arrays.asList(p1, p2, p3));
-
-        Thread.sleep(1000);
-        System.out.println("Disable");
-        model.disable(SystemEntityPath.fromString("ROOT.ELEMENT1"));
-
-        Thread.sleep(1000);
-        System.out.println("Injection - Batch 2");
-        p1 = ParameterSample.of(101, true);
-        p2 = ParameterSample.of(102, 2);
-        p3 = ParameterSample.of(101, false);
-        model.injectParameters(Arrays.asList(p1, p2, p3));
-
-        Thread.sleep(1000);
-        System.out.println("Enable");
-        model.enable(SystemEntityPath.fromString("ROOT.ELEMENT1"));
-
-        Thread.sleep(1000);
-        System.out.println("Injection - Batch 3");
-        p1 = ParameterSample.of(101, true);
-        p2 = ParameterSample.of(102, 3);
-        p3 = ParameterSample.of(101, false);
-        model.injectParameters(Arrays.asList(p1, p2, p3));
-
-        Thread.sleep(1000);
-    }
-
-    @Test
     void testBatteryModel() throws JAXBException, ProcessingModelException, InterruptedException {
         Logger testLogger = Logger.getLogger(getClass().getName());
         ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions.xml"));
@@ -107,23 +69,58 @@ class ProcessingModelFactoryImplTest {
         // Battery current
         assertEquals(1003, ((ParameterData)outList.get(4)).getExternalId());
         assertEquals("BATTERY_CURRENT", ((SystemEntity)outList.get(5)).getName());
+        assertEquals(1L, ((ParameterData)outList.get(4)).getSourceValue());
+        assertEquals(7.7, ((ParameterData)outList.get(4)).getEngValue());
+        assertEquals(Validity.VALID, ((ParameterData)outList.get(4)).getValidity());
+        assertEquals(AlarmState.ALARM, ((ParameterData)outList.get(4)).getAlarmState());
         // Battery state (enumeration)
         assertEquals(1004, ((ParameterData)outList.get(6)).getExternalId());
         assertEquals("BATTERY_STATE_EN", ((SystemEntity)outList.get(7)).getName());
-
-        testLogger.info("List size: " + outList.size());
-
-        batteryState = ParameterSample.of(1001, false);
-        batteryTension = ParameterSample.of(1002, 1100L);
-        batteryCurrent = ParameterSample.of(1003, 2L);
+        assertEquals(1, ((ParameterData)outList.get(6)).getSourceValue());
+        assertEquals("ON", ((ParameterData)outList.get(6)).getEngValue());
+        assertEquals(Validity.VALID, ((ParameterData)outList.get(6)).getValidity());
+        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(6)).getAlarmState());
 
         testLogger.info("Injection - Batch 2");
+        outList.clear();
+
+        batteryState = ParameterSample.of(1001, false);
+        batteryTension = ParameterSample.of(1002, 300L);
+        batteryCurrent = ParameterSample.of(1003, 2L);
+
         model.injectParameters(Arrays.asList(batteryCurrent, batteryState, batteryTension));
 
         Thread.sleep(5000);
-        // TODO: Verify: 1001, 1002, 1003
-        System.out.println("List size: " + outList.size());
-        outList.forEach(System.out::println);
+
+        assertEquals(8, outList.size());
+        // Battery state
+        assertEquals(1001, ((ParameterData)outList.get(0)).getExternalId());
+        assertEquals("BATTERY_STATE", ((SystemEntity)outList.get(1)).getName());
+        assertEquals(false, ((ParameterData)outList.get(0)).getSourceValue());
+        assertEquals(false, ((ParameterData)outList.get(0)).getEngValue());
+        assertEquals(Validity.VALID, ((ParameterData)outList.get(0)).getValidity());
+        assertEquals(AlarmState.ALARM, ((ParameterData)outList.get(0)).getAlarmState());
+        // Battery tension
+        assertEquals(1002, ((ParameterData)outList.get(2)).getExternalId());
+        assertEquals("BATTERY_TENSION", ((SystemEntity)outList.get(3)).getName());
+        assertEquals(300L, ((ParameterData)outList.get(2)).getSourceValue());
+        assertEquals(null, ((ParameterData)outList.get(2)).getEngValue());
+        assertEquals(Validity.INVALID, ((ParameterData)outList.get(2)).getValidity());
+        assertEquals(AlarmState.UNKNOWN, ((ParameterData)outList.get(2)).getAlarmState());
+        // Battery current
+        assertEquals(1003, ((ParameterData)outList.get(4)).getExternalId());
+        assertEquals("BATTERY_CURRENT", ((SystemEntity)outList.get(5)).getName());
+        assertEquals(2L, ((ParameterData)outList.get(4)).getSourceValue());
+        assertEquals(null, ((ParameterData)outList.get(4)).getEngValue());
+        assertEquals(Validity.INVALID, ((ParameterData)outList.get(4)).getValidity());
+        assertEquals(AlarmState.UNKNOWN, ((ParameterData)outList.get(4)).getAlarmState());
+        // Battery state (enumeration)
+        assertEquals(1004, ((ParameterData)outList.get(6)).getExternalId());
+        assertEquals("BATTERY_STATE_EN", ((SystemEntity)outList.get(7)).getName());
+        assertEquals(0, ((ParameterData)outList.get(6)).getSourceValue());
+        assertEquals("OFF", ((ParameterData)outList.get(6)).getEngValue());
+        assertEquals(Validity.VALID, ((ParameterData)outList.get(6)).getValidity());
+        assertEquals(AlarmState.ALARM, ((ParameterData)outList.get(6)).getAlarmState());
     }
 
 }
