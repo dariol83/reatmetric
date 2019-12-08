@@ -18,6 +18,7 @@
         <parameter id="#109" location="ROOT.ELEMENT2.PARAM4" description="Parameter 9" raw_type="ABSOLUTE_TIME" eng_type="ABSOLUTE_TIME" eng_unit="" />
         <parameter id="#110" location="ROOT.ELEMENT2.PARAM5" description="Parameter 10" raw_type="RELATIVE_TIME" eng_type="RELATIVE_TIME" eng_unit="" />
 
+        <!-- Battery model -->
         <parameter id="#1001" location="ROOT.BATTERY.BATTERY_STATE" description="Battery state" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="">
             <validity>
                 <expression>true</expression>
@@ -69,6 +70,40 @@
                     <value>ON</value>
                 </expected>
             </checks>
+        </parameter>
+
+        <!-- Fail model, to test errors -->
+        <parameter id="#1010" location="ROOT.FAIL.WRONG_VAL_RETVAL" description="Wrong validity return value" raw_type="ENUMERATED" eng_type="CHARACTER_STRING">
+            <validity>
+                <expression>12.3</expression>
+            </validity>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1011" location="ROOT.FAIL.DEPEN" description="Dependency for synth parameter" raw_type="REAL" eng_type="REAL">
+        </parameter>
+        <parameter id="#1012" location="ROOT.FAIL.SYNTH_SAMPLE" description="Synthetic value" raw_type="REAL" eng_type="REAL" eng_unit="mS">
+            <synthetic>
+                <expression>DEPEN * 2</expression>
+                <symbol name="DEPEN" reference="#1011" />
+            </synthetic>
+        </parameter>
+        <parameter id="#1013" location="ROOT.FAIL.WRONG_VAL_EXP" description="Wrong validity expression" raw_type="ENUMERATED" eng_type="CHARACTER_STRING">
+            <validity>
+                <expression>NOSYMBOL == 2.0</expression>
+            </validity>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1014" location="ROOT.FAIL.WRONG_SYNTH_EXP" description="Wrong synthetic value expression" raw_type="REAL" eng_type="REAL" eng_unit="mS">
+            <synthetic>
+                <expression>WHATEVER * 2</expression>
+                <symbol name="DEPEN" reference="#1011" />
+            </synthetic>
         </parameter>
 
     </parameters>

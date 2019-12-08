@@ -9,6 +9,7 @@ package eu.dariolucia.reatmetric.processing.impl;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.model.Status;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
@@ -49,9 +50,8 @@ class ProcessingModelFactoryImplTest {
         testLogger.info("Injection - Batch 1");
         model.injectParameters(Arrays.asList(batteryCurrent, batteryState, batteryTension));
 
-        Thread.sleep(5000);
+        AwaitUtil.awaitAndVerify(5000, () -> outList.size() == 8);
 
-        assertEquals(8, outList.size());
         // Battery state
         assertEquals(1001, ((ParameterData)outList.get(0)).getExternalId());
         assertEquals("BATTERY_STATE", ((SystemEntity)outList.get(1)).getName());
@@ -90,9 +90,8 @@ class ProcessingModelFactoryImplTest {
 
         model.injectParameters(Arrays.asList(batteryCurrent, batteryState, batteryTension));
 
-        Thread.sleep(5000);
+        AwaitUtil.awaitAndVerify(5000, () -> outList.size() == 8);
 
-        assertEquals(8, outList.size());
         // Battery state
         assertEquals(1001, ((ParameterData)outList.get(0)).getExternalId());
         assertEquals("BATTERY_STATE", ((SystemEntity)outList.get(1)).getName());
@@ -129,8 +128,8 @@ class ProcessingModelFactoryImplTest {
 
         model.injectParameters(Collections.singletonList(batteryState));
 
-        Thread.sleep(5000);
-        assertEquals(7, outList.size());
+        AwaitUtil.awaitAndVerify(5000, () -> outList.size() == 7);
+
         // Battery state
         assertEquals(1001, ((ParameterData)outList.get(0)).getExternalId());
         assertEquals("BATTERY_STATE", ((SystemEntity)outList.get(1)).getName());
@@ -159,7 +158,54 @@ class ProcessingModelFactoryImplTest {
         assertEquals(Validity.VALID, ((ParameterData)outList.get(5)).getValidity());
         assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(5)).getAlarmState());
 
-        // TODO: inject CURRENT
+        testLogger.info("Injection - Batch 4");
+        outList.clear();
+
+        batteryTension = ParameterSample.of(1002, 500);
+        batteryCurrent = ParameterSample.of(1003, 0L);
+
+        model.injectParameters(Arrays.asList(batteryCurrent, batteryTension));
+
+        AwaitUtil.awaitAndVerify(5000, () -> outList.size() == 4);
+
+        // Battery tension
+        assertEquals(1002, ((ParameterData)outList.get(0)).getExternalId());
+        assertEquals("BATTERY_TENSION", ((SystemEntity)outList.get(1)).getName());
+        assertEquals(500L, ((ParameterData)outList.get(0)).getSourceValue());
+        assertEquals(1010L, ((ParameterData)outList.get(0)).getEngValue());
+        assertEquals(Validity.VALID, ((ParameterData)outList.get(0)).getValidity());
+        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(0)).getAlarmState());
+        // Battery current
+        assertEquals(1003, ((ParameterData)outList.get(2)).getExternalId());
+        assertEquals("BATTERY_CURRENT", ((SystemEntity)outList.get(3)).getName());
+        assertEquals(0L, ((ParameterData)outList.get(2)).getSourceValue());
+        assertEquals(3.3666, (Double) ((ParameterData)outList.get(2)).getEngValue(), 0.001);
+        assertEquals(Validity.VALID, ((ParameterData)outList.get(2)).getValidity());
+        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(2)).getAlarmState());
+
+        testLogger.info("Injection - Disable battery");
+        outList.clear();
+
+        model.disable(SystemEntityPath.fromString("ROOT.BATTERY"));
+
+        AwaitUtil.awaitAndVerify(5000, () -> outList.size() == 5);
+
+        for(AbstractDataItem i : outList) {
+            assertEquals(Status.DISABLED, ((SystemEntity)i).getStatus());
+        }
+
+        testLogger.info("Injection - Disable battery");
+        outList.clear();
+
+        model.enable(SystemEntityPath.fromString("ROOT.BATTERY"));
+
+        AwaitUtil.awaitAndVerify(5000, () -> outList.size() == 9);
+
+        for(AbstractDataItem i : outList) {
+            if(i instanceof SystemEntity) {
+                assertEquals(Status.ENABLED, ((SystemEntity) i).getStatus());
+            }
+        }
     }
 
 }

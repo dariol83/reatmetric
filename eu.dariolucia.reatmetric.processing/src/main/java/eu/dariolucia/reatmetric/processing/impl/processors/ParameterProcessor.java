@@ -243,9 +243,6 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             } catch(ScriptException e) {
                 LOG.log(Level.SEVERE, "Error when computing validity of parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
                 return Validity.ERROR;
-            } catch(Throwable e) {
-                LOG.log(Level.SEVERE, "Error (critical) when computing validity of parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
-                return Validity.ERROR;
             }
         }
     }
@@ -273,11 +270,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     @Override
     public boolean inAlarm() {
         return this.state != null &&
-                (this.state.getAlarmState() != AlarmState.NOMINAL &&
-                        this.state.getAlarmState() != AlarmState.NOT_APPLICABLE &&
-                        this.state.getAlarmState() != AlarmState.NOT_CHECKED &&
-                        this.state.getAlarmState() != AlarmState.UNKNOWN &&
-                        this.state.getAlarmState() != AlarmState.VIOLATED);
+                (this.state.getAlarmState() == AlarmState.ALARM ||
+                        this.state.getAlarmState() == AlarmState.WARNING ||
+                        this.state.getAlarmState() != AlarmState.ERROR);
     }
 
     @Override
