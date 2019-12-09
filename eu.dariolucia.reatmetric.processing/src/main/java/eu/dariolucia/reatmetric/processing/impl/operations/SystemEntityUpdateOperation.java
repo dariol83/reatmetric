@@ -7,8 +7,9 @@ import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 
 import java.time.Instant;
+import java.util.List;
 
-public class SystemEntityUpdateOperation extends AbstractModelOperation<AbstractDataItem, AbstractSystemEntityProcessor> {
+public class SystemEntityUpdateOperation extends AbstractModelOperation<AbstractSystemEntityProcessor> {
 
     private final Instant creationTime = Instant.now();
 
@@ -18,7 +19,7 @@ public class SystemEntityUpdateOperation extends AbstractModelOperation<Abstract
     }
 
     @Override
-    protected Pair<AbstractDataItem, SystemEntity> doProcess() throws ProcessingModelException {
+    protected List<AbstractDataItem> doProcess() throws ProcessingModelException {
         return getProcessor().evaluate();
     }
 

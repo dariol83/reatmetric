@@ -94,15 +94,10 @@ public class ExpressionDefinition {
             bindings.putAll(additionalBindings);
         }
         // Evaluate the script
-        try {
-            if (compiledScript != null) {
-                return compiledScript.eval(bindings);
-            } else {
-                return engine.eval(expression, bindings);
-            }
-        } catch(ScriptException e) {
-            LOG.log(Level.SEVERE, "Expression " + expression + " cannot be evaluated: " + e.getMessage(), e);
-            throw e;
+        if (compiledScript != null) {
+            return compiledScript.eval(bindings);
+        } else {
+            return engine.eval(expression, bindings);
         }
     }
 }

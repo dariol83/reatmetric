@@ -7,9 +7,10 @@ import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.function.Supplier;
 
-public abstract class AbstractModelOperation<T extends AbstractDataItem, K extends AbstractSystemEntityProcessor> {
+public abstract class AbstractModelOperation<K extends AbstractSystemEntityProcessor> {
 
     private int orderingId;
 
@@ -23,7 +24,7 @@ public abstract class AbstractModelOperation<T extends AbstractDataItem, K exten
         this.processor = processor;
     }
 
-    public Pair<T, SystemEntity> execute() throws ProcessingModelException {
+    public List<AbstractDataItem> execute() throws ProcessingModelException {
         // A processor is required: if it is not set, exception
         if(processor == null) {
             throw new ProcessingModelException("Processor not set on operation " + getClass().getSimpleName() + " for entity " + getSystemEntityId());
@@ -31,7 +32,7 @@ public abstract class AbstractModelOperation<T extends AbstractDataItem, K exten
         return doProcess();
     }
 
-    protected abstract Pair<T, SystemEntity> doProcess() throws ProcessingModelException;
+    protected abstract List<AbstractDataItem> doProcess() throws ProcessingModelException;
 
     public abstract int getSystemEntityId();
 

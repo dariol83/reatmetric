@@ -1,5 +1,6 @@
 package eu.dariolucia.reatmetric.processing.impl.operations;
 
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
@@ -8,8 +9,9 @@ import eu.dariolucia.reatmetric.processing.impl.processors.ParameterProcessor;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
 import java.time.Instant;
+import java.util.List;
 
-public class ParameterSampleProcessOperation extends AbstractModelOperation<ParameterData, ParameterProcessor> {
+public class ParameterSampleProcessOperation extends AbstractModelOperation<ParameterProcessor> {
 
     private final ParameterSample input;
 
@@ -23,7 +25,7 @@ public class ParameterSampleProcessOperation extends AbstractModelOperation<Para
     }
 
     @Override
-    protected Pair<ParameterData, SystemEntity> doProcess() throws ProcessingModelException {
+    protected List<AbstractDataItem> doProcess() throws ProcessingModelException {
         return getProcessor().process(input);
     }
 

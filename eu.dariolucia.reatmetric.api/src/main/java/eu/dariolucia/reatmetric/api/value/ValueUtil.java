@@ -145,7 +145,8 @@ public class ValueUtil {
      *     <li>a 2 bytes prefix, identifying the type ID of the {@link IValueExtensionHandler} (-1 if Java Serialization is used)</li>
      *     <li>the serialized value provided by the corresponding {@link IValueExtensionHandler}</li>
      * </ul>
-     *
+     * @param type the type
+     * @param valueObject the value
      * @return the serialized {@link Value}
      */
     public static byte[] serialize(ValueTypeEnum type, Object valueObject) {

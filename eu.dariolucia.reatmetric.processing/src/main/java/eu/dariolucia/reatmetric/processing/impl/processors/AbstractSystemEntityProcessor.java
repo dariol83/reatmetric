@@ -2,7 +2,6 @@ package eu.dariolucia.reatmetric.processing.impl.processors;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
-import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
@@ -10,12 +9,14 @@ import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.SystemEntityBuilder;
 import eu.dariolucia.reatmetric.processing.input.AbstractInputDataItem;
 
+import java.util.List;
+
 /**
  * This class is the parent class of all processing elements of the system entity model. A processing class is defined
  * by three template types:
  * <ul>
  *     <li>the processing definition that describes the system entity type and its processing characteristics</li>
- *     <li>the output (in terms of distributable and storable state) of the processing</li>
+ *     <li>the main output (in terms of distributable and storable state) of the processing: ancillary states can still be produced</li>
  *     <li>the input type (if any), which requires processing from the processing element and generates an output state</li>
  * </ul>
  * @param <J> the {@link AbstractProcessingDefinition} type, i.e. the entity definition
@@ -61,19 +62,19 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         return entityStatus;
     }
 
-    public Pair<T, SystemEntity> enable() throws ProcessingModelException {
+    public List<AbstractDataItem> enable() throws ProcessingModelException {
         this.entityStatus = Status.ENABLED;
         return evaluate();
     }
 
-    public Pair<T, SystemEntity> disable() throws ProcessingModelException {
+    public List<AbstractDataItem> disable() throws ProcessingModelException {
         this.entityStatus = Status.DISABLED;
         return evaluate();
     }
 
-    public abstract Pair<T, SystemEntity> process(K input) throws ProcessingModelException;
+    public abstract List<AbstractDataItem> process(K input) throws ProcessingModelException;
 
-    public abstract Pair<T, SystemEntity> evaluate() throws ProcessingModelException;
+    public abstract List<AbstractDataItem> evaluate() throws ProcessingModelException;
 
     public final int getSystemEntityId() {
         return definition.getId();

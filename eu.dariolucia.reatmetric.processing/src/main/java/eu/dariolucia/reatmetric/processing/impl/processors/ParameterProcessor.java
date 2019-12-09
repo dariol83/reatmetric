@@ -8,8 +8,9 @@
 
 package eu.dariolucia.reatmetric.processing.impl.processors;
 
+import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
-import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
@@ -19,13 +20,13 @@ import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IParameterBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
+import eu.dariolucia.reatmetric.processing.impl.processors.builders.AlarmParameterDataBuilder;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.ParameterDataBuilder;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
 import javax.script.ScriptException;
 import java.time.Instant;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,20 +41,24 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     private final ParameterDataBuilder builder;
 
+    private final AlarmParameterDataBuilder alarmBuilder;
+
     public ParameterProcessor(ParameterProcessingDefinition definition, ProcessingModelImpl processor) {
         super(definition, processor, SystemEntityType.PARAMETER);
         this.builder = new ParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
+        this.alarmBuilder = new AlarmParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
     }
 
     @Override
-    public synchronized Pair<ParameterData, SystemEntity> process(ParameterSample newValue) throws ProcessingModelException {
+    public synchronized List<AbstractDataItem> process(ParameterSample newValue) throws ProcessingModelException {
         // Guard condition: if this parameter has an expression, newValue must be null
         if(definition.getExpression() != null && newValue != null) {
             LOG.log(Level.SEVERE, "Parameter " + definition.getId() + " (" + definition.getLocation() + ") is a synthetic parameter, but a sample was injected. Processing ignored.");
-            return Pair.of(null, null);
+            return Collections.emptyList();
         }
         boolean stateChanged = false;
-        boolean entityStateChanged = false;
+        List<AbstractDataItem> generatedStates = new ArrayList<>(3);
+        AlarmParameterData alarmData = null;
         // If the object is enabled, then you have to process it as usual
         if(entityStatus == Status.ENABLED) {
             // Prepare the values
@@ -92,7 +97,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                         }
                     } else {
                         // Effectively, as there is no change in the depending elements, the processing can end here
-                        return Pair.of(null, null);
+                        return generatedStates;
                     }
                 }
                 if(validity == Validity.VALID) {
@@ -135,23 +140,39 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             // Replace the state
             if(this.builder.isChangedSinceLastBuild()) {
                 this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
+                generatedStates.add(this.state);
                 stateChanged = true;
+            }
+            // Compute alarm state
+            if(stateChanged && valid()) {
+                // If nominal, set the last nominal value
+                if(!inAlarm()) {
+                    this.alarmBuilder.setLastNominalValue(this.state.getEngValue(), this.state.getGenerationTime());
+                }
+                // Set current values
+                this.alarmBuilder.setCurrentValue(this.state.getAlarmState(), this.state.getEngValue(), this.state.getGenerationTime(), this.state.getReceptionTime());
+                if(this.alarmBuilder.isChangedSinceLastBuild()) {
+                    alarmData = this.alarmBuilder.build(new LongUniqueId(processor.getNextId(AlarmParameterData.class)));
+                }
             }
         } else {
             // Completely ignore the processing
             LOG.log(Level.FINE, "Parameter sample not computed for parameter " + definition.getLocation() + ": parameter processing is disabled");
         }
-        // Finalize entity state
+        // Finalize entity state and prepare for the returned list of data items
         if(stateChanged) {
             this.systemEntityBuilder.setAlarmState(this.state.getAlarmState());
         }
         this.systemEntityBuilder.setStatus(entityStatus);
         if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
             this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
-            entityStateChanged = true;
+            generatedStates.add(this.entityState);
         }
-        // Return the pair
-        return Pair.of(stateChanged ? this.state : null, entityStateChanged ? this.entityState : null);
+        if(alarmData != null) {
+            generatedStates.add(alarmData);
+        }
+        // Return the list
+        return generatedStates;
     }
 
     private Object verifySourceValue(Object value) throws ProcessingModelException {
@@ -248,7 +269,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     @Override
-    public Pair<ParameterData, SystemEntity> evaluate() throws ProcessingModelException {
+    public List<AbstractDataItem> evaluate() throws ProcessingModelException {
         return process(null);
     }
 
@@ -270,9 +291,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     @Override
     public boolean inAlarm() {
         return this.state != null &&
-                (this.state.getAlarmState() == AlarmState.ALARM ||
-                        this.state.getAlarmState() == AlarmState.WARNING ||
-                        this.state.getAlarmState() != AlarmState.ERROR);
+                this.state.getAlarmState().isAlarm();
     }
 
     @Override

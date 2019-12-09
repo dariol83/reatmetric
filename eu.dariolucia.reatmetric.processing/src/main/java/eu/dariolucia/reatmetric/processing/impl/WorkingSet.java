@@ -32,11 +32,4 @@ public class WorkingSet {
             workingSet.notifyAll();
         }
     }
-
-    public void clear() {
-        synchronized (workingSet) {
-            workingSet.clear();
-            workingSet.notifyAll();
-        }
-    }
 }

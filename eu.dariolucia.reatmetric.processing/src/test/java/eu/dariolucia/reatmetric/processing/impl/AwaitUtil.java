@@ -16,8 +16,10 @@
 
 package eu.dariolucia.reatmetric.processing.impl;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AwaitUtil {
@@ -36,6 +38,11 @@ public class AwaitUtil {
     public static void awaitAndVerify(int maxMs, Supplier<Boolean> conditionChecker) throws InterruptedException {
         awaitCondition(maxMs, conditionChecker);
         assertTrue(conditionChecker.get());
+    }
+
+    public static void awaitAndVerify(int maxMs, Supplier<Object> valueRetriever, Object equal) throws InterruptedException {
+        awaitCondition(maxMs, () -> Objects.equals(valueRetriever.get(), equal));
+        assertEquals(equal, valueRetriever.get());
     }
 
     public static void await(int ms) throws InterruptedException {

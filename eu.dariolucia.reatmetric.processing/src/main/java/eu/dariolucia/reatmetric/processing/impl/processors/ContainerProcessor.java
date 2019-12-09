@@ -1,7 +1,7 @@
 package eu.dariolucia.reatmetric.processing.impl.processors;
 
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
-import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
@@ -13,6 +13,7 @@ import eu.dariolucia.reatmetric.processing.impl.operations.EnableDisableOperatio
 import eu.dariolucia.reatmetric.processing.input.VoidInputDataItem;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -34,26 +35,26 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
     }
 
     @Override
-    public Pair<SystemEntity, SystemEntity> process(VoidInputDataItem input) {
+    public List<AbstractDataItem> process(VoidInputDataItem input) {
         this.systemEntityBuilder.setStatus(entityStatus);
         this.systemEntityBuilder.setAlarmState(AlarmState.NOT_APPLICABLE);
         if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
             this.state = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
             this.entityState = this.state;
-            return Pair.of(null, this.entityState);
+            return List.of(this.entityState);
         } else {
             // No reason to send out anything relevant
-            return Pair.of(null, null);
+            return Collections.emptyList();
         }
     }
 
     @Override
-    public Pair<SystemEntity, SystemEntity> evaluate() {
+    public List<AbstractDataItem> evaluate() {
         return process(VoidInputDataItem.instance());
     }
 
     @Override
-    public Pair<SystemEntity, SystemEntity> enable() throws ProcessingModelException {
+    public List<AbstractDataItem> enable() throws ProcessingModelException {
         // Propagate
         propagateEnablement(true);
         // Process now
@@ -71,7 +72,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
     }
 
     @Override
-    public Pair<SystemEntity, SystemEntity> disable() throws ProcessingModelException {
+    public List<AbstractDataItem> disable() throws ProcessingModelException {
         // Propagate
         propagateEnablement(false);
         // Process now

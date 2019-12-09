@@ -7,6 +7,7 @@
 
 <ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
     <parameters>
+        <!-- All types-->
         <parameter id="#101" location="ROOT.ELEMENT1.PARAM1" description="Parameter 1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
         <parameter id="#102" location="ROOT.ELEMENT1.PARAM2" description="Parameter 2" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
         <parameter id="#103" location="ROOT.ELEMENT1.PARAM3" description="Parameter 3" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
@@ -86,7 +87,7 @@
         </parameter>
         <parameter id="#1012" location="ROOT.FAIL.SYNTH_SAMPLE" description="Synthetic value" raw_type="REAL" eng_type="REAL" eng_unit="mS">
             <synthetic>
-                <expression>DEPEN * 2</expression>
+                <expression>DEPEN.value() * 2</expression>
                 <symbol name="DEPEN" reference="#1011" />
             </synthetic>
         </parameter>

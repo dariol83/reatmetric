@@ -13,12 +13,22 @@ package eu.dariolucia.reatmetric.api.model;
  * @author dario
  */
 public enum AlarmState {
-    ALARM,
-    WARNING,
-    VIOLATED,
-    ERROR,
-    NOMINAL,
-    NOT_CHECKED,
-    NOT_APPLICABLE,
-    UNKNOWN
+    ALARM(true),
+    WARNING(true),
+    VIOLATED(false),
+    ERROR(true),
+    NOMINAL(false),
+    NOT_CHECKED(false),
+    NOT_APPLICABLE(false),
+    UNKNOWN(false);
+
+    private final boolean alarm;
+
+    AlarmState(boolean alarm) {
+        this.alarm = alarm;
+    }
+
+    public boolean isAlarm() {
+        return alarm;
+    }
 }
