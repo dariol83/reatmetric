@@ -16,35 +16,43 @@ import java.util.Objects;
 public final class EventOccurrence extends AbstractInputDataItem {
 
     public static EventOccurrence of(int id) {
-        return new EventOccurrence(id, null, null, null, null, null);
+        return new EventOccurrence(id, null, null, null, null, null, null, null);
     }
 
-    public static EventOccurrence of(int id, String qualifier, String type) {
-        return new EventOccurrence(id, null, null, null, qualifier, type);
+    public static EventOccurrence of(int id, String qualifier, Object report) {
+        return new EventOccurrence(id, null, null, null, qualifier, report, null, null);
     }
 
-    public static EventOccurrence of(int id, Instant generationTime, Instant receptionTime, String qualifier, String type) {
-        return new EventOccurrence(id, generationTime, receptionTime, null, qualifier, type);
+    public static EventOccurrence of(int id, Instant generationTime, Instant receptionTime, String qualifier, Object report) {
+        return new EventOccurrence(id, generationTime, receptionTime, null, qualifier, report, null, null);
     }
 
-    public static EventOccurrence of(int id, Instant generationTime, Instant receptionTime, IUniqueId container, String qualifier, String type) {
-        return new EventOccurrence(id, generationTime, receptionTime, container, qualifier, type);
+    public static EventOccurrence of(int id, Instant generationTime, Instant receptionTime, IUniqueId container, String qualifier, Object report) {
+        return new EventOccurrence(id, generationTime, receptionTime, container, qualifier, report, null, null);
+    }
+
+    public static EventOccurrence of(int id, Instant generationTime, Instant receptionTime, IUniqueId container, String qualifier, Object report, String route, String source) {
+        return new EventOccurrence(id, generationTime, receptionTime, container, qualifier, report, route, source);
     }
 
     private final int id;
     private final Instant generationTime;
     private final Instant receptionTime;
     private final String qualifier;
-    private final String type;
+    private final Object report;
     private final IUniqueId container;
+    private final String route;
+    private final String source;
 
-    private EventOccurrence(int id, Instant generationTime, Instant receptionTime, IUniqueId container, String qualifier, String type) {
+    private EventOccurrence(int id, Instant generationTime, Instant receptionTime, IUniqueId container, String qualifier, Object report, String route, String source) {
         this.id = id;
         this.generationTime = generationTime;
         this.receptionTime = receptionTime;
         this.qualifier = qualifier;
-        this.type = type;
+        this.report = report;
         this.container = container;
+        this.route = route;
+        this.source = source;
     }
 
     public int getId() {
@@ -63,12 +71,20 @@ public final class EventOccurrence extends AbstractInputDataItem {
         return qualifier;
     }
 
-    public String getType() {
-        return type;
+    public Object getReport() {
+        return report;
     }
 
     public IUniqueId getContainer() {
         return container;
+    }
+
+    public String getRoute() {
+        return route;
+    }
+
+    public String getSource() {
+        return source;
     }
 
     @Override
@@ -77,16 +93,18 @@ public final class EventOccurrence extends AbstractInputDataItem {
         if (o == null || getClass() != o.getClass()) return false;
         EventOccurrence that = (EventOccurrence) o;
         return Objects.equals(this.id, that.id) &&
+                Objects.equals(route, that.route) &&
+                Objects.equals(source, that.source) &&
                 Objects.equals(generationTime, that.generationTime) &&
                 Objects.equals(receptionTime, that.receptionTime) &&
                 Objects.equals(qualifier, that.qualifier) &&
-                Objects.equals(type, that.type) &&
+                Objects.equals(report, that.report) &&
                 Objects.equals(container, that.container);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, generationTime, receptionTime, qualifier, type, container);
+        return Objects.hash(id, generationTime, receptionTime, qualifier, report, container, route, source);
     }
 
     @Override
@@ -96,7 +114,9 @@ public final class EventOccurrence extends AbstractInputDataItem {
                 ", generationTime=" + generationTime +
                 ", receptionTime=" + receptionTime +
                 ", qualifier='" + qualifier + '\'' +
-                ", type='" + type + '\'' +
+                ", report='" + report + '\'' +
+                ", route='" + route + '\'' +
+                ", source='" + source + '\'' +
                 ", container=" + container +
                 '}';
     }

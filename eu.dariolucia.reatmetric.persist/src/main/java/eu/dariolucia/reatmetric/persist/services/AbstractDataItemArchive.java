@@ -234,7 +234,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected List<T> doRetrieve(Connection connection, T startItem, int numRecords, RetrievalDirection direction, K filter) throws SQLException {
         // Use the startItem generationTime to retrieve all the items from that point in time: increase limit by 100
         List<T> largeSize = doRetrieve(connection, startItem.getGenerationTime(), numRecords + LOOK_AHEAD_SPAN, direction, filter);
-        // Now scan and get rid of the startItem object
+        // Now scan and get rid of the startItem object: in order to work, equality must work correctly (typically only on the internalId)
         int position = largeSize.indexOf(startItem);
         if(position == -1) {
             return largeSize.subList(0, Math.min(numRecords, largeSize.size()));

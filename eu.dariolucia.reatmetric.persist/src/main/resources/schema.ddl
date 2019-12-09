@@ -21,6 +21,8 @@ CREATE TABLE EVENT_DATA_TABLE (
    Route VARCHAR(32),
    Source VARCHAR(32),
    Severity SMALLINT NOT NULL,
+   ContainerId BIGINT,
+   Report BLOB,
    AdditionalData BLOB,
    PRIMARY KEY (UniqueId)
 )

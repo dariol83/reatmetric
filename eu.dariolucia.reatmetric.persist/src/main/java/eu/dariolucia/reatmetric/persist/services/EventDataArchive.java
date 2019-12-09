@@ -19,9 +19,9 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
 
     private static final Logger LOG = Logger.getLogger(EventDataArchive.class.getName());
 
-    private static final String STORE_STATEMENT = "INSERT INTO EVENT_DATA_TABLE(UniqueId,GenerationTime,ExternalId,Name,Path,Qualifier,ReceptionTime,Type,Route,Source,Severity,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+    private static final String STORE_STATEMENT = "INSERT INTO EVENT_DATA_TABLE(UniqueId,GenerationTime,ExternalId,Name,Path,Qualifier,ReceptionTime,Type,Route,Source,Severity,ContainerId,Report,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM EVENT_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
-    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ExternalId,Name,Path,Qualifier,ReceptionTime,Type,Route,Source,Severity,AdditionalData FROM EVENT_DATA_TABLE WHERE UniqueId=?";
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ExternalId,Name,Path,Qualifier,ReceptionTime,Type,Route,Source,Severity,ContainerId,Report,AdditionalData FROM EVENT_DATA_TABLE WHERE UniqueId=?";
 
     public EventDataArchive(Archive controller) throws SQLException {
         super(controller);
@@ -40,7 +40,17 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
         storeStatement.setString(9, item.getRoute());
         storeStatement.setString(10, item.getSource());
         storeStatement.setShort(11, (short) item.getSeverity().ordinal());
-        storeStatement.setBlob(12, toInputstreamArray(item.getAdditionalFields()));
+        if(item.getRawDataContainerId() == null) {
+            storeStatement.setNull(12, Types.BIGINT);
+        } else {
+            storeStatement.setLong(12, item.getRawDataContainerId().asLong());
+        }
+        if(item.getReport() == null) {
+            storeStatement.setNull(13, Types.BLOB);
+        } else {
+            storeStatement.setBlob(13, toInputstream(item.getReport()));
+        }
+        storeStatement.setBlob(14, toInputstreamArray(item.getAdditionalFields()));
     }
 
     @Override
@@ -105,9 +115,14 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
         String route = rs.getString(9);
         String source = rs.getString(10);
         Severity severity = Severity.values()[rs.getShort(11)];
-        Object[] additionalDataArray = toObjectArray(rs.getBlob(12));
+        Long containerId = rs.getLong(12);
+        if(rs.wasNull()) {
+            containerId = null;
+        }
+        Object report = toObject(rs.getBlob(13));
+        Object[] additionalDataArray = toObjectArray(rs.getBlob(14));
 
-        return new EventData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), qualifier, type, route, source, severity, toInstant(receptionTime), additionalDataArray);
+        return new EventData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), qualifier, type, route, source, severity, report, containerId == null ? null : new LongUniqueId(containerId), toInstant(receptionTime), additionalDataArray);
     }
 
     @Override

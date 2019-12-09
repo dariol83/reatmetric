@@ -8,14 +8,14 @@
 
 package eu.dariolucia.reatmetric.api.events;
 
-import java.io.Serializable;
-import java.time.Instant;
-import java.util.Objects;
-
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+
+import java.io.Serializable;
+import java.time.Instant;
+import java.util.Objects;
 
 /**
  *
@@ -46,8 +46,12 @@ public final class EventData extends AbstractDataItem implements Serializable {
     
     private final Severity severity;
 
+    private final Object report;
+
+    private final IUniqueId rawDataContainerId;
+
 	public EventData(IUniqueId internalId, Instant generationTime, int externalId, String name,
-                     SystemEntityPath path, String qualifier, String type, String route, String source, Severity severity, Instant receptionTime,
+                     SystemEntityPath path, String qualifier, String type, String route, String source, Severity severity, Object report, IUniqueId rawDataContainerId, Instant receptionTime,
                      Object[] additionalFields) {
 		super(internalId, generationTime, additionalFields);
 		this.externalId = externalId;
@@ -59,6 +63,8 @@ public final class EventData extends AbstractDataItem implements Serializable {
 		this.route = route;
 		this.source = source;
 		this.severity = severity;
+		this.report = report;
+		this.rawDataContainerId = rawDataContainerId;
 	}
 
     public int getExternalId() {
@@ -97,61 +103,12 @@ public final class EventData extends AbstractDataItem implements Serializable {
 		return severity;
 	}
 
-    @Override
-    public int hashCode() {
-        int hash = 5;
-        hash = 59 * hash + Objects.hashCode(this.externalId);
-        hash = 59 * hash + Objects.hashCode(this.path);
-        hash = 59 * hash + Objects.hashCode(this.qualifier);
-        hash = 59 * hash + Objects.hashCode(this.type);
-        hash = 59 * hash + Objects.hashCode(this.receptionTime);
-        hash = 59 * hash + Objects.hashCode(this.generationTime);
-        hash = 59 * hash + Objects.hashCode(this.route);
-        hash = 59 * hash + Objects.hashCode(this.source);
-        hash = 59 * hash + Objects.hashCode(this.severity);
-        return hash;
+    public IUniqueId getRawDataContainerId() {
+        return rawDataContainerId;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final EventData other = (EventData) obj;
-        if (!Objects.equals(this.externalId, other.externalId)) {
-            return false;
-        }
-        if (!Objects.equals(this.path, other.path)) {
-            return false;
-        }
-        if (!Objects.equals(this.receptionTime, other.receptionTime)) {
-            return false;
-        }
-        if (!Objects.equals(this.generationTime, other.generationTime)) {
-            return false;
-        }
-        if (!Objects.equals(this.qualifier, other.qualifier)) {
-            return false;
-        }
-        if (!Objects.equals(this.type, other.type)) {
-            return false;
-        }
-        if (!Objects.equals(this.route, other.route)) {
-            return false;
-        }
-        if (!Objects.equals(this.source, other.source)) {
-            return false;
-        }
-        if (this.severity != other.severity) {
-            return false;
-        }
-        return true;
+    public Object getReport() {
+        return report;
     }
 
     @Override
@@ -165,6 +122,8 @@ public final class EventData extends AbstractDataItem implements Serializable {
                 ", type='" + type + '\'' +
                 ", route='" + route + '\'' +
                 ", source='" + source + '\'' +
+                ", report=" + report +
+                ", containerId=" + rawDataContainerId +
                 ", severity=" + severity +
                 ", generationTime=" + generationTime +
                 ", internalId=" + internalId +

@@ -16,17 +16,28 @@ public class EventProcessingDefinition extends AbstractProcessingDefinition {
     @XmlAttribute
     private EventSeverity severity = EventSeverity.INFO;
 
-    @XmlElement(name = "expression")
-    private ExpressionDefinition expression;
+    @XmlAttribute
+    private String type = "";
+
+    @XmlElement(name = "condition")
+    private ExpressionDefinition condition;
 
     public EventProcessingDefinition() {
         super();
     }
 
-    public EventProcessingDefinition(int id, String description, String location, EventSeverity severity, ExpressionDefinition expression) {
+    public EventProcessingDefinition(int id, String description, String location, EventSeverity severity, ExpressionDefinition condition, String type) {
         super(id, description, location);
         this.severity = severity;
-        this.expression = expression;
+        this.condition = condition;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public EventSeverity getSeverity() {
@@ -37,11 +48,11 @@ public class EventProcessingDefinition extends AbstractProcessingDefinition {
         this.severity = severity;
     }
 
-    public ExpressionDefinition getExpression() {
-        return expression;
+    public ExpressionDefinition getCondition() {
+        return condition;
     }
 
-    public void setExpression(ExpressionDefinition expression) {
-        this.expression = expression;
+    public void setCondition(ExpressionDefinition condition) {
+        this.condition = condition;
     }
 }

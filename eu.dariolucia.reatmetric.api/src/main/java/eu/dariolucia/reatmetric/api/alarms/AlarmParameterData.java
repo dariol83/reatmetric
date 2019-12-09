@@ -89,59 +89,6 @@ public final class AlarmParameterData extends AbstractDataItem implements Serial
 	}
 
 	@Override
-	public int hashCode() {
-		int hash = 5;
-		hash = 59 * hash + Objects.hashCode(this.externalId);
-		hash = 59 * hash + Objects.hashCode(this.path);
-		hash = 59 * hash + Objects.hashCode(this.currentAlarmState);
-		hash = 59 * hash + Objects.hashCode(this.currentValue);
-		hash = 59 * hash + Objects.hashCode(this.receptionTime);
-		hash = 59 * hash + Objects.hashCode(this.generationTime);
-		hash = 59 * hash + Objects.hashCode(this.lastNominalValue);
-		hash = 59 * hash + Objects.hashCode(this.lastNominalValueTime);
-		return hash;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (getClass() != obj.getClass()) {
-			return false;
-		}
-		final AlarmParameterData other = (AlarmParameterData) obj;
-		if (!Objects.equals(this.externalId, other.externalId)) {
-			return false;
-		}
-		if (!Objects.equals(this.path, other.path)) {
-			return false;
-		}
-		if (!Objects.equals(this.receptionTime, other.receptionTime)) {
-			return false;
-		}
-		if (!Objects.equals(this.generationTime, other.generationTime)) {
-			return false;
-		}
-		if (!Objects.equals(this.currentAlarmState, other.currentAlarmState)) {
-			return false;
-		}
-		if (!Objects.equals(this.currentValue, other.currentValue)) {
-			return false;
-		}
-		if (!Objects.equals(this.lastNominalValue, other.lastNominalValue)) {
-			return false;
-		}
-		if (!Objects.equals(this.lastNominalValueTime, other.lastNominalValueTime)) {
-			return false;
-		}
-		return true;
-	}
-
-	@Override
 	public String toString() {
 		return "AlarmParameterData{" +
 				"externalId=" + externalId +

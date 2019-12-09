@@ -26,6 +26,7 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlAttribute(name = "eng_unit")
     private String unit = "";
 
+    // TODO: abstract it to be either an expression or a simple equality condition
     @XmlElement(name = "validity")
     private ExpressionDefinition validity;
 

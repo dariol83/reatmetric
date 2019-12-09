@@ -54,7 +54,7 @@ class EventDataArchiveTest {
             IEventDataArchive eventDataArchive = archive.getArchive(IEventDataArchive.class);
             Instant t = Instant.now();
             // store one event data
-            eventDataArchive.store(new EventData(new LongUniqueId(0), t, 12,"eventA", SystemEntityPath.fromString("root.eventA"), "q1", "type1", "routeA", "Source1", Severity.ALARM, t, new Object[0]));
+            eventDataArchive.store(new EventData(new LongUniqueId(0), t, 12,"eventA", SystemEntityPath.fromString("root.eventA"), "q1", "type1", "routeA", "Source1", Severity.ALARM, null, null, t, new Object[0]));
             Thread.sleep(2000);
             // retrieve: expected 1
             List<EventData> items = eventDataArchive.retrieve(t.minusMillis(200), 10, RetrievalDirection.TO_FUTURE, null);

@@ -103,67 +103,6 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
     }
 
     @Override
-    public int hashCode() {
-        int hash = 5;
-        hash = 59 * hash + Objects.hashCode(this.externalId);
-        hash = 59 * hash + Objects.hashCode(this.path);
-        hash = 59 * hash + Objects.hashCode(this.engValue);
-        hash = 59 * hash + Objects.hashCode(this.sourceValue);
-        hash = 59 * hash + Objects.hashCode(this.receptionTime);
-        hash = 59 * hash + Objects.hashCode(this.generationTime);
-        hash = 59 * hash + Objects.hashCode(this.validity);
-        hash = 59 * hash + Objects.hashCode(this.alarmState);
-        hash = 59 * hash + Objects.hashCode(this.route);
-        hash = 59 * hash + Objects.hashCode(this.rawDataContainerId);
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final ParameterData other = (ParameterData) obj;
-        if (!Objects.equals(this.externalId, other.externalId)) {
-            return false;
-        }
-        if (!Objects.equals(this.path, other.path)) {
-            return false;
-        }
-        if (!Objects.equals(this.receptionTime, other.receptionTime)) {
-            return false;
-        }
-        if (!Objects.equals(this.generationTime, other.generationTime)) {
-            return false;
-        }
-        if (!Objects.equals(this.engValue, other.engValue)) {
-            return false;
-        }
-        if (!Objects.equals(this.sourceValue, other.sourceValue)) {
-            return false;
-        }
-        if (!Objects.equals(this.route, other.route)) {
-            return false;
-        }
-        if (!Objects.equals(this.rawDataContainerId, other.rawDataContainerId)) {
-            return false;
-        }
-        if (this.validity != other.validity) {
-            return false;
-        }
-        if (this.alarmState != other.alarmState) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
     public String toString() {
         return "ParameterData{" +
                 "externalId=" + externalId +

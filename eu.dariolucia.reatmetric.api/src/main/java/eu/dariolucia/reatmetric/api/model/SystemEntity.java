@@ -66,41 +66,20 @@ public final class SystemEntity extends AbstractDataItem implements Serializable
     }
 
     @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 19 * hash + Objects.hashCode(this.externalId);
-        hash = 19 * hash + Objects.hashCode(this.path);
-        hash = 19 * hash + Objects.hashCode(this.status);
-        hash = 19 * hash + Objects.hashCode(this.alarmState);
-        hash = 19 * hash + Objects.hashCode(this.type);
-        return hash;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SystemEntity that = (SystemEntity) o;
+        return externalId == that.externalId &&
+                Objects.equals(getPath(), that.getPath()) &&
+                getStatus() == that.getStatus() &&
+                getAlarmState() == that.getAlarmState() &&
+                getType() == that.getType();
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final SystemEntity other = (SystemEntity) obj;
-        if (!Objects.equals(this.externalId, other.externalId)) {
-            return false;
-        }
-        if (!Objects.equals(this.path, other.path)) {
-            return false;
-        }
-        if (this.status != other.status) {
-            return false;
-        }
-        if (this.alarmState != other.alarmState) {
-            return false;
-        }
-        return this.type == other.type;
+    public int hashCode() {
+        return Objects.hash(externalId, getPath(), getStatus(), getAlarmState(), getType());
     }
 
     @Override

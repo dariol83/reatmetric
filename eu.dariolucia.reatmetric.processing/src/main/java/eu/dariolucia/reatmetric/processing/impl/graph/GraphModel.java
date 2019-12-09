@@ -68,8 +68,8 @@ public class GraphModel {
             }
         }
         for(EventProcessingDefinition event : definition.getEventDefinitions()) {
-            if(event.getExpression() != null) {
-                addEdges(event, event.getExpression());
+            if(event.getCondition() != null) {
+                addEdges(event, event.getCondition());
             }
         }
 

@@ -126,9 +126,11 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     @Override
-    public void raiseEvent(EventOccurrence event, List<ParameterSample> attachedParameters) {
-        // TODO
-        throw new UnsupportedOperationException();
+    public void raiseEvent(EventOccurrence event) {
+        // Build the list of operations to be performed
+        List<AbstractModelOperation> operations = Collections.singletonList(new RaiseEventOperation(event));
+        // Schedule task
+        scheduleTask(operations);
     }
 
     @Override

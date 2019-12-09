@@ -22,7 +22,7 @@ public interface IProcessingModel {
 
     void injectParameters(List<ParameterSample> sampleList);
 
-    void raiseEvent(EventOccurrence event, List<ParameterSample> attachedParameters);
+    void raiseEvent(EventOccurrence event);
 
     IUniqueId startAction(); // TODO
 

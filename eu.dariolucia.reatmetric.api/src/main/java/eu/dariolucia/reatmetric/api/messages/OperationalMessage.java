@@ -59,44 +59,6 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
     }
 
     @Override
-    public int hashCode() {
-        return internalId.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final OperationalMessage other = (OperationalMessage) obj;
-        if (!Objects.equals(this.internalId, other.internalId)) {
-            return false;
-        }
-        if (!Objects.equals(this.id, other.id)) {
-            return false;
-        }
-        if (!Objects.equals(this.generationTime, other.generationTime)) {
-            return false;
-        }
-        if (!Objects.equals(this.source, other.source)) {
-            return false;
-        }
-        if (this.severity != other.severity) {
-            return false;
-        }
-        if (!Objects.equals(this.message, other.message)) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
     public String toString() {
         return "OperationalMessage{" +
                 "id='" + id + '\'' +

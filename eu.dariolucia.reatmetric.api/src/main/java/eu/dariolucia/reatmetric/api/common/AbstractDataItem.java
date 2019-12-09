@@ -49,7 +49,6 @@ public abstract class AbstractDataItem extends UniqueItem implements Serializabl
         int hash = 5;
         hash = 89 * hash + this.internalId.hashCode();
         hash = 89 * hash + this.generationTime.hashCode();
-        hash = 89 * hash + Arrays.deepHashCode(this.additionalFields);
         return hash;
     }
 
@@ -65,13 +64,13 @@ public abstract class AbstractDataItem extends UniqueItem implements Serializabl
             return false;
         }
         final AbstractDataItem other = (AbstractDataItem) obj;
-        if (this.internalId != other.internalId) {
+        if (!Objects.equals(this.internalId, other.internalId)) {
             return false;
         }
         if (!Objects.equals(this.generationTime, other.generationTime)) {
             return false;
         }
-        return Arrays.deepEquals(this.additionalFields, other.additionalFields);
+        return true;
     }
 
     @Override
