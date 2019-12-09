@@ -10,7 +10,6 @@ package eu.dariolucia.reatmetric.processing.impl;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.api.model.ISystemModelSubscriber;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.processing.IProcessingModel;
@@ -23,6 +22,7 @@ import eu.dariolucia.reatmetric.processing.impl.graph.GraphModel;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
 import eu.dariolucia.reatmetric.processing.impl.operations.EnableDisableOperation;
 import eu.dariolucia.reatmetric.processing.impl.operations.ParameterSampleProcessOperation;
+import eu.dariolucia.reatmetric.processing.impl.operations.RaiseEventOperation;
 import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
@@ -40,8 +40,6 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private static final Logger LOG = Logger.getLogger(ProcessingModelImpl.class.getName());
 
-    private final List<ISystemModelSubscriber> listeners = new CopyOnWriteArrayList<>();
-
     private final ProcessingDefinition processingDefinition;
 
     private final IProcessingModelOutput output;
@@ -50,7 +48,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private final GraphModel graphModel;
 
-    private final BlockingQueue<ProcessingTask> updateTaskQueue = new ArrayBlockingQueue<ProcessingTask>(1000); // TODO: parametric
+    private final BlockingQueue<ProcessingTask> updateTaskQueue = new ArrayBlockingQueue<>(1000); // TODO: parametric
 
     private final ExecutorService taskProcessors = Executors.newFixedThreadPool(2); // TODO: parametric
 
@@ -170,7 +168,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     @Override
-    public SystemEntity getRoot() throws ProcessingModelException {
+    public SystemEntity getRoot() {
         return graphModel.getRoot();
     }
 

@@ -46,7 +46,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         this.entityStatus = Status.ENABLED;
         this.systemEntityBuilder = new SystemEntityBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()), type);
         this.systemEntityBuilder.setStatus(entityStatus);
-        this.systemEntityBuilder.setAlarmState(AlarmState.UNKNOWN);
+        this.systemEntityBuilder.setAlarmState(AlarmState.UNKNOWN); // TODO: UNKNOWN true only for parameters, for events, actions and containers should be NOMINAL - introduce abstr. method
         this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
     }
 
@@ -88,7 +88,8 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         return entityState;
     }
 
-    public final void initialise(T state) {
+    public final void initialise(T state, SystemEntity entityState) {
         this.state = state;
+        this.entityState = entityState;
     }
 }

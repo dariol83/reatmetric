@@ -8,13 +8,15 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
+import eu.dariolucia.reatmetric.api.messages.Severity;
+
 import javax.xml.bind.annotation.*;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class EventProcessingDefinition extends AbstractProcessingDefinition {
 
     @XmlAttribute
-    private EventSeverity severity = EventSeverity.INFO;
+    private Severity severity = Severity.INFO;
 
     @XmlAttribute
     private String type = "";
@@ -26,7 +28,7 @@ public class EventProcessingDefinition extends AbstractProcessingDefinition {
         super();
     }
 
-    public EventProcessingDefinition(int id, String description, String location, EventSeverity severity, ExpressionDefinition condition, String type) {
+    public EventProcessingDefinition(int id, String description, String location, Severity severity, ExpressionDefinition condition, String type) {
         super(id, description, location);
         this.severity = severity;
         this.condition = condition;
@@ -40,11 +42,11 @@ public class EventProcessingDefinition extends AbstractProcessingDefinition {
         this.type = type;
     }
 
-    public EventSeverity getSeverity() {
+    public Severity getSeverity() {
         return severity;
     }
 
-    public void setSeverity(EventSeverity severity) {
+    public void setSeverity(Severity severity) {
         this.severity = severity;
     }
 

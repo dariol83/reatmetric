@@ -16,5 +16,7 @@ public enum Severity {
     ALARM,
     ERROR,
     WARN,
-    INFO
+    INFO,
+    NONE,
+    UNKNOWN
 }

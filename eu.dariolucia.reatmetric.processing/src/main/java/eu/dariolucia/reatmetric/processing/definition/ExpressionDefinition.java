@@ -34,6 +34,7 @@ public class ExpressionDefinition {
     public ExpressionDefinition() {
     }
 
+    // TODO: add object property bindings (e.g. PATH, GEN_TIME, RCT_TIME, ROUTE, SOURCE_VALUE, ENG_VALUE, ALARM_STATE, VALIDITY, QUALIFIER, OBJECT (default)
     public ExpressionDefinition(String expression, List<SymbolDefinition> symbols) {
         this.expression = expression;
         this.symbols = symbols;

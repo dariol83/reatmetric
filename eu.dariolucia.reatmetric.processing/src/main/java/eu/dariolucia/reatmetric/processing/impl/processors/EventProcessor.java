@@ -7,29 +7,23 @@
 
 package eu.dariolucia.reatmetric.processing.impl.processors;
 
-import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.events.EventData;
+import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.*;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
-import eu.dariolucia.reatmetric.api.parameters.Validity;
-import eu.dariolucia.reatmetric.api.value.ValueException;
-import eu.dariolucia.reatmetric.api.value.ValueUtil;
-import eu.dariolucia.reatmetric.processing.ProcessingModelException;
-import eu.dariolucia.reatmetric.processing.definition.*;
+import eu.dariolucia.reatmetric.processing.definition.EventProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IEventBinding;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IParameterBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
-import eu.dariolucia.reatmetric.processing.impl.processors.builders.AlarmParameterDataBuilder;
-import eu.dariolucia.reatmetric.processing.impl.processors.builders.ParameterDataBuilder;
+import eu.dariolucia.reatmetric.processing.impl.processors.builders.EventDataBuilder;
 import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
-import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
 import javax.script.ScriptException;
 import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,7 +34,11 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
 
     private static final Logger LOG = Logger.getLogger(EventProcessor.class.getName());
 
+    // TODO: add in the definition the ability to inhibit to raise an event for a defined period of time
     private boolean conditionTriggerState = false;
+
+    private boolean internallyTriggered = false;
+    private String internalSource = null;
 
     private final EventDataBuilder builder;
 
@@ -50,116 +48,131 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     }
 
     @Override
-    public synchronized List<AbstractDataItem> process(EventOccurrence newValue) throws ProcessingModelException {
+    public synchronized List<AbstractDataItem> process(EventOccurrence newValue) {
         // Guard condition: if this event has an expression, newValue must be null
         if(definition.getCondition() != null && newValue != null) {
             LOG.log(Level.SEVERE, "Event " + definition.getId() + " (" + definition.getLocation() + ") is a condition-driven event, but an external occurrence was injected. Processing ignored.");
             return Collections.emptyList();
         }
-        boolean mustBeRaised = false;
+        boolean mustBeRaised;
+        Object report = null;
+        IUniqueId containerId = null;
+        String route = null;
+        String source = null;
+        String qualifier = null;
         List<AbstractDataItem> generatedStates = new ArrayList<>(2);
         // If the object is enabled, then you have to process it as usual
         if(entityStatus == Status.ENABLED) {
-            // Prepare the values
-            Instant generationTime = this.state == null ? null : this.state.getGenerationTime();
+            // Prepare the time values
+            Instant generationTime = this.state == null ? Instant.now() : this.state.getGenerationTime();
             generationTime = newValue != null ? newValue.getGenerationTime() : generationTime;
             Instant receptionTime;
-            // If there is an expression, then evaluate the expression and check for a transition false -> true
             if(definition.getCondition() != null) {
-                boolean triggered = false;
+                // If there is an expression, then evaluate the expression and check for a transition false -> true
+                boolean triggered;
                 try {
                     triggered = (Boolean) definition.getCondition().execute(processor, null);
                     mustBeRaised = triggered && !conditionTriggerState; // raise the event if it must be raised and it is not already reported from previous evaluation
+                    conditionTriggerState = triggered;
+                    // No need to set more
                 } catch (ScriptException|ClassCastException e) {
                     LOG.log(Level.SEVERE, "Error when evaluating condition of event " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
                     return generatedStates;
                 }
             } else if(newValue != null) {
-                // No condition, no re-evaluation, so use the input
+                // No condition, use the input since it is available
+                report = newValue.getReport();
+                containerId = newValue.getContainer();
+                qualifier = newValue.getQualifier();
+                source = newValue.getSource();
+                route = newValue.getRoute();
+                mustBeRaised = true;
             } else {
-                // Simple re-evaluation, check if there is an external trigger: if no triggers, then no event, then no states
-            }
-            // If valid, derive source value (if expression) and calibrate
-            if(validity == Validity.VALID) {
-
-                if(validity == Validity.VALID) {
-                    try {
-                        // Calibrate the source value
-                        engValue = calibrate(sourceValue);
-                        // Then run checks
-                        alarmState = check(engValue, generationTime, newValue == null);
-                    } catch (CalibrationException e) {
-                        LOG.log(Level.SEVERE, "Error when calibrating parameter " + definition.getId() + " (" + definition.getLocation() + ") with source value " + sourceValue + ": " + e.getMessage(), e);
-                        // Validity is INVALID, to prevent other processors to take the null eng. value as good value
-                        validity = Validity.INVALID;
-                        // Alarm state is set to UNKNOWN
-                        alarmState = AlarmState.UNKNOWN;
-                    }
+                // No condition, no input data: simple re-evaluation, check if there is an external trigger: if no trigger, then no event, then no states
+                if(internallyTriggered) {
+                    mustBeRaised = true;
+                    source = internalSource;
+                    // Reset the flag
+                    internallyTriggered = false;
+                    internalSource = null;
+                } else {
+                    return generatedStates;
                 }
             }
-            // Set validity
-            this.builder.setValidity(validity);
-            // Set the source value and the generation time
-            this.builder.setSourceValue(sourceValue);
-            this.builder.setGenerationTime(generationTime);
-            // Set engineering value - If not valid, the engineering value is not computed
-            this.builder.setEngValue(engValue);
-            // The checks are not run
-            this.builder.setAlarmState(alarmState);
-            // Build final state, set it and return it
-            if(newValue != null) {
-                this.builder.setRoute(newValue.getRoute());
-                this.builder.setContainerId(newValue.getContainerId());
-                receptionTime = newValue.getReceptionTime(); // This can never be null
-            } else {
-                this.builder.setRoute(state == null ? null : state.getRoute());
-                this.builder.setContainerId(state == null ? null : state.getRawDataContainerId());
-                // Re-evaluation, so set the reception time to now
-                receptionTime = Instant.now();
-            }
-            // Sanitize the reception time
-            this.builder.setReceptionTime(receptionTime);
-            // Replace the state
-            if(this.builder.isChangedSinceLastBuild()) {
-                this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
+            // Check if you have to raise the event
+            if(mustBeRaised) {
+                // Set necessary objects
+                this.builder.setEventState(qualifier, source, route, report, containerId);
+                // Set the generation time
+                this.builder.setGenerationTime(generationTime);
+                // Build final state, set it and return it
+                if (newValue != null) {
+                    receptionTime = newValue.getReceptionTime(); // This can never be null
+                } else {
+                    // Condition re-evaluation or internally triggered, so set the reception time to now
+                    receptionTime = Instant.now();
+                }
+                // Set the reception time
+                this.builder.setReceptionTime(receptionTime);
+                // Replace the state
+                this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
                 generatedStates.add(this.state);
-                stateChanged = true;
-            }
-            // Compute alarm state
-            if(stateChanged && valid()) {
-                // If nominal, set the last nominal value
-                if(!inAlarm()) {
-                    this.alarmBuilder.setLastNominalValue(this.state.getEngValue(), this.state.getGenerationTime());
-                }
-                // Set current values
-                this.alarmBuilder.setCurrentValue(this.state.getAlarmState(), this.state.getEngValue(), this.state.getGenerationTime(), this.state.getReceptionTime());
-                if(this.alarmBuilder.isChangedSinceLastBuild()) {
-                    alarmData = this.alarmBuilder.build(new LongUniqueId(processor.getNextId(AlarmParameterData.class)));
+
+                // Finalize entity state and prepare for the returned list of data items
+                this.systemEntityBuilder.setAlarmState(AlarmState.NOT_APPLICABLE);
+                this.systemEntityBuilder.setStatus(entityStatus);
+                if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
+                    this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+                    generatedStates.add(this.entityState);
                 }
             }
         } else {
             // Completely ignore the processing
-            LOG.log(Level.FINE, "Parameter sample not computed for parameter " + definition.getLocation() + ": parameter processing is disabled");
+            LOG.log(Level.FINE, "Event occurrence not computed for event " + definition.getLocation() + ": event processing is disabled");
         }
-        // Finalize entity state and prepare for the returned list of data items
-        if(stateChanged) {
-            this.systemEntityBuilder.setAlarmState(this.state.getAlarmState());
-        }
-        this.systemEntityBuilder.setStatus(entityStatus);
-        if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
-            this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
-            generatedStates.add(this.entityState);
-        }
-        if(alarmData != null) {
-            generatedStates.add(alarmData);
-        }
+
         // Return the list
         return generatedStates;
     }
 
+    public void raiseEvent(String source) {
+        this.internallyTriggered = true;
+        this.internalSource = source;
+    }
+
     @Override
-    public List<AbstractDataItem> evaluate() throws ProcessingModelException {
+    public List<AbstractDataItem> evaluate() {
         return process(null);
+    }
+
+    @Override
+    public Severity severity() {
+        return this.state == null ? null : this.state.getSeverity();
+    }
+
+    @Override
+    public String route() {
+        return this.state == null ? null : this.state.getRoute();
+    }
+
+    @Override
+    public String source() {
+        return this.state == null ? null : this.state.getSource();
+    }
+
+    @Override
+    public String type() {
+        return this.state == null ? null : this.state.getType();
+    }
+
+    @Override
+    public String qualifier() {
+        return this.state == null ? null : this.state.getQualifier();
+    }
+
+    @Override
+    public Object report() {
+        return this.state == null ? null : this.state.getReport();
     }
 
     @Override

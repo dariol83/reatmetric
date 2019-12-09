@@ -9,6 +9,7 @@ import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 import eu.dariolucia.reatmetric.processing.impl.processors.ContainerProcessor;
+import eu.dariolucia.reatmetric.processing.impl.processors.EventProcessor;
 import eu.dariolucia.reatmetric.processing.impl.processors.ParameterProcessor;
 
 import java.util.*;
@@ -42,15 +43,15 @@ public class GraphModel {
         for(ParameterProcessingDefinition param : definition.getParameterDefinitions()) {
             addEntities(param, () -> new ParameterProcessor(param, processingModel));
         }
-        // TODO
-        // for(EventProcessingDefinition event : definition.getEventDefinitions()) {
-        //     addEntities(event, () -> new EventProcessor(event, processingModel));
-        // }
+        for(EventProcessingDefinition event : definition.getEventDefinitions()) {
+             addEntities(event, () -> new EventProcessor(event, processingModel));
+        }
 
         // Now add the links for:
         // - expressions (source value computation, validity, expression calibration, expression checks)
         // - parent/child relationship (error propagation)
         // - event expressions
+        // TODO: parameter to event triggers
         for(ParameterProcessingDefinition param : definition.getParameterDefinitions()) {
             if(param.getExpression() != null) {
                 addEdges(param, param.getExpression());
