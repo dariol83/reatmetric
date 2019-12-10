@@ -52,11 +52,15 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     })
     private List<CheckDefinition> checks = new LinkedList<>();
 
+    @XmlElementWrapper(name = "triggers")
+    @XmlElement(name="trigger")
+    private List<ParameterTriggerDefinition> triggers = new LinkedList<>();
+
     public ParameterProcessingDefinition() {
         super();
     }
 
-    public ParameterProcessingDefinition(int id, String description, String location, ValueTypeEnum rawType, ValueTypeEnum engineeringType, String unit, ValidityCondition validity, CalibrationDefinition calibration, List<CheckDefinition> checks, ExpressionDefinition expression) {
+    public ParameterProcessingDefinition(int id, String description, String location, ValueTypeEnum rawType, ValueTypeEnum engineeringType, String unit, ValidityCondition validity, CalibrationDefinition calibration, List<CheckDefinition> checks, ExpressionDefinition expression, List<ParameterTriggerDefinition> triggers) {
         super(id, description, location);
         this.rawType = rawType;
         this.engineeringType = engineeringType;
@@ -65,6 +69,7 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.calibration = calibration;
         this.checks = checks;
         this.expression = expression;
+        this.triggers = triggers;
     }
 
     public ValueTypeEnum getRawType() {
@@ -121,5 +126,13 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
 
     public void setExpression(ExpressionDefinition expression) {
         this.expression = expression;
+    }
+
+    public List<ParameterTriggerDefinition> getTriggers() {
+        return triggers;
+    }
+
+    public void setTriggers(List<ParameterTriggerDefinition> triggers) {
+        this.triggers = triggers;
     }
 }

@@ -20,12 +20,16 @@ public class SymbolDefinition {
     @XmlAttribute(name = "reference", required = true)
     private AbstractProcessingDefinition reference;
 
+    @XmlAttribute
+    private PropertyBinding binding = PropertyBinding.OBJECT;
+
     public SymbolDefinition() {
     }
 
-    public SymbolDefinition(String name, AbstractProcessingDefinition reference) {
+    public SymbolDefinition(String name, AbstractProcessingDefinition reference, PropertyBinding binding) {
         this.name = name;
         this.reference = reference;
+        this.binding = binding;
     }
 
     public String getName() {
@@ -42,5 +46,13 @@ public class SymbolDefinition {
 
     public void setReference(AbstractProcessingDefinition reference) {
         this.reference = reference;
+    }
+
+    public PropertyBinding getBinding() {
+        return binding;
+    }
+
+    public void setBinding(PropertyBinding binding) {
+        this.binding = binding;
     }
 }

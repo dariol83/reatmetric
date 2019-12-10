@@ -23,6 +23,7 @@ import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperatio
 import eu.dariolucia.reatmetric.processing.impl.operations.EnableDisableOperation;
 import eu.dariolucia.reatmetric.processing.impl.operations.ParameterSampleProcessOperation;
 import eu.dariolucia.reatmetric.processing.impl.operations.RaiseEventOperation;
+import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
@@ -97,6 +98,10 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 LOG.log(Level.SEVERE, "Exception when dispatching processing tasks: " + e.getMessage(), e);
             }
         }
+    }
+
+    public AbstractSystemEntityProcessor getProcessor(int processorId) {
+        return graphModel.getProcessor(processorId);
     }
 
     public long getNextId(Class<? extends AbstractDataItem> type) {
@@ -205,4 +210,5 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     public IEntityBinding resolve(int systemEntityId) {
         return graphModel.getBinding(systemEntityId);
     }
+
 }

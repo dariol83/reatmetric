@@ -9,6 +9,9 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IEntityBinding;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IEventBinding;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IParameterBinding;
 
 import javax.script.*;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -34,7 +37,6 @@ public class ExpressionDefinition {
     public ExpressionDefinition() {
     }
 
-    // TODO: add object property bindings (e.g. PATH, GEN_TIME, RCT_TIME, ROUTE, SOURCE_VALUE, ENG_VALUE, ALARM_STATE, VALIDITY, QUALIFIER, OBJECT (default)
     public ExpressionDefinition(String expression, List<SymbolDefinition> symbols) {
         this.expression = expression;
         this.symbols = symbols;
@@ -89,7 +91,7 @@ public class ExpressionDefinition {
         }
         // Update the bindings
         for(SymbolDefinition sd : symbols) {
-            bindings.put(sd.getName(), resolver.resolve(sd.getReference().getId()));
+            bindings.put(sd.getName(), toBindingProperty(sd.getBinding(), resolver.resolve(sd.getReference().getId())));
         }
         if(additionalBindings != null) {
             bindings.putAll(additionalBindings);
@@ -100,5 +102,62 @@ public class ExpressionDefinition {
         } else {
             return engine.eval(expression, bindings);
         }
+    }
+
+    private Object toBindingProperty(PropertyBinding binding, IEntityBinding resolve) throws ScriptException {
+        switch (binding) {
+            case OBJECT: return resolve;
+            case PATH: return resolve.path();
+            case GEN_TIME: return resolve.generationTime();
+            case RCT_TIME: return resolve.receptionTime();
+            case ALARM_STATE: {
+                if(resolve instanceof IParameterBinding) {
+                    return ((IParameterBinding) resolve).alarmState();
+                }
+                break;
+            }
+            case ROUTE: {
+                if(resolve instanceof IParameterBinding) {
+                    return ((IParameterBinding) resolve).route();
+                }
+                if(resolve instanceof IEventBinding) {
+                    return ((IEventBinding) resolve).route();
+                }
+                break;
+            }
+            case SOURCE: {
+                if(resolve instanceof IEventBinding) {
+                    return ((IEventBinding) resolve).source();
+                }
+                break;
+            }
+            case VALIDITY: {
+                if(resolve instanceof IParameterBinding) {
+                    return ((IParameterBinding) resolve).validity();
+                }
+                break;
+            }
+            case ENG_VALUE: {
+                if(resolve instanceof IParameterBinding) {
+                    return ((IParameterBinding) resolve).value();
+                }
+                break;
+            }
+            case SOURCE_VALUE: {
+                if(resolve instanceof IParameterBinding) {
+                    return ((IParameterBinding) resolve).sourceValue();
+                }
+                break;
+            }
+            case QUALIFIER: {
+                if(resolve instanceof IEventBinding) {
+                    return ((IEventBinding) resolve).qualifier();
+                }
+                break;
+            }
+            default:
+                throw new ScriptException("Cannot resolve property binding " + binding + " against object of type " + resolve.getClass());
+        }
+        throw new ScriptException("Cannot resolve property binding " + binding + " against object of type " + resolve.getClass());
     }
 }

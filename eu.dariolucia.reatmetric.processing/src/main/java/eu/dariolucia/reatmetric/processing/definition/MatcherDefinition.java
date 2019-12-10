@@ -38,6 +38,62 @@ public class MatcherDefinition {
     @XmlAttribute(name = "reference")
     private ParameterProcessingDefinition reference;
 
+    public MatcherDefinition() {
+    }
+
+    public MatcherDefinition(ParameterProcessingDefinition parameter, MatcherType operator, ValueTypeEnum valueType, String value) {
+        this.parameter = parameter;
+        this.operator = operator;
+        this.valueType = valueType;
+        this.value = value;
+    }
+
+    public MatcherDefinition(ParameterProcessingDefinition parameter, MatcherType operator, ParameterProcessingDefinition reference) {
+        this.parameter = parameter;
+        this.operator = operator;
+        this.reference = reference;
+    }
+
+    public ParameterProcessingDefinition getParameter() {
+        return parameter;
+    }
+
+    public void setParameter(ParameterProcessingDefinition parameter) {
+        this.parameter = parameter;
+    }
+
+    public MatcherType getOperator() {
+        return operator;
+    }
+
+    public void setOperator(MatcherType operator) {
+        this.operator = operator;
+    }
+
+    public ValueTypeEnum getValueType() {
+        return valueType;
+    }
+
+    public void setValueType(ValueTypeEnum valueType) {
+        this.valueType = valueType;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    public ParameterProcessingDefinition getReference() {
+        return reference;
+    }
+
+    public void setReference(ParameterProcessingDefinition reference) {
+        this.reference = reference;
+    }
+
     /**
      * Execute the comparison between the parameter and either the provided value or the value of the referenced parameter.
      * This method does not take into consideration any validity or alarm state of the referenced parameter.

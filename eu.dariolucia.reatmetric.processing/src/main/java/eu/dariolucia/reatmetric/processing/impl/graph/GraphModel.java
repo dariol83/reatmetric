@@ -51,13 +51,21 @@ public class GraphModel {
         // - expressions (source value computation, validity, expression calibration, expression checks)
         // - parent/child relationship (error propagation)
         // - event expressions
-        // TODO: parameter to event triggers
+        // - parameter triggers
         for(ParameterProcessingDefinition param : definition.getParameterDefinitions()) {
             if(param.getExpression() != null) {
                 addEdges(param, param.getExpression());
             }
             if(param.getValidity() != null) {
-                addEdges(param, param.getValidity());
+                if (param.getValidity().getCondition() != null) {
+                    addEdges(param, param.getValidity().getCondition());
+                }
+                if (param.getValidity().getMatch() != null) {
+                    new DependencyEdge(getVertexOf(param.getId()), getVertexOf(param.getValidity().getMatch().getParameter().getId()));
+                    if(param.getValidity().getMatch().getReference() != null) {
+                        new DependencyEdge(getVertexOf(param.getId()), getVertexOf(param.getValidity().getMatch().getReference().getId()));
+                    }
+                }
             }
             if(param.getCalibration() instanceof ExpressionCalibration) {
                 addEdges(param, ((ExpressionCalibration) param.getCalibration()).getDefinition());
@@ -66,6 +74,9 @@ public class GraphModel {
                 if(cd instanceof ExpressionCheck) {
                     addEdges(param, ((ExpressionCheck) cd).getDefinition());
                 }
+            }
+            for(ParameterTriggerDefinition ptd : param.getTriggers()) {
+                new DependencyEdge(getVertexOf(ptd.getEvent().getId()), getVertexOf(param.getId()));
             }
         }
         for(EventProcessingDefinition event : definition.getEventDefinitions()) {
@@ -278,11 +289,15 @@ public class GraphModel {
     }
 
     public IEntityBinding getBinding(int systemEntityId) {
+        return (IEntityBinding) getProcessor(systemEntityId);
+    }
+
+    public AbstractSystemEntityProcessor getProcessor(int systemEntityId) {
         EntityVertex ev = idMap.get(systemEntityId);
         if(ev == null) {
             return null;
         } else {
-            return (IEntityBinding) ev.getProcessor();
+            return ev.getProcessor();
         }
     }
 }

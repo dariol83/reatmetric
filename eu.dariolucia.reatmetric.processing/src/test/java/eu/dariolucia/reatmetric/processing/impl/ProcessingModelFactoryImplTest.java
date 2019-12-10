@@ -341,4 +341,7 @@ class ProcessingModelFactoryImplTest {
     }
 
     // TODO: test the validity matcher with value and with parameter
+    // TODO: test event including inhibition
+    // TODO: test expression with binding property
+    // TODO: test event raised by parameter triggers
 }

@@ -50,14 +50,26 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     @Override
+    protected AlarmState getInitialAlarmState() {
+        return AlarmState.UNKNOWN;
+    }
+
+    @Override
     public synchronized List<AbstractDataItem> process(ParameterSample newValue) throws ProcessingModelException {
         // Guard condition: if this parameter has an expression, newValue must be null
         if(definition.getExpression() != null && newValue != null) {
             LOG.log(Level.SEVERE, "Parameter " + definition.getId() + " (" + definition.getLocation() + ") is a synthetic parameter, but a sample was injected. Processing ignored.");
             return Collections.emptyList();
         }
+        // Previous value
+        Object previousValue = this.state == null ? null : this.state.getEngValue();
+        // Was in alarm?
+        boolean wasInAlarm = this.state != null && this.state.getAlarmState().isAlarm();
+        // Required to take decision at the end
         boolean stateChanged = false;
+        // To be returned at the end of the processing
         List<AbstractDataItem> generatedStates = new ArrayList<>(3);
+        // The placeholder for the AlarmParameterData to be created, if needed
         AlarmParameterData alarmData = null;
         // If the object is enabled, then you have to process it as usual
         if(entityStatus == Status.ENABLED) {
@@ -107,7 +119,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                         // Then run checks
                         alarmState = check(engValue, generationTime, newValue == null);
                     } catch (CalibrationException e) {
-                        LOG.log(Level.SEVERE, "Error when calibrating parameter " + definition.getId() + " (" + definition.getLocation() + ") with source value " + sourceValue + ": " + e.getMessage(), e);
+                        LOG.log(Level.SEVERE, "Error when calibrating parameter " + id() + " (" + path() + ") with source value " + sourceValue + ": " + e.getMessage(), e);
                         // Validity is INVALID, to prevent other processors to take the null eng. value as good value
                         validity = Validity.INVALID;
                         // Alarm state is set to UNKNOWN
@@ -157,7 +169,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             }
         } else {
             // Completely ignore the processing
-            LOG.log(Level.FINE, "Parameter sample not computed for parameter " + definition.getLocation() + ": parameter processing is disabled");
+            LOG.log(Level.FINE, "Parameter sample not computed for parameter " + path() + ": parameter processing is disabled");
         }
         // Finalize entity state and prepare for the returned list of data items
         if(stateChanged) {
@@ -171,8 +183,37 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         if(alarmData != null) {
             generatedStates.add(alarmData);
         }
+        // At this stage, check the triggers and, for each of them, derive the correct behaviour
+        for(ParameterTriggerDefinition ptd : definition.getTriggers()) {
+            try {
+                if (ptd.getTriggerCondition() == TriggerCondition.ON_NEW_SAMPLE && newValue != null && stateChanged) {
+                    // Raise event
+                    raiseEvent(ptd.getEvent().getId());
+                } else if (ptd.getTriggerCondition() == TriggerCondition.ON_ALARM_RAISED && !wasInAlarm && inAlarm()) {
+                    // Raise event
+                    raiseEvent(ptd.getEvent().getId());
+                } else if (ptd.getTriggerCondition() == TriggerCondition.ON_BACK_TO_NOMINAL && wasInAlarm && !inAlarm()) {
+                    // Raise event
+                    raiseEvent(ptd.getEvent().getId());
+                } else if (ptd.getTriggerCondition() == TriggerCondition.ON_VALUE_CHANGE && !Objects.equals(previousValue, this.state.getEngValue())) {
+                    // Raise event
+                    raiseEvent(ptd.getEvent().getId());
+                }
+            } catch(Exception e) {
+                LOG.log(Level.SEVERE, "Event " + ptd.getEvent().getId() + " cannot be raised by parameter " + id() + " (" + path() + ") due to unexpected exception: " + e.getMessage(), e);
+            }
+        }
         // Return the list
         return generatedStates;
+    }
+
+    private void raiseEvent(int eventId) {
+        EventProcessor ev = (EventProcessor)processor.getProcessor(eventId);
+        if(ev == null) {
+            LOG.severe("Event " + eventId + " cannot be raised by parameter " + id() + " (" + path() + "): event processor not found");
+        } else {
+            ev.raiseEvent(path());
+        }
     }
 
     private Object verifySourceValue(Object value) throws ProcessingModelException {
@@ -308,6 +349,11 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     @Override
     public String path() {
         return definition.getLocation();
+    }
+
+    @Override
+    public String route() {
+        return this.state == null ? null : this.state.getRoute();
     }
 
     @Override

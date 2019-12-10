@@ -34,11 +34,11 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
 
     private static final Logger LOG = Logger.getLogger(EventProcessor.class.getName());
 
-    // TODO: add in the definition the ability to inhibit to raise an event for a defined period of time
     private boolean conditionTriggerState = false;
 
     private boolean internallyTriggered = false;
     private String internalSource = null;
+    private Instant lastReportedEventTime = null;
 
     private final EventDataBuilder builder;
 
@@ -99,6 +99,10 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                     return generatedStates;
                 }
             }
+            // Check inhibition time - If an event is detected/reported during the inhibition period, the raising is discarded
+            if(mustBeRaised && this.lastReportedEventTime != null && this.lastReportedEventTime.plusMillis(definition.getInhibitionPeriod()).isAfter(generationTime)) {
+                mustBeRaised = false;
+            }
             // Check if you have to raise the event
             if(mustBeRaised) {
                 // Set necessary objects
@@ -117,7 +121,8 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                 // Replace the state
                 this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
                 generatedStates.add(this.state);
-
+                // Remember the generation time
+                this.lastReportedEventTime = generationTime;
                 // Finalize entity state and prepare for the returned list of data items
                 this.systemEntityBuilder.setAlarmState(AlarmState.NOT_APPLICABLE);
                 this.systemEntityBuilder.setStatus(entityStatus);

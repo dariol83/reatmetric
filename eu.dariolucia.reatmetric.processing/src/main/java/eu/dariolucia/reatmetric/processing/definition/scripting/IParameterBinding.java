@@ -19,4 +19,6 @@ public interface IParameterBinding extends IEntityBinding {
 
     Long containerId();
 
+    String route();
+
 }
