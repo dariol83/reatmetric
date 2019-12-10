@@ -22,7 +22,7 @@
         <!-- Battery model -->
         <parameter id="#1001" location="ROOT.BATTERY.BATTERY_STATE" description="Battery state" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="">
             <validity>
-                <expression>true</expression>
+                <condition><expression>true</expression></condition>
             </validity>
             <checks>
                 <expected name="EXPCHK1" type="BOOLEAN">
@@ -32,8 +32,10 @@
         </parameter>
         <parameter id="#1002" location="ROOT.BATTERY.BATTERY_TENSION" description="Battery tension" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="mV">
             <validity>
-                <expression>BATTERY_STATE.value() == true</expression>
-                <symbol name="BATTERY_STATE" reference="#1001" />
+                <condition>
+                    <expression>BATTERY_STATE.value() == true</expression>
+                    <symbol name="BATTERY_STATE" reference="#1001" />
+                </condition>
             </validity>
             <calib_poly a0="10" a1="2" />
             <checks>
@@ -42,9 +44,11 @@
         </parameter>
         <parameter id="#1003" location="ROOT.BATTERY.BATTERY_CURRENT" description="Battery current" raw_type="UNSIGNED_INTEGER" eng_type="REAL" eng_unit="A">
             <validity>
-                <expression>BATTERY_STATE.value() == true &amp;&amp; !BATTERY_TENSION.inAlarm()</expression>
-                <symbol name="BATTERY_STATE" reference="#1001" />
-                <symbol name="BATTERY_TENSION" reference="#1002" />
+                <condition>
+                    <expression>BATTERY_STATE.value() == true &amp;&amp; !BATTERY_TENSION.inAlarm()</expression>
+                    <symbol name="BATTERY_STATE" reference="#1001" />
+                    <symbol name="BATTERY_TENSION" reference="#1002" />
+                </condition>
             </validity>
             <calib_expression>
                 <definition>
@@ -76,7 +80,9 @@
         <!-- Fail model, to test errors -->
         <parameter id="#1010" location="ROOT.FAIL.WRONG_VAL_RETVAL" description="Wrong validity return value" raw_type="ENUMERATED" eng_type="CHARACTER_STRING">
             <validity>
+                <condition>
                 <expression>12.3</expression>
+                </condition>
             </validity>
             <calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
@@ -93,7 +99,9 @@
         </parameter>
         <parameter id="#1013" location="ROOT.FAIL.WRONG_VAL_EXP" description="Wrong validity expression" raw_type="ENUMERATED" eng_type="CHARACTER_STRING">
             <validity>
-                <expression>NOSYMBOL == 2.0</expression>
+                <condition>
+                    <expression>NOSYMBOL == 2.0</expression>
+                </condition>
             </validity>
             <calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />

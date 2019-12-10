@@ -250,18 +250,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             return Validity.VALID;
         } else {
             try {
-                Object obj = definition.getValidity().execute(processor, null);
-                if(obj instanceof Boolean) {
-                    if((Boolean) obj) {
-                        return Validity.VALID;
-                    } else {
-                        return Validity.INVALID;
-                    }
-                } else {
-                    LOG.log(Level.SEVERE, "Error when computing validity of parameter " + definition.getId() + " (" + definition.getLocation() + "): expression did not return a boolean, but " + obj);
-                    return Validity.ERROR;
-                }
-            } catch(ScriptException e) {
+                boolean valid = definition.getValidity().execute(processor);
+                return valid ? Validity.VALID : Validity.INVALID;
+            } catch(ValidityException e) {
                 LOG.log(Level.SEVERE, "Error when computing validity of parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
                 return Validity.ERROR;
             }

@@ -26,9 +26,8 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlAttribute(name = "eng_unit")
     private String unit = "";
 
-    // TODO: abstract it to be either an expression or a simple equality condition
     @XmlElement(name = "validity")
-    private ExpressionDefinition validity;
+    private ValidityCondition validity;
 
     @XmlElement(name = "synthetic")
     private ExpressionDefinition expression;
@@ -57,7 +56,7 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         super();
     }
 
-    public ParameterProcessingDefinition(int id, String description, String location, ValueTypeEnum rawType, ValueTypeEnum engineeringType, String unit, ExpressionDefinition validity, CalibrationDefinition calibration, List<CheckDefinition> checks, ExpressionDefinition expression) {
+    public ParameterProcessingDefinition(int id, String description, String location, ValueTypeEnum rawType, ValueTypeEnum engineeringType, String unit, ValidityCondition validity, CalibrationDefinition calibration, List<CheckDefinition> checks, ExpressionDefinition expression) {
         super(id, description, location);
         this.rawType = rawType;
         this.engineeringType = engineeringType;
@@ -92,11 +91,11 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.unit = unit;
     }
 
-    public ExpressionDefinition getValidity() {
+    public ValidityCondition getValidity() {
         return validity;
     }
 
-    public void setValidity(ExpressionDefinition validity) {
+    public void setValidity(ValidityCondition validity) {
         this.validity = validity;
     }
 
