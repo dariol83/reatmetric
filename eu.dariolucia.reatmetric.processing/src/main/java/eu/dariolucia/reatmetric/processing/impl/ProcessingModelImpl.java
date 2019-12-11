@@ -138,13 +138,11 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public IUniqueId startAction() {
-        // TODO
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void reportActionProgress() {
-        // TODO
         throw new UnsupportedOperationException();
     }
 
