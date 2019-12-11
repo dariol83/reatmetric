@@ -593,7 +593,4 @@ class ParameterTest {
             }
         }
     }
-
-    // TODO: test event including inhibition
-    // TODO: test event raised by parameter triggers
 }

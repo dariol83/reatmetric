@@ -38,6 +38,7 @@ public class ProcessingTask implements Callable<List<AbstractDataItem>> {
 
     @Override
     public List<AbstractDataItem> call() {
+        // XXX: think about having parallel parameter processing by introducing processing levels based on longest-dependency count
         List<AbstractDataItem> result = new ArrayList<>(operations.size());
         for (AbstractModelOperation amo : operations) {
             try {
