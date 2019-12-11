@@ -33,7 +33,7 @@ import java.util.logging.Logger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-class ProcessingModelFactoryImplTest {
+class ParameterTest {
 
     @Test
     void testBatteryModel() throws JAXBException, ProcessingModelException, InterruptedException {
@@ -340,8 +340,179 @@ class ProcessingModelFactoryImplTest {
         }
     }
 
-    // TODO: test the validity matcher with value and with parameter
-    // TODO: test event including inhibition
+    @Test
+    void testValidityMatchers() throws JAXBException, ProcessingModelException, InterruptedException {
+        Logger testLogger = Logger.getLogger(getClass().getName());
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions.xml"));
+        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
+        List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
+        // All output data items go in the outList
+        IProcessingModelOutput output = outList::addAll;
+        IProcessingModel model = factory.build(pd, output, null);
+
+        testLogger.info("Injection - Batch 1");
+        ParameterSample b = ParameterSample.of(1020, 20);
+
+        model.injectParameters(Collections.singletonList(b));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 8);
+
+        // Checks
+        for(int i = 0; i < outList.size(); ++i) {
+            if(((ParameterData) outList.get(i)).getExternalId() == 1020) {
+                assertEquals(1020, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                assertEquals(AlarmState.NOMINAL, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("BASE", ((SystemEntity) outList.get(i)).getName());
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1021) {
+                assertEquals(1021, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                ++i;
+                assertEquals("VALMATCH1", ((SystemEntity) outList.get(i)).getName());
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1022) {
+                assertEquals(1022, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.INVALID, ((ParameterData) outList.get(i)).getValidity());
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1023) {
+                assertEquals(1023, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.INVALID, ((ParameterData) outList.get(i)).getValidity());
+            } else {
+                assertEquals(1024, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                ++i;
+                assertEquals("VALMATCH4", ((SystemEntity) outList.get(i)).getName());
+            }
+        }
+        testLogger.info("Injection - Batch 2");
+        outList.clear();
+
+        b = ParameterSample.of(1020, 25);
+
+        model.injectParameters(Collections.singletonList(b));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 9);
+
+        // Checks
+        for(int i = 0; i < outList.size(); ++i) {
+            if(((ParameterData) outList.get(i)).getExternalId() == 1020) {
+                assertEquals(1020, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                assertEquals(AlarmState.ALARM, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("BASE", ((SystemEntity) outList.get(i)).getName()); // Nominal -> Alarm
+                ++i;
+                assertEquals(AlarmState.ALARM, ((AlarmParameterData) outList.get(i)).getCurrentAlarmState());
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1021) {
+                assertEquals(1021, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.INVALID, ((ParameterData) outList.get(i)).getValidity());
+                ++i;
+                assertEquals("VALMATCH1", ((SystemEntity) outList.get(i)).getName()); // Not checked -> Unknown
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1022) {
+                assertEquals(1022, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                ++i;
+                assertEquals("VALMATCH2", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Not checked
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1023) {
+                assertEquals(1023, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.INVALID, ((ParameterData) outList.get(i)).getValidity());
+            } else {
+                assertEquals(1024, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+            }
+        }
+        testLogger.info("Injection - Batch 3");
+        outList.clear();
+
+        Instant current = Instant.ofEpochMilli(500000);
+        Instant next = current.plusMillis(30000);
+        b = ParameterSample.of(1025, current);
+
+        model.injectParameters(Collections.singletonList(b));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 4);
+
+        // Checks
+        for(int i = 0; i < outList.size(); ++i) {
+            if(((ParameterData) outList.get(i)).getExternalId() == 1025) {
+                assertEquals(1025, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                assertEquals(AlarmState.NOT_CHECKED, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("BASE2", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Not checked
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1027) {
+                assertEquals(1027, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.ERROR, ((ParameterData) outList.get(i)).getValidity()); // The other value is not set
+            } else {
+                assertEquals(1028, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.INVALID, ((ParameterData) outList.get(i)).getValidity()); // The other value is not set, but equality test with null is OK
+            }
+        }
+
+        testLogger.info("Injection - Batch 4");
+        outList.clear();
+
+        b = ParameterSample.of(1026, current);
+
+        model.injectParameters(Collections.singletonList(b));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 5);
+
+        // Checks
+        for(int i = 0; i < outList.size(); ++i) {
+            if(((ParameterData) outList.get(i)).getExternalId() == 1026) {
+                assertEquals(1026, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                assertEquals(AlarmState.NOT_CHECKED, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("BASE3", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Nominal
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1027) {
+                assertEquals(1027, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.INVALID, ((ParameterData) outList.get(i)).getValidity());
+            } else {
+                assertEquals(1028, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity()); // The other value is not set
+                ++i;
+                assertEquals("VALMATCH6", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Not checked
+            }
+        }
+
+        testLogger.info("Injection - Batch 5");
+        outList.clear();
+
+        b = ParameterSample.of(1026, next);
+
+        model.injectParameters(Collections.singletonList(b));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 5);
+
+        // Checks
+        for(int i = 0; i < outList.size(); ++i) {
+            if(((ParameterData) outList.get(i)).getExternalId() == 1026) {
+                assertEquals(1026, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                assertEquals(AlarmState.NOT_CHECKED, ((ParameterData) outList.get(i)).getAlarmState());
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1027) {
+                assertEquals(1027, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                ++i;
+                assertEquals("VALMATCH5", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Not checked
+            } else {
+                assertEquals(1028, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(Validity.INVALID, ((ParameterData) outList.get(i)).getValidity()); // The other value is not set
+                ++i;
+                assertEquals("VALMATCH6", ((SystemEntity) outList.get(i)).getName()); // Not checked -> Unknown
+            }
+        }
+    }
+
     // TODO: test expression with binding property
+    // TODO: test event including inhibition
     // TODO: test event raised by parameter triggers
 }

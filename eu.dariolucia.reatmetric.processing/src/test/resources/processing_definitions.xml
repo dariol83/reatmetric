@@ -115,5 +115,54 @@
             </synthetic>
         </parameter>
 
+        <!-- Validity matchers with base value -->
+        <parameter id="#1020" location="ROOT.VALTEST.BASE" description="Base parameter" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <checks>
+                <expected name="EXPCHK1" type="SIGNED_INTEGER">
+                    <value>10</value>
+                    <value>20</value>
+                    <value>30</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#1021" location="ROOT.VALTEST.VALMATCH1" description="Parameter with matcher 1" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <validity>
+                <match parameter="#1020" operator="EQUAL" valueType="SIGNED_INTEGER" value="20" />
+            </validity>
+        </parameter>
+        <parameter id="#1022" location="ROOT.VALTEST.VALMATCH2" description="Parameter with matcher 2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <validity>
+                <match parameter="#1020" operator="GT" valueType="SIGNED_INTEGER" value="20" />
+            </validity>
+        </parameter>
+        <parameter id="#1023" location="ROOT.VALTEST.VALMATCH3" description="Parameter with matcher 3" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <validity>
+                <match parameter="#1020" operator="LT" valueType="SIGNED_INTEGER" value="20" />
+            </validity>
+        </parameter>
+        <parameter id="#1024" location="ROOT.VALTEST.VALMATCH4" description="Parameter with matcher 4" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <validity>
+                <match parameter="#1020" operator="NOT_EQUAL" valueType="SIGNED_INTEGER" value="30" />
+            </validity>
+        </parameter>
+
+        <!-- Validity matchers with parameter reference -->
+        <parameter id="#1025" location="ROOT.VALTEST.BASE2" description="Base parameter 2" raw_type="ABSOLUTE_TIME"
+                   eng_type="ABSOLUTE_TIME" eng_unit=""/>
+        <parameter id="#1026" location="ROOT.VALTEST.BASE3" description="Base parameter 3" raw_type="ABSOLUTE_TIME"
+                   eng_type="ABSOLUTE_TIME" eng_unit=""/>
+        <parameter id="#1027" location="ROOT.VALTEST.VALMATCH5" description="Parameter with matcher 5" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <validity>
+                <match parameter="#1025" operator="LT" reference="#1026" />
+            </validity>
+        </parameter>
+        <parameter id="#1028" location="ROOT.VALTEST.VALMATCH6" description="Parameter with matcher 6" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <validity>
+                <match parameter="#1025" operator="EQUAL" reference="#1026" />
+            </validity>
+        </parameter>
+
+
+
     </parameters>
 </ns1:processing>

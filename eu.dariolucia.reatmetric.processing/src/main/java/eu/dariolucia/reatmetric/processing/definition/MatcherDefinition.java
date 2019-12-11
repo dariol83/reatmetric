@@ -123,6 +123,7 @@ public class MatcherDefinition {
             return (operator == MatcherType.EQUAL) == equals;
         }
         // If comparison is needed, then you can do it only if you cast the two objects as comparables
+        // XXX: a null will make the instanceof returning false, this might not be desirable
         if(compareValue instanceof Comparable && paramValue instanceof Comparable) {
             int result = ((Comparable) paramValue).compareTo(compareValue);
             if(result == 0) {
@@ -133,7 +134,7 @@ public class MatcherDefinition {
                 return operator == MatcherType.GT || operator == MatcherType.GT_EQUAL;
             }
         } else {
-            throw new MatcherException("Provided values cannot be casted to Comparable, cannot compare");
+            throw new MatcherException("Provided values '" + paramValue + "' and '" + compareValue + "' cannot be casted to Comparable, cannot compare");
         }
     }
 }
