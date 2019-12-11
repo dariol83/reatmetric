@@ -38,7 +38,7 @@ class ParameterTest {
     @Test
     void testBatteryModel() throws JAXBException, ProcessingModelException, InterruptedException {
         Logger testLogger = Logger.getLogger(getClass().getName());
-        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions.xml"));
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
         ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
         List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
         // All output data items go in the outList
@@ -228,7 +228,7 @@ class ParameterTest {
     @Test
     void testWrongDefinitionsAndInjections() throws JAXBException, ProcessingModelException, InterruptedException {
         Logger testLogger = Logger.getLogger(getClass().getName());
-        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions.xml"));
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
         ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
         List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
         // All output data items go in the outList
@@ -306,7 +306,7 @@ class ParameterTest {
     @Test
     void testSourceTypes() throws JAXBException, ProcessingModelException, InterruptedException {
         Logger testLogger = Logger.getLogger(getClass().getName());
-        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions.xml"));
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
         ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
         List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
         // All output data items go in the outList
@@ -343,7 +343,7 @@ class ParameterTest {
     @Test
     void testValidityMatchers() throws JAXBException, ProcessingModelException, InterruptedException {
         Logger testLogger = Logger.getLogger(getClass().getName());
-        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions.xml"));
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
         ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
         List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
         // All output data items go in the outList
@@ -352,7 +352,6 @@ class ParameterTest {
 
         testLogger.info("Injection - Batch 1");
         ParameterSample b = ParameterSample.of(1020, 20);
-
         model.injectParameters(Collections.singletonList(b));
 
         //
@@ -386,11 +385,10 @@ class ParameterTest {
                 assertEquals("VALMATCH4", ((SystemEntity) outList.get(i)).getName());
             }
         }
+
         testLogger.info("Injection - Batch 2");
         outList.clear();
-
         b = ParameterSample.of(1020, 25);
-
         model.injectParameters(Collections.singletonList(b));
 
         //
@@ -426,11 +424,9 @@ class ParameterTest {
         }
         testLogger.info("Injection - Batch 3");
         outList.clear();
-
         Instant current = Instant.ofEpochMilli(500000);
         Instant next = current.plusMillis(30000);
         b = ParameterSample.of(1025, current);
-
         model.injectParameters(Collections.singletonList(b));
 
         //
@@ -455,9 +451,7 @@ class ParameterTest {
 
         testLogger.info("Injection - Batch 4");
         outList.clear();
-
         b = ParameterSample.of(1026, current);
-
         model.injectParameters(Collections.singletonList(b));
 
         //
@@ -484,9 +478,7 @@ class ParameterTest {
 
         testLogger.info("Injection - Batch 5");
         outList.clear();
-
         b = ParameterSample.of(1026, next);
-
         model.injectParameters(Collections.singletonList(b));
 
         //
@@ -512,7 +504,96 @@ class ParameterTest {
         }
     }
 
-    // TODO: test expression with binding property
+    @Test
+    void testExpressionPropertyBindings() throws JAXBException, ProcessingModelException, InterruptedException {
+        Logger testLogger = Logger.getLogger(getClass().getName());
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
+        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
+        List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
+        // All output data items go in the outList
+        IProcessingModelOutput output = outList::addAll;
+        IProcessingModel model = factory.build(pd, output, null);
+
+        testLogger.info("Injection - Batch 1");
+        ParameterSample b = ParameterSample.of(1030, 10);
+        model.injectParameters(Collections.singletonList(b));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 8);
+
+        // Checks
+        for(int i = 0; i < outList.size(); ++i) {
+            if(((ParameterData) outList.get(i)).getExternalId() == 1030) {
+                assertEquals(1030, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(10L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                assertEquals(AlarmState.NOMINAL, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("BASE", ((SystemEntity) outList.get(i)).getName());
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1031) {
+                assertEquals(1031, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(-20L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(-20L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                ++i;
+                assertEquals("EXP1", ((SystemEntity) outList.get(i)).getName());
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1032) {
+                assertEquals(1032, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(40L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(40L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                ++i;
+                assertEquals("EXP2", ((SystemEntity) outList.get(i)).getName());
+            } else {
+                assertEquals(1033, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals("ALL OK", ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals("ALL OK", ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                ++i;
+                assertEquals("EXP3", ((SystemEntity) outList.get(i)).getName());
+            }
+        }
+
+        testLogger.info("Injection - Batch 2");
+        outList.clear();
+        b = ParameterSample.of(1030, 30);
+        model.injectParameters(Collections.singletonList(b));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 6);
+
+        // Checks
+        for(int i = 0; i < outList.size(); ++i) {
+            if(((ParameterData) outList.get(i)).getExternalId() == 1030) {
+                assertEquals(1030, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(30L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(60L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+                assertEquals(AlarmState.ALARM, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("BASE", ((SystemEntity) outList.get(i)).getName());
+                ++i;
+                assertEquals(AlarmState.ALARM, ((AlarmParameterData) outList.get(i)).getCurrentAlarmState());
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1031) {
+                assertEquals(1031, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(100L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(100L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+            } else if(((ParameterData) outList.get(i)).getExternalId() == 1032) {
+                assertEquals(1032, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(120L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(120L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+            } else {
+                assertEquals(1033, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals("IN ALARM", ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals("IN ALARM", ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
+            }
+        }
+    }
+
     // TODO: test event including inhibition
     // TODO: test event raised by parameter triggers
 }

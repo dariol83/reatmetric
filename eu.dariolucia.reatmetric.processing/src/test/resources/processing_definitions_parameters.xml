@@ -162,6 +162,35 @@
             </validity>
         </parameter>
 
+        <!-- Expression with binding properties -->
+        <parameter id="#1030" location="ROOT.EXPTEST.BASE" description="Base parameter" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <calib_poly a1="2" />
+            <checks>
+                <expected name="EXPCHK1" type="SIGNED_INTEGER">
+                    <value>10</value>
+                    <value>20</value>
+                    <value>30</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#1031" location="ROOT.EXPTEST.EXP1" description="Parameter with expression 1" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <synthetic>
+                <expression>SOURCEVAL == 30 ? 100 : -20</expression>
+                <symbol name="SOURCEVAL" reference="#1030" binding="SOURCE_VALUE" />
+            </synthetic>
+        </parameter>
+        <parameter id="#1032" location="ROOT.EXPTEST.EXP2" description="Parameter with expression 2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <synthetic>
+                <expression>EXPTEST_BASE * 2</expression>
+                <symbol name="EXPTEST_BASE" reference="#1030" binding="ENG_VALUE" />
+            </synthetic>
+        </parameter>
+        <parameter id="#1033" location="ROOT.EXPTEST.EXP3" description="Parameter with expression 3" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
+            <synthetic>
+                <expression>alarmState.ordinal() == 0 ? "IN ALARM" : "ALL OK" </expression>
+                <symbol name="alarmState" reference="#1030" binding="ALARM_STATE" />
+            </synthetic>
+        </parameter>
 
 
     </parameters>

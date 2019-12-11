@@ -1,0 +1,40 @@
+<!--
+  ~ Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
+  ~ All rights reserved.
+  ~
+  ~ Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes shall be granted by the author in writing.
+  -->
+
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
+    <parameters>
+        <parameter id="#1001" location="ROOT.EVT.PARAM1" description="Battery state" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="">
+            <checks>
+                <expected name="EXPCHK1" type="UNSIGNED_INTEGER">
+                    <value>10</value>
+                    <value>15</value>
+                    <value>16</value>
+                </expected>
+            </checks>
+            <triggers>
+                <trigger event="#2003" condition="ON_NEW_SAMPLE"/>
+                <trigger event="#2004" condition="ON_VALUE_CHANGE"/>
+                <trigger event="#2005" condition="ON_ALARM_RAISED"/>
+                <trigger event="#2006" condition="ON_BACK_TO_NOMINAL"/>
+            </triggers>
+        </parameter>
+    </parameters>
+    <events>
+        <event id="#2001" severity="WARNING" type="ONBOARD"/>
+        <event id="#2002" severity="ALARM" type="ONBOARD"/>
+        <event id="#2003" severity="INFO" type="ONGROUND"/>
+        <event id="#2004" severity="WARNING" type="ONGROUND"/>
+        <event id="#2005" severity="ALARM" type="ONGROUND"/>
+        <event id="#2006" severity="WARNING" type="ANOTHER_TYPE"/>
+        <event id="#2007" severity="ALARM" type="ONGROUND" inhibitionPeriod="2000">
+            <condition>
+                <expression>PARAM1 == 20</expression>
+                <symbol name="PARAM1" reference="#1001" binding="ENG_VALUE" />
+            </condition>
+        </event>
+    </events>
+</ns1:processing>

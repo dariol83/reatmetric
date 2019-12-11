@@ -20,7 +20,7 @@ public class SymbolDefinition {
     @XmlAttribute(name = "reference", required = true)
     private AbstractProcessingDefinition reference;
 
-    @XmlAttribute
+    @XmlAttribute(name = "binding")
     private PropertyBinding binding = PropertyBinding.OBJECT;
 
     public SymbolDefinition() {

@@ -81,6 +81,13 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             Object sourceValue = newValue != null ? verifySourceValue(newValue.getValue()) : previousSourceValue;
             Instant generationTime = this.state == null ? null : this.state.getGenerationTime();
             generationTime = newValue != null ? newValue.getGenerationTime() : generationTime;
+            // Immediate check: if there is a sample and its generation time is before the current (not null) one, then exist now
+            if(newValue != null && generationTime != null && newValue.getGenerationTime().isBefore(generationTime)) {
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.log(Level.FINE, String.format("Sample of parameter %d (%s) discarded, generation time %s is before current time %s", definition.getId(), definition.getLocation(), newValue.getGenerationTime(), generationTime));
+                }
+                return Collections.emptyList();
+            }
             Instant receptionTime;
             // Validity check
             Validity validity = deriveValidity();
@@ -100,7 +107,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                     if(generationTime == null || (latestGenerationTime != null && latestGenerationTime.isAfter(generationTime))) {
                         try {
                             sourceValue = definition.getExpression().execute(processor, null);
-                        } catch (ScriptException e) {
+                            sourceValue = ValueUtil.convert(sourceValue, definition.getRawType());
+                        } catch (ScriptException | ValueException e) {
                             LOG.log(Level.SEVERE, "Error when computing value of parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
                             // Overrule validity to be INVALID
                             validity = Validity.INVALID;
@@ -169,7 +177,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             }
         } else {
             // Completely ignore the processing
-            LOG.log(Level.FINE, "Parameter sample not computed for parameter " + path() + ": parameter processing is disabled");
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Parameter sample not computed for parameter " + path() + ": parameter processing is disabled");
+            }
         }
         // Finalize entity state and prepare for the returned list of data items
         if(stateChanged) {
@@ -186,16 +196,10 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         // At this stage, check the triggers and, for each of them, derive the correct behaviour
         for(ParameterTriggerDefinition ptd : definition.getTriggers()) {
             try {
-                if (ptd.getTriggerCondition() == TriggerCondition.ON_NEW_SAMPLE && newValue != null && stateChanged) {
-                    // Raise event
-                    raiseEvent(ptd.getEvent().getId());
-                } else if (ptd.getTriggerCondition() == TriggerCondition.ON_ALARM_RAISED && !wasInAlarm && inAlarm()) {
-                    // Raise event
-                    raiseEvent(ptd.getEvent().getId());
-                } else if (ptd.getTriggerCondition() == TriggerCondition.ON_BACK_TO_NOMINAL && wasInAlarm && !inAlarm()) {
-                    // Raise event
-                    raiseEvent(ptd.getEvent().getId());
-                } else if (ptd.getTriggerCondition() == TriggerCondition.ON_VALUE_CHANGE && !Objects.equals(previousValue, this.state.getEngValue())) {
+                if ((ptd.getTriggerCondition() == TriggerCondition.ON_NEW_SAMPLE && newValue != null && stateChanged) ||
+                        (ptd.getTriggerCondition() == TriggerCondition.ON_ALARM_RAISED && !wasInAlarm && inAlarm()) ||
+                        (ptd.getTriggerCondition() == TriggerCondition.ON_BACK_TO_NOMINAL && wasInAlarm && !inAlarm()) ||
+                        (ptd.getTriggerCondition() == TriggerCondition.ON_VALUE_CHANGE && !Objects.equals(previousValue, this.state.getEngValue()))) {
                     // Raise event
                     raiseEvent(ptd.getEvent().getId());
                 }
@@ -210,7 +214,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     private void raiseEvent(int eventId) {
         EventProcessor ev = (EventProcessor)processor.getProcessor(eventId);
         if(ev == null) {
-            LOG.severe("Event " + eventId + " cannot be raised by parameter " + id() + " (" + path() + "): event processor not found");
+            if(LOG.isLoggable(Level.SEVERE)) {
+                LOG.severe(String.format("Event %d cannot be raised by parameter %d (%s): event processor not found", eventId, id(), path()));
+            }
         } else {
             ev.raiseEvent(path());
         }
