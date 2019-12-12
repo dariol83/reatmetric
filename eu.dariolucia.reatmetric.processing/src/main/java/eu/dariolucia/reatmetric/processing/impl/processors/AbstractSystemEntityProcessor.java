@@ -51,7 +51,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     }
 
     protected AlarmState getInitialAlarmState() {
-        return AlarmState.NOMINAL;
+        return AlarmState.NOT_APPLICABLE;
     }
 
     protected final SystemEntityPath getPath() {

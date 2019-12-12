@@ -22,6 +22,8 @@ public class ExternalCalibration extends CalibrationDefinition {
     @XmlAttribute(required = true)
     private String function;
 
+    // TODO: add an optional list of key-value string pairs
+
     public ExternalCalibration() {
     }
 

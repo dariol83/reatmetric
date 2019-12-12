@@ -24,6 +24,8 @@ public class ExternalCheck extends CheckDefinition {
     @XmlAttribute(required = true)
     private String function;
 
+    // TODO: add an optional list of key-value string pairs
+
     public ExternalCheck() {
     }
 

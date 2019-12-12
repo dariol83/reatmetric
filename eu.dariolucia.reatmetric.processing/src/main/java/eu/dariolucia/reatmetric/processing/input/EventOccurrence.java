@@ -46,7 +46,13 @@ public final class EventOccurrence extends AbstractInputDataItem {
 
     private EventOccurrence(int id, Instant generationTime, Instant receptionTime, IUniqueId container, String qualifier, Object report, String route, String source) {
         this.id = id;
+        if(generationTime == null) {
+            generationTime = Instant.now();
+        }
         this.generationTime = generationTime;
+        if(receptionTime == null) {
+            receptionTime = this.generationTime;
+        }
         this.receptionTime = receptionTime;
         this.qualifier = qualifier;
         this.report = report;

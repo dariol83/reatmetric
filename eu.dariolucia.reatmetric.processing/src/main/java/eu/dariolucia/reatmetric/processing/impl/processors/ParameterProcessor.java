@@ -190,13 +190,20 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
             generatedStates.add(this.entityState);
         }
+        // If there is an AlarmParameterData, then report it
         if(alarmData != null) {
             generatedStates.add(alarmData);
         }
         // At this stage, check the triggers and, for each of them, derive the correct behaviour
+        activateTriggers(newValue, previousValue, wasInAlarm, stateChanged);
+        // Return the list
+        return generatedStates;
+    }
+
+    private void activateTriggers(ParameterSample sample, Object previousValue, boolean wasInAlarm, boolean stateChanged) {
         for(ParameterTriggerDefinition ptd : definition.getTriggers()) {
             try {
-                if ((ptd.getTriggerCondition() == TriggerCondition.ON_NEW_SAMPLE && newValue != null && stateChanged) ||
+                if ((ptd.getTriggerCondition() == TriggerCondition.ON_NEW_SAMPLE && sample != null && stateChanged) ||
                         (ptd.getTriggerCondition() == TriggerCondition.ON_ALARM_RAISED && !wasInAlarm && inAlarm()) ||
                         (ptd.getTriggerCondition() == TriggerCondition.ON_BACK_TO_NOMINAL && wasInAlarm && !inAlarm()) ||
                         (ptd.getTriggerCondition() == TriggerCondition.ON_VALUE_CHANGE && !Objects.equals(previousValue, this.state.getEngValue()))) {
@@ -207,8 +214,6 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 LOG.log(Level.SEVERE, "Event " + ptd.getEvent().getId() + " cannot be raised by parameter " + id() + " (" + path() + ") due to unexpected exception: " + e.getMessage(), e);
             }
         }
-        // Return the list
-        return generatedStates;
     }
 
     private void raiseEvent(int eventId) {

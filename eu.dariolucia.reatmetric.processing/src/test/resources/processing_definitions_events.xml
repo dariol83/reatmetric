@@ -24,13 +24,13 @@
         </parameter>
     </parameters>
     <events>
-        <event id="#2001" severity="WARNING" type="ONBOARD"/>
-        <event id="#2002" severity="ALARM" type="ONBOARD"/>
-        <event id="#2003" severity="INFO" type="ONGROUND"/>
-        <event id="#2004" severity="WARNING" type="ONGROUND"/>
-        <event id="#2005" severity="ALARM" type="ONGROUND"/>
-        <event id="#2006" severity="WARNING" type="ANOTHER_TYPE"/>
-        <event id="#2007" severity="ALARM" type="ONGROUND" inhibitionPeriod="2000">
+        <event id="#2001" location="ROOT.EVT.EVT1" description="Event 1" severity="WARN" type="ONBOARD"/>
+        <event id="#2002" location="ROOT.EVT.EVT2" description="Event 2" severity="ALARM" type="ONBOARD" inhibitionPeriod="3000" />
+        <event id="#2003" location="ROOT.EVT.EVT3" description="Event 3" severity="INFO" type="ONGROUND"/>
+        <event id="#2004" location="ROOT.EVT.EVT4" description="Event 4" severity="WARN" type="ONGROUND"/>
+        <event id="#2005" location="ROOT.EVT.EVT5" description="Event 5" severity="ALARM" type="ONGROUND"/>
+        <event id="#2006" location="ROOT.EVT.EVT6" description="Event 6" severity="WARN" type="ANOTHER_TYPE"/>
+        <event id="#2007" location="ROOT.EVT.EVT7" description="Event 7" severity="ALARM" type="ONGROUND">
             <condition>
                 <expression>PARAM1 == 20</expression>
                 <symbol name="PARAM1" reference="#1001" binding="ENG_VALUE" />

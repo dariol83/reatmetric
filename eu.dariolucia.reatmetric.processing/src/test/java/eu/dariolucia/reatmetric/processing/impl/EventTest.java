@@ -9,6 +9,8 @@ package eu.dariolucia.reatmetric.processing.impl;
 
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.events.EventData;
+import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.Status;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
@@ -20,6 +22,7 @@ import eu.dariolucia.reatmetric.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
+import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 import org.junit.jupiter.api.Test;
 
@@ -30,14 +33,12 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class EventTest {
 
     @Test
     void testEvents() throws JAXBException, ProcessingModelException, InterruptedException {
-        // TODO
         Logger testLogger = Logger.getLogger(getClass().getName());
         ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_events.xml"));
         ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
@@ -46,186 +47,531 @@ class EventTest {
         IProcessingModelOutput output = outList::addAll;
         IProcessingModel model = factory.build(pd, output, null);
 
-        ParameterSample batteryState = ParameterSample.of(1001, true);
-        ParameterSample batteryTension = ParameterSample.of(1002, 1000L);
-        ParameterSample batteryCurrent = ParameterSample.of(1003, 1L);
-
+        // Simple injection
         testLogger.info("Injection - Batch 1");
-        model.injectParameters(Arrays.asList(batteryCurrent, batteryState, batteryTension));
 
-        // First compilation of the expressions can take time
-        AwaitUtil.awaitAndVerify(10000, outList::size, 9);
+        EventOccurrence injectedEvent = EventOccurrence.of(2001, "Q1", new String[] { "Report", "Example" });
+        model.raiseEvent(injectedEvent);
 
-        // Battery state
-        assertEquals(1001, ((ParameterData)outList.get(0)).getExternalId());
-        assertEquals("BATTERY_STATE", ((SystemEntity)outList.get(1)).getName());
-        assertEquals(true, ((ParameterData)outList.get(0)).getSourceValue());
-        assertEquals(true, ((ParameterData)outList.get(0)).getEngValue());
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(0)).getValidity());
-        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(0)).getAlarmState());
-        // Battery tension
-        assertEquals(1002, ((ParameterData)outList.get(2)).getExternalId());
-        assertEquals("BATTERY_TENSION", ((SystemEntity)outList.get(3)).getName());
-        assertEquals(1000L, ((ParameterData)outList.get(2)).getSourceValue());
-        assertEquals(2010L, ((ParameterData)outList.get(2)).getEngValue());
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(2)).getValidity());
-        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(2)).getAlarmState());
-        // Battery current
-        assertEquals(1003, ((ParameterData)outList.get(4)).getExternalId());
-        assertEquals("BATTERY_CURRENT", ((SystemEntity)outList.get(5)).getName());
-        assertEquals(1L, ((ParameterData)outList.get(4)).getSourceValue());
-        assertEquals(7.7, ((ParameterData)outList.get(4)).getEngValue());
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(4)).getValidity());
-        assertEquals(AlarmState.ALARM, ((ParameterData)outList.get(4)).getAlarmState());
-        assertEquals(AlarmState.ALARM, ((AlarmParameterData)outList.get(6)).getCurrentAlarmState());
-        // Battery state (enumeration)
-        assertEquals(1004, ((ParameterData)outList.get(7)).getExternalId());
-        assertEquals("BATTERY_STATE_EN", ((SystemEntity)outList.get(8)).getName());
-        assertEquals(1, ((ParameterData)outList.get(7)).getSourceValue());
-        assertEquals("ON", ((ParameterData)outList.get(7)).getEngValue());
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(7)).getValidity());
-        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(7)).getAlarmState());
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 1);
 
+        // Check
+        assertEquals(2001, ((EventData)outList.get(0)).getExternalId());
+        assertEquals("Q1", ((EventData)outList.get(0)).getQualifier());
+        assertEquals("ONBOARD", ((EventData)outList.get(0)).getType());
+        assertEquals(Severity.WARN, ((EventData)outList.get(0)).getSeverity());
+        assertArrayEquals(new String[] { "Report", "Example" }, (String[]) ((EventData)outList.get(0)).getReport());
+
+        // First parameter sample with value
         testLogger.info("Injection - Batch 2");
         outList.clear();
 
-        batteryState = ParameterSample.of(1001, false);
-        batteryTension = ParameterSample.of(1002, 300L);
-        batteryCurrent = ParameterSample.of(1003, 2L);
+        ParameterSample paramSample = ParameterSample.of(1001, 10L);
 
-        model.injectParameters(Arrays.asList(batteryCurrent, batteryState, batteryTension));
+        model.injectParameters(Collections.singletonList(paramSample));
 
-        AwaitUtil.awaitAndVerify(5000, outList::size, 10);
+        AwaitUtil.awaitAndVerify(5000, outList::size, 4);
 
-        // Battery state
-        assertEquals(1001, ((ParameterData)outList.get(0)).getExternalId());
-        assertEquals("BATTERY_STATE", ((SystemEntity)outList.get(1)).getName());
-        assertEquals(false, ((ParameterData)outList.get(0)).getSourceValue());
-        assertEquals(false, ((ParameterData)outList.get(0)).getEngValue());
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(0)).getValidity());
-        assertEquals(AlarmState.ALARM, ((ParameterData)outList.get(0)).getAlarmState());
-        assertEquals(AlarmState.ALARM, ((AlarmParameterData)outList.get(2)).getCurrentAlarmState());
-        assertEquals(true, ((AlarmParameterData)outList.get(2)).getLastNominalValue());
-        assertEquals(false, ((AlarmParameterData)outList.get(2)).getCurrentValue());
-        // Battery tension
-        assertEquals(1002, ((ParameterData)outList.get(3)).getExternalId());
-        assertEquals("BATTERY_TENSION", ((SystemEntity)outList.get(4)).getName());
-        assertEquals(300L, ((ParameterData)outList.get(3)).getSourceValue());
-        assertNull(((ParameterData) outList.get(3)).getEngValue());
-        assertEquals(Validity.INVALID, ((ParameterData)outList.get(3)).getValidity());
-        assertEquals(AlarmState.UNKNOWN, ((ParameterData)outList.get(3)).getAlarmState());
-        // Battery current
-        assertEquals(1003, ((ParameterData)outList.get(5)).getExternalId());
-        assertEquals("BATTERY_CURRENT", ((SystemEntity)outList.get(6)).getName());
-        assertEquals(2L, ((ParameterData)outList.get(5)).getSourceValue());
-        assertNull(((ParameterData) outList.get(5)).getEngValue());
-        assertEquals(Validity.INVALID, ((ParameterData)outList.get(5)).getValidity());
-        assertEquals(AlarmState.UNKNOWN, ((ParameterData)outList.get(5)).getAlarmState());
-        // Battery state (enumeration)
-        assertEquals(1004, ((ParameterData)outList.get(7)).getExternalId());
-        assertEquals("BATTERY_STATE_EN", ((SystemEntity)outList.get(8)).getName());
-        assertEquals(0, ((ParameterData)outList.get(7)).getSourceValue());
-        assertEquals("OFF", ((ParameterData)outList.get(7)).getEngValue());
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(7)).getValidity());
-        assertEquals(AlarmState.ALARM, ((ParameterData)outList.get(7)).getAlarmState());
-        assertEquals(AlarmState.ALARM, ((AlarmParameterData)outList.get(9)).getCurrentAlarmState());
-        assertEquals("ON", ((AlarmParameterData)outList.get(9)).getLastNominalValue());
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(10L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(10L, ((ParameterData) outList.get(i)).getEngValue());
+                ++i;
+                assertEquals("PARAM1", ((SystemEntity) outList.get(i)).getName());
+            } else if(outList.get(i) instanceof EventData) {
+                if(((EventData) outList.get(i)).getExternalId() == 2003) {
+                    assertEquals(2003, ((EventData)outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
+                    assertEquals(Severity.INFO, ((EventData)outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2004) {
+                    assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
+                    assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
+                } else {
+                    fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
+                }
+            } else {
+                fail("Unexpected data item: " + outList.get(i));
+            }
+        }
 
+        // Another parameter sample with same value
         testLogger.info("Injection - Batch 3");
         outList.clear();
 
-        batteryState = ParameterSample.of(1001, true);
+        paramSample = ParameterSample.of(1001, 10L);
 
-        model.injectParameters(Collections.singletonList(batteryState));
+        model.injectParameters(Collections.singletonList(paramSample));
 
-        AwaitUtil.awaitAndVerify(5000, outList::size, 10);
+        AwaitUtil.awaitAndVerify(5000, outList::size, 2);
 
-        // Battery state
-        assertEquals(1001, ((ParameterData)outList.get(0)).getExternalId());
-        assertEquals("BATTERY_STATE", ((SystemEntity)outList.get(1)).getName());
-        assertEquals(true, ((ParameterData)outList.get(0)).getSourceValue());
-        assertEquals(true, ((ParameterData)outList.get(0)).getEngValue());
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(0)).getValidity());
-        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(0)).getAlarmState());
-        assertEquals(AlarmState.NOMINAL, ((AlarmParameterData)outList.get(2)).getCurrentAlarmState());
-        assertEquals(true, ((AlarmParameterData)outList.get(2)).getLastNominalValue());
-        assertEquals(true, ((AlarmParameterData)outList.get(2)).getCurrentValue());
-        // Battery tension
-        assertEquals(1002, ((ParameterData)outList.get(3)).getExternalId());
-        assertEquals("BATTERY_TENSION", ((SystemEntity)outList.get(4)).getName());
-        assertEquals(300L, ((ParameterData)outList.get(3)).getSourceValue());
-        assertEquals(610L, ((ParameterData)outList.get(3)).getEngValue());
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(3)).getValidity());
-        assertEquals(AlarmState.WARNING, ((ParameterData)outList.get(3)).getAlarmState());
-        assertEquals(AlarmState.WARNING, ((AlarmParameterData)outList.get(5)).getCurrentAlarmState());
-        assertEquals(2010L, ((AlarmParameterData)outList.get(5)).getLastNominalValue());
-        // Battery current
-        assertEquals(1003, ((ParameterData)outList.get(6)).getExternalId());
-        assertEquals(2L, ((ParameterData)outList.get(6)).getSourceValue());
-        assertNull(((ParameterData) outList.get(6)).getEngValue());
-        assertEquals(Validity.INVALID, ((ParameterData)outList.get(6)).getValidity());
-        assertEquals(AlarmState.UNKNOWN, ((ParameterData)outList.get(6)).getAlarmState());
-        // Battery state (enumeration)
-        assertEquals(1004, ((ParameterData)outList.get(7)).getExternalId());
-        assertEquals("BATTERY_STATE_EN", ((SystemEntity)outList.get(8)).getName());
-        assertEquals(1, ((ParameterData)outList.get(7)).getSourceValue());
-        assertEquals("ON", ((ParameterData)outList.get(7)).getEngValue());
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(7)).getValidity());
-        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(7)).getAlarmState());
-        assertEquals(AlarmState.NOMINAL, ((AlarmParameterData)outList.get(9)).getCurrentAlarmState());
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(10L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(10L, ((ParameterData) outList.get(i)).getEngValue());
+            } else if(outList.get(i) instanceof EventData) {
+                if(((EventData) outList.get(i)).getExternalId() == 2003) {
+                    assertEquals(2003, ((EventData)outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
+                    assertEquals(Severity.INFO, ((EventData)outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
+                } else {
+                    fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
+                }
+            } else {
+                fail("Unexpected data item");
+            }
+        }
 
+        // Another parameter sample with value that brings the parameter in alarm
         testLogger.info("Injection - Batch 4");
         outList.clear();
 
-        batteryTension = ParameterSample.of(1002, 500);
-        batteryCurrent = ParameterSample.of(1003, 0L);
+        paramSample = ParameterSample.of(1001, 13L);
 
-        model.injectParameters(Arrays.asList(batteryCurrent, batteryTension));
+        model.injectParameters(Collections.singletonList(paramSample));
 
         AwaitUtil.awaitAndVerify(5000, outList::size, 6);
 
-        // Battery tension
-        assertEquals(1002, ((ParameterData)outList.get(0)).getExternalId());
-        assertEquals("BATTERY_TENSION", ((SystemEntity)outList.get(1)).getName());
-        assertEquals(500L, ((ParameterData)outList.get(0)).getSourceValue());
-        assertEquals(1010L, ((ParameterData)outList.get(0)).getEngValue());
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(0)).getValidity());
-        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(0)).getAlarmState());
-        assertEquals(AlarmState.NOMINAL, ((AlarmParameterData)outList.get(2)).getCurrentAlarmState());
-        // Battery current
-        assertEquals(1003, ((ParameterData)outList.get(3)).getExternalId());
-        assertEquals("BATTERY_CURRENT", ((SystemEntity)outList.get(4)).getName());
-        assertEquals(0L, ((ParameterData)outList.get(3)).getSourceValue());
-        assertEquals(3.3666, (Double) ((ParameterData)outList.get(3)).getEngValue(), 0.001);
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(3)).getValidity());
-        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(3)).getAlarmState());
-        assertEquals(AlarmState.NOMINAL, ((AlarmParameterData)outList.get(5)).getCurrentAlarmState()); // ALARM - Validity INVALID - Validity INVALID - NOMINAL
-
-        testLogger.info("Injection - Disable battery");
-        outList.clear();
-
-        model.disable(SystemEntityPath.fromString("ROOT.BATTERY"));
-
-        AwaitUtil.awaitAndVerify(5000, () -> outList.size() == 5);
-
-        for(AbstractDataItem i : outList) {
-            assertEquals(Status.DISABLED, ((SystemEntity)i).getStatus());
-        }
-
-        testLogger.info("Injection - Enable battery");
-        outList.clear();
-
-        model.enable(SystemEntityPath.fromString("ROOT.BATTERY"));
-
-        AwaitUtil.awaitAndVerify(5000, () -> outList.size() == 9);
-
-        for(AbstractDataItem i : outList) {
-            if(i instanceof SystemEntity) {
-                assertEquals(Status.ENABLED, ((SystemEntity) i).getStatus());
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(13L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(13L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(AlarmState.ALARM, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("PARAM1", ((SystemEntity) outList.get(i)).getName());
+                ++i;
+                assertEquals(AlarmState.ALARM, ((AlarmParameterData) outList.get(i)).getCurrentAlarmState());
+            } else if(outList.get(i) instanceof EventData) {
+                if(((EventData) outList.get(i)).getExternalId() == 2003) {
+                    assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2004) {
+                    assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
+                    assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2005) {
+                    assertEquals(2005, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else {
+                    fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
+                }
+            } else {
+                fail("Unexpected data item");
             }
         }
+
+        // Another parameter sample with value that keeps the parameter in alarm
+        testLogger.info("Injection - Batch 5");
+        outList.clear();
+
+        paramSample = ParameterSample.of(1001, 12L);
+
+        model.injectParameters(Collections.singletonList(paramSample));
+
+        AwaitUtil.awaitAndVerify(5000, outList::size, 4);
+
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(12L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(12L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(AlarmState.ALARM, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals(AlarmState.ALARM, ((AlarmParameterData) outList.get(i)).getCurrentAlarmState());
+            } else if(outList.get(i) instanceof EventData) {
+                if(((EventData) outList.get(i)).getExternalId() == 2003) {
+                    assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2004) {
+                    assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
+                    assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
+                } else {
+                    fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
+                }
+            } else {
+                fail("Unexpected data item");
+            }
+        }
+
+        // Another parameter sample with value that brings the parameter in nominal state
+        testLogger.info("Injection - Batch 6");
+        outList.clear();
+
+        paramSample = ParameterSample.of(1001, 15L);
+
+        model.injectParameters(Collections.singletonList(paramSample));
+
+        AwaitUtil.awaitAndVerify(5000, outList::size, 6);
+
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(15L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(15L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(AlarmState.NOMINAL, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("PARAM1", ((SystemEntity) outList.get(i)).getName());
+                ++i;
+                assertEquals(AlarmState.NOMINAL, ((AlarmParameterData) outList.get(i)).getCurrentAlarmState());
+            } else if(outList.get(i) instanceof EventData) {
+                if(((EventData) outList.get(i)).getExternalId() == 2003) {
+                    assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2004) {
+                    assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
+                    assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2006) {
+                    assertEquals(2006, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ANOTHER_TYPE", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.WARN, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else {
+                    fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
+                }
+            } else {
+                fail("Unexpected data item");
+            }
+        }
+
+        // Another parameter sample with value that brings the parameter in alarm and triggers also event 2007
+        testLogger.info("Injection - Batch 7");
+        outList.clear();
+
+        paramSample = ParameterSample.of(1001, 20L);
+
+        model.injectParameters(Collections.singletonList(paramSample));
+
+        AwaitUtil.awaitAndVerify(5000, outList::size, 7);
+
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(AlarmState.ALARM, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("PARAM1", ((SystemEntity) outList.get(i)).getName());
+                ++i;
+                assertEquals(AlarmState.ALARM, ((AlarmParameterData) outList.get(i)).getCurrentAlarmState());
+            } else if(outList.get(i) instanceof EventData) {
+                if(((EventData) outList.get(i)).getExternalId() == 2003) { // New sample
+                    assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2004) { // New value
+                    assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
+                    assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2005) { // In alarm
+                    assertEquals(2005, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2007) { // Condition based
+                    assertEquals(2007, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals(null, ((EventData) outList.get(i)).getSource());
+                } else {
+                    fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
+                }
+            } else {
+                fail("Unexpected data item");
+            }
+        }
+
+        // Another parameter sample with value that keeps the parameter in alarm and should trigger again event 2007, but it does not happen
+        // due to no other sample resetting the trigger condition
+        testLogger.info("Injection - Batch 8");
+        outList.clear();
+
+        paramSample = ParameterSample.of(1001, 20L);
+
+        model.injectParameters(Collections.singletonList(paramSample));
+
+        AwaitUtil.awaitAndVerify(5000, outList::size, 3);
+
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(AlarmState.ALARM, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals(AlarmState.ALARM, ((AlarmParameterData) outList.get(i)).getCurrentAlarmState());
+            } else if(outList.get(i) instanceof EventData) {
+                if(((EventData) outList.get(i)).getExternalId() == 2003) { // New sample
+                    assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else {
+                    fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
+                }
+            } else {
+                fail("Unexpected data item");
+            }
+        }
+
+        // Another parameter sample with value that brings the parameter in nominal state
+        testLogger.info("Injection - Batch 9");
+        outList.clear();
+
+        paramSample = ParameterSample.of(1001, 15L);
+
+        model.injectParameters(Collections.singletonList(paramSample));
+
+        AwaitUtil.awaitAndVerify(5000, outList::size, 6);
+
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(15L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(15L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(AlarmState.NOMINAL, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("PARAM1", ((SystemEntity) outList.get(i)).getName());
+                ++i;
+                assertEquals(AlarmState.NOMINAL, ((AlarmParameterData) outList.get(i)).getCurrentAlarmState());
+            } else if(outList.get(i) instanceof EventData) {
+                if(((EventData) outList.get(i)).getExternalId() == 2003) {
+                    assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2004) {
+                    assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
+                    assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2006) {
+                    assertEquals(2006, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ANOTHER_TYPE", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.WARN, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else {
+                    fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
+                }
+            } else {
+                fail("Unexpected data item");
+            }
+        }
+
+        // Another parameter sample with value that brings the parameter in alarm and triggers also event 2007 (again)
+        testLogger.info("Injection - Batch 10");
+        outList.clear();
+
+        paramSample = ParameterSample.of(1001, 20L);
+
+        model.injectParameters(Collections.singletonList(paramSample));
+
+        AwaitUtil.awaitAndVerify(5000, outList::size, 7);
+
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(AlarmState.ALARM, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("PARAM1", ((SystemEntity) outList.get(i)).getName());
+                ++i;
+                assertEquals(AlarmState.ALARM, ((AlarmParameterData) outList.get(i)).getCurrentAlarmState());
+            } else if(outList.get(i) instanceof EventData) {
+                if(((EventData) outList.get(i)).getExternalId() == 2003) { // New sample
+                    assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2004) { // New value
+                    assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
+                    assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2005) { // In alarm
+                    assertEquals(2005, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else if(((EventData) outList.get(i)).getExternalId() == 2007) { // Condition based
+                    assertEquals(2007, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals(null, ((EventData) outList.get(i)).getSource());
+                } else {
+                    fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
+                }
+            } else {
+                fail("Unexpected data item");
+            }
+        }
+
+        // Disable the new sample event
+        outList.clear();
+        model.disable(SystemEntityPath.fromString("ROOT.EVT.EVT3"));
+        AwaitUtil.awaitAndVerify(5000, outList::size, 1);
+
+        // Another parameter sample with value that keeps the parameter in alarm and should trigger again event 2007, but it does not happen
+        // due to no other sample resetting the trigger condition. 2003 is not triggered.
+        testLogger.info("Injection - Batch 11");
+        outList.clear();
+
+        paramSample = ParameterSample.of(1001, 20L);
+
+        model.injectParameters(Collections.singletonList(paramSample));
+
+        AwaitUtil.awaitAndVerify(5000, outList::size, 2);
+
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(AlarmState.ALARM, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals(AlarmState.ALARM, ((AlarmParameterData) outList.get(i)).getCurrentAlarmState());
+            } else {
+                fail("Unexpected data item");
+            }
+        }
+
+        // Enable the new sample event
+        outList.clear();
+        model.enable(SystemEntityPath.fromString("ROOT.EVT.EVT3"));
+        AwaitUtil.awaitAndVerify(5000, outList::size, 1);
+
+        // Another parameter sample with value that keeps the parameter in alarm and should trigger again event 2007, but it does not happen
+        // due to no other sample resetting the trigger condition. 2003 is triggered again.
+        testLogger.info("Injection - Batch 12");
+        outList.clear();
+
+        paramSample = ParameterSample.of(1001, 20L);
+
+        model.injectParameters(Collections.singletonList(paramSample));
+
+        AwaitUtil.awaitAndVerify(5000, outList::size, 3);
+
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(20L, ((ParameterData) outList.get(i)).getEngValue());
+                assertEquals(AlarmState.ALARM, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals(AlarmState.ALARM, ((AlarmParameterData) outList.get(i)).getCurrentAlarmState());
+            } else if(outList.get(i) instanceof EventData) {
+                if(((EventData) outList.get(i)).getExternalId() == 2003) { // New sample
+                    assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
+                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
+                    assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
+                } else {
+                    fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
+                }
+            } else {
+                fail("Unexpected data item");
+            }
+        }
+
+        // Simple injection with inhibition of 3000 ms
+        testLogger.info("Injection - Batch 13");
+        outList.clear();
+
+        injectedEvent = EventOccurrence.of(2002, "Q2", new String[] { "Report", "Example" });
+        model.raiseEvent(injectedEvent);
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 1);
+
+        // Check
+        assertEquals(2002, ((EventData)outList.get(0)).getExternalId());
+        assertEquals("Q2", ((EventData)outList.get(0)).getQualifier());
+        assertEquals("ONBOARD", ((EventData)outList.get(0)).getType());
+        assertEquals(Severity.ALARM, ((EventData)outList.get(0)).getSeverity());
+        assertArrayEquals(new String[] { "Report", "Example" }, (String[]) ((EventData)outList.get(0)).getReport());
+
+        // Inject again two parameters, 2001 and 2002
+        testLogger.info("Injection - Batch 14");
+        outList.clear();
+
+        injectedEvent = EventOccurrence.of(2002, "Q2", new String[] { "Report", "Example" });
+        model.raiseEvent(injectedEvent);
+        AwaitUtil.await(200);
+        injectedEvent = EventOccurrence.of(2001, "Q1", new String[] { "Report", "Example" });
+        model.raiseEvent(injectedEvent);
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 1);
+        // Check
+        assertEquals(2001, ((EventData)outList.get(0)).getExternalId());
+
+        // Wait a bit
+        AwaitUtil.await(3000);
+        // Simple injection with inhibition of 3000 ms
+        testLogger.info("Injection - Batch 15");
+        outList.clear();
+
+        injectedEvent = EventOccurrence.of(2002, "Q2", new String[] { "Report", "Example" });
+        model.raiseEvent(injectedEvent);
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 1);
+
+        // Check
+        assertEquals(2002, ((EventData)outList.get(0)).getExternalId());
+        assertEquals("Q2", ((EventData)outList.get(0)).getQualifier());
+        assertEquals("ONBOARD", ((EventData)outList.get(0)).getType());
+        assertEquals(Severity.ALARM, ((EventData)outList.get(0)).getSeverity());
+        assertArrayEquals(new String[] { "Report", "Example" }, (String[]) ((EventData)outList.get(0)).getReport());
     }
 
-    // TODO: test event including inhibition
-    // TODO: test event raised by parameter triggers
+    // TODO: error case: event injection on one having a condition defined
+    // TODO: error case: event condition with issue (return not a boolean)
+    // TODO: error case: event condition with issue (missing symbol)
 }

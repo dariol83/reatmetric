@@ -48,13 +48,15 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     }
 
     @Override
-    public synchronized List<AbstractDataItem> process(EventOccurrence newValue) {
+    public List<AbstractDataItem> process(EventOccurrence newValue) {
         // Guard condition: if this event has an expression, newValue must be null
         if(definition.getCondition() != null && newValue != null) {
-            LOG.log(Level.SEVERE, "Event " + definition.getId() + " (" + definition.getLocation() + ") is a condition-driven event, but an external occurrence was injected. Processing ignored.");
+            if(LOG.isLoggable(Level.SEVERE)) {
+                LOG.log(Level.SEVERE, String.format("Event %d (%s) is a condition-driven event, but an external occurrence was injected. Processing ignored.", id(), path()));
+            }
             return Collections.emptyList();
         }
-        boolean mustBeRaised;
+        boolean mustBeRaised = false;
         Object report = null;
         IUniqueId containerId = null;
         String route = null;
@@ -66,7 +68,6 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
             // Prepare the time values
             Instant generationTime = this.state == null ? Instant.now() : this.state.getGenerationTime();
             generationTime = newValue != null ? newValue.getGenerationTime() : generationTime;
-            Instant receptionTime;
             if(definition.getCondition() != null) {
                 // If there is an expression, then evaluate the expression and check for a transition false -> true
                 boolean triggered;
@@ -77,6 +78,9 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                     // No need to set more
                 } catch (ScriptException|ClassCastException e) {
                     LOG.log(Level.SEVERE, "Error when evaluating condition of event " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
+                    // Finalize entity state and prepare for the returned list of data items
+                    computeEntityState(generatedStates);
+                    // Stop doing the processing
                     return generatedStates;
                 }
             } else if(newValue != null) {
@@ -88,20 +92,27 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                 route = newValue.getRoute();
                 mustBeRaised = true;
             } else {
-                // No condition, no input data: simple re-evaluation, check if there is an external trigger: if no trigger, then no event, then no states
+                // No condition, no input data: simple re-evaluation, check if there is an external trigger: if no trigger, then no event
                 if(internallyTriggered) {
                     mustBeRaised = true;
                     source = internalSource;
                     // Reset the flag
                     internallyTriggered = false;
                     internalSource = null;
-                } else {
-                    return generatedStates;
                 }
             }
             // Check inhibition time - If an event is detected/reported during the inhibition period, the raising is discarded
+            if(LOG.isLoggable(Level.FINEST)) {
+                LOG.log(Level.FINEST, String.format("Check inhibition condition for event %s: mustBeRaised=%s, lastReportedEventTime=%s, inhibitionPeriod=%d ms", definition.getLocation(), mustBeRaised, lastReportedEventTime, definition.getInhibitionPeriod()));
+            }
             if(mustBeRaised && this.lastReportedEventTime != null && this.lastReportedEventTime.plusMillis(definition.getInhibitionPeriod()).isAfter(generationTime)) {
+                // Do not raise the event: inhibited
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.log(Level.FINE, "Event occurrence not raised for event " + definition.getLocation() + ": event processing is inhibited");
+                }
                 mustBeRaised = false;
+                // Reset also the condition triggered state
+                conditionTriggerState = false;
             }
             // Check if you have to raise the event
             if(mustBeRaised) {
@@ -110,39 +121,44 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                 // Set the generation time
                 this.builder.setGenerationTime(generationTime);
                 // Build final state, set it and return it
-                if (newValue != null) {
-                    receptionTime = newValue.getReceptionTime(); // This can never be null
-                } else {
-                    // Condition re-evaluation or internally triggered, so set the reception time to now
-                    receptionTime = Instant.now();
-                }
                 // Set the reception time
-                this.builder.setReceptionTime(receptionTime);
+                this.builder.setReceptionTime(newValue != null ? newValue.getReceptionTime() : Instant.now());
                 // Replace the state
                 this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
                 generatedStates.add(this.state);
-                // Remember the generation time
+                // Remember the generation time (needed to check if inhibition is needed)
                 this.lastReportedEventTime = generationTime;
-                // Finalize entity state and prepare for the returned list of data items
-                this.systemEntityBuilder.setAlarmState(AlarmState.NOT_APPLICABLE);
-                this.systemEntityBuilder.setStatus(entityStatus);
-                if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
-                    this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
-                    generatedStates.add(this.entityState);
-                }
             }
         } else {
             // Completely ignore the processing
-            LOG.log(Level.FINE, "Event occurrence not computed for event " + definition.getLocation() + ": event processing is disabled");
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Event occurrence not computed for event " + definition.getLocation() + ": event processing is disabled");
+            }
         }
-
+        // Finalize entity state and prepare for the returned list of data items
+        computeEntityState(generatedStates);
         // Return the list
         return generatedStates;
     }
 
-    public void raiseEvent(String source) {
-        this.internallyTriggered = true;
-        this.internalSource = source;
+    private void computeEntityState(List<AbstractDataItem> generatedStates) {
+        this.systemEntityBuilder.setAlarmState(AlarmState.NOT_APPLICABLE);
+        this.systemEntityBuilder.setStatus(entityStatus);
+        if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
+            this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+            generatedStates.add(this.entityState);
+        }
+    }
+
+    void raiseEvent(String source) {
+        if(LOG.isLoggable(Level.FINEST)) {
+            LOG.log(Level.FINEST, String.format("Raising event %s from internal source %s, entity status is %s", path(), source, entityStatus));
+        }
+        // If the event is enabled, then you can mark it as raised
+        if(entityStatus == Status.ENABLED) {
+            this.internallyTriggered = true;
+            this.internalSource = source;
+        }
     }
 
     @Override
