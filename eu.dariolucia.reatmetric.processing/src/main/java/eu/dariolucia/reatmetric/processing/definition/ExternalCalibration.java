@@ -8,13 +8,17 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.processing.extension.ICalibrationExtension;
 
-import javax.script.ScriptEngine;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ExternalCalibration extends CalibrationDefinition {
@@ -22,13 +26,15 @@ public class ExternalCalibration extends CalibrationDefinition {
     @XmlAttribute(required = true)
     private String function;
 
-    // TODO: add an optional list of key-value string pairs
+    @XmlElement(name = "property")
+    private List<KeyValue> properties = new LinkedList<>();
 
     public ExternalCalibration() {
     }
 
-    public ExternalCalibration(String function) {
+    public ExternalCalibration(String function, List<KeyValue> properties) {
         this.function = function;
+        this.properties = properties;
     }
 
     public String getFunction() {
@@ -39,9 +45,26 @@ public class ExternalCalibration extends CalibrationDefinition {
         this.function = function;
     }
 
+    // ----------------------------------------------------------------------------------------------------------------
+    // Transient objects
+    // ----------------------------------------------------------------------------------------------------------------
+
+    private transient Map<String, String> key2values = new HashMap<>();
+    private transient ICalibrationExtension externalCalibration = null;
+
     @Override
-    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) {
-        // TODO
-        return valueToCalibrate;
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
+        // Initialise the properties
+        if(!properties.isEmpty() && key2values.isEmpty()) {
+            properties.forEach(o -> key2values.put(o.getKey(), o.getValue()));
+        }
+        if(externalCalibration == null) {
+            // Retrieve calibration
+            externalCalibration = ICalibrationExtension.resolve(this.function);
+            if(externalCalibration == null) {
+                throw new CalibrationException("External calibration function " + function + " not found");
+            }
+        }
+        return externalCalibration.calibrate(valueToCalibrate, key2values, resolver);
     }
 }
