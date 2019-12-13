@@ -715,7 +715,7 @@ class ParameterTest {
         AwaitUtil.await(5000);
         assertEquals(0, outList.size());
     }
-    // TODO: test old generation time
+
     // TODO: test extension checks
     // TODO: test extension calibrations
 }
