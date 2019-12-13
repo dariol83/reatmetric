@@ -21,17 +21,28 @@ import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.JAXBException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class EventTest {
+
+    @BeforeEach
+    void setup() {
+        Logger packageLogger = Logger.getLogger("eu.dariolucia.reatmetric.processing");
+        packageLogger.setLevel(Level.ALL);
+        Arrays.stream(Logger.getLogger("").getHandlers()).forEach(o -> o.setLevel(Level.ALL));
+    }
+
 
     @Test
     void testEvents() throws JAXBException, ProcessingModelException, InterruptedException {
@@ -79,13 +90,13 @@ class EventTest {
             } else if(outList.get(i) instanceof EventData) {
                 if(((EventData) outList.get(i)).getExternalId() == 2003) {
                     assertEquals(2003, ((EventData)outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
                     assertEquals(Severity.INFO, ((EventData)outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2004) {
                     assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
                     assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
@@ -107,20 +118,20 @@ class EventTest {
 
         AwaitUtil.awaitAndVerify(5000, outList::size, 2);
 
-        for(int i = 0; i < outList.size(); ++i) {
-            if(outList.get(i) instanceof ParameterData) {
-                assertEquals(1001, ((ParameterData) outList.get(i)).getExternalId());
-                assertEquals(10L, ((ParameterData) outList.get(i)).getSourceValue());
-                assertEquals(10L, ((ParameterData) outList.get(i)).getEngValue());
-            } else if(outList.get(i) instanceof EventData) {
-                if(((EventData) outList.get(i)).getExternalId() == 2003) {
-                    assertEquals(2003, ((EventData)outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
-                    assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
-                    assertEquals(Severity.INFO, ((EventData)outList.get(i)).getSeverity());
-                    assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
+        for (AbstractDataItem abstractDataItem : outList) {
+            if (abstractDataItem instanceof ParameterData) {
+                assertEquals(1001, ((ParameterData) abstractDataItem).getExternalId());
+                assertEquals(10L, ((ParameterData) abstractDataItem).getSourceValue());
+                assertEquals(10L, ((ParameterData) abstractDataItem).getEngValue());
+            } else if (abstractDataItem instanceof EventData) {
+                if (((EventData) abstractDataItem).getExternalId() == 2003) {
+                    assertEquals(2003, ((EventData) abstractDataItem).getExternalId());
+                    assertNull(((EventData) abstractDataItem).getQualifier());
+                    assertEquals("ONGROUND", ((EventData) abstractDataItem).getType());
+                    assertEquals(Severity.INFO, ((EventData) abstractDataItem).getSeverity());
+                    assertEquals("ROOT.EVT.PARAM1", ((EventData) abstractDataItem).getSource());
                 } else {
-                    fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
+                    fail("Event Data ID not expected: " + ((EventData) abstractDataItem).getExternalId());
                 }
             } else {
                 fail("Unexpected data item");
@@ -150,19 +161,19 @@ class EventTest {
             } else if(outList.get(i) instanceof EventData) {
                 if(((EventData) outList.get(i)).getExternalId() == 2003) {
                     assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2004) {
                     assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
                     assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2005) {
                     assertEquals(2005, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
@@ -195,13 +206,13 @@ class EventTest {
             } else if(outList.get(i) instanceof EventData) {
                 if(((EventData) outList.get(i)).getExternalId() == 2003) {
                     assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2004) {
                     assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
                     assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
@@ -236,19 +247,19 @@ class EventTest {
             } else if(outList.get(i) instanceof EventData) {
                 if(((EventData) outList.get(i)).getExternalId() == 2003) {
                     assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2004) {
                     assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
                     assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2006) {
                     assertEquals(2006, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ANOTHER_TYPE", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.WARN, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
@@ -283,28 +294,28 @@ class EventTest {
             } else if(outList.get(i) instanceof EventData) {
                 if(((EventData) outList.get(i)).getExternalId() == 2003) { // New sample
                     assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2004) { // New value
                     assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
                     assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2005) { // In alarm
                     assertEquals(2005, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2007) { // Condition based
                     assertEquals(2007, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
-                    assertEquals(null, ((EventData) outList.get(i)).getSource());
+                    assertNull(((EventData) outList.get(i)).getSource());
                 } else {
                     fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
                 }
@@ -335,7 +346,7 @@ class EventTest {
             } else if(outList.get(i) instanceof EventData) {
                 if(((EventData) outList.get(i)).getExternalId() == 2003) { // New sample
                     assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
@@ -370,19 +381,19 @@ class EventTest {
             } else if(outList.get(i) instanceof EventData) {
                 if(((EventData) outList.get(i)).getExternalId() == 2003) {
                     assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2004) {
                     assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
                     assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2006) {
                     assertEquals(2006, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ANOTHER_TYPE", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.WARN, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
@@ -417,28 +428,28 @@ class EventTest {
             } else if(outList.get(i) instanceof EventData) {
                 if(((EventData) outList.get(i)).getExternalId() == 2003) { // New sample
                     assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2004) { // New value
                     assertEquals(2004, ((EventData)outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData)outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData)outList.get(i)).getType());
                     assertEquals(Severity.WARN, ((EventData)outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData)outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2005) { // In alarm
                     assertEquals(2005, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());
                 } else if(((EventData) outList.get(i)).getExternalId() == 2007) { // Condition based
                     assertEquals(2007, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
-                    assertEquals(null, ((EventData) outList.get(i)).getSource());
+                    assertNull(((EventData) outList.get(i)).getSource());
                 } else {
                     fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
                 }
@@ -503,7 +514,7 @@ class EventTest {
             } else if(outList.get(i) instanceof EventData) {
                 if(((EventData) outList.get(i)).getExternalId() == 2003) { // New sample
                     assertEquals(2003, ((EventData) outList.get(i)).getExternalId());
-                    assertEquals(null, ((EventData) outList.get(i)).getQualifier());
+                    assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.INFO, ((EventData) outList.get(i)).getSeverity());
                     assertEquals("ROOT.EVT.PARAM1", ((EventData) outList.get(i)).getSource());

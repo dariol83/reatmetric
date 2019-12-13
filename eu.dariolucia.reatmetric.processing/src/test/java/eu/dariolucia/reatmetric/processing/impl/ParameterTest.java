@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.JAXBException;
@@ -28,12 +29,19 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ParameterTest {
+
+    @BeforeEach
+    void setup() {
+        Logger packageLogger = Logger.getLogger("eu.dariolucia.reatmetric.processing");
+        packageLogger.setLevel(Level.ALL);
+        Arrays.stream(Logger.getLogger("").getHandlers()).forEach(o -> o.setLevel(Level.ALL));
+    }
 
     @Test
     void testBatteryModel() throws JAXBException, ProcessingModelException, InterruptedException {
@@ -594,7 +602,120 @@ class ParameterTest {
         }
     }
 
-    // TODO: test XY and LOG calibrations
+    @Test
+    void testLogXYCalibrations() throws JAXBException, ProcessingModelException, InterruptedException {
+        Logger testLogger = Logger.getLogger(getClass().getName());
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
+        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
+        List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
+        // All output data items go in the outList
+        IProcessingModelOutput output = outList::addAll;
+        IProcessingModel model = factory.build(pd, output, null);
+
+        testLogger.info("Injection - Batch 1");
+
+        ParameterSample logSample = ParameterSample.of(1041, 3.2);
+        ParameterSample xySample = ParameterSample.of(1042, 7);
+        model.injectParameters(Arrays.asList(logSample, xySample));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 4);
+
+        for(int i = 0; i < outList.size(); ++i) {
+            if(((ParameterData) outList.get(i)).getExternalId() == 1041) {
+                assertEquals(1041, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(3.2, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(0.13649, (Double) ((ParameterData) outList.get(i)).getEngValue(), 0.00001);
+                ++i;
+                assertEquals("LOGPARAM", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Not checked
+            } else {
+                assertEquals(1042, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(7.0, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(7.0, ((ParameterData) outList.get(i)).getEngValue());
+                ++i;
+                assertEquals("XYPARAM", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Not checked
+            }
+        }
+
+        testLogger.info("Injection - Batch 2");
+        outList.clear();
+        xySample = ParameterSample.of(1042, -2);
+        model.injectParameters(Collections.singletonList(xySample));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 1);
+
+        for (AbstractDataItem dataItem : outList) {
+            if (((ParameterData) dataItem).getExternalId() == 1042) {
+                assertEquals(1042, ((ParameterData) dataItem).getExternalId());
+                assertEquals(-2.0, ((ParameterData) dataItem).getSourceValue());
+                assertEquals(-2.0, ((ParameterData) dataItem).getEngValue());
+            } else {
+                fail("Expected 1042");
+            }
+        }
+
+        testLogger.info("Injection - Batch 3");
+        outList.clear();
+        xySample = ParameterSample.of(1042, 13);
+        model.injectParameters(Collections.singletonList(xySample));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 1);
+
+        for (AbstractDataItem abstractDataItem : outList) {
+            if (((ParameterData) abstractDataItem).getExternalId() == 1042) {
+                assertEquals(1042, ((ParameterData) abstractDataItem).getExternalId());
+                assertEquals(13.0, ((ParameterData) abstractDataItem).getSourceValue());
+                assertEquals(16.0, ((ParameterData) abstractDataItem).getEngValue());
+            } else {
+                fail("Expected 1042");
+            }
+        }
+    }
+
+    @Test
+    void testOldGenerationTime() throws JAXBException, ProcessingModelException, InterruptedException {
+        Logger testLogger = Logger.getLogger(getClass().getName());
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
+        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
+        List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
+        // All output data items go in the outList
+        IProcessingModelOutput output = outList::addAll;
+        IProcessingModel model = factory.build(pd, output, null);
+
+        testLogger.info("Injection - Batch 1");
+
+        Instant toInject = Instant.ofEpochMilli(3000000);
+        ParameterSample logSample = ParameterSample.of(1041, toInject, Instant.now(), 3.2);
+        model.injectParameters(Collections.singletonList(logSample));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 2);
+
+        for(int i = 0; i < outList.size(); ++i) {
+            if(((ParameterData) outList.get(i)).getExternalId() == 1041) {
+                assertEquals(1041, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(3.2, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(0.13649, (Double) ((ParameterData) outList.get(i)).getEngValue(), 0.00001);
+                ++i;
+                assertEquals("LOGPARAM", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Not checked
+            } else {
+                fail("Expected 1041");
+            }
+        }
+
+        testLogger.info("Injection - Batch 2");
+        outList.clear();
+        toInject = Instant.ofEpochMilli(3000000 - 1);
+        logSample = ParameterSample.of(1041, toInject, Instant.now(), 400);
+        model.injectParameters(Collections.singletonList(logSample));
+
+        //
+        AwaitUtil.await(5000);
+        assertEquals(0, outList.size());
+    }
+    // TODO: test old generation time
     // TODO: test extension checks
     // TODO: test extension calibrations
 }
