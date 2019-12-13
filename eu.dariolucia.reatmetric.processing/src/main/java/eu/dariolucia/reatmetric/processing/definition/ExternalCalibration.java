@@ -10,6 +10,7 @@ package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 import eu.dariolucia.reatmetric.processing.extension.ICalibrationExtension;
+import eu.dariolucia.reatmetric.processing.extension.internal.ExtensionRegistry;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -45,6 +46,14 @@ public class ExternalCalibration extends CalibrationDefinition {
         this.function = function;
     }
 
+    public List<KeyValue> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(List<KeyValue> properties) {
+        this.properties = properties;
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Transient objects
     // ----------------------------------------------------------------------------------------------------------------
@@ -60,7 +69,7 @@ public class ExternalCalibration extends CalibrationDefinition {
         }
         if(externalCalibration == null) {
             // Retrieve calibration
-            externalCalibration = ICalibrationExtension.resolve(this.function);
+            externalCalibration = ExtensionRegistry.resolveCalibration(this.function);
             if(externalCalibration == null) {
                 throw new CalibrationException("External calibration function " + function + " not found");
             }

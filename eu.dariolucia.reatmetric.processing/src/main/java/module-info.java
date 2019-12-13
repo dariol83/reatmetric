@@ -1,4 +1,6 @@
 open module eu.dariolucia.reatmetric.processing {
+    uses eu.dariolucia.reatmetric.processing.extension.ICalibrationExtension;
+    uses eu.dariolucia.reatmetric.processing.extension.ICheckExtension;
 
     requires java.logging;
     requires java.xml.bind;

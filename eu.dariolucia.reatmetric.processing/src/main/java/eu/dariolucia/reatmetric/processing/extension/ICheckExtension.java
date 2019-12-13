@@ -8,9 +8,9 @@
 
 package eu.dariolucia.reatmetric.processing.extension;
 
-import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -20,5 +20,5 @@ public interface ICheckExtension {
 
     String getFunctionName();
 
-    AlarmState check(Object currentValue, Map<String, String> properties, IBindingResolver resolver);
+    boolean check(Object currentValue, Instant generationTime, Map<String, String> properties, IBindingResolver resolver);
 }

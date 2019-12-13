@@ -26,6 +26,7 @@ import eu.dariolucia.reatmetric.processing.impl.operations.RaiseEventOperation;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.processing.util.ThreadUtil;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -49,13 +50,13 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private final GraphModel graphModel;
 
-    private final BlockingQueue<ProcessingTask> updateTaskQueue = new ArrayBlockingQueue<>(1000); // TODO: parametric
+    private final BlockingQueue<ProcessingTask> updateTaskQueue = new ArrayBlockingQueue<>(1000); // TODO: queue size shall be parametric
 
-    private final ExecutorService taskProcessors = Executors.newFixedThreadPool(2); // TODO: parametric
+    private final ExecutorService taskProcessors = ThreadUtil.newThreadExecutor(2, "Reatmetric Task Processor"); // TODO: number of threads shall be parametric
 
-    private final ExecutorService dispatcher = Executors.newFixedThreadPool(1);
+    private final ExecutorService dispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing Dispatcher");
 
-    private final ExecutorService notifier = Executors.newFixedThreadPool(1);
+    private final ExecutorService notifier = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing Notifier");
 
     private final WorkingSet workingSet = new WorkingSet();
 

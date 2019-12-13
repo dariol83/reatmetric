@@ -593,4 +593,8 @@ class ParameterTest {
             }
         }
     }
+
+    // TODO: test XY and LOG calibrations
+    // TODO: test extension checks
+    // TODO: test extension calibrations
 }

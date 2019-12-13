@@ -192,6 +192,19 @@
             </synthetic>
         </parameter>
 
+        <!-- Log and XY calibrations -->
+        <parameter id="#1041" location="ROOT.TEST.LOGPARAM" description="Parameter with log calibration" raw_type="REAL" eng_type="REAL">
+            <calib_log a0="5" a1="2" />
+        </parameter>
+        <parameter id="#1042" location="ROOT.TEST.XYPARAM" description="Parameter with xy calibration" raw_type="REAL" eng_type="REAL">
+            <calib_xy extrapolate="true">
+                <point x="0" y="0" />
+                <point x="10" y="10" />
+                <point x="15" y="20" />
+                <point x="17.5" y="30" />
+                <point x="20" y="0" />
+            </calib_xy>
+        </parameter>
 
     </parameters>
 </ns1:processing>

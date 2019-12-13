@@ -12,12 +12,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ThreadUtil {
-    public static ExecutorService newSingleThreadExecutor(String name) {
-        return Executors.newSingleThreadExecutor(r -> {
+    public static ExecutorService newThreadExecutor(int threads, String name) {
+        return Executors.newFixedThreadPool(threads, r -> {
             Thread t = new Thread(r);
             t.setDaemon(true);
             t.setName(name);
             return t;
         });
+    }
+
+    public static ExecutorService newSingleThreadExecutor(String name) {
+        return newThreadExecutor(1, name);
     }
 }

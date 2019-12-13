@@ -7,7 +7,7 @@
 
 <ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
     <parameters>
-        <parameter id="#1001" location="ROOT.EVT.PARAM1" description="Battery state" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="">
+        <parameter id="#1001" location="ROOT.EVT.PARAM1" description="Base parameter 1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="">
             <checks>
                 <expected name="EXPCHK1" type="UNSIGNED_INTEGER">
                     <value>10</value>
@@ -22,6 +22,7 @@
                 <trigger event="#2006" condition="ON_BACK_TO_NOMINAL"/>
             </triggers>
         </parameter>
+        <parameter id="#1002" location="ROOT.EVT.PARAM2" description="Base parameter 2" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
     </parameters>
     <events>
         <event id="#2001" location="ROOT.EVT.EVT1" description="Event 1" severity="WARN" type="ONBOARD"/>
@@ -34,6 +35,24 @@
             <condition>
                 <expression>PARAM1 == 20</expression>
                 <symbol name="PARAM1" reference="#1001" binding="ENG_VALUE" />
+            </condition>
+        </event>
+        <event id="#2008" location="ROOT.EVT.EVT8" description="Event 8" severity="ALARM" type="ONGROUND">
+            <condition>
+                <expression>PARAM2 == 3000</expression>
+                <symbol name="PARAM2" reference="#1002" binding="ENG_VALUE" />
+            </condition>
+        </event>
+        <event id="#2009" location="ROOT.EVT.EVT9" description="Event 9" severity="ALARM" type="ONGROUND">
+            <condition>
+                <expression>PARAM2 * 2.5</expression>
+                <symbol name="PARAM2" reference="#1002" binding="ENG_VALUE" />
+            </condition>
+        </event>
+        <event id="#2010" location="ROOT.EVT.EVT10" description="Event 10" severity="ALARM" type="ONGROUND">
+            <condition>
+                <expression>WHATEVER.value() == 2</expression>
+                <symbol name="PARAM2" reference="#1002" binding="ENG_VALUE" />
             </condition>
         </event>
     </events>

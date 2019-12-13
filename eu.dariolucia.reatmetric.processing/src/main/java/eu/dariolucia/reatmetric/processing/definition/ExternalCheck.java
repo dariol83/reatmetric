@@ -9,14 +9,19 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.processing.extension.ICheckExtension;
+import eu.dariolucia.reatmetric.processing.extension.internal.ExtensionRegistry;
 
-import javax.script.ScriptEngine;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ExternalCheck extends CheckDefinition {
@@ -24,13 +29,16 @@ public class ExternalCheck extends CheckDefinition {
     @XmlAttribute(required = true)
     private String function;
 
-    // TODO: add an optional list of key-value string pairs
+    @XmlElement(name = "property")
+    private List<KeyValue> properties = new LinkedList<>();
 
     public ExternalCheck() {
     }
 
-    public ExternalCheck(String function) {
+    public ExternalCheck(String name, CheckSeverity severity, int numViolations, String function, List<KeyValue> properties) {
+        super(name, severity, numViolations);
         this.function = function;
+        this.properties = properties;
     }
 
     public String getFunction() {
@@ -41,11 +49,36 @@ public class ExternalCheck extends CheckDefinition {
         this.function = function;
     }
 
+    public List<KeyValue> getProperties() {
+        return properties;
+    }
+
+    public void setProperties(List<KeyValue> properties) {
+        this.properties = properties;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Transient objects
+    // ----------------------------------------------------------------------------------------------------------------
+
+    private transient Map<String, String> key2values = new HashMap<>();
+    private transient ICheckExtension externalCheck = null;
 
     @Override
-    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, IBindingResolver resolver) {
-        // TODO
-        return AlarmState.NOMINAL;
+    public AlarmState check(Object currentValue, Instant generationTime, int currentViolations, IBindingResolver resolver) throws CheckException {
+        // Initialise the properties
+        if(!properties.isEmpty() && key2values.isEmpty()) {
+            properties.forEach(o -> key2values.put(o.getKey(), o.getValue()));
+        }
+        if(externalCheck == null) {
+            // Retrieve calibration
+            externalCheck = ExtensionRegistry.resolveCheck(this.function);
+            if(externalCheck == null) {
+                throw new CheckException("External calibration function " + function + " not found");
+            }
+        }
+        boolean violated = externalCheck.check(currentValue, generationTime, key2values, resolver);
+        return deriveState(violated, currentViolations);
     }
 
 }
