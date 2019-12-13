@@ -716,6 +716,39 @@ class ParameterTest {
         assertEquals(0, outList.size());
     }
 
+    @Test
+    void testExternal() throws InterruptedException, ProcessingModelException, JAXBException {
+        Logger testLogger = Logger.getLogger(getClass().getName());
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
+        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
+        List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
+        // All output data items go in the outList
+        IProcessingModelOutput output = outList::addAll;
+        IProcessingModel model = factory.build(pd, output, null);
+
+        testLogger.info("Injection - Batch 1");
+
+        Instant toInject = Instant.ofEpochMilli(3000000);
+        ParameterSample logSample = ParameterSample.of(1051, toInject, Instant.now(), 3.2);
+        model.injectParameters(Collections.singletonList(logSample));
+
+        //
+        AwaitUtil.awaitAndVerify(5000, outList::size, 2);
+
+        for(int i = 0; i < outList.size(); ++i) {
+            if(((ParameterData) outList.get(i)).getExternalId() == 1051) {
+                assertEquals(1051, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(3.2, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(6.4, (Double) ((ParameterData) outList.get(i)).getEngValue(), 0.00001);
+                assertEquals(AlarmState.VIOLATED, ((ParameterData) outList.get(i)).getAlarmState());
+                ++i;
+                assertEquals("EXTPARAM", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Violated
+            } else {
+                fail("Expected 1041");
+            }
+        }
+
+    }
     // TODO: test extension checks
     // TODO: test extension calibrations
 }

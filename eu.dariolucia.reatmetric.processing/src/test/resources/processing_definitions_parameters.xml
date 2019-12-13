@@ -206,5 +206,17 @@
             </calib_xy>
         </parameter>
 
+        <!-- External check and calibration -->
+        <parameter id="#1051" location="ROOT.TEST.EXTPARAM" description="Parameter with external functions" raw_type="REAL" eng_type="REAL">
+            <calib_external function="test_calibration">
+                <property key="calib.key" value="test" />
+            </calib_external>
+            <checks>
+                <external function="test_check" name="TESTEXTCHK" numViolations="2">
+                    <property key="check.key" value="the_value" />
+                </external>
+            </checks>
+        </parameter>
+
     </parameters>
 </ns1:processing>
