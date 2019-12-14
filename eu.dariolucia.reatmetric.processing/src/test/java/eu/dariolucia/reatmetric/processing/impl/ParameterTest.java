@@ -739,16 +739,13 @@ class ParameterTest {
             if(((ParameterData) outList.get(i)).getExternalId() == 1051) {
                 assertEquals(1051, ((ParameterData) outList.get(i)).getExternalId());
                 assertEquals(3.2, ((ParameterData) outList.get(i)).getSourceValue());
-                assertEquals(6.4, (Double) ((ParameterData) outList.get(i)).getEngValue(), 0.00001);
-                assertEquals(AlarmState.VIOLATED, ((ParameterData) outList.get(i)).getAlarmState());
+                assertEquals(3.2, (Double) ((ParameterData) outList.get(i)).getEngValue(), 0.00001);
+                assertEquals(AlarmState.NOMINAL, ((ParameterData) outList.get(i)).getAlarmState());
                 ++i;
-                assertEquals("EXTPARAM", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Violated
+                assertEquals("EXTPARAM", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Nominal
             } else {
-                fail("Expected 1041");
+                fail("Expected 1051");
             }
         }
-
     }
-    // TODO: test extension checks
-    // TODO: test extension calibrations
 }

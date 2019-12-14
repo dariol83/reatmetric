@@ -208,11 +208,11 @@
 
         <!-- External check and calibration -->
         <parameter id="#1051" location="ROOT.TEST.EXTPARAM" description="Parameter with external functions" raw_type="REAL" eng_type="REAL">
-            <calib_external function="test_calibration">
+            <calib_external function="__identity">
                 <property key="calib.key" value="test" />
             </calib_external>
             <checks>
-                <external function="test_check" name="TESTEXTCHK" numViolations="2">
+                <external function="__nocheck" name="TESTEXTCHK" numViolations="2">
                     <property key="check.key" value="the_value" />
                 </external>
             </checks>
