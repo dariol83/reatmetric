@@ -10,14 +10,19 @@ package eu.dariolucia.reatmetric.processing;
 
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
-import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.processing.input.ActionArgument;
+import eu.dariolucia.reatmetric.processing.input.ActivityArgument;
 
 import java.util.List;
 import java.util.Map;
 
-public interface IActionHandler {
+public interface IActivityHandler {
 
-    void executeAction(IUniqueId actionOccurrenceId, SystemEntity actionEntity, List<ActionArgument> argumentList, Map<String, Object> properties);
+    void registerModel(IProcessingModel model);
+
+    List<String> getSupportedRoutes();
+
+    List<String> getSupportedActivityTypes();
+
+    void executeAction(IUniqueId activityOccurrenceId, SystemEntity activityEntity, List<ActivityArgument> argumentList, Map<String, String> properties, String route);
 
 }

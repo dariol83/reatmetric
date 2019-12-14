@@ -140,12 +140,12 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     @Override
-    public IUniqueId startAction() {
+    public IUniqueId startActivity() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void reportActionProgress() {
+    public void reportActivityProgress() {
         throw new UnsupportedOperationException();
     }
 

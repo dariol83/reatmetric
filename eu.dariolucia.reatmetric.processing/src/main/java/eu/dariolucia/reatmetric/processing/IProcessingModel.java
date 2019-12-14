@@ -24,9 +24,9 @@ public interface IProcessingModel {
 
     void raiseEvent(EventOccurrence event);
 
-    IUniqueId startAction(); // TODO
+    IUniqueId startActivity(); // TODO
 
-    void reportActionProgress(); // TODO
+    void reportActivityProgress(); // TODO
 
     ProcessingDefinition getProcessingDefinition();
 
