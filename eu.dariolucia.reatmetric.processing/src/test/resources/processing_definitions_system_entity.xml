@@ -1,0 +1,31 @@
+<!--
+  ~ Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
+  ~ All rights reserved.
+  ~
+  ~ Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes shall be granted by the author in writing.
+  -->
+
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
+    <parameters>
+        <parameter id="#1001" location="ROOT.EVT.PARAM1" description="Base parameter 1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        <parameter id="#1002" location="ROOT.EVT.PARAM2" description="Base parameter 2" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        <parameter id="#101" location="ROOT.ELEMENT1.PARAM1" description="Parameter 1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
+        <parameter id="#102" location="ROOT.ELEMENT1.PARAM2" description="Parameter 2" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+        <parameter id="#1004" location="ROOT.BATTERY.BATTERY_STATE_EN" description="Battery state as enum" raw_type="ENUMERATED" eng_type="CHARACTER_STRING">
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#1005" location="ROOT.ELEMENT1.ELEMENT2.PARAM1" description="Deeper Parameter 1" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+    </parameters>
+    <events>
+        <event id="#2001" location="ROOT.EVT.EVT1" description="Event 1" severity="WARN" type="ONBOARD"/>
+        <event id="#2002" location="ROOT.EVT.EVT2" description="Event 2" severity="ALARM" type="ONBOARD" inhibitionPeriod="3000" />
+    </events>
+</ns1:processing>

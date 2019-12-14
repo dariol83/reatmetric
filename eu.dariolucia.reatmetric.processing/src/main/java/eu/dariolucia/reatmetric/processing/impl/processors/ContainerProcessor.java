@@ -31,7 +31,9 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
     }
 
     public void addChildProcessor(AbstractSystemEntityProcessor processor) {
-        this.childProcessors.add(processor);
+        if(!this.childProcessors.contains(processor)) {
+            this.childProcessors.add(processor);
+        }
     }
 
     @Override

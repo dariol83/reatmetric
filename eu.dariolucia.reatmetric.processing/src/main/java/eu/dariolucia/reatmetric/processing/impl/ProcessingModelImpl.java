@@ -42,6 +42,8 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private static final Logger LOG = Logger.getLogger(ProcessingModelImpl.class.getName());
 
+    private static final int UPDATE_TASK_CAPACITY = 1000;
+
     private final ProcessingDefinition processingDefinition;
 
     private final IProcessingModelOutput output;
@@ -50,9 +52,9 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private final GraphModel graphModel;
 
-    private final BlockingQueue<ProcessingTask> updateTaskQueue = new ArrayBlockingQueue<>(1000); // TODO: queue size shall be parametric
+    private final BlockingQueue<ProcessingTask> updateTaskQueue = new ArrayBlockingQueue<>(UPDATE_TASK_CAPACITY);
 
-    private final ExecutorService taskProcessors = ThreadUtil.newThreadExecutor(2, "Reatmetric Task Processor"); // TODO: number of threads shall be parametric
+    private final ExecutorService taskProcessors = ThreadUtil.newCachedThreadExecutor("Reatmetric Task Processor");
 
     private final ExecutorService dispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing Dispatcher");
 
