@@ -13,6 +13,7 @@ import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
+import eu.dariolucia.reatmetric.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 
@@ -24,7 +25,7 @@ public interface IProcessingModel {
 
     void raiseEvent(EventOccurrence event);
 
-    IUniqueId startActivity(); // TODO
+    IUniqueId startActivity(ActivityRequest request);
 
     void reportActivityProgress(); // TODO
 
