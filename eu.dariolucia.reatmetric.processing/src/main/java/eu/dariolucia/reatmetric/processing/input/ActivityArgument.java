@@ -10,15 +10,15 @@ package eu.dariolucia.reatmetric.processing.input;
 public final class ActivityArgument {
 
     public static ActivityArgument ofSource(String name, Object sourceValue) {
-        return of(name, sourceValue, null);
+        return of(name, sourceValue, null, false);
     }
 
     public static ActivityArgument ofEngineering(String name, Object engValue) {
-        return of(name, null, engValue);
+        return of(name, null, engValue, true);
     }
 
-    public static ActivityArgument of(String name, Object sourceValue, Object engValue) {
-        return new ActivityArgument(name, sourceValue, engValue);
+    public static ActivityArgument of(String name, Object sourceValue, Object engValue, boolean engineering) {
+        return new ActivityArgument(name, sourceValue, engValue, engineering);
     }
 
     private final String name;
@@ -27,10 +27,13 @@ public final class ActivityArgument {
 
     private final Object engValue;
 
-    public ActivityArgument(String name, Object sourceValue, Object engValue) {
+    private final boolean engineering;
+
+    public ActivityArgument(String name, Object sourceValue, Object engValue, boolean engineering) {
         this.name = name;
         this.sourceValue = sourceValue;
         this.engValue = engValue;
+        this.engineering = engineering;
     }
 
     public String getName() {
@@ -43,5 +46,9 @@ public final class ActivityArgument {
 
     public Object getEngValue() {
         return engValue;
+    }
+
+    public boolean isEngineering() {
+        return engineering;
     }
 }

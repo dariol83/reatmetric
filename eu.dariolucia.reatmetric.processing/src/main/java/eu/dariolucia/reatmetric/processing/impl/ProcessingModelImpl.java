@@ -12,6 +12,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
@@ -24,6 +25,8 @@ import eu.dariolucia.reatmetric.processing.impl.operations.EnableDisableOperatio
 import eu.dariolucia.reatmetric.processing.impl.operations.ParameterSampleProcessOperation;
 import eu.dariolucia.reatmetric.processing.impl.operations.RaiseEventOperation;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
+import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
+import eu.dariolucia.reatmetric.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.processing.util.ThreadUtil;
@@ -140,12 +143,38 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     @Override
-    public IUniqueId startActivity() {
+    public IUniqueId startActivity(ActivityRequest request) {
+        // TODO: implement support
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void reportActivityProgress() {
+    public IUniqueId createActivity(ActivityRequest request, ActivityProgress progress) {
+        // TODO: implement support
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void reportActivityProgress(ActivityProgress progress) {
+        // TODO: implement support
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void purgeActivities(List<IUniqueId> activityOccurrenceIds) {
+        // TODO: implement support
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void registerActivityHandler(IActivityHandler handler) throws ProcessingModelException {
+        // TODO: implement support
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void deregisterActivityHandler(IActivityHandler handler) throws ProcessingModelException {
+        // TODO: implement support
         throw new UnsupportedOperationException();
     }
 

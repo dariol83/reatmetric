@@ -35,12 +35,17 @@ public class ProcessingDefinition {
     @XmlElement(name = "event")
     private List<EventProcessingDefinition> eventDefinitions = new LinkedList<>();
 
+    @XmlElementWrapper(name = "activities")
+    @XmlElement(name = "activity")
+    private List<ActivityProcessingDefinition> activityDefinitions = new LinkedList<>();
+
     public ProcessingDefinition() {
     }
 
-    public ProcessingDefinition(List<ParameterProcessingDefinition> parameterDefinitions, List<EventProcessingDefinition> eventDefinitions) {
+    public ProcessingDefinition(List<ParameterProcessingDefinition> parameterDefinitions, List<EventProcessingDefinition> eventDefinitions, List<ActivityProcessingDefinition> activityDefinitions) {
         this.parameterDefinitions = parameterDefinitions;
         this.eventDefinitions = eventDefinitions;
+        this.activityDefinitions = activityDefinitions;
     }
 
     public List<ParameterProcessingDefinition> getParameterDefinitions() {
@@ -57,5 +62,14 @@ public class ProcessingDefinition {
 
     public void setEventDefinitions(List<EventProcessingDefinition> eventDefinitions) {
         this.eventDefinitions = eventDefinitions;
+    }
+
+    public List<ActivityProcessingDefinition> getActivityDefinitions() {
+        return activityDefinitions;
+    }
+
+    public ProcessingDefinition setActivityDefinitions(List<ActivityProcessingDefinition> activityDefinitions) {
+        this.activityDefinitions = activityDefinitions;
+        return this;
     }
 }

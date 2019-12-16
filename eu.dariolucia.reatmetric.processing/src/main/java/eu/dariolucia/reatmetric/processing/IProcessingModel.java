@@ -13,9 +13,7 @@ import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
-import eu.dariolucia.reatmetric.processing.input.ActivityRequest;
-import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
-import eu.dariolucia.reatmetric.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.processing.input.*;
 
 import java.util.List;
 
@@ -25,9 +23,13 @@ public interface IProcessingModel {
 
     void raiseEvent(EventOccurrence event);
 
-    IUniqueId startActivity(ActivityRequest request);
+    IUniqueId startActivity(ActivityRequest request) throws ProcessingModelException;
 
-    void reportActivityProgress(); // TODO
+    IUniqueId createActivity(ActivityRequest request, ActivityProgress currentProgress) throws ProcessingModelException;
+
+    void reportActivityProgress(ActivityProgress progress);
+
+    void purgeActivities(List<IUniqueId> activityOccurrenceIds);
 
     ProcessingDefinition getProcessingDefinition();
 
@@ -46,4 +48,8 @@ public interface IProcessingModel {
     int getExternalIdOf(SystemEntityPath path) throws ProcessingModelException;
 
     SystemEntityPath getPathOf(int id) throws ProcessingModelException;
+
+    void registerActivityHandler(IActivityHandler handler) throws ProcessingModelException;
+
+    void deregisterActivityHandler(IActivityHandler handler) throws ProcessingModelException;
 }

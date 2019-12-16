@@ -15,15 +15,15 @@ import java.util.Objects;
 
 public final class ParameterSample extends AbstractInputDataItem {
 
-    public static final ParameterSample of(int id, Object value) {
+    public static ParameterSample of(int id, Object value) {
         return new ParameterSample(id, null, null, null, value, null);
     }
 
-    public static final ParameterSample of(int id, Instant generationTime, Instant receptionTime, Object value) {
+    public static ParameterSample of(int id, Instant generationTime, Instant receptionTime, Object value) {
         return new ParameterSample(id, generationTime, receptionTime, null, value, null);
     }
 
-    public static final ParameterSample of(int id, Instant generationTime, Instant receptionTime, IUniqueId container, Object value, String route) {
+    public static ParameterSample of(int id, Instant generationTime, Instant receptionTime, IUniqueId container, Object value, String route) {
         return new ParameterSample(id, generationTime, receptionTime, container, value, route);
     }
 

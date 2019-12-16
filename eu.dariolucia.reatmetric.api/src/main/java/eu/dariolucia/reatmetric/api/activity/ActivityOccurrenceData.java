@@ -24,8 +24,6 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
 
     private final int externalId;
 
-    private final IUniqueId occurrenceId;
-
     private final String name;
 
     private final SystemEntityPath path;
@@ -49,10 +47,9 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
     // Derived
     private final Object result;
 
-    public ActivityOccurrenceData(IUniqueId internalId, Instant generationTime, Object[] additionalFields, int externalId, IUniqueId occurrenceId, String name, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> progressReports, String route) {
+    public ActivityOccurrenceData(IUniqueId internalId, Instant generationTime, Object[] additionalFields, int externalId, String name, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> progressReports, String route) {
         super(internalId, generationTime, additionalFields);
         this.externalId = externalId;
-        this.occurrenceId = occurrenceId;
         this.name = name;
         this.path = path;
         this.type = type;
@@ -60,7 +57,8 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
         this.properties = properties;
         this.progressReports = progressReports;
         this.route = route;
-        Instant derExecutionTime = generationTime;
+        // Compute derived fields
+        Instant derExecutionTime = null;
         ActivityOccurrenceState derState = ActivityOccurrenceState.CREATION;
         Object derResult = null;
         for(ActivityOccurrenceReport report : progressReports) {
@@ -77,8 +75,8 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
         return externalId;
     }
 
-    public IUniqueId getOccurrenceId() {
-        return occurrenceId;
+    public String getType() {
+        return type;
     }
 
     public String getName() {

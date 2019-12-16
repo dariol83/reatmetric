@@ -7,10 +7,7 @@ import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IEntityBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
-import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
-import eu.dariolucia.reatmetric.processing.impl.processors.ContainerProcessor;
-import eu.dariolucia.reatmetric.processing.impl.processors.EventProcessor;
-import eu.dariolucia.reatmetric.processing.impl.processors.ParameterProcessor;
+import eu.dariolucia.reatmetric.processing.impl.processors.*;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -40,18 +37,23 @@ public class GraphModel {
         // - parameters
         // - events
         // - containers
+        // - activities
         for(ParameterProcessingDefinition param : definition.getParameterDefinitions()) {
             addEntities(param, () -> new ParameterProcessor(param, processingModel));
         }
         for(EventProcessingDefinition event : definition.getEventDefinitions()) {
              addEntities(event, () -> new EventProcessor(event, processingModel));
         }
+        for(ActivityProcessingDefinition act : definition.getActivityDefinitions()) {
+            addEntities(act, () -> new ActivityProcessor(act, processingModel));
+        }
 
         // Now add the links for:
-        // - expressions (source value computation, validity, expression calibration, expression checks)
+        // - expressions (source value computation, validity, expression calibration, expression checks, activity verification expressions)
         // - parent/child relationship (error propagation)
         // - event expressions
         // - parameter triggers
+        // - references of default values for activity arguments
         for(ParameterProcessingDefinition param : definition.getParameterDefinitions()) {
             if(param.getExpression() != null) {
                 addEdges(param, param.getExpression());
@@ -84,7 +86,17 @@ public class GraphModel {
                 addEdges(event, event.getCondition());
             }
         }
-
+        for(ActivityProcessingDefinition act : definition.getActivityDefinitions()) {
+            if(act.getVerification() != null) {
+                addEdges(act, act.getVerification());
+            }
+            // This is needed to block the injection of referenced parameters while a new activity occurrence is about to be released
+            for(ArgumentDefinition ad : act.getArguments()) {
+                if(ad.getDefaultValue() != null && ad.getDefaultValue() instanceof ReferenceDefaultValue) {
+                   new DependencyEdge(getVertexOf(act.getId()), getVertexOf(((ReferenceDefaultValue) ad.getDefaultValue()).getParameter().getId()));
+                }
+            }
+        }
         // Topological sort now and assignment of the orderingIds
         computeTopologicalOrdering();
     }

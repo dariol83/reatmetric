@@ -9,19 +9,14 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.api.value.ValueUtil;
-import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
-import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ExpressionCheck extends CheckDefinition{

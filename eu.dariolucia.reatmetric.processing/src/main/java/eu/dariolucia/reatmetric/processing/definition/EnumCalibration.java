@@ -8,10 +8,8 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.reatmetric.processing.IDataItemStateResolver;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
-import javax.script.ScriptEngine;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -19,7 +17,6 @@ import javax.xml.bind.annotation.XmlElement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class EnumCalibration extends CalibrationDefinition {

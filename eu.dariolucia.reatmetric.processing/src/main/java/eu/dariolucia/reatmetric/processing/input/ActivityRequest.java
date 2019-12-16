@@ -48,6 +48,32 @@ public final class ActivityRequest extends AbstractInputDataItem {
         return route;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ActivityRequest that = (ActivityRequest) o;
+        return getId() == that.getId() &&
+                Objects.equals(getArguments(), that.getArguments()) &&
+                Objects.equals(getProperties(), that.getProperties()) &&
+                Objects.equals(getRoute(), that.getRoute());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId(), getArguments(), getProperties(), getRoute());
+    }
+
+    @Override
+    public String toString() {
+        return "ActivityRequest{" +
+                "id=" + id +
+                ", arguments=" + arguments +
+                ", properties=" + properties +
+                ", route='" + route + '\'' +
+                "}";
+    }
+
     public static class Builder {
         private final int id;
         private List<ActivityArgument> arguments = new LinkedList<>();

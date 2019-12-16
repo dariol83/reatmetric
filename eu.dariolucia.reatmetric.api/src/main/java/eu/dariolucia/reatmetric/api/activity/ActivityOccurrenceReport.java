@@ -18,14 +18,16 @@ public final class ActivityOccurrenceReport extends AbstractDataItem {
     private final ActivityOccurrenceState state;
     private final Instant executionTime; // If not null, this report provides the activity occurrence execution time (estimated or final)
     private final ActivityReportState status;
+    private final boolean stateTransition;
     private final Object result; // If not null, this report provides the activity occurrence execution result (partial or final)
 
-    public ActivityOccurrenceReport(IUniqueId internalId, Instant generationTime, Object[] additionalFields, String name, ActivityOccurrenceState state, Instant executionTime, ActivityReportState status, Object result) {
+    public ActivityOccurrenceReport(IUniqueId internalId, Instant generationTime, Object[] additionalFields, String name, ActivityOccurrenceState state, Instant executionTime, ActivityReportState status, boolean stateTransition, Object result) {
         super(internalId, generationTime, additionalFields);
         this.name = name;
         this.state = state;
         this.executionTime = executionTime;
         this.status = status;
+        this.stateTransition = stateTransition;
         this.result = result;
     }
 
@@ -43,6 +45,10 @@ public final class ActivityOccurrenceReport extends AbstractDataItem {
 
     public ActivityReportState getStatus() {
         return status;
+    }
+
+    public boolean isStateTransition() {
+        return stateTransition;
     }
 
     public Object getResult() {
