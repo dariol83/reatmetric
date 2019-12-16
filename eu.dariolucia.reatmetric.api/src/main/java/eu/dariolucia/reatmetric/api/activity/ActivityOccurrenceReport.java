@@ -14,15 +14,21 @@ import java.time.Instant;
 
 public final class ActivityOccurrenceReport extends AbstractDataItem {
 
-    private final String name;
-    private final ActivityOccurrenceState state;
+    private final String name; // Always set
+    private final ActivityOccurrenceState state; // Always set
     private final Instant executionTime; // If not null, this report provides the activity occurrence execution time (estimated or final)
     private final ActivityReportState status;
-    private final boolean stateTransition;
+    private final ActivityOccurrenceState stateTransition; // Always set, can be equal to state
     private final Object result; // If not null, this report provides the activity occurrence execution result (partial or final)
 
-    public ActivityOccurrenceReport(IUniqueId internalId, Instant generationTime, Object[] additionalFields, String name, ActivityOccurrenceState state, Instant executionTime, ActivityReportState status, boolean stateTransition, Object result) {
+    public ActivityOccurrenceReport(IUniqueId internalId, Instant generationTime, Object[] additionalFields, String name, ActivityOccurrenceState state, Instant executionTime, ActivityReportState status, ActivityOccurrenceState stateTransition, Object result) {
         super(internalId, generationTime, additionalFields);
+        if(state == null || stateTransition == null) {
+            throw new NullPointerException("state or stateTransition set to null");
+        }
+        if(name == null) {
+            throw new NullPointerException("Report name set to null");
+        }
         this.name = name;
         this.state = state;
         this.executionTime = executionTime;
@@ -47,7 +53,7 @@ public final class ActivityOccurrenceReport extends AbstractDataItem {
         return status;
     }
 
-    public boolean isStateTransition() {
+    public ActivityOccurrenceState getStateTransition() {
         return stateTransition;
     }
 

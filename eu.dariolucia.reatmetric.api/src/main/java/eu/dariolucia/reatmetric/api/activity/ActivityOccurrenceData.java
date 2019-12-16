@@ -63,7 +63,7 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
         Object derResult = null;
         for(ActivityOccurrenceReport report : progressReports) {
             derExecutionTime = report.getExecutionTime() != null ? report.getExecutionTime() : derExecutionTime;
-            derState = report.getState();
+            derState = report.getStateTransition();
             derResult = report.getResult() != null ? report.getResult() : derResult;
         }
         executionTime = derExecutionTime;
