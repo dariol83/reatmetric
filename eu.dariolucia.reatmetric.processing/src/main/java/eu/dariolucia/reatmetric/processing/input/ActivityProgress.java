@@ -9,15 +9,15 @@ import java.time.Instant;
 public final class ActivityProgress extends AbstractInputDataItem {
 
     public static ActivityProgress of(IUniqueId occurrenceId, String name, Instant generationTime, ActivityOccurrenceState state, ActivityReportState status) {
-        return new ActivityProgress(occurrenceId, name, generationTime, state, null, status, false, null);
+        return new ActivityProgress(occurrenceId, name, generationTime, state, null, status, state, null);
     }
 
     public static ActivityProgress of(IUniqueId occurrenceId, String name, Instant generationTime, Instant executionTime, ActivityOccurrenceState state, ActivityReportState status) {
-        return new ActivityProgress(occurrenceId, name, generationTime, state, executionTime, status, false, null);
+        return new ActivityProgress(occurrenceId, name, generationTime, state, executionTime, status, state, null);
     }
 
-    public static ActivityProgress of(IUniqueId occurrenceId, String name, Instant generationTime, ActivityOccurrenceState state, Instant executionTime, ActivityReportState status, boolean stateTransition, Object result) {
-        return new ActivityProgress(occurrenceId, name, generationTime, state, executionTime, status, stateTransition, result);
+    public static ActivityProgress of(IUniqueId occurrenceId, String name, Instant generationTime, ActivityOccurrenceState state, Instant executionTime, ActivityReportState status, ActivityOccurrenceState nextState, Object result) {
+        return new ActivityProgress(occurrenceId, name, generationTime, state, executionTime, status, nextState, result);
     }
 
     private final IUniqueId occurrenceId;
@@ -26,17 +26,17 @@ public final class ActivityProgress extends AbstractInputDataItem {
     private final ActivityOccurrenceState state;
     private final Instant executionTime; // If not null, this report provides the activity occurrence execution time (estimated or final)
     private final ActivityReportState status;
-    private final boolean stateTransition;
+    private final ActivityOccurrenceState nextState;
     private final Object result; // If not null, this report provides the activity occurrence execution result (partial or final)
 
-    private ActivityProgress(IUniqueId occurrenceId, String name, Instant generationTime, ActivityOccurrenceState state, Instant executionTime, ActivityReportState status, boolean stateTransition, Object result) {
+    private ActivityProgress(IUniqueId occurrenceId, String name, Instant generationTime, ActivityOccurrenceState state, Instant executionTime, ActivityReportState status, ActivityOccurrenceState nextState, Object result) {
         this.occurrenceId = occurrenceId;
         this.name = name;
         this.generationTime = generationTime;
         this.state = state;
         this.executionTime = executionTime;
         this.status = status;
-        this.stateTransition = stateTransition;
+        this.nextState = nextState;
         this.result = result;
     }
 
@@ -64,8 +64,8 @@ public final class ActivityProgress extends AbstractInputDataItem {
         return status;
     }
 
-    public boolean isStateTransition() {
-        return stateTransition;
+    public ActivityOccurrenceState getNextState() {
+        return nextState;
     }
 
     public Object getResult() {

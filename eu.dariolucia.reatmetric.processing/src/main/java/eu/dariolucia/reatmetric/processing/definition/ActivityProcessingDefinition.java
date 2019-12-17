@@ -42,10 +42,10 @@ public class ActivityProcessingDefinition extends AbstractProcessingDefinition {
     private String defaultRoute;
 
     @XmlAttribute(name = "transmissionTimeout")
-    private int transmissionTimeout = 10; // in seconds
+    private int transmissionTimeout = 0; // in seconds
 
     @XmlAttribute(name = "executionTimeout")
-    private int executionTimeout = 3600; // in seconds
+    private int executionTimeout = 0; // in seconds
 
     @XmlAttribute(name = "verificationTimeout")
     private int verificationTimeout = 5; // in seconds

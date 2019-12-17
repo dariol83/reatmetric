@@ -8,11 +8,12 @@
 package eu.dariolucia.reatmetric.api.activity;
 
 public enum ActivityReportState {
-    EXPECTED,
-    PENDING,
-    OK,
-    TIMEOUT,
-    FAIL,
-    FATAL,
-    UNKNOWN
+    EXPECTED, // The algorithm expects this stage to have happened, no confirmation of the stage received yet
+    PENDING, // The algorithm is waiting for the confirmation of the stage
+    OK, // The algorithm received confirmation that the stage was OK
+    TIMEOUT, // The timeout linked to the activity phase expired
+    FAIL, // The algorithm received confirmation that the stage was failed, but the activity might still proceed
+    FATAL, // The algorithm received confirmation that the stage was failed, the activity shall be considered completed
+    ERROR, // The verification expression failed its evaluation, the activity is completed
+    UNKNOWN // The algorithm has no clue of what happened to this stage
 }
