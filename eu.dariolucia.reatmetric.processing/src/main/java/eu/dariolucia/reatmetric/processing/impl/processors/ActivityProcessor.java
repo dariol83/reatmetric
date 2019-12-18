@@ -53,4 +53,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         // TODO: handle re-evaluation of all the activity occurrences for this activity
         return null;
     }
+
+    public List<AbstractDataItem> evaluate(IUniqueId occurrenceId) {
+        // TODO: handle re-evaluation of a single occurrence
+        return null;
+    }
 }

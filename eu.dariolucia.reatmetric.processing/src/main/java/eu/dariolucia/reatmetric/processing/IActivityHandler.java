@@ -10,6 +10,7 @@ package eu.dariolucia.reatmetric.processing;
 
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 import java.util.List;
 import java.util.Map;
@@ -22,5 +23,5 @@ public interface IActivityHandler {
 
     List<String> getSupportedActivityTypes();
 
-    void executeActivity(IUniqueId activityOccurrenceId, SystemEntity activityEntity, Map<String, Object> arguments, Map<String, String> properties, String route) throws ActivityHandlingException;
+    void executeActivity(IUniqueId activityOccurrenceId, int activityId, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, String route) throws ActivityHandlingException;
 }
