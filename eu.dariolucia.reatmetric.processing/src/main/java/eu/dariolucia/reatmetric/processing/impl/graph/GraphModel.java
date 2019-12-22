@@ -222,9 +222,9 @@ public class GraphModel {
      * @param operations the list of operations to be performed
      * @return the extended list of operations to be performed, including dependency re-evaluation
      */
-    public List<AbstractModelOperation> finalizeOperationList(List<AbstractModelOperation> operations) {
+    public List<AbstractModelOperation<?>> finalizeOperationList(List<AbstractModelOperation<?>> operations) {
         Set<Integer> alreadyPresent = new HashSet<>();
-        List<AbstractModelOperation> extendedOperations = new LinkedList<>();
+        List<AbstractModelOperation<?>> extendedOperations = new LinkedList<>();
         // Add the entity IDs to the alreadyPresent set
         operations.forEach(o -> alreadyPresent.add(o.getSystemEntityId()));
         for(AbstractModelOperation operation : operations) {

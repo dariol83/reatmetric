@@ -6,6 +6,7 @@ import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperatio
 
 import java.util.*;
 import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,16 +15,18 @@ public class ProcessingTask implements Callable<List<AbstractDataItem>> {
 
     private static final Logger LOG = Logger.getLogger(ProcessingTask.class.getName());
 
-    private List<AbstractModelOperation> operations;
+    private List<AbstractModelOperation<?>> operations;
     private final Consumer<List<AbstractDataItem>> output;
     private final Set<Integer> affectedItems;
     private final WorkingSet workingSet;
+    private final FutureTask<List<AbstractDataItem>> task;
 
-    ProcessingTask(List<AbstractModelOperation> operations, Consumer<List<AbstractDataItem>> output, WorkingSet workingSet) {
+    ProcessingTask(List<AbstractModelOperation<?>> operations, Consumer<List<AbstractDataItem>> output, WorkingSet workingSet) {
         this.operations = operations;
         this.output = output;
         this.workingSet = workingSet;
         this.affectedItems = new HashSet<>();
+        this.task = new FutureTask<>(this);
     }
 
     void prepareTask(GraphModel graphModel) {
@@ -31,7 +34,7 @@ public class ProcessingTask implements Callable<List<AbstractDataItem>> {
         // and order by topological sort
         operations = graphModel.finalizeOperationList(operations);
         // Build the set of affected items by ID
-        for (AbstractModelOperation amo : operations) {
+        for (AbstractModelOperation<?> amo : operations) {
             this.affectedItems.add(amo.getSystemEntityId());
         }
     }
@@ -40,7 +43,7 @@ public class ProcessingTask implements Callable<List<AbstractDataItem>> {
     public List<AbstractDataItem> call() {
         // XXX: think about having parallel parameter processing by introducing processing levels based on longest-dependency count
         List<AbstractDataItem> result = new ArrayList<>(operations.size());
-        for (AbstractModelOperation amo : operations) {
+        for (AbstractModelOperation<?> amo : operations) {
             try {
                 result.addAll(amo.execute());
             } catch (Exception e) {
@@ -57,5 +60,9 @@ public class ProcessingTask implements Callable<List<AbstractDataItem>> {
 
     Set<Integer> getAffectedItems() {
         return affectedItems;
+    }
+
+    public FutureTask<List<AbstractDataItem>> getTask() {
+        return this.task;
     }
 }

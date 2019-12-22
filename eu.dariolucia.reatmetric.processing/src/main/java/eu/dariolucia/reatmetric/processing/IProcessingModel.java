@@ -9,6 +9,7 @@
 package eu.dariolucia.reatmetric.processing;
 
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
@@ -29,7 +30,7 @@ public interface IProcessingModel {
 
     void reportActivityProgress(ActivityProgress progress);
 
-    void purgeActivities(List<IUniqueId> activityOccurrenceIds);
+    void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds);
 
     ProcessingDefinition getProcessingDefinition();
 

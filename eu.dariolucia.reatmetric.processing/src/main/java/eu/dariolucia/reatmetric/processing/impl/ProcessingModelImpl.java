@@ -8,10 +8,12 @@
 
 package eu.dariolucia.reatmetric.processing.impl;
 
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.processing.*;
@@ -34,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
@@ -100,7 +103,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 // Check if the working set allows the processing of the items (blocking call)
                 this.workingSet.add(toProcess.getAffectedItems());
                 // Ready to be processed, submit the task
-                this.taskProcessors.submit(toProcess);
+                this.taskProcessors.submit(toProcess.getTask());
             } catch(Exception e) {
                 LOG.log(Level.SEVERE, "Exception when dispatching processing tasks: " + e.getMessage(), e);
             }
@@ -115,12 +118,13 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         return updateSequencerMap.computeIfAbsent(type, o -> new AtomicLong(0)).getAndIncrement();
     }
 
-    public void scheduleTask(List<AbstractModelOperation> operations) {
+    public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations) {
         // Create the processing task
         ProcessingTask taskToRun = new ProcessingTask(operations, outputRedirector, workingSet);
         // Add the task to be done to the queue
         updateTaskQueue.add(taskToRun);
         // Done
+        return taskToRun;
     }
 
     public void scheduleAt(Instant executionDate, TimerTask task) {
@@ -139,7 +143,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         }
         // All fine, schedule the dispatch
         this.activityOccurrenceDispatcher.execute(() -> {
-            reportActivityProgress(ActivityProgress.of(occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.PENDING, ActivityOccurrenceState.RELEASE, null));
+            reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.PENDING, ActivityOccurrenceState.RELEASE, null));
             try {
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.fine(String.format("Forwarding activity occurrence %s of activity %s to the activity handler on route %s", occurrenceId, path, route));
@@ -148,10 +152,10 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.fine(String.format("Activity occurrence %s forwarded", occurrenceId));
                 }
-                reportActivityProgress(ActivityProgress.of(occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.RELEASE, null));
+                reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.RELEASE, null));
             } catch (ActivityHandlingException e) {
                 LOG.log(Level.SEVERE, String.format("Failure forwarding activity occurrence %s of activity %s to the activity handler on route %s", occurrenceId, path, route), e);
-                reportActivityProgress(ActivityProgress.of(occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE, null));
+                reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE, null));
             }
         });
     }
@@ -159,11 +163,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     @Override
     public void injectParameters(List<ParameterSample> sampleList) {
         // Build the list of operations to be performed
-        List<AbstractModelOperation> operations = new LinkedList<>();
-        for(ParameterSample ps : sampleList) {
-            ParameterSampleProcessOperation injectOperation = new ParameterSampleProcessOperation(ps);
-            operations.add(injectOperation);
-        }
+        List<AbstractModelOperation<?>> operations = sampleList.stream().map(ParameterSampleProcessOperation::new).collect(Collectors.toList());
         // Schedule task
         scheduleTask(operations);
     }
@@ -171,33 +171,68 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     @Override
     public void raiseEvent(EventOccurrence event) {
         // Build the list of operations to be performed
-        List<AbstractModelOperation> operations = Collections.singletonList(new RaiseEventOperation(event));
+        List<AbstractModelOperation<?>> operations = Collections.singletonList(new RaiseEventOperation(event));
         // Schedule task
         scheduleTask(operations);
     }
 
     @Override
-    public IUniqueId startActivity(ActivityRequest request) {
-        // TODO: implement support
-        throw new UnsupportedOperationException();
+    public IUniqueId startActivity(ActivityRequest request) throws ProcessingModelException {
+        // Build the activity start operation
+        List<AbstractModelOperation<?>> operations = Collections.singletonList(new StartActivityOperation(request));
+        // Schedule task
+        return scheduleActivityOperation(request, operations, "start");
     }
 
     @Override
-    public IUniqueId createActivity(ActivityRequest request, ActivityProgress progress) {
-        // TODO: implement support
-        throw new UnsupportedOperationException();
+    public IUniqueId createActivity(ActivityRequest request, ActivityProgress progress) throws ProcessingModelException {
+        // Build the activity create operation
+        List<AbstractModelOperation<?>> operations = Collections.singletonList(new CreateActivityOperation(request, progress));
+        // Schedule task
+        return scheduleActivityOperation(request, operations, "creation");
     }
 
     @Override
     public void reportActivityProgress(ActivityProgress progress) {
-        // TODO: implement support
-        throw new UnsupportedOperationException();
+        // Build the list of operations to be performed
+        List<AbstractModelOperation<?>> operations = Collections.singletonList(new ReportActivityProgressOperation(progress));
+        // Schedule task
+        scheduleTask(operations);
     }
 
     @Override
-    public void purgeActivities(List<IUniqueId> activityOccurrenceIds) {
-        // TODO: implement support
-        throw new UnsupportedOperationException();
+    public void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) {
+        // Build the list of operations to be performed
+        List<AbstractModelOperation<?>> operations = activityOccurrenceIds.stream().map(PurgeActivityOperation::new).collect(Collectors.toList());
+        // Schedule task
+        scheduleTask(operations);
+    }
+
+    private IUniqueId scheduleActivityOperation(ActivityRequest request, List<AbstractModelOperation<?>> operations, String type) throws ProcessingModelException {
+        // Schedule task
+        ProcessingTask pt = scheduleTask(operations);
+
+        List<AbstractDataItem> executionResult;
+        // Wait for the activity creation
+        try {
+            executionResult = pt.getTask().get();
+        } catch (InterruptedException e) {
+            throw new ProcessingModelException("Creation of activity occurrence for activity " + type + " request " + request.getId() + " interrupted", e);
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof ProcessingModelException) {
+                throw (ProcessingModelException) e.getCause();
+            } else {
+                throw new ProcessingModelException("Creation of activity occurrence for activity " + type + " request " + request.getId() + " failed: " + e.getMessage(), e);
+            }
+        }
+        // Return the unique ID of the activity occurrence
+        for (AbstractDataItem adi : executionResult) {
+            if (adi instanceof ActivityOccurrenceData) {
+                return adi.getInternalId();
+            }
+        }
+        // Error
+        throw new ProcessingModelException("Creation of activity occurrence for activity " + type + " request " + request.getId() + " not detected");
     }
 
     @Override
@@ -212,7 +247,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     @Override
-    public void deregisterActivityHandler(IActivityHandler handler) throws ProcessingModelException {
+    public void deregisterActivityHandler(IActivityHandler handler) {
         for(String route : handler.getSupportedRoutes()) {
             this.activityHandlers.remove(route);
         }
@@ -232,7 +267,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Map the path to the entity ID
         int id = getExternalIdOf(path);
         // Build the list of operations to be performed
-        List<AbstractModelOperation> operations = Collections.singletonList(new EnableDisableOperation(id, b));
+        List<AbstractModelOperation<?>> operations = Collections.singletonList(new EnableDisableOperation(id, b));
         // Schedule task
         scheduleTask(operations);
     }

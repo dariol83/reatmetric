@@ -30,14 +30,14 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         super(act, processingModel, SystemEntityType.ACTIVITY);
     }
 
-    public IUniqueId invoke(ActivityRequest request) throws ProcessingModelException {
+    public List<AbstractDataItem> invoke(ActivityRequest request) throws ProcessingModelException {
         // TODO: handle new activity occurrence creation, decalibration of the arguments, argument and route checks and forward to activity handler
         // Static check failures (decalibration errors, arguments, route) generate an error message and throw an exception. The
         // ActivityOccurrenceProcessor is created only when the activity invocation must be forwarded to the activity handler.
         throw new UnsupportedOperationException();
     }
 
-    public IUniqueId create(ActivityRequest request, ActivityProgress progress) throws ProcessingModelException {
+    public List<AbstractDataItem> create(ActivityRequest request, ActivityProgress progress) throws ProcessingModelException {
         // TODO: handle new activity occurrence creation and state setup
         throw new UnsupportedOperationException();
     }
@@ -56,6 +56,11 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
 
     public List<AbstractDataItem> evaluate(IUniqueId occurrenceId) {
         // TODO: handle re-evaluation of a single occurrence
+        return null;
+    }
+
+    public List<AbstractDataItem> purge(IUniqueId occurrenceId) {
+        // TODO: handle activity occurrence purge (aka completion)
         return null;
     }
 }
