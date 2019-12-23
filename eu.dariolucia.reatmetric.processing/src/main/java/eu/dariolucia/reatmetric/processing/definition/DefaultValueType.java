@@ -12,6 +12,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public enum DefaultValueType {
-    SOURCE,
+    RAW,
     ENGINEERING
 }

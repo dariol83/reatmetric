@@ -317,7 +317,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     @Override
-    public Object sourceValue() {
+    public Object rawValue() {
         return this.state == null ? null : this.state.getSourceValue();
     }
 

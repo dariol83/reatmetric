@@ -11,6 +11,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
@@ -60,7 +61,11 @@ public class ActivityOccurrenceProcessor {
         this.route = route;
     }
 
-    public List<ActivityOccurrenceData> dispatch() {
+    public IUniqueId getOccurrenceId() {
+        return occurrenceId;
+    }
+
+    public List<AbstractDataItem> dispatch() {
         // Clear temporary list
         temporaryDataItemList.clear();
         // Set the initial state and generate the report for the creation of the activity occurrence (start of the lifecycle)
@@ -104,7 +109,7 @@ public class ActivityOccurrenceProcessor {
         temporaryDataItemList.add(activityOccurrenceData);
     }
 
-    public List<ActivityOccurrenceData> progress(ActivityProgress progress) {
+    public List<AbstractDataItem> progress(ActivityProgress progress) {
         if(currentState == ActivityOccurrenceState.COMPLETION) {
             // Activity occurrence in its final state, update discarded
             if(LOG.isLoggable(Level.WARNING)) {
@@ -243,7 +248,7 @@ public class ActivityOccurrenceProcessor {
         return false;
     }
 
-    public List<ActivityOccurrenceData> evaluate() {
+    public List<AbstractDataItem> evaluate() {
         // Clear temporary list
         temporaryDataItemList.clear();
         // If currentTimeoutState is applicable, currentTimeoutTask is pending and it is expired, generate ActivityOccurrenceReport accordingly

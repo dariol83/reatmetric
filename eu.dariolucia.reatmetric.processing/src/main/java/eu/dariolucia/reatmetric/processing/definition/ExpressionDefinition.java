@@ -145,7 +145,7 @@ public class ExpressionDefinition {
             }
             case SOURCE_VALUE: {
                 if(resolve instanceof IParameterBinding) {
-                    return ((IParameterBinding) resolve).sourceValue();
+                    return ((IParameterBinding) resolve).rawValue();
                 }
                 break;
             }

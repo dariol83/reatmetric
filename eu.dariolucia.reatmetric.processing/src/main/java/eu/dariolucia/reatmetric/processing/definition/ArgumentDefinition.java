@@ -39,7 +39,7 @@ public class ArgumentDefinition {
 
     /**
      * The decalibration converts the activity argument's engineering value into the corresponding raw value. If no
-     * calibration is specified, the engineering value is set as source value.
+     * calibration is specified, the engineering value is set as raw value.
      */
     @XmlElements({
             @XmlElement(name="decalib_xy",type=XYCalibration.class),

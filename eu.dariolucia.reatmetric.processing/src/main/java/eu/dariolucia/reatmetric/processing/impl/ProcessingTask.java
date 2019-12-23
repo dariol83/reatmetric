@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+// TODO: maybe this must become a FutureTask, for better control over exceptions
 public class ProcessingTask implements Callable<List<AbstractDataItem>> {
 
     private static final Logger LOG = Logger.getLogger(ProcessingTask.class.getName());

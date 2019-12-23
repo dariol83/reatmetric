@@ -5,7 +5,7 @@ import eu.dariolucia.reatmetric.api.parameters.Validity;
 
 public interface IParameterBinding extends IEntityBinding {
 
-    Object sourceValue();
+    Object rawValue();
 
     Object value();
 

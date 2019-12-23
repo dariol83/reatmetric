@@ -23,15 +23,15 @@ public final class ActivityArgument {
 
     private final String name;
 
-    private final Object sourceValue;
+    private final Object rawValue;
 
     private final Object engValue;
 
     private final boolean engineering;
 
-    public ActivityArgument(String name, Object sourceValue, Object engValue, boolean engineering) {
+    public ActivityArgument(String name, Object rawValue, Object engValue, boolean engineering) {
         this.name = name;
-        this.sourceValue = sourceValue;
+        this.rawValue = rawValue;
         this.engValue = engValue;
         this.engineering = engineering;
     }
@@ -40,8 +40,8 @@ public final class ActivityArgument {
         return name;
     }
 
-    public Object getSourceValue() {
-        return sourceValue;
+    public Object getRawValue() {
+        return rawValue;
     }
 
     public Object getEngValue() {

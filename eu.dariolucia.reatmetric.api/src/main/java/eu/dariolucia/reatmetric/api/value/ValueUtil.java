@@ -333,4 +333,18 @@ public class ValueUtil {
         }
         throw new ValueException("Object " + result + " cannot be converted to " + type);
     }
+
+    public static boolean typeMatch(ValueTypeEnum type, Object value) {
+        if(value == null) {
+            // Absence of value is considered a type match
+            return true;
+        }
+        if(type == ValueTypeEnum.EXTENSION) {
+            // Type EXTENSION cannot be used to evaluate type match: the method returns true, because it is in the hand of the person using the extension to check properly
+            return true;
+        } else {
+            return type.getAssignedClass().isAssignableFrom(value.getClass());
+        }
+
+    }
 }

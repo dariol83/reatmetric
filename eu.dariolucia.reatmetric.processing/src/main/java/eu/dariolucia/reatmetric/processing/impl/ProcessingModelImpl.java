@@ -134,13 +134,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     public void forwardActivityToHandler(IUniqueId occurrenceId, int activityId, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, String route) throws ProcessingModelException {
         // Check if the route exist
-        IActivityHandler handler = activityHandlers.get(route);
-        if(handler == null) {
-            throw new ProcessingModelException("Cannot find activity handler for route " + route);
-        }
-        if(!handler.getSupportedActivityTypes().contains(type)) {
-            throw new ProcessingModelException("The selected activity handler does not support processing of activity type " + type);
-        }
+        IActivityHandler handler = checkHandlerAvailability(route, type);
         // All fine, schedule the dispatch
         this.activityOccurrenceDispatcher.execute(() -> {
             reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.PENDING, ActivityOccurrenceState.RELEASE, null));
@@ -158,6 +152,18 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE, null));
             }
         });
+    }
+
+    public IActivityHandler checkHandlerAvailability(String route, String type) throws ProcessingModelException {
+        // Check if the route exist
+        IActivityHandler handler = activityHandlers.get(route);
+        if(handler == null) {
+            throw new ProcessingModelException("Cannot find activity handler for route " + route);
+        }
+        if(!handler.getSupportedActivityTypes().contains(type)) {
+            throw new ProcessingModelException("The selected activity handler does not support processing of activity type " + type);
+        }
+        return handler;
     }
 
     @Override
