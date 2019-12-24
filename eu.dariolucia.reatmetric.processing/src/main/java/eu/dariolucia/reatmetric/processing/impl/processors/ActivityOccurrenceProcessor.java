@@ -33,6 +33,7 @@ public class ActivityOccurrenceProcessor {
     public static final String CREATION_STAGE_NAME = "Creation";
     public static final String RELEASE_TO_ACTIVITY_HANDLER_STAGE_NAME = "Release to Activity Handler";
     public static final String VERIFICATION_STAGE_NAME = "Verification";
+    public static final String PURGE_STAGE_NAME = "Purge";
 
     private final ActivityProcessor parent;
     private final IUniqueId occurrenceId;
@@ -65,6 +66,11 @@ public class ActivityOccurrenceProcessor {
         return occurrenceId;
     }
 
+    /**
+     * This method initialises the activity occurrence and forwards it to the selected activity handler.
+     *
+     * @return the list of state changes at the end of the dispatching
+     */
     public List<AbstractDataItem> dispatch() {
         // Clear temporary list
         temporaryDataItemList.clear();
@@ -88,6 +94,27 @@ public class ActivityOccurrenceProcessor {
         }
         // Return list
         return List.copyOf(temporaryDataItemList);
+    }
+
+    /**
+     * This method creates an activity occurrence with the given state. The activity occurrence is not forwarded to the
+     * activity handler. This method is used to register activity occurrences that are created externally and not by
+     * the Reatmetric system.
+     *
+     * @param progress the progress information to be used to derive the activity occurrence state
+     * @return the list of state changes at the end of the creation
+     */
+    public List<AbstractDataItem> create(ActivityProgress progress) {
+        // Clear temporary list
+        temporaryDataItemList.clear();
+        // Set the initial state and generate the report for the creation of the activity occurrence (start of the lifecycle)
+        currentState = ActivityOccurrenceState.CREATION;
+        generateReport(CREATION_STAGE_NAME, creationTime,progress.getExecutionTime(), ActivityReportState.OK, progress.getResult(), progress.getState());
+        List<AbstractDataItem> toReturn = new LinkedList<>(temporaryDataItemList);
+        // Process the progress state
+        toReturn.addAll(progress(progress));
+        // Return list
+        return toReturn;
     }
 
     private void forwardOccurrence() throws ProcessingModelException {
@@ -248,6 +275,24 @@ public class ActivityOccurrenceProcessor {
         return false;
     }
 
+    public List<AbstractDataItem> purge() {
+        if(currentState == ActivityOccurrenceState.COMPLETION) {
+            // Activity occurrence in its final state, update discarded
+            if(LOG.isLoggable(Level.WARNING)) {
+                LOG.warning(String.format("Purge request for activity occurrence %s of activity %s discarded, activity occurrence already completed", occurrenceId, parent.getPath()));
+            }
+            return Collections.emptyList();
+        }
+        // Clear temporary list
+        temporaryDataItemList.clear();
+        // Abort timeout
+        abortTimeout();
+        // Move to COMPLETION state
+        generateReport(PURGE_STAGE_NAME, Instant.now(), null, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETION);
+        // Return list
+        return List.copyOf(temporaryDataItemList);
+    }
+
     public List<AbstractDataItem> evaluate() {
         // Clear temporary list
         temporaryDataItemList.clear();
@@ -307,4 +352,5 @@ public class ActivityOccurrenceProcessor {
     public Instant executionTime() {
         return executionTime;
     }
+
 }

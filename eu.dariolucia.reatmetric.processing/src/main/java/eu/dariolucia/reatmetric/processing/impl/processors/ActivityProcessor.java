@@ -26,8 +26,12 @@ import eu.dariolucia.reatmetric.processing.input.ActivityRequest;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityProcessingDefinition, ActivityOccurrenceData, ActivityProgress> {
+
+    private final static Logger LOG = Logger.getLogger(ActivityProcessor.class.getName());
 
     private final Map<IUniqueId, ActivityOccurrenceProcessor> id2occurrence = new ConcurrentHashMap<>();
     private final Map<String, ArgumentDefinition> name2argumentDefinition = new TreeMap<>();
@@ -171,7 +175,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         }
     }
 
-    public List<AbstractDataItem> create(ActivityRequest request, ActivityProgress progress) throws ProcessingModelException {
+    public List<AbstractDataItem> create(ActivityRequest request, ActivityProgress progress) {
         // Build the map of activity arguments with the corresponding raw values
         Map<String, Object> name2value = new TreeMap<>();
         for(ActivityArgument arg : request.getArguments()) {
@@ -184,10 +188,12 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     @Override
-    public List<AbstractDataItem> process(ActivityProgress input) throws ProcessingModelException {
+    public List<AbstractDataItem> process(ActivityProgress input) {
         ActivityOccurrenceProcessor aop = id2occurrence.get(input.getOccurrenceId());
         if(aop == null) {
-            // TODO: log with WARNING
+            if(LOG.isLoggable(Level.WARNING)) {
+                LOG.warning("No activity occurrence with ID " + input.getOccurrenceId() + " found, progress report not processed");
+            }
             return Collections.emptyList();
         } else {
             return removeActivityOccurrenceIfCompleted(input.getOccurrenceId(), aop.progress(input));
@@ -195,7 +201,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     @Override
-    public List<AbstractDataItem> evaluate() throws ProcessingModelException {
+    public List<AbstractDataItem> evaluate() {
         // Copy the keys
         Set<IUniqueId> keys = new HashSet<>(id2occurrence.keySet());
         List<AbstractDataItem> result = new LinkedList<>();
@@ -208,7 +214,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     public List<AbstractDataItem> evaluate(IUniqueId occurrenceId) {
         ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
         if(aop == null) {
-            // TODO: log with WARNING
+            if(LOG.isLoggable(Level.WARNING)) {
+                LOG.warning("No activity occurrence with ID " + occurrenceId + " found, evaluation not processed");
+            }
             return Collections.emptyList();
         } else {
             return removeActivityOccurrenceIfCompleted(occurrenceId, aop.evaluate());
@@ -218,7 +226,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     public List<AbstractDataItem> purge(IUniqueId occurrenceId) {
         ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
         if(aop == null) {
-            // TODO: log with WARNING
+            if(LOG.isLoggable(Level.WARNING)) {
+                LOG.warning("No activity occurrence with ID " + occurrenceId + " found, purge request not processed");
+            }
             return Collections.emptyList();
         } else {
             return removeActivityOccurrenceIfCompleted(occurrenceId, aop.purge());
