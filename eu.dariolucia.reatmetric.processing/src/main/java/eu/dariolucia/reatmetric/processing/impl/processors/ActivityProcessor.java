@@ -61,7 +61,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                 throw new ProcessingModelException("Argument " + arg.getName() + " set with engineering value not matching the argument engineering value definition type " + argDef.getEngineeringType());
             }
             if(arg.getRawValue() != null && !ValueUtil.typeMatch(argDef.getRawType(), arg.getRawValue())) {
-                throw new ProcessingModelException("Argument " + arg.getName() + " set with engineering value not matching the argument raw value definition type " + argDef.getRawType());
+                throw new ProcessingModelException("Argument " + arg.getName() + " set with raw value not matching the argument raw value definition type " + argDef.getRawType());
             }
             // If it is engineering value and there is a decalibration function, decalibrate
             Object finalValue = arg.getRawValue() != null ? arg.getRawValue() : arg.getEngValue();
@@ -121,7 +121,12 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             }
         }
         // At this stage, the map name2value is complete and everything is setup according to definition
-        ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), Instant.now(), name2value, request.getProperties(), new LinkedList<>(), request.getRoute());
+        Map<String, String> properties = new TreeMap<>();
+        for(KeyValue kv : definition.getProperties()) {
+            properties.put(kv.getKey(), kv.getValue());
+        }
+        properties.putAll(request.getProperties());
+        ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), Instant.now(), name2value, properties, new LinkedList<>(), request.getRoute());
         id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
         return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.dispatch());
     }

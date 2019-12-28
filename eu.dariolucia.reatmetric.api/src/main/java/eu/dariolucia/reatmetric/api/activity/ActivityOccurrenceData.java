@@ -114,4 +114,21 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
     public Object getResult() {
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "ActivityOccurrenceData{" +
+                "externalId=" + externalId +
+                ", name='" + name + '\'' +
+                ", path=" + path +
+                ", type='" + type + '\'' +
+                ", arguments=" + arguments +
+                ", properties=" + properties +
+                ", progressReports=" + progressReports +
+                ", route='" + route + '\'' +
+                ", executionTime=" + executionTime +
+                ", currentState=" + currentState +
+                ", result=" + result +
+                "} " + super.toString();
+    }
 }

@@ -42,13 +42,13 @@ public class ActivityProcessingDefinition extends AbstractProcessingDefinition {
     private String defaultRoute;
 
     @XmlAttribute(name = "transmissionTimeout")
-    private int transmissionTimeout = 0; // in seconds
+    private int transmissionTimeout = 0; // in seconds, 0 means disabled
 
     @XmlAttribute(name = "executionTimeout")
-    private int executionTimeout = 0; // in seconds
+    private int executionTimeout = 0; // in seconds, 0 means disabled
 
     @XmlAttribute(name = "verificationTimeout")
-    private int verificationTimeout = 5; // in seconds
+    private int verificationTimeout = 0; // in seconds, 0 means disabled
 
     @XmlElement(name = "argument")
     private List<ArgumentDefinition> arguments = new LinkedList<>();

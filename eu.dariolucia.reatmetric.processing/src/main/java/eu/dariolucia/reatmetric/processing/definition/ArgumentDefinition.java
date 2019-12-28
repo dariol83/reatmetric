@@ -17,9 +17,9 @@ import java.util.List;
 public class ArgumentDefinition {
 
     @XmlAttribute(name = "name", required = true)
-    private String name = "";
+    private String name;
 
-    @XmlAttribute(name = "raw_type",required = true)
+    @XmlAttribute(name = "raw_type", required = true)
     private ValueTypeEnum rawType;
 
     @XmlAttribute(name = "eng_type", required = true)
@@ -29,7 +29,7 @@ public class ArgumentDefinition {
     private String unit = "";
 
     @XmlAttribute(name = "fixed")
-    private boolean fixed;
+    private boolean fixed = false;
 
     @XmlElements({
             @XmlElement(name="default_fixed",type=FixedDefaultValue.class),

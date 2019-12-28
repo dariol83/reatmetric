@@ -142,7 +142,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.fine(String.format("Forwarding activity occurrence %s of activity %s to the activity handler on route %s", occurrenceId, path, route));
                 }
-                handler.executeActivity(occurrenceId, activityId, path, type, arguments, properties, route);
+                handler.executeActivity(new IActivityHandler.ActivityInvocation(occurrenceId, activityId, path, type, arguments, properties, route));
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.fine(String.format("Activity occurrence %s forwarded", occurrenceId));
                 }
@@ -225,6 +225,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         } catch (InterruptedException e) {
             throw new ProcessingModelException("Creation of activity occurrence for activity " + type + " request " + request.getId() + " interrupted", e);
         } catch (ExecutionException e) {
+            // TODO: make sure that the correct meaningful exception is propagated back to the caller
             if (e.getCause() instanceof ProcessingModelException) {
                 throw (ProcessingModelException) e.getCause();
             } else {

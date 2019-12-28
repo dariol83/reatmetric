@@ -65,7 +65,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
 
     private void propagateEnablement(boolean enable) {
         // One layer only
-        List<AbstractModelOperation> ops = new ArrayList<>(childProcessors.size());
+        List<AbstractModelOperation<?>> ops = new ArrayList<>(childProcessors.size());
         for(AbstractSystemEntityProcessor proc : childProcessors) {
             ops.add(new EnableDisableOperation(proc.getSystemEntityId(), enable));
         }

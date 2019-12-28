@@ -1,0 +1,43 @@
+<!--
+  ~ Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
+  ~ All rights reserved.
+  ~
+  ~ Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes shall be granted by the author in writing.
+  -->
+
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
+    <parameters>
+        <!-- All types-->
+        <parameter id="#101" location="ROOT.ELEMENT1.PARAM1" description="Parameter 1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
+        <parameter id="#102" location="ROOT.ELEMENT1.PARAM2" description="Parameter 2" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+        <parameter id="#103" location="ROOT.ELEMENT1.PARAM3" description="Parameter 3" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        <parameter id="#104" location="ROOT.ELEMENT1.PARAM4" description="Parameter 4" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="" />
+        <parameter id="#105" location="ROOT.ELEMENT1.PARAM5" description="Parameter 5" raw_type="REAL" eng_type="REAL" eng_unit="" />
+        <parameter id="#106" location="ROOT.ELEMENT2.PARAM1" description="Parameter 6" raw_type="BIT_STRING" eng_type="BIT_STRING" eng_unit="" />
+        <parameter id="#107" location="ROOT.ELEMENT2.PARAM2" description="Parameter 7" raw_type="OCTET_STRING" eng_type="OCTET_STRING" eng_unit="" />
+        <parameter id="#108" location="ROOT.ELEMENT2.PARAM3" description="Parameter 8" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
+        <parameter id="#109" location="ROOT.ELEMENT2.PARAM4" description="Parameter 9" raw_type="ABSOLUTE_TIME" eng_type="ABSOLUTE_TIME" eng_unit="" />
+        <parameter id="#110" location="ROOT.ELEMENT2.PARAM5" description="Parameter 10" raw_type="RELATIVE_TIME" eng_type="RELATIVE_TIME" eng_unit="" />
+    </parameters>
+    <activities>
+        <activity id="#1000" location="ROOT.ELEMENT.ACT1" description="Activity 1" type="TC">
+            <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
+            <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="mV">
+                <default_fixed type="RAW" value="43" />
+            </argument>
+            <argument name="ARG3" raw_type="REAL" eng_type="REAL" eng_unit="mA" fixed="true">
+                <default_fixed type="RAW" value="12.4" />
+            </argument>
+            <argument name="ARG4" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <default_fixed type="ENGINEERING" value="OFF" />
+                <decalib_ienum default="100">
+                    <point input="OFF" value="0" />
+                    <point input="ON" value="1" />
+                    <point input="UNKNOWN" value="100" />
+                </decalib_ienum>
+            </argument>
+            <property key="spacecraft-id" value="100" />
+            <property key="schedule-time" value="2007-12-03T10:15:30.00123Z" />
+        </activity>
+    </activities>
+</ns1:processing>

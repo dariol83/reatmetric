@@ -9,7 +9,6 @@
 package eu.dariolucia.reatmetric.processing;
 
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 import java.util.List;
@@ -23,5 +22,66 @@ public interface IActivityHandler {
 
     List<String> getSupportedActivityTypes();
 
-    void executeActivity(IUniqueId activityOccurrenceId, int activityId, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, String route) throws ActivityHandlingException;
+    void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException;
+
+    class ActivityInvocation {
+        private final IUniqueId activityOccurrenceId;
+        private final int activityId;
+        private final SystemEntityPath path;
+        private final String type;
+        private final Map<String, Object> arguments;
+        private final Map<String, String> properties;
+        private final String route;
+
+        public ActivityInvocation(IUniqueId activityOccurrenceId, int activityId, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, String route) {
+            this.activityOccurrenceId = activityOccurrenceId;
+            this.activityId = activityId;
+            this.path = path;
+            this.type = type;
+            this.arguments = arguments;
+            this.properties = properties;
+            this.route = route;
+        }
+
+        public IUniqueId getActivityOccurrenceId() {
+            return activityOccurrenceId;
+        }
+
+        public int getActivityId() {
+            return activityId;
+        }
+
+        public SystemEntityPath getPath() {
+            return path;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public Map<String, Object> getArguments() {
+            return arguments;
+        }
+
+        public Map<String, String> getProperties() {
+            return properties;
+        }
+
+        public String getRoute() {
+            return route;
+        }
+
+        @Override
+        public String toString() {
+            return "ActivityInvocation{" +
+                    "activityOccurrenceId=" + activityOccurrenceId +
+                    ", activityId=" + activityId +
+                    ", path=" + path +
+                    ", type='" + type + '\'' +
+                    ", arguments=" + arguments +
+                    ", properties=" + properties +
+                    ", route='" + route + '\'' +
+                    '}';
+        }
+    }
 }

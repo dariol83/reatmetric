@@ -60,4 +60,17 @@ public final class ActivityOccurrenceReport extends AbstractDataItem {
     public Object getResult() {
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "ActivityOccurrenceReport{" +
+                "name='" + name + '\'' +
+                ", state=" + state +
+                ", executionTime=" + executionTime +
+                ", status=" + status +
+                ", stateTransition=" + stateTransition +
+                ", result=" + result +
+                ", generationTime=" + generationTime +
+                "} " + super.toString();
+    }
 }
