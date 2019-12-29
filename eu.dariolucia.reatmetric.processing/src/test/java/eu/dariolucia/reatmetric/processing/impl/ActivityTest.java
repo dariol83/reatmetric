@@ -8,6 +8,7 @@
 package eu.dariolucia.reatmetric.processing.impl;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
@@ -66,21 +67,60 @@ class ActivityTest {
         // Register handler
         model.registerActivityHandler(h1);
 
-        // Request activity execution
-        testLogger.info("Invocation 1");
+        // Request activity execution: nominal
+        {
+            outList.clear();
+            testLogger.info("Invocation 1");
 
-        ActivityRequest ar1 = ActivityRequest.newRequest(1000)
-                .withArgument(ActivityArgument.ofSource("ARG1", true))
-                .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
-                .withProperty("custom", "hello world")
-                .withRoute("A")
-                .build();
-        IUniqueId id1 = model.startActivity(ar1);
-        assertEquals(0L, id1.asLong());
+            ActivityRequest ar1 = ActivityRequest.newRequest(1000)
+                    .withArgument(ActivityArgument.ofSource("ARG1", true))
+                    .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
+                    .withProperty("custom", "hello world")
+                    .withRoute("A")
+                    .build();
+            IUniqueId id1 = model.startActivity(ar1);
+            assertEquals(0L, id1.asLong());
 
-        //
-        AwaitUtil.awaitAndVerify(10000, outList::size, 18);
+            //
+            AwaitUtil.awaitAndVerify(10000, outList::size, 18);
 
-        ((ActivityOccurrenceData)outList.get(outList.size() - 1)).getProgressReports().forEach(System.out::println); // TODO remove
+            // Get the final state and check what it contains
+            ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
+            assertEquals("ACT1", state.getName());
+            assertEquals("ROOT.ELEMENT.ACT1", state.getPath().asString());
+            assertEquals(true, state.getArguments().get("ARG1"));
+            assertEquals(43L, state.getArguments().get("ARG2"));
+            assertEquals(12.4, state.getArguments().get("ARG3"));
+            assertEquals(1, state.getArguments().get("ARG4"));
+            assertEquals("hello world", state.getProperties().get("custom"));
+            assertEquals("100", state.getProperties().get("spacecraft-id"));
+            assertEquals("2007-12-03T10:15:30.00123Z", state.getProperties().get("schedule-time"));
+            assertEquals("A", state.getRoute());
+            assertEquals("TC", state.getType());
+            assertNull(state.getResult());
+            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+        }
+
+        // Request activity execution: change of fixed value
+        {
+            outList.clear();
+            testLogger.info("Invocation 1");
+
+            ActivityRequest ar1 = ActivityRequest.newRequest(1000)
+                    .withArgument(ActivityArgument.ofSource("ARG1", true))
+                    .withArgument(ActivityArgument.ofSource("ARG3", 4.5))
+                    .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
+                    .withRoute("A")
+                    .build();
+            try {
+                model.startActivity(ar1);
+                fail("Exception expected: attempt to update of fixed argument ARG3");
+            } catch(ProcessingModelException e) {
+                // good, check exception message
+                e.printStackTrace();
+                assertTrue(e.getMessage().startsWith("Supplied argument ARG3"));
+            }
+        }
+
     }
 }

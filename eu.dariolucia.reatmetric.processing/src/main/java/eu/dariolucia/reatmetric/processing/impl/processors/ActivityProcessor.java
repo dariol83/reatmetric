@@ -17,7 +17,6 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IParameterBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.input.ActivityArgument;
 import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
@@ -63,11 +62,15 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             if(arg.getRawValue() != null && !ValueUtil.typeMatch(argDef.getRawType(), arg.getRawValue())) {
                 throw new ProcessingModelException("Argument " + arg.getName() + " set with raw value not matching the argument raw value definition type " + argDef.getRawType());
             }
+            // Argument is fixed? Then check if there is corresponding value.
+            if(argDef.isFixed()) {
+                checkSameValue(argDef, arg);
+            }
             // If it is engineering value and there is a decalibration function, decalibrate
             Object finalValue = arg.getRawValue() != null ? arg.getRawValue() : arg.getEngValue();
-            if(arg.getRawValue() == null && argDef.getDecalibration() != null) {
+            if(arg.getRawValue() == null) {
                 try {
-                    finalValue = argDef.getDecalibration().calibrate(finalValue, processor);
+                    finalValue = CalibrationDefinition.performCalibration(argDef.getDecalibration(), finalValue, argDef.getRawType(), processor);
                 } catch (CalibrationException e) {
                     throw new ProcessingModelException("Cannot decalibrate argument " + arg.getName() + ": " + e.getMessage(), e);
                 }
@@ -77,6 +80,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         }
         // Verify that all arguments are specified and, if some are not, use the default values if specified. If not, throw exception
         for(ArgumentDefinition ad : definition.getArguments()) {
+            // If the argument was not provided, use the default value
             if(!name2value.containsKey(ad.getName())) {
                 Object finalValue;
                 DefaultValueType valueType = ad.getDefaultValue().getType();
@@ -91,24 +95,24 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                         finalValue = ValueUtil.parse(ad.getRawType(), formattedValue);
                     } else if(valueType ==  DefaultValueType.ENGINEERING) {
                         finalValue = ValueUtil.parse(ad.getEngineeringType(), formattedValue);
-                        if(ad.getDecalibration() != null) {
-                            try {
-                                finalValue = ad.getDecalibration().calibrate(finalValue, processor);
-                            } catch (CalibrationException e) {
-                                throw new ProcessingModelException("Cannot decalibrate default (fixed) value of argument " + ad.getName() + ": " + e.getMessage(), e);
-                            }
+                        try {
+                            finalValue = CalibrationDefinition.performCalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
+                        } catch (CalibrationException e) {
+                            throw new ProcessingModelException("Cannot decalibrate default (fixed) value of argument " + ad.getName() + ": " + e.getMessage(), e);
                         }
                     } else {
                         throw new ProcessingModelException("Default value of argument " + ad.getName() + " has undefined value type: " + valueType);
                     }
                     // If default value comes from another parameter, then retrieve and use it
                 } else if(ad.getDefaultValue() instanceof ReferenceDefaultValue) {
-                    ParameterProcessingDefinition referencedParameter = ((ReferenceDefaultValue) ad.getDefaultValue()).getParameter();
-                    DefaultValueType targetValueToRead = ((ReferenceDefaultValue) ad.getDefaultValue()).getTargetValueType();
-                    finalValue = readTargetValue(ad.getName(), referencedParameter, targetValueToRead);
-                    if(valueType ==  DefaultValueType.ENGINEERING && ad.getDecalibration() != null) {
+                    try {
+                        finalValue = ((ReferenceDefaultValue) ad.getDefaultValue()).readTargetValue(ad.getName(), processor);
+                    } catch (ValueReferenceException e) {
+                        throw new ProcessingModelException(e);
+                    }
+                    if(valueType ==  DefaultValueType.ENGINEERING) {
                         try {
-                            finalValue = ad.getDecalibration().calibrate(finalValue, processor);
+                            finalValue = CalibrationDefinition.performCalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
                         } catch (CalibrationException e) {
                             throw new ProcessingModelException("Cannot decalibrate default (reference) value of argument " + ad.getName() + ": " + e.getMessage(), e);
                         }
@@ -131,17 +135,31 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.dispatch());
     }
 
-    private Object readTargetValue(String argumentName, ParameterProcessingDefinition referencedParameter, DefaultValueType targetValueToRead) throws ProcessingModelException {
-        if(referencedParameter == null) {
-            throw new ProcessingModelException("Argument " + argumentName + " points to a non-existing parameter");
+    private void checkSameValue(ArgumentDefinition argumentDefinition, ActivityArgument suppliedArgument) throws ProcessingModelException {
+        DefaultValueType definedType = argumentDefinition.getDefaultValue().getType();
+        DefaultValueType suppliedType = suppliedArgument.isEngineering() ? DefaultValueType.ENGINEERING : DefaultValueType.RAW;
+        if(definedType != suppliedType) {
+            throw new ProcessingModelException("Supplied argument " + suppliedArgument.getName() + " violates fixed argument type: defined " + definedType + ", but provided " + suppliedType);
         }
-        IParameterBinding entity = (IParameterBinding) processor.resolve(referencedParameter.getId());
-        if(targetValueToRead == DefaultValueType.RAW) {
-            return entity.rawValue();
-        } else if(targetValueToRead == DefaultValueType.ENGINEERING) {
-            return entity.value();
+        Object suppliedValue = suppliedArgument.isEngineering() ? suppliedArgument.getEngValue() : suppliedArgument.getRawValue();
+        if(argumentDefinition.getDefaultValue() instanceof FixedDefaultValue) {
+            String definedValueStr = ((FixedDefaultValue) argumentDefinition.getDefaultValue()).getValue();
+            Object definedValue = ValueUtil.parse(definedType == DefaultValueType.ENGINEERING ? argumentDefinition.getEngineeringType() : argumentDefinition.getRawType(), definedValueStr);
+            if(!Objects.equals(definedValue, suppliedValue)) {
+                throw new ProcessingModelException("Supplied argument " + suppliedArgument.getName() + " violates fixed argument value: defined (fixed) " + definedValue + ", but provided " + suppliedValue);
+            }
+        } else if(argumentDefinition.getDefaultValue() instanceof ReferenceDefaultValue) {
+            Object referencedValue;
+            try {
+                referencedValue = ((ReferenceDefaultValue) argumentDefinition.getDefaultValue()).readTargetValue(argumentDefinition.getName(), processor);
+            } catch (ValueReferenceException e) {
+                throw new ProcessingModelException(e);
+            }
+            if(!Objects.equals(referencedValue, suppliedValue)) {
+                throw new ProcessingModelException("Supplied argument " + suppliedArgument.getName() + " violates fixed argument value: defined (reference to " + ((ReferenceDefaultValue) argumentDefinition.getDefaultValue()).getParameter().getLocation() + ") " + referencedValue + ", but provided " + suppliedValue);
+            }
         } else {
-            throw new ProcessingModelException("Default value of argument " + argumentName + " has undefined value target type: " + targetValueToRead);
+            throw new ProcessingModelException("Supplied argument " + suppliedArgument.getName() + " is fixed but the argument definition does not define a valid default value");
         }
     }
 

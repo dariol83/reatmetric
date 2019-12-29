@@ -123,7 +123,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 if(validity == Validity.VALID) {
                     try {
                         // Calibrate the source value
-                        engValue = calibrate(sourceValue);
+                        engValue = CalibrationDefinition.performCalibration(definition.getCalibration(), sourceValue, definition.getEngineeringType(), this.processor);
                         // Then run checks
                         alarmState = check(engValue, generationTime, newValue == null);
                     } catch (CalibrationException e) {
@@ -244,26 +244,6 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 throw new ProcessingModelException("Source value " + value + " does not match declared source type " + definition.getRawType() + " and cannot be automatically converted", e);
             }
         }
-    }
-
-    private Object calibrate(Object value) throws CalibrationException {
-        // If the value is null, then set to null (no value)
-        if(value == null) {
-            return null;
-        }
-        Object result = value;
-        // Otherwise, calibrate it
-        if(this.definition.getCalibration() != null) {
-            result = this.definition.getCalibration().calibrate(value, this.processor);
-        }
-        // Sanitize, if possible, based on type
-        try {
-            result = ValueUtil.convert(result, definition.getEngineeringType());
-        } catch(ValueException ve) {
-            throw new CalibrationException("Conversion of value " + result + " to output type " + definition.getEngineeringType() + " failed: " + ve.getMessage(), ve);
-        }
-        // Return the result
-        return result;
     }
 
     private AlarmState check(Object engValue, Instant generationTime, boolean reevaluation) {

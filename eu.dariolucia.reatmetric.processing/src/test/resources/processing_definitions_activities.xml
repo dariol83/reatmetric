@@ -31,9 +31,9 @@
             <argument name="ARG4" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
                 <default_fixed type="ENGINEERING" value="OFF" />
                 <decalib_ienum default="100">
-                    <point input="OFF" value="0" />
-                    <point input="ON" value="1" />
-                    <point input="UNKNOWN" value="100" />
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                    <point x="UNKNOWN" y="100" />
                 </decalib_ienum>
             </argument>
             <property key="spacecraft-id" value="100" />

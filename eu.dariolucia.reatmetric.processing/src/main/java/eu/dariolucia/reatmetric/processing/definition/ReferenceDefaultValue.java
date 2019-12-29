@@ -7,10 +7,15 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
+import eu.dariolucia.reatmetric.processing.ProcessingModelException;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.processing.definition.scripting.IParameterBinding;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlIDREF;
+import java.lang.ref.Reference;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ReferenceDefaultValue extends AbstractDefaultValue {
@@ -45,5 +50,23 @@ public class ReferenceDefaultValue extends AbstractDefaultValue {
 
     public void setTargetValueType(DefaultValueType targetValueType) {
         this.targetValueType = targetValueType;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Transient objects
+    // ----------------------------------------------------------------------------------------------------------------
+
+    public Object readTargetValue(String argumentName, IBindingResolver resolver) throws ValueReferenceException {
+        if(this.parameter == null) {
+            throw new ValueReferenceException("Argument " + argumentName + " points to a non-existing parameter");
+        }
+        IParameterBinding entity = (IParameterBinding) resolver.resolve(this.parameter.getId());
+        if(targetValueType == DefaultValueType.RAW) {
+            return entity.rawValue();
+        } else if(targetValueType == DefaultValueType.ENGINEERING) {
+            return entity.value();
+        } else {
+            throw new ValueReferenceException("Default value of argument " + argumentName + " has undefined value target type: " + targetValueType);
+        }
     }
 }

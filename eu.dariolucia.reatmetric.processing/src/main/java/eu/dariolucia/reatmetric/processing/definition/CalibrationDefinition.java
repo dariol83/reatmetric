@@ -8,6 +8,9 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
+import eu.dariolucia.reatmetric.api.value.ValueException;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
 
 import javax.script.ScriptEngine;
@@ -33,5 +36,25 @@ public abstract class CalibrationDefinition {
         } else {
             throw new CalibrationException("Cannot calibrate " + valueToCalibrate + " as input to enumeration calibration: value cannot be converted to long");
         }
+    }
+
+    public static Object performCalibration(CalibrationDefinition definition, Object inputValue, ValueTypeEnum outputType, IBindingResolver resolver) throws CalibrationException {
+        // If the value is null, then set to null (no value)
+        if(inputValue == null) {
+            return null;
+        }
+        Object result = inputValue;
+        // Otherwise, calibrate it
+        if(definition != null) {
+            result = definition.calibrate(inputValue, resolver);
+        }
+        // Sanitize, if possible, based on type
+        try {
+            result = ValueUtil.convert(result, outputType);
+        } catch(ValueException ve) {
+            throw new CalibrationException("Conversion of value " + result + " to output type " + outputType + " failed: " + ve.getMessage(), ve);
+        }
+        // Return the result
+        return result;
     }
 }
