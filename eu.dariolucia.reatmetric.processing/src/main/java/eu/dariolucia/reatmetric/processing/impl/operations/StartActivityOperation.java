@@ -25,6 +25,7 @@ public class StartActivityOperation extends AbstractModelOperation<ActivityProce
     public StartActivityOperation(ActivityRequest input) {
         this.input = input;
         this.time = Instant.now();
+        setAbortOnException(true);
     }
 
     @Override
@@ -40,5 +41,10 @@ public class StartActivityOperation extends AbstractModelOperation<ActivityProce
     @Override
     public int getSystemEntityId() {
         return input.getId();
+    }
+
+    @Override
+    public String toString() {
+        return "'Start Activity " + input.getId() + "'";
     }
 }

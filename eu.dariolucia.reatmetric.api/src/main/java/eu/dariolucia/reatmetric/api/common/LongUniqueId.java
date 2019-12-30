@@ -32,9 +32,7 @@ public class LongUniqueId implements IUniqueId {
 
     @Override
     public String toString() {
-        return "LongUniqueId{" +
-                "id=" + id +
-                '}';
+        return String.valueOf(id);
     }
 
     @Override

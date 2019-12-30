@@ -50,6 +50,11 @@ public class ActivityHandlerStub implements IActivityHandler {
     }
 
     @Override
+    public void deregisterModel(IProcessingModel model) {
+        this.model = null;
+    }
+
+    @Override
     public List<String> getSupportedRoutes() {
         return this.routes;
     }
@@ -62,6 +67,12 @@ public class ActivityHandlerStub implements IActivityHandler {
     @Override
     public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
         LOG.info("Activity invocation: " + activityInvocation);
+        if(model == null) {
+            throw new ActivityHandlingException("Activity handler not registered");
+        }
+        if(unavailableRoutes.contains(activityInvocation.getRoute())) {
+            throw new ActivityHandlingException("Route " + activityInvocation.getRoute() + " currently not available");
+        }
         executor.submit(() -> lifecycle.execute(activityInvocation, model));
     }
 

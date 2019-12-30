@@ -103,7 +103,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 // Check if the working set allows the processing of the items (blocking call)
                 this.workingSet.add(toProcess.getAffectedItems());
                 // Ready to be processed, submit the task
-                this.taskProcessors.submit(toProcess.getTask());
+                this.taskProcessors.submit(toProcess);
             } catch(Exception e) {
                 LOG.log(Level.SEVERE, "Exception when dispatching processing tasks: " + e.getMessage(), e);
             }
@@ -120,7 +120,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations) {
         // Create the processing task
-        ProcessingTask taskToRun = new ProcessingTask(operations, outputRedirector, workingSet);
+        ProcessingTask taskToRun = new ProcessingTask(new ProcessingTask.Job(operations, outputRedirector, workingSet));
         // Add the task to be done to the queue
         updateTaskQueue.add(taskToRun);
         // Done
@@ -221,11 +221,10 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         List<AbstractDataItem> executionResult;
         // Wait for the activity creation
         try {
-            executionResult = pt.getTask().get();
+            executionResult = pt.get();
         } catch (InterruptedException e) {
             throw new ProcessingModelException("Creation of activity occurrence for activity " + type + " request " + request.getId() + " interrupted", e);
         } catch (ExecutionException e) {
-            // TODO: make sure that the correct meaningful exception is propagated back to the caller
             if (e.getCause() instanceof ProcessingModelException) {
                 throw (ProcessingModelException) e.getCause();
             } else {

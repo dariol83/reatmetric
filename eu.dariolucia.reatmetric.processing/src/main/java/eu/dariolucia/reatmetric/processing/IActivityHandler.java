@@ -18,6 +18,8 @@ public interface IActivityHandler {
 
     void registerModel(IProcessingModel model);
 
+    void deregisterModel(IProcessingModel model);
+
     List<String> getSupportedRoutes();
 
     List<String> getSupportedActivityTypes();

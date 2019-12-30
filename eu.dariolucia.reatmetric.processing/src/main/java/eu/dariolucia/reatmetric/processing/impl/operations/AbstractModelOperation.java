@@ -12,6 +12,8 @@ import java.util.function.Supplier;
 
 public abstract class AbstractModelOperation<K extends AbstractSystemEntityProcessor> {
 
+    private boolean abortOnException = false;
+
     private int orderingId;
 
     protected K processor;
@@ -51,5 +53,13 @@ public abstract class AbstractModelOperation<K extends AbstractSystemEntityProce
 
     public void setOrderingId(int orderingId) {
         this.orderingId = orderingId;
+    }
+
+    public boolean isAbortOnException() {
+        return abortOnException;
+    }
+
+    protected void setAbortOnException(boolean abortOnException) {
+        this.abortOnException = abortOnException;
     }
 }

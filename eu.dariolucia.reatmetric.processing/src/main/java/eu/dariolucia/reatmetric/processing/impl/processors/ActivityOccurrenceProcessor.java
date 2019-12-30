@@ -212,7 +212,7 @@ public class ActivityOccurrenceProcessor {
                 }
             } else {
                 if(LOG.isLoggable(Level.FINE)) {
-                    LOG.log(Level.FINE, String.format("Verification of activity occurrence %s of activity %s completed. no expression defined", occurrenceId, parent.getPath()));
+                    LOG.log(Level.FINE, String.format("Verification of activity occurrence %s of activity %s completed: no expression defined", occurrenceId, parent.getPath()));
                 }
                 // If no expression is defined, move currentState to COMPLETION
                 generateReport(VERIFICATION_STAGE_NAME, Instant.now(), null, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETION);

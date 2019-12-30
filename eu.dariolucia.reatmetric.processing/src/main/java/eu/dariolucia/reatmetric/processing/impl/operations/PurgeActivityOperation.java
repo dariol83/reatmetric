@@ -42,4 +42,9 @@ public class PurgeActivityOperation extends AbstractModelOperation<ActivityProce
     public int getSystemEntityId() {
         return input.getFirst();
     }
+
+    @Override
+    public String toString() {
+        return "'Purge Activity " + input.getFirst() + ":" + input.getSecond() + "'";
+    }
 }

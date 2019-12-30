@@ -104,7 +104,7 @@ class ActivityTest {
         // Request activity execution: change of fixed value
         {
             outList.clear();
-            testLogger.info("Invocation 1");
+            testLogger.info("Invocation 2");
 
             ActivityRequest ar1 = ActivityRequest.newRequest(1000)
                     .withArgument(ActivityArgument.ofSource("ARG1", true))
@@ -117,10 +117,19 @@ class ActivityTest {
                 fail("Exception expected: attempt to update of fixed argument ARG3");
             } catch(ProcessingModelException e) {
                 // good, check exception message
-                e.printStackTrace();
                 assertTrue(e.getMessage().startsWith("Supplied argument ARG3"));
             }
         }
 
+        // Deregister handler
+        model.deregisterActivityHandler(h1);
     }
+
+    // TODO: test activity argument decalibration: nominal and error case (wrong type)
+    // TODO: test activity argument default reference value
+    // TODO: test activity argument check: nominal and error case
+    // TODO: test activity creation
+    // TODO: test activity purge
+    // TODO: test activity with verification expression linked to parameter value (equal to argument value: nominal and error case)
+    // TODO: test activity remotely scheduled and then transition to execution (implement new LifecycleStrategy)
 }

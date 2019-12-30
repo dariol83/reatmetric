@@ -39,4 +39,9 @@ public class RaiseEventOperation extends AbstractModelOperation<EventProcessor> 
     public int getSystemEntityId() {
         return input.getId();
     }
+
+    @Override
+    public String toString() {
+        return "'Raise Event " + input.getId() + "'";
+    }
 }

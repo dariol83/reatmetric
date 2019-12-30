@@ -11,59 +11,79 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-// TODO: maybe this must become a FutureTask, for better control over exceptions
-public class ProcessingTask implements Callable<List<AbstractDataItem>> {
+public class ProcessingTask extends FutureTask<List<AbstractDataItem>> {
 
     private static final Logger LOG = Logger.getLogger(ProcessingTask.class.getName());
 
-    private List<AbstractModelOperation<?>> operations;
-    private final Consumer<List<AbstractDataItem>> output;
-    private final Set<Integer> affectedItems;
-    private final WorkingSet workingSet;
-    private final FutureTask<List<AbstractDataItem>> task;
+    private final Job job;
 
-    ProcessingTask(List<AbstractModelOperation<?>> operations, Consumer<List<AbstractDataItem>> output, WorkingSet workingSet) {
-        this.operations = operations;
-        this.output = output;
-        this.workingSet = workingSet;
-        this.affectedItems = new HashSet<>();
-        this.task = new FutureTask<>(this);
+    ProcessingTask(Job toRun) {
+        super(toRun);
+        this.job = toRun;
     }
 
     void prepareTask(GraphModel graphModel) {
-        // Finalize the list by extending it with the necessary re-evaluations, the setting of the processors
-        // and order by topological sort
-        operations = graphModel.finalizeOperationList(operations);
-        // Build the set of affected items by ID
-        for (AbstractModelOperation<?> amo : operations) {
-            this.affectedItems.add(amo.getSystemEntityId());
-        }
-    }
-
-    @Override
-    public List<AbstractDataItem> call() {
-        // XXX: think about having parallel parameter processing by introducing processing levels based on longest-dependency count
-        List<AbstractDataItem> result = new ArrayList<>(operations.size());
-        for (AbstractModelOperation<?> amo : operations) {
-            try {
-                result.addAll(amo.execute());
-            } catch (Exception e) {
-                // You need to survive here!
-                LOG.log(Level.SEVERE, "Cannot process model operation " + amo + ": " + e.getMessage(), e);
-            }
-        }
-        workingSet.remove(affectedItems);
-        // Notify
-        output.accept(result);
-        // Return the result
-        return result;
+        // Delegate
+        job.prepareTask(graphModel);
     }
 
     Set<Integer> getAffectedItems() {
-        return affectedItems;
+        // Delegate
+        return job.getAffectedItems();
     }
 
-    public FutureTask<List<AbstractDataItem>> getTask() {
-        return this.task;
+    public static class Job implements Callable<List<AbstractDataItem>> {
+        private List<AbstractModelOperation<?>> operations;
+        private final Consumer<List<AbstractDataItem>> output;
+        private final Set<Integer> affectedItems;
+        private final WorkingSet workingSet;
+
+        public Job(List<AbstractModelOperation<?>> operations, Consumer<List<AbstractDataItem>> output, WorkingSet workingSet) {
+            this.operations = operations;
+            this.output = output;
+            this.affectedItems = new HashSet<>();
+            this.workingSet = workingSet;
+        }
+
+        @Override
+        public List<AbstractDataItem> call() throws Exception {
+            // XXX: think about having parallel parameter processing by introducing processing levels based on longest-dependency count
+            List<AbstractDataItem> result = new ArrayList<>(operations.size());
+            for (AbstractModelOperation<?> amo : operations) {
+                try {
+                    result.addAll(amo.execute());
+                } catch (Exception e) {
+                    // You need to survive here!
+                    LOG.log(Level.SEVERE, "Cannot process model operation " + amo + ": " + e.getMessage(), e);
+                    // If you have an operation that aborts the update (e.g. activity start), report the cause and exit
+                    if(amo.isAbortOnException()) {
+                        // Remove items
+                        workingSet.remove(affectedItems);
+                        // Report exception
+                        throw e;
+                    }
+                }
+            }
+            // Remove items
+            workingSet.remove(affectedItems);
+            // Notify
+            output.accept(result);
+            // Return the result
+            return result;
+        }
+
+        void prepareTask(GraphModel graphModel) {
+            // Finalize the list by extending it with the necessary re-evaluations, the setting of the processors
+            // and order by topological sort
+            operations = graphModel.finalizeOperationList(operations);
+            // Build the set of affected items by ID
+            for (AbstractModelOperation<?> amo : operations) {
+                this.affectedItems.add(amo.getSystemEntityId());
+            }
+        }
+
+        public Set<Integer> getAffectedItems() {
+            return affectedItems;
+        }
     }
 }

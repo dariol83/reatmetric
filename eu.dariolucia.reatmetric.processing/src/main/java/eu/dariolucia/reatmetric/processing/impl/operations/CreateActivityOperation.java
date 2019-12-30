@@ -24,6 +24,7 @@ public class CreateActivityOperation extends AbstractModelOperation<ActivityProc
     public CreateActivityOperation(ActivityRequest input, ActivityProgress state) {
         this.input = input;
         this.state = state;
+        setAbortOnException(true);
     }
 
     @Override
@@ -39,5 +40,10 @@ public class CreateActivityOperation extends AbstractModelOperation<ActivityProc
     @Override
     public int getSystemEntityId() {
         return input.getId();
+    }
+
+    @Override
+    public String toString() {
+        return "'Create Activity " + input.getId() + "'";
     }
 }

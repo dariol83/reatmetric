@@ -40,4 +40,9 @@ public class EnableDisableOperation extends AbstractModelOperation<AbstractSyste
     public int getSystemEntityId() {
         return id;
     }
+
+    @Override
+    public String toString() {
+        return (enable ? "'Enable " : "'Disable ") + id + "'";
+    }
 }
