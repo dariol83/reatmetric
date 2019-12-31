@@ -57,10 +57,10 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             }
             // Type is correct?
             if(arg.getEngValue() != null && !ValueUtil.typeMatch(argDef.getEngineeringType(), arg.getEngValue())) {
-                throw new ProcessingModelException("Argument " + arg.getName() + " set with engineering value not matching the argument engineering value definition type " + argDef.getEngineeringType());
+                throw new ProcessingModelException("Argument " + arg.getName() + " set with engineering value not matching the argument engineering value definition type " + argDef.getEngineeringType() + ", expected " + argDef.getEngineeringType().getAssignedClass().getSimpleName());
             }
             if(arg.getRawValue() != null && !ValueUtil.typeMatch(argDef.getRawType(), arg.getRawValue())) {
-                throw new ProcessingModelException("Argument " + arg.getName() + " set with raw value not matching the argument raw value definition type " + argDef.getRawType());
+                throw new ProcessingModelException("Argument " + arg.getName() + " set with raw value not matching the argument raw value definition type " + argDef.getRawType() + ", expected " + argDef.getRawType().getAssignedClass().getSimpleName());
             }
             // Argument is fixed? Then check if there is corresponding value.
             if(argDef.isFixed()) {
@@ -168,6 +168,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             if(adi instanceof ActivityOccurrenceData) {
                 ActivityOccurrenceState theState = ((ActivityOccurrenceData) adi).getCurrentState();
                 if(theState == ActivityOccurrenceState.COMPLETION) {
+                    if(LOG.isLoggable(Level.FINER)) {
+                        LOG.finer("Removing activity occurrence " + adi.getInternalId() + " of activity " + getSystemEntityId() + ", since completed");
+                    }
                     id2occurrence.remove(occurrenceId);
                     break;
                 }
@@ -225,6 +228,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
 
     @Override
     public List<AbstractDataItem> evaluate() {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer("Evaluting all activity occurrences for activity " + getSystemEntityId());
+        }
         // Copy the keys
         Set<IUniqueId> keys = new HashSet<>(id2occurrence.keySet());
         List<AbstractDataItem> result = new LinkedList<>();
@@ -235,6 +241,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     public List<AbstractDataItem> evaluate(IUniqueId occurrenceId) {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer("Evaluating activity occurrence " + occurrenceId + " of activity " + getSystemEntityId());
+        }
         ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
         if(aop == null) {
             if(LOG.isLoggable(Level.WARNING)) {

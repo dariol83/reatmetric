@@ -30,11 +30,6 @@ public class ActivityOccurrenceProcessor {
 
     public static final String SELF_BINDING = "self";
 
-    public static final String CREATION_STAGE_NAME = "Creation";
-    public static final String RELEASE_TO_ACTIVITY_HANDLER_STAGE_NAME = "Release to Activity Handler";
-    public static final String VERIFICATION_STAGE_NAME = "Verification";
-    public static final String PURGE_STAGE_NAME = "Purge";
-
     private final ActivityProcessor parent;
     private final IUniqueId occurrenceId;
     private final Instant creationTime;
@@ -76,21 +71,21 @@ public class ActivityOccurrenceProcessor {
         temporaryDataItemList.clear();
         // Set the initial state and generate the report for the creation of the activity occurrence (start of the lifecycle)
         currentState = ActivityOccurrenceState.CREATION;
-        generateReport(CREATION_STAGE_NAME, creationTime,null, ActivityReportState.OK, null, ActivityOccurrenceState.RELEASE);
+        generateReport(ActivityOccurrenceReport.CREATION_REPORT_NAME, creationTime, null, ActivityReportState.OK, null, ActivityOccurrenceState.RELEASE);
         // Forward occurrence to the activity handler
         boolean forwardOk = false;
         Instant nextTime = Instant.now();
         try {
             forwardOccurrence();
             forwardOk = true;
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOG.log(Level.SEVERE, String.format("Failure forwarding activity occurrence %s of activity %s to the activity handler on route %s", occurrenceId, parent.getPath(), route), e);
         }
         // Generate ActivityOccurrenceReport and notify activity release: positive or negative if exception is thrown (FATAL)
-        if(forwardOk) {
-            generateReport(RELEASE_TO_ACTIVITY_HANDLER_STAGE_NAME, nextTime,null, ActivityReportState.OK, null, ActivityOccurrenceState.RELEASE);
+        if (forwardOk) {
+            generateReport(ActivityOccurrenceReport.FORWARDING_REPORT_NAME, nextTime, null, ActivityReportState.OK, null, ActivityOccurrenceState.RELEASE);
         } else {
-            generateReport(RELEASE_TO_ACTIVITY_HANDLER_STAGE_NAME, nextTime,null, ActivityReportState.FATAL, null, ActivityOccurrenceState.COMPLETION);
+            generateReport(ActivityOccurrenceReport.FORWARDING_REPORT_NAME, nextTime, null, ActivityReportState.FATAL, null, ActivityOccurrenceState.COMPLETION);
         }
         // Return list
         return List.copyOf(temporaryDataItemList);
@@ -109,7 +104,7 @@ public class ActivityOccurrenceProcessor {
         temporaryDataItemList.clear();
         // Set the initial state and generate the report for the creation of the activity occurrence (start of the lifecycle)
         currentState = ActivityOccurrenceState.CREATION;
-        generateReport(CREATION_STAGE_NAME, creationTime,progress.getExecutionTime(), ActivityReportState.OK, progress.getResult(), progress.getState());
+        generateReport(ActivityOccurrenceReport.CREATION_REPORT_NAME, creationTime, progress.getExecutionTime(), ActivityReportState.OK, progress.getResult(), progress.getState());
         List<AbstractDataItem> toReturn = new LinkedList<>(temporaryDataItemList);
         // Process the progress state
         toReturn.addAll(progress(progress));
@@ -127,26 +122,36 @@ public class ActivityOccurrenceProcessor {
         ActivityOccurrenceReport report = new ActivityOccurrenceReport(new LongUniqueId(parent.processor.getNextId(ActivityOccurrenceReport.class)), generationTime, null, name, currentState, executionTime, reportState, nextState, result);
         // Add the report to the list
         reports.add(report);
-        // Set the current state
-        currentState = nextState;
+        // Set the current state: prevent going back
+        if(currentState == null || currentState.ordinal() <= nextState.ordinal()) {
+            currentState = nextState;
+        } else {
+            if (LOG.isLoggable(Level.WARNING)) {
+                LOG.warning(String.format("Reported progress %s of activity occurrence %s of activity %s has next state set to %s, but current state is %s, current state not updated", name, occurrenceId, parent.getPath(), nextState, currentState));
+            }
+        }
         // Set the execution time if any
         this.executionTime = executionTime != null ? executionTime : this.executionTime;
         // Generate the ActivityOccurrenceData and add it to the temporary list
         ActivityOccurrenceData activityOccurrenceData = new ActivityOccurrenceData(this.occurrenceId, creationTime, null, parent.getSystemEntityId(), parent.getPath().getLastPathElement(), parent.getPath(), parent.getDefinition().getType(), this.arguments, this.properties, List.copyOf(this.reports), this.route);
         temporaryDataItemList.add(activityOccurrenceData);
+        // If the current state is now COMPLETION, stop the timeout
+        if (currentState == ActivityOccurrenceState.COMPLETION) {
+            abortTimeout();
+        }
     }
 
     public List<AbstractDataItem> progress(ActivityProgress progress) {
-        if(currentState == ActivityOccurrenceState.COMPLETION) {
+        if (currentState == ActivityOccurrenceState.COMPLETION) {
             // Activity occurrence in its final state, update discarded
-            if(LOG.isLoggable(Level.WARNING)) {
+            if (LOG.isLoggable(Level.WARNING)) {
                 LOG.warning(String.format("Reported progress of activity occurrence %s of activity %s completed", occurrenceId, parent.getPath()));
             }
             return Collections.emptyList();
         }
-        if(progress.getNextState() == ActivityOccurrenceState.COMPLETION) {
+        if (progress.getNextState() == ActivityOccurrenceState.COMPLETION) {
             // Progress with COMPLETION as next state is not allowed
-            if(LOG.isLoggable(Level.SEVERE)) {
+            if (LOG.isLoggable(Level.SEVERE)) {
                 LOG.severe(String.format("Reported progress for activity occurrence %s of activity %s has next state set to COMPLETION, which is not supported. Reported states can be up to VERIFICATION.", occurrenceId, parent.getPath()));
             }
             return Collections.emptyList();
@@ -160,62 +165,62 @@ public class ActivityOccurrenceProcessor {
         generateReport(progress.getName(), progress.getGenerationTime(), progress.getExecutionTime(), progress.getStatus(), progress.getResult(), nextState);
 
         // Enable timeout, if the situation is appropriate
-        if(previousState != ActivityOccurrenceState.TRANSMISSION && currentState == ActivityOccurrenceState.TRANSMISSION) {
+        if (previousState != ActivityOccurrenceState.TRANSMISSION && currentState == ActivityOccurrenceState.TRANSMISSION) {
             // If progress triggers the transition to TRANSMISSION, start the TRANSMISSION timeout if specified
-            if(parent.getDefinition().getTransmissionTimeout() > 0) {
+            if (parent.getDefinition().getTransmissionTimeout() > 0) {
                 startTimeout(ActivityOccurrenceState.TRANSMISSION, parent.getDefinition().getTransmissionTimeout());
             }
-        } else if(previousState != ActivityOccurrenceState.SCHEDULING && currentState == ActivityOccurrenceState.SCHEDULING) {
+        } else if (previousState != ActivityOccurrenceState.SCHEDULING && currentState == ActivityOccurrenceState.SCHEDULING) {
             // Stop transmission timeout
             stopTimeout(ActivityOccurrenceState.TRANSMISSION);
-        } else if(previousState != ActivityOccurrenceState.EXECUTION && currentState == ActivityOccurrenceState.EXECUTION) {
+        } else if (previousState != ActivityOccurrenceState.EXECUTION && currentState == ActivityOccurrenceState.EXECUTION) {
             // Stop transmission timeout
             stopTimeout(ActivityOccurrenceState.TRANSMISSION);
             // If progress triggers the transition to EXECUTION, start the EXECUTION timeout if specified
-            if(parent.getDefinition().getExecutionTimeout() > 0) {
+            if (parent.getDefinition().getExecutionTimeout() > 0) {
                 startTimeout(ActivityOccurrenceState.EXECUTION, parent.getDefinition().getExecutionTimeout());
             }
-        } else if(previousState != ActivityOccurrenceState.VERIFICATION && currentState == ActivityOccurrenceState.VERIFICATION) {
+        } else if (previousState != ActivityOccurrenceState.VERIFICATION && currentState == ActivityOccurrenceState.VERIFICATION) {
             // Stop execution timeout
             stopTimeout(ActivityOccurrenceState.EXECUTION);
             // If progress triggers the transition to VERIFICATION, start the VERIFICATION timeout if specified and if an expression is defined
-            if(parent.getDefinition().getVerification() != null && parent.getDefinition().getVerificationTimeout() > 0) {
+            if (parent.getDefinition().getVerification() != null && parent.getDefinition().getVerificationTimeout() > 0) {
                 startTimeout(ActivityOccurrenceState.VERIFICATION, parent.getDefinition().getVerificationTimeout());
             }
             // If an expression is specified, run the expression now as verification (if in the correct state)
-            if(parent.getDefinition().getVerification() != null) {
+            if (parent.getDefinition().getVerification() != null) {
                 try {
                     Boolean verificationResult = (Boolean) parent.getDefinition().getVerification().execute(parent.processor, Map.of(SELF_BINDING, this));
-                    if(verificationResult) {
-                        if(LOG.isLoggable(Level.INFO)) {
+                    if (verificationResult) {
+                        if (LOG.isLoggable(Level.INFO)) {
                             LOG.log(Level.INFO, String.format("Verification of activity occurrence %s of activity %s completed", occurrenceId, parent.getPath()));
                         }
                         // Activity occurrence confirmed by parameter data, add report with OK state and move state to COMPLETION
-                        generateReport(VERIFICATION_STAGE_NAME, Instant.now(), null, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETION);
-                    } else if(parent.getDefinition().getVerificationTimeout() == 0) {
-                        if(LOG.isLoggable(Level.WARNING)) {
+                        generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETION);
+                    } else if (parent.getDefinition().getVerificationTimeout() == 0) {
+                        if (LOG.isLoggable(Level.WARNING)) {
                             LOG.log(Level.WARNING, String.format("Verification of activity occurrence %s of activity %s failed", occurrenceId, parent.getPath()));
                         }
                         // No timeout, so derive the final state now
-                        generateReport(VERIFICATION_STAGE_NAME, Instant.now(), null, ActivityReportState.FAIL, null, ActivityOccurrenceState.COMPLETION);
+                        generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityReportState.FAIL, null, ActivityOccurrenceState.COMPLETION);
                     } else {
-                        if(LOG.isLoggable(Level.FINE)) {
+                        if (LOG.isLoggable(Level.FINE)) {
                             LOG.log(Level.FINE, String.format("Verification of activity occurrence %s of activity %s pending", occurrenceId, parent.getPath()));
                         }
                         // Expression not OK but there is a timeout, announce the PENDING
-                        generateReport(VERIFICATION_STAGE_NAME, Instant.now(), null, ActivityReportState.PENDING, null, ActivityOccurrenceState.VERIFICATION);
+                        generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityReportState.PENDING, null, ActivityOccurrenceState.VERIFICATION);
                     }
-                } catch (ScriptException|ClassCastException e) {
+                } catch (ScriptException | ClassCastException e) {
                     // Expression has a radical error
                     LOG.log(Level.SEVERE, String.format("Error while evaluating verification expression of activity occurrence %s of activity %s: %s", occurrenceId, parent.getPath(), e.getMessage()), e);
-                    generateReport(VERIFICATION_STAGE_NAME, Instant.now(), null, ActivityReportState.ERROR, null, ActivityOccurrenceState.COMPLETION);
+                    generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityReportState.ERROR, null, ActivityOccurrenceState.COMPLETION);
                 }
             } else {
-                if(LOG.isLoggable(Level.FINE)) {
+                if (LOG.isLoggable(Level.FINE)) {
                     LOG.log(Level.FINE, String.format("Verification of activity occurrence %s of activity %s completed: no expression defined", occurrenceId, parent.getPath()));
                 }
                 // If no expression is defined, move currentState to COMPLETION
-                generateReport(VERIFICATION_STAGE_NAME, Instant.now(), null, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETION);
+                generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETION);
             }
         }
         // Verify timeout completions: this can generate an additional ActivityOccurrenceData object
@@ -225,7 +230,10 @@ public class ActivityOccurrenceProcessor {
     }
 
     private void abortTimeout() {
-        if(this.currentTimeoutTask != null) {
+        if (this.currentTimeoutTask != null) {
+            if (LOG.isLoggable(Level.FINER)) {
+                LOG.finer(String.format("Cancelling timeout timer for state %s on activity occurrence %s of activity %s", currentTimeoutState, occurrenceId, parent.getPath()));
+            }
             this.currentTimeoutTask.cancel();
             this.currentTimeoutTask = null;
             this.currentTimeoutState = null;
@@ -234,7 +242,7 @@ public class ActivityOccurrenceProcessor {
     }
 
     private void stopTimeout(ActivityOccurrenceState theState) {
-        if(currentTimeoutState == theState) {
+        if (currentTimeoutState == theState) {
             abortTimeout();
         }
     }
@@ -245,11 +253,14 @@ public class ActivityOccurrenceProcessor {
         // Schedule operation to re-evaluate this occurrence at a given time
         this.currentTimeoutAbsoluteTime = Instant.now().plusSeconds(transmissionTimeout);
         this.currentTimeoutState = theState;
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer(String.format("Starting timeout timer for state %s on activity occurrence %s of activity %s with timeout %s", theState, occurrenceId, parent.getPath(), this.currentTimeoutAbsoluteTime));
+        }
         this.currentTimeoutTask = new TimerTask() {
             @Override
             public void run() {
-                if(currentTimeoutTask == this) {
-                    parent.processor.scheduleTask(Collections.singletonList(new ActivityOccurrenceUpdateOperation(occurrenceId)));
+                if (currentTimeoutTask == this) {
+                    parent.processor.scheduleTask(Collections.singletonList(new ActivityOccurrenceUpdateOperation(parent.getSystemEntityId(), occurrenceId)));
                 }
             }
         };
@@ -257,17 +268,17 @@ public class ActivityOccurrenceProcessor {
     }
 
     private boolean verifyTimeout() {
-        if(currentState == ActivityOccurrenceState.COMPLETION) {
-            // Stop everything
+        if (currentState == ActivityOccurrenceState.COMPLETION) {
+            // Stop the clock
             abortTimeout();
             return false;
         }
         // Check if the current timeout is applicable to the current state and if it is in timeout. If it is the case,
         // then generates a report and stop the timer
-        if(this.currentTimeoutState == this.currentState) {
+        if (this.currentTimeoutState == this.currentState) {
             Instant toCheck = Instant.now();
-            if(this.currentTimeoutTask != null && (toCheck.equals(this.currentTimeoutAbsoluteTime) || toCheck.isAfter(this.currentTimeoutAbsoluteTime))) {
-                generateReport(this.currentState.name() + " Timeout", Instant.now(), null, ActivityReportState.TIMEOUT, null, this.currentState);
+            if (this.currentTimeoutTask != null && (toCheck.equals(this.currentTimeoutAbsoluteTime) || toCheck.isAfter(this.currentTimeoutAbsoluteTime))) {
+                generateReport(currentTimeoutState.getFormatString() + " Timeout", Instant.now(), null, ActivityReportState.TIMEOUT, null, this.currentState);
                 abortTimeout();
                 return true;
             }
@@ -276,9 +287,9 @@ public class ActivityOccurrenceProcessor {
     }
 
     public List<AbstractDataItem> purge() {
-        if(currentState == ActivityOccurrenceState.COMPLETION) {
+        if (currentState == ActivityOccurrenceState.COMPLETION) {
             // Activity occurrence in its final state, update discarded
-            if(LOG.isLoggable(Level.WARNING)) {
+            if (LOG.isLoggable(Level.WARNING)) {
                 LOG.warning(String.format("Purge request for activity occurrence %s of activity %s discarded, activity occurrence already completed", occurrenceId, parent.getPath()));
             }
             return Collections.emptyList();
@@ -288,7 +299,7 @@ public class ActivityOccurrenceProcessor {
         // Abort timeout
         abortTimeout();
         // Move to COMPLETION state
-        generateReport(PURGE_STAGE_NAME, Instant.now(), null, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETION);
+        generateReport(ActivityOccurrenceReport.PURGE_REPORT_NAME, Instant.now(), null, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETION);
         // Return list
         return List.copyOf(temporaryDataItemList);
     }
@@ -299,26 +310,26 @@ public class ActivityOccurrenceProcessor {
         // If currentTimeoutState is applicable, currentTimeoutTask is pending and it is expired, generate ActivityOccurrenceReport accordingly
         boolean expired = verifyTimeout();
         // If currentState is VERIFICATION, check expression: if OK, then announce ActivityOccurrenceReport OK and move to COMPLETION
-        if(currentState == ActivityOccurrenceState.VERIFICATION) {
+        if (currentState == ActivityOccurrenceState.VERIFICATION) {
             try {
                 Boolean verificationResult = (Boolean) parent.getDefinition().getVerification().execute(parent.processor, Map.of(SELF_BINDING, this));
-                if(verificationResult) {
-                    if(LOG.isLoggable(Level.INFO)) {
+                if (verificationResult) {
+                    if (LOG.isLoggable(Level.INFO)) {
                         LOG.log(Level.INFO, String.format("Verification of activity occurrence %s of activity %s completed", occurrenceId, parent.getPath()));
                     }
                     // Activity occurrence confirmed by parameter data, add report with OK state and move state to COMPLETION
-                    generateReport(VERIFICATION_STAGE_NAME, Instant.now(), null, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETION);
-                } else if(expired) {
-                    if(LOG.isLoggable(Level.WARNING)) {
+                    generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETION);
+                } else if (expired) {
+                    if (LOG.isLoggable(Level.WARNING)) {
                         LOG.log(Level.WARNING, String.format("Verification of activity occurrence %s of activity %s failed", occurrenceId, parent.getPath()));
                     }
                     // No timeout, so derive the final state now
-                    generateReport(VERIFICATION_STAGE_NAME, Instant.now(), null, ActivityReportState.FAIL, null, ActivityOccurrenceState.COMPLETION);
+                    generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityReportState.FAIL, null, ActivityOccurrenceState.COMPLETION);
                 }
-            } catch (ScriptException|ClassCastException e) {
+            } catch (ScriptException | ClassCastException e) {
                 // Expression has a radical error
                 LOG.log(Level.SEVERE, String.format("Error while evaluating verification expression of activity occurrence %s of activity %s: %s", occurrenceId, parent.getPath(), e.getMessage()), e);
-                generateReport(VERIFICATION_STAGE_NAME, Instant.now(), null, ActivityReportState.ERROR, null, ActivityOccurrenceState.COMPLETION);
+                generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityReportState.ERROR, null, ActivityOccurrenceState.COMPLETION);
             }
         }
         // Return list

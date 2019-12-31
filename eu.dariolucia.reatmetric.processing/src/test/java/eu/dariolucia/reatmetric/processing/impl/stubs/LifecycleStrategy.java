@@ -28,7 +28,7 @@ public abstract class LifecycleStrategy {
     }
 
     protected void log(IActivityHandler.ActivityInvocation invocation, String message, Exception e) {
-        LOG.log(Level.INFO, String.format("Activity Occurrence %d - %s - %s", invocation.getActivityOccurrenceId().asLong(), invocation.getPath(), message), e);
+        LOG.log(Level.INFO, String.format("Activity occurrence %d - %s - %s", invocation.getActivityOccurrenceId().asLong(), invocation.getPath(), message), e);
     }
 
     protected void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, String name, ActivityReportState reportState, ActivityOccurrenceState occState, ActivityOccurrenceState nextOccState) {

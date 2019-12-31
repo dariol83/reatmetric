@@ -101,7 +101,11 @@ public class ActivityHandlerStub implements IActivityHandler {
         }
 
         public ActivityHandlerStub build() {
-            return new ActivityHandlerStub(routes, types);
+            ActivityHandlerStub stub = new ActivityHandlerStub(routes, types);
+            if(lifecycle != null) {
+                stub.setLifecycle(lifecycle);
+            }
+            return stub;
         }
     }
 }

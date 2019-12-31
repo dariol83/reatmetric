@@ -12,9 +12,11 @@ import java.util.List;
 public class ActivityOccurrenceUpdateOperation extends AbstractModelOperation<ActivityProcessor> {
 
     private final Instant creationTime = Instant.now();
+    private final int activityId;
     private final IUniqueId occurrenceId;
 
-    public ActivityOccurrenceUpdateOperation(IUniqueId occurrenceId) {
+    public ActivityOccurrenceUpdateOperation(int activityId, IUniqueId occurrenceId) {
+        this.activityId = activityId;
         this.occurrenceId = occurrenceId;
     }
 
@@ -30,6 +32,6 @@ public class ActivityOccurrenceUpdateOperation extends AbstractModelOperation<Ac
 
     @Override
     public int getSystemEntityId() {
-        return getProcessor().getSystemEntityId();
+        return activityId;
     }
 }

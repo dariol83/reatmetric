@@ -14,6 +14,12 @@ import java.time.Instant;
 
 public final class ActivityOccurrenceReport extends AbstractDataItem {
 
+    public static final String CREATION_REPORT_NAME = "Creation";
+    public static final String FORWARDING_REPORT_NAME = "Forwarding to Activity Handler";
+    public static final String RELEASE_REPORT_NAME = "Release";
+    public static final String VERIFICATION_REPORT_NAME = "Verification";
+    public static final String PURGE_REPORT_NAME = "Purge";
+
     private final String name; // Always set
     private final ActivityOccurrenceState state; // Always set
     private final Instant executionTime; // If not null, this report provides the activity occurrence execution time (estimated or final)
@@ -71,6 +77,7 @@ public final class ActivityOccurrenceReport extends AbstractDataItem {
                 ", stateTransition=" + stateTransition +
                 ", result=" + result +
                 ", generationTime=" + generationTime +
-                "} " + super.toString();
+                ", id=" + internalId +
+                "}";
     }
 }

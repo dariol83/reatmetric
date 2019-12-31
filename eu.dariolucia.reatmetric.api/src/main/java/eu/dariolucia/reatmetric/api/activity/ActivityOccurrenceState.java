@@ -8,11 +8,21 @@
 package eu.dariolucia.reatmetric.api.activity;
 
 public enum ActivityOccurrenceState {
-    CREATION,
-    RELEASE,
-    TRANSMISSION,
-    SCHEDULING,
-    EXECUTION,
-    VERIFICATION,
-    COMPLETION
+    CREATION("Creation"),
+    RELEASE("Release"),
+    TRANSMISSION("Transmission"),
+    SCHEDULING("Scheduling"),
+    EXECUTION("Execution"),
+    VERIFICATION("Verification"),
+    COMPLETION("Completion");
+
+    String formatString;
+
+    ActivityOccurrenceState(String formatString) {
+        this.formatString = formatString;
+    }
+
+    public String getFormatString() {
+        return formatString;
+    }
 }

@@ -117,18 +117,24 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
 
     @Override
     public String toString() {
-        return "ActivityOccurrenceData{" +
+        StringBuilder sb = new StringBuilder("ActivityOccurrenceData{" +
                 "externalId=" + externalId +
                 ", name='" + name + '\'' +
                 ", path=" + path +
                 ", type='" + type + '\'' +
                 ", arguments=" + arguments +
                 ", properties=" + properties +
-                ", progressReports=" + progressReports +
                 ", route='" + route + '\'' +
                 ", executionTime=" + executionTime +
                 ", currentState=" + currentState +
                 ", result=" + result +
-                "} " + super.toString();
+                "} " + super.toString());
+        if(!progressReports.isEmpty()) {
+            sb.append("\n");
+            for(ActivityOccurrenceReport aor : progressReports) {
+                sb.append("\t").append(aor).append("\n");
+            }
+        }
+        return sb.toString().trim();
     }
 }

@@ -39,5 +39,41 @@
             <property key="spacecraft-id" value="100" />
             <property key="schedule-time" value="2007-12-03T10:15:30.00123Z" />
         </activity>
+        <activity id="#1001" location="ROOT.ELEMENT.ACT2" description="Activity 2" type="TC">
+            <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
+            <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="mV" >
+                <checks>
+                    <limit type="SIGNED_INTEGER" high="10000" low="800" />
+                </checks>
+            </argument>
+            <argument name="ARG3" raw_type="REAL" eng_type="REAL" eng_unit="mA" fixed="true">
+                <default_fixed type="RAW" value="12.4" />
+            </argument>
+            <argument name="ARG4" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <default_ref type="ENGINEERING" parameter="#108" targetValueType="RAW" />
+                <decalib_ienum default="1010">
+                    <point x="OFF" y="10" />
+                    <point x="ON" y="11" />
+                    <point x="UNKNOWN" y="1010" />
+                </decalib_ienum>
+                <checks>
+                    <expected name="EXP1" type="ENUMERATED">
+                        <value>10</value>
+                        <value>11</value>
+                    </expected>
+                </checks>
+            </argument>
+            <property key="spacecraft-id" value="101" />
+        </activity>
+        <activity id="#1002" location="ROOT.ELEMENT.ACT3" description="Activity 3" type="TC" verificationTimeout="5">
+            <argument name="ARG1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+            <verification>
+                <expression>PARAM3.value() == self.argument("ARG1")</expression>
+                <symbol name="PARAM3" reference="#103" />
+            </verification>
+        </activity>
+        <activity id="#1003" location="ROOT.ELEMENT.ACT4" description="Activity 4" type="TC" transmissionTimeout="2" executionTimeout="3">
+            <argument name="ARG1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        </activity>
     </activities>
 </ns1:processing>
