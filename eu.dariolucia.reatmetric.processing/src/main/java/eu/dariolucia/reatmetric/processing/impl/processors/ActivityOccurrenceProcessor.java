@@ -81,10 +81,8 @@ public class ActivityOccurrenceProcessor {
         } catch (Exception e) {
             LOG.log(Level.SEVERE, String.format("Failure forwarding activity occurrence %s of activity %s to the activity handler on route %s", occurrenceId, parent.getPath(), route), e);
         }
-        // Generate ActivityOccurrenceReport and notify activity release: positive or negative if exception is thrown (FATAL)
-        if (forwardOk) {
-            generateReport(ActivityOccurrenceReport.FORWARDING_REPORT_NAME, nextTime, null, ActivityReportState.OK, null, ActivityOccurrenceState.RELEASE);
-        } else {
+        // Generate ActivityOccurrenceReport and notify activity release, negative, if exception is thrown (FATAL)
+        if (!forwardOk) {
             generateReport(ActivityOccurrenceReport.FORWARDING_REPORT_NAME, nextTime, null, ActivityReportState.FATAL, null, ActivityOccurrenceState.COMPLETION);
         }
         // Return list
@@ -113,6 +111,8 @@ public class ActivityOccurrenceProcessor {
     }
 
     private void forwardOccurrence() throws ProcessingModelException {
+        // Notify pending release
+        generateReport(ActivityOccurrenceReport.FORWARDING_REPORT_NAME, Instant.now(), null, ActivityReportState.PENDING, null, ActivityOccurrenceState.RELEASE);
         // Forward to the activity handler
         parent.processor.forwardActivityToHandler(occurrenceId, parent.getSystemEntityId(), parent.getPath(), parent.getDefinition().getType(), arguments, properties, route);
     }

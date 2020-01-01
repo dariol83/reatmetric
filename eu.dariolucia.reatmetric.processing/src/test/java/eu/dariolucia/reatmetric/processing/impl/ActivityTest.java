@@ -13,6 +13,8 @@ import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.LongUniqueId;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
@@ -20,12 +22,14 @@ import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.stubs.ActivityHandlerStub;
 import eu.dariolucia.reatmetric.processing.impl.stubs.NominalLifecycleStrategy;
 import eu.dariolucia.reatmetric.processing.input.ActivityArgument;
+import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.JAXBException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -43,7 +47,6 @@ class ActivityTest {
         packageLogger.setLevel(Level.ALL);
         Arrays.stream(Logger.getLogger("").getHandlers()).forEach(o -> o.setLevel(Level.ALL));
     }
-
 
     @Test
     void testActivity1() throws JAXBException, ProcessingModelException, InterruptedException {
@@ -76,7 +79,7 @@ class ActivityTest {
             assertEquals(0L, id1.asLong());
 
             //
-            AwaitUtil.awaitAndVerify(10000, outList::size, 18);
+            AwaitUtil.awaitAndVerify(10000, outList::size, 17);
 
             // Get the final state and check what it contains
             ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
@@ -131,7 +134,7 @@ class ActivityTest {
             assertEquals(1L, id1.asLong());
 
             //
-            AwaitUtil.awaitAndVerify(10000, outList::size, 18);
+            AwaitUtil.awaitAndVerify(10000, outList::size, 17);
 
             // Get the final state and check what it contains
             ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
@@ -185,7 +188,7 @@ class ActivityTest {
             assertEquals(0L, id1.asLong());
 
             //
-            AwaitUtil.awaitAndVerify(10000, outList::size, 18);
+            AwaitUtil.awaitAndVerify(10000, outList::size, 17);
 
             // Get the final state and check what it contains
             ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
@@ -246,7 +249,7 @@ class ActivityTest {
             assertEquals(1L, id1.asLong());
 
             //
-            AwaitUtil.awaitAndVerify(10000, outList::size, 18);
+            AwaitUtil.awaitAndVerify(10000, outList::size, 17);
 
             // Get the final state and check what it contains
             ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
@@ -295,6 +298,64 @@ class ActivityTest {
     }
 
     @Test
+    void testActivity2WithResult() throws JAXBException, ProcessingModelException, InterruptedException {
+        Logger testLogger = Logger.getLogger(getClass().getName());
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_activities.xml"));
+        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
+        List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
+        // All output data items go in the outList
+        IProcessingModelOutput output = outList::addAll;
+        IProcessingModel model = factory.build(pd, output, null);
+
+        // Create activity handler for route A and type TC
+        ActivityHandlerStub h1 = ActivityHandlerStub.create()
+                .withRoutes("A", "B")
+                .withTypes("TC")
+                .withLifecycle(new NominalLifecycleStrategy(3, 2000, 2, 1000, () -> 4L))
+                .build();
+
+        // Register handler
+        model.registerActivityHandler(h1);
+
+        // Request activity execution: nominal
+        {
+            outList.clear();
+            testLogger.info("Invocation 1");
+
+            ActivityRequest ar1 = ActivityRequest.newRequest(1001)
+                    .withArgument(ActivityArgument.ofSource("ARG1", true))
+                    .withArgument(ActivityArgument.ofEngineering("ARG2", 1000L))
+                    .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
+                    .withProperty("custom", "hello world")
+                    .withRoute("A")
+                    .build();
+            IUniqueId id1 = model.startActivity(ar1);
+            assertEquals(0L, id1.asLong());
+
+            //
+            AwaitUtil.awaitAndVerify(10000, outList::size, 15);
+
+            // Get the final state and check what it contains
+            ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
+            assertEquals("ACT2", state.getName());
+            assertEquals("ROOT.ELEMENT.ACT2", state.getPath().asString());
+            assertEquals(true, state.getArguments().get("ARG1"));
+            assertEquals(1000L, state.getArguments().get("ARG2"));
+            assertEquals(12.4, state.getArguments().get("ARG3"));
+            assertEquals(11, state.getArguments().get("ARG4"));
+            assertEquals("hello world", state.getProperties().get("custom"));
+            assertEquals("101", state.getProperties().get("spacecraft-id"));
+            assertEquals("A", state.getRoute());
+            assertEquals("TC", state.getType());
+            assertEquals(4L, state.getResult());
+            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+        }
+
+        // Deregister handler
+        model.deregisterActivityHandler(h1);
+    }
+
+    @Test
     void testActivity3() throws JAXBException, ProcessingModelException, InterruptedException {
         Logger testLogger = Logger.getLogger(getClass().getName());
         ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_activities.xml"));
@@ -328,7 +389,7 @@ class ActivityTest {
             assertEquals(0L, id1.asLong());
 
             //
-            AwaitUtil.awaitAndVerify(10000, outList::size, 18);
+            AwaitUtil.awaitAndVerify(10000, outList::size, 17);
 
             // Get the final state and check what it contains
             ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
@@ -345,7 +406,7 @@ class ActivityTest {
             model.injectParameters(Collections.singletonList(ParameterSample.of(103, 120)));
 
             //
-            AwaitUtil.awaitAndVerify(10000, outList::size, 20); // Parameter data item plus 1 activity occurrence updates
+            AwaitUtil.awaitAndVerify(10000, outList::size, 19); // Parameter data item plus 1 activity occurrence updates
         }
 
         // Request activity execution: failure
@@ -361,7 +422,7 @@ class ActivityTest {
             assertEquals(1L, id1.asLong());
 
             //
-            AwaitUtil.awaitAndVerify(10000, outList::size, 18);
+            AwaitUtil.awaitAndVerify(10000, outList::size, 17);
 
             // Get the final state and check what it contains
             ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
@@ -374,16 +435,16 @@ class ActivityTest {
             model.injectParameters(Collections.singletonList(ParameterSample.of(103, 122)));
 
             //
-            AwaitUtil.awaitAndVerify(5000, outList::size, 19); // Parameter data item only
+            AwaitUtil.awaitAndVerify(5000, outList::size, 18); // Parameter data item only
 
             // Now inject parameter 103 with 129
             model.injectParameters(Collections.singletonList(ParameterSample.of(103, 129)));
 
             //
-            AwaitUtil.awaitAndVerify(5000, outList::size, 20); // Parameter data item only
+            AwaitUtil.awaitAndVerify(5000, outList::size, 19); // Parameter data item only
 
             // Stop and wait for other 6 seconds max
-            AwaitUtil.awaitAndVerify(5000, outList::size, 22); // Activity occurrence verification timeout + fail
+            AwaitUtil.awaitAndVerify(5000, outList::size, 21); // Activity occurrence verification timeout + fail
 
             state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
             assertEquals("ACT3", state.getName());
@@ -431,9 +492,7 @@ class ActivityTest {
             assertEquals(0L, id1.asLong());
 
             //
-            AwaitUtil.awaitAndVerify(15000, outList::size, 20);
-
-            outList.forEach(System.out::println);
+            AwaitUtil.awaitAndVerify(15000, outList::size, 19);
 
             // Get the final state and check what it contains
             ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
@@ -464,10 +523,139 @@ class ActivityTest {
         model.deregisterActivityHandler(h1);
     }
 
-    // TODO: test activity creation
-    // TODO: test activity purge
-    // TODO: test activity remotely scheduled and then transition to execution (implement new LifecycleStrategy)
-    // TODO: test activity rejection (dynamically unavailable route)
-    // TODO: test activity rejection (random exception - implement new LifecycleStrategy)
-    // TODO: test activity result (update NominalLifecycleStrategy to get a Function)
+    @Test
+    void testActivity1DisabledRoute() throws JAXBException, ProcessingModelException, InterruptedException {
+        Logger testLogger = Logger.getLogger(getClass().getName());
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_activities.xml"));
+        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
+        List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
+        // All output data items go in the outList
+        IProcessingModelOutput output = outList::addAll;
+        IProcessingModel model = factory.build(pd, output, null);
+
+        // Create activity handler for route A and type TC
+        ActivityHandlerStub h1 = ActivityHandlerStub.create().withRoutes("A", "B").withTypes("TC").build();
+
+        // Register handler
+        model.registerActivityHandler(h1);
+
+        // Request activity execution: unavailable route
+        {
+            outList.clear();
+            testLogger.info("Invocation 1");
+
+            // Set route A as unavailable
+            h1.markRouteAsUnavailable("A");
+
+            ActivityRequest ar1 = ActivityRequest.newRequest(1000)
+                    .withArgument(ActivityArgument.ofSource("ARG1", true))
+                    .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
+                    .withRoute("A")
+                    .build();
+
+            IUniqueId id1 = model.startActivity(ar1);
+            assertEquals(0L, id1.asLong());
+
+            //
+            AwaitUtil.awaitAndVerify(5000, outList::size, 3);
+
+            outList.forEach(System.out::println);
+
+            // Get the final state and check what it contains
+            ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
+            assertEquals("ACT1", state.getName());
+            assertEquals("ROOT.ELEMENT.ACT1", state.getPath().asString());
+            assertEquals("A", state.getRoute());
+            assertEquals("TC", state.getType());
+            assertNull(state.getResult());
+            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+        }
+
+        // Deregister handler
+        model.deregisterActivityHandler(h1);
+    }
+
+    @Test
+    void testActivity1CreationPurge() throws JAXBException, ProcessingModelException, InterruptedException {
+        Logger testLogger = Logger.getLogger(getClass().getName());
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_activities.xml"));
+        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
+        List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
+        // All output data items go in the outList
+        IProcessingModelOutput output = outList::addAll;
+        IProcessingModel model = factory.build(pd, output, null);
+
+        // Create activity handler for route A and type TC
+        ActivityHandlerStub h1 = ActivityHandlerStub.create().withRoutes("A", "B").withTypes("TC").build();
+        // Make sure to reject invocations: the creation of an activity occurrence shall not be dispatched
+        h1.setRejectInvocations(true);
+        // Register handler
+        model.registerActivityHandler(h1);
+
+        // Request activity creation
+        {
+            outList.clear();
+            testLogger.info("Invocation 1");
+
+            ActivityRequest ar1 = ActivityRequest.newRequest(1000)
+                    .withArgument(ActivityArgument.ofSource("ARG1", true))
+                    .withArgument(ActivityArgument.ofSource("ARG2", 104L))
+                    .withArgument(ActivityArgument.ofSource("ARG3", 7.9))
+                    .withArgument(ActivityArgument.ofSource("ARG4", 0))
+                    .withRoute("C")
+                    .build();
+
+            // Null occurrence ID, not relevant as it goes together with the activity request
+            ActivityProgress pr1 = ActivityProgress.of(1000, null, "Scheduled", Instant.now(), ActivityOccurrenceState.SCHEDULING, ActivityReportState.OK);
+
+            IUniqueId id1 = model.createActivity(ar1, pr1);
+            assertEquals(0L, id1.asLong());
+
+            //
+            AwaitUtil.awaitAndVerify(5000, outList::size, 2);
+
+            // Get the final state and check what it contains
+            ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
+            assertEquals("ACT1", state.getName());
+            assertEquals("ROOT.ELEMENT.ACT1", state.getPath().asString());
+            assertEquals(true, state.getArguments().get("ARG1"));
+            assertEquals(104L, state.getArguments().get("ARG2"));
+            assertEquals(7.9, state.getArguments().get("ARG3"));
+            assertEquals(0, state.getArguments().get("ARG4"));
+            assertEquals("C", state.getRoute());
+            assertEquals("TC", state.getType());
+            assertNull(state.getResult());
+            assertEquals(ActivityOccurrenceState.SCHEDULING, state.getCurrentState());
+        }
+
+        // Request activity purge
+        {
+            outList.clear();
+            testLogger.info("Invocation 2");
+
+            // Invoke purge
+            model.purgeActivities(Collections.singletonList(Pair.of(1000, new LongUniqueId(0))));
+
+            //
+            AwaitUtil.awaitAndVerify(5000, outList::size, 1);
+
+            // Get the final state and check what it contains
+            ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
+            assertEquals("ACT1", state.getName());
+            assertEquals("ROOT.ELEMENT.ACT1", state.getPath().asString());
+            assertEquals(true, state.getArguments().get("ARG1"));
+            assertEquals(104L, state.getArguments().get("ARG2"));
+            assertEquals(7.9, state.getArguments().get("ARG3"));
+            assertEquals(0, state.getArguments().get("ARG4"));
+            assertEquals("C", state.getRoute());
+            assertEquals("TC", state.getType());
+            assertNull(state.getResult());
+            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+        }
+
+        // Deregister handler
+        model.deregisterActivityHandler(h1);
+    }
+
+    // TODO: test activity remotely scheduled and then transition to execution (implement new LifecycleStrategy): show that execution timeout does not expire while in scheduling
 }

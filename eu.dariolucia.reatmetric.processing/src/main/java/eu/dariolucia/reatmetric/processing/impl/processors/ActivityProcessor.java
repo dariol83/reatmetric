@@ -229,7 +229,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     @Override
     public List<AbstractDataItem> evaluate() {
         if(LOG.isLoggable(Level.FINER)) {
-            LOG.finer("Evaluting all activity occurrences for activity " + getSystemEntityId());
+            LOG.finer("Evaluating all activity occurrences for activity " + getSystemEntityId());
         }
         // Copy the keys
         Set<IUniqueId> keys = new HashSet<>(id2occurrence.keySet());
@@ -256,6 +256,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     public List<AbstractDataItem> purge(IUniqueId occurrenceId) {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer("Purging activity occurrence " + occurrenceId + " of activity " + getSystemEntityId());
+        }
         ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
         if(aop == null) {
             if(LOG.isLoggable(Level.WARNING)) {

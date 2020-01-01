@@ -137,7 +137,6 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         IActivityHandler handler = checkHandlerAvailability(route, type);
         // All fine, schedule the dispatch
         this.activityOccurrenceDispatcher.execute(() -> {
-            reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.PENDING, ActivityOccurrenceState.RELEASE, null));
             try {
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.fine(String.format("Forwarding activity occurrence %s of activity %s to the activity handler on route %s", occurrenceId, path, route));

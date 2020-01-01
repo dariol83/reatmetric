@@ -12,21 +12,29 @@ import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.processing.IProcessingModel;
 
+import java.util.function.Supplier;
+
 public class NominalLifecycleStrategy extends LifecycleStrategy {
 
     private int transmissionStateCount = 3;
     private int transmissionTime = 1000;
     private int executionStateCount = 3;
     private int executionTime = 3000;
+    private Supplier<Object> resultSupplier = () -> null;
 
     public NominalLifecycleStrategy() {
     }
 
     public NominalLifecycleStrategy(int transmissionStateCount, int transmissionTime, int executionStateCount, int executionTime) {
+        this(transmissionStateCount, transmissionTime, executionStateCount, executionTime, () -> null);
+    }
+
+    public NominalLifecycleStrategy(int transmissionStateCount, int transmissionTime, int executionStateCount, int executionTime, Supplier<Object> resultSupplier) {
         this.transmissionStateCount = transmissionStateCount;
         this.transmissionTime = transmissionTime;
         this.executionStateCount = executionStateCount;
         this.executionTime = executionTime;
+        this.resultSupplier = resultSupplier;
     }
 
     @Override
@@ -57,7 +65,7 @@ public class NominalLifecycleStrategy extends LifecycleStrategy {
             int executionForEachState = executionTime / executionStateCount;
             for (int i = 0; i < executionStateCount; ++i) {
                 Thread.sleep(executionForEachState);
-                announce(activityInvocation, model, "E" + i, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, i != executionStateCount - 1 ? ActivityOccurrenceState.EXECUTION : ActivityOccurrenceState.VERIFICATION);
+                announce(activityInvocation, model, "E" + i, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, i != executionStateCount - 1 ? ActivityOccurrenceState.EXECUTION : ActivityOccurrenceState.VERIFICATION, null, i == executionStateCount - 1 ? this.resultSupplier.get() : null);
             }
             log(activityInvocation, "Execution completed");
         } catch(Exception e) {
