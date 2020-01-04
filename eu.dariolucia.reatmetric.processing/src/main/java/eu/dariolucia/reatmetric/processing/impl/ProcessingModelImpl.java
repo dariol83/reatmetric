@@ -23,6 +23,7 @@ import eu.dariolucia.reatmetric.processing.definition.scripting.IEntityBinding;
 import eu.dariolucia.reatmetric.processing.impl.graph.GraphModel;
 import eu.dariolucia.reatmetric.processing.impl.operations.*;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
+import eu.dariolucia.reatmetric.processing.impl.processors.ActivityProcessor;
 import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
@@ -38,7 +39,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-// TODO: implement a way to get the set of the currently running activity occurrences. Add method to IProcessingModel.
 public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private static final Logger LOG = Logger.getLogger(ProcessingModelImpl.class.getName());
@@ -77,6 +77,12 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     private final Map<String, IActivityHandler> activityHandlers = new ConcurrentHashMap<>();
 
     private final Consumer<List<AbstractDataItem>> outputRedirector;
+
+    /**
+     * The set of running activity processors, i.e. those processors that have at least one activity occurrence currently
+     * loaded.
+     */
+    private final Set<ActivityProcessor> activeActivityProcessors = new HashSet<>();
 
     public ProcessingModelImpl(ProcessingDefinition processingDefinition, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialSequencerMap) throws ProcessingModelException {
         this.processingDefinition = processingDefinition;
@@ -179,6 +185,18 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         return handler;
     }
 
+    public void registerActiveActivityProcessor(ActivityProcessor ap) {
+        synchronized (this.activeActivityProcessors) {
+            this.activeActivityProcessors.add(ap);
+        }
+    }
+
+    public void deregisterInactiveActivityProcessor(ActivityProcessor ap) {
+        synchronized (this.activeActivityProcessors) {
+            this.activeActivityProcessors.remove(ap);
+        }
+    }
+
     @Override
     public void injectParameters(List<ParameterSample> sampleList) {
         // Build the list of operations to be performed
@@ -225,6 +243,16 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         List<AbstractModelOperation<?>> operations = activityOccurrenceIds.stream().map(PurgeActivityOperation::new).collect(Collectors.toList());
         // Schedule task
         scheduleTask(operations, USER_DISPATCHING_QUEUE);
+    }
+
+    @Override
+    public List<ActivityOccurrenceData> getActiveActivityOccurrences() {
+        synchronized (this.activeActivityProcessors) {
+            return this.activeActivityProcessors.stream()
+                    .map(ActivityProcessor::getActiveActivityOccurrences) // Get the List of ActivityOccurrenceData
+                    .flatMap(Collection::stream) // Flatten the list
+                    .collect(Collectors.toList()); // Collect everything in a single list
+        }
     }
 
     private IUniqueId scheduleActivityOperation(ActivityRequest request, List<AbstractModelOperation<?>> operations, String type) throws ProcessingModelException {

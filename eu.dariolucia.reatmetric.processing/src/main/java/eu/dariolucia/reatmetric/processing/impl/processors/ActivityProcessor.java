@@ -13,6 +13,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
@@ -25,8 +26,10 @@ import eu.dariolucia.reatmetric.processing.input.ActivityRequest;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityProcessingDefinition, ActivityOccurrenceData, ActivityProgress> {
 
@@ -132,7 +135,10 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         properties.putAll(request.getProperties());
         ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), Instant.now(), name2value, properties, new LinkedList<>(), request.getRoute());
         id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
-        // TODO: inform the processor that the activity occurrence has been created
+        // inform the processor that the activity occurrence has been created, use equality to 1 to avoid calling the registration for every activity
+        if(id2occurrence.size() == 1) {
+            processor.registerActiveActivityProcessor(this);
+        }
         return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.dispatch());
     }
 
@@ -173,10 +179,13 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                         LOG.finer("Removing activity occurrence " + adi.getInternalId() + " of activity " + getSystemEntityId() + ", since completed");
                     }
                     id2occurrence.remove(occurrenceId);
-                    // TODO: inform the processor that the activity occurrence was removed
                     break;
                 }
             }
+        }
+        // If at this stage there are no occurrences, this activity processor is not active anymore
+        if(id2occurrence.isEmpty()) {
+            processor.deregisterInactiveActivityProcessor(this);
         }
         return result;
     }
@@ -212,7 +221,10 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         //
         ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), progress.getGenerationTime(), name2value, request.getProperties(), new LinkedList<>(), request.getRoute());
         id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
-        // TODO: inform the processor that the activity occurrence has been created
+        // inform the processor that the activity occurrence has been created, check equality to 1 to avoid calling the registration for every occurrence
+        if(id2occurrence.size() == 1) {
+            processor.registerActiveActivityProcessor(this);
+        }
         return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.create(progress));
     }
 
@@ -271,5 +283,23 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         } else {
             return removeActivityOccurrenceIfCompleted(occurrenceId, aop.purge());
         }
+    }
+
+    @Override
+    public void initialise(List<ActivityOccurrenceData> state, SystemEntity entityState) {
+        this.entityState = entityState;
+        for(ActivityOccurrenceData aod : state) {
+            if(aod.getCurrentState() != ActivityOccurrenceState.COMPLETION) {
+                id2occurrence.put(aod.getInternalId(), new ActivityOccurrenceProcessor(this, aod));
+            }
+        }
+        // inform the processor that the activity occurrences have been created (if that is the case)
+        if(!id2occurrence.isEmpty()) {
+            processor.registerActiveActivityProcessor(this);
+        }
+    }
+
+    public List<ActivityOccurrenceData> getActiveActivityOccurrences() {
+        return id2occurrence.values().stream().map(Supplier::get).collect(Collectors.toList());
     }
 }

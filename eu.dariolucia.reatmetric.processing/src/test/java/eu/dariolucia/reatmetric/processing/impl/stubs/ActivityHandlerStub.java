@@ -78,6 +78,12 @@ public class ActivityHandlerStub implements IActivityHandler {
         if(unavailableRoutes.contains(activityInvocation.getRoute())) {
             throw new ActivityHandlingException("Route " + activityInvocation.getRoute() + " currently not available");
         }
+        if(!types.contains(activityInvocation.getType())) {
+            throw new ActivityHandlingException("Type " + activityInvocation.getType() + " not supported");
+        }
+        if(activityInvocation.getArguments() == null) {
+            throw new ActivityHandlingException("Activity invocation has null argument map");
+        }
         executor.submit(() -> lifecycle.execute(activityInvocation, model));
     }
 

@@ -22,10 +22,11 @@ import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
 import javax.script.ScriptException;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ActivityOccurrenceProcessor {
+public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceData> {
 
     private static final Logger LOG = Logger.getLogger(ActivityOccurrenceProcessor.class.getName());
 
@@ -46,7 +47,9 @@ public class ActivityOccurrenceProcessor {
     private Instant currentTimeoutAbsoluteTime;
     private TimerTask currentTimeoutTask;
 
-    private List<ActivityOccurrenceData> temporaryDataItemList = new ArrayList<>(10);
+    private final List<ActivityOccurrenceData> temporaryDataItemList = new ArrayList<>(10);
+
+    private ActivityOccurrenceData lastGeneratedState = null;
 
     public ActivityOccurrenceProcessor(ActivityProcessor parent, IUniqueId occurrenceId, Instant creationTime, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> reports, String route) {
         this.parent = parent;
@@ -56,6 +59,13 @@ public class ActivityOccurrenceProcessor {
         this.properties = Collections.unmodifiableMap(properties);
         this.reports = reports;
         this.route = route;
+    }
+
+    public ActivityOccurrenceProcessor(ActivityProcessor parent, ActivityOccurrenceData occurrenceToRestore) {
+        this(parent, occurrenceToRestore.getInternalId(), occurrenceToRestore.getGenerationTime(), occurrenceToRestore.getArguments(), occurrenceToRestore.getProperties(), occurrenceToRestore.getProgressReports(), occurrenceToRestore.getRoute());
+        this.currentState = occurrenceToRestore.getCurrentState();
+        this.executionTime = occurrenceToRestore.getExecutionTime();
+        this.lastGeneratedState = occurrenceToRestore;
     }
 
     public IUniqueId getOccurrenceId() {
@@ -140,6 +150,8 @@ public class ActivityOccurrenceProcessor {
         if (currentState == ActivityOccurrenceState.COMPLETION) {
             abortTimeout();
         }
+        // Set the last generated state
+        this.lastGeneratedState = activityOccurrenceData;
     }
 
     public List<AbstractDataItem> progress(ActivityProgress progress) {
@@ -365,4 +377,8 @@ public class ActivityOccurrenceProcessor {
         return executionTime;
     }
 
+    @Override
+    public ActivityOccurrenceData get() {
+        return lastGeneratedState;
+    }
 }

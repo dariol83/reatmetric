@@ -92,8 +92,8 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         return entityState;
     }
 
-    public final void initialise(T state, SystemEntity entityState) {
-        this.state = state;
+    public void initialise(List<T> state, SystemEntity entityState) {
+        this.state = state.isEmpty() ? null : state.get(0);
         this.entityState = entityState;
     }
 }

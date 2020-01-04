@@ -5,10 +5,6 @@ public class ProcessingModelException extends Exception {
         super(s);
     }
 
-    public ProcessingModelException(Throwable cause) {
-        super(cause);
-    }
-
     public ProcessingModelException(String message, Throwable cause) {
         super(message, cause);
     }

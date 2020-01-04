@@ -688,6 +688,8 @@ class ActivityTest {
             IUniqueId id1 = model.startActivity(ar1);
             assertEquals(0L, id1.asLong());
 
+            AwaitUtil.awaitCondition(4000, () -> outList.size() > 0);
+            assertEquals(1, model.getActiveActivityOccurrences().size());
             //
             AwaitUtil.awaitAndVerify(15000, outList::size, 20);
 
@@ -715,6 +717,8 @@ class ActivityTest {
             }
             assertTrue(tTimeoutFound); // Timeout in transmission
             assertFalse(eTimeoutFound); // No timeout in execution
+
+            assertEquals(0, model.getActiveActivityOccurrences().size());
         }
 
         // Deregister handler

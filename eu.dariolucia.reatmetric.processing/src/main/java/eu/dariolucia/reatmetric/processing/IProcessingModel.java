@@ -8,6 +8,7 @@
 
 package eu.dariolucia.reatmetric.processing;
 
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
@@ -30,7 +31,9 @@ public interface IProcessingModel {
 
     void reportActivityProgress(ActivityProgress progress);
 
-    void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds);
+    void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) throws ProcessingModelException;
+
+    List<ActivityOccurrenceData> getActiveActivityOccurrences();
 
     ProcessingDefinition getProcessingDefinition();
 

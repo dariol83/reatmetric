@@ -16,8 +16,4 @@ public class ActivityHandlingException extends Exception {
     public ActivityHandlingException(String message, Throwable cause) {
         super(message, cause);
     }
-
-    public ActivityHandlingException(Throwable cause) {
-        super(cause);
-    }
 }
