@@ -132,6 +132,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         properties.putAll(request.getProperties());
         ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), Instant.now(), name2value, properties, new LinkedList<>(), request.getRoute());
         id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
+        // TODO: inform the processor that the activity occurrence has been created
         return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.dispatch());
     }
 
@@ -172,6 +173,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                         LOG.finer("Removing activity occurrence " + adi.getInternalId() + " of activity " + getSystemEntityId() + ", since completed");
                     }
                     id2occurrence.remove(occurrenceId);
+                    // TODO: inform the processor that the activity occurrence was removed
                     break;
                 }
             }
@@ -210,6 +212,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         //
         ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), progress.getGenerationTime(), name2value, request.getProperties(), new LinkedList<>(), request.getRoute());
         id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
+        // TODO: inform the processor that the activity occurrence has been created
         return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.create(progress));
     }
 
