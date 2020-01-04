@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.processing.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.stubs.ActivityHandlerStub;
 import eu.dariolucia.reatmetric.processing.impl.stubs.NominalLifecycleStrategy;
+import eu.dariolucia.reatmetric.processing.impl.stubs.SchedulingLifecycleStrategy;
 import eu.dariolucia.reatmetric.processing.input.ActivityArgument;
 import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.processing.input.ActivityRequest;
@@ -402,7 +403,6 @@ class ActivityTest {
             assertEquals(ActivityOccurrenceState.VERIFICATION, state.getCurrentState());
 
             // Now inject parameter 103 with 120
-            AwaitUtil.await(1000);
             model.injectParameters(Collections.singletonList(ParameterSample.of(103, 120)));
 
             //
@@ -559,8 +559,6 @@ class ActivityTest {
             //
             AwaitUtil.awaitAndVerify(5000, outList::size, 3);
 
-            outList.forEach(System.out::println);
-
             // Get the final state and check what it contains
             ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
             assertEquals("ACT1", state.getName());
@@ -657,5 +655,70 @@ class ActivityTest {
         model.deregisterActivityHandler(h1);
     }
 
-    // TODO: test activity remotely scheduled and then transition to execution (implement new LifecycleStrategy): show that execution timeout does not expire while in scheduling
+    @Test
+    void testActivity4Scheduled() throws JAXBException, ProcessingModelException, InterruptedException {
+        Logger testLogger = Logger.getLogger(getClass().getName());
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_activities.xml"));
+        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
+        List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
+        // All output data items go in the outList
+        IProcessingModelOutput output = outList::addAll;
+        IProcessingModel model = factory.build(pd, output, null);
+
+        // Create activity handler for route A and type TC
+        ActivityHandlerStub h1 = ActivityHandlerStub.create()
+                .withRoutes("A", "B")
+                .withTypes("TC")
+                .withLifecycle(new SchedulingLifecycleStrategy(3, 4000, 3, 1000))
+                .build();
+
+        // Register handler
+        model.registerActivityHandler(h1);
+
+        // Request activity execution: nominal
+        {
+            outList.clear();
+            testLogger.info("Invocation 1");
+            // Invoke
+            ActivityRequest ar1 = ActivityRequest.newRequest(1003)
+                    .withArgument(ActivityArgument.ofSource("ARG1", 120L))
+                    .withProperty(SchedulingLifecycleStrategy.SCHEDULED_EXECUTION_TIME_KEY, Instant.now().plusSeconds(10).toString())
+                    .withRoute("A")
+                    .build();
+            IUniqueId id1 = model.startActivity(ar1);
+            assertEquals(0L, id1.asLong());
+
+            //
+            AwaitUtil.awaitAndVerify(15000, outList::size, 20);
+
+            // Get the final state and check what it contains
+            ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);
+            assertEquals("ACT4", state.getName());
+            assertEquals("ROOT.ELEMENT.ACT4", state.getPath().asString());
+            assertEquals(120L, state.getArguments().get("ARG1"));
+            assertEquals("A", state.getRoute());
+            assertEquals("TC", state.getType());
+            assertNull(state.getResult());
+            assertNotNull(state.getExecutionTime());
+            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+
+            // Verify the two timeouts
+            boolean tTimeoutFound = false;
+            boolean eTimeoutFound = false;
+            for(ActivityOccurrenceReport aor : state.getProgressReports()) {
+                if(aor.getName().equals("Transmission Timeout")) {
+                    tTimeoutFound = true;
+                }
+                if(aor.getName().equals("Execution Timeout")) {
+                    eTimeoutFound = true;
+                }
+            }
+            assertTrue(tTimeoutFound); // Timeout in transmission
+            assertFalse(eTimeoutFound); // No timeout in execution
+        }
+
+        // Deregister handler
+        model.deregisterActivityHandler(h1);
+    }
+
 }

@@ -38,6 +38,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+// TODO: implement a parallel queue or executor to process activity-related operations (create, start, purge) bypassing the potential backlog coming from telemetry processing
+// TODO: implement a way to get the set of the currently running activity occurrences. Add method to IProcessingModel.
 public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private static final Logger LOG = Logger.getLogger(ProcessingModelImpl.class.getName());

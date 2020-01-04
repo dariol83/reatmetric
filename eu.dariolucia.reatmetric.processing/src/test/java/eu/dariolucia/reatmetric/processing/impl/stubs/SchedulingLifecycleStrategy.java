@@ -12,33 +12,36 @@ import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.processing.IProcessingModel;
 
+import java.time.Instant;
 import java.util.function.Supplier;
 
-public class NominalLifecycleStrategy extends LifecycleStrategy {
+/**
+ * This lifecycle strategy reads a specific property (as per SCHEDULED_EXECUTION_TIME_KEY constant) to resume the execution
+ * of the activity occurrence at the specified point in time.
+ */
+public class SchedulingLifecycleStrategy extends NominalLifecycleStrategy {
 
-    protected int transmissionStateCount = 3;
-    protected int transmissionTime = 1000;
-    protected int executionStateCount = 3;
-    protected int executionTime = 3000;
-    protected Supplier<Object> resultSupplier = () -> null;
+    public static final String SCHEDULED_EXECUTION_TIME_KEY = "scheduled-execution-time";
 
-    public NominalLifecycleStrategy() {
+    public SchedulingLifecycleStrategy() {
+        super();
     }
 
-    public NominalLifecycleStrategy(int transmissionStateCount, int transmissionTime, int executionStateCount, int executionTime) {
-        this(transmissionStateCount, transmissionTime, executionStateCount, executionTime, () -> null);
+    public SchedulingLifecycleStrategy(int transmissionStateCount, int transmissionTime, int executionStateCount, int executionTime) {
+        super(transmissionStateCount, transmissionTime, executionStateCount, executionTime, () -> null);
     }
 
-    public NominalLifecycleStrategy(int transmissionStateCount, int transmissionTime, int executionStateCount, int executionTime, Supplier<Object> resultSupplier) {
-        this.transmissionStateCount = transmissionStateCount;
-        this.transmissionTime = transmissionTime;
-        this.executionStateCount = executionStateCount;
-        this.executionTime = executionTime;
-        this.resultSupplier = resultSupplier;
+    public SchedulingLifecycleStrategy(int transmissionStateCount, int transmissionTime, int executionStateCount, int executionTime, Supplier<Object> resultSupplier) {
+        super(transmissionStateCount, transmissionTime, executionStateCount, executionTime, resultSupplier);
     }
 
     @Override
     public void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
+        String scheduledExecTime = activityInvocation.getProperties().get(SCHEDULED_EXECUTION_TIME_KEY);
+        Instant absExecTime = null;
+        if(scheduledExecTime != null && !scheduledExecTime.isBlank()) {
+            absExecTime = Instant.parse(scheduledExecTime);
+        }
         try {
             log(activityInvocation, "Release finalisation");
             announce(activityInvocation, model, "Final Release", ActivityReportState.OK, ActivityOccurrenceState.RELEASE, ActivityOccurrenceState.TRANSMISSION);
@@ -49,7 +52,7 @@ public class NominalLifecycleStrategy extends LifecycleStrategy {
             int transmissionForEachState = transmissionTime / transmissionStateCount;
             for (int i = 0; i < transmissionStateCount; ++i) {
                 Thread.sleep(transmissionForEachState);
-                announce(activityInvocation, model, "T" + i, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION, i != transmissionStateCount - 1 ? ActivityOccurrenceState.TRANSMISSION : ActivityOccurrenceState.EXECUTION);
+                announce(activityInvocation, model, "T" + i, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION, i != transmissionStateCount - 1 ? ActivityOccurrenceState.TRANSMISSION : ActivityOccurrenceState.SCHEDULING);
             }
             log(activityInvocation, "Transmission completed");
         } catch(Exception e) {
@@ -57,6 +60,19 @@ public class NominalLifecycleStrategy extends LifecycleStrategy {
             announce(activityInvocation, model, "Error", ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
             return;
         }
+        // Wait the amount specified in the property
+        if(absExecTime != null) {
+            announce(activityInvocation, model, "Scheduling Time", ActivityReportState.PENDING, ActivityOccurrenceState.SCHEDULING);
+            long timeToSleep = absExecTime.toEpochMilli() - System.currentTimeMillis();
+            try {
+                Thread.sleep(timeToSleep);
+            } catch (InterruptedException e) {
+                log(activityInvocation, "Scheduling time interrupted");
+            }
+        }
+        // Move to EXECUTION
+        announce(activityInvocation, model, "Scheduling Time", ActivityReportState.OK, ActivityOccurrenceState.SCHEDULING, ActivityOccurrenceState.EXECUTION, Instant.now(), null);
+        // Execute
         try {
             log(activityInvocation, "Execution started");
             for (int i = 0; i < executionStateCount; ++i) {
@@ -73,5 +89,4 @@ public class NominalLifecycleStrategy extends LifecycleStrategy {
             announce(activityInvocation, model, "Error", ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION);
         }
     }
-
 }

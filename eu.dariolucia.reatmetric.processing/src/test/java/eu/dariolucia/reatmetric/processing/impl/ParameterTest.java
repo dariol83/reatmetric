@@ -44,7 +44,7 @@ class ParameterTest {
     }
 
     @Test
-    void testBatteryModel() throws JAXBException, ProcessingModelException, InterruptedException {
+    void testBasicCapabilities() throws JAXBException, ProcessingModelException, InterruptedException {
         Logger testLogger = Logger.getLogger(getClass().getName());
         ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
         ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
