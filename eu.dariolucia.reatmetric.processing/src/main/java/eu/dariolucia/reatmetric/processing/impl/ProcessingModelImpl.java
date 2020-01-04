@@ -38,14 +38,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-// TODO: implement a parallel queue or executor to process activity-related operations (create, start, purge) bypassing the potential backlog coming from telemetry processing
 // TODO: implement a way to get the set of the currently running activity occurrences. Add method to IProcessingModel.
 public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private static final Logger LOG = Logger.getLogger(ProcessingModelImpl.class.getName());
 
     private static final int UPDATE_TASK_CAPACITY = 1000;
+
     public static final String FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME = "Forwarding to Activity Handler";
+
+    public static final int USER_DISPATCHING_QUEUE = 0;
+    public static final int TM_DISPATCHING_QUEUE = 1;
 
     private final ProcessingDefinition processingDefinition;
 
@@ -55,17 +58,19 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private final GraphModel graphModel;
 
-    private final BlockingQueue<ProcessingTask> updateTaskQueue = new ArrayBlockingQueue<>(UPDATE_TASK_CAPACITY);
+    private final BlockingQueue<ProcessingTask> tmUpdateTaskQueue = new ArrayBlockingQueue<>(UPDATE_TASK_CAPACITY);
+    private final BlockingQueue<ProcessingTask> activityUpdateTaskQueue = new ArrayBlockingQueue<>(UPDATE_TASK_CAPACITY);
 
-    private final ExecutorService taskProcessors = ThreadUtil.newCachedThreadExecutor("Reatmetric Task Processor");
+    private final ExecutorService taskProcessors = ThreadUtil.newCachedThreadExecutor("Reatmetric Processing - Task Processor");
 
-    private final ExecutorService dispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing Dispatcher");
+    private final ExecutorService tmDispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing - TM Dispatcher");
+    private final ExecutorService activityDispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing - Activity Dispatcher");
 
-    private final ExecutorService notifier = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing Notifier");
+    private final ExecutorService notifier = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing - Notifier");
 
-    private final ExecutorService activityOccurrenceDispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Activity Occurrence Dispatcher");
+    private final ExecutorService activityOccurrenceDispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing - Activity Occurrence Dispatcher");
 
-    private final Timer operationScheduler = new Timer("Reatmetric Processing Scheduler", true);
+    private final Timer operationScheduler = new Timer("Reatmetric Processing - Scheduler", true);
 
     private final WorkingSet workingSet = new WorkingSet();
 
@@ -85,8 +90,9 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the graph model and compute the topological sort
         graphModel = new GraphModel(processingDefinition, this);
         graphModel.build();
-        // Activate the dispatcher
-        dispatcher.submit(this::doDispatch);
+        // Activate the dispatchers
+        tmDispatcher.submit(() -> doDispatch(tmDispatcher, tmUpdateTaskQueue));
+        activityDispatcher.submit(() -> doDispatch(activityDispatcher, activityUpdateTaskQueue));
         // Create redirector that uses the asynchronous notifier
         outputRedirector = createOutputRedirector();
     }
@@ -95,11 +101,11 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         return items -> notifier.submit(() -> output.notifyUpdate(items));
     }
 
-    private void doDispatch() {
-        while(!dispatcher.isShutdown()) {
+    private void doDispatch(ExecutorService executor, BlockingQueue<ProcessingTask> queue) {
+        while(!executor.isShutdown()) {
             try {
                 // Get the task
-                ProcessingTask toProcess = this.updateTaskQueue.take();
+                ProcessingTask toProcess = queue.take();
                 // Prepare the task
                 toProcess.prepareTask(graphModel);
                 // Check if the working set allows the processing of the items (blocking call)
@@ -120,11 +126,18 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         return updateSequencerMap.computeIfAbsent(type, o -> new AtomicLong(0)).getAndIncrement();
     }
 
-    public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations) {
+    public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations, int dispatchingQueue) {
         // Create the processing task
         ProcessingTask taskToRun = new ProcessingTask(new ProcessingTask.Job(operations, outputRedirector, workingSet));
         // Add the task to be done to the queue
-        updateTaskQueue.add(taskToRun);
+        switch(dispatchingQueue) {
+            case USER_DISPATCHING_QUEUE:
+                activityUpdateTaskQueue.add(taskToRun);
+                break;
+            default:
+                tmUpdateTaskQueue.add(taskToRun);
+                break;
+        }
         // Done
         return taskToRun;
     }
@@ -132,7 +145,6 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     public void scheduleAt(Instant executionDate, TimerTask task) {
         this.operationScheduler.schedule(task, new Date(executionDate.toEpochMilli()));
     }
-
 
     public void forwardActivityToHandler(IUniqueId occurrenceId, int activityId, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, String route) throws ProcessingModelException {
         // Check if the route exist
@@ -172,7 +184,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = sampleList.stream().map(ParameterSampleProcessOperation::new).collect(Collectors.toList());
         // Schedule task
-        scheduleTask(operations);
+        scheduleTask(operations, TM_DISPATCHING_QUEUE);
     }
 
     @Override
@@ -180,7 +192,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new RaiseEventOperation(event));
         // Schedule task
-        scheduleTask(operations);
+        scheduleTask(operations, TM_DISPATCHING_QUEUE);
     }
 
     @Override
@@ -204,7 +216,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new ReportActivityProgressOperation(progress));
         // Schedule task
-        scheduleTask(operations);
+        scheduleTask(operations, TM_DISPATCHING_QUEUE);
     }
 
     @Override
@@ -212,12 +224,12 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = activityOccurrenceIds.stream().map(PurgeActivityOperation::new).collect(Collectors.toList());
         // Schedule task
-        scheduleTask(operations);
+        scheduleTask(operations, USER_DISPATCHING_QUEUE);
     }
 
     private IUniqueId scheduleActivityOperation(ActivityRequest request, List<AbstractModelOperation<?>> operations, String type) throws ProcessingModelException {
         // Schedule task
-        ProcessingTask pt = scheduleTask(operations);
+        ProcessingTask pt = scheduleTask(operations, USER_DISPATCHING_QUEUE);
 
         List<AbstractDataItem> executionResult;
         // Wait for the activity creation
@@ -276,7 +288,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new EnableDisableOperation(id, b));
         // Schedule task
-        scheduleTask(operations);
+        scheduleTask(operations, USER_DISPATCHING_QUEUE);
     }
 
     @Override

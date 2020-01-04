@@ -15,6 +15,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.processing.ProcessingModelException;
+import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.ActivityOccurrenceUpdateOperation;
 import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
 
@@ -260,7 +261,7 @@ public class ActivityOccurrenceProcessor {
             @Override
             public void run() {
                 if (currentTimeoutTask == this) {
-                    parent.processor.scheduleTask(Collections.singletonList(new ActivityOccurrenceUpdateOperation(parent.getSystemEntityId(), occurrenceId)));
+                    parent.processor.scheduleTask(Collections.singletonList(new ActivityOccurrenceUpdateOperation(parent.getSystemEntityId(), occurrenceId)), ProcessingModelImpl.USER_DISPATCHING_QUEUE);
                 }
             }
         };
