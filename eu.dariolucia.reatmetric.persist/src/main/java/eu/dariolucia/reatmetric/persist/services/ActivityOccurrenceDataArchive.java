@@ -16,6 +16,7 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,7 +28,10 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
     private static final String REPORT_STORE_STATEMENT = "INSERT INTO ACTIVITY_REPORT_DATA_TABLE(UniqueId,GenerationTime,Name,ExecutionTime,State,NextState,ReportStatus,Result,ActivityOccurrenceId,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?)";
 
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM EVENT_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
-    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ExternalId,Name,Path,Qualifier,ReceptionTime,Type,Route,Source,Severity,ContainerId,Report,AdditionalData FROM EVENT_DATA_TABLE WHERE UniqueId=?";
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT ao.UniqueId,ao.GenerationTime,ao.ExternalId,ao.Name,ao.Path,ao.Type,ao.Route,ao.Source,ao.Arguments,ao.Properties,ao.AdditionalData," +
+            "r.UniqueId,r.GenerationTime,r.Name,r.ExecutionTime,r.State,r.NextState,r.ReportStatus,r.Result,r.ActivityOccurrenceId,r.AdditionalData " +
+            "FROM ACTIVITY_OCCURRENCE_DATA_TABLE AS ao JOIN ACTIVITY_REPORT_DATA_TABLE AS r ON ao.UniqueId == r.ActivityOccurrenceId " +
+            "WHERE ao.UniqueId=? ORDER BY r.GenerationTime ASC, r.UniqueId ASC";
 
     private PreparedStatement occurrenceStoreStatement;
     private PreparedStatement reportStoreStatement;
@@ -114,7 +118,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         storeStatement.setString(6, item.getType());
         storeStatement.setString(7, item.getRoute());
         storeStatement.setString(8, ""); // TODO: add source to the activity occurrence
-        storeStatement.setBlob(9, toInputstream(item.getProperties()));
+        storeStatement.setBlob(9, toInputstream(item.getArguments()));
         storeStatement.setBlob(10, toInputstream(item.getProperties()));
         storeStatement.setBlob(11, toInputstreamArray(item.getAdditionalFields()));
     }
@@ -151,21 +155,42 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                     try {
                         // Build an empty activity occurrence
                         if(temporaryResult == null) {
-                            // TODO
+                            temporaryResult = mapToOccurrenceItem(rs, reports);
                         }
                         // Build the report and add it to the list
-                        // TODO
+                        reports.add(mapToReportItem(rs, 11));
                     } catch (IOException | ClassNotFoundException e) {
                         throw new SQLException(e);
                     }
                 }
                 // Build the final activity occurrence
-                // TODO
+                result = new ActivityOccurrenceData(temporaryResult.getInternalId(), temporaryResult.getGenerationTime(),
+                        temporaryResult.getAdditionalFields(), temporaryResult.getExternalId(), temporaryResult.getName(),
+                        temporaryResult.getPath(), temporaryResult.getType(), temporaryResult.getArguments(),
+                        temporaryResult.getProperties(), reports, temporaryResult.getRoute());
             } finally {
                 connection.commit();
             }
         }
         return result;
+    }
+
+    private ActivityOccurrenceData mapToOccurrenceItem(ResultSet rs, List<ActivityOccurrenceReport> reports) throws SQLException, IOException, ClassNotFoundException {
+        long uniqueId = rs.getLong(1);
+        Timestamp genTime = rs.getTimestamp(2);
+        int externalId = rs.getInt(3);
+        String name = rs.getString(4);
+        String path = rs.getString(5);
+        String type = rs.getString(6);
+        String route = rs.getString(7);
+        String source = rs.getString(8);
+        Map<String, Object> arguments = (Map<String, Object>) toObject(rs.getBlob(9));
+        Map<String, String> properties = (Map<String, String>) toObject(rs.getBlob(10));
+        Object[] additionalDataArray = toObjectArray(rs.getBlob(11));
+
+        return new ActivityOccurrenceData(new LongUniqueId(uniqueId), toInstant(genTime),
+                additionalDataArray, externalId, name, SystemEntityPath.fromString(path),
+                type, arguments, properties, reports, route);
     }
 
     @Override
