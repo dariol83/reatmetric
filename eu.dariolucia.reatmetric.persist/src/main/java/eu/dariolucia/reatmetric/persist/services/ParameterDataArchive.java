@@ -1,6 +1,7 @@
 package eu.dariolucia.reatmetric.persist.services;
 
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -199,5 +200,10 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
     @Override
     public String toString() {
         return "Parameter Data Archive";
+    }
+
+    @Override
+    protected Class<ParameterData> getMainType() {
+        return ParameterData.class;
     }
 }

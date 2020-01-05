@@ -7,6 +7,7 @@ import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.IOException;
@@ -133,5 +134,10 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
     @Override
     public String toString() {
         return "Event Data Archive";
+    }
+
+    @Override
+    protected Class<EventData> getMainType() {
+        return EventData.class;
     }
 }

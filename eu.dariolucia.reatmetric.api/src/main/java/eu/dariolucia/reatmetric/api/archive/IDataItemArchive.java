@@ -67,9 +67,21 @@ public interface IDataItemArchive<T extends AbstractDataItem, K extends Abstract
      */
     T retrieve(IUniqueId uniqueId) throws ArchiveException;
 
-    void store(T message) throws ArchiveException;
+    /**
+     * Store the provided item.
+     *
+     * @param item the item to store
+     * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the store operation to be completed successfully
+     */
+    void store(T item) throws ArchiveException;
 
-    void store(List<T> messages) throws ArchiveException;
+    /**
+     * Store the provided items.
+     *
+     * @param items the item to store
+     * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the store operation to be completed successfully
+     */
+    void store(List<T> items) throws ArchiveException;
 
     /**
      * Retrieve the last stored unique ID for the data item handled by this archive service.
@@ -78,6 +90,15 @@ public interface IDataItemArchive<T extends AbstractDataItem, K extends Abstract
      * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the retrieval operation to be completed successfully
      */
     IUniqueId retrieveLastId() throws ArchiveException;
+
+    /**
+     * Retrieve the last stored unique ID for the specified data item type handled by this archive service.
+     *
+     * @param type the class of the data item type
+     * @return the last unique ID or 0 if there is none
+     * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the retrieval operation to be completed successfully
+     */
+    IUniqueId retrieveLastId(Class<? extends AbstractDataItem> type) throws ArchiveException;
 
     /**
      * Close and dispose this archive service. Further calls to store/retrieve operations will throw an exception.

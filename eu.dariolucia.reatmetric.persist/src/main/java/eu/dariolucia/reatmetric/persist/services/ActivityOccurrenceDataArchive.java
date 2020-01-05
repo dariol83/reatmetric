@@ -1,22 +1,17 @@
 package eu.dariolucia.reatmetric.persist.services;
 
 import eu.dariolucia.reatmetric.api.activity.*;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.events.EventData;
-import eu.dariolucia.reatmetric.api.events.EventDataFilter;
-import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
-import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -27,11 +22,13 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
     private static final String OCCURRENCE_STORE_STATEMENT = "INSERT INTO ACTIVITY_OCCURRENCE_DATA_TABLE(UniqueId,GenerationTime,ExternalId,Name,Path,Type,Route,Source,Arguments,Properties,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
     private static final String REPORT_STORE_STATEMENT = "INSERT INTO ACTIVITY_REPORT_DATA_TABLE(UniqueId,GenerationTime,Name,ExecutionTime,State,NextState,ReportStatus,Result,ActivityOccurrenceId,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?)";
 
-    private static final String LAST_ID_QUERY = "SELECT UniqueId FROM EVENT_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
-    private static final String RETRIEVE_BY_ID_QUERY = "SELECT ao.UniqueId,ao.GenerationTime,ao.ExternalId,ao.Name,ao.Path,ao.Type,ao.Route,ao.Source,ao.Arguments,ao.Properties,ao.AdditionalData," +
+    private static final String OCCURRENCE_LAST_ID_QUERY = "SELECT UniqueId FROM ACTIVITY_OCCURRENCE_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
+    private static final String REPORT_LAST_ID_QUERY = "SELECT UniqueId FROM ACTIVITY_REPORT_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
+
+    private static final String START_FULL_JOIN_QUERY = "SELECT ao.UniqueId,ao.GenerationTime,ao.ExternalId,ao.Name,ao.Path,ao.Type,ao.Route,ao.Source,ao.Arguments,ao.Properties,ao.AdditionalData," +
             "r.UniqueId,r.GenerationTime,r.Name,r.ExecutionTime,r.State,r.NextState,r.ReportStatus,r.Result,r.ActivityOccurrenceId,r.AdditionalData " +
-            "FROM ACTIVITY_OCCURRENCE_DATA_TABLE AS ao JOIN ACTIVITY_REPORT_DATA_TABLE AS r ON ao.UniqueId == r.ActivityOccurrenceId " +
-            "WHERE ao.UniqueId=? ORDER BY r.GenerationTime ASC, r.UniqueId ASC";
+            "FROM ACTIVITY_OCCURRENCE_DATA_TABLE AS ao JOIN ACTIVITY_REPORT_DATA_TABLE AS r ON ao.UniqueId == r.ActivityOccurrenceId ";
+    private static final String RETRIEVE_BY_ID_QUERY = START_FULL_JOIN_QUERY + "WHERE ao.UniqueId=? ORDER BY r.GenerationTime ASC, r.UniqueId ASC";
 
     private PreparedStatement occurrenceStoreStatement;
     private PreparedStatement reportStoreStatement;
@@ -164,15 +161,34 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                     }
                 }
                 // Build the final activity occurrence
-                result = new ActivityOccurrenceData(temporaryResult.getInternalId(), temporaryResult.getGenerationTime(),
-                        temporaryResult.getAdditionalFields(), temporaryResult.getExternalId(), temporaryResult.getName(),
-                        temporaryResult.getPath(), temporaryResult.getType(), temporaryResult.getArguments(),
-                        temporaryResult.getProperties(), reports, temporaryResult.getRoute());
+                if(temporaryResult != null) {
+                    result = new ActivityOccurrenceData(temporaryResult.getInternalId(), temporaryResult.getGenerationTime(),
+                            temporaryResult.getAdditionalFields(), temporaryResult.getExternalId(), temporaryResult.getName(),
+                            temporaryResult.getPath(), temporaryResult.getType(), temporaryResult.getArguments(),
+                            temporaryResult.getProperties(), reports, temporaryResult.getRoute());
+                }
             } finally {
                 connection.commit();
             }
         }
         return result;
+    }
+
+    private ActivityOccurrenceReport mapToReportItem(ResultSet rs, int offset) throws SQLException, IOException, ClassNotFoundException {
+        long uniqueId = rs.getLong(offset + 1);
+        Timestamp genTime = rs.getTimestamp(offset + 2);
+        String name = rs.getString(offset + 3);
+        Timestamp execTime = rs.getTimestamp(offset + 4);
+        if(rs.wasNull()) {
+            execTime = null;
+        }
+        ActivityOccurrenceState state = ActivityOccurrenceState.values()[rs.getShort(offset + 5)];
+        ActivityOccurrenceState nextState = ActivityOccurrenceState.values()[rs.getShort(offset + 6)];
+        ActivityReportState reportStatus = ActivityReportState.values()[rs.getShort(offset + 7)];
+        Object result = toObject(rs.getBlob(offset + 8));
+        Object[] additionalDataArray = toObjectArray(rs.getBlob(offset + 10));
+
+        return new ActivityOccurrenceReport(new LongUniqueId(uniqueId),toInstant(genTime),additionalDataArray, name, state, toInstant(execTime),reportStatus, nextState, result);
     }
 
     private ActivityOccurrenceData mapToOccurrenceItem(ResultSet rs, List<ActivityOccurrenceReport> reports) throws SQLException, IOException, ClassNotFoundException {
@@ -199,71 +215,123 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
     }
 
     @Override
+    protected List<ActivityOccurrenceData> doRetrieve(Connection connection, Instant startTime, int numRecords, RetrievalDirection direction, ActivityOccurrenceDataFilter filter) throws SQLException {
+        String finalQuery = buildRetrieveQuery(startTime, numRecords, direction, filter);
+        List<ActivityOccurrenceData> result = new ArrayList<>(numRecords);
+        try (Statement prepStmt = connection.createStatement()) {
+            if(LOG.isLoggable(Level.FINEST)) {
+                LOG.finest(this + " - retrieve statement: " + finalQuery);
+            }
+            try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
+                ActivityOccurrenceData temporaryResult = null;
+                List<ActivityOccurrenceReport> reports = new LinkedList<>();
+                while (rs.next()) {
+                    try {
+                        ActivityOccurrenceData theOccurrence = mapToOccurrenceItem(rs, reports);
+                        // Build an empty activity occurrence
+                        if(temporaryResult == null) {
+                            temporaryResult = theOccurrence;
+                        } else if(!temporaryResult.getInternalId().equals(theOccurrence.getInternalId())) {
+                            // Close the occurrence
+                            ActivityOccurrenceData fullOccurrence = new ActivityOccurrenceData(temporaryResult.getInternalId(), temporaryResult.getGenerationTime(),
+                                    temporaryResult.getAdditionalFields(), temporaryResult.getExternalId(), temporaryResult.getName(),
+                                    temporaryResult.getPath(), temporaryResult.getType(), temporaryResult.getArguments(),
+                                    temporaryResult.getProperties(), reports, temporaryResult.getRoute());
+                            if(checkStateFilter(filter, fullOccurrence)) {
+                                result.add(fullOccurrence);
+                            }
+                            reports = new LinkedList<>();
+                            // Set the next occurrence
+                            temporaryResult = theOccurrence;
+                        }
+                        // Build the report and add it to the list
+                        reports.add(mapToReportItem(rs, 11));
+                    } catch (IOException | ClassNotFoundException e) {
+                        throw new SQLException(e);
+                    }
+                }
+                // Last occurrence, if there is one
+                if(temporaryResult != null) {
+                    // Close the occurrence
+                    ActivityOccurrenceData fullOccurrence = new ActivityOccurrenceData(temporaryResult.getInternalId(), temporaryResult.getGenerationTime(),
+                            temporaryResult.getAdditionalFields(), temporaryResult.getExternalId(), temporaryResult.getName(),
+                            temporaryResult.getPath(), temporaryResult.getType(), temporaryResult.getArguments(),
+                            temporaryResult.getProperties(), reports, temporaryResult.getRoute());
+                    if(checkStateFilter(filter, fullOccurrence)) {
+                        result.add(fullOccurrence);
+                    }
+                }
+            } finally {
+                connection.commit();
+            }
+        }
+        return result;
+    }
+
+    private boolean checkStateFilter(ActivityOccurrenceDataFilter filter, ActivityOccurrenceData fullOccurrence) {
+        return filter == null || filter.isClear() || filter.getStateList()
+    }
+
+    @Override
     protected String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, ActivityOccurrenceDataFilter filter) {
-        StringBuilder query = new StringBuilder("SELECT * FROM EVENT_DATA_TABLE WHERE ");
+        // TODO: rebuild the query: we need an inner query to identify first the required numRecords activity occurrences, and then perform a join on the result (with no numRecords limits)
+        StringBuilder query = new StringBuilder(START_FULL_JOIN_QUERY).append("WHERE ");
         // add time info
         if(direction == RetrievalDirection.TO_FUTURE) {
-            query.append("GenerationTime >= '").append(toTimestamp(startTime).toString()).append("' ");
+            query.append("ao.GenerationTime >= '").append(toTimestamp(startTime).toString()).append("' ");
         } else {
-            query.append("GenerationTime <= '").append(toTimestamp(startTime).toString()).append("' ");
+            query.append("ao.GenerationTime <= '").append(toTimestamp(startTime).toString()).append("' ");
         }
         // process filter
         if(filter != null && !filter.isClear()) {
             if(filter.getParentPath() != null) {
-                query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+                query.append("AND ao.Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
             }
             if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
-                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+                query.append("AND ao.Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
             }
             if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
-                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
+                query.append("AND ao.Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
             }
-            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
-                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
-            }
-            if(filter.getSeverityList() != null && !filter.getSeverityList().isEmpty()) {
-                query.append("AND Severity IN (").append(toEnumFilterListString(filter.getSeverityList())).append(") ");
-            }
+            // For the activity occurrence state we use application post-filtering... for the time being
         }
         // order by and limit
         if(direction == RetrievalDirection.TO_FUTURE) {
-            query.append("ORDER BY GenerationTime ASC, UniqueId ASC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
+            query.append("ORDER BY ao.GenerationTime ASC, ao.UniqueId ASC, r.UniqueId ASC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
         } else {
-            query.append("ORDER BY GenerationTime DESC, UniqueId DESC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
+            query.append("ORDER BY ao.GenerationTime DESC, ao.UniqueId DESC, r.UniqueId ASC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
         }
         return query.toString();
     }
 
     @Override
-    protected EventData mapToItem(ResultSet rs, EventDataFilter usedFilter) throws SQLException, IOException, ClassNotFoundException {
-        long uniqueId = rs.getLong(1);
-        Timestamp genTime = rs.getTimestamp(2);
-        int externalId = rs.getInt(3);
-        String name = rs.getString(4);
-        String path = rs.getString(5);
-        String qualifier = rs.getString(6);
-        Timestamp receptionTime = rs.getTimestamp(7);
-        String type = rs.getString(8);
-        String route = rs.getString(9);
-        String source = rs.getString(10);
-        Severity severity = Severity.values()[rs.getShort(11)];
-        Long containerId = rs.getLong(12);
-        if(rs.wasNull()) {
-            containerId = null;
-        }
-        Object report = toObject(rs.getBlob(13));
-        Object[] additionalDataArray = toObjectArray(rs.getBlob(14));
+    protected ActivityOccurrenceData mapToItem(ResultSet rs, ActivityOccurrenceDataFilter usedFilter) throws SQLException, IOException, ClassNotFoundException {
+        throw new UnsupportedOperationException("Operation not supposed to be called in this implementation");
+    }
 
-        return new EventData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), qualifier, type, route, source, severity, report, containerId == null ? null : new LongUniqueId(containerId), toInstant(receptionTime), additionalDataArray);
+    @Override
+    protected String getLastIdQuery(Class<? extends AbstractDataItem> type) {
+        if(type.equals(ActivityOccurrenceData.class)) {
+            return getLastIdQuery();
+        } else if(type.equals(ActivityOccurrenceReport.class)) {
+            return REPORT_LAST_ID_QUERY;
+        } else {
+            throw new UnsupportedOperationException("Provided type " + type.getName() + " not supported by " + this);
+        }
     }
 
     @Override
     protected String getLastIdQuery() {
-        return LAST_ID_QUERY;
+        return OCCURRENCE_LAST_ID_QUERY;
     }
 
     @Override
     public String toString() {
         return "Activity Occurrence Data Archive";
+    }
+
+    @Override
+    protected Class<ActivityOccurrenceData> getMainType() {
+        return ActivityOccurrenceData.class;
     }
 }

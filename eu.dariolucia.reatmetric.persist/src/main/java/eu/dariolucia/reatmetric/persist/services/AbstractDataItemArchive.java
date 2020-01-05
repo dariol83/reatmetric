@@ -246,15 +246,24 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     public IUniqueId retrieveLastId() throws ArchiveException {
         checkDisposed();
         try {
-            return doRetrieveLastId(retrieveConnection);
-        } catch (SQLException e) {
+            return doRetrieveLastId(retrieveConnection, getMainType());
+        } catch (SQLException|UnsupportedOperationException e) {
             throw new ArchiveException(e);
         }
     }
 
-    protected IUniqueId doRetrieveLastId(Connection connection) throws SQLException {
+    public IUniqueId retrieveLastId(Class<? extends AbstractDataItem> type) throws ArchiveException {
+        checkDisposed();
+        try {
+            return doRetrieveLastId(retrieveConnection, type);
+        } catch (SQLException|UnsupportedOperationException e) {
+            throw new ArchiveException(e);
+        }
+    }
+
+    protected IUniqueId doRetrieveLastId(Connection connection, Class<? extends AbstractDataItem> type) throws SQLException {
         try (Statement prepStmt = connection.createStatement()) {
-            try (ResultSet rs = prepStmt.executeQuery(getLastIdQuery())) {
+            try (ResultSet rs = prepStmt.executeQuery(getLastIdQuery(type))) {
                 if (rs.next()) {
                     return new LongUniqueId(rs.getLong(1));
                 }
@@ -272,6 +281,31 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
      * @return the SELECT query to retrieve the last stored unique ID (as long) for the specific data item
      */
     protected abstract String getLastIdQuery();
+
+    /**
+     * This method must return a SELECT query, delivering only a single result and a single field. The calling method
+     * will read the associated ID (as long) using: resultSet.getLong(1).
+     *
+     * @param type the data item class, for which the last stored unique ID shall be retrieved
+     * @return the SELECT query to retrieve the last stored unique ID (as long) for the specific data item type
+     * @throws UnsupportedOperationException if the type is not supported
+     */
+    protected String getLastIdQuery(Class<? extends AbstractDataItem> type) throws UnsupportedOperationException {
+        if(!getMainType().equals(type)) {
+            throw new UnsupportedOperationException("Provided type " + type.getName() + " not supported by " + this);
+        } else {
+            return getLastIdQuery();
+        }
+    }
+
+
+
+    /**
+     * This method must return the class type of the main data item type supported by this archive specific implementation.
+     *
+     * @return the data item type
+     */
+    protected abstract Class<T> getMainType();
 
     /**
      * This method closes all connections and disposes the internal resources, if any. The class is marked as disposed

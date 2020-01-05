@@ -6,6 +6,7 @@ import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.IOException;
@@ -104,5 +105,10 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     @Override
     public String toString() {
         return "Operational Message Archive";
+    }
+
+    @Override
+    protected Class<OperationalMessage> getMainType() {
+        return OperationalMessage.class;
     }
 }

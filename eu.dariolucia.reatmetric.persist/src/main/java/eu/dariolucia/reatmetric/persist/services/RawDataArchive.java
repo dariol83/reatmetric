@@ -2,6 +2,7 @@ package eu.dariolucia.reatmetric.persist.services;
 
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
@@ -126,5 +127,10 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
     @Override
     public String toString() {
         return "Raw Data Archive";
+    }
+
+    @Override
+    protected Class<RawData> getMainType() {
+        return RawData.class;
     }
 }

@@ -8,6 +8,7 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.IOException;
@@ -163,5 +164,10 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
     @Override
     public String toString() {
         return "Alarm Parameter Data Archive";
+    }
+
+    @Override
+    protected Class<AlarmParameterData> getMainType() {
+        return AlarmParameterData.class;
     }
 }
