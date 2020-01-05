@@ -11,6 +11,6 @@ import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 
-public interface IActivityDataArchive extends IDataItemArchive<ActivityOccurrenceData, ActivityOccurrenceDataFilter> {
+public interface IActivityOccurrenceDataArchive extends IDataItemArchive<ActivityOccurrenceData, ActivityOccurrenceDataFilter> {
 
 }

@@ -1,5 +1,6 @@
 package eu.dariolucia.reatmetric.persist;
 
+import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataArchive;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
@@ -65,6 +66,7 @@ public class Archive implements IArchive {
             registeredArchives.put(IRawDataArchive.class, new RawDataArchive(this));
             registeredArchives.put(IParameterDataArchive.class, new ParameterDataArchive(this));
             registeredArchives.put(IAlarmParameterDataArchive.class, new AlarmParameterDataArchive(this));
+            registeredArchives.put(IActivityOccurrenceDataArchive.class, new ActivityOccurrenceDataArchive(this));
         } catch (SQLException e) {
             throw new ArchiveException(e);
         }
@@ -131,7 +133,7 @@ public class Archive implements IArchive {
     }
 
     @Override
-    public void dispose() throws ArchiveException {
+    public void dispose() {
         // dispose storage services
         for(IDataItemArchive archive : registeredArchives.values()) {
             try {
