@@ -269,10 +269,46 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
     }
 
     private boolean checkStateFilter(ActivityOccurrenceDataFilter filter, ActivityOccurrenceData fullOccurrence) {
-        return filter == null || filter.isClear() || filter.getStateList()
+        return filter == null || filter.isClear() || filter.getStateList() == null || filter.getStateList().contains(fullOccurrence.getCurrentState());
     }
 
-    @Override
+    protected String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, ActivityOccurrenceDataFilter filter) {
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT ao.UniqueId,ao.GenerationTime,ao.ExternalId,ao.Name,ao.Path,ao.Type,ao.Route,ao.Source,ao.Arguments,ao.Properties,ao.AdditionalData," +
+                "r.UniqueId,r.GenerationTime,r.Name,r.ExecutionTime,r.State,r.NextState,r.ReportStatus,r.Result,r.ActivityOccurrenceId,r.AdditionalData " +
+                "FROM ACTIVITY_REPORT_DATA_TABLE AS r JOIN ");
+        query.append("(SELECT UniqueId,GenerationTime,ExternalId,Name,Path,Type,Route,Source,Arguments,Properties,AdditionalData FROM ACTIVITY_OCCURRENCE_DATA_TABLE WHERE ");
+        // add time info
+        if(direction == RetrievalDirection.TO_FUTURE) {
+            query.append("GenerationTime >= '").append(toTimestamp(startTime).toString()).append("' ");
+        } else {
+            query.append("GenerationTime <= '").append(toTimestamp(startTime).toString()).append("' ");
+        }
+        // process filter
+        if(filter != null && !filter.isClear()) {
+            if(filter.getParentPath() != null) {
+                query.append("AND ao.Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+            }
+            if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
+                query.append("AND ao.Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
+                query.append("AND ao.Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
+            }
+            // For the activity occurrence state we use application post-filtering... for the time being
+        }
+        query.append("FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
+        query.append(") AS ao ON ao.UniqueId == r.ActivityOccurrenceId ");
+        // order by and limit
+        if(direction == RetrievalDirection.TO_FUTURE) {
+            query.append("ORDER BY ao.GenerationTime ASC, ao.UniqueId ASC, r.UniqueId ASC");
+        } else {
+            query.append("ORDER BY ao.GenerationTime DESC, ao.UniqueId DESC, r.UniqueId ASC");
+        }
+        return query.toString();
+    }
+
+/*    @Override
     protected String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, ActivityOccurrenceDataFilter filter) {
         // TODO: rebuild the query: we need an inner query to identify first the required numRecords activity occurrences, and then perform a join on the result (with no numRecords limits)
         StringBuilder query = new StringBuilder(START_FULL_JOIN_QUERY).append("WHERE ");
@@ -302,7 +338,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
             query.append("ORDER BY ao.GenerationTime DESC, ao.UniqueId DESC, r.UniqueId ASC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
         }
         return query.toString();
-    }
+    }*/
 
     @Override
     protected ActivityOccurrenceData mapToItem(ResultSet rs, ActivityOccurrenceDataFilter usedFilter) throws SQLException, IOException, ClassNotFoundException {
