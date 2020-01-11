@@ -167,8 +167,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             try (ResultSet rs = prepStmt.executeQuery()) {
                 if (rs.next()) {
                     try {
-                        T object = mapToItem(rs, null);
-                        result = object;
+                        result = mapToItem(rs, null);
                     } catch (IOException | ClassNotFoundException e) {
                         throw new SQLException(e);
                     }
@@ -182,7 +181,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
 
     protected abstract String buildRetrieveByIdQuery();
 
-    public synchronized List<T> retrieve(Instant time, K filter) throws ArchiveException {
+    public synchronized List<T> retrieve(Instant time, K filter, Instant maxLookbackTime) throws ArchiveException {
         throw new UnsupportedOperationException("This operation is not supported by this archive service");
     }
 
@@ -266,12 +265,13 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             try (ResultSet rs = prepStmt.executeQuery(getLastIdQuery(type))) {
                 if (rs.next()) {
                     return new LongUniqueId(rs.getLong(1));
+                } else {
+                    return null;
                 }
             } finally {
                 connection.commit();
             }
         }
-        throw new SQLException("Cannot retrieve last ID from " + this);
     }
 
     /**
@@ -351,7 +351,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         return genTime == null ? null : genTime.toInstant();
     }
 
-    protected Object toObject(Blob b) throws IOException, ClassNotFoundException, SQLException {
+    protected Object toObject(Blob b) throws IOException, SQLException {
         Object toReturn = null;
         if(b != null) {
             InputStream ois = b.getBinaryStream();
@@ -361,7 +361,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
-    protected Object[] toObjectArray(Blob b) throws IOException, ClassNotFoundException, SQLException {
+    protected Object[] toObjectArray(Blob b) throws IOException, SQLException {
         Object[] toReturn = null;
         if(b != null) {
             InputStream ois = b.getBinaryStream();
@@ -371,7 +371,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
-    protected InputStream toInputstreamArray(Object[] data) throws IOException {
+    protected InputStream toInputstreamArray(Object[] data) {
         if(data == null) {
             return null;
         }

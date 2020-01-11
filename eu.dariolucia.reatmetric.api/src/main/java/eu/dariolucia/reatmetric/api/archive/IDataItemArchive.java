@@ -53,10 +53,11 @@ public interface IDataItemArchive<T extends AbstractDataItem, K extends Abstract
      *
      * @param time the reference time for which the status is needed
      * @param filter the filter, it can be null
+     * @param maxLookbackTime the maximum look-back time (absolute), can be null. In such case, internal archive default is used
      * @return the list of retrieved items
      * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the retrieval operation to be completed successfully
      */
-    List<T> retrieve(Instant time, K filter) throws ArchiveException;
+    List<T> retrieve(Instant time, K filter, Instant maxLookbackTime) throws ArchiveException;
 
     /**
      * Retrieve the data item having the provided unique ID.

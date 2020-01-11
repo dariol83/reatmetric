@@ -1,7 +1,6 @@
 package eu.dariolucia.reatmetric.persist.services;
 
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -33,7 +32,7 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
     }
 
     @Override
-    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, ParameterData item) throws SQLException, IOException {
+    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, ParameterData item) throws SQLException {
         storeStatement.setLong(1, item.getInternalId().asLong());
         storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
         storeStatement.setInt(3, item.getExternalId());
@@ -115,7 +114,7 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
     }
 
     @Override
-    protected ParameterData mapToItem(ResultSet rs, ParameterDataFilter usedFilter) throws SQLException, IOException, ClassNotFoundException {
+    protected ParameterData mapToItem(ResultSet rs, ParameterDataFilter usedFilter) throws SQLException, IOException {
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
         int externalId = rs.getInt(3);
@@ -132,24 +131,27 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
             containerId = null;
         }
         Object[] additionalDataArray = toObjectArray(rs.getBlob(13));
-        
+
         return new ParameterData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), engValue, sourceValue, route, validity, alarmState, containerId == null ? null : new LongUniqueId(containerId), toInstant(receptionTime), additionalDataArray);
     }
 
     @Override
-    public synchronized List<ParameterData> retrieve(Instant time, ParameterDataFilter filter) throws ArchiveException {
+    public synchronized List<ParameterData> retrieve(Instant time, ParameterDataFilter filter, Instant maxLookbackTime) throws ArchiveException {
         checkDisposed();
         try {
-            return doRetrieve(retrieveConnection, time, filter);
+            return doRetrieve(retrieveConnection, time, filter, maxLookbackTime);
         } catch (SQLException e) {
             throw new ArchiveException(e);
         }
     }
 
-    private List<ParameterData> doRetrieve(Connection connection, Instant time, ParameterDataFilter filter) throws SQLException {
+    private List<ParameterData> doRetrieve(Connection connection, Instant time, ParameterDataFilter filter, Instant maxLookbackTime) throws SQLException {
         StringBuilder query = new StringBuilder("SELECT PARAMETER_DATA_TABLE.* FROM (SELECT DISTINCT Path, MAX(GenerationTime) as LatestTime FROM PARAMETER_DATA_TABLE WHERE GenerationTime <= '");
         query.append(toTimestamp(time));
         query.append("' ");
+        if(maxLookbackTime != null) {
+            query.append(" AND GenerationTime >= '").append(toTimestamp(maxLookbackTime)).append("' ");
+        }
         if(filter != null) {
             if (filter.getParentPath() != null) {
                 query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
@@ -181,7 +183,7 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
                     try {
                         ParameterData object = mapToItem(rs, filter);
                         result.add(object);
-                    } catch (IOException | ClassNotFoundException e) {
+                    } catch (IOException e) {
                         throw new SQLException(e);
                     }
                 }

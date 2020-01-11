@@ -1,6 +1,7 @@
 package eu.dariolucia.reatmetric.persist.services;
 
 import eu.dariolucia.reatmetric.api.activity.*;
+import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
@@ -156,7 +157,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                         }
                         // Build the report and add it to the list
                         reports.add(mapToReportItem(rs, 11));
-                    } catch (IOException | ClassNotFoundException e) {
+                    } catch (IOException e) {
                         throw new SQLException(e);
                     }
                 }
@@ -174,7 +175,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         return result;
     }
 
-    private ActivityOccurrenceReport mapToReportItem(ResultSet rs, int offset) throws SQLException, IOException, ClassNotFoundException {
+    private ActivityOccurrenceReport mapToReportItem(ResultSet rs, int offset) throws SQLException, IOException {
         long uniqueId = rs.getLong(offset + 1);
         Timestamp genTime = rs.getTimestamp(offset + 2);
         String name = rs.getString(offset + 3);
@@ -191,7 +192,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         return new ActivityOccurrenceReport(new LongUniqueId(uniqueId),toInstant(genTime),additionalDataArray, name, state, toInstant(execTime),reportStatus, nextState, result);
     }
 
-    private ActivityOccurrenceData mapToOccurrenceItem(ResultSet rs, List<ActivityOccurrenceReport> reports) throws SQLException, IOException, ClassNotFoundException {
+    private ActivityOccurrenceData mapToOccurrenceItem(ResultSet rs, List<ActivityOccurrenceReport> reports) throws SQLException, IOException {
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
         int externalId = rs.getInt(3);
@@ -217,7 +218,11 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
     @Override
     protected List<ActivityOccurrenceData> doRetrieve(Connection connection, Instant startTime, int numRecords, RetrievalDirection direction, ActivityOccurrenceDataFilter filter) throws SQLException {
         String finalQuery = buildRetrieveQuery(startTime, numRecords, direction, filter);
-        List<ActivityOccurrenceData> result = new ArrayList<>(numRecords);
+        return retrieveAndBuild(connection, filter, finalQuery);
+    }
+
+    private List<ActivityOccurrenceData> retrieveAndBuild(Connection connection, ActivityOccurrenceDataFilter filter, String finalQuery) throws SQLException {
+        List<ActivityOccurrenceData> result = new ArrayList<>();
         try (Statement prepStmt = connection.createStatement()) {
             if(LOG.isLoggable(Level.FINEST)) {
                 LOG.finest(this + " - retrieve statement: " + finalQuery);
@@ -246,7 +251,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                         }
                         // Build the report and add it to the list
                         reports.add(mapToReportItem(rs, 11));
-                    } catch (IOException | ClassNotFoundException e) {
+                    } catch (IOException e) {
                         throw new SQLException(e);
                     }
                 }
@@ -280,9 +285,9 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         query.append("(SELECT UniqueId,GenerationTime,ExternalId,Name,Path,Type,Route,Source,Arguments,Properties,AdditionalData FROM ACTIVITY_OCCURRENCE_DATA_TABLE WHERE ");
         // add time info
         if(direction == RetrievalDirection.TO_FUTURE) {
-            query.append("GenerationTime >= '").append(toTimestamp(startTime).toString()).append("' ");
+            query.append("GenerationTime >= '").append(toTimestamp(startTime)).append("' ");
         } else {
-            query.append("GenerationTime <= '").append(toTimestamp(startTime).toString()).append("' ");
+            query.append("GenerationTime <= '").append(toTimestamp(startTime)).append("' ");
         }
         // process filter
         if(filter != null && !filter.isClear()) {
@@ -309,7 +314,52 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
     }
 
     @Override
-    protected ActivityOccurrenceData mapToItem(ResultSet rs, ActivityOccurrenceDataFilter usedFilter) throws SQLException, IOException, ClassNotFoundException {
+    public synchronized List<ActivityOccurrenceData> retrieve(Instant time, ActivityOccurrenceDataFilter filter, Instant maxLookbackTime) throws ArchiveException {
+        checkDisposed();
+        try {
+            return doRetrieve(retrieveConnection, time, filter, maxLookbackTime);
+        } catch (SQLException e) {
+            throw new ArchiveException(e);
+        }
+    }
+
+    private List<ActivityOccurrenceData> doRetrieve(Connection retrieveConnection, Instant time, ActivityOccurrenceDataFilter filter, Instant maxLookbackTime) throws SQLException {
+        String query = buildRetrieveByTimeQuery(time, filter, maxLookbackTime);
+        return retrieveAndBuild(retrieveConnection, filter, query);
+    }
+
+    protected String buildRetrieveByTimeQuery(Instant time, ActivityOccurrenceDataFilter filter, Instant maxLookbackTime) {
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT ao.UniqueId,ao.GenerationTime,ao.ExternalId,ao.Name,ao.Path,ao.Type,ao.Route,ao.Source,ao.Arguments,ao.Properties,ao.AdditionalData," +
+                "r.UniqueId,r.GenerationTime,r.Name,r.ExecutionTime,r.State,r.NextState,r.ReportStatus,r.Result,r.ActivityOccurrenceId,r.AdditionalData " +
+                "FROM ACTIVITY_REPORT_DATA_TABLE AS r JOIN ");
+        query.append("(SELECT UniqueId,GenerationTime,ExternalId,Name,Path,Type,Route,Source,Arguments,Properties,AdditionalData FROM ACTIVITY_OCCURRENCE_DATA_TABLE WHERE ");
+        // add time info
+        query.append("GenerationTime <= '").append(toTimestamp(time)).append("' ");
+        if(maxLookbackTime != null) {
+            query.append(" AND GenerationTime >= '").append(toTimestamp(maxLookbackTime)).append("' ");
+        }
+        // process filter
+        if(filter != null && !filter.isClear()) {
+            if(filter.getParentPath() != null) {
+                query.append("AND ao.Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+            }
+            if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
+                query.append("AND ao.Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
+                query.append("AND ao.Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
+            }
+            // For the activity occurrence state we use application post-filtering... for the time being
+        }
+        query.append(") AS ao ON ao.UniqueId == r.ActivityOccurrenceId ");
+        // order by and limit
+        query.append("ORDER BY ao.GenerationTime DESC, ao.UniqueId DESC, r.UniqueId ASC");
+        return query.toString();
+    }
+
+    @Override
+    protected ActivityOccurrenceData mapToItem(ResultSet rs, ActivityOccurrenceDataFilter usedFilter) {
         throw new UnsupportedOperationException("Operation not supposed to be called in this implementation");
     }
 

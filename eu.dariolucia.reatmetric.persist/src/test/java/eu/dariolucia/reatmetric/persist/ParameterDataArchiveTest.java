@@ -68,7 +68,7 @@ class ParameterDataArchiveTest {
             ));
             Thread.sleep(2000);
             // Retrieve at t + 250 ms
-            List<ParameterData> params = parameterDataArchive.retrieve(t.plusMillis(250), null);
+            List<ParameterData> params = parameterDataArchive.retrieve(t.plusMillis(250), null, null);
             assertEquals(3, params.size());
             for (ParameterData pd : params) {
                 if (pd.getPath().asString().equals("TEST.PARAM1")) {
@@ -83,7 +83,7 @@ class ParameterDataArchiveTest {
             d = parameterDataArchive.retrieve(new LongUniqueId(31));
             assertNull(d);
             // Retrieve at t + 250 ms in AlarmState ALARM or VIOLATED
-            params = parameterDataArchive.retrieve(t.plusMillis(250), new ParameterDataFilter(null, null, Arrays.asList("R1", "R2"), null, Arrays.asList(AlarmState.ALARM, AlarmState.VIOLATED)));
+            params = parameterDataArchive.retrieve(t.plusMillis(250), new ParameterDataFilter(null, null, Arrays.asList("R1", "R2"), null, Arrays.asList(AlarmState.ALARM, AlarmState.VIOLATED)), null);
             assertEquals(1, params.size());
             for (ParameterData pd : params) {
                 if (pd.getPath().asString().equals("TEST.PARAM2")) {

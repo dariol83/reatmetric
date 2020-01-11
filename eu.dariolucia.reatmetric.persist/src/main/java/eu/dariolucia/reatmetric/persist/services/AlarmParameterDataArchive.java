@@ -107,19 +107,22 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
     }
 
     @Override
-    public synchronized List<AlarmParameterData> retrieve(Instant time, AlarmParameterDataFilter filter) throws ArchiveException {
+    public synchronized List<AlarmParameterData> retrieve(Instant time, AlarmParameterDataFilter filter, Instant maxLookbackTime) throws ArchiveException {
         checkDisposed();
         try {
-            return doRetrieve(retrieveConnection, time, filter);
+            return doRetrieve(retrieveConnection, time, filter, maxLookbackTime);
         } catch (SQLException e) {
             throw new ArchiveException(e);
         }
     }
 
-    private List<AlarmParameterData> doRetrieve(Connection connection, Instant time, AlarmParameterDataFilter filter) throws SQLException {
+    private List<AlarmParameterData> doRetrieve(Connection connection, Instant time, AlarmParameterDataFilter filter, Instant maxLookbackTime) throws SQLException {
         StringBuilder query = new StringBuilder("SELECT ALARM_PARAMETER_DATA_TABLE.* FROM (SELECT DISTINCT Path, MAX(GenerationTime) as LatestTime FROM ALARM_PARAMETER_DATA_TABLE WHERE GenerationTime <= '");
         query.append(toTimestamp(time));
         query.append("' ");
+        if(maxLookbackTime != null) {
+            query.append(" AND GenerationTime >= '").append(toTimestamp(maxLookbackTime)).append("' ");
+        }
         if(filter != null) {
             if (filter.getParentPath() != null) {
                 query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");

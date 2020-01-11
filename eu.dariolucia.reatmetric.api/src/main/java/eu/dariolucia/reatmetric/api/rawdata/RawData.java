@@ -8,13 +8,11 @@
 
 package eu.dariolucia.reatmetric.api.rawdata;
 
-import java.io.Serializable;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.Objects;
-
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+
+import java.io.Serializable;
+import java.time.Instant;
 
 /**
  *
@@ -40,6 +38,8 @@ public final class RawData extends AbstractDataItem implements Serializable {
     private final Quality quality;
 
     private final byte[] contents;
+
+    // TODO add IUniqueID relatedItem, and allow to filter for that
 
     public RawData(IUniqueId internalId, Instant generationTime, String name, String type, String route, String source, Quality quality, byte[] contents, Instant receptionTime, Object[] additionalFields) {
         super(internalId, generationTime, additionalFields);
