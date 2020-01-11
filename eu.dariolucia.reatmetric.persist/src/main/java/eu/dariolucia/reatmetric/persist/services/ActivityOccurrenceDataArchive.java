@@ -28,7 +28,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
 
     private static final String START_FULL_JOIN_QUERY = "SELECT ao.UniqueId,ao.GenerationTime,ao.ExternalId,ao.Name,ao.Path,ao.Type,ao.Route,ao.Source,ao.Arguments,ao.Properties,ao.AdditionalData," +
             "r.UniqueId,r.GenerationTime,r.Name,r.ExecutionTime,r.State,r.NextState,r.ReportStatus,r.Result,r.ActivityOccurrenceId,r.AdditionalData " +
-            "FROM ACTIVITY_OCCURRENCE_DATA_TABLE AS ao JOIN ACTIVITY_REPORT_DATA_TABLE AS r ON ao.UniqueId == r.ActivityOccurrenceId ";
+            "FROM ACTIVITY_OCCURRENCE_DATA_TABLE AS ao JOIN ACTIVITY_REPORT_DATA_TABLE AS r ON ao.UniqueId = r.ActivityOccurrenceId ";
     private static final String RETRIEVE_BY_ID_QUERY = START_FULL_JOIN_QUERY + "WHERE ao.UniqueId=? ORDER BY r.GenerationTime ASC, r.UniqueId ASC";
 
     private PreparedStatement occurrenceStoreStatement;
@@ -43,11 +43,16 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - request to store " + itemsToStore.size() + " items");
         }
-        occurrenceStoreStatement.clearBatch();
+        if(occurrenceStoreStatement != null) {
+            occurrenceStoreStatement.clearBatch();
+        }
         for(ActivityOccurrenceData aod : itemsToStore) {
-            // If the activity occurrence has a single progress report marked as CREATION, then add the activity occurrence.
-            if(aod.getCurrentState() == ActivityOccurrenceState.CREATION && aod.getProgressReports().size() <= 1) {
+            // If the activity occurrence has no progress reports, or a single progress report marked as CREATION, then add the activity occurrence.
+            if(aod.getProgressReports().size() == 0 || (aod.getProgressReports().size() == 1 && aod.getProgressReports().get(0).getState() == ActivityOccurrenceState.CREATION)) {
                 if (occurrenceStoreStatement == null) {
+                    if(LOG.isLoggable(Level.FINER)) {
+                        LOG.finer(this + " - creating occurrence store statement");
+                    }
                     occurrenceStoreStatement = createStoreStatement(connection);
                 }
                 setItemPropertiesToStatement(occurrenceStoreStatement, aod);
@@ -70,6 +75,12 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
     }
 
     private void executeStoreBatchAndClear(PreparedStatement preparedStatement) throws SQLException {
+        if(preparedStatement == null) {
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer(this + " - Not storing the prepared statement, it is null");
+            }
+            return;
+        }
         int[] numUpdates = preparedStatement.executeBatch();
         if (LOG.isLoggable(Level.FINEST)) {
             for (int i = 0; i < numUpdates.length; i++) {
@@ -124,14 +135,14 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
     @Override
     protected PreparedStatement createStoreStatement(Connection connection) throws SQLException {
         if(LOG.isLoggable(Level.FINEST)) {
-            LOG.finest(this + " - preparing store statement: " + OCCURRENCE_STORE_STATEMENT);
+            LOG.finest(this + " - preparing activity occurrence store statement: " + OCCURRENCE_STORE_STATEMENT);
         }
         return connection.prepareStatement(OCCURRENCE_STORE_STATEMENT);
     }
 
     protected PreparedStatement createReportStoreStatement(Connection connection) throws SQLException {
         if(LOG.isLoggable(Level.FINEST)) {
-            LOG.finest(this + " - preparing store statement: " + REPORT_STORE_STATEMENT);
+            LOG.finest(this + " - preparing activity report store statement: " + REPORT_STORE_STATEMENT);
         }
         return connection.prepareStatement(REPORT_STORE_STATEMENT);
     }
@@ -303,7 +314,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
             // For the activity occurrence state we use application post-filtering... for the time being
         }
         query.append("FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
-        query.append(") AS ao ON ao.UniqueId == r.ActivityOccurrenceId ");
+        query.append(") AS ao ON ao.UniqueId = r.ActivityOccurrenceId ");
         // order by and limit
         if(direction == RetrievalDirection.TO_FUTURE) {
             query.append("ORDER BY ao.GenerationTime ASC, ao.UniqueId ASC, r.UniqueId ASC");
@@ -352,7 +363,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
             }
             // For the activity occurrence state we use application post-filtering... for the time being
         }
-        query.append(") AS ao ON ao.UniqueId == r.ActivityOccurrenceId ");
+        query.append(") AS ao ON ao.UniqueId = r.ActivityOccurrenceId ");
         // order by and limit
         query.append("ORDER BY ao.GenerationTime DESC, ao.UniqueId DESC, r.UniqueId ASC");
         return query.toString();
