@@ -8,6 +8,7 @@
 
 package eu.dariolucia.reatmetric.api;
 
+import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.common.IServiceMonitorCallback;
 import eu.dariolucia.reatmetric.api.common.IUserMonitorCallback;
@@ -24,33 +25,23 @@ import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
  */
 public interface IServiceFactory {
     
-    public String getSystem();
+    String getSystem();
     
-    public IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException;
+    IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException;
     
-    public IRawDataProvisionService getRawDataMonitorService() throws ReatmetricException;
+    IRawDataProvisionService getRawDataMonitorService() throws ReatmetricException;
     
-    public IParameterDataProvisionService getParameterDataMonitorService() throws ReatmetricException;
+    IParameterDataProvisionService getParameterDataMonitorService() throws ReatmetricException;
     
-    public ISystemModelProvisionService getSystemModelMonitorService() throws ReatmetricException;
+    ISystemModelProvisionService getSystemModelMonitorService() throws ReatmetricException;
     
-    public IEventDataProvisionService getEventDataMonitorService() throws ReatmetricException;
+    IEventDataProvisionService getEventDataMonitorService() throws ReatmetricException;
     
-    public IAlarmParameterDataProvisionService getAlarmParameterDataMonitorService() throws ReatmetricException;
-    
-    public void login(String username, String password) throws ReatmetricException;
-    
-    public void logout();
+    IAlarmParameterDataProvisionService getAlarmParameterDataMonitorService() throws ReatmetricException;
 
-    public void connect() throws ReatmetricException;
+    IActivityOccurrenceDataProvisionService getActivityOccurrenceDataMonitorService() throws ReatmetricException;
 
-    public void disconnect() throws ReatmetricException;
-    
-    public void register(IServiceMonitorCallback callback);
-    
-    public void register(IUserMonitorCallback callback);
-    
-    public void deregister(IServiceMonitorCallback callback);
-    
-    public void deregister(IUserMonitorCallback callback);
+    // TODO: activity execution service
+
+    // TODO: connectors M&C service
 }
