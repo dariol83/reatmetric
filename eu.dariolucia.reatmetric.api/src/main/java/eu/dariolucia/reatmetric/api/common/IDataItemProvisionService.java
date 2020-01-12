@@ -8,6 +8,8 @@
 
 package eu.dariolucia.reatmetric.api.common;
 
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+
 import java.time.Instant;
 import java.util.List;
 
@@ -24,9 +26,9 @@ public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R e
     
     void unsubscribe(T subscriber);
     
-    List<K> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, R filter);
+    List<K> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException;
     
-    List<K> retrieve(K startItem, int numRecords, RetrievalDirection direction, R filter);
+    List<K> retrieve(K startItem, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException;
     
     List<FieldDescriptor> getAdditionalFieldDescriptors();
 }

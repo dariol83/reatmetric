@@ -25,9 +25,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>eu.dariolucia.reatmetric.core</artifactId>
-    <name>REATMETRIC CORE</name>
-    <description>REATMETRIC core service implementation reference</description>
+    <artifactId>eu.dariolucia.reatmetric.driver.spacecraft</artifactId>
+    <name>REATMETRIC DRIVER - CCSDS/ECSS Spacecraft</name>
+    <description>REATMETRIC driver module for CCSDS/ECSS spacecraft monitoring and control</description>
 
     <dependencies>
         <dependency>
@@ -37,12 +37,7 @@
         </dependency>
 		<dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
-            <artifactId>eu.dariolucia.reatmetric.processing</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-		<dependency>
-            <groupId>eu.dariolucia.reatmetric</groupId>
-            <artifactId>eu.dariolucia.reatmetric.persist</artifactId>
+            <artifactId>eu.dariolucia.reatmetric.core</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
