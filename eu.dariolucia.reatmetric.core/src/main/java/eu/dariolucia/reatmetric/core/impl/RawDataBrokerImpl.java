@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionService {
 
     private final IRawDataArchive archive;
-
     private final AtomicLong sequencer;
 
     private final List<RawDataSubscriptionManager> subscribers = new CopyOnWriteArrayList<>();
