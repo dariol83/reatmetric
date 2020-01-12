@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionService {
 
@@ -110,39 +111,83 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
         return new LongUniqueId(sequencer.incrementAndGet());
     }
 
-    private class RawDataSubscriptionManager {
+    private static class RawDataSubscriptionManager {
 
         private final ExecutorService dispatcher = Executors.newSingleThreadExecutor();
         private final IRawDataSubscriber subscriber;
         private Predicate<RawData> preFilter;
-        private RawDataFilter filter;
+        private Predicate<RawData> filter;
         private Predicate<RawData> postFilter;
 
         public RawDataSubscriptionManager(IRawDataSubscriber subscriber, Predicate<RawData> preFilter, RawDataFilter filter, Predicate<RawData> postFilter) {
             this.subscriber = subscriber;
             this.preFilter = preFilter;
-            this.filter = filter;
+            this.filter = new RawDataFilterPredicate(filter);
             this.postFilter = postFilter;
             sanitizeFilters();
         }
 
         public void notifyItems(List<RawData> items) {
-            // TODO
+            // TODO: implement timely and blocking policy
+            dispatcher.submit(() -> {
+                List<RawData> toNotify = filterItems(items);
+                if(!toNotify.isEmpty()) {
+                    subscriber.dataItemsReceived(toNotify);
+                }
+            });
+        }
+
+        private synchronized List<RawData> filterItems(List<RawData> items) {
+            return items.stream().filter(preFilter).filter(filter).filter(postFilter).collect(Collectors.toList());
         }
 
         public synchronized void update(Predicate<RawData> preFilter, RawDataFilter filter, Predicate<RawData> postFilter) {
             this.preFilter = preFilter;
-            this.filter = filter;
+            this.filter = new RawDataFilterPredicate(filter);
             this.postFilter = postFilter;
             sanitizeFilters();
         }
 
         private void sanitizeFilters() {
-            // TODO
+            if(preFilter == null) {
+                preFilter = (o) -> true;
+            }
+            if(postFilter == null) {
+                postFilter = (o) -> true;
+            }
         }
 
         public synchronized void terminate() {
             dispatcher.shutdownNow();
+        }
+    }
+
+    private static class RawDataFilterPredicate implements Predicate<RawData> {
+
+        private final RawDataFilter innerFilter;
+
+        public RawDataFilterPredicate(RawDataFilter innerFilter) {
+            this.innerFilter = innerFilter;
+        }
+
+        @Override
+        public boolean test(RawData rawData) {
+            if(innerFilter == null || innerFilter.isClear()) {
+                return true;
+            }
+            if(innerFilter.getNameContains() != null && !rawData.getName().contains(innerFilter.getNameContains())) {
+                return false;
+            }
+            if(innerFilter.getTypeList() != null && !innerFilter.getTypeList().contains(rawData.getType())) {
+                return false;
+            }
+            if(innerFilter.getSourceList() != null && !innerFilter.getSourceList().contains(rawData.getSource())) {
+                return false;
+            }
+            if(innerFilter.getRouteList() != null && !innerFilter.getRouteList().contains(rawData.getRoute())) {
+                return false;
+            }
+            return innerFilter.getQualityList() == null || innerFilter.getQualityList().contains(rawData.getQuality());
         }
     }
 }
