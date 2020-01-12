@@ -8,6 +8,7 @@
 
 package eu.dariolucia.reatmetric.api;
 
+import eu.dariolucia.reatmetric.api.activity.IActivityExecutionService;
 import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.common.IServiceMonitorCallback;
@@ -18,6 +19,9 @@ import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
+import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
+
+import java.util.List;
 
 /**
  *
@@ -41,7 +45,7 @@ public interface IServiceFactory {
 
     IActivityOccurrenceDataProvisionService getActivityOccurrenceDataMonitorService() throws ReatmetricException;
 
-    // TODO: activity execution service
+    IActivityExecutionService getActivityExecutionService() throws ReatmetricException;
 
-    // TODO: connectors M&C service
+    List<ITransportConnector> getTransportConnectors() throws ReatmetricException;
 }

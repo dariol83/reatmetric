@@ -16,20 +16,20 @@ import java.util.List;
  */
 public interface ISystemModelProvisionService {
 
-    public void subscribe(ISystemModelSubscriber subscriber);
+    void subscribe(ISystemModelSubscriber subscriber);
     
-    public void unsubscribe(ISystemModelSubscriber subscriber);
+    void unsubscribe(ISystemModelSubscriber subscriber);
     
-    public SystemEntity getRoot();
+    SystemEntity getRoot();
     
-    public List<SystemEntity> getContainedEntities(SystemEntityPath se);
+    List<SystemEntity> getContainedEntities(SystemEntityPath se);
     
-    public SystemEntity getSystemEntityAt(SystemEntityPath path);
+    SystemEntity getSystemEntityAt(SystemEntityPath path);
 
-    public SystemEntity getSystemEntityOf(int externalId);
+    SystemEntity getSystemEntityOf(int externalId);
 
-    public int getExternalIdOf(SystemEntityPath path);
+    int getExternalIdOf(SystemEntityPath path);
 
-    public SystemEntityPath getPathOf(int externalId);
+    SystemEntityPath getPathOf(int externalId);
 
 }
