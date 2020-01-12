@@ -2,8 +2,7 @@ package eu.dariolucia.reatmetric.processing.impl.operations;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.processing.ProcessingModelException;
-import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.impl.processors.ActivityProcessor;
 
 import java.time.Instant;

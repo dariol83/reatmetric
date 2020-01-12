@@ -8,10 +8,9 @@
 package eu.dariolucia.reatmetric.processing.impl.operations;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
-import eu.dariolucia.reatmetric.processing.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.impl.processors.ActivityProcessor;
-import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
-import eu.dariolucia.reatmetric.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 
 import java.time.Instant;
 import java.util.List;

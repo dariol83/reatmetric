@@ -8,9 +8,8 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 
-import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;

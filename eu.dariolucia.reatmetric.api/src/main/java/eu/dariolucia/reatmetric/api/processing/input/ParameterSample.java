@@ -6,7 +6,7 @@
  * shall be granted by the author in writing.
  */
 
-package eu.dariolucia.reatmetric.processing.input;
+package eu.dariolucia.reatmetric.api.processing.input;
 
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 

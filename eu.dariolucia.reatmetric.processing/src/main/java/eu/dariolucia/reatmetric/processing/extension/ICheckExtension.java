@@ -8,7 +8,7 @@
 
 package eu.dariolucia.reatmetric.processing.extension;
 
-import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 
 import java.time.Instant;
 import java.util.Map;

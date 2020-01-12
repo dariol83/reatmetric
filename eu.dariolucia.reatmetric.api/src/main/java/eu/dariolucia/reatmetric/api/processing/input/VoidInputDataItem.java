@@ -6,7 +6,7 @@
  * shall be granted by the author in writing.
  */
 
-package eu.dariolucia.reatmetric.processing.input;
+package eu.dariolucia.reatmetric.api.processing.input;
 
 /**
  * This class is used for system entity processors that do not need any input data item to work, as they use only

@@ -14,10 +14,10 @@ import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.processing.definition.EventProcessingDefinition;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IEventBinding;
+import eu.dariolucia.reatmetric.api.processing.scripting.IEventBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.EventDataBuilder;
-import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
+import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 
 import javax.script.ScriptException;
 import java.time.Instant;

@@ -5,12 +5,12 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
-import eu.dariolucia.reatmetric.processing.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
 import eu.dariolucia.reatmetric.processing.impl.operations.EnableDisableOperation;
-import eu.dariolucia.reatmetric.processing.input.VoidInputDataItem;
+import eu.dariolucia.reatmetric.api.processing.input.VoidInputDataItem;
 
 import java.util.ArrayList;
 import java.util.Collections;

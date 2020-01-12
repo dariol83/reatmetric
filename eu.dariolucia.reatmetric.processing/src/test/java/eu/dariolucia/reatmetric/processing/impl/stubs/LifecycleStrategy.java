@@ -9,9 +9,9 @@ package eu.dariolucia.reatmetric.processing.impl.stubs;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
-import eu.dariolucia.reatmetric.processing.IActivityHandler;
-import eu.dariolucia.reatmetric.processing.IProcessingModel;
-import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 
 import java.time.Instant;
 import java.util.logging.Level;

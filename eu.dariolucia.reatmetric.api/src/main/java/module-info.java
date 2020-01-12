@@ -16,4 +16,8 @@ open module eu.dariolucia.reatmetric.api {
     exports eu.dariolucia.reatmetric.api.archive.exceptions;
     exports eu.dariolucia.reatmetric.api.value;
     exports eu.dariolucia.reatmetric.api.activity;
+    exports eu.dariolucia.reatmetric.api.processing;
+    exports eu.dariolucia.reatmetric.api.processing.exceptions;
+    exports eu.dariolucia.reatmetric.api.processing.input;
+    exports eu.dariolucia.reatmetric.api.processing.scripting;
 }

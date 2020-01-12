@@ -16,13 +16,13 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.value.ValueException;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
-import eu.dariolucia.reatmetric.processing.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IParameterBinding;
+import eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.AlarmParameterDataBuilder;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.ParameterDataBuilder;
-import eu.dariolucia.reatmetric.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 
 import javax.script.ScriptException;
 import java.time.Instant;

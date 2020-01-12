@@ -3,11 +3,11 @@ package eu.dariolucia.reatmetric.processing.impl.processors;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.*;
-import eu.dariolucia.reatmetric.processing.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.SystemEntityBuilder;
-import eu.dariolucia.reatmetric.processing.input.AbstractInputDataItem;
+import eu.dariolucia.reatmetric.api.processing.input.AbstractInputDataItem;
 
 import java.util.List;
 

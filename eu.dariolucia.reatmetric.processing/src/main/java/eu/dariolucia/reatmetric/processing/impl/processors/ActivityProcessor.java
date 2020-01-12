@@ -16,12 +16,12 @@ import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
-import eu.dariolucia.reatmetric.processing.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
-import eu.dariolucia.reatmetric.processing.input.ActivityArgument;
-import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
-import eu.dariolucia.reatmetric.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 
 import java.time.Instant;
 import java.util.*;

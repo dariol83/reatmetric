@@ -14,10 +14,10 @@ import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
-import eu.dariolucia.reatmetric.processing.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.ActivityOccurrenceUpdateOperation;
-import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 
 import javax.script.ScriptException;
 import java.time.Instant;

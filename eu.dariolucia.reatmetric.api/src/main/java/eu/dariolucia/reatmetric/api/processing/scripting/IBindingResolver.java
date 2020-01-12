@@ -1,4 +1,4 @@
-package eu.dariolucia.reatmetric.processing.definition.scripting;
+package eu.dariolucia.reatmetric.api.processing.scripting;
 
 public interface IBindingResolver {
 

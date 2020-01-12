@@ -16,18 +16,22 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.processing.*;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
+import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.processing.scripting.IEntityBinding;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IEntityBinding;
 import eu.dariolucia.reatmetric.processing.impl.graph.GraphModel;
 import eu.dariolucia.reatmetric.processing.impl.operations.*;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 import eu.dariolucia.reatmetric.processing.impl.processors.ActivityProcessor;
-import eu.dariolucia.reatmetric.processing.input.ActivityProgress;
-import eu.dariolucia.reatmetric.processing.input.ActivityRequest;
-import eu.dariolucia.reatmetric.processing.input.EventOccurrence;
-import eu.dariolucia.reatmetric.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.processing.util.ThreadUtil;
 
 import java.time.Instant;
@@ -317,11 +321,6 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new EnableDisableOperation(id, b));
         // Schedule task
         scheduleTask(operations, USER_DISPATCHING_QUEUE);
-    }
-
-    @Override
-    public ProcessingDefinition getProcessingDefinition() {
-        return this.processingDefinition;
     }
 
     @Override

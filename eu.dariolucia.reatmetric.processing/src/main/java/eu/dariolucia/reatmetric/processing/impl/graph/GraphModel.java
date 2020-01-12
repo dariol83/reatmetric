@@ -2,9 +2,9 @@ package eu.dariolucia.reatmetric.processing.impl.graph;
 
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.processing.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IEntityBinding;
+import eu.dariolucia.reatmetric.api.processing.scripting.IEntityBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
 import eu.dariolucia.reatmetric.processing.impl.processors.*;

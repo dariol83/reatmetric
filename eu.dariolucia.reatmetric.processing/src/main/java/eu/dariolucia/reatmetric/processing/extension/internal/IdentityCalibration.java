@@ -7,7 +7,7 @@
 
 package eu.dariolucia.reatmetric.processing.extension.internal;
 
-import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import eu.dariolucia.reatmetric.processing.extension.ICalibrationExtension;
 
 import java.util.Map;

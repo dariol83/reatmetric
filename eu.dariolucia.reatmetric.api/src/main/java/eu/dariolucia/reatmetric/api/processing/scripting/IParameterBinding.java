@@ -1,4 +1,4 @@
-package eu.dariolucia.reatmetric.processing.definition.scripting;
+package eu.dariolucia.reatmetric.api.processing.scripting;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.parameters.Validity;

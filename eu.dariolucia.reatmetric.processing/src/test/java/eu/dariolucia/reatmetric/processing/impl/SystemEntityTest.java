@@ -9,18 +9,17 @@ package eu.dariolucia.reatmetric.processing.impl;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.*;
-import eu.dariolucia.reatmetric.processing.IProcessingModel;
-import eu.dariolucia.reatmetric.processing.IProcessingModelOutput;
-import eu.dariolucia.reatmetric.processing.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
-import eu.dariolucia.reatmetric.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.JAXBException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;

@@ -9,8 +9,8 @@ package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IParameterBinding;
+import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;

@@ -8,10 +8,10 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IEntityBinding;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IEventBinding;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IParameterBinding;
+import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.processing.scripting.IEntityBinding;
+import eu.dariolucia.reatmetric.api.processing.scripting.IEventBinding;
+import eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding;
 
 import javax.script.*;
 import javax.xml.bind.annotation.XmlAccessType;

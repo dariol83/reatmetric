@@ -9,7 +9,7 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.processing.definition.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import eu.dariolucia.reatmetric.processing.extension.ICheckExtension;
 import eu.dariolucia.reatmetric.processing.extension.internal.ExtensionRegistry;
 

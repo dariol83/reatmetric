@@ -16,11 +16,11 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.value.BitString;
-import eu.dariolucia.reatmetric.processing.IProcessingModel;
-import eu.dariolucia.reatmetric.processing.IProcessingModelOutput;
-import eu.dariolucia.reatmetric.processing.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
-import eu.dariolucia.reatmetric.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
