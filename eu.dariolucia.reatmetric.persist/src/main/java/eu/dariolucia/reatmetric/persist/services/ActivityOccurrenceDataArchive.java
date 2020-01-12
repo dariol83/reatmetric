@@ -303,15 +303,21 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         // process filter
         if(filter != null && !filter.isClear()) {
             if(filter.getParentPath() != null) {
-                query.append("AND ao.Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+                query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
             }
             if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
-                query.append("AND ao.Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
             }
             if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
-                query.append("AND ao.Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
+                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
             }
             // For the activity occurrence state we use application post-filtering... for the time being
+        }
+        // order by and limit
+        if(direction == RetrievalDirection.TO_FUTURE) {
+            query.append("ORDER BY GenerationTime ASC, UniqueId ASC ");
+        } else {
+            query.append("ORDER BY GenerationTime DESC, UniqueId DESC ");
         }
         query.append("FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
         query.append(") AS ao ON ao.UniqueId = r.ActivityOccurrenceId ");
@@ -353,16 +359,18 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         // process filter
         if(filter != null && !filter.isClear()) {
             if(filter.getParentPath() != null) {
-                query.append("AND ao.Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+                query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
             }
             if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
-                query.append("AND ao.Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
             }
             if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
-                query.append("AND ao.Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
+                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
             }
             // For the activity occurrence state we use application post-filtering... for the time being
         }
+        // order by and limit
+        query.append("ORDER BY GenerationTime DESC, UniqueId DESC");
         query.append(") AS ao ON ao.UniqueId = r.ActivityOccurrenceId ");
         // order by and limit
         query.append("ORDER BY ao.GenerationTime DESC, ao.UniqueId DESC, r.UniqueId ASC");
