@@ -112,6 +112,8 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
 
     private static class RawDataSubscriptionManager {
 
+        private static final Predicate<RawData> IDENTITY_FILTER = (o) -> true;
+
         private final ExecutorService dispatcher = Executors.newSingleThreadExecutor();
         private final IRawDataSubscriber subscriber;
         private Predicate<RawData> preFilter;
@@ -121,7 +123,7 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
         public RawDataSubscriptionManager(IRawDataSubscriber subscriber, Predicate<RawData> preFilter, RawDataFilter filter, Predicate<RawData> postFilter) {
             this.subscriber = subscriber;
             this.preFilter = preFilter;
-            this.filter = new RawDataFilterPredicate(filter);
+            this.filter = filter;
             this.postFilter = postFilter;
             sanitizeFilters();
         }
@@ -142,51 +144,25 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
 
         public synchronized void update(Predicate<RawData> preFilter, RawDataFilter filter, Predicate<RawData> postFilter) {
             this.preFilter = preFilter;
-            this.filter = new RawDataFilterPredicate(filter);
+            this.filter = filter;
             this.postFilter = postFilter;
             sanitizeFilters();
         }
 
         private void sanitizeFilters() {
             if(preFilter == null) {
-                preFilter = (o) -> true;
+                preFilter = IDENTITY_FILTER;
+            }
+            if(filter == null) {
+                filter = IDENTITY_FILTER;
             }
             if(postFilter == null) {
-                postFilter = (o) -> true;
+                postFilter = IDENTITY_FILTER;
             }
         }
 
         public synchronized void terminate() {
             dispatcher.shutdownNow();
-        }
-    }
-
-    private static class RawDataFilterPredicate implements Predicate<RawData> {
-
-        private final RawDataFilter innerFilter;
-
-        public RawDataFilterPredicate(RawDataFilter innerFilter) {
-            this.innerFilter = innerFilter;
-        }
-
-        @Override
-        public boolean test(RawData rawData) {
-            if(innerFilter == null || innerFilter.isClear()) {
-                return true;
-            }
-            if(innerFilter.getNameContains() != null && !rawData.getName().contains(innerFilter.getNameContains())) {
-                return false;
-            }
-            if(innerFilter.getTypeList() != null && !innerFilter.getTypeList().contains(rawData.getType())) {
-                return false;
-            }
-            if(innerFilter.getSourceList() != null && !innerFilter.getSourceList().contains(rawData.getSource())) {
-                return false;
-            }
-            if(innerFilter.getRouteList() != null && !innerFilter.getRouteList().contains(rawData.getRoute())) {
-                return false;
-            }
-            return innerFilter.getQualityList() == null || innerFilter.getQualityList().contains(rawData.getQuality());
         }
     }
 }
