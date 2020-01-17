@@ -6,20 +6,20 @@
  */
 package eu.dariolucia.reatmetric.api.alarms;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+
+import java.io.Serializable;
+import java.util.List;
 
 /**
  *
  * @author dario
  */
-public final class AlarmParameterDataFilter extends AbstractDataItemFilter implements Serializable {
+public final class AlarmParameterDataFilter extends AbstractDataItemFilter<AlarmParameterData> implements Serializable {
 
 	/**
 	 * 
@@ -61,5 +61,30 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter imple
     @Override
     public boolean isClear() {
         return this.parentPath == null && this.parameterPathList == null && this.alarmStateList == null;
+    }
+
+    @Override
+    public boolean test(AlarmParameterData item) {
+        if(parentPath != null && !parentPath.isParentOf(item.getPath())) {
+            return false;
+        }
+        if(parameterPathList != null && !parameterPathList.contains(item.getPath())) {
+            return false;
+        }
+        if(alarmStateList != null && !alarmStateList.contains(item.getCurrentAlarmState())) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean select(SystemEntity entity) {
+        return entity.getType() == SystemEntityType.PARAMETER
+                && (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
+    }
+
+    @Override
+    public Class<AlarmParameterData> getDataItemType() {
+        return AlarmParameterData.class;
     }
 }

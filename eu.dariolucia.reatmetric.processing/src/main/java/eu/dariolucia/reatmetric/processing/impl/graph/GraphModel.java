@@ -1,7 +1,9 @@
 package eu.dariolucia.reatmetric.processing.impl.graph;
 
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEntityBinding;
@@ -311,5 +313,36 @@ public class GraphModel {
         } else {
             return ev.getProcessor();
         }
+    }
+
+    public void navigate(IProcessingModelVisitor visitor) {
+        // Start from root
+        this.root.getProcessor().visit(visitor);
+    }
+
+    public List<AbstractDataItem> getByPath(List<SystemEntityPath> paths) throws ProcessingModelException {
+        List<AbstractDataItem> toReturn = new LinkedList<>();
+        for(SystemEntityPath p : paths) {
+            EntityVertex ev = this.pathMap.get(p);
+            if(ev != null) {
+                ev.getProcessor().putCurrentStates(toReturn);
+            } else {
+                throw new ProcessingModelException("Path " + p + " unknown");
+            }
+        }
+        return toReturn;
+    }
+
+    public List<AbstractDataItem> getById(List<Integer> ids) throws ProcessingModelException {
+        List<AbstractDataItem> toReturn = new LinkedList<>();
+        for(Integer i : ids) {
+            EntityVertex ev = this.idMap.get(i);
+            if(ev != null) {
+                ev.getProcessor().putCurrentStates(toReturn);
+            } else {
+                throw new ProcessingModelException("ID " + i + " unknown");
+            }
+        }
+        return toReturn;
     }
 }

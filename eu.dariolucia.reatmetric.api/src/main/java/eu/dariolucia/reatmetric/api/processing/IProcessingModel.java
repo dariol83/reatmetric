@@ -8,12 +8,17 @@
 package eu.dariolucia.reatmetric.api.processing;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
-import eu.dariolucia.reatmetric.api.processing.input.*;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
+import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 
 import java.util.List;
 
@@ -33,13 +38,21 @@ public interface IProcessingModel {
 
     List<ActivityOccurrenceData> getActiveActivityOccurrences();
 
+    void visit(IProcessingModelVisitor visitor);
+
+    List<AbstractDataItem> get(AbstractDataItemFilter<?> filter);
+
+    List<AbstractDataItem> getByPath(List<SystemEntityPath> paths) throws ProcessingModelException;
+
+    List<AbstractDataItem> getById(List<Integer> ids) throws ProcessingModelException;
+
     void enable(SystemEntityPath path) throws ProcessingModelException;
 
     void disable(SystemEntityPath path) throws ProcessingModelException;
 
     SystemEntity getRoot() throws ProcessingModelException;
 
-    List<SystemEntity> getContainedEntities(SystemEntityPath se) throws ProcessingModelException;
+    List<SystemEntity> getContainedEntities(SystemEntityPath path) throws ProcessingModelException;
 
     SystemEntity getSystemEntityAt(SystemEntityPath path) throws ProcessingModelException;
 

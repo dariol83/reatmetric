@@ -6,13 +6,18 @@
  */
 package eu.dariolucia.reatmetric.api.common;
 
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+
 import java.io.Serializable;
+import java.util.function.Predicate;
 
 /**
  *
  * @author dario
  */
-public abstract class AbstractDataItemFilter implements Serializable {
+public abstract class AbstractDataItemFilter<T extends AbstractDataItem> implements Serializable, Predicate<T> {
     
     /**
 	 * 
@@ -20,5 +25,10 @@ public abstract class AbstractDataItemFilter implements Serializable {
 	private static final long serialVersionUID = 8489715714812772842L;
 
 	public abstract boolean isClear();
-    
+
+	public abstract boolean test(T item);
+
+	public abstract boolean select(SystemEntity entity);
+
+	public abstract Class<T> getDataItemType();
 }

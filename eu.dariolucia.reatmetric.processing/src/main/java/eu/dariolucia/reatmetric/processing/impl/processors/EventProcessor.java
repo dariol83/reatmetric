@@ -13,6 +13,7 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.*;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.processing.definition.EventProcessingDefinition;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEventBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
@@ -165,6 +166,16 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     @Override
     public List<AbstractDataItem> evaluate() {
         return process(null);
+    }
+
+    @Override
+    public void visit(IProcessingModelVisitor visitor) {
+        visitor.onVisit(getState());
+    }
+
+    @Override
+    public void putCurrentStates(List<AbstractDataItem> items) {
+        items.add(getState());
     }
 
     @Override

@@ -9,6 +9,9 @@
 package eu.dariolucia.reatmetric.api.messages;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +21,7 @@ import java.util.Objects;
  *
  * @author dario
  */
-public final class OperationalMessageFilter extends AbstractDataItemFilter implements Serializable {
+public final class OperationalMessageFilter extends AbstractDataItemFilter<OperationalMessage> implements Serializable {
     
     /**
 	 * 
@@ -71,6 +74,33 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter imple
     @Override
     public boolean isClear() {
         return this.messageTextContains == null && this.idList == null && this.severityList == null && this.sourceList == null;
+    }
+
+    @Override
+    public boolean test(OperationalMessage item) {
+        if(messageTextContains != null && !item.getMessage().contains(messageTextContains)) {
+            return false;
+        }
+        if(idList != null && !idList.contains(item.getId())) {
+            return false;
+        }
+        if(severityList != null && !severityList.contains(item.getSeverity())) {
+            return false;
+        }
+        if(sourceList != null && !sourceList.contains(item.getSource())) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean select(SystemEntity entity) {
+        return true;
+    }
+
+    @Override
+    public Class<OperationalMessage> getDataItemType() {
+        return OperationalMessage.class;
     }
 
     @Override

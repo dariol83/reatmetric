@@ -17,6 +17,5 @@ public enum SystemEntityType {
     PARAMETER,
     EVENT,
     ACTIVITY,
-    REFERENCE,
-    REPORT
+    REPORT // Future evolution (to be assessed)
 }

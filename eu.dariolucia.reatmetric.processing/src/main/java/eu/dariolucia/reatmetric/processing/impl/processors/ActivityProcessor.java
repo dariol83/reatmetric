@@ -15,6 +15,7 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
@@ -282,6 +283,20 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             return Collections.emptyList();
         } else {
             return removeActivityOccurrenceIfCompleted(occurrenceId, aop.purge());
+        }
+    }
+
+    @Override
+    public void visit(IProcessingModelVisitor visitor) {
+        for(ActivityOccurrenceProcessor proc : id2occurrence.values()) {
+            proc.visit(visitor);
+        }
+    }
+
+    @Override
+    public void putCurrentStates(List<AbstractDataItem> items) {
+        for(ActivityOccurrenceProcessor proc : id2occurrence.values()) {
+            items.add(proc.get());
         }
     }
 

@@ -10,7 +10,9 @@ package eu.dariolucia.reatmetric.api.parameters;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.io.Serializable;
 import java.util.List;
@@ -19,7 +21,7 @@ import java.util.List;
  *
  * @author dario
  */
-public final class ParameterDataFilter extends AbstractDataItemFilter implements Serializable {
+public final class ParameterDataFilter extends AbstractDataItemFilter<ParameterData> implements Serializable {
    
     /**
 	 * 
@@ -83,5 +85,36 @@ public final class ParameterDataFilter extends AbstractDataItemFilter implements
     @Override
     public boolean isClear() {
         return this.parentPath == null && this.parameterPathList == null && this.routeList == null && this.alarmStateList == null && this.validityList == null;
+    }
+
+    @Override
+    public boolean test(ParameterData item) {
+        if(parentPath != null && !parentPath.isParentOf(item.getPath())) {
+            return false;
+        }
+        if(parameterPathList != null && !parameterPathList.contains(item.getPath())) {
+            return false;
+        }
+        if(alarmStateList != null && !alarmStateList.contains(item.getAlarmState())) {
+            return false;
+        }
+        if(routeList != null && !routeList.contains(item.getRoute())) {
+            return false;
+        }
+        if(validityList != null && !validityList.contains(item.getValidity())) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean select(SystemEntity entity) {
+        return entity.getType() == SystemEntityType.PARAMETER
+                && (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
+    }
+
+    @Override
+    public Class<ParameterData> getDataItemType() {
+        return ParameterData.class;
     }
 }

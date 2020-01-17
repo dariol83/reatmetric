@@ -10,10 +10,11 @@ package eu.dariolucia.reatmetric.api.events;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -21,7 +22,7 @@ import java.util.Objects;
  *
  * @author dario
  */
-public final class EventDataFilter extends AbstractDataItemFilter implements Serializable {
+public final class EventDataFilter extends AbstractDataItemFilter<EventData> implements Serializable {
     
 	/**
 	 * 
@@ -85,6 +86,37 @@ public final class EventDataFilter extends AbstractDataItemFilter implements Ser
     @Override
     public boolean isClear() {
         return this.parentPath == null && this.severityList == null && this.sourceList == null && this.routeList == null && this.typeList == null;
+    }
+
+    @Override
+    public boolean test(EventData item) {
+        if(parentPath != null && !parentPath.isParentOf(item.getPath())) {
+            return false;
+        }
+        if(severityList != null && !severityList.contains(item.getSeverity())) {
+            return false;
+        }
+        if(sourceList != null && !sourceList.contains(item.getSource())) {
+            return false;
+        }
+        if(routeList != null && !routeList.contains(item.getRoute())) {
+            return false;
+        }
+        if(typeList != null && !typeList.contains(item.getType())) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean select(SystemEntity entity) {
+        return entity.getType() == SystemEntityType.EVENT
+                && (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
+    }
+
+    @Override
+    public Class<EventData> getDataItemType() {
+        return EventData.class;
     }
 
     @Override

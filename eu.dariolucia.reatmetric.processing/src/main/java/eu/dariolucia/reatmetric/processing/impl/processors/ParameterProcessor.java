@@ -14,6 +14,7 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.value.ValueException;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
@@ -42,6 +43,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     private final ParameterDataBuilder builder;
 
     private final AlarmParameterDataBuilder alarmBuilder;
+
+    private volatile AlarmParameterData currentAlarmData;
 
     public ParameterProcessor(ParameterProcessingDefinition definition, ProcessingModelImpl processor) {
         super(definition, processor, SystemEntityType.PARAMETER);
@@ -190,9 +193,13 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
             generatedStates.add(this.entityState);
         }
-        // If there is an AlarmParameterData, then report it
+        // If there is an AlarmParameterData, then report it and save it
         if(alarmData != null) {
             generatedStates.add(alarmData);
+            currentAlarmData = alarmData;
+        } else {
+            // Remove the alarm data
+            currentAlarmData = null;
         }
         // At this stage, check the triggers and, for each of them, derive the correct behaviour
         activateTriggers(newValue, previousValue, wasInAlarm, stateChanged);
@@ -294,6 +301,24 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     @Override
     public List<AbstractDataItem> evaluate() throws ProcessingModelException {
         return process(null);
+    }
+
+    @Override
+    public void visit(IProcessingModelVisitor visitor) {
+        visitor.onVisit(getState());
+        AlarmParameterData currAlarmData = currentAlarmData;
+        if(currAlarmData != null) {
+            visitor.onVisit(currAlarmData);
+        }
+    }
+
+    @Override
+    public void putCurrentStates(List<AbstractDataItem> items) {
+        items.add(getState());
+        AlarmParameterData currAlarmData = currentAlarmData;
+        if(currAlarmData != null) {
+            items.add(currAlarmData);
+        }
     }
 
     @Override

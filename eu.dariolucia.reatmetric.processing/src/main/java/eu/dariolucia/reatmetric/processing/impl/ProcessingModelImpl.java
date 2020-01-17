@@ -12,6 +12,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
@@ -19,6 +20,7 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
@@ -32,6 +34,7 @@ import eu.dariolucia.reatmetric.processing.impl.graph.GraphModel;
 import eu.dariolucia.reatmetric.processing.impl.operations.*;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 import eu.dariolucia.reatmetric.processing.impl.processors.ActivityProcessor;
+import eu.dariolucia.reatmetric.processing.impl.processors.visitors.DataCollectorVisitor;
 import eu.dariolucia.reatmetric.processing.util.ThreadUtil;
 
 import java.time.Instant;
@@ -257,6 +260,28 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                     .flatMap(Collection::stream) // Flatten the list
                     .collect(Collectors.toList()); // Collect everything in a single list
         }
+    }
+
+    @Override
+    public void visit(IProcessingModelVisitor visitor) {
+        graphModel.navigate(visitor);
+    }
+
+    @Override
+    public List<AbstractDataItem> get(AbstractDataItemFilter<?> filter) {
+        DataCollectorVisitor visitor = new DataCollectorVisitor(filter);
+        graphModel.navigate(visitor);
+        return visitor.getCollectedData();
+    }
+
+    @Override
+    public List<AbstractDataItem> getByPath(List<SystemEntityPath> paths) throws ProcessingModelException {
+        return graphModel.getByPath(paths);
+    }
+
+    @Override
+    public List<AbstractDataItem> getById(List<Integer> ids) throws ProcessingModelException {
+        return graphModel.getById(ids);
     }
 
     private IUniqueId scheduleActivityOperation(ActivityRequest request, List<AbstractModelOperation<?>> operations, String type) throws ProcessingModelException {

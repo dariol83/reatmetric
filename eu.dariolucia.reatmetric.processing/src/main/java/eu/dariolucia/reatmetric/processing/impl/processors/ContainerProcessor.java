@@ -5,6 +5,7 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
@@ -53,6 +54,23 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
     @Override
     public List<AbstractDataItem> evaluate() {
         return process(VoidInputDataItem.instance());
+    }
+
+    @Override
+    public void visit(IProcessingModelVisitor visitor) {
+        for(AbstractSystemEntityProcessor proc : childProcessors) {
+            SystemEntity toVisit = proc.getEntityState();
+            if(visitor.shouldDescend(toVisit)) {
+                visitor.startVisit(toVisit);
+                proc.visit(visitor);
+                visitor.endVisit(toVisit);
+            }
+        }
+    }
+
+    @Override
+    public void putCurrentStates(List<AbstractDataItem> items) {
+        // Nothing to do
     }
 
     @Override

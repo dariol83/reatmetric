@@ -9,8 +9,9 @@
 package eu.dariolucia.reatmetric.api.activity;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
-import eu.dariolucia.reatmetric.api.messages.Severity;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.io.Serializable;
 import java.util.List;
@@ -20,7 +21,7 @@ import java.util.Objects;
  *
  * @author dario
  */
-public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter implements Serializable {
+public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<ActivityOccurrenceData> implements Serializable {
 
 	/**
 	 *
@@ -73,6 +74,33 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter i
     @Override
     public boolean isClear() {
         return this.parentPath == null && this.stateList == null && this.routeList == null && this.typeList == null;
+    }
+
+    @Override
+    public boolean test(ActivityOccurrenceData item) {
+        if(parentPath != null && !parentPath.isParentOf(item.getPath())) {
+            return false;
+        }
+        if(stateList != null && !stateList.contains(item.getCurrentState())) {
+            return false;
+        }
+        if(routeList != null && !routeList.contains(item.getRoute())) {
+            return false;
+        }
+        if(typeList != null && !typeList.contains(item.getType())) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean select(SystemEntity entity) {
+        return entity.getType() == SystemEntityType.ACTIVITY && (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
+    }
+
+    @Override
+    public Class<ActivityOccurrenceData> getDataItemType() {
+        return ActivityOccurrenceData.class;
     }
 
     @Override

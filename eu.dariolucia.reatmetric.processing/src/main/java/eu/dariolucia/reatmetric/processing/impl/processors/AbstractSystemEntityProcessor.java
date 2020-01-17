@@ -3,6 +3,7 @@ package eu.dariolucia.reatmetric.processing.impl.processors;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.*;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
@@ -96,4 +97,8 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         this.state = state.isEmpty() ? null : state.get(0);
         this.entityState = entityState;
     }
+
+    public abstract void visit(IProcessingModelVisitor visitor);
+
+    public abstract void putCurrentStates(List<AbstractDataItem> items);
 }

@@ -14,6 +14,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.ActivityOccurrenceUpdateOperation;
@@ -49,7 +50,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
 
     private final List<ActivityOccurrenceData> temporaryDataItemList = new ArrayList<>(10);
 
-    private ActivityOccurrenceData lastGeneratedState = null;
+    private volatile ActivityOccurrenceData lastGeneratedState = null;
 
     public ActivityOccurrenceProcessor(ActivityProcessor parent, IUniqueId occurrenceId, Instant creationTime, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> reports, String route) {
         this.parent = parent;
@@ -380,5 +381,9 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     @Override
     public ActivityOccurrenceData get() {
         return lastGeneratedState;
+    }
+
+    public void visit(IProcessingModelVisitor visitor) {
+        visitor.onVisit(lastGeneratedState);
     }
 }

@@ -9,6 +9,8 @@
 package eu.dariolucia.reatmetric.api.rawdata;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +19,7 @@ import java.util.List;
  *
  * @author dario
  */
-public final class RawDataFilter extends AbstractDataItemFilter implements Serializable {
+public final class RawDataFilter extends AbstractDataItemFilter<RawData> implements Serializable {
     
     /**
 	 * 
@@ -100,6 +102,36 @@ public final class RawDataFilter extends AbstractDataItemFilter implements Seria
     @Override
     public boolean isClear() {
         return this.qualityList == null && this.nameContains == null && this.sourceList == null && this.typeList == null && this.routeList == null;
+    }
+
+    @Override
+    public boolean test(RawData item) {
+        if(nameContains != null && !item.getName().contains(nameContains)) {
+            return false;
+        }
+        if(qualityList != null && !qualityList.contains(item.getQuality())) {
+            return false;
+        }
+        if(sourceList != null && !sourceList.contains(item.getSource())) {
+            return false;
+        }
+        if(routeList != null && !routeList.contains(item.getRoute())) {
+            return false;
+        }
+        if(typeList != null && !typeList.contains(item.getType())) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean select(SystemEntity entity) {
+        return true;
+    }
+
+    @Override
+    public Class<RawData> getDataItemType() {
+        return RawData.class;
     }
 
 }

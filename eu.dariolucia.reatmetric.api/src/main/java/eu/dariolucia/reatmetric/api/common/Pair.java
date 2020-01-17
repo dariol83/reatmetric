@@ -1,7 +1,6 @@
 package eu.dariolucia.reatmetric.api.common;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Objects;
 
 public final class Pair<T, K> implements Serializable {
@@ -24,15 +23,6 @@ public final class Pair<T, K> implements Serializable {
 
     public K getSecond() {
         return second;
-    }
-
-    public void addToList(List list) {
-        if(first != null) {
-            list.add(first);
-        }
-        if(second != null) {
-            list.add(second);
-        }
     }
 
     @Override
