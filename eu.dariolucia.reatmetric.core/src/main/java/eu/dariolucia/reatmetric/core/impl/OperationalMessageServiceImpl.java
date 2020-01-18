@@ -14,19 +14,26 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.*;
+import eu.dariolucia.reatmetric.core.api.IOperationalMessageBroker;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class OperationalMessageServiceImpl implements IOperationalMessageProvisionService {
+public class OperationalMessageServiceImpl extends Handler implements IOperationalMessageProvisionService, IOperationalMessageBroker {
+
+    public static final String REATMETRIC_ID = "ReatMetric";
+    private static final Logger LOG = Logger.getLogger(OperationalMessageServiceImpl.class.getName());
 
     private final IOperationalMessageArchive archive;
     private final AtomicLong sequencer;
@@ -43,14 +50,15 @@ public class OperationalMessageServiceImpl implements IOperationalMessageProvisi
         } else {
             this.sequencer.set(lastStoredUniqueId.asLong());
         }
-        // TODO: register to java.util.logging as handler
+        setLevel(Level.INFO);
+        Logger.getLogger("eu.dariolucia.reatmetric").addHandler(this);
     }
 
     @Override
     public void subscribe(IOperationalMessageSubscriber subscriber, OperationalMessageFilter filter) {
         OperationalMessageSubscriptionManager manager = subscriberIndex.get(subscriber);
         if(manager == null) {
-            manager = new OperationalMessageSubscriptionManager(subscriber, filter);
+            manager = new OperationalMessageSubscriptionManager(subscriber, filter, false);
             subscriberIndex.put(subscriber, manager);
             subscribers.add(manager);
         } else {
@@ -80,7 +88,13 @@ public class OperationalMessageServiceImpl implements IOperationalMessageProvisi
             archive.store(items);
         }
         for(OperationalMessageSubscriptionManager s : subscribers) {
-            s.notifyItems(items);
+            try {
+                s.notifyItems(items);
+            } catch (Exception e) {
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.log(Level.FINE, "Exception when notifying subscriber on operational message broker", e);
+                }
+            }
         }
     }
 
@@ -97,47 +111,121 @@ public class OperationalMessageServiceImpl implements IOperationalMessageProvisi
         return new LongUniqueId(sequencer.incrementAndGet());
     }
 
+    @Override
+    public void publish(LogRecord record) {
+        if(record.getLevel().intValue() < Level.INFO.intValue()) {
+            // Simple trace, ignore at this level
+            return;
+        }
+        IUniqueId idToAssign = nextOperationalMessageId();
+        Severity messageSeverity = Severity.INFO;
+        if(record.getLevel().intValue() >= Level.SEVERE.intValue()) {
+            messageSeverity = Severity.ALARM;
+        } else if(record.getLevel().intValue() >= Level.WARNING.intValue()) {
+            messageSeverity = Severity.WARN;
+        }
+        OperationalMessage om = new OperationalMessage(idToAssign, record.getInstant(), REATMETRIC_ID, record.getMessage(), record.getLoggerName(), messageSeverity, null);
+        try {
+            distribute(Collections.singletonList(om), true);
+        } catch (ReatmetricException e) {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Exception when distributing on operational message broker", e);
+            }
+        }
+    }
+
+    @Override
+    public void flush() {
+        // Do nothing
+    }
+
+    @Override
+    public void close() throws SecurityException {
+        // Do nothing
+    }
+
+    @Override
+    public OperationalMessage distribute(String id, String message, String source, Severity severity, Object[] additionalFields, boolean store) throws ReatmetricException {
+        IUniqueId idToAssign = nextOperationalMessageId();
+        OperationalMessage om = new OperationalMessage(idToAssign, Instant.now(), id, message, source, severity, additionalFields);
+        distribute(Collections.singletonList(om), store);
+        return om;
+    }
+
     private static class OperationalMessageSubscriptionManager {
 
         private static final Predicate<OperationalMessage> IDENTITY_FILTER = (o) -> true;
 
         private final ExecutorService dispatcher = Executors.newSingleThreadExecutor();
+        private final BlockingQueue<OperationalMessage> queue = new ArrayBlockingQueue<>(1000);
         private final IOperationalMessageSubscriber subscriber;
-        private Predicate<OperationalMessage> filter;
+        private final boolean timely;
+        private volatile Predicate<OperationalMessage> filter;
 
-        public OperationalMessageSubscriptionManager(IOperationalMessageSubscriber subscriber, OperationalMessageFilter filter) {
+        public OperationalMessageSubscriptionManager(IOperationalMessageSubscriber subscriber, OperationalMessageFilter filter, boolean timely) {
             this.subscriber = subscriber;
-            this.filter = filter;
-            sanitizeFilters();
+            this.filter = filter == null ? IDENTITY_FILTER : filter;
+            this.timely = timely;
+            dispatcher.submit(this::processQueue);
         }
 
-        public void notifyItems(List<OperationalMessage> items) {
-            // TODO: implement timely and blocking policy
-            dispatcher.submit(() -> {
-                List<OperationalMessage> toNotify = filterItems(items);
+        private void processQueue() {
+            List<OperationalMessage> drainer = new ArrayList<>(1000);
+            while(!dispatcher.isShutdown()) {
+                // Wait to have elements in the queue
+                synchronized (queue) {
+                    while(queue.isEmpty() && !dispatcher.isShutdown()) {
+                        try {
+                            queue.wait(1000);
+                        } catch (InterruptedException e) {
+                            break;
+                        }
+                    }
+                    // If the queue is still empty, repeat the outer cycle
+                    if(queue.isEmpty()) {
+                        continue;
+                    }
+                    // If you are here, there are elements in the queue: so drain them
+                    queue.drainTo(drainer);
+                }
+                // Now filter the items and then inform the subscriber
+                List<OperationalMessage> toNotify = filterItems(drainer);
                 if(!toNotify.isEmpty()) {
                     subscriber.dataItemsReceived(toNotify);
                 }
-            });
-        }
-
-        private synchronized List<OperationalMessage> filterItems(List<OperationalMessage> items) {
-            return items.stream().filter(filter).collect(Collectors.toList());
-        }
-
-        public synchronized void update(OperationalMessageFilter filter) {
-            this.filter = filter;
-            sanitizeFilters();
-        }
-
-        private void sanitizeFilters() {
-            if(filter == null) {
-                filter = IDENTITY_FILTER;
+                drainer.clear();
             }
         }
 
-        public synchronized void terminate() {
-            dispatcher.shutdownNow();
+        public void notifyItems(List<OperationalMessage> messages) {
+            synchronized (queue) {
+                if (timely && !queue.isEmpty() && messages.size() > queue.remainingCapacity()) {
+                    queue.clear();
+                }
+                queue.addAll(messages);
+                queue.notifyAll();
+            }
+        }
+
+        private List<OperationalMessage> filterItems(List<OperationalMessage> items) {
+            Predicate<OperationalMessage> theFilter = filter;
+            return items.stream().filter(theFilter).collect(Collectors.toList());
+        }
+
+        public void update(OperationalMessageFilter filter) {
+            this.filter = filter == null ? IDENTITY_FILTER : filter;
+        }
+
+        public void terminate() {
+            dispatcher.shutdown();
+            synchronized (queue) {
+                queue.notifyAll();
+            }
+            try {
+                dispatcher.awaitTermination(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                //
+            }
         }
     }
 }

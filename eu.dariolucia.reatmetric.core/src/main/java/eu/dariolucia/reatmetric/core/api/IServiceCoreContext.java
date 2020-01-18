@@ -17,4 +17,6 @@ public interface IServiceCoreContext {
     IServiceFactory getServiceFactory();
 
     IRawDataBroker getRawDataBroker();
+
+    IOperationalMessageBroker getOperationalMessageBroker();
 }

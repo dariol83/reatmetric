@@ -25,9 +25,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionService {
+
+    private static final Logger LOG = Logger.getLogger(RawDataBrokerImpl.class.getName());
 
     private final IRawDataArchive archive;
     private final AtomicLong sequencer;
@@ -80,7 +84,13 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
             archive.store(items);
         }
         for(RawDataSubscriptionManager s : subscribers) {
-            s.notifyItems(items);
+            try {
+                s.notifyItems(items);
+            } catch (Exception e) {
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.log(Level.FINE, "Exception when notifying subscriber on raw data broker", e);
+                }
+            }
         }
     }
 
@@ -129,7 +139,6 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
         }
 
         public void notifyItems(List<RawData> items) {
-            // TODO: implement timely and blocking policy
             dispatcher.submit(() -> {
                 List<RawData> toNotify = filterItems(items);
                 if(!toNotify.isEmpty()) {
