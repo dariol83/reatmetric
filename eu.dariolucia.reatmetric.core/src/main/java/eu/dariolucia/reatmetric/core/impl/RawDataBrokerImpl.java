@@ -17,6 +17,7 @@ import eu.dariolucia.reatmetric.api.rawdata.*;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +43,7 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
     public RawDataBrokerImpl(IRawDataArchive archive) throws ArchiveException {
         this.archive = archive;
         this.sequencer = new AtomicLong();
-        IUniqueId lastStoredUniqueId = archive.retrieveLastId();
+        IUniqueId lastStoredUniqueId = archive != null ? archive.retrieveLastId() : null;
         if(lastStoredUniqueId == null) {
             this.sequencer.set(0);
         } else {
@@ -53,7 +54,11 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
     @Override
     public RawData getRawDataContents(IUniqueId uniqueId) throws ReatmetricException {
         // Access the archive and query it
-        return archive.retrieve(uniqueId);
+        if(archive != null) {
+            return archive.retrieve(uniqueId);
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -64,13 +69,21 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
     @Override
     public List<RawData> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, RawDataFilter filter) throws ReatmetricException{
         // Access the archive and query it
-        return archive.retrieve(startTime, numRecords, direction, filter);
+        if(archive != null) {
+            return archive.retrieve(startTime, numRecords, direction, filter);
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     @Override
     public List<RawData> retrieve(RawData startItem, int numRecords, RetrievalDirection direction, RawDataFilter filter) throws ReatmetricException {
         // Access the archive and query it
-        return archive.retrieve(startItem, numRecords, direction, filter);
+        if(archive != null) {
+            return archive.retrieve(startItem, numRecords, direction, filter);
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     @Override
@@ -80,7 +93,7 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
 
     @Override
     public void distribute(List<RawData> items, boolean store) throws ReatmetricException {
-        if(store) {
+        if(store && archive != null) {
             archive.store(items);
         }
         for(RawDataSubscriptionManager s : subscribers) {

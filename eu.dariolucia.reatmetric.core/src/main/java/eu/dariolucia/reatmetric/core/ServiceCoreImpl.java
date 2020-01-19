@@ -11,21 +11,29 @@ import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.activity.IActivityExecutionService;
 import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
+import eu.dariolucia.reatmetric.api.archive.IArchive;
+import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
+import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService;
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.IOperationalMessageBroker;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
+import eu.dariolucia.reatmetric.core.impl.OperationalMessageBrokerImpl;
+import eu.dariolucia.reatmetric.core.impl.ProcessingModelManager;
+import eu.dariolucia.reatmetric.core.impl.RawDataBrokerImpl;
 
 import java.io.FileInputStream;
 import java.util.List;
+import java.util.ServiceLoader;
 import java.util.logging.LogManager;
 
 public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
@@ -33,6 +41,11 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
     private static final String INIT_FILE_KEY = "reatmetric.core.config"; // Absolute location of the init file, to configure the core instance
 
     private final ServiceCoreConfiguration configuration;
+
+    private IArchive archive;
+    private OperationalMessageBrokerImpl messageBroker;
+    private RawDataBrokerImpl rawDataBroker;
+    private ProcessingModelManager processingModelManager;
 
     public ServiceCoreImpl() {
         try {
@@ -50,15 +63,23 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
             LogManager.getLogManager().readConfiguration(new FileInputStream(configuration.getLogPropertyFile()));
         }
         // Load the archive
-        // TODO
+        if(configuration.getArchiveLocation() != null) {
+            ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
+            if(archiveLoader.findFirst().isPresent()) {
+                archive = archiveLoader.findFirst().get().buildArchive(configuration.getArchiveLocation());
+                archive.connect();
+            } else {
+                throw new ReatmetricException("Archive location configured, but no archive factory deployed");
+            }
+        }
         // Load the operational data broker
-        // TODO
+        IOperationalMessageArchive messageArchive = archive != null ? archive.getArchive(IOperationalMessageArchive.class) : null;
+        messageBroker = new OperationalMessageBrokerImpl(messageArchive);
         // Load the raw data broker
-        // TODO
-        // Load the processing model services
-        // TODO
-        // Load the processing model
-        // TODO
+        IRawDataArchive rawDataArchive = archive != null ? archive.getArchive(IRawDataArchive.class) : null;
+        rawDataBroker = new RawDataBrokerImpl(rawDataArchive);
+        // Load the processing model manager and services
+        processingModelManager = new ProcessingModelManager(archive, configuration.getDefinitionsLocation());
         // Load the drivers
         // For each driver, get and register the transport connectors
         // For each driver, get and register the activity handlers
@@ -73,42 +94,42 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
 
     @Override
     public IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException {
-        return null;
+        return messageBroker;
     }
 
     @Override
     public IRawDataProvisionService getRawDataMonitorService() throws ReatmetricException {
-        return null;
+        return rawDataBroker;
     }
 
     @Override
     public IParameterDataProvisionService getParameterDataMonitorService() throws ReatmetricException {
-        return null;
+        return processingModelManager.getParameterDataMonitorService();
     }
 
     @Override
     public ISystemModelProvisionService getSystemModelMonitorService() throws ReatmetricException {
-        return null;
+        return processingModelManager.getSystemModelMonitorService();
     }
 
     @Override
     public IEventDataProvisionService getEventDataMonitorService() throws ReatmetricException {
-        return null;
+        return processingModelManager.getEventDataMonitorService();
     }
 
     @Override
     public IAlarmParameterDataProvisionService getAlarmParameterDataMonitorService() throws ReatmetricException {
-        return null;
+        return processingModelManager.getAlarmParameterDataMonitorService();
     }
 
     @Override
     public IActivityOccurrenceDataProvisionService getActivityOccurrenceDataMonitorService() throws ReatmetricException {
-        return null;
+        return processingModelManager.getActivityOccurrenceDataMonitorService();
     }
 
     @Override
     public IActivityExecutionService getActivityExecutionService() throws ReatmetricException {
-        return null;
+        return processingModelManager.getActivityExecutionService();
     }
 
     @Override
@@ -118,21 +139,21 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
 
     @Override
     public IProcessingModel getProcessingModel() {
-        return null;
+        return processingModelManager.getProcessingModel();
     }
 
     @Override
     public IServiceFactory getServiceFactory() {
-        return null;
+        return this;
     }
 
     @Override
     public IRawDataBroker getRawDataBroker() {
-        return null;
+        return rawDataBroker;
     }
 
     @Override
     public IOperationalMessageBroker getOperationalMessageBroker() {
-        return null;
+        return messageBroker;
     }
 }

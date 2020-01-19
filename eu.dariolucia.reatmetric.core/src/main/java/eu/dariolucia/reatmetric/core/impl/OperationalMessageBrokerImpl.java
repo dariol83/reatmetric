@@ -30,10 +30,10 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class OperationalMessageServiceImpl extends Handler implements IOperationalMessageProvisionService, IOperationalMessageBroker {
+public class OperationalMessageBrokerImpl extends Handler implements IOperationalMessageProvisionService, IOperationalMessageBroker {
 
     public static final String REATMETRIC_ID = "ReatMetric";
-    private static final Logger LOG = Logger.getLogger(OperationalMessageServiceImpl.class.getName());
+    private static final Logger LOG = Logger.getLogger(OperationalMessageBrokerImpl.class.getName());
 
     private final IOperationalMessageArchive archive;
     private final AtomicLong sequencer;
@@ -41,10 +41,10 @@ public class OperationalMessageServiceImpl extends Handler implements IOperation
     private final List<OperationalMessageSubscriptionManager> subscribers = new CopyOnWriteArrayList<>();
     private final Map<IOperationalMessageSubscriber, OperationalMessageSubscriptionManager> subscriberIndex = new ConcurrentHashMap<>();
 
-    public OperationalMessageServiceImpl(IOperationalMessageArchive archive) throws ArchiveException {
+    public OperationalMessageBrokerImpl(IOperationalMessageArchive archive) throws ArchiveException {
         this.archive = archive;
         this.sequencer = new AtomicLong();
-        IUniqueId lastStoredUniqueId = archive.retrieveLastId();
+        IUniqueId lastStoredUniqueId = archive != null ? archive.retrieveLastId() : null;
         if(lastStoredUniqueId == null) {
             this.sequencer.set(0);
         } else {
@@ -69,13 +69,21 @@ public class OperationalMessageServiceImpl extends Handler implements IOperation
     @Override
     public List<OperationalMessage> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, OperationalMessageFilter filter) throws ReatmetricException{
         // Access the archive and query it
-        return archive.retrieve(startTime, numRecords, direction, filter);
+        if(archive != null) {
+            return archive.retrieve(startTime, numRecords, direction, filter);
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     @Override
     public List<OperationalMessage> retrieve(OperationalMessage startItem, int numRecords, RetrievalDirection direction, OperationalMessageFilter filter) throws ReatmetricException {
         // Access the archive and query it
-        return archive.retrieve(startItem, numRecords, direction, filter);
+        if(archive != null) {
+            return archive.retrieve(startItem, numRecords, direction, filter);
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     @Override
@@ -84,7 +92,7 @@ public class OperationalMessageServiceImpl extends Handler implements IOperation
     }
 
     private void distribute(List<OperationalMessage> items, boolean store) throws ReatmetricException {
-        if(store) {
+        if(store && archive != null) {
             archive.store(items);
         }
         for(OperationalMessageSubscriptionManager s : subscribers) {

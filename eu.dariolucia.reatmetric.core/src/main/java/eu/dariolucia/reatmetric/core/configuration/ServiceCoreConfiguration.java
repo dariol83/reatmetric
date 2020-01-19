@@ -39,16 +39,20 @@ public class ServiceCoreConfiguration {
     @XmlElement(name = "archiveLocation", required = true)
     private String archiveLocation;
 
+    @XmlElement(name = "definitionsLocation", required = true)
+    private String definitionsLocation;
+
     @XmlElement(name = "driver", required = true)
     private List<DriverConfiguration> drivers = new LinkedList<>();
 
     public ServiceCoreConfiguration() {
     }
 
-    public ServiceCoreConfiguration(String name, String logPropertyFile, String archiveLocation, List<DriverConfiguration> drivers) {
+    public ServiceCoreConfiguration(String name, String logPropertyFile, String archiveLocation, String definitionsLocation, List<DriverConfiguration> drivers) {
         this.name = name;
         this.logPropertyFile = logPropertyFile;
         this.archiveLocation = archiveLocation;
+        this.definitionsLocation = definitionsLocation;
         this.drivers = drivers;
     }
 
@@ -76,6 +80,15 @@ public class ServiceCoreConfiguration {
 
     public ServiceCoreConfiguration setArchiveLocation(String archiveLocation) {
         this.archiveLocation = archiveLocation;
+        return this;
+    }
+
+    public String getDefinitionsLocation() {
+        return definitionsLocation;
+    }
+
+    public ServiceCoreConfiguration setDefinitionsLocation(String definitionsLocation) {
+        this.definitionsLocation = definitionsLocation;
         return this;
     }
 
