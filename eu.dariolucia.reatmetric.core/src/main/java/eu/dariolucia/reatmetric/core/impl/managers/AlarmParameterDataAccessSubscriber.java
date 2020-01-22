@@ -7,26 +7,29 @@
 
 package eu.dariolucia.reatmetric.core.impl.managers;
 
+import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
+import eu.dariolucia.reatmetric.api.alarms.AlarmParameterDataFilter;
+import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 
-public class ParameterDataAccessSubscriber extends AbstractAccessSubscriber<ParameterData, ParameterDataFilter, IParameterDataSubscriber> {
+public class AlarmParameterDataAccessSubscriber extends AbstractAccessSubscriber<AlarmParameterData, AlarmParameterDataFilter, IAlarmParameterDataSubscriber> {
 
-    public ParameterDataAccessSubscriber(IParameterDataSubscriber subscriber, ParameterDataFilter filter, IProcessingModel model) {
+    public AlarmParameterDataAccessSubscriber(IAlarmParameterDataSubscriber subscriber, AlarmParameterDataFilter filter, IProcessingModel model) {
         super(subscriber, filter, model);
     }
 
     @Override
-    protected Pair<Integer, Long> computeId(ParameterData item) {
+    protected Pair<Integer, Long> computeId(AlarmParameterData item) {
         return Pair.of(item.getExternalId(), 0L);
     }
 
     @Override
     protected String getName() {
-        return "Parameter Access Subscriber";
+        return "Alarm Parameter Access Subscriber";
     }
 
 }

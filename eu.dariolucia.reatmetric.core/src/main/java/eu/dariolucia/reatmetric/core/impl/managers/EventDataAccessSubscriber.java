@@ -8,25 +8,25 @@
 package eu.dariolucia.reatmetric.core.impl.managers;
 
 import eu.dariolucia.reatmetric.api.common.Pair;
-import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
-import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
+import eu.dariolucia.reatmetric.api.events.EventData;
+import eu.dariolucia.reatmetric.api.events.EventDataFilter;
+import eu.dariolucia.reatmetric.api.events.IEventDataSubscriber;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 
-public class ParameterDataAccessSubscriber extends AbstractAccessSubscriber<ParameterData, ParameterDataFilter, IParameterDataSubscriber> {
+public class EventDataAccessSubscriber extends AbstractAccessSubscriber<EventData, EventDataFilter, IEventDataSubscriber> {
 
-    public ParameterDataAccessSubscriber(IParameterDataSubscriber subscriber, ParameterDataFilter filter, IProcessingModel model) {
+    public EventDataAccessSubscriber(IEventDataSubscriber subscriber, EventDataFilter filter, IProcessingModel model) {
         super(subscriber, filter, model);
     }
 
     @Override
-    protected Pair<Integer, Long> computeId(ParameterData item) {
+    protected Pair<Integer, Long> computeId(EventData item) {
         return Pair.of(item.getExternalId(), 0L);
     }
 
     @Override
     protected String getName() {
-        return "Parameter Access Subscriber";
+        return "Event Access Subscriber";
     }
 
 }

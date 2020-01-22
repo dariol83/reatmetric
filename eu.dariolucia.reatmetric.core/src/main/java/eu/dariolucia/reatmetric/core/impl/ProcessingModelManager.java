@@ -10,6 +10,7 @@ package eu.dariolucia.reatmetric.core.impl;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
 import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataArchive;
+import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
@@ -17,13 +18,17 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
+import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataArchive;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelFactory;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
-import eu.dariolucia.reatmetric.core.impl.managers.ParameterAccessManager;
+import eu.dariolucia.reatmetric.core.impl.managers.ActivityOccurrenceDataAccessManager;
+import eu.dariolucia.reatmetric.core.impl.managers.AlarmParameterDataAccessManager;
+import eu.dariolucia.reatmetric.core.impl.managers.EventDataAccessManager;
+import eu.dariolucia.reatmetric.core.impl.managers.ParameterDataAccessManager;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
 import javax.xml.bind.JAXBException;
@@ -44,7 +49,10 @@ public class ProcessingModelManager implements IProcessingModelOutput {
 
     private final IProcessingModel processingModel;
 
-    private final ParameterAccessManager parameterAccessManager;
+    private final ParameterDataAccessManager parameterDataAccessManager;
+    private final EventDataAccessManager eventDataAccessManager;
+    private final AlarmParameterDataAccessManager alarmDataAccessManager;
+    private final ActivityOccurrenceDataAccessManager activityOccurrenceDataAccessManager;
 
     public ProcessingModelManager(IArchive archive, String definitionsLocation) throws ReatmetricException {
         Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters = new HashMap<>();
@@ -68,27 +76,30 @@ public class ProcessingModelManager implements IProcessingModelOutput {
         // Aggregate all the definitions inside the definitionsLocation path
         ProcessingDefinition defs = readProcessingDefinitions(definitionsLocation);
         // Create the access services
-        parameterAccessManager = new ParameterAccessManager(parameterArchive);
-        alarmAccessManager = new AlarmAccessManager(alarmArchive);
-        eventAccessManager = new EventAccessManager(eventArchive);
-        activityAccessManager = new ActivityAccessManager(activityArchive);
+        parameterDataAccessManager = new ParameterDataAccessManager(parameterArchive);
+        alarmDataAccessManager = new AlarmParameterDataAccessManager(alarmArchive);
+        eventDataAccessManager = new EventDataAccessManager(eventArchive);
+        activityOccurrenceDataAccessManager = new ActivityOccurrenceDataAccessManager(activityArchive);
         // Create the model
         ServiceLoader<IProcessingModelFactory> modelLoader = ServiceLoader.load(IProcessingModelFactory.class);
         if(modelLoader.findFirst().isPresent()) {
             IProcessingModelFactory modelFactory = modelLoader.findFirst().get();
             processingModel = modelFactory.build(defs, this, initialUniqueCounters);
-            parameterAccessManager.setProcessingModel(processingModel);
-            alarmAccessManager.setProcessingModel(processingModel);
-            eventAccessManager.setProcessingModel(processingModel);
-            activityAccessManager.setProcessingModel(processingModel);
+            parameterDataAccessManager.setProcessingModel(processingModel);
+            alarmDataAccessManager.setProcessingModel(processingModel);
+            eventDataAccessManager.setProcessingModel(processingModel);
+            activityOccurrenceDataAccessManager.setProcessingModel(processingModel);
         } else {
             throw new ReatmetricException("Archive location configured, but no archive factory deployed");
         }
     }
 
-    private ProcessingDefinition readProcessingDefinitions(String definitionsLocation) {
+    private ProcessingDefinition readProcessingDefinitions(String definitionsLocation) throws ReatmetricException {
         ProcessingDefinition aggregated = new ProcessingDefinition();
         File folder = new File(definitionsLocation);
+        if(!folder.exists() || folder.listFiles() == null) {
+            throw new ReatmetricException("Cannot read definition files in folder " + definitionsLocation);
+        }
         for(File def : folder.listFiles()) {
             try {
                 ProcessingDefinition eachDef = ProcessingDefinition.load(new FileInputStream(def));
@@ -97,6 +108,7 @@ public class ProcessingModelManager implements IProcessingModelOutput {
                 aggregated.getActivityDefinitions().addAll(eachDef.getActivityDefinitions());
             } catch(IOException | JAXBException e) {
                 // TODO log properly
+                e.printStackTrace();
             }
         }
         return aggregated;
@@ -104,13 +116,25 @@ public class ProcessingModelManager implements IProcessingModelOutput {
 
     @Override
     public void notifyUpdate(List<AbstractDataItem> items) {
-        parameterAccessManager.distribute(items);
-        alarmAccessManager.distribute(items);
-        eventAccessManager.distribute(items);
-        activityAccessManager.distribute(items);
+        parameterDataAccessManager.distribute(items);
+        alarmDataAccessManager.distribute(items);
+        eventDataAccessManager.distribute(items);
+        activityOccurrenceDataAccessManager.distribute(items);
     }
 
     public IParameterDataProvisionService getParameterDataMonitorService() {
-        return parameterAccessManager;
+        return parameterDataAccessManager;
+    }
+
+    public IEventDataProvisionService getEventDataMonitorService() {
+        return eventDataAccessManager;
+    }
+
+    public IActivityOccurrenceDataProvisionService getActivityOccurrenceDataMonitorService() {
+        return activityOccurrenceDataAccessManager;
+    }
+
+    public AlarmParameterDataAccessManager getAlarmParameterDataMonitorService() {
+        return alarmDataAccessManager;
     }
 }
