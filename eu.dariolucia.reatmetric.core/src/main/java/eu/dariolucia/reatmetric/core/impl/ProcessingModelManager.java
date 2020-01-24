@@ -7,24 +7,29 @@
 
 package eu.dariolucia.reatmetric.core.impl;
 
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
-import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataArchive;
-import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
+import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
+import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
+import eu.dariolucia.reatmetric.api.model.ISystemModelSubscriber;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataArchive;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelFactory;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.core.impl.managers.ActivityOccurrenceDataAccessManager;
 import eu.dariolucia.reatmetric.core.impl.managers.AlarmParameterDataAccessManager;
 import eu.dariolucia.reatmetric.core.impl.managers.EventDataAccessManager;
@@ -35,12 +40,13 @@ import javax.xml.bind.JAXBException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
-public class ProcessingModelManager implements IProcessingModelOutput {
+public class ProcessingModelManager implements IProcessingModelOutput, ISystemModelProvisionService, IActivityExecutionService {
 
     private final IParameterDataArchive parameterArchive;
     private final IEventDataArchive eventArchive;
@@ -53,6 +59,8 @@ public class ProcessingModelManager implements IProcessingModelOutput {
     private final EventDataAccessManager eventDataAccessManager;
     private final AlarmParameterDataAccessManager alarmDataAccessManager;
     private final ActivityOccurrenceDataAccessManager activityOccurrenceDataAccessManager;
+
+    private final Map<ISystemModelSubscriber, SystemModelSubscriberWrapper> subscribers = new LinkedHashMap<>();
 
     public ProcessingModelManager(IArchive archive, String definitionsLocation) throws ReatmetricException {
         Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters = new HashMap<>();
@@ -120,6 +128,10 @@ public class ProcessingModelManager implements IProcessingModelOutput {
         alarmDataAccessManager.distribute(items);
         eventDataAccessManager.distribute(items);
         activityOccurrenceDataAccessManager.distribute(items);
+
+        for(SystemModelSubscriberWrapper w : subscribers.values()) {
+            w.notifyItems(items);
+        }
     }
 
     public IParameterDataProvisionService getParameterDataMonitorService() {
@@ -136,5 +148,105 @@ public class ProcessingModelManager implements IProcessingModelOutput {
 
     public AlarmParameterDataAccessManager getAlarmParameterDataMonitorService() {
         return alarmDataAccessManager;
+    }
+
+    @Override
+    public void subscribe(ISystemModelSubscriber subscriber) {
+        if(!subscribers.containsKey(subscriber)) {
+            subscribers.put(subscriber, new SystemModelSubscriberWrapper(subscriber));
+        }
+    }
+
+    @Override
+    public void unsubscribe(ISystemModelSubscriber subscriber) {
+        SystemModelSubscriberWrapper wrapper = subscribers.remove(subscriber);
+        if(wrapper != null) {
+            wrapper.terminate();
+        }
+    }
+
+    @Override
+    public SystemEntity getRoot() throws ReatmetricException {
+        return processingModel.getRoot();
+    }
+
+    @Override
+    public List<SystemEntity> getContainedEntities(SystemEntityPath se) throws ReatmetricException {
+        return processingModel.getContainedEntities(se);
+    }
+
+    @Override
+    public SystemEntity getSystemEntityAt(SystemEntityPath path) throws ReatmetricException {
+        return processingModel.getSystemEntityAt(path);
+    }
+
+    @Override
+    public SystemEntity getSystemEntityOf(int externalId) throws ReatmetricException {
+        return processingModel.getSystemEntityOf(externalId);
+    }
+
+    @Override
+    public int getExternalIdOf(SystemEntityPath path) throws ReatmetricException {
+        return processingModel.getExternalIdOf(path);
+    }
+
+    @Override
+    public SystemEntityPath getPathOf(int externalId) throws ReatmetricException {
+        return processingModel.getPathOf(externalId);
+    }
+
+    @Override
+    public IUniqueId startActivity(ActivityRequest request) throws ReatmetricException {
+        return processingModel.startActivity(request);
+    }
+
+    @Override
+    public IUniqueId createActivity(ActivityRequest request, ActivityProgress currentProgress) throws ReatmetricException {
+        return processingModel.createActivity(request, currentProgress);
+    }
+
+    @Override
+    public void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) throws ReatmetricException {
+        processingModel.purgeActivities(activityOccurrenceIds);
+    }
+
+    public IProcessingModel getProcessingModel() {
+        return processingModel;
+    }
+
+    private class SystemModelSubscriberWrapper {
+
+        private final ISystemModelSubscriber subscriber;
+        private final ExecutorService dispatcher;
+
+        public SystemModelSubscriberWrapper(ISystemModelSubscriber subscriber) {
+            this.subscriber = subscriber;
+            this.dispatcher = Executors.newSingleThreadExecutor((r) -> {
+                Thread t = new Thread();
+                t.setName("Reatmetric System Model Dispatcher - " + subscriber);
+                t.setDaemon(true);
+                return t;
+            });
+        }
+
+        public void notifyItems(List<AbstractDataItem> toDistribute) {
+            if(this.dispatcher.isShutdown()) {
+                return;
+            }
+            List<SystemEntity> filtered = toDistribute.stream().filter((i) -> i.getClass().equals(SystemEntity.class)).map(o -> (SystemEntity) o).collect(Collectors.toList());
+            if(!filtered.isEmpty()) {
+                subscriber.dataItemsReceived(filtered);
+            }
+        }
+
+        public void terminate() {
+            this.dispatcher.shutdownNow();
+            try {
+                this.dispatcher.awaitTermination(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                // TODO
+                e.printStackTrace();
+            }
+        }
     }
 }

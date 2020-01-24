@@ -28,7 +28,6 @@ import eu.dariolucia.reatmetric.api.model.Status;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
-import eu.dariolucia.reatmetric.api.model.SystemEntityUpdate;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;

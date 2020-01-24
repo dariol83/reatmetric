@@ -8,9 +8,6 @@
 package eu.dariolucia.reatmetric.core.impl.managers;
 
 import eu.dariolucia.reatmetric.api.common.*;
-import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
-import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 
 import java.util.*;
@@ -116,13 +113,18 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
     }
 
     public void notifyItems(List<T> toDistribute) {
+        if(!running) {
+            return;
+        }
         K theFilter = filter;
         if(theFilter != null && !theFilter.isClear()) {
             toDistribute = toDistribute.stream().filter(theFilter).collect(Collectors.toList());
         }
-        synchronized (queue) {
-            queue.addAll(toDistribute);
-            queue.notifyAll();
+        if(!toDistribute.isEmpty()) {
+            synchronized (queue) {
+                queue.addAll(toDistribute);
+                queue.notifyAll();
+            }
         }
     }
 

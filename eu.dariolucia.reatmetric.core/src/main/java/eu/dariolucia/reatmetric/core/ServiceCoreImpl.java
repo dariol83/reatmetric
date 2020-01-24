@@ -19,21 +19,25 @@ import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService;
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
+import eu.dariolucia.reatmetric.core.api.IDriver;
 import eu.dariolucia.reatmetric.core.api.IOperationalMessageBroker;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
+import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
+import eu.dariolucia.reatmetric.core.configuration.DriverConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.core.impl.OperationalMessageBrokerImpl;
 import eu.dariolucia.reatmetric.core.impl.ProcessingModelManager;
 import eu.dariolucia.reatmetric.core.impl.RawDataBrokerImpl;
 
 import java.io.FileInputStream;
-import java.util.List;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.logging.LogManager;
 
 public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
@@ -41,6 +45,9 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
     private static final String INIT_FILE_KEY = "reatmetric.core.config"; // Absolute location of the init file, to configure the core instance
 
     private final ServiceCoreConfiguration configuration;
+    private final List<IDriver> drivers = new ArrayList<>();
+    private final List<ITransportConnector> transportConnectors = new ArrayList<>();
+    private final List<ITransportConnector> transportConnectorsImmutable = Collections.unmodifiableList(transportConnectors);
 
     private IArchive archive;
     private OperationalMessageBrokerImpl messageBroker;
@@ -81,10 +88,44 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
         // Load the processing model manager and services
         processingModelManager = new ProcessingModelManager(archive, configuration.getDefinitionsLocation());
         // Load the drivers
-        // For each driver, get and register the transport connectors
-        // For each driver, get and register the activity handlers
-        // TODO
+        for(DriverConfiguration dc : configuration.getDrivers()) {
+            IDriver driver = loadDriver(dc);
+            if(driver != null) {
+                // Register the driver
+                drivers.add(driver);
+                // Get and register the transport connectors
+                registerConnectors(driver.getTransportConnectors());
+                // Get and register the activity handlers
+                registerActivityHandlers(driver.getActivityHandlers());
+            }
+        }
         // Done and ready to go
+    }
+
+    private void registerActivityHandlers(List<IActivityHandler> activityHandlers) {
+        for(IActivityHandler h : activityHandlers) {
+            try {
+                getProcessingModel().registerActivityHandler(h);
+            } catch (ProcessingModelException e) {
+                // TODO
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void registerConnectors(List<ITransportConnector> transportConnectors) {
+        this.transportConnectors.addAll(transportConnectors);
+    }
+
+    private IDriver loadDriver(DriverConfiguration dc) throws DriverException {
+        ServiceLoader<IDriver> serviceLoader = ServiceLoader.load(IDriver.class);
+        Optional<ServiceLoader.Provider<IDriver>> provider = serviceLoader.stream().filter(pr -> pr.type().getName().equals(dc.getType())).findFirst();
+        IDriver driver = null;
+        if(provider.isPresent()) {
+            driver = provider.get().get();
+            driver.initialise(dc.getName(), dc.getConfiguration(), this);
+        }
+        return driver;
     }
 
     @Override
@@ -93,48 +134,48 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
     }
 
     @Override
-    public IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException {
+    public IOperationalMessageProvisionService getOperationalMessageMonitorService() {
         return messageBroker;
     }
 
     @Override
-    public IRawDataProvisionService getRawDataMonitorService() throws ReatmetricException {
+    public IRawDataProvisionService getRawDataMonitorService()  {
         return rawDataBroker;
     }
 
     @Override
-    public IParameterDataProvisionService getParameterDataMonitorService() throws ReatmetricException {
+    public IParameterDataProvisionService getParameterDataMonitorService() {
         return processingModelManager.getParameterDataMonitorService();
     }
 
     @Override
-    public ISystemModelProvisionService getSystemModelMonitorService() throws ReatmetricException {
-        return processingModelManager.getSystemModelMonitorService();
+    public ISystemModelProvisionService getSystemModelMonitorService() {
+        return processingModelManager;
     }
 
     @Override
-    public IEventDataProvisionService getEventDataMonitorService() throws ReatmetricException {
+    public IEventDataProvisionService getEventDataMonitorService() {
         return processingModelManager.getEventDataMonitorService();
     }
 
     @Override
-    public IAlarmParameterDataProvisionService getAlarmParameterDataMonitorService() throws ReatmetricException {
+    public IAlarmParameterDataProvisionService getAlarmParameterDataMonitorService() {
         return processingModelManager.getAlarmParameterDataMonitorService();
     }
 
     @Override
-    public IActivityOccurrenceDataProvisionService getActivityOccurrenceDataMonitorService() throws ReatmetricException {
+    public IActivityOccurrenceDataProvisionService getActivityOccurrenceDataMonitorService() {
         return processingModelManager.getActivityOccurrenceDataMonitorService();
     }
 
     @Override
-    public IActivityExecutionService getActivityExecutionService() throws ReatmetricException {
-        return processingModelManager.getActivityExecutionService();
+    public IActivityExecutionService getActivityExecutionService() {
+        return processingModelManager;
     }
 
     @Override
-    public List<ITransportConnector> getTransportConnectors() throws ReatmetricException {
-        return null;
+    public List<ITransportConnector> getTransportConnectors() {
+        return transportConnectorsImmutable;
     }
 
     @Override

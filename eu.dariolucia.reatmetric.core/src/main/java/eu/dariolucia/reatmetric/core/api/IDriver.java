@@ -15,7 +15,7 @@ import java.util.List;
 
 public interface IDriver {
 
-    void initialise(String driverConfigurationDirectory, IServiceCoreContext context) throws DriverException;
+    void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context) throws DriverException;
 
     List<IActivityHandler> getActivityHandlers();
 

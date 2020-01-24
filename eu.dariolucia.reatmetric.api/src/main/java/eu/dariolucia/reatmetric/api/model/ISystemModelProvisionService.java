@@ -8,6 +8,9 @@
 
 package eu.dariolucia.reatmetric.api.model;
 
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
+
 import java.util.List;
 
 /**
@@ -20,16 +23,16 @@ public interface ISystemModelProvisionService {
     
     void unsubscribe(ISystemModelSubscriber subscriber);
     
-    SystemEntity getRoot();
+    SystemEntity getRoot() throws ReatmetricException;
     
-    List<SystemEntity> getContainedEntities(SystemEntityPath se);
+    List<SystemEntity> getContainedEntities(SystemEntityPath se) throws ReatmetricException;
     
-    SystemEntity getSystemEntityAt(SystemEntityPath path);
+    SystemEntity getSystemEntityAt(SystemEntityPath path) throws ReatmetricException;
 
-    SystemEntity getSystemEntityOf(int externalId);
+    SystemEntity getSystemEntityOf(int externalId) throws ReatmetricException;
 
-    int getExternalIdOf(SystemEntityPath path);
+    int getExternalIdOf(SystemEntityPath path) throws ReatmetricException;
 
-    SystemEntityPath getPathOf(int externalId);
+    SystemEntityPath getPathOf(int externalId) throws ReatmetricException;
 
 }

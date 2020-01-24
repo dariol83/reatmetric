@@ -14,6 +14,6 @@ import eu.dariolucia.reatmetric.api.common.IDataItemSubscriber;
  *
  * @author dario
  */
-public interface ISystemModelSubscriber extends IDataItemSubscriber<SystemEntityUpdate> {
+public interface ISystemModelSubscriber extends IDataItemSubscriber<SystemEntity> {
     
 }
