@@ -40,6 +40,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     private final Map<String, String> properties;
     private final List<ActivityOccurrenceReport> reports;
     private final String route;
+    private final String source;
 
     private ActivityOccurrenceState currentState;
     private Instant executionTime;
@@ -52,7 +53,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
 
     private volatile ActivityOccurrenceData lastGeneratedState = null;
 
-    public ActivityOccurrenceProcessor(ActivityProcessor parent, IUniqueId occurrenceId, Instant creationTime, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> reports, String route) {
+    public ActivityOccurrenceProcessor(ActivityProcessor parent, IUniqueId occurrenceId, Instant creationTime, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> reports, String route, String source) {
         this.parent = parent;
         this.occurrenceId = occurrenceId;
         this.creationTime = creationTime;
@@ -60,10 +61,11 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         this.properties = Collections.unmodifiableMap(properties);
         this.reports = reports;
         this.route = route;
+        this.source = source;
     }
 
     public ActivityOccurrenceProcessor(ActivityProcessor parent, ActivityOccurrenceData occurrenceToRestore) {
-        this(parent, occurrenceToRestore.getInternalId(), occurrenceToRestore.getGenerationTime(), occurrenceToRestore.getArguments(), occurrenceToRestore.getProperties(), occurrenceToRestore.getProgressReports(), occurrenceToRestore.getRoute());
+        this(parent, occurrenceToRestore.getInternalId(), occurrenceToRestore.getGenerationTime(), occurrenceToRestore.getArguments(), occurrenceToRestore.getProperties(), occurrenceToRestore.getProgressReports(), occurrenceToRestore.getRoute(), occurrenceToRestore.getSource());
         this.currentState = occurrenceToRestore.getCurrentState();
         this.executionTime = occurrenceToRestore.getExecutionTime();
         this.lastGeneratedState = occurrenceToRestore;
@@ -145,7 +147,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         // Set the execution time if any
         this.executionTime = executionTime != null ? executionTime : this.executionTime;
         // Generate the ActivityOccurrenceData and add it to the temporary list
-        ActivityOccurrenceData activityOccurrenceData = new ActivityOccurrenceData(this.occurrenceId, creationTime, null, parent.getSystemEntityId(), parent.getPath().getLastPathElement(), parent.getPath(), parent.getDefinition().getType(), this.arguments, this.properties, List.copyOf(this.reports), this.route);
+        ActivityOccurrenceData activityOccurrenceData = new ActivityOccurrenceData(this.occurrenceId, creationTime, null, parent.getSystemEntityId(), parent.getPath().getLastPathElement(), parent.getPath(), parent.getDefinition().getType(), this.arguments, this.properties, List.copyOf(this.reports), this.route, this.source);
         temporaryDataItemList.add(activityOccurrenceData);
         // If the current state is now COMPLETION, stop the timeout
         if (currentState == ActivityOccurrenceState.COMPLETION) {
@@ -368,6 +370,10 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
 
     public String route() {
         return this.route;
+    }
+
+    public String source() {
+        return this.source;
     }
 
     public Instant creationTime() {

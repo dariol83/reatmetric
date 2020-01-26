@@ -32,16 +32,23 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
 
     private final List<String> routeList;
 
+    private final List<String> sourceList;
+
     private final List<String> typeList;
 
     private final List<ActivityOccurrenceState> stateList;
 
-    public ActivityOccurrenceDataFilter(SystemEntityPath parentPath, List<String> routeList, List<String> typeList, List<ActivityOccurrenceState> stateList) {
+    public ActivityOccurrenceDataFilter(SystemEntityPath parentPath, List<String> routeList, List<String> typeList, List<ActivityOccurrenceState> stateList, List<String> sourceList) {
         this.parentPath = parentPath;
         if(routeList != null) {
             this.routeList = List.copyOf(routeList);
         } else {
             this.routeList = null;
+        }
+        if(sourceList != null) {
+            this.sourceList = List.copyOf(sourceList);
+        } else {
+            this.sourceList = null;
         }
         if(typeList != null) {
             this.typeList = List.copyOf(typeList);
@@ -70,10 +77,14 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
     public List<String> getTypeList() {
         return typeList;
     }
-    
+
+    public List<String> getSourceList() {
+        return sourceList;
+    }
+
     @Override
     public boolean isClear() {
-        return this.parentPath == null && this.stateList == null && this.routeList == null && this.typeList == null;
+        return this.parentPath == null && this.stateList == null && this.routeList == null && this.typeList == null && this.sourceList == null;
     }
 
     @Override
@@ -85,6 +96,9 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
             return false;
         }
         if(routeList != null && !routeList.contains(item.getRoute())) {
+            return false;
+        }
+        if(sourceList != null && !sourceList.contains(item.getRoute())) {
             return false;
         }
         if(typeList != null && !typeList.contains(item.getType())) {
@@ -109,6 +123,7 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
         hash = 19 * hash + Objects.hashCode(this.parentPath);
         hash = 19 * hash + Objects.hashCode(this.stateList);
         hash = 19 * hash + Objects.hashCode(this.routeList);
+        hash = 19 * hash + Objects.hashCode(this.sourceList);
         hash = 19 * hash + Objects.hashCode(this.typeList);
         return hash;
     }
@@ -134,6 +149,9 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
         if (!Objects.equals(this.routeList, other.routeList)) {
             return false;
         }
+        if (!Objects.equals(this.sourceList, other.sourceList)) {
+            return false;
+        }
         if (!Objects.equals(this.typeList, other.typeList)) {
             return false;
         }
@@ -142,7 +160,7 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
 
 	@Override
 	public String toString() {
-		return "EventDataFilter [parentPath=" + parentPath + ", routeList=" + routeList + ", typeList=" + typeList
+		return "EventDataFilter [parentPath=" + parentPath + ", routeList=" + routeList + ", sourceList=" + sourceList + ", typeList=" + typeList
 				+ ", stateList=" + stateList + "]";
 	}
 

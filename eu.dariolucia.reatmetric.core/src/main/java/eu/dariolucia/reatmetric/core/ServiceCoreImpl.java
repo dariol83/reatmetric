@@ -123,7 +123,7 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
         IDriver driver = null;
         if(provider.isPresent()) {
             driver = provider.get().get();
-            driver.initialise(dc.getName(), dc.getConfiguration(), this);
+            driver.initialise(dc.getName(), dc.getConfiguration(), this, this.configuration);
         }
         return driver;
     }

@@ -126,7 +126,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         storeStatement.setString(5, item.getPath().asString());
         storeStatement.setString(6, item.getType());
         storeStatement.setString(7, item.getRoute());
-        storeStatement.setString(8, ""); // TODO: add source to the activity occurrence
+        storeStatement.setString(8, item.getSource());
         storeStatement.setBlob(9, toInputstream(item.getArguments()));
         storeStatement.setBlob(10, toInputstream(item.getProperties()));
         storeStatement.setBlob(11, toInputstreamArray(item.getAdditionalFields()));
@@ -177,7 +177,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                     result = new ActivityOccurrenceData(temporaryResult.getInternalId(), temporaryResult.getGenerationTime(),
                             temporaryResult.getAdditionalFields(), temporaryResult.getExternalId(), temporaryResult.getName(),
                             temporaryResult.getPath(), temporaryResult.getType(), temporaryResult.getArguments(),
-                            temporaryResult.getProperties(), reports, temporaryResult.getRoute());
+                            temporaryResult.getProperties(), reports, temporaryResult.getRoute(), temporaryResult.getSource());
                 }
             } finally {
                 connection.commit();
@@ -218,7 +218,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
 
         return new ActivityOccurrenceData(new LongUniqueId(uniqueId), toInstant(genTime),
                 additionalDataArray, externalId, name, SystemEntityPath.fromString(path),
-                type, arguments, properties, reports, route);
+                type, arguments, properties, reports, route, source);
     }
 
     @Override
@@ -252,7 +252,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                             ActivityOccurrenceData fullOccurrence = new ActivityOccurrenceData(temporaryResult.getInternalId(), temporaryResult.getGenerationTime(),
                                     temporaryResult.getAdditionalFields(), temporaryResult.getExternalId(), temporaryResult.getName(),
                                     temporaryResult.getPath(), temporaryResult.getType(), temporaryResult.getArguments(),
-                                    temporaryResult.getProperties(), reports, temporaryResult.getRoute());
+                                    temporaryResult.getProperties(), reports, temporaryResult.getRoute(), temporaryResult.getSource());
                             if(checkStateFilter(filter, fullOccurrence)) {
                                 result.add(fullOccurrence);
                             }
@@ -272,7 +272,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                     ActivityOccurrenceData fullOccurrence = new ActivityOccurrenceData(temporaryResult.getInternalId(), temporaryResult.getGenerationTime(),
                             temporaryResult.getAdditionalFields(), temporaryResult.getExternalId(), temporaryResult.getName(),
                             temporaryResult.getPath(), temporaryResult.getType(), temporaryResult.getArguments(),
-                            temporaryResult.getProperties(), reports, temporaryResult.getRoute());
+                            temporaryResult.getProperties(), reports, temporaryResult.getRoute(), temporaryResult.getSource());
                     if(checkStateFilter(filter, fullOccurrence)) {
                         result.add(fullOccurrence);
                     }
@@ -307,6 +307,9 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
             }
             if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
                 query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
+                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
             }
             if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
                 query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
@@ -363,6 +366,9 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
             }
             if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
                 query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
+                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
             }
             if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
                 query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");

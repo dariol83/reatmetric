@@ -75,6 +75,7 @@ class ActivityTest {
                     .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
                     .withProperty("custom", "hello world")
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
             assertEquals(0L, id1.asLong());
@@ -109,6 +110,7 @@ class ActivityTest {
                     .withArgument(ActivityArgument.ofSource("ARG3", 4.5))
                     .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
             try {
                 model.startActivity(ar1);
@@ -129,6 +131,7 @@ class ActivityTest {
                     .withArgument(ActivityArgument.ofSource("ARG3", 12.4))
                     .withArgument(ActivityArgument.ofEngineering("ARG4", "OFF"))
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
 
             IUniqueId id1 = model.startActivity(ar1);
@@ -184,6 +187,7 @@ class ActivityTest {
                     .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
                     .withProperty("custom", "hello world")
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
             assertEquals(0L, id1.asLong());
@@ -217,6 +221,7 @@ class ActivityTest {
                     .withArgument(ActivityArgument.ofEngineering("ARG2", 70000L))
                     .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
             try {
                 model.startActivity(ar1);
@@ -244,6 +249,7 @@ class ActivityTest {
                     .withArgument(ActivityArgument.ofSource("ARG1", false))
                     .withArgument(ActivityArgument.ofSource("ARG2", 3000L))
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
 
             IUniqueId id1 = model.startActivity(ar1);
@@ -284,6 +290,7 @@ class ActivityTest {
                     .withArgument(ActivityArgument.ofSource("ARG1", true))
                     .withArgument(ActivityArgument.ofEngineering("ARG2", 4000L))
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
             try {
                 model.startActivity(ar1);
@@ -329,6 +336,7 @@ class ActivityTest {
                     .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
                     .withProperty("custom", "hello world")
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
             assertEquals(0L, id1.asLong());
@@ -385,6 +393,7 @@ class ActivityTest {
             ActivityRequest ar1 = ActivityRequest.newRequest(1002)
                     .withArgument(ActivityArgument.ofSource("ARG1", 120L))
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
             assertEquals(0L, id1.asLong());
@@ -417,6 +426,7 @@ class ActivityTest {
             ActivityRequest ar1 = ActivityRequest.newRequest(1002)
                     .withArgument(ActivityArgument.ofSource("ARG1", 121L))
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
             assertEquals(1L, id1.asLong());
@@ -487,6 +497,7 @@ class ActivityTest {
             ActivityRequest ar1 = ActivityRequest.newRequest(1003)
                     .withArgument(ActivityArgument.ofSource("ARG1", 120L))
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
             assertEquals(0L, id1.asLong());
@@ -551,6 +562,7 @@ class ActivityTest {
                     .withArgument(ActivityArgument.ofSource("ARG1", true))
                     .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
 
             IUniqueId id1 = model.startActivity(ar1);
@@ -601,6 +613,7 @@ class ActivityTest {
                     .withArgument(ActivityArgument.ofSource("ARG3", 7.9))
                     .withArgument(ActivityArgument.ofSource("ARG4", 0))
                     .withRoute("C")
+                    .withSource("XXX")
                     .build();
 
             // Null occurrence ID, not relevant as it goes together with the activity request
@@ -684,6 +697,7 @@ class ActivityTest {
                     .withArgument(ActivityArgument.ofSource("ARG1", 120L))
                     .withProperty(SchedulingLifecycleStrategy.SCHEDULED_EXECUTION_TIME_KEY, Instant.now().plusSeconds(10).toString())
                     .withRoute("A")
+                    .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
             assertEquals(0L, id1.asLong());

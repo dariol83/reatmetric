@@ -134,7 +134,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             properties.put(kv.getKey(), kv.getValue());
         }
         properties.putAll(request.getProperties());
-        ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), Instant.now(), name2value, properties, new LinkedList<>(), request.getRoute());
+        ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), Instant.now(), name2value, properties, new LinkedList<>(), request.getRoute(), request.getSource());
         id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
         // inform the processor that the activity occurrence has been created, use equality to 1 to avoid calling the registration for every activity
         if(id2occurrence.size() == 1) {
@@ -220,7 +220,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             name2value.put(arg.getName(), arg.getRawValue()); // XXX: raw value only
         }
         //
-        ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), progress.getGenerationTime(), name2value, request.getProperties(), new LinkedList<>(), request.getRoute());
+        ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), progress.getGenerationTime(), name2value, request.getProperties(), new LinkedList<>(), request.getRoute(), request.getSource());
         id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
         // inform the processor that the activity occurrence has been created, check equality to 1 to avoid calling the registration for every occurrence
         if(id2occurrence.size() == 1) {

@@ -38,6 +38,8 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
 
     private final String route;
 
+    private final String source;
+
     // Derived
     private final Instant executionTime;
 
@@ -47,7 +49,7 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
     // Derived
     private final Object result;
 
-    public ActivityOccurrenceData(IUniqueId internalId, Instant generationTime, Object[] additionalFields, int externalId, String name, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> progressReports, String route) {
+    public ActivityOccurrenceData(IUniqueId internalId, Instant generationTime, Object[] additionalFields, int externalId, String name, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> progressReports, String route, String source) {
         super(internalId, generationTime, additionalFields);
         this.externalId = externalId;
         this.name = name;
@@ -57,6 +59,7 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
         this.properties = properties;
         this.progressReports = progressReports;
         this.route = route;
+        this.source = source;
         // Compute derived fields
         Instant derExecutionTime = null;
         ActivityOccurrenceState derState = ActivityOccurrenceState.CREATION;
@@ -115,6 +118,10 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
         return result;
     }
 
+    public String getSource() {
+        return source;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("ActivityOccurrenceData{" +
@@ -125,6 +132,7 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
                 ", arguments=" + arguments +
                 ", properties=" + properties +
                 ", route='" + route + '\'' +
+                ", source='" + source + '\'' +
                 ", executionTime=" + executionTime +
                 ", currentState=" + currentState +
                 ", result=" + result +

@@ -52,7 +52,7 @@ class ActivityOccurrenceDataArchiveTest {
             Instant t = Instant.now();
             // store one activity occurrence
             ActivityOccurrenceReport creationReport = new ActivityOccurrenceReport(new LongUniqueId(0), t, null, "Creation", ActivityOccurrenceState.CREATION, null, ActivityReportState.OK, ActivityOccurrenceState.RELEASE, null);
-            activityArchive.store(new ActivityOccurrenceData(new LongUniqueId(0), t, null, 12,"activity1", SystemEntityPath.fromString("root.activity1"), "t1", new HashMap<>(), new HashMap<>(), Collections.singletonList(creationReport), "routeA"));
+            activityArchive.store(new ActivityOccurrenceData(new LongUniqueId(0), t, null, 12,"activity1", SystemEntityPath.fromString("root.activity1"), "t1", new HashMap<>(), new HashMap<>(), Collections.singletonList(creationReport), "routeA", "sourceB"));
             Thread.sleep(2000);
             // retrieve: expected 1
             List<ActivityOccurrenceData> items = activityArchive.retrieve(t.minusMillis(200), 10, RetrievalDirection.TO_FUTURE, null);
@@ -68,7 +68,7 @@ class ActivityOccurrenceDataArchiveTest {
             assertNull(items.get(0).getExecutionTime());
             // store the second progress report
             ActivityOccurrenceReport releaseReport = new ActivityOccurrenceReport(new LongUniqueId(1), t.plusMillis(20), null, "Release", ActivityOccurrenceState.RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION, null);
-            activityArchive.store(new ActivityOccurrenceData(new LongUniqueId(0), t, null, 12,"activity1", SystemEntityPath.fromString("root.activity1"), "t1", new HashMap<>(), new HashMap<>(), Arrays.asList(creationReport, releaseReport), "routeA"));
+            activityArchive.store(new ActivityOccurrenceData(new LongUniqueId(0), t, null, 12,"activity1", SystemEntityPath.fromString("root.activity1"), "t1", new HashMap<>(), new HashMap<>(), Arrays.asList(creationReport, releaseReport), "routeA", "sourceB"));
             Thread.sleep(2000);
             // retrieve: expected 1
             items = activityArchive.retrieve(t.minusMillis(200), 10, RetrievalDirection.TO_FUTURE, null);
@@ -87,8 +87,8 @@ class ActivityOccurrenceDataArchiveTest {
             ActivityOccurrenceReport transmissionReport = new ActivityOccurrenceReport(new LongUniqueId(2), t.plusMillis(40), null, "Transmission", ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, null);
             ActivityOccurrenceReport executionReport = new ActivityOccurrenceReport(new LongUniqueId(3), t.plusMillis(50), null, "Execution", ActivityOccurrenceState.EXECUTION, t.plusMillis(45), ActivityReportState.OK, ActivityOccurrenceState.VERIFICATION, 5);
             activityArchive.store(Arrays.asList(
-                    new ActivityOccurrenceData(new LongUniqueId(0), t, null, 12,"activity1", SystemEntityPath.fromString("root.activity1"), "t1", new HashMap<>(), new HashMap<>(), Arrays.asList(creationReport, releaseReport, transmissionReport), "routeA"),
-                    new ActivityOccurrenceData(new LongUniqueId(0), t, null, 12,"activity1", SystemEntityPath.fromString("root.activity1"), "t1", new HashMap<>(), new HashMap<>(), Arrays.asList(creationReport, releaseReport, transmissionReport, executionReport), "routeA")
+                    new ActivityOccurrenceData(new LongUniqueId(0), t, null, 12,"activity1", SystemEntityPath.fromString("root.activity1"), "t1", new HashMap<>(), new HashMap<>(), Arrays.asList(creationReport, releaseReport, transmissionReport), "routeA", "sourceB"),
+                    new ActivityOccurrenceData(new LongUniqueId(0), t, null, 12,"activity1", SystemEntityPath.fromString("root.activity1"), "t1", new HashMap<>(), new HashMap<>(), Arrays.asList(creationReport, releaseReport, transmissionReport, executionReport), "routeA", "sourceB")
             ));
             Thread.sleep(2000);
             // retrieve: expected 1
@@ -114,9 +114,9 @@ class ActivityOccurrenceDataArchiveTest {
             releaseReport = new ActivityOccurrenceReport(new LongUniqueId(5), t.plusMillis(2000), null, "Release", ActivityOccurrenceState.RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION, null);
             transmissionReport = new ActivityOccurrenceReport(new LongUniqueId(6), t.plusMillis(4000), null, "Transmission", ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, null);
             activityArchive.store(Arrays.asList(
-                    new ActivityOccurrenceData(new LongUniqueId(1), t.plusMillis(1000), null, 13,"activity2", SystemEntityPath.fromString("root.activity2"), "t1", args, properties, Collections.singletonList(creationReport), "routeB"),
-                    new ActivityOccurrenceData(new LongUniqueId(1), t.plusMillis(1000), null, 13,"activity2", SystemEntityPath.fromString("root.activity2"), "t1", args, properties, Arrays.asList(creationReport, releaseReport), "routeB"),
-                    new ActivityOccurrenceData(new LongUniqueId(1), t.plusMillis(1000), null, 13,"activity2", SystemEntityPath.fromString("root.activity2"), "t1", args, properties, Arrays.asList(creationReport, releaseReport, transmissionReport), "routeB")
+                    new ActivityOccurrenceData(new LongUniqueId(1), t.plusMillis(1000), null, 13,"activity2", SystemEntityPath.fromString("root.activity2"), "t1", args, properties, Collections.singletonList(creationReport), "routeB", "sourceB"),
+                    new ActivityOccurrenceData(new LongUniqueId(1), t.plusMillis(1000), null, 13,"activity2", SystemEntityPath.fromString("root.activity2"), "t1", args, properties, Arrays.asList(creationReport, releaseReport), "routeB", "sourceB"),
+                    new ActivityOccurrenceData(new LongUniqueId(1), t.plusMillis(1000), null, 13,"activity2", SystemEntityPath.fromString("root.activity2"), "t1", args, properties, Arrays.asList(creationReport, releaseReport, transmissionReport), "routeB", "sourceB")
             ));
             // 2
             properties = Map.of("prop1", "val1", "prop2", "val2");
@@ -124,8 +124,8 @@ class ActivityOccurrenceDataArchiveTest {
             creationReport = new ActivityOccurrenceReport(new LongUniqueId(7), t.plusMillis(5000), null, "Creation", ActivityOccurrenceState.CREATION, null, ActivityReportState.OK, ActivityOccurrenceState.RELEASE, null);
             releaseReport = new ActivityOccurrenceReport(new LongUniqueId(8), t.plusMillis(5100), null, "Release", ActivityOccurrenceState.RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION, null);
             activityArchive.store(Arrays.asList(
-                    new ActivityOccurrenceData(new LongUniqueId(2), t.plusMillis(5000), null, 13,"activity2", SystemEntityPath.fromString("root.activity2"), "t2", args, properties, Collections.singletonList(creationReport), "routeA"),
-                    new ActivityOccurrenceData(new LongUniqueId(2), t.plusMillis(5000), null, 13,"activity2", SystemEntityPath.fromString("root.activity2"), "t2", args, properties, Arrays.asList(creationReport, releaseReport), "routeA")
+                    new ActivityOccurrenceData(new LongUniqueId(2), t.plusMillis(5000), null, 13,"activity2", SystemEntityPath.fromString("root.activity2"), "t2", args, properties, Collections.singletonList(creationReport), "routeA", "sourceB"),
+                    new ActivityOccurrenceData(new LongUniqueId(2), t.plusMillis(5000), null, 13,"activity2", SystemEntityPath.fromString("root.activity2"), "t2", args, properties, Arrays.asList(creationReport, releaseReport), "routeA", "sourceB")
             ));
             Thread.sleep(2000);
             // several retrievals (past, future, with filter, at time)
@@ -145,12 +145,12 @@ class ActivityOccurrenceDataArchiveTest {
             assertEquals(2L, items.get(0).getInternalId().asLong());
             assertEquals(1L, items.get(1).getInternalId().asLong());
             // retrieve: expected 1
-            items = activityArchive.retrieve(t.plusMillis(10000), 10, RetrievalDirection.TO_PAST, new ActivityOccurrenceDataFilter(null, Arrays.asList("routeB", "routeC"), Arrays.asList("t1", "t2"), null));
+            items = activityArchive.retrieve(t.plusMillis(10000), 10, RetrievalDirection.TO_PAST, new ActivityOccurrenceDataFilter(null, Arrays.asList("routeB", "routeC"), Arrays.asList("t1", "t2"), null, null));
             assertEquals(1, items.size());
             assertEquals(1L, items.get(0).getInternalId().asLong());
             assertEquals("routeB", items.get(0).getRoute());
             // retrieve: expected 2
-            items = activityArchive.retrieve(t.plusMillis(10000), 10, RetrievalDirection.TO_PAST, new ActivityOccurrenceDataFilter(SystemEntityPath.fromString("root.activity2"), Arrays.asList("routeA", "routeB", "routeC"), null, null));
+            items = activityArchive.retrieve(t.plusMillis(10000), 10, RetrievalDirection.TO_PAST, new ActivityOccurrenceDataFilter(SystemEntityPath.fromString("root.activity2"), Arrays.asList("routeA", "routeB", "routeC"), null, null, null));
             assertEquals(2, items.size());
             assertEquals(2L, items.get(0).getInternalId().asLong());
             assertEquals(1L, items.get(1).getInternalId().asLong());
@@ -162,7 +162,7 @@ class ActivityOccurrenceDataArchiveTest {
             assertEquals(1L, items.get(0).getInternalId().asLong());
             assertEquals(0L, items.get(1).getInternalId().asLong());
             // retrieve: expected 1
-            items = activityArchive.retrieve(t.plusMillis(2000),  new ActivityOccurrenceDataFilter(null, Arrays.asList("routeB", "routeC"), Arrays.asList("t1", "t2"), Collections.singletonList(ActivityOccurrenceState.EXECUTION)), null);
+            items = activityArchive.retrieve(t.plusMillis(2000),  new ActivityOccurrenceDataFilter(null, Arrays.asList("routeB", "routeC"), Arrays.asList("t1", "t2"), Collections.singletonList(ActivityOccurrenceState.EXECUTION), Arrays.asList("sourceA", "sourceB")), null);
             assertEquals(1, items.size());
             assertEquals(1L, items.get(0).getInternalId().asLong());
             assertEquals("val1", items.get(0).getProperties().get("prop1"));

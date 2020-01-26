@@ -24,12 +24,17 @@ public final class ActivityRequest extends AbstractInputDataItem {
      * The route that the request must be forwarded to.
      */
     private final String route;
+    /**
+     * The source that originated the request.
+     */
+    private final String source;
 
-    public ActivityRequest(int id, List<ActivityArgument> arguments, Map<String, String> properties, String route) {
+    public ActivityRequest(int id, List<ActivityArgument> arguments, Map<String, String> properties, String route, String source) {
         this.id = id;
         this.arguments = List.copyOf(arguments);
         this.properties = Collections.unmodifiableMap(new TreeMap<>(properties));
         this.route = route;
+        this.source = source;
     }
 
     public int getId() {
@@ -48,6 +53,10 @@ public final class ActivityRequest extends AbstractInputDataItem {
         return route;
     }
 
+    public String getSource() {
+        return source;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -56,12 +65,13 @@ public final class ActivityRequest extends AbstractInputDataItem {
         return getId() == that.getId() &&
                 Objects.equals(getArguments(), that.getArguments()) &&
                 Objects.equals(getProperties(), that.getProperties()) &&
-                Objects.equals(getRoute(), that.getRoute());
+                Objects.equals(getRoute(), that.getRoute()) &&
+                Objects.equals(getSource(), that.getSource());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId(), getArguments(), getProperties(), getRoute());
+        return Objects.hash(getId(), getArguments(), getProperties(), getRoute(), getSource());
     }
 
     @Override
@@ -71,6 +81,7 @@ public final class ActivityRequest extends AbstractInputDataItem {
                 ", arguments=" + arguments +
                 ", properties=" + properties +
                 ", route='" + route + '\'' +
+                ", source='" + source + '\'' +
                 "}";
     }
 
@@ -79,6 +90,7 @@ public final class ActivityRequest extends AbstractInputDataItem {
         private List<ActivityArgument> arguments = new LinkedList<>();
         private Map<String, String> properties = new TreeMap<>();
         private String route;
+        private String source;
 
         public Builder(int id) {
             this.id = id;
@@ -109,8 +121,13 @@ public final class ActivityRequest extends AbstractInputDataItem {
             return this;
         }
 
+        public Builder withSource(String source) {
+            this.source = source;
+            return this;
+        }
+
         public ActivityRequest build() {
-            return new ActivityRequest(id, arguments, properties, route);
+            return new ActivityRequest(id, arguments, properties, route, source);
         }
     }
 }
