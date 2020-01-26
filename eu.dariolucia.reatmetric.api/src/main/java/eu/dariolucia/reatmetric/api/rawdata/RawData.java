@@ -37,11 +37,11 @@ public final class RawData extends AbstractDataItem implements Serializable {
 
     private final Quality quality;
 
+    private final IUniqueId relatedItem;
+
     private final byte[] contents;
 
-    // TODO add IUniqueID relatedItem, and allow to filter for that
-
-    public RawData(IUniqueId internalId, Instant generationTime, String name, String type, String route, String source, Quality quality, byte[] contents, Instant receptionTime, Object[] additionalFields) {
+    public RawData(IUniqueId internalId, Instant generationTime, String name, String type, String route, String source, Quality quality, IUniqueId relatedItem, byte[] contents, Instant receptionTime, Object[] additionalFields) {
         super(internalId, generationTime, additionalFields);
         this.name = name;
         this.type = type;
@@ -50,6 +50,7 @@ public final class RawData extends AbstractDataItem implements Serializable {
         this.source = source;
         this.quality = quality;
         this.contents = contents;
+        this.relatedItem = relatedItem;
     }
 
     public String getName() {
@@ -84,6 +85,10 @@ public final class RawData extends AbstractDataItem implements Serializable {
         return contents != null;
     }
 
+    public IUniqueId getRelatedItem() {
+        return relatedItem;
+    }
+
     @Override
     public String toString() {
         return "RawData{" +
@@ -93,6 +98,7 @@ public final class RawData extends AbstractDataItem implements Serializable {
                 ", receptionTime=" + receptionTime +
                 ", source='" + source + '\'' +
                 ", quality=" + quality +
+                ", relatedItem=" + relatedItem +
                 ", generationTime=" + generationTime +
                 ", internalId=" + internalId +
                 '}';

@@ -21,9 +21,9 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     private static final Logger LOG = Logger.getLogger(RawDataArchive.class.getName());
 
-    private static final String STORE_STATEMENT = "INSERT INTO RAW_DATA_TABLE(UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,Contents,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?)";
+    private static final String STORE_STATEMENT = "INSERT INTO RAW_DATA_TABLE(UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,RelatedItem,Contents,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM RAW_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
-    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,Contents,AdditionalData FROM RAW_DATA_TABLE WHERE UniqueId=?";
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,RelatedItem,Contents,AdditionalData FROM RAW_DATA_TABLE WHERE UniqueId=?";
 
 
     public RawDataArchive(Archive controller) throws SQLException {
@@ -31,7 +31,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
     }
 
     @Override
-    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, RawData item) throws SQLException, IOException {
+    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, RawData item) throws SQLException {
         storeStatement.setLong(1, item.getInternalId().asLong());
         storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
         storeStatement.setString(3, item.getName());
@@ -40,8 +40,17 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         storeStatement.setString(6, item.getRoute());
         storeStatement.setString(7, item.getSource());
         storeStatement.setShort(8, (short) item.getQuality().ordinal());
-        storeStatement.setBlob(9, item.isContentsSet() ? new ByteArrayInputStream(item.getContents()) : null);
-        storeStatement.setBlob(10, toInputstreamArray(item.getAdditionalFields()));
+        if(item.getRelatedItem() == null) {
+            storeStatement.setNull(9, Types.BIGINT);
+        } else {
+            storeStatement.setLong(9, item.getRelatedItem().asLong());
+        }
+        if(item.isContentsSet()) {
+            storeStatement.setBlob(10, new ByteArrayInputStream(item.getContents()));
+        } else {
+            storeStatement.setNull(10, Types.BLOB);
+        }
+        storeStatement.setBlob(11, toInputstreamArray(item.getAdditionalFields()));
     }
 
     @Override
@@ -59,7 +68,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     @Override
     protected String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, RawDataFilter filter) {
-        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,AdditionalData");
+        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,RelatedItem,AdditionalData");
         if(filter == null || filter.isWithData()) {
             query.append(",Contents");
         }
@@ -98,7 +107,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
     }
 
     @Override
-    protected RawData mapToItem(ResultSet rs, RawDataFilter usedFilter) throws SQLException, IOException, ClassNotFoundException {
+    protected RawData mapToItem(ResultSet rs, RawDataFilter usedFilter) throws SQLException, IOException {
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
         String name = rs.getString(3);
@@ -107,16 +116,20 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         String route = rs.getString(6);
         String source = rs.getString(7);
         Quality quality = Quality.values()[rs.getShort(8)];
-        Object[] additionalDataArray = toObjectArray(rs.getBlob(9));
+        Long relatedItemUniqueId = rs.getLong(9);
+        if(rs.wasNull()) {
+            relatedItemUniqueId = null;
+        }
+        Object[] additionalDataArray = toObjectArray(rs.getBlob(10));
         // retrieve Contents if present
         byte[] contents = null;
         if(usedFilter == null || usedFilter.isWithData()) {
-            Blob blob = rs.getBlob(10);
+            Blob blob = rs.getBlob(11);
             if(blob != null) {
                 contents = toByteArray(blob.getBinaryStream());
             }
         }
-        return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, contents, toInstant(receptionTime), additionalDataArray);
+        return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, relatedItemUniqueId != null ? new LongUniqueId(relatedItemUniqueId) : null, contents, toInstant(receptionTime), additionalDataArray);
     }
 
     @Override

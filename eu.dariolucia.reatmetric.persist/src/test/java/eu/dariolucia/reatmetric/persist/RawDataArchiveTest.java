@@ -55,7 +55,7 @@ class RawDataArchiveTest {
             IRawDataArchive rawDataArchive = archive.getArchive(IRawDataArchive.class);
             Instant t = Instant.now();
             // store one raw data
-            rawDataArchive.store(new RawData(new LongUniqueId(0), t, "nameAA1", "TCPacket", "Route1", "Source1", Quality.GOOD, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]));
+            rawDataArchive.store(new RawData(new LongUniqueId(0), t, "nameAA1", "TCPacket", "Route1", "Source1", Quality.GOOD, null, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]));
             Thread.sleep(2000);
             // retrieve: expected 1
             List<RawData> items = rawDataArchive.retrieve(t.minusMillis(200), 10, RetrievalDirection.TO_FUTURE, null);
@@ -65,12 +65,12 @@ class RawDataArchiveTest {
             assertArrayEquals(new byte[] { 0,1, 2, 3, 4 }, items.get(0).getContents());
             // add a batch for filtered retrieval
             rawDataArchive.store(Arrays.asList(
-                    new RawData(new LongUniqueId(1), t, "nameAA1", "TCPacket", "Route1", "Source1", Quality.BAD, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]),
-                    new RawData(new LongUniqueId(2), t, "nameAA1", "TCPacket", "Route2", "Source1", Quality.GOOD, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]),
-                    new RawData(new LongUniqueId(3), t, "nameAA2", "TMPacket", "Route2", "Source2", Quality.GOOD, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]),
-                    new RawData(new LongUniqueId(4), t, "name3", "TMPacket", "Route3", "Source2", Quality.GOOD, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]),
-                    new RawData(new LongUniqueId(5), t, "name4", "TMPacket", "Route2", "Source2", Quality.GOOD, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]),
-                    new RawData(new LongUniqueId(6), t, "name5", "TMFrame", "Route1", "Source1", Quality.UNKNOWN, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0])
+                    new RawData(new LongUniqueId(1), t, "nameAA1", "TCPacket", "Route1", "Source1", Quality.BAD, null, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]),
+                    new RawData(new LongUniqueId(2), t, "nameAA1", "TCPacket", "Route2", "Source1", Quality.GOOD, null, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]),
+                    new RawData(new LongUniqueId(3), t, "nameAA2", "TMPacket", "Route2", "Source2", Quality.GOOD, null, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]),
+                    new RawData(new LongUniqueId(4), t, "name3", "TMPacket", "Route3", "Source2", Quality.GOOD, null, new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]),
+                    new RawData(new LongUniqueId(5), t, "name4", "TMPacket", "Route2", "Source2", Quality.GOOD, new LongUniqueId(100), new byte[] { 0,1, 2, 3, 4 }, t, new Object[0]),
+                    new RawData(new LongUniqueId(6), t, "name5", "TMFrame", "Route1", "Source1", Quality.UNKNOWN, new LongUniqueId(100), new byte[] { 0,1, 2, 3, 4 }, t, new Object[0])
             ));
             Thread.sleep(2000);
             // retrieve name1 and name2, no contents
