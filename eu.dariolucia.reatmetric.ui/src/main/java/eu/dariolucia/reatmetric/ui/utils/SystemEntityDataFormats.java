@@ -20,7 +20,6 @@ public class SystemEntityDataFormats {
     public final static DataFormat CONTAINER = new DataFormat(SystemEntityType.CONTAINER.name());
     public final static DataFormat PARAMETER = new DataFormat(SystemEntityType.PARAMETER.name());
     public final static DataFormat EVENT = new DataFormat(SystemEntityType.EVENT.name());
-    public final static DataFormat REFERENCE = new DataFormat(SystemEntityType.REFERENCE.name());
     public final static DataFormat REPORT = new DataFormat(SystemEntityType.REPORT.name());
     public final static DataFormat ACTIVITY = new DataFormat(SystemEntityType.ACTIVITY.name());
     
@@ -29,7 +28,6 @@ public class SystemEntityDataFormats {
             case ACTIVITY: return ACTIVITY;
             case CONTAINER: return CONTAINER;
             case EVENT: return EVENT;
-            case REFERENCE: return REFERENCE;
             case REPORT: return REPORT;
             case PARAMETER: return PARAMETER;
             default: throw new IllegalArgumentException("System entity type " + t + " unknown");

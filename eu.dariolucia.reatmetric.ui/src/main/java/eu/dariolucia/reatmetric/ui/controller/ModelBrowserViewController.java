@@ -9,25 +9,9 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.ResourceBundle;
-import java.util.TreeMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 import eu.dariolucia.reatmetric.api.common.ServiceType;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.api.model.ISystemModelSubscriber;
-import eu.dariolucia.reatmetric.api.model.Status;
-import eu.dariolucia.reatmetric.api.model.SystemEntity;
-import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
@@ -36,19 +20,18 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
-import javafx.scene.control.Control;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TitledPane;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeTableCell;
-import javafx.scene.control.TreeTableColumn;
-import javafx.scene.control.TreeTableView;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
+
+import java.net.URL;
+import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * FXML Controller class
@@ -62,10 +45,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private final Image eventImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/smartmode_co.gif"));
     private final Image activityImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/debugt_obj.gif"));
     private final Image reportImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/file_obj.gif"));
-    private final Image referenceImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/inst_ptr.gif"));
-    
-    
-    
+
     // Pane control
     @FXML
     protected TitledPane displayTitledPane;
@@ -84,7 +64,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private SystemEntity root = null;
     
     // Temporary message queue
-    private DataProcessingDelegator<SystemEntityUpdate> delegator;
+    private DataProcessingDelegator<SystemEntity> delegator;
     
     @FXML
     public void filterClearButtonPressed(ActionEvent e) {
@@ -122,42 +102,40 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getName()));
         this.statusCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getStatus()));
         
-        this.statusCol.setCellFactory(column -> {
-            return new TreeTableCell<SystemEntity, Status>() {
-                @Override
-                protected void updateItem(Status item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (item != null && !empty && !isEmpty()) {
-                        setText(item.name());
-                        switch (item) {
-                            case ENABLED:
-                                setTextFill(Color.LIMEGREEN);
-                                setStyle("-fx-font-weight: bold");
-                                // setStyle("-fx-font-weight: bold; -fx-background-color: Lime");
-                                break;
-                            case DISABLED:
-                                setTextFill(Color.DARKGRAY);
-                                setStyle("-fx-font-weight: bold");
-                                // setStyle("-fx-font-weight: bold; -fx-background-color: LightGray");
-                                break;
-                            case UNKNOWN:
-                                setTextFill(Color.DARKORANGE);
-                                setStyle("-fx-font-weight: bold");
-                                // setStyle("-fx-font-weight: bold; -fx-background-color: DarkKhaki");
-                                break;
-                            default:
-                                setText("");
-                                setTextFill(Color.BLACK);
-                                setStyle("");
-                                break;
-                        }
-                    } else {
-                        setText("");
-                        setGraphic(null);
+        this.statusCol.setCellFactory(column -> new TreeTableCell<>() {
+            @Override
+            protected void updateItem(Status item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(item.name());
+                    switch (item) {
+                        case ENABLED:
+                            setTextFill(Color.LIMEGREEN);
+                            setStyle("-fx-font-weight: bold");
+                            // setStyle("-fx-font-weight: bold; -fx-background-color: Lime");
+                            break;
+                        case DISABLED:
+                            setTextFill(Color.DARKGRAY);
+                            setStyle("-fx-font-weight: bold");
+                            // setStyle("-fx-font-weight: bold; -fx-background-color: LightGray");
+                            break;
+                        case UNKNOWN:
+                            setTextFill(Color.DARKORANGE);
+                            setStyle("-fx-font-weight: bold");
+                            // setStyle("-fx-font-weight: bold; -fx-background-color: DarkKhaki");
+                            break;
+                        default:
+                            setText("");
+                            setTextFill(Color.BLACK);
+                            setStyle("");
+                            break;
                     }
+                } else {
+                    setText("");
+                    setGraphic(null);
                 }
-            };
-        });   
+            }
+        });
         
         this.delegator = new DataProcessingDelegator<>("Model Browser Delegator", (a) -> {
             this.mapLock.lock();
@@ -232,7 +210,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     }
 
     @Override
-    public void dataItemsReceived(List<SystemEntityUpdate> objects) {
+    public void dataItemsReceived(List<SystemEntity> objects) {
         this.delegator.delegate(objects);
     }
 
@@ -271,21 +249,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
     }
 
-    private void removeItemFromTree(SystemEntity toRemove) throws ReatmetricException {
-        TreeItem<SystemEntity> item = this.path2item.get(toRemove.getPath());
-        if(item != null) {
-            // Remove from map
-            this.path2item.remove(toRemove.getPath());
-            // Remove from parent
-            SystemEntityPath parentPath = item.getValue().getPath().getParent();
-            TreeItem<SystemEntity> parent = this.path2item.get(parentPath);
-            if(parent != null) {
-                parent.getChildren().remove(item);
-            }
-        }
-    }
-    
-    private TreeItem<SystemEntity> addOrUpdateItemToTree(SystemEntity toAdd) throws ReatmetricException {
+    private TreeItem<SystemEntity> addOrUpdateItemToTree(SystemEntity toAdd) {
         // If there is already an item in the map, update the item
         TreeItem<SystemEntity> item = this.path2item.get(toAdd.getPath());
         if(item == null) {
@@ -296,8 +260,11 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             // Add it to the parent tree item
             addToParent(item);
         } else {
-            // Replace the system element
-            item.setValue(toAdd);
+            // Replace the system element, if the internal ID is more recent
+            SystemEntity currentState = item.getValue();
+            if(currentState.getInternalId().asLong() < toAdd.getInternalId().asLong()) {
+                item.setValue(toAdd);
+            }
         }
         return item;
     }
@@ -308,13 +275,12 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             case ACTIVITY: return activityImage;
             case EVENT: return eventImage;
             case PARAMETER: return parameterImage;
-            case REFERENCE: return referenceImage;
             case REPORT: return reportImage;
             default: return null;
         }
     }
     
-    private void addToParent(TreeItem<SystemEntity> item) throws ReatmetricException {
+    private void addToParent(TreeItem<SystemEntity> item) {
         SystemEntityPath parentPath = item.getValue().getPath().getParent();
         if(parentPath == null) {
             // This is the root, do not do anything
@@ -322,30 +288,17 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
         TreeItem<SystemEntity> parent = this.path2item.get(parentPath);
         if(parent == null) {
-            // Create the parent recursively (fake)
-            SystemEntity parentEntity = new SystemEntity(null, parentPath, parentPath.getLastPathElement(), Status.UNKNOWN, AlarmState.UNKNOWN, SystemEntityType.CONTAINER);
-            parent = addOrUpdateItemToTree(parentEntity);
-        }    
-        parent.getChildren().add(item);
+            // TODO: log problem
+        } else {
+            parent.getChildren().add(item);
+        }
     }
 
-    private void addDataItems(List<SystemEntityUpdate> objects) {
+    private void addDataItems(List<SystemEntity> objects) {
         Platform.runLater(() -> {
             this.mapLock.lock();
             try {
-                for(SystemEntityUpdate seu : objects) {
-                    try {
-                        switch(seu.getUpdateType()) {
-                            case ADDITION:
-                            case UPDATE:
-                                addOrUpdateItemToTree(seu.getElement());
-                            case DELETION:
-                                removeItemFromTree(seu.getElement());
-                        }
-                    } catch(ReatmetricException e) {
-                        e.printStackTrace();
-                    }
-                }
+                objects.forEach(this::addOrUpdateItemToTree);
                 this.modelTree.layout();
                 this.modelTree.refresh();
             } finally {

@@ -65,6 +65,10 @@ public final class SystemEntity extends AbstractDataItem implements Serializable
         return type;
     }
 
+    public int getExternalId() {
+        return externalId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

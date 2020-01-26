@@ -17,7 +17,7 @@ import eu.dariolucia.reatmetric.api.common.IServiceMonitorCallback;
 import eu.dariolucia.reatmetric.api.common.IUserMonitorCallback;
 import eu.dariolucia.reatmetric.api.common.ServiceType;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.plugin.IMonitoringCentreServiceListener;
+import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -38,7 +38,7 @@ import javafx.scene.transform.Scale;
  *
  * @author dario
  */
-public abstract class AbstractDisplayController implements Initializable, IMonitoringCentreServiceListener, IUserMonitorCallback, IServiceMonitorCallback {
+public abstract class AbstractDisplayController implements Initializable, IReatmetricServiceListener, IUserMonitorCallback, IServiceMonitorCallback {
  
     // Service availability control
     @FXML
@@ -90,14 +90,12 @@ public abstract class AbstractDisplayController implements Initializable, IMonit
 
     @Override
     public void systemAdded(IServiceFactory system) {
-        system.register((IUserMonitorCallback) this);
-        system.register((IServiceMonitorCallback) this);
+        //
     }
 
     @Override
     public void systemRemoved(IServiceFactory system) {
-        system.deregister((IUserMonitorCallback) this);
-        system.deregister((IServiceMonitorCallback) this);
+        //
     }
 
     @Override

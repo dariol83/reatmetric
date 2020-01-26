@@ -9,16 +9,8 @@
 
 package eu.dariolucia.reatmetric.ui;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.function.Consumer;
-
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.ui.plugin.MonitoringCentreServiceHolder;
+import eu.dariolucia.reatmetric.ui.plugin.ReatmetricServiceHolder;
 import eu.dariolucia.reatmetric.ui.preferences.PreferencesManager;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -30,6 +22,13 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+
 /**
  *
  * @author dario
@@ -40,9 +39,9 @@ public class ReatmetricUI extends Application {
     
     public static final String APPLICATION_VERSION = "0.1.0";
     
-    private static final MonitoringCentreServiceHolder SELECTED_SYSTEM = new MonitoringCentreServiceHolder();
+    private static final ReatmetricServiceHolder SELECTED_SYSTEM = new ReatmetricServiceHolder();
     
-    public static MonitoringCentreServiceHolder selectedSystem() {
+    public static ReatmetricServiceHolder selectedSystem() {
         return SELECTED_SYSTEM;
     }
     
@@ -53,15 +52,12 @@ public class ReatmetricUI extends Application {
     	synchronized (THREAD_POOL) {
 			toReturn = THREAD_POOL.get(clazz);
 			if(toReturn == null) {
-				toReturn = Executors.newFixedThreadPool(1, new ThreadFactory() {
-					@Override
-					public Thread newThread(Runnable r) {
-						Thread t = new Thread(r);
-						t.setName(clazz.getSimpleName() + " External Thread");
-						t.setDaemon(true);
-						return t;
-					}
-				});
+				toReturn = Executors.newFixedThreadPool(1, r -> {
+                    Thread t = new Thread(r);
+                    t.setName(clazz.getSimpleName() + " External Thread");
+                    t.setDaemon(true);
+                    return t;
+                });
 				THREAD_POOL.put(clazz, toReturn);
 			}
 		}
@@ -127,10 +123,7 @@ public class ReatmetricUI extends Application {
     }
 
     @Override
-    public void stop() throws Exception {
-        if(ReatmetricUI.selectedSystem().getSystem() != null) {
-            ReatmetricUI.selectedSystem().getSystem().logout();
-        }
+    public void stop() {
         ReatmetricUI.threadPool(ReatmetricUI.class).shutdown();
     }
 

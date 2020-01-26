@@ -15,10 +15,10 @@ import eu.dariolucia.reatmetric.api.IServiceFactory;
  *
  * @author dario
  */
-public interface IMonitoringCentreServiceListener {
+public interface IReatmetricServiceListener {
     
-    public void systemAdded(IServiceFactory system);
+    void systemAdded(IServiceFactory system);
     
-    public void systemRemoved(IServiceFactory system);
+    void systemRemoved(IServiceFactory system);
     
 }

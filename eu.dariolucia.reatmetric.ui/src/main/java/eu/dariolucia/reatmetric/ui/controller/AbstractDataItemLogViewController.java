@@ -334,7 +334,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
 
     protected void addDataItems(List<T> messages, boolean fromLive, boolean addOnTop) {
         Platform.runLater(() -> {
-            if (!this.displayTitledPane.isDisabled() && (!fromLive || (fromLive && (this.liveTgl == null || this.liveTgl.isSelected())))) {
+            if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
                 if (addOnTop) {
                     this.dataItemTableView.getItems().addAll(0, messages);
                     if (this.dataItemTableView.getItems().size() > MAX_ENTRIES) {

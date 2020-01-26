@@ -17,11 +17,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author dario
  */
-public class MonitoringCentreServiceHolder {
+public class ReatmetricServiceHolder {
     
     private volatile IServiceFactory system;
     
-    private final List<IMonitoringCentreServiceListener> listeners = new CopyOnWriteArrayList<IMonitoringCentreServiceListener>();
+    private final List<IReatmetricServiceListener> listeners = new CopyOnWriteArrayList<IReatmetricServiceListener>();
     
     public synchronized void setSystem(IServiceFactory system) {
         IServiceFactory oldSystem = this.system;
@@ -38,14 +38,14 @@ public class MonitoringCentreServiceHolder {
         return this.system;
     }
     
-    public synchronized void addSubscriber(IMonitoringCentreServiceListener l) {
+    public synchronized void addSubscriber(IReatmetricServiceListener l) {
         this.listeners.add(l);
         if(this.system != null) {
             l.systemAdded(this.system);
         }
     }
     
-    public void removeSubscriber(IMonitoringCentreServiceListener l) {
+    public void removeSubscriber(IReatmetricServiceListener l) {
         this.listeners.remove(l);
     }
 }

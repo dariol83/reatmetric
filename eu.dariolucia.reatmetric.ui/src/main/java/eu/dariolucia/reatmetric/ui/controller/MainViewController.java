@@ -9,20 +9,11 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.ResourceBundle;
-
 import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.common.IUserMonitorCallback;
-import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.plugin.IMonitoringCentreServiceListener;
+import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import eu.dariolucia.reatmetric.ui.plugin.MonitoringCentrePluginInspector;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -32,26 +23,22 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.control.Alert;
+import javafx.scene.control.*;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonBar.ButtonData;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
 
 /**
  *
  * @author dario
  */
-public class MainViewController implements Initializable, IMonitoringCentreServiceListener, IUserMonitorCallback {
+public class MainViewController implements Initializable, IReatmetricServiceListener, IUserMonitorCallback {
 
 	private static final String NULL_PERSPECTIVE = "nullPerspective";
 
@@ -133,7 +120,7 @@ public class MainViewController implements Initializable, IMonitoringCentreServi
 			d.setHeaderText("Select the system and provide the related credential information");
 
 			// Set the button types.
-			ButtonType loginButtonType = new ButtonType("Login", ButtonData.OK_DONE);
+			ButtonType loginButtonType = new ButtonType("OK", ButtonData.OK_DONE);
 			d.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
 
 			Parent root = FXMLLoader.load(getClass().getClassLoader()
@@ -173,14 +160,8 @@ public class MainViewController implements Initializable, IMonitoringCentreServi
 			Platform.runLater(() -> usernameText.requestFocus());
 
 			Optional<String[]> data = d.showAndWait();
-			if (data.isPresent()) {
-				ReatmetricUI.selectedSystem().setSystem(this.serviceInspector.getSystem(data.get()[0]));
-				ReatmetricUI.selectedSystem().getSystem().register(this);
-				ReatmetricUI.selectedSystem().getSystem().login(data.get()[1], data.get()[2]);
-			}
+			data.ifPresent(strings -> ReatmetricUI.selectedSystem().setSystem(this.serviceInspector.getSystem(strings[0])));
 		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (ReatmetricException e) {
 			e.printStackTrace();
 		}
 	}
@@ -197,8 +178,6 @@ public class MainViewController implements Initializable, IMonitoringCentreServi
 				.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
 		Optional<ButtonType> result = alert.showAndWait();
 		if ((result.isPresent()) && (result.get() == ButtonType.OK)) {
-			ReatmetricUI.selectedSystem().getSystem().logout();
-			ReatmetricUI.selectedSystem().getSystem().deregister(this);
 			ReatmetricUI.selectedSystem().setSystem(null);
 		}
 	}

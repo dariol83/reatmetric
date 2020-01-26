@@ -9,20 +9,6 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import java.io.IOException;
-import java.net.URL;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.ResourceBundle;
-import java.util.TreeMap;
-import java.util.function.Consumer;
-
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.ServiceType;
@@ -36,11 +22,7 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
-import eu.dariolucia.reatmetric.ui.utils.OrderedProperties;
-import eu.dariolucia.reatmetric.ui.utils.PresetStorageManager;
-import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
-import eu.dariolucia.reatmetric.ui.utils.TableViewUtil;
+import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
@@ -49,21 +31,17 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
 import javafx.scene.Parent;
-import javafx.scene.control.Button;
-import javafx.scene.control.Control;
-import javafx.scene.control.Label;
-import javafx.scene.control.Menu;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextInputDialog;
-import javafx.scene.control.TitledPane;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.stage.Popup;
+
+import java.io.IOException;
+import java.net.URL;
+import java.time.Instant;
+import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * FXML Controller class
@@ -184,9 +162,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
 
     protected Consumer<List<ParameterData>> buildIncomingDataDelegatorAction() {
-        return (List<ParameterData> t) -> {
-            updateDataItems(t);
-        };
+        return this::updateDataItems;
     }
      
     @FXML
@@ -201,7 +177,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             Optional<String> result = dialog.showAndWait();
             if (result.isPresent()){
                 Properties props = new OrderedProperties();
-                this.dataItemTableView.getItems().forEach((o) -> props.put(o.getPath().asString(), ""));
+                this.dataItemTableView.getItems().forEach((o) -> props.put(o.getPath().asString(), String.valueOf(o.get().getExternalId())));
                 this.presetManager.save(system, user, result.get(), doGetComponentId(), props);
             }
         }
@@ -257,8 +233,8 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected void goBackOne(ActionEvent e) {
         if(!isProgressBusy()) {
-            // We need to do the following: find the parameter with the latest reception time (LRT) among all displayed parameters.
-            // We request the retrieval of the state of the parameter linked to the LRT at the time LRT - 1 picosec, i.e. the first change going to the past.
+            // We need to do the following: find the parameter with the latest generation time (LGT) among all displayed parameters.
+            // We request the retrieval of the state of the parameter linked to the LGT at the time LGT - 1 picosec, i.e. the first change going to the past.
             // But only of this parameter.
             // This retrieval will retrieve the previous state, which overrides the current one.
             fetchPreviousStateChange();
@@ -428,10 +404,10 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             this.selectTimeBtn.setText("---");
         } else {
             ParameterData pd = retrieveLatest();
-            if(pd == null || pd.getReceptionTime() == null) {
+            if(pd == null || pd.getGenerationTime() == null) {
                 this.selectTimeBtn.setText("---");
             } else {
-                this.selectTimeBtn.setText(pd.getReceptionTime().toString());
+                this.selectTimeBtn.setText(pd.getGenerationTime().toString());
             }
         }
     }
@@ -541,10 +517,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(selectedTime, filter);
     }
 
-    protected Instant doGetReceptionTime(ParameterData om) {
-        return om.getReceptionTime();
-    }
-
     protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().getAdditionalFieldDescriptors();
     }
@@ -564,8 +536,8 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             if(latest == null) {
                 latest = pdw.get();
             } else if(pdw.get() != null) {
-                if(latest.getReceptionTime() != null && pdw.get().getReceptionTime() != null) {
-                    if(latest.getReceptionTime().isBefore(pdw.get().getReceptionTime())) {
+                if(latest.getGenerationTime() != null && pdw.get().getGenerationTime() != null) {
+                    if(latest.getGenerationTime().isBefore(pdw.get().getGenerationTime())) {
                         latest = pdw.get();
                     }
                 }
@@ -642,19 +614,19 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         for(SystemEntity systemEntity : systemEntities) {
             if(systemEntity.getType() == SystemEntityType.PARAMETER) {
                 if(!this.path2wrapper.containsKey(systemEntity.getPath())) {
-                    // TODO: this sounds a bit ugly, find a better solution
+                    // TODO: this sounds a bit ugly, find a better solution: introduce a get operation on the service, in addition to the retrieve
                     ParameterDataWrapper pdw = new ParameterDataWrapper(
                             new ParameterData(
                             		null,
-                                    null,
-                                    0,
+                                    Instant.ofEpochMilli(0),
+                                    systemEntity.getExternalId(),
                                     systemEntity.getName(),
-                                    systemEntity.getPath(), 
-                                    null, 
-                                    null, 
+                                    systemEntity.getPath(),
+                                    null,
+                                    null,
                                     null,
                                     Validity.UNKNOWN, AlarmState.UNKNOWN, null,
-                                    null),
+                                    null, null),
                             systemEntity.getPath()
                     );
                     this.path2wrapper.put(systemEntity.getPath(), pdw);
@@ -676,20 +648,21 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         this.dataItemTableView.getItems().clear();
         for(Object systemEntity : p.keySet()) {
             SystemEntityPath sep = SystemEntityPath.fromString(systemEntity.toString());
+            int externalId = Integer.parseInt(p.getProperty(sep.toString()));
             if(!this.path2wrapper.containsKey(sep)) {
-                // TODO: this sounds a bit ugly, find a better solution
+                // TODO: this sounds a bit ugly, find a better solution: introduce a get operation on the service, in addition to the retrieve
                 ParameterDataWrapper pdw = new ParameterDataWrapper(
                         new ParameterData(
                         		null,
-                                null,
-                                0,
+                                Instant.ofEpochMilli(0),
+                                externalId, //
                                 sep.getLastPathElement(),
                                 sep, 
                                 null, 
                                 null, 
                                 null,
                                 Validity.UNKNOWN, AlarmState.UNKNOWN, null,
-                                null),
+                                null, null),
                         sep
                 );
                 this.path2wrapper.put(sep, pdw);
@@ -701,7 +674,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         }
     }
     
-    public class ParameterDataWrapper {
+    public static class ParameterDataWrapper {
         
         private volatile ParameterData data;
         private final SystemEntityPath path;
