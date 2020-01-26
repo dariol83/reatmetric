@@ -82,7 +82,7 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
                     queue.drainTo(toDistribute);
                 } else {
                     // Filter updated in the meantime, repeat the outer cycle
-                    // TODO: to be evaluated if a reset of the subscription (i.e. with retrieval from model) is needed
+                    // XXX: to be evaluated if a reset of the subscription (i.e. with retrieval from model) is needed. So far this is enabled.
                     initialiseFromModel = true;
                     continue;
                 }
@@ -101,7 +101,7 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
             // Distribute the elements
             subscriber.dataItemsReceived(toDistribute);
 
-            // TODO: to be evaluated if a reset of the subscription (i.e. with retrieval from model) is needed
+            // XXX: to be evaluated if a reset of the subscription (i.e. with retrieval from model) is needed. So far this is enabled.
             if(theFilter != filter) {
                 initialiseFromModel = true;
             }

@@ -20,9 +20,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public abstract class AbstractAccessManager<T extends AbstractDataItem, K extends AbstractDataItemFilter<T>, J extends IDataItemSubscriber<T>> {
+
+    private static final Logger LOG = Logger.getLogger(AbstractAccessManager.class.getName());
 
     protected IDataItemArchive<T, K> archive;
     protected ExecutorService dispatcher; // XXX not sure that this is useful...
@@ -82,7 +86,7 @@ public abstract class AbstractAccessManager<T extends AbstractDataItem, K extend
         if(archive != null) {
             return archive.retrieve(startTime, numRecords, direction, filter);
         } else {
-            throw new ReatmetricException("Parameter archive not available");
+            throw new ReatmetricException(getName() + " - Archive not available");
         }
     }
 
@@ -90,7 +94,7 @@ public abstract class AbstractAccessManager<T extends AbstractDataItem, K extend
         if(archive != null) {
             return archive.retrieve(startItem, numRecords, direction, filter);
         } else {
-            throw new ReatmetricException("Parameter archive not available");
+            throw new ReatmetricException(getName() + " - Archive not available");
         }
     }
 
@@ -114,8 +118,7 @@ public abstract class AbstractAccessManager<T extends AbstractDataItem, K extend
                 try {
                     archive.store(toDistribute);
                 } catch (ArchiveException e) {
-                    e.printStackTrace();
-                    // TODO log
+                    LOG.log(Level.SEVERE, getName() + " - Cannot store data items inside the archive", e);
                 }
             }
             // Distribute
@@ -123,8 +126,7 @@ public abstract class AbstractAccessManager<T extends AbstractDataItem, K extend
                 try {
                     entry.getValue().notifyItems(toDistribute);
                 } catch(Exception e) {
-                    e.printStackTrace();
-                    // TODO log
+                    LOG.log(Level.SEVERE, getName() + " - Cannot notify data items to subscriber " + entry.getValue(), e);
                 }
             }
         }

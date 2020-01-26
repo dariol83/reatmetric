@@ -44,9 +44,13 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class ProcessingModelManager implements IProcessingModelOutput, ISystemModelProvisionService, IActivityExecutionService {
+
+    private static final Logger LOG = Logger.getLogger(ProcessingModelManager.class.getName());
 
     private final IParameterDataArchive parameterArchive;
     private final IEventDataArchive eventArchive;
@@ -115,8 +119,7 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
                 aggregated.getEventDefinitions().addAll(eachDef.getEventDefinitions());
                 aggregated.getActivityDefinitions().addAll(eachDef.getActivityDefinitions());
             } catch(IOException | JAXBException e) {
-                // TODO log properly
-                e.printStackTrace();
+                LOG.log(Level.WARNING, "Cannot read definitions at " + def.getAbsolutePath(), e);
             }
         }
         return aggregated;
@@ -214,7 +217,7 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
         return processingModel;
     }
 
-    private class SystemModelSubscriberWrapper {
+    private static class SystemModelSubscriberWrapper {
 
         private final ISystemModelSubscriber subscriber;
         private final ExecutorService dispatcher;
@@ -244,8 +247,7 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
             try {
                 this.dispatcher.awaitTermination(10, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
-                // TODO
-                e.printStackTrace();
+                // Nothing to do
             }
         }
     }

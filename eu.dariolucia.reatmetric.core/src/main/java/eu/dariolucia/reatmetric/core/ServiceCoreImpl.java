@@ -38,11 +38,15 @@ import eu.dariolucia.reatmetric.core.impl.RawDataBrokerImpl;
 
 import java.io.FileInputStream;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.LogManager;
+import java.util.logging.Logger;
 
 public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
 
+    private static final Logger LOG = Logger.getLogger(ServiceCoreImpl.class.getName());
     private static final String INIT_FILE_KEY = "reatmetric.core.config"; // Absolute location of the init file, to configure the core instance
+
 
     private final ServiceCoreConfiguration configuration;
     private final List<IDriver> drivers = new ArrayList<>();
@@ -96,19 +100,18 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
                 // Get and register the transport connectors
                 registerConnectors(driver.getTransportConnectors());
                 // Get and register the activity handlers
-                registerActivityHandlers(driver.getActivityHandlers());
+                registerActivityHandlers(dc.getName(), driver.getActivityHandlers());
             }
         }
         // Done and ready to go
     }
 
-    private void registerActivityHandlers(List<IActivityHandler> activityHandlers) {
+    private void registerActivityHandlers(String driverName, List<IActivityHandler> activityHandlers) {
         for(IActivityHandler h : activityHandlers) {
             try {
                 getProcessingModel().registerActivityHandler(h);
             } catch (ProcessingModelException e) {
-                // TODO
-                e.printStackTrace();
+                LOG.log(Level.WARNING, "Cannot register activity handler " + h + "from driver " + driverName + ", handler ignored", e);
             }
         }
     }
