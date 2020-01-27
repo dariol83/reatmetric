@@ -25,9 +25,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>eu.dariolucia.reatmetric.core</artifactId>
-    <name>REATMETRIC CORE</name>
-    <description>REATMETRIC core service implementation reference</description>
+    <artifactId>eu.dariolucia.reatmetric.driver.test</artifactId>
+    <name>REATMETRIC DRIVER - Test driver</name>
+    <description>REATMETRIC driver module for testing</description>
 
     <dependencies>
         <dependency>
@@ -37,13 +37,13 @@
         </dependency>
 		<dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
-            <artifactId>eu.dariolucia.reatmetric.processing</artifactId>
+            <artifactId>eu.dariolucia.reatmetric.core</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.glassfish.jaxb</groupId>
-            <artifactId>jaxb-runtime</artifactId>
-            <version>${jaxb.version}</version>
+		<dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.processing</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
     </dependencies>
 

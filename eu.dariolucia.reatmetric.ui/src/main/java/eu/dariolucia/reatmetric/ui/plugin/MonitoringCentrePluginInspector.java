@@ -10,12 +10,8 @@
 package eu.dariolucia.reatmetric.ui.plugin;
 
 import eu.dariolucia.reatmetric.api.IServiceFactory;
-import eu.dariolucia.reatmetric.ui.test.TestSystem;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.TreeMap;
+
+import java.util.*;
 
 /**
  *
@@ -35,8 +31,6 @@ public class MonitoringCentrePluginInspector {
                     this.serviceFactories.put(system, cp);
                 }
             }
-            // TODO: remove once in production
-            addTestSystem();
         }
         //
         return new ArrayList<>(this.serviceFactories.keySet());
@@ -44,10 +38,5 @@ public class MonitoringCentrePluginInspector {
     
     public synchronized IServiceFactory getSystem(String system) {
         return this.serviceFactories.get(system);
-    }
-
-    private void addTestSystem() {
-        TestSystem ts = new TestSystem();
-        this.serviceFactories.put(ts.getSystem(), ts);
     }
 }

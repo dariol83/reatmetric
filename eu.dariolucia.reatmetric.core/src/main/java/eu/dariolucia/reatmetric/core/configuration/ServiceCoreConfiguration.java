@@ -7,8 +7,6 @@
 
 package eu.dariolucia.reatmetric.core.configuration;
 
-import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
-
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
