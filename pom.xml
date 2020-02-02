@@ -65,6 +65,7 @@
         <ccsds.version>0.2.0</ccsds.version>
         <jdbc.version>19.3.0.0</jdbc.version>
         <graalvm.version>19.3.0</graalvm.version>
+        <ccsds.version>0.2.0</ccsds.version>
         <!-- Maven plugin versions -->
         <maven.jacoco.version>0.8.2</maven.jacoco.version>
         <maven.javadoc.version>3.1.0</maven.javadoc.version>
