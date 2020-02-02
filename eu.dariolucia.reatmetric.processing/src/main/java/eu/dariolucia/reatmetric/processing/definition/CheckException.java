@@ -7,7 +7,9 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-public class CheckException extends Exception {
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+
+public class CheckException extends ReatmetricException {
 
     public CheckException(String message) {
         super(message);

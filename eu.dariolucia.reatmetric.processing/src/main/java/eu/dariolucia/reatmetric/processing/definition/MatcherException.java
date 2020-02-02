@@ -7,7 +7,9 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-public class MatcherException extends Exception {
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+
+public class MatcherException extends ReatmetricException {
 
     public MatcherException(String message) {
         super(message);

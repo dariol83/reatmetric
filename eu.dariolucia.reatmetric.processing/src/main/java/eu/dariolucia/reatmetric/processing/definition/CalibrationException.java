@@ -7,7 +7,9 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-public class CalibrationException extends Exception {
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+
+public class CalibrationException extends ReatmetricException {
 
     public CalibrationException(String message) {
         super(message);

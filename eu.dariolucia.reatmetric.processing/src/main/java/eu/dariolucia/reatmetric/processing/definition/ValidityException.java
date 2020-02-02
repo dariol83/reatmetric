@@ -7,7 +7,9 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-public class ValidityException extends Exception {
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+
+public class ValidityException extends ReatmetricException {
 
     public ValidityException(String message) {
         super(message);

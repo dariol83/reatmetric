@@ -86,7 +86,7 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
             alarmArchive = null;
         }
         // Aggregate all the definitions inside the definitionsLocation path
-        ProcessingDefinition defs = readProcessingDefinitions(definitionsLocation);
+        ProcessingDefinition defs = ProcessingDefinition.loadAll(definitionsLocation);
         // Create the access services
         parameterDataAccessManager = new ParameterDataAccessManager(parameterArchive);
         alarmDataAccessManager = new AlarmParameterDataAccessManager(alarmArchive);
@@ -104,25 +104,6 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
         } else {
             throw new ReatmetricException("Archive location configured, but no archive factory deployed");
         }
-    }
-
-    private ProcessingDefinition readProcessingDefinitions(String definitionsLocation) throws ReatmetricException {
-        ProcessingDefinition aggregated = new ProcessingDefinition();
-        File folder = new File(definitionsLocation);
-        if(!folder.exists() || folder.listFiles() == null) {
-            throw new ReatmetricException("Cannot read definition files in folder " + definitionsLocation);
-        }
-        for(File def : folder.listFiles()) {
-            try {
-                ProcessingDefinition eachDef = ProcessingDefinition.load(new FileInputStream(def));
-                aggregated.getParameterDefinitions().addAll(eachDef.getParameterDefinitions());
-                aggregated.getEventDefinitions().addAll(eachDef.getEventDefinitions());
-                aggregated.getActivityDefinitions().addAll(eachDef.getActivityDefinitions());
-            } catch(IOException | JAXBException e) {
-                LOG.log(Level.WARNING, "Cannot read definitions at " + def.getAbsolutePath(), e);
-            }
-        }
-        return aggregated;
     }
 
     @Override

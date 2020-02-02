@@ -13,5 +13,6 @@ public enum TransportConnectionStatus {
     OPEN,
     DISCONNECTING,
     ABORTED,
+    NOT_INIT,
     ERROR
 }

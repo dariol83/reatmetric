@@ -7,7 +7,9 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-public class ValueReferenceException extends Exception {
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+
+public class ValueReferenceException extends ReatmetricException {
 
     public ValueReferenceException(String message) {
         super(message);
