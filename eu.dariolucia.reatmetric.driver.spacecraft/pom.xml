@@ -31,6 +31,21 @@
 
     <dependencies>
         <dependency>
+            <groupId>eu.dariolucia.ccsds</groupId>
+            <artifactId>eu.dariolucia.ccsds.encdec</artifactId>
+            <version>${ccsds.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.ccsds</groupId>
+            <artifactId>eu.dariolucia.ccsds.tmtc</artifactId>
+            <version>${ccsds.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.ccsds</groupId>
+            <artifactId>eu.dariolucia.ccsds.sle.utl</artifactId>
+            <version>${ccsds.version}</version>
+        </dependency>
+        <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.api</artifactId>
             <version>${project.parent.version}</version>
