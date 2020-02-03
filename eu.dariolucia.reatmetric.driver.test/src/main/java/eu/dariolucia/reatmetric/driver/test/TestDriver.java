@@ -9,6 +9,7 @@ package eu.dariolucia.reatmetric.driver.test;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
@@ -55,12 +56,27 @@ public class TestDriver implements IDriver, IActivityHandler {
 
     @Override
     public void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration) throws DriverException {
-        this.definitions = ProcessingDefinition.loadAll(coreConfiguration.getDefinitionsLocation());
-        this.connectors.add(createTcConnector("TC", "Route A"));
-        this.connectors.add(createTcConnector("Custom", "Route A", "RouteB"));
-        this.connectors.add(createTmConnector("TM", "Route A"));
+        try {
+            this.definitions = ProcessingDefinition.loadAll(coreConfiguration.getDefinitionsLocation());
+        } catch (ReatmetricException e) {
+            throw new DriverException(e);
+        }
+        // TODO add raw data broker
+        this.connectors.add(createTcConnector("TC", "RouteA"));
+        // TODO add raw data broker
+        this.connectors.add(createTcConnector("Custom", "RouteA", "RouteB"));
+        // TODO add raw data broker
+        this.connectors.add(createTmConnector("TM", "RouteA"));
         this.running = true;
         this.context = context;
+    }
+
+    private ITransportConnector createTcConnector(String type, String... routes) {
+        return new TelecommandTransportConnectorImpl(type, type, routes);
+    }
+
+    private ITransportConnector createTmConnector(String name, String... routes) {
+        return new TelemetryTransportConnectorImpl(name, routes, definitions, context.getProcessingModel());
     }
 
     @Override
@@ -74,7 +90,7 @@ public class TestDriver implements IDriver, IActivityHandler {
     }
 
     @Override
-    public void dispose() throws DriverException {
+    public void dispose() {
         running = false;
     }
 
@@ -115,6 +131,19 @@ public class TestDriver implements IDriver, IActivityHandler {
         executor.submit(() -> execute(activityInvocation, model));
     }
 
+    private boolean connectorReady(String type, String route) {
+        for(ITransportConnector c : this.connectors) {
+            if(c.isInitialised() && c instanceof TelecommandTransportConnectorImpl) {
+                if(((TelecommandTransportConnectorImpl) c).getType().equals(type)
+                && ((TelecommandTransportConnectorImpl) c).getRoutes().contains(route)
+                && ((TelecommandTransportConnectorImpl) c).isReady()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
         try {
             log(activityInvocation, "Release finalisation");
@@ -142,7 +171,7 @@ public class TestDriver implements IDriver, IActivityHandler {
             int executionForEachState = 3500 / 4;
             for (int i = 0; i < 4; ++i) {
                 Thread.sleep(executionForEachState);
-                announce(activityInvocation, model, "E" + i, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, i != 4 - 1 ? ActivityOccurrenceState.EXECUTION : ActivityOccurrenceState.VERIFICATION, null, i == executionStateCount - 1 ? this.resultSupplier.get() : null);
+                announce(activityInvocation, model, "E" + i, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, i != 4 - 1 ? ActivityOccurrenceState.EXECUTION : ActivityOccurrenceState.VERIFICATION, null, null);
             }
             log(activityInvocation, "Execution completed");
         } catch(Exception e) {

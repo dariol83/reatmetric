@@ -8,4 +8,6 @@ module eu.dariolucia.reatmetric.core {
     exports eu.dariolucia.reatmetric.core.api;
     exports eu.dariolucia.reatmetric.core.api.exceptions;
     exports eu.dariolucia.reatmetric.core.configuration;
+
+    uses eu.dariolucia.reatmetric.core.api.IDriver;
 }
