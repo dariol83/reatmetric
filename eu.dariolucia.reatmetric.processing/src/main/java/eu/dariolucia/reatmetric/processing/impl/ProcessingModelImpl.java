@@ -159,7 +159,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         this.operationScheduler.schedule(task, new Date(executionDate.toEpochMilli()));
     }
 
-    public void forwardActivityToHandler(IUniqueId occurrenceId, int activityId, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, String route) throws ProcessingModelException {
+    public void forwardActivityToHandler(IUniqueId occurrenceId, int activityId, Instant creationTime, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, String route, String source) throws ProcessingModelException {
         // Check if the route exist
         IActivityHandler handler = checkHandlerAvailability(route, type);
         // All fine, schedule the dispatch
@@ -168,7 +168,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.fine(String.format("Forwarding activity occurrence %s of activity %s to the activity handler on route %s", occurrenceId, path, route));
                 }
-                handler.executeActivity(new IActivityHandler.ActivityInvocation(occurrenceId, activityId, path, type, arguments, properties, route));
+                handler.executeActivity(new IActivityHandler.ActivityInvocation(occurrenceId, activityId, creationTime, path, type, arguments, properties, route, source));
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.fine(String.format("Activity occurrence %s forwarded", occurrenceId));
                 }

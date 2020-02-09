@@ -11,6 +11,7 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -28,21 +29,29 @@ public interface IActivityHandler {
 
     class ActivityInvocation {
         private final IUniqueId activityOccurrenceId;
+        private final Instant generationTime;
         private final int activityId;
         private final SystemEntityPath path;
         private final String type;
         private final Map<String, Object> arguments;
         private final Map<String, String> properties;
         private final String route;
+        private final String source;
 
-        public ActivityInvocation(IUniqueId activityOccurrenceId, int activityId, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, String route) {
+        public ActivityInvocation(IUniqueId activityOccurrenceId, int activityId, Instant generationTime, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, String route, String source) {
             this.activityOccurrenceId = activityOccurrenceId;
+            this.generationTime = generationTime;
             this.activityId = activityId;
             this.path = path;
             this.type = type;
             this.arguments = arguments;
             this.properties = properties;
             this.route = route;
+            this.source = source;
+        }
+
+        public Instant getGenerationTime() {
+            return generationTime;
         }
 
         public IUniqueId getActivityOccurrenceId() {
@@ -73,16 +82,22 @@ public interface IActivityHandler {
             return route;
         }
 
+        public String getSource() {
+            return source;
+        }
+
         @Override
         public String toString() {
             return "ActivityInvocation{" +
                     "activityOccurrenceId=" + activityOccurrenceId +
                     ", activityId=" + activityId +
+                    ", generationTime=" + generationTime +
                     ", path=" + path +
                     ", type='" + type + '\'' +
                     ", arguments=" + arguments +
                     ", properties=" + properties +
                     ", route='" + route + '\'' +
+                    ", source='" + source + '\'' +
                     '}';
         }
     }

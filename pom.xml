@@ -82,7 +82,9 @@
         <module>eu.dariolucia.reatmetric.core</module>
         <module>eu.dariolucia.reatmetric.persist</module>
         <module>eu.dariolucia.reatmetric.driver.spacecraft</module>
+        <module>eu.dariolucia.reatmetric.driver.test</module>
         <module>eu.dariolucia.reatmetric.ui</module>
+        <module>eu.dariolucia.reatmetric.ui.test</module>
     </modules>
 
     <build>
@@ -126,6 +128,7 @@
                 </executions>
             </plugin>
             <!-- Javadoc -->
+            <!--
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -143,6 +146,7 @@
                     <nohelp>true</nohelp>
                 </configuration>
             </plugin>
+            -->
             <!-- JaCoCo -->
             <plugin>
                 <groupId>org.jacoco</groupId>

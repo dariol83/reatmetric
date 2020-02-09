@@ -7,16 +7,21 @@
 
 package eu.dariolucia.reatmetric.driver.test;
 
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.api.rawdata.Quality;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.value.BitString;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.processing.definition.EventProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.definition.ParameterProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
@@ -27,25 +32,31 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class TelemetryTransportConnectorImpl implements ITransportConnector {
+
+    private static final Logger LOG = Logger.getLogger(TelemetryTransportConnectorImpl.class.getName());
 
     private final String name;
     private final String[] routes;
     private final List<ITransportSubscriber> subscriber = new CopyOnWriteArrayList<>();
     private final ProcessingDefinition definitions;
     private final IProcessingModel model;
+    private final IRawDataBroker broker;
     private final ExecutorService notifier = Executors.newSingleThreadExecutor();
     private volatile boolean connected;
     private volatile boolean initialised;
     private volatile String message;
     private volatile Thread generator;
 
-    public TelemetryTransportConnectorImpl(String name, String[] routes, ProcessingDefinition definitions, IProcessingModel model) {
+    public TelemetryTransportConnectorImpl(String name, String[] routes, ProcessingDefinition definitions, IProcessingModel model, IRawDataBroker broker) {
         this.name = name;
         this.routes = routes;
         this.definitions = definitions;
         this.model = model;
+        this.broker = broker;
     }
 
     @Override
@@ -78,6 +89,12 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
         startTmGeneration();
     }
 
+    private void storeRawData(String name, Instant generationTime, String route, String type) throws ReatmetricException {
+        IUniqueId internalId = broker.nextRawDataId();
+        RawData rd = new RawData(internalId, generationTime, name, type, route, "", Quality.GOOD, null, new byte[45], Instant.now(), null);
+        broker.distribute(Collections.singletonList(rd), true);
+    }
+
     private void startTmGeneration() {
         this.generator = new Thread(() -> {
             int paramCurrentIdx = 0;
@@ -93,6 +110,11 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
                     }
                 }
                 if(model != null) {
+                    try {
+                        storeRawData("TM00" + (System.currentTimeMillis() % 15), Instant.now(), routes[0], "TM Packet");
+                    } catch (ReatmetricException e) {
+                        LOG.log(Level.FINE, "Cannot store TM raw data", e);
+                    }
                     model.injectParameters(samples);
                 }
                 for(int i = 0; i < 3; ++i) {
@@ -103,8 +125,16 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
                         notifyState();
                     }
                     if(model != null) {
+                        try {
+                            storeRawData("EVT00" + (System.currentTimeMillis() % 9), Instant.now(), routes[0], "TM Packet");
+                        } catch (ReatmetricException e) {
+                            LOG.log(Level.FINE, "Cannot store TM raw data", e);
+                        }
                         model.raiseEvent(event);
                     }
+                }
+                if(System.currentTimeMillis() % 100 == 0) {
+                    LOG.info("TM log message to be reported");
                 }
             }
         });

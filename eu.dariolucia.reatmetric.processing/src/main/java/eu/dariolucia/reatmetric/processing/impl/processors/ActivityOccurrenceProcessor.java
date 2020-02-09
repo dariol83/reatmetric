@@ -128,7 +128,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         // Notify pending release
         generateReport(ActivityOccurrenceReport.FORWARDING_REPORT_NAME, Instant.now(), null, ActivityReportState.PENDING, null, ActivityOccurrenceState.RELEASE);
         // Forward to the activity handler
-        parent.processor.forwardActivityToHandler(occurrenceId, parent.getSystemEntityId(), parent.getPath(), parent.getDefinition().getType(), arguments, properties, route);
+        parent.processor.forwardActivityToHandler(occurrenceId, parent.getSystemEntityId(), creationTime, parent.getPath(), parent.getDefinition().getType(), arguments, properties, route, source);
     }
 
     private void generateReport(String name, Instant generationTime, Instant executionTime, ActivityReportState reportState, Object result, ActivityOccurrenceState nextState) {

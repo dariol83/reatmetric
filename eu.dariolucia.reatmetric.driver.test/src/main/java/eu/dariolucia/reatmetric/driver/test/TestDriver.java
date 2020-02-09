@@ -9,13 +9,18 @@ package eu.dariolucia.reatmetric.driver.test;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
+import eu.dariolucia.reatmetric.api.rawdata.Quality;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.IDriver;
+import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
@@ -56,27 +61,24 @@ public class TestDriver implements IDriver, IActivityHandler {
 
     @Override
     public void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration) throws DriverException {
+        this.context = context;
         try {
             this.definitions = ProcessingDefinition.loadAll(coreConfiguration.getDefinitionsLocation());
         } catch (ReatmetricException e) {
             throw new DriverException(e);
         }
-        // TODO add raw data broker
         this.connectors.add(createTcConnector("TC", "RouteA"));
-        // TODO add raw data broker
         this.connectors.add(createTcConnector("Custom", "RouteA", "RouteB"));
-        // TODO add raw data broker
-        this.connectors.add(createTmConnector("TM", "RouteA"));
+        this.connectors.add(createTmConnector("TM", context.getRawDataBroker(), "RouteA"));
         this.running = true;
-        this.context = context;
     }
 
     private ITransportConnector createTcConnector(String type, String... routes) {
         return new TelecommandTransportConnectorImpl(type, type, routes);
     }
 
-    private ITransportConnector createTmConnector(String name, String... routes) {
-        return new TelemetryTransportConnectorImpl(name, routes, definitions, context.getProcessingModel());
+    private ITransportConnector createTmConnector(String name, IRawDataBroker broker, String... routes) {
+        return new TelemetryTransportConnectorImpl(name, routes, definitions, context.getProcessingModel(), broker);
     }
 
     @Override
@@ -147,6 +149,7 @@ public class TestDriver implements IDriver, IActivityHandler {
     public void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
         try {
             log(activityInvocation, "Release finalisation");
+            storeRawData(activityInvocation.getActivityOccurrenceId(), activityInvocation.getPath(), activityInvocation.getGenerationTime(), activityInvocation.getRoute(), "TC");
             announce(activityInvocation, model, "Final Release", ActivityReportState.OK, ActivityOccurrenceState.RELEASE, ActivityOccurrenceState.TRANSMISSION);
             log(activityInvocation, "Transmission started");
             for (int i = 0; i < 3; ++i) {
@@ -178,6 +181,12 @@ public class TestDriver implements IDriver, IActivityHandler {
             log(activityInvocation, "Exception raised", e);
             announce(activityInvocation, model, "Error", ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION);
         }
+    }
+
+    private void storeRawData(IUniqueId activityOccurrenceId, SystemEntityPath path, Instant generationTime, String route, String type) throws ReatmetricException {
+        IUniqueId internalId = context.getRawDataBroker().nextRawDataId();
+        RawData rd = new RawData(internalId, generationTime, path.getLastPathElement(), type, route, "", Quality.GOOD, activityOccurrenceId, new byte[25], Instant.now(), null);
+        context.getRawDataBroker().distribute(Collections.singletonList(rd), true);
     }
 
     protected void log(IActivityHandler.ActivityInvocation invocation, String message) {

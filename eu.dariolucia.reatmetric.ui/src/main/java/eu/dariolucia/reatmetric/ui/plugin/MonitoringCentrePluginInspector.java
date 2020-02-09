@@ -23,9 +23,9 @@ public class MonitoringCentrePluginInspector {
 
     public synchronized List<String> getAvailableSystems() {
         if(this.serviceFactories.isEmpty()) {
-            ServiceLoader<IServiceFactory> codecSetLoader
+            ServiceLoader<IServiceFactory> loader
                     = ServiceLoader.load(IServiceFactory.class);
-            for (IServiceFactory cp : codecSetLoader) {
+            for (IServiceFactory cp : loader) {
                 String system = cp.getSystem();
                 if (system != null) {
                     this.serviceFactories.put(system, cp);

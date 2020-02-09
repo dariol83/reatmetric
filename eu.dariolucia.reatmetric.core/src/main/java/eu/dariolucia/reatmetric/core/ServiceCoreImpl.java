@@ -45,7 +45,7 @@ import java.util.logging.Logger;
 public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
 
     private static final Logger LOG = Logger.getLogger(ServiceCoreImpl.class.getName());
-    private static final String INIT_FILE_KEY = "reatmetric.core.config"; // Absolute location of the init file, to configure the core instance
+    private static final String INIT_FILE_KEY = "reatmetric.core.config"; // Absolute location of the configuration file, to configure the core instance
 
 
     private final ServiceCoreConfiguration configuration;

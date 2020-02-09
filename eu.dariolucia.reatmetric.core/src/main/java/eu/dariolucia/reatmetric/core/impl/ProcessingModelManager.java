@@ -74,11 +74,16 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
             activityArchive = archive.getArchive(IActivityOccurrenceDataArchive.class);
             alarmArchive = archive.getArchive(IAlarmParameterDataArchive.class);
             // Retrieve the IDs
-            initialUniqueCounters.put(ParameterData.class, parameterArchive.retrieveLastId().asLong());
-            initialUniqueCounters.put(EventData.class, eventArchive.retrieveLastId().asLong());
-            initialUniqueCounters.put(AlarmParameterData.class, alarmArchive.retrieveLastId().asLong());
-            initialUniqueCounters.put(ActivityOccurrenceData.class, activityArchive.retrieveLastId(ActivityOccurrenceData.class).asLong());
-            initialUniqueCounters.put(ActivityOccurrenceReport.class, activityArchive.retrieveLastId(ActivityOccurrenceReport.class).asLong());
+            IUniqueId lastId = parameterArchive.retrieveLastId();
+            initialUniqueCounters.put(ParameterData.class, lastId != null ? lastId.asLong() : 0L);
+            lastId = eventArchive.retrieveLastId();
+            initialUniqueCounters.put(EventData.class, lastId != null ? lastId.asLong() : 0L);
+            lastId = alarmArchive.retrieveLastId();
+            initialUniqueCounters.put(AlarmParameterData.class, lastId != null ? lastId.asLong() : 0L);
+            lastId = activityArchive.retrieveLastId(ActivityOccurrenceData.class);
+            initialUniqueCounters.put(ActivityOccurrenceData.class, lastId != null ? lastId.asLong() : 0L);
+            lastId = activityArchive.retrieveLastId(ActivityOccurrenceReport.class);
+            initialUniqueCounters.put(ActivityOccurrenceReport.class, lastId != null ? lastId.asLong() : 0L);
         } else {
             parameterArchive = null;
             eventArchive = null;
