@@ -1,0 +1,9 @@
+<ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
+	<name>Core Test</name>
+	<logPropertyFile>$HOME/.reatmetric/log.properties</logPropertyFile>
+	<archiveLocation>$HOME/.reatmetric/archive</archiveLocation>
+	<definitionsLocation>$HOME/.reatmetric/processing</definitionsLocation>
+	<driver name="Test Driver"
+		type="eu.dariolucia.reatmetric.driver.test.TestDriver"
+		configuration="$HOME/.reatmetric/driver_testdriver.xml" />
+</ns1:core>
