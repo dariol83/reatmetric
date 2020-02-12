@@ -22,10 +22,21 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ServiceCoreConfiguration {
 
+    private static final String HOME_VAR = "$HOME";
+    private static final String HOME_DIR = System.getProperty("user.home");
+
     public static ServiceCoreConfiguration load(InputStream is) throws JAXBException {
         JAXBContext jc = JAXBContext.newInstance(ServiceCoreConfiguration.class);
         Unmarshaller u = jc.createUnmarshaller();
-        return (ServiceCoreConfiguration) u.unmarshal(is);
+        ServiceCoreConfiguration configuration = (ServiceCoreConfiguration) u.unmarshal(is);
+        // Update $HOME
+        configuration.setArchiveLocation(configuration.getArchiveLocation().replace(HOME_VAR, HOME_DIR));
+        configuration.setDefinitionsLocation(configuration.getDefinitionsLocation().replace(HOME_VAR, HOME_DIR));
+        configuration.setLogPropertyFile(configuration.getLogPropertyFile().replace(HOME_VAR, HOME_DIR));
+        for(DriverConfiguration dc : configuration.getDrivers()) {
+            dc.setConfiguration(dc.getConfiguration().replace(HOME_VAR, HOME_DIR));
+        }
+        return configuration;
     }
 
     @XmlElement(name = "name")
