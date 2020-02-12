@@ -26,11 +26,11 @@ public class ReatmetricServiceHolder {
     public synchronized void setSystem(IServiceFactory system) {
         IServiceFactory oldSystem = this.system;
         if(oldSystem != null) {
-            this.listeners.forEach(o -> o.systemRemoved(oldSystem));
+            this.listeners.forEach(o -> o.systemDisconnected(oldSystem));
         }
         this.system = system;
         if(this.system != null) {
-            this.listeners.forEach(o -> o.systemAdded(this.system));
+            this.listeners.forEach(o -> o.systemConnected(this.system));
         }
     }
     
@@ -41,7 +41,7 @@ public class ReatmetricServiceHolder {
     public synchronized void addSubscriber(IReatmetricServiceListener l) {
         this.listeners.add(l);
         if(this.system != null) {
-            l.systemAdded(this.system);
+            l.systemConnected(this.system);
         }
     }
     

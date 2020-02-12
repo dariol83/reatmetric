@@ -10,11 +10,10 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IServiceFactory;
-import eu.dariolucia.reatmetric.api.common.IUserMonitorCallback;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
-import eu.dariolucia.reatmetric.ui.plugin.MonitoringCentrePluginInspector;
+import eu.dariolucia.reatmetric.ui.plugin.ReatmetricPluginInspector;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -42,7 +41,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
 	private static final String NULL_PERSPECTIVE = "nullPerspective";
 
-	private final MonitoringCentrePluginInspector serviceInspector = new MonitoringCentrePluginInspector();
+	private final ReatmetricPluginInspector serviceInspector = new ReatmetricPluginInspector();
 
 	@FXML
 	private ToggleButton parameterTgl;
@@ -213,12 +212,12 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	}
 
 	@Override
-	public void systemAdded(IServiceFactory system) {
+	public void systemConnected(IServiceFactory system) {
 		// Nothing to do yet
 	}
 
 	@Override
-	public void systemRemoved(IServiceFactory system) {
+	public void systemDisconnected(IServiceFactory system) {
 		// Nothing to do yet
 	}
 

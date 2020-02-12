@@ -17,8 +17,8 @@ import eu.dariolucia.reatmetric.api.IServiceFactory;
  */
 public interface IReatmetricServiceListener {
     
-    void systemAdded(IServiceFactory system);
+    void systemConnected(IServiceFactory system);
     
-    void systemRemoved(IServiceFactory system);
+    void systemDisconnected(IServiceFactory system);
     
 }

@@ -9,44 +9,35 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import java.net.URL;
-import java.util.ResourceBundle;
-
 import eu.dariolucia.reatmetric.api.IServiceFactory;
-import eu.dariolucia.reatmetric.api.common.IServiceMonitorCallback;
-import eu.dariolucia.reatmetric.api.common.IUserMonitorCallback;
-import eu.dariolucia.reatmetric.api.common.ServiceType;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.print.PageLayout;
-import javafx.print.PageOrientation;
-import javafx.print.Paper;
-import javafx.print.Printer;
-import javafx.print.PrinterAttributes;
-import javafx.print.PrinterJob;
+import javafx.print.*;
 import javafx.scene.control.Control;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.transform.Scale;
+
+import java.net.URL;
+import java.util.ResourceBundle;
 
 /**
  * FXML Controller class
  *
  * @author dario
  */
-public abstract class AbstractDisplayController implements Initializable, IReatmetricServiceListener, IUserMonitorCallback, IServiceMonitorCallback {
+public abstract class AbstractDisplayController implements Initializable, IReatmetricServiceListener {
  
     // Service availability control
     @FXML
     protected Circle serviceHealthStatus;
 
     // Info
-    protected String system = null;
-    protected String user = null;
+    protected IServiceFactory system = null;
     protected boolean serviceConnected = false;
 
     /**
@@ -55,7 +46,6 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     @Override
     public final void initialize(URL url, ResourceBundle rb) {
         doInitialize(url, rb);
-        
         ReatmetricUI.selectedSystem().addSubscriber(this);
     }
 
@@ -66,7 +56,6 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 Printer printer = Printer.getDefaultPrinter();
                 PageLayout pageLayout = printer.createPageLayout(Paper.A4, PageOrientation.PORTRAIT, Printer.MarginType.HARDWARE_MINIMUM);
-                PrinterAttributes attr = printer.getPrinterAttributes();
                 PrinterJob job = PrinterJob.createPrinterJob();
                 
                 double scaleX = pageLayout.getPrintableWidth() / n.getPrefWidth();
@@ -89,86 +78,40 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     }
 
     @Override
-    public void systemAdded(IServiceFactory system) {
-        //
-    }
-
-    @Override
-    public void systemRemoved(IServiceFactory system) {
-        //
-    }
-
-    @Override
-    public void userDisconnected(String system, String user) {
-        Platform.runLater(() -> {
-            this.system = null;
-            this.user = null;
-            doUserDisconnected(system, user);
-        });
-    }
-
-    @Override
-    public void userConnected(String system, String user) {
+    public void systemConnected(IServiceFactory system) {
         Platform.runLater(() -> {
             this.system = system;
-            this.user = user;
-            doUserConnected(system, user);
+            // Set indicator
+            this.serviceHealthStatus.setFill(Paint.valueOf("#00ca00"));
+            //
+            boolean oldStatus = this.serviceConnected;
+            this.serviceConnected = true;
+            //
+            doSystemConnected(system, oldStatus);
         });
     }
 
     @Override
-    public void userConnectionFailed(String system, String user, String reason) {
+    public void systemDisconnected(IServiceFactory system) {
         Platform.runLater(() -> {
             this.system = null;
-            this.user = null;
-            doUserConnectionFailed(system, user, reason);
+            // Set indicator
+            this.serviceHealthStatus.setFill(Paint.valueOf("#003915"));
+            //
+            boolean oldStatus = this.serviceConnected;
+            this.serviceConnected = false;
+            //
+            doSystemDisconnected(system, oldStatus);
         });
     }
 
-    @Override
-    public void serviceDisconnected(String system, ServiceType service) {
-        if (service.equals(doGetSupportedService())) {
-            Platform.runLater(() -> {
-                // Set indicator
-                this.serviceHealthStatus.setFill(Paint.valueOf("#003915"));
-                //
-                boolean oldStatus = this.serviceConnected;
-                this.serviceConnected = false;
-                //
-                doServiceDisconnected(oldStatus);           
-            });
-        }
-    }
-
-    @Override
-    public void serviceConnected(String system, ServiceType service) {
-        if (service.equals(doGetSupportedService())) {
-            Platform.runLater(() -> {
-                // Set indicator
-                this.serviceHealthStatus.setFill(Paint.valueOf("#00ca00"));
-                // 
-                boolean oldStatus = this.serviceConnected;
-                this.serviceConnected = true;
-                //
-                doServiceConnected(oldStatus);
-            });
-        }
-    }
-    
     protected abstract void doInitialize(URL url, ResourceBundle rb);
 
     protected abstract Control doBuildNodeForPrinting();
 
-    protected abstract void doUserDisconnected(String system, String user);
+    protected abstract void doSystemDisconnected(IServiceFactory system, boolean oldStatus);
 
-    protected abstract void doUserConnected(String system, String user);
+    protected abstract void doSystemConnected(IServiceFactory system, boolean oldStatus);
 
-    protected abstract void doUserConnectionFailed(String system, String user, String reason);
-
-    protected abstract void doServiceDisconnected(boolean previousConnectionStatus);
-
-    protected abstract void doServiceConnected(boolean previousConnectionStatus);
-    
-    protected abstract ServiceType doGetSupportedService();
 }
 

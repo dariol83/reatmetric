@@ -17,7 +17,7 @@ import java.util.*;
  *
  * @author dario
  */
-public class MonitoringCentrePluginInspector {
+public class ReatmetricPluginInspector {
 
     private final Map<String, IServiceFactory> serviceFactories = new TreeMap<>();
 

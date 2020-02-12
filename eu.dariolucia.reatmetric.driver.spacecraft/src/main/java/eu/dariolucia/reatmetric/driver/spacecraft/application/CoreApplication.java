@@ -9,8 +9,6 @@ package eu.dariolucia.reatmetric.driver.spacecraft.application;
 
 import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
-import eu.dariolucia.reatmetric.api.common.IServiceMonitorCallback;
-import eu.dariolucia.reatmetric.api.common.IUserMonitorCallback;
 import eu.dariolucia.reatmetric.api.common.ServiceType;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
