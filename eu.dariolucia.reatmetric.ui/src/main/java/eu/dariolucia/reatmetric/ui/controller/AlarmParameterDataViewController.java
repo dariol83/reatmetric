@@ -9,18 +9,11 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import java.net.URL;
-import java.time.Instant;
-import java.util.List;
-import java.util.Objects;
-import java.util.ResourceBundle;
-
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterDataFilter;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.common.ServiceType;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
@@ -37,6 +30,12 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
+
+import java.net.URL;
+import java.time.Instant;
+import java.util.List;
+import java.util.Objects;
+import java.util.ResourceBundle;
 
 /**
  * FXML Controller class
@@ -297,8 +296,4 @@ public class AlarmParameterDataViewController
 		return "AlarmParameterDataView";
 	}
 
-	@Override
-	protected ServiceType doGetSupportedService() {
-		return ServiceType.ALARMS;
-	}
 }

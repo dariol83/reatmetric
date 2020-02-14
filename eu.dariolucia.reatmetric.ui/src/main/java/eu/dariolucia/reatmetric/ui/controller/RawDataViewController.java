@@ -11,18 +11,12 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.common.ServiceType;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import java.io.IOException;
-import java.net.URL;
-import java.time.Instant;
-import java.util.List;
-import java.util.ResourceBundle;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
@@ -34,6 +28,12 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.paint.Color;
 import javafx.stage.Popup;
+
+import java.io.IOException;
+import java.net.URL;
+import java.time.Instant;
+import java.util.List;
+import java.util.ResourceBundle;
 
 /**
  * FXML Controller class
@@ -187,8 +187,4 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
         return "RawDataView";
     }
 
-    @Override
-    protected ServiceType doGetSupportedService() {
-        return ServiceType.RAW_DATA;
-    }
 }

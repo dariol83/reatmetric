@@ -9,14 +9,8 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import java.net.URL;
-import java.time.Instant;
-import java.util.List;
-import java.util.ResourceBundle;
-
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.common.ServiceType;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
@@ -34,6 +28,11 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
+
+import java.net.URL;
+import java.time.Instant;
+import java.util.List;
+import java.util.ResourceBundle;
 
 /**
  * FXML Controller class
@@ -203,8 +202,4 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
 		return "EventDataView";
 	}
 
-	@Override
-	protected ServiceType doGetSupportedService() {
-		return ServiceType.EVENTS;
-	}
 }

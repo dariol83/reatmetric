@@ -9,7 +9,7 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.common.ServiceType;
+import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
@@ -154,36 +154,18 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     }
 
     @Override
-    protected void doUserDisconnected(String system, String user) {
+    protected void doSystemDisconnected(IServiceFactory system, boolean oldStatus) {
         this.displayTitledPane.setDisable(true);
-    }
-
-    @Override
-    protected void doUserConnected(String system, String user) {
-        this.displayTitledPane.setDisable(false);
-    }
-
-    @Override
-    protected void doUserConnectionFailed(String system, String user, String reason) {
-        this.displayTitledPane.setDisable(true);
-    }
-
-    @Override
-    protected void doServiceDisconnected(boolean previousConnectionStatus) {
-        // Clear the table                
+        // Clear the table
         clearTreeModel();
     }
 
     @Override
-    protected void doServiceConnected(boolean previousConnectionStatus) {
+    protected void doSystemConnected(IServiceFactory system, boolean oldStatus) {
+        this.displayTitledPane.setDisable(false);
         startSubscription();
     }
-    
-    @Override
-    protected ServiceType doGetSupportedService() {
-        return ServiceType.SYSTEM_MODEL;
-    }
-    
+
     private void startSubscription() {
         clearTreeModel();
         ReatmetricUI.threadPool(getClass()).execute(() -> {

@@ -26,7 +26,11 @@ import java.util.List;
  * @author dario
  */
 public interface IServiceFactory {
-    
+
+    void initialise() throws ReatmetricException;
+
+    void dispose() throws ReatmetricException;
+
     String getSystem();
     
     IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException;

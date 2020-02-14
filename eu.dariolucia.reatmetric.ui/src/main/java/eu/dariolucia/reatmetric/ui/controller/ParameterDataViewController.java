@@ -9,9 +9,9 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
+import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.common.ServiceType;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
@@ -178,7 +178,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             if (result.isPresent()){
                 Properties props = new OrderedProperties();
                 this.dataItemTableView.getItems().forEach((o) -> props.put(o.getPath().asString(), String.valueOf(o.get().getExternalId())));
-                this.presetManager.save(system, user, result.get(), doGetComponentId(), props);
+                this.presetManager.save(system.getSystem(), user, result.get(), doGetComponentId(), props);
             }
         }
     }
@@ -186,12 +186,12 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected void onShowingPresetMenu(Event e) {
         this.loadPresetMenu.getItems().remove(0, this.loadPresetMenu.getItems().size());
-        List<String> presets = this.presetManager.getAvailablePresets(system, user, doGetComponentId());
+        List<String> presets = this.presetManager.getAvailablePresets(system.getSystem(), user, doGetComponentId());
         for(String preset : presets) {
             final String fpreset = preset;
             MenuItem mi = new MenuItem(preset);
             mi.setOnAction((event) -> {
-                Properties p = this.presetManager.load(system, user, fpreset, doGetComponentId());
+                Properties p = this.presetManager.load(system.getSystem(), user, fpreset, doGetComponentId());
                 if(p != null) {
                     addItemsFromPreset(p);
                 }
@@ -366,11 +366,11 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
 
     private void restoreColumnConfiguration() {
-        TableViewUtil.restoreColumnConfiguration(this.system, this.user, doGetComponentId(), this.dataItemTableView);
+        TableViewUtil.restoreColumnConfiguration(this.system.getSystem(), this.user, doGetComponentId(), this.dataItemTableView);
     }
     
     private void persistColumnConfiguration() {
-        TableViewUtil.persistColumnConfiguration(this.system, this.user, doGetComponentId(), this.dataItemTableView);
+        TableViewUtil.persistColumnConfiguration(this.system.getSystem(), this.user, doGetComponentId(), this.dataItemTableView);
     }
 
     protected void informDataItemsReceived(List<ParameterData> objects) {
@@ -459,26 +459,10 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
     
     @Override
-    protected void doUserDisconnected(String system, String user) {
+    protected void doSystemDisconnected(IServiceFactory system, boolean oldStatus) {
         this.liveTgl.setSelected(false);
         this.displayTitledPane.setDisable(true);
-    }
-
-    @Override
-    protected void doUserConnected(String system, String user) {
-        this.liveTgl.setSelected(true);
-        this.displayTitledPane.setDisable(false);
-    }
-
-    @Override
-    protected void doUserConnectionFailed(String system, String user, String reason) {
-        this.liveTgl.setSelected(false);
-        this.displayTitledPane.setDisable(true);
-    }
-
-    @Override
-    protected void doServiceDisconnected(boolean oldState) {
-        if(oldState) {
+        if(oldStatus) {
             persistColumnConfiguration();
         }
         // Remove the additional header fields
@@ -486,7 +470,9 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
 
     @Override
-    protected void doServiceConnected(boolean oldState) {
+    protected void doSystemConnected(IServiceFactory system, boolean oldStatus) {
+        this.liveTgl.setSelected(true);
+        this.displayTitledPane.setDisable(false);
         // Add the additional header fields
         addAdditionalHeaderFields();
         // Restore column configuration
@@ -496,7 +482,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             startSubscription();
         }
     }
-    
+
     protected void doServiceSubscribe(ParameterDataFilter selectedFilter) throws ReatmetricException {
         ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().subscribe(this, selectedFilter);
     }
@@ -523,11 +509,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
 
     protected String doGetComponentId() {
         return "ParameterDataView";
-    }
-
-    @Override
-    protected ServiceType doGetSupportedService() {
-        return ServiceType.PARAMETERS;
     }
 
     private ParameterData retrieveLatest() {

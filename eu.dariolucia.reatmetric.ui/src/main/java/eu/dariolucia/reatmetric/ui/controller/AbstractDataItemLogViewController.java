@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
+import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
@@ -273,31 +274,12 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     @Override
-    protected void doUserDisconnected(String system, String user) {
-    	if(this.liveTgl != null) {
-    		this.liveTgl.setSelected(false);
-    	}
+    protected void doSystemDisconnected(IServiceFactory system, boolean oldState) {
+        if(this.liveTgl != null) {
+            this.liveTgl.setSelected(false);
+        }
         this.displayTitledPane.setDisable(true);
-    }
 
-    @Override
-    protected void doUserConnected(String system, String user) {
-    	if(this.liveTgl != null) {
-    		this.liveTgl.setSelected(true);
-    	}
-        this.displayTitledPane.setDisable(false);
-    }
-
-    @Override
-    protected void doUserConnectionFailed(String system, String user, String reason) {
-    	if(this.liveTgl != null) {
-    		this.liveTgl.setSelected(false);
-    	}
-    	this.displayTitledPane.setDisable(true);
-    }
-
-    @Override
-    protected void doServiceDisconnected(boolean oldState) {
         if(oldState) {
             persistColumnConfiguration();
         }
@@ -308,7 +290,12 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     @Override
-    protected void doServiceConnected(boolean oldState) {
+    protected void doSystemConnected(IServiceFactory system, boolean oldState) {
+        if(this.liveTgl != null) {
+            this.liveTgl.setSelected(true);
+        }
+        this.displayTitledPane.setDisable(false);
+
         // Add the additional header fields
         addAdditionalHeaderFields();
         // Restore column configuration
@@ -321,11 +308,11 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
     
     private void restoreColumnConfiguration() {
-        TableViewUtil.restoreColumnConfiguration(this.system, this.user, doGetComponentId(), this.dataItemTableView);
+        TableViewUtil.restoreColumnConfiguration(this.system.getSystem(), this.user, doGetComponentId(), this.dataItemTableView);
     }
     
     private void persistColumnConfiguration() {
-        TableViewUtil.persistColumnConfiguration(this.system, this.user, doGetComponentId(), this.dataItemTableView);
+        TableViewUtil.persistColumnConfiguration(this.system.getSystem(), this.user, doGetComponentId(), this.dataItemTableView);
     }
 
     protected void informDataItemsReceived(List<T> objects) {

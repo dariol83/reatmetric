@@ -37,7 +37,7 @@ import java.util.*;
  *
  * @author dario
  */
-public class MainViewController implements Initializable, IReatmetricServiceListener, IUserMonitorCallback {
+public class MainViewController implements Initializable, IReatmetricServiceListener {
 
 	private static final String NULL_PERSPECTIVE = "nullPerspective";
 
@@ -213,19 +213,19 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
 	@Override
 	public void systemConnected(IServiceFactory system) {
-		// Nothing to do yet
+		Platform.runLater(() -> {
+			enableMainViewItems();
+			this.systemLbl.setText(system.getSystem());
+			this.usernameLbl.setText(System.getProperty("user.name"));
+			ReatmetricUI.setStatusLabel("System " + system.getSystem() + " connected");
+		});
 	}
 
 	@Override
 	public void systemDisconnected(IServiceFactory system) {
-		// Nothing to do yet
-	}
-
-	@Override
-	public void userDisconnected(String system, String user) {
 		Platform.runLater(() -> {
 			disableMainViewItems();
-			ReatmetricUI.setStatusLabel("User " + user + " disconnected");
+			ReatmetricUI.setStatusLabel("System " + system.getSystem() + " disconnected");
 		});
 	}
 
@@ -248,16 +248,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		activatePerspective(NULL_PERSPECTIVE);
 	}
 
-	@Override
-	public void userConnected(String system, String user) {
-		Platform.runLater(() -> {
-			enableMainViewItems();
-			this.systemLbl.setText(system);
-			this.usernameLbl.setText(user);
-			ReatmetricUI.setStatusLabel("User " + user + " connected to system " + system);
-		});
-	}
-
 	private void enableMainViewItems() {
 		// Enable the perspective buttons
 		this.alarmsTgl.setDisable(false);
@@ -271,14 +261,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		// Enable the two labels
 		this.systemLbl.setDisable(false);
 		this.usernameLbl.setDisable(false);
-	}
-
-	@Override
-	public void userConnectionFailed(String system, String user, String reason) {
-		Platform.runLater(() -> {
-			disableMainViewItems();
-			ReatmetricUI.setStatusLabel("User connection failed: " + reason);
-		});
 	}
 
 	public void updateStatusIndicator(AlarmState state) {

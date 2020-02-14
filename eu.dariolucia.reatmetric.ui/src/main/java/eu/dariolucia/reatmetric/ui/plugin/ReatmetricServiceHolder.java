@@ -10,6 +10,8 @@
 package eu.dariolucia.reatmetric.ui.plugin;
 
 import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -27,9 +29,21 @@ public class ReatmetricServiceHolder {
         IServiceFactory oldSystem = this.system;
         if(oldSystem != null) {
             this.listeners.forEach(o -> o.systemDisconnected(oldSystem));
+            try {
+                oldSystem.dispose();
+            } catch (ReatmetricException e) {
+                // TODO: log
+                e.printStackTrace();
+            }
         }
         this.system = system;
         if(this.system != null) {
+            try {
+                this.system.initialise();
+            } catch (ReatmetricException e) {
+                // TODO: log
+                e.printStackTrace();
+            }
             this.listeners.forEach(o -> o.systemConnected(this.system));
         }
     }

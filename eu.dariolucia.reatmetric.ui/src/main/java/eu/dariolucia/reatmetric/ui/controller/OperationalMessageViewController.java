@@ -11,22 +11,22 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.common.ServiceType;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageSubscriber;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import java.net.URL;
-import java.time.Instant;
-import java.util.List;
-import java.util.ResourceBundle;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.paint.Color;
+
+import java.net.URL;
+import java.time.Instant;
+import java.util.List;
+import java.util.ResourceBundle;
 
 /**
  * FXML Controller class
@@ -133,8 +133,4 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
         return "OperationalMessageView";
     }
 
-    @Override
-    protected ServiceType doGetSupportedService() {
-        return ServiceType.OPERATIONAL_MESSAGES;
-    }
 }

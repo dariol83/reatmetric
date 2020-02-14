@@ -18,13 +18,13 @@ import java.util.List;
  */
 public interface IFilterController<T extends AbstractDataItemFilter> {
     
-    public void setActionAfterSelection(Runnable r);
+    void setActionAfterSelection(Runnable r);
     
-    public void setSelectedFilter(T filter);
+    void setSelectedFilter(T filter);
     
-    public T getSelectedFilter();
+    T getSelectedFilter();
     
-    public static String toStringList(List<?> sourceList) {
+    static String toStringList(List<?> sourceList) {
         if(sourceList == null) {
             return "";
         }

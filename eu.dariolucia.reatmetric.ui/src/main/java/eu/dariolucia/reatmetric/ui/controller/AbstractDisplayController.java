@@ -38,6 +38,8 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
 
     // Info
     protected IServiceFactory system = null;
+    protected String user = System.getProperty("user.name");
+
     protected boolean serviceConnected = false;
 
     /**

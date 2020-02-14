@@ -9,20 +9,7 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import eu.dariolucia.reatmetric.api.common.ServiceType;
+import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
@@ -41,6 +28,13 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.VBox;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * FXML Controller class
@@ -159,36 +153,24 @@ public class UserDisplayViewController extends AbstractDisplayController
 	}
 
 	@Override
-	protected void doUserDisconnected(String system, String user) {
-		this.tab2contents.values().stream().forEach(c -> c.doUserDisconnected(system, user));
+	protected void doSystemDisconnected(IServiceFactory system, boolean oldStatus) {
+		// TODO: review double call
+		this.tab2contents.values().stream().forEach(c -> c.doUserDisconnected(system.getSystem(), user));
 		this.displayTitledPane.setDisable(true);
-	}
-
-	@Override
-	protected void doUserConnected(String system, String user) {
-		this.tab2contents.values().stream().forEach(c -> c.doUserConnected(system, user));
-		this.displayTitledPane.setDisable(false);
-	}
-
-	@Override
-	protected void doUserConnectionFailed(String system, String user, String reason) {
-		this.tab2contents.values().stream().forEach(c -> c.doUserConnectionFailed(system, user, reason));
-		this.displayTitledPane.setDisable(true);
-	}
-
-	@Override
-	protected void doServiceDisconnected(boolean previousConnectionStatus) {
-		this.tab2contents.values().stream().forEach(c -> c.doServiceDisconnected(previousConnectionStatus));
+		this.tab2contents.values().stream().forEach(c -> c.doServiceDisconnected(oldStatus));
 		stopSubscription();
 	}
 
 	@Override
-	protected void doServiceConnected(boolean previousConnectionStatus) {
-		this.tab2contents.values().stream().forEach(c -> c.doServiceConnected(previousConnectionStatus));
+	protected void doSystemConnected(IServiceFactory system, boolean oldStatus) {
+		// TODO: review double call
+		this.tab2contents.values().stream().forEach(c -> c.doServiceConnected(oldStatus));
 		ParameterDataFilter globalFilter = buildFilter();
 		if(mustSubscribe(globalFilter)) {
 			startSubscription(globalFilter);
 		}
+		this.tab2contents.values().stream().forEach(c -> c.doUserConnected(system.getSystem(), user));
+		this.displayTitledPane.setDisable(false);
 	}
 
     private boolean mustSubscribe(ParameterDataFilter globalFilter) {
@@ -221,11 +203,6 @@ public class UserDisplayViewController extends AbstractDisplayController
                 e.printStackTrace();
             }
         });
-    }
-	
-    @Override
-    protected ServiceType doGetSupportedService() {
-        return ServiceType.PARAMETERS;
     }
 
 	@Override

@@ -37,6 +37,7 @@ import eu.dariolucia.reatmetric.core.impl.ProcessingModelManager;
 import eu.dariolucia.reatmetric.core.impl.RawDataBrokerImpl;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -47,11 +48,10 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
     private static final Logger LOG = Logger.getLogger(ServiceCoreImpl.class.getName());
     private static final String INIT_FILE_KEY = "reatmetric.core.config"; // Absolute location of the configuration file, to configure the core instance
 
-
-    private final ServiceCoreConfiguration configuration;
     private final List<IDriver> drivers = new ArrayList<>();
     private final List<ITransportConnector> transportConnectors = new ArrayList<>();
     private final List<ITransportConnector> transportConnectorsImmutable = Collections.unmodifiableList(transportConnectors);
+    private final ServiceCoreConfiguration configuration;
 
     private IArchive archive;
     private OperationalMessageBrokerImpl messageBroker;
@@ -62,16 +62,20 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
         try {
             String configurationFileLocation = System.getProperty(INIT_FILE_KEY);
             configuration = ServiceCoreConfiguration.load(new FileInputStream(configurationFileLocation));
-            initialise();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void initialise() throws Exception {
+    @Override
+    public void initialise() throws ReatmetricException {
         // Prepare the logging facility
         if(configuration.getLogPropertyFile() != null) {
-            LogManager.getLogManager().readConfiguration(new FileInputStream(configuration.getLogPropertyFile()));
+            try {
+                LogManager.getLogManager().readConfiguration(new FileInputStream(configuration.getLogPropertyFile()));
+            } catch (IOException e) {
+                throw new ReatmetricException(e);
+            }
         }
         // Load the archive
         if(configuration.getArchiveLocation() != null) {
@@ -104,6 +108,22 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
             }
         }
         // Done and ready to go
+    }
+
+    @Override
+    public void dispose() throws ReatmetricException {
+        for(IDriver d : drivers) {
+            d.dispose();
+        }
+        rawDataBroker = null;
+        if(messageBroker != null) {
+            messageBroker.close();
+            messageBroker = null;
+        }
+        if(archive != null) {
+            archive.dispose();
+            archive = null;
+        }
     }
 
     private void registerActivityHandlers(String driverName, List<IActivityHandler> activityHandlers) {

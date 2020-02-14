@@ -33,7 +33,7 @@ public class TableViewUtil {
             Properties p = ReatmetricUI.preferences().load(csystem, cuser, id);
             if(p != null) {
                 // Construct a map: table column to information (width as double, position as int)
-                Map<TableColumn, Object[]> infoMap = new HashMap<TableColumn, Object[]>();
+                Map<TableColumn, Object[]> infoMap = new HashMap<>();
                 for(TableColumn tc : table.getColumns()) {
                     String storedTcProp = p.getProperty(tc.getText(), "");
                     if(!storedTcProp.isEmpty()) {
