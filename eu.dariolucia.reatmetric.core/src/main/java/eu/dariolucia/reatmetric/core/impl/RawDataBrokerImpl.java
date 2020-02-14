@@ -88,7 +88,7 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
 
     @Override
     public List<FieldDescriptor> getAdditionalFieldDescriptors() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override

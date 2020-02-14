@@ -26,7 +26,7 @@ public class DataCollectorVisitor implements IProcessingModelVisitor {
 
     @Override
     public boolean shouldDescend(SystemEntity entity) {
-        return filter.select(entity);
+        return filter == null || filter.select(entity);
     }
 
     @Override
@@ -36,9 +36,13 @@ public class DataCollectorVisitor implements IProcessingModelVisitor {
 
     @Override
     public void onVisit(AbstractDataItem item) {
-        if(item.getClass().equals(filter.getDataItemType())) {
-            if (filter.test(item)) {
-                result.add(item);
+        if(filter == null) {
+            result.add(item);
+        } else {
+            if (item.getClass().equals(filter.getDataItemType())) {
+                if (filter.test(item)) {
+                    result.add(item);
+                }
             }
         }
     }

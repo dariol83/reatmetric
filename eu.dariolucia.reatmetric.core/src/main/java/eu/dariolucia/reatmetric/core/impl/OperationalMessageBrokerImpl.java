@@ -88,7 +88,7 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
 
     @Override
     public List<FieldDescriptor> getAdditionalFieldDescriptors() {
-        return null;
+        return Collections.emptyList();
     }
 
     private void distribute(List<OperationalMessage> items, boolean store) throws ReatmetricException {

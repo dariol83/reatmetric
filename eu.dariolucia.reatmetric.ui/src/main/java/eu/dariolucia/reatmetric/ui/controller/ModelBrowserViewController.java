@@ -214,9 +214,11 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 SystemEntity toProcess = constructionQueue.poll();
                 if(!this.path2item.containsKey(toProcess.getPath())) {
                     addOrUpdateItemToTree(toProcess);
-                    List<SystemEntity> children = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getContainedEntities(toProcess.getPath());
-                    if(children != null) {
-                        constructionQueue.addAll(children);
+                    if(toProcess.getType() == SystemEntityType.CONTAINER) {
+                        List<SystemEntity> children = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getContainedEntities(toProcess.getPath());
+                        if (children != null) {
+                            constructionQueue.addAll(children);
+                        }
                     }
                 }
             }
