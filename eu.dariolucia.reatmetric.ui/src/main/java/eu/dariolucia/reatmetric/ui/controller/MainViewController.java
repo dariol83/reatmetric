@@ -184,9 +184,9 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	@FXML
 	private void exitMenuAction(ActionEvent event) {
 		Alert alert = new Alert(AlertType.CONFIRMATION);
-		alert.setTitle("Exit Monitoring Centre UI");
-		alert.setHeaderText("Exit Monitoring Centre UI");
-		String s = "Do you want to close Monitoring Centre UI?";
+		alert.setTitle("Exit Reatmetric UI");
+		alert.setHeaderText("Exit Reatmetric UI");
+		String s = "Do you want to close Reatmetric UI?";
 		alert.setContentText(s);
 		alert.getDialogPane().getStylesheets().add(getClass().getClassLoader()
 				.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());

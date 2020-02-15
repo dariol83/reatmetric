@@ -36,10 +36,10 @@ public class DataCollectorVisitor implements IProcessingModelVisitor {
 
     @Override
     public void onVisit(AbstractDataItem item) {
-        if(filter == null) {
+        if(filter == null && item != null) {
             result.add(item);
         } else {
-            if (item.getClass().equals(filter.getDataItemType())) {
+            if (item != null && item.getClass().equals(filter.getDataItemType())) {
                 if (filter.test(item)) {
                     result.add(item);
                 }
