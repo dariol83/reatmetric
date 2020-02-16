@@ -100,8 +100,39 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
         this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getName()));
+        this.nameCol.setCellFactory(column -> new TreeTableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(item);
+                    switch (getTreeTableView().getTreeItem(getIndex()).getValue().getType()) {
+                        case CONTAINER:
+                            setGraphic(new ImageView(containerImage));
+                            break;
+                        case PARAMETER:
+                            setGraphic(new ImageView(parameterImage));
+                            break;
+                        case EVENT:
+                            setGraphic(new ImageView(eventImage));
+                            break;
+                        case ACTIVITY:
+                            setGraphic(new ImageView(activityImage));
+                            break;
+                        case REPORT:
+                            setGraphic(new ImageView(reportImage));
+                            break;
+                        default:
+                            setGraphic(null);
+                            break;
+                    }
+                } else {
+                    setText("");
+                    setGraphic(null);
+                }
+            }
+        });
         this.statusCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getStatus()));
-        
         this.statusCol.setCellFactory(column -> new TreeTableCell<>() {
             @Override
             protected void updateItem(Status item, boolean empty) {
@@ -238,7 +269,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         TreeItem<SystemEntity> item = this.path2item.get(toAdd.getPath());
         if(item == null) {
             // Create the item
-            item = new TreeItem<>(toAdd, new ImageView(getImageFromType(toAdd.getType())));
+            item = new TreeItem<>(toAdd); //, new ImageView(getImageFromType(toAdd.getType())));
             // Add it to the map
             this.path2item.put(toAdd.getPath(), item);
             // Add it to the parent tree item

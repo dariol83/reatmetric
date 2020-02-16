@@ -61,5 +61,10 @@
             <artifactId>javafx-graphics</artifactId>
             <version>${openjfx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.controlsfx</groupId>
+            <artifactId>controlsfx</artifactId>
+            <version>${controlsfx.version}</version>
+        </dependency>
     </dependencies>
 </project>

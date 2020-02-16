@@ -155,10 +155,10 @@ public class UserDisplayViewController extends AbstractDisplayController
 	@Override
 	protected void doSystemDisconnected(IServiceFactory system, boolean oldStatus) {
 		// TODO: review double call
+		stopSubscription();
 		this.tab2contents.values().stream().forEach(c -> c.doUserDisconnected(system.getSystem(), user));
 		this.displayTitledPane.setDisable(true);
 		this.tab2contents.values().stream().forEach(c -> c.doServiceDisconnected(oldStatus));
-		stopSubscription();
 	}
 
 	@Override
@@ -198,7 +198,10 @@ public class UserDisplayViewController extends AbstractDisplayController
 	private void stopSubscription() {
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-            	ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().unsubscribe(this);
+				IServiceFactory service = ReatmetricUI.selectedSystem().getSystem();
+				if(service != null && service.getParameterDataMonitorService() != null) {
+					ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().unsubscribe(this);
+				}
             } catch (ReatmetricException e) {
                 e.printStackTrace();
             }

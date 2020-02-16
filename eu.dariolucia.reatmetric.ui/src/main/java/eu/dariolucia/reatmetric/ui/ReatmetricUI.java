@@ -54,7 +54,7 @@ public class ReatmetricUI extends Application {
 			if(toReturn == null) {
 				toReturn = Executors.newFixedThreadPool(1, r -> {
                     Thread t = new Thread(r);
-                    t.setName(clazz.getSimpleName() + " External Thread");
+                    t.setName(clazz.getSimpleName() + " Worker Thread");
                     t.setDaemon(true);
                     return t;
                 });
@@ -62,6 +62,14 @@ public class ReatmetricUI extends Application {
 			}
 		}
         return toReturn;
+    }
+
+    public static void shutdownThreadPool() {
+        synchronized (THREAD_POOL) {
+            for(Map.Entry<Class<?>, ExecutorService> entry : THREAD_POOL.entrySet()) {
+                entry.getValue().shutdownNow();
+            }
+        }
     }
     
     private static final PreferencesManager PREFERENCES = new PreferencesManager();

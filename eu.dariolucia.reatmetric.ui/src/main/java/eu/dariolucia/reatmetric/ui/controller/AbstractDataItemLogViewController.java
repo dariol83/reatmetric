@@ -239,6 +239,9 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     protected void fetchRecords(int n, RetrievalDirection direction) {
+        if(dataItemTableView.getItems().isEmpty()) {
+            return;
+        }
         // Get the first message in the table
         T om = direction == RetrievalDirection.TO_FUTURE ? getFirst() : getLast();
         // Retrieve the next one and add it on top

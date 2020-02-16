@@ -96,14 +96,14 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     @Override
     public void systemDisconnected(IServiceFactory system) {
         Platform.runLater(() -> {
+            boolean oldStatus = this.serviceConnected;
+            //
+            doSystemDisconnected(system, oldStatus);
             this.system = null;
             // Set indicator
             this.serviceHealthStatus.setFill(Paint.valueOf("#003915"));
             //
-            boolean oldStatus = this.serviceConnected;
-            this.serviceConnected = false;
-            //
-            doSystemDisconnected(system, oldStatus);
+            // this.serviceConnected = false;
         });
     }
 

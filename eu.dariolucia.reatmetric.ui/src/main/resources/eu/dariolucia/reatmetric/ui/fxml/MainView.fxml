@@ -5,7 +5,7 @@
 <?import javafx.scene.control.MenuBar?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.SplitPane?>
-<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.RadioMenuItem?>
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.StackPane?>
@@ -25,12 +25,25 @@
    <children>
       <MenuBar>
         <menus>
-          <Menu mnemonicParsing="false" text="Monitoring Centre">
+          <Menu mnemonicParsing="false" text="Reatmetric UI">
             <items>
                   <MenuItem fx:id="connectMenuItem" mnemonicParsing="false" onAction="#connectMenuAction" text="Connect..." />
                   <MenuItem fx:id="disconnectMenuItem" disable="true" mnemonicParsing="false" onAction="#disconnectMenuAction" text="Disconnect..." />
               <MenuItem mnemonicParsing="false" onAction="#exitMenuAction" text="Exit" />
             </items>
+          </Menu>
+          <Menu mnemonicParsing="false" text="View">
+              <items>
+                  <RadioMenuItem fx:id="parameterTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Parameters">
+                      <toggleGroup>
+                          <ToggleGroup fx:id="perspectiveGroup" />
+                      </toggleGroup>
+                  </RadioMenuItem>
+                  <RadioMenuItem fx:id="eventTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Events" toggleGroup="$perspectiveGroup" />
+                  <RadioMenuItem fx:id="rawDataTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Raw Data" toggleGroup="$perspectiveGroup" />
+                  <RadioMenuItem fx:id="alarmsTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Alarms" toggleGroup="$perspectiveGroup" />
+                  <RadioMenuItem fx:id="userDisplaysTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="User Displays" toggleGroup="$perspectiveGroup" />
+              </items>
           </Menu>
           <Menu mnemonicParsing="false" text="Help">
             <items>
@@ -41,20 +54,8 @@
       </MenuBar>
       <ToolBar prefHeight="40.0" prefWidth="200.0">
          <items>
-            <ToggleButton fx:id="parameterTgl" disable="true" mnemonicParsing="false" onAction="#toolbarToggleButtonAction" prefWidth="90.0" text="Parameters">
-               <toggleGroup>
-                  <ToggleGroup fx:id="perspectiveGroup" />
-               </toggleGroup>
-            </ToggleButton>
-            <ToggleButton fx:id="eventTgl" disable="true" mnemonicParsing="false" onAction="#toolbarToggleButtonAction" prefWidth="90.0" text="Events" toggleGroup="$perspectiveGroup" />
-            <ToggleButton fx:id="rawDataTgl" disable="true" mnemonicParsing="false" onAction="#toolbarToggleButtonAction" prefWidth="90.0" text="Raw Data" toggleGroup="$perspectiveGroup" />
-            <ToggleButton fx:id="alarmsTgl" disable="true" mnemonicParsing="false" onAction="#toolbarToggleButtonAction" prefWidth="90.0" text="Alarms" toggleGroup="$perspectiveGroup" />
-            <ToggleButton fx:id="userDisplaysTgl" disable="true" mnemonicParsing="false" onAction="#toolbarToggleButtonAction" prefWidth="90.0" text="User Displays" toggleGroup="$perspectiveGroup" />
-            <Label prefHeight="17.0" prefWidth="24.0" />
             <Label fx:id="systemTextLbl" disable="true" prefHeight="17.0" prefWidth="44.0" text="System" />
             <Label fx:id="systemLbl" alignment="CENTER" disable="true" prefHeight="17.0" prefWidth="141.0" style="-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;" text="---" />
-            <Label fx:id="usernameTextLbl" alignment="CENTER" disable="true" maxWidth="1.7976931348623157E308" prefHeight="17.0" prefWidth="72.0" text="Username" />
-            <Label fx:id="usernameLbl" alignment="CENTER" disable="true" prefHeight="17.0" prefWidth="141.0" style="-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;" text="---" />
          </items>
       </ToolBar>
       <SplitPane dividerPositions="0.7" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" VBox.vgrow="ALWAYS">

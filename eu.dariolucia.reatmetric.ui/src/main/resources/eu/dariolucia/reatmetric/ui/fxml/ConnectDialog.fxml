@@ -29,11 +29,7 @@
   </rowConstraints>
    <children>
       <Label text="System" />
-      <Label text="Username" GridPane.rowIndex="1" />
-      <Label text="Password" GridPane.rowIndex="2" />
       <ComboBox fx:id="systemCombo" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" GridPane.columnIndex="1" />
-      <TextField fx:id="usernameText" promptText="Username" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-      <PasswordField fx:id="passwordText" promptText="Password" GridPane.columnIndex="1" GridPane.rowIndex="2" />
    </children>
    <padding>
       <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />

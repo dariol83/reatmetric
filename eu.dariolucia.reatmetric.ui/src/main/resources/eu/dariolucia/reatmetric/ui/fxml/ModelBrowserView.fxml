@@ -20,7 +20,7 @@
   ~ shall be granted by the author in writing.
   -->
 
-<TitledPane fx:id="displayTitledPane" collapsible="false" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Model" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ModelBrowserViewController">
+<TitledPane fx:id="displayTitledPane" collapsible="false" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ModelBrowserViewController">
    <content>
       <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
          <children>
@@ -28,8 +28,7 @@
                <items>
                   <Circle fx:id="serviceHealthStatus" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
                   <Label text=" " />
-                  <Label text="Filter" />
-                  <TextField fx:id="filterText" maxWidth="1.7976931348623157E308" prefHeight="25.0" prefWidth="180.0"> 
+                  <TextField fx:id="filterText" maxWidth="1.7976931348623157E308" prefHeight="25.0" prefWidth="180.0">
                       <tooltip>
                           <Tooltip text="Text matching with wildcard (*)" />
                       </tooltip>

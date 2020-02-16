@@ -44,15 +44,15 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	private final ReatmetricPluginInspector serviceInspector = new ReatmetricPluginInspector();
 
 	@FXML
-	private ToggleButton parameterTgl;
+	private RadioMenuItem parameterTgl;
 	@FXML
-	private ToggleButton eventTgl;
+	private RadioMenuItem eventTgl;
 	@FXML
-	private ToggleButton userDisplaysTgl;
+	private RadioMenuItem userDisplaysTgl;
 	@FXML
-	private ToggleButton alarmsTgl;
+	private RadioMenuItem alarmsTgl;
 	@FXML
-	private ToggleButton rawDataTgl;
+	private RadioMenuItem rawDataTgl;
 	@FXML
 	private StackPane perspectiveStackPane;
 
@@ -66,13 +66,9 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	@FXML
 	private Label systemLbl;
 	@FXML
-	private Label usernameLbl;
-	@FXML
 	private Label statusLbl;
 	@FXML
 	private Label systemTextLbl;
-	@FXML
-	private Label usernameTextLbl;
 
 	@FXML
 	private MenuItem connectMenuItem;
@@ -82,11 +78,11 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	/**
 	 * Map the toggle button to the perspective to activate (by fx:id)
 	 */
-	private Map<ToggleButton, String> perspectiveMap = new HashMap<ToggleButton, String>();
+	private Map<RadioMenuItem, String> perspectiveMap = new HashMap<>();
 
 	@FXML
-	private void toolbarToggleButtonAction(ActionEvent event) {
-		ToggleButton source = (ToggleButton) event.getSource();
+	private void menubarViewAction(ActionEvent event) {
+		RadioMenuItem source = (RadioMenuItem) event.getSource();
 		if (source.isSelected()) {
 			activatePerspective(this.perspectiveMap.get(source));
 		} else {
@@ -116,18 +112,18 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		try {
 			Dialog<String[]> d = new Dialog<>();
 			d.setTitle("Connect to system");
-			d.setHeaderText("Select the system and provide the related credential information");
+			d.setHeaderText("Select the system to connect to");
 
 			// Set the button types.
-			ButtonType loginButtonType = new ButtonType("OK", ButtonData.OK_DONE);
+			ButtonType loginButtonType = new ButtonType("Connect", ButtonData.OK_DONE);
 			d.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
 
 			Parent root = FXMLLoader.load(getClass().getClassLoader()
 					.getResource("eu/dariolucia/reatmetric/ui/fxml/ConnectDialog.fxml"));
 			d.getDialogPane().setContent(root);
 			ComboBox<String> systemCombo = (ComboBox<String>) root.lookup("#systemCombo");
-			TextField usernameText = (TextField) root.lookup("#usernameText");
-			PasswordField passwordText = (PasswordField) root.lookup("#passwordText");
+			// TextField usernameText = (TextField) root.lookup("#usernameText");
+			// PasswordField passwordText = (PasswordField) root.lookup("#passwordText");
 			// First: let's retrieve the list of available systems and set them in the combo
 			List<String> systems = serviceInspector.getAvailableSystems();
 			systemCombo.setItems(FXCollections.observableList(systems));
@@ -143,8 +139,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 			d.setResultConverter(buttonType -> {
 				if (buttonType.equals(loginButtonType)) {
 					if (systemCombo.getValue() != null) {
-						return new String[] { systemCombo.getValue().toString(), usernameText.getText(),
-								passwordText.getText() };
+						return new String[] { systemCombo.getValue() };
 					} else {
 						return new String[] {};
 					}
@@ -155,8 +150,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 			// Set the CSS
 			d.getDialogPane().getStylesheets().add(getClass().getClassLoader()
 					.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
-			// Request focus on the username field by default.
-			Platform.runLater(() -> usernameText.requestFocus());
 
 			Optional<String[]> data = d.showAndWait();
 			data.ifPresent(strings -> ReatmetricUI.selectedSystem().setSystem(this.serviceInspector.getSystem(strings[0])));
@@ -170,7 +163,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		Alert alert = new Alert(AlertType.CONFIRMATION);
 		alert.setTitle("Disconnect user");
 		alert.setHeaderText("Disconnect user");
-		String s = "Do you want to logout user " + this.usernameLbl.getText() + " from system "
+		String s = "Do you want to disconnect from system "
 				+ this.systemLbl.getText() + "?";
 		alert.setContentText(s);
 		alert.getDialogPane().getStylesheets().add(getClass().getClassLoader()
@@ -192,6 +185,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 				.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
 		Optional<ButtonType> result = alert.showAndWait();
 		if ((result.isPresent()) && (result.get() == ButtonType.OK)) {
+			ReatmetricUI.shutdownThreadPool();
+			ReatmetricUI.selectedSystem().setSystem(null);
 			Platform.exit();
 		}
 	}
@@ -203,7 +198,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		this.perspectiveMap.put(this.parameterTgl, "monitoringPerspective");
 		this.perspectiveMap.put(this.eventTgl, "eventPerspective");
 		this.perspectiveMap.put(this.userDisplaysTgl, "userDisplayPerspective");
-		this.usernameTextLbl.disableProperty().bind(this.usernameLbl.disableProperty());
 		this.systemTextLbl.disableProperty().bind(this.systemLbl.disableProperty());
 		ReatmetricUI.selectedSystem().addSubscriber(this);
 		// Register the status label
@@ -216,7 +210,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		Platform.runLater(() -> {
 			enableMainViewItems();
 			this.systemLbl.setText(system.getSystem());
-			this.usernameLbl.setText(System.getProperty("user.name"));
 			ReatmetricUI.setStatusLabel("System " + system.getSystem() + " connected");
 		});
 	}
@@ -239,11 +232,9 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		// Disable the logout menu item and enable the other one
 		this.disconnectMenuItem.setDisable(true);
 		this.connectMenuItem.setDisable(false);
-		// Disable the two labels
+		// Disable the system label
 		this.systemLbl.setText("---");
 		this.systemLbl.setDisable(true);
-		this.usernameLbl.setText("---");
-		this.usernameLbl.setDisable(true);
 		// Set the null perspective
 		activatePerspective(NULL_PERSPECTIVE);
 	}
@@ -258,9 +249,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		// Enable the logout menu item and enable the other one
 		this.disconnectMenuItem.setDisable(false);
 		this.connectMenuItem.setDisable(true);
-		// Enable the two labels
+		// Enable the system label
 		this.systemLbl.setDisable(false);
-		this.usernameLbl.setDisable(false);
 	}
 
 	public void updateStatusIndicator(AlarmState state) {
