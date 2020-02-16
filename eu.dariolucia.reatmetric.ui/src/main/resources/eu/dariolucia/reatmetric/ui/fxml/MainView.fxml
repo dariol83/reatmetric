@@ -21,7 +21,9 @@
   ~ shall be granted by the author in writing.
   -->
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="767.0" prefWidth="1079.0" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.MainViewController">
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.Tab?>
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="900.0" prefWidth="1600.0" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.MainViewController">
    <children>
       <MenuBar>
         <menus>
@@ -62,7 +64,13 @@
          <items>
             <SplitPane dividerPositions="0.17" prefHeight="160.0" prefWidth="200.0">
               <items>
-                  <fx:include source="ModelBrowserView.fxml" />
+                  <TabPane fx:id="tabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" side="BOTTOM">
+                      <Tab text="Model">
+                        <fx:include source="ModelBrowserView.fxml" />
+                      </Tab>
+                      <Tab text="Connectors">
+                      </Tab>
+                  </TabPane>
                   <StackPane fx:id="perspectiveStackPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
                       <children>
                           <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="ParameterPerspective.fxml" />

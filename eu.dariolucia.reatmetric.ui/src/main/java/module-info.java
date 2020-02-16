@@ -7,6 +7,8 @@ open module eu.dariolucia.reatmetric.ui {
     requires javafx.base;
     requires javafx.controls;
 
+    requires org.controlsfx.controls;
+
     requires eu.dariolucia.reatmetric.api;
 
     exports eu.dariolucia.reatmetric.ui;

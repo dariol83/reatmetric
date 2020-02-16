@@ -102,6 +102,13 @@ public abstract class AbstractAccessManager<T extends AbstractDataItem, K extend
         return Collections.emptyList();
     }
 
+    public void dispose() {
+        for(AbstractAccessSubscriber aas : this.subscribers.values()) {
+            aas.terminate();
+        }
+        this.subscribers.clear();
+    }
+
     private class DispatchJob implements Runnable {
 
         private List<AbstractDataItem> items;

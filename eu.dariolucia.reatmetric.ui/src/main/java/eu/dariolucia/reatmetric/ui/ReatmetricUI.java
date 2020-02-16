@@ -64,7 +64,7 @@ public class ReatmetricUI extends Application {
         return toReturn;
     }
 
-    public static void shutdownThreadPool() {
+    private static void shutdownThreadPool() {
         synchronized (THREAD_POOL) {
             for(Map.Entry<Class<?>, ExecutorService> entry : THREAD_POOL.entrySet()) {
                 entry.getValue().shutdownNow();
@@ -113,18 +113,8 @@ public class ReatmetricUI extends Application {
         stage.setTitle("Reatmetric UI");
         
         stage.setOnCloseRequest(event -> {
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("Exit Reatmetric UI");
-            alert.setHeaderText("Exit Reatmetric UI");
-            String s = "Do you want to close Reatmetric UI?";
-            alert.setContentText(s);
-            alert.getDialogPane().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
-            Optional<ButtonType> result = alert.showAndWait();
-            if ((result.isPresent()) && (result.get() == ButtonType.OK)) {
-                Platform.exit();
-            } else {
-                event.consume();
-            }
+            event.consume();
+            shutdown();
         });
         
         stage.show();
@@ -133,6 +123,23 @@ public class ReatmetricUI extends Application {
     @Override
     public void stop() {
         ReatmetricUI.threadPool(ReatmetricUI.class).shutdown();
+    }
+
+    public static void shutdown() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Exit Reatmetric UI");
+        alert.setHeaderText("Exit Reatmetric UI");
+        String s = "Do you want to close Reatmetric UI?";
+        alert.setContentText(s);
+        alert.getDialogPane().getStylesheets().add(ReatmetricUI.class.getClassLoader()
+                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+        Optional<ButtonType> result = alert.showAndWait();
+        if ((result.isPresent()) && (result.get() == ButtonType.OK)) {
+            ReatmetricUI.shutdownThreadPool();
+            ReatmetricUI.selectedSystem().setSystem(null);
+            Platform.exit();
+            System.exit(0);
+        }
     }
 
     /**

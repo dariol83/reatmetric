@@ -115,6 +115,10 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
         for(IDriver d : drivers) {
             d.dispose();
         }
+        if(processingModelManager != null) {
+            processingModelManager.dispose();
+            processingModelManager = null;
+        }
         rawDataBroker = null;
         if(messageBroker != null) {
             messageBroker.close();

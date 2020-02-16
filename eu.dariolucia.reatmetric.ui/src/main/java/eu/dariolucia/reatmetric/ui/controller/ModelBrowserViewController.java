@@ -27,6 +27,7 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
+import org.controlsfx.control.textfield.CustomTextField;
 
 import java.net.URL;
 import java.util.*;
@@ -51,7 +52,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     protected TitledPane displayTitledPane;
     
     @FXML
-    private TextField filterText;
+    private CustomTextField filterText;
     @FXML    
     private TreeTableView<SystemEntity> modelTree;
     @FXML    
@@ -67,7 +68,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private DataProcessingDelegator<SystemEntity> delegator;
     
     @FXML
-    public void filterClearButtonPressed(ActionEvent e) {
+    public void filterClearButtonPressed(Event e) {
         this.filterText.clear();
     }
     
@@ -99,6 +100,11 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
+        ImageView clearButton = new ImageView(new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/clear_input.png")));
+        clearButton.setStyle("-fx-cursor: hand");
+        clearButton.setOnMouseClicked(this::filterClearButtonPressed);
+        this.filterText.setRight(clearButton);
+
         this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getName()));
         this.nameCol.setCellFactory(column -> new TreeTableCell<>() {
             @Override

@@ -36,15 +36,10 @@ import eu.dariolucia.reatmetric.core.impl.managers.EventDataAccessManager;
 import eu.dariolucia.reatmetric.core.impl.managers.ParameterDataAccessManager;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
-import javax.xml.bind.JAXBException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -201,6 +196,19 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
 
     public IProcessingModel getProcessingModel() {
         return processingModel;
+    }
+
+    public void dispose() {
+        // Kill subscribers
+        for(SystemModelSubscriberWrapper s : subscribers.values()) {
+            s.terminate();
+        }
+        subscribers.clear();
+        // Kill managers
+        parameterDataAccessManager.dispose();
+        eventDataAccessManager.dispose();
+        alarmDataAccessManager.dispose();
+        activityOccurrenceDataAccessManager.dispose();
     }
 
     private static class SystemModelSubscriberWrapper {
