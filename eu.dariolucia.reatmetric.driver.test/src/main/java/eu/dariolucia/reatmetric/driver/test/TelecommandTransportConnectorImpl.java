@@ -8,6 +8,7 @@
 package eu.dariolucia.reatmetric.driver.test;
 
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
@@ -48,6 +49,11 @@ class TelecommandTransportConnectorImpl implements ITransportConnector {
     @Override
     public String getDescription() {
         return "Connector " + name + " for type " + type + ": " + Arrays.toString(routes);
+    }
+
+    @Override
+    public TransportConnectionStatus getConnectionStatus() {
+        return deriveStatus();
     }
 
     public String getType() {
@@ -124,11 +130,11 @@ class TelecommandTransportConnectorImpl implements ITransportConnector {
 
     private void notifyState(ITransportSubscriber listener) {
         TransportStatus status = buildTransportStatus();
-        notifier.execute(() -> listener.status(status));
+        notifier.execute(() -> listener.status(this, status));
     }
 
     private TransportStatus buildTransportStatus() {
-        return new TransportStatus(name, message, deriveStatus(), 0, 0);
+        return new TransportStatus(name, message, deriveStatus(), 0, 0, AlarmState.WARNING);
     }
 
     private TransportConnectionStatus deriveStatus() {

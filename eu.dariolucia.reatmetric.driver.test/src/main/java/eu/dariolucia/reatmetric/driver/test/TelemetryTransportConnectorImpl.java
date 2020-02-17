@@ -10,6 +10,7 @@ package eu.dariolucia.reatmetric.driver.test;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
@@ -70,6 +71,11 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
     }
 
     @Override
+    public TransportConnectionStatus getConnectionStatus() {
+        return deriveStatus();
+    }
+
+    @Override
     public boolean isInitialised() {
         return initialised;
     }
@@ -100,6 +106,11 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
             int paramCurrentIdx = 0;
             int eventCurrentIdx = 0;
             while(connected && this.generator == Thread.currentThread()) {
+                try {
+                    Thread.sleep(1234);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 List<ParameterSample> samples = new LinkedList<>();
                 for(int i = 0; i < 80; ++i) {
                     samples.add(generateTmSample(paramCurrentIdx));
@@ -210,11 +221,11 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
 
     private void notifyState(ITransportSubscriber listener) {
         TransportStatus status = buildTransportStatus();
-        notifier.execute(() -> listener.status(status));
+        notifier.execute(() -> listener.status(this, status));
     }
 
     private TransportStatus buildTransportStatus() {
-        return new TransportStatus(name, message, deriveStatus(), 0, 0);
+        return new TransportStatus(name, message, deriveStatus(), 0, 0, AlarmState.NOMINAL);
     }
 
     private TransportConnectionStatus deriveStatus() {

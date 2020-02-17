@@ -145,10 +145,10 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Add the task to be done to the queue
         switch(dispatchingQueue) {
             case USER_DISPATCHING_QUEUE:
-                activityUpdateTaskQueue.add(taskToRun);
+                activityUpdateTaskQueue.offer(taskToRun);
                 break;
             default:
-                tmUpdateTaskQueue.add(taskToRun);
+                tmUpdateTaskQueue.offer(taskToRun);
                 break;
         }
         // Done

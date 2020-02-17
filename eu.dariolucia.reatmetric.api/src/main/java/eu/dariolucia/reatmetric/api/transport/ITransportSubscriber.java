@@ -9,6 +9,6 @@ package eu.dariolucia.reatmetric.api.transport;
 
 public interface ITransportSubscriber {
 
-    void status(TransportStatus status);
+    void status(ITransportConnector connector, TransportStatus status);
 
 }

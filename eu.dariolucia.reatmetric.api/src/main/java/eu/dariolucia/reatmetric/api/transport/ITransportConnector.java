@@ -19,6 +19,8 @@ public interface ITransportConnector {
 
     String getDescription();
 
+    TransportConnectionStatus getConnectionStatus();
+
     boolean isInitialised();
 
     void initialise(Map<String, Object> properties) throws TransportException;

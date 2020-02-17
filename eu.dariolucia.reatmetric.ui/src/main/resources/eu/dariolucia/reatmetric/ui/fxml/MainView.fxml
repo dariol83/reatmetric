@@ -66,9 +66,10 @@
               <items>
                   <TabPane fx:id="tabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" side="BOTTOM">
                       <Tab text="Model">
-                        <fx:include source="ModelBrowserView.fxml" />
+                          <fx:include source="ModelBrowserView.fxml" />
                       </Tab>
                       <Tab text="Connectors">
+                          <fx:include source="ConnectorsBrowserView.fxml" />
                       </Tab>
                   </TabPane>
                   <StackPane fx:id="perspectiveStackPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">

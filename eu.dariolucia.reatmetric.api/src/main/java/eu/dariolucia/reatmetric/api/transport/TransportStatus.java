@@ -7,20 +7,24 @@
 
 package eu.dariolucia.reatmetric.api.transport;
 
+import eu.dariolucia.reatmetric.api.model.AlarmState;
+
 public final class TransportStatus {
 
     private final String name;
     private final String message;
     private final TransportConnectionStatus status;
+    private final AlarmState alarmState;
     private final long txRate;
     private final long rxRate;
 
-    public TransportStatus(String name, String message, TransportConnectionStatus status, long txRate, long rxRate) {
+    public TransportStatus(String name, String message, TransportConnectionStatus status, long txRate, long rxRate, AlarmState alarmState) {
         this.name = name;
         this.message = message;
         this.status = status;
         this.txRate = txRate;
         this.rxRate = rxRate;
+        this.alarmState = alarmState;
     }
 
     public String getName() {
@@ -43,6 +47,10 @@ public final class TransportStatus {
         return rxRate;
     }
 
+    public AlarmState getAlarmState() {
+        return alarmState;
+    }
+
     @Override
     public String toString() {
         return "TransportStatus{" +
@@ -51,6 +59,7 @@ public final class TransportStatus {
                 ", status=" + status +
                 ", txRate=" + txRate +
                 ", rxRate=" + rxRate +
+                ", alarmState=" + alarmState +
                 '}';
     }
 }

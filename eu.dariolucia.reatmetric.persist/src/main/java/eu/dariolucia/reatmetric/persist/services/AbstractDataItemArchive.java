@@ -5,7 +5,9 @@ import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.persist.Archive;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.*;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -61,7 +63,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
     }
 
-    protected void storeBuffer() {
+    protected synchronized void storeBuffer() {
         if(LOG.isLoggable(Level.FINEST)) {
             LOG.finest(this + " - storeBuffer called: storageQueue.size() = " + storageQueue.size());
         }
@@ -143,7 +145,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             if (LOG.isLoggable(Level.FINEST)) {
                 LOG.finest(this + " - storageQueue almost full: storageQueue.size() = " + storageQueue.size());
             }
-            this.latencyStoreTimer.schedule(this.latencyTask, 0);
+            storeBuffer();
         }
     }
 

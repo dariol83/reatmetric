@@ -209,6 +209,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             try {
                 buildTreeModel();
             } catch (ReatmetricException e) {
+                // TODO: log
                 e.printStackTrace();
             }
         });
