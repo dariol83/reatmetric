@@ -136,7 +136,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     public long getNextId(Class<? extends AbstractDataItem> type) {
-        return updateSequencerMap.computeIfAbsent(type, o -> new AtomicLong(0)).getAndIncrement();
+        return updateSequencerMap.computeIfAbsent(type, o -> new AtomicLong(0)).incrementAndGet();
     }
 
     public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations, int dispatchingQueue) {

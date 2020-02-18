@@ -175,8 +175,9 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
         String finalQuery = query.toString();
         List<ParameterData> result = new LinkedList<>();
         try (Statement prepStmt = connection.createStatement()) {
-            if(LOG.isLoggable(Level.FINEST)) {
-                LOG.finest(this + " - retrieve statement: " + finalQuery);
+            if(LOG.isLoggable(Level.FINER)) {
+                // TODO put back FINEST
+                LOG.finer(this + " - retrieve statement: " + finalQuery);
             }
             try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
                 while (rs.next()) {

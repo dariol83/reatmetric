@@ -40,6 +40,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -70,14 +71,29 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
             alarmArchive = archive.getArchive(IAlarmParameterDataArchive.class);
             // Retrieve the IDs
             IUniqueId lastId = parameterArchive.retrieveLastId();
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer("Parameter Data last unique ID: " + lastId);
+            }
             initialUniqueCounters.put(ParameterData.class, lastId != null ? lastId.asLong() : 0L);
             lastId = eventArchive.retrieveLastId();
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer("Event Data last unique ID: " + lastId);
+            }
             initialUniqueCounters.put(EventData.class, lastId != null ? lastId.asLong() : 0L);
             lastId = alarmArchive.retrieveLastId();
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer("Alarm Parameter Data last unique ID: " + lastId);
+            }
             initialUniqueCounters.put(AlarmParameterData.class, lastId != null ? lastId.asLong() : 0L);
             lastId = activityArchive.retrieveLastId(ActivityOccurrenceData.class);
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer("Activity Occurrence Data last unique ID: " + lastId);
+            }
             initialUniqueCounters.put(ActivityOccurrenceData.class, lastId != null ? lastId.asLong() : 0L);
             lastId = activityArchive.retrieveLastId(ActivityOccurrenceReport.class);
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer("Activity Occurrence Report last unique ID: " + lastId);
+            }
             initialUniqueCounters.put(ActivityOccurrenceReport.class, lastId != null ? lastId.asLong() : 0L);
         } else {
             parameterArchive = null;

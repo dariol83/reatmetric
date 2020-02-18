@@ -113,7 +113,10 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
                 }
                 List<ParameterSample> samples = new LinkedList<>();
                 for(int i = 0; i < 80; ++i) {
-                    samples.add(generateTmSample(paramCurrentIdx));
+                    ParameterSample ps = generateTmSample(paramCurrentIdx);
+                    if(ps != null) {
+                        samples.add(ps);
+                    }
                     if(++paramCurrentIdx >= definitions.getParameterDefinitions().size()) {
                         paramCurrentIdx = 0;
                         message = "Wrapping around parameters";
@@ -135,7 +138,7 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
                         message = "Wrapping around events";
                         notifyState();
                     }
-                    if(model != null) {
+                    if(model != null && event != null) {
                         try {
                             storeRawData("EVT00" + (System.currentTimeMillis() % 9), Instant.now(), routes[0], "TM Packet");
                         } catch (ReatmetricException e) {
@@ -154,11 +157,17 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
 
     private EventOccurrence generateEvent(int eventCurrentIdx) {
         EventProcessingDefinition eventDef = definitions.getEventDefinitions().get(eventCurrentIdx);
+        if(eventDef.getCondition() != null) {
+            return null;
+        }
         return EventOccurrence.of(eventDef.getId(), Instant.now(), Instant.now(), null, "Qual1", eventDef.hashCode(), routes[0], "SC1");
     }
 
     private ParameterSample generateTmSample(int currentIdx) {
         ParameterProcessingDefinition paramDef = definitions.getParameterDefinitions().get(currentIdx);
+        if(paramDef.getExpression() != null) {
+            return null;
+        }
         return ParameterSample.of(paramDef.getId(), Instant.now(), Instant.now(), null, deriveValue(paramDef), routes[0]);
     }
 

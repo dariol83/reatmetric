@@ -87,6 +87,10 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected void doStore(Connection connection, List<T> itemsToStore) throws SQLException, IOException {
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - request to store " + itemsToStore.size() + " items");
+            // TODO: move to FINEST
+            for(T item : itemsToStore) {
+                LOG.finer("Storing " + item);
+            }
         }
         if(storeStatement == null) {
             storeStatement = createStoreStatement(connection);

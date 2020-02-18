@@ -91,7 +91,9 @@ public final class AlarmParameterData extends AbstractDataItem implements Serial
 	@Override
 	public String toString() {
 		return "AlarmParameterData{" +
-				"externalId=" + externalId +
+				"internalId=" + internalId +
+				", generationTime=" + generationTime +
+				", externalId=" + externalId +
 				", name='" + name + '\'' +
 				", path=" + path +
 				", currentAlarmState=" + currentAlarmState +

@@ -114,7 +114,9 @@ public final class EventData extends AbstractDataItem implements Serializable {
     @Override
     public String toString() {
         return "EventData{" +
-                "externalId=" + externalId +
+				"internalId=" + internalId +
+				", generationTime=" + generationTime +
+                ", externalId=" + externalId +
                 ", name='" + name + '\'' +
                 ", path=" + path +
                 ", qualifier='" + qualifier + '\'' +
@@ -125,8 +127,6 @@ public final class EventData extends AbstractDataItem implements Serializable {
                 ", report=" + report +
                 ", containerId=" + rawDataContainerId +
                 ", severity=" + severity +
-                ", generationTime=" + generationTime +
-                ", internalId=" + internalId +
                 '}';
     }
 }

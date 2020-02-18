@@ -132,13 +132,22 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
         } else if(record.getLevel().intValue() >= Level.WARNING.intValue()) {
             messageSeverity = Severity.WARN;
         }
-        OperationalMessage om = new OperationalMessage(idToAssign, record.getInstant(), REATMETRIC_ID, record.getMessage(), record.getLoggerName(), messageSeverity, null);
+        OperationalMessage om = new OperationalMessage(idToAssign, record.getInstant(), REATMETRIC_ID, record.getMessage(), shortenLoggerName(record.getLoggerName()), messageSeverity, null);
         try {
             distribute(Collections.singletonList(om), true);
         } catch (ReatmetricException e) {
             if(LOG.isLoggable(Level.FINE)) {
                 LOG.log(Level.FINE, "Exception when distributing on operational message broker", e);
             }
+        }
+    }
+
+    private String shortenLoggerName(String loggerName) {
+        int lastDot = loggerName.lastIndexOf('.');
+        if(lastDot == -1) {
+            return loggerName;
+        } else {
+            return loggerName.substring(lastDot + 1);
         }
     }
 

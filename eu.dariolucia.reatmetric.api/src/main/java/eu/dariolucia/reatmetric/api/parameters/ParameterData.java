@@ -105,7 +105,9 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
     @Override
     public String toString() {
         return "ParameterData{" +
-                "externalId=" + externalId +
+                "internalId=" + internalId +
+                ", generationTime=" + generationTime +
+                ", externalId=" + externalId +
                 ", name='" + name + '\'' +
                 ", path=" + path +
                 ", engValue=" + engValue +

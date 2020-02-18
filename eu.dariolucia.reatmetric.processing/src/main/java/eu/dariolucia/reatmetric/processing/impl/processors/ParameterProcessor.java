@@ -176,6 +176,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 this.alarmBuilder.setCurrentValue(this.state.getAlarmState(), this.state.getEngValue(), this.state.getGenerationTime(), this.state.getReceptionTime());
                 if(this.alarmBuilder.isChangedSinceLastBuild()) {
                     alarmData = this.alarmBuilder.build(new LongUniqueId(processor.getNextId(AlarmParameterData.class)));
+                    if(LOG.isLoggable(Level.FINER)) {
+                        LOG.log(Level.FINER, "Alarm Parameter Data generated: " + alarmData);
+                    }
                 }
             }
         } else {

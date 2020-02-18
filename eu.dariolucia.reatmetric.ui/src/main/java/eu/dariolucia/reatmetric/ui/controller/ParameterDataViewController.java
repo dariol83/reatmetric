@@ -226,7 +226,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected void goToStart(ActionEvent e) {
         if(!isProgressBusy()) {
-            moveToTime(Instant.MIN);
+            moveToTime(Instant.MIN); // FIXME: limit to 1958 AD
         }
     }
 
@@ -263,7 +263,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected void goToEnd(ActionEvent e) {
         if(!isProgressBusy()) {
-            moveToTime(Instant.MAX);
+            moveToTime(Instant.MAX); // FIXME: limit to 3000 AD
         }
     }
 
