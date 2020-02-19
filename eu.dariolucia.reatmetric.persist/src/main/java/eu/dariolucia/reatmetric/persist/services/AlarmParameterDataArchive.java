@@ -117,6 +117,11 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
     }
 
     private List<AlarmParameterData> doRetrieve(Connection connection, Instant time, AlarmParameterDataFilter filter, Instant maxLookbackTime) throws SQLException {
+        if(time.isBefore(MINIMUM_TIME)) {
+            time = MINIMUM_TIME;
+        } else if(time.isAfter(MAXIMUM_TIME)) {
+            time = MAXIMUM_TIME;
+        }
         StringBuilder query = new StringBuilder("SELECT ALARM_PARAMETER_DATA_TABLE.* FROM (SELECT DISTINCT Path, MAX(GenerationTime) as LatestTime FROM ALARM_PARAMETER_DATA_TABLE WHERE GenerationTime <= '");
         query.append(toTimestamp(time));
         query.append("' ");

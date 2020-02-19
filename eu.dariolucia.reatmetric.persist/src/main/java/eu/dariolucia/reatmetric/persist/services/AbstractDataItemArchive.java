@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -28,6 +29,9 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected static final int STORAGE_QUEUE_FLUSH_LIMIT = MAX_STORAGE_QUEUE - 100; // size for flush
     protected static final int MAX_LATENCY_TIME = 1000; // milliseconds
     protected static final int LOOK_AHEAD_SPAN = 100; // items to look ahead
+
+    protected static final Instant MINIMUM_TIME = Instant.EPOCH;
+    protected static final Instant MAXIMUM_TIME = Instant.EPOCH.plusSeconds(1000L * 365 * 24 * 3600); // 1000 years -> 2970 ... fair enough
 
     protected final Archive controller;
 
@@ -201,6 +205,11 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     protected List<T> doRetrieve(Connection connection, Instant startTime, int numRecords, RetrievalDirection direction, K filter) throws SQLException {
+        if(startTime.isBefore(MINIMUM_TIME)) {
+            startTime = MINIMUM_TIME;
+        } else if(startTime.isAfter(MAXIMUM_TIME)) {
+            startTime = MAXIMUM_TIME;
+        }
         String finalQuery = buildRetrieveQuery(startTime, numRecords, direction, filter);
         List<T> result = new ArrayList<>(numRecords);
         try (Statement prepStmt = connection.createStatement()) {

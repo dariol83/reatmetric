@@ -48,6 +48,8 @@ import javafx.stage.Popup;
 /**
  * FXML Controller class
  *
+ * TODO: introduce a fixed number of rows, to be always kept, also for retrieval
+ *
  * @author dario
  */
 public abstract class AbstractDataItemLogViewController<T extends AbstractDataItem, V extends AbstractDataItemFilter> extends AbstractDisplayController {

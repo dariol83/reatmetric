@@ -228,6 +228,11 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
 
     @Override
     protected List<ActivityOccurrenceData> doRetrieve(Connection connection, Instant startTime, int numRecords, RetrievalDirection direction, ActivityOccurrenceDataFilter filter) throws SQLException {
+        if(startTime.isBefore(MINIMUM_TIME)) {
+            startTime = MINIMUM_TIME;
+        } else if(startTime.isAfter(MAXIMUM_TIME)) {
+            startTime = MAXIMUM_TIME;
+        }
         String finalQuery = buildRetrieveQuery(startTime, numRecords, direction, filter);
         return retrieveAndBuild(connection, filter, finalQuery);
     }
@@ -344,6 +349,11 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
     }
 
     private List<ActivityOccurrenceData> doRetrieve(Connection retrieveConnection, Instant time, ActivityOccurrenceDataFilter filter, Instant maxLookbackTime) throws SQLException {
+        if(time.isBefore(MINIMUM_TIME)) {
+            time = MINIMUM_TIME;
+        } else if(time.isAfter(MAXIMUM_TIME)) {
+            time = MAXIMUM_TIME;
+        }
         String query = buildRetrieveByTimeQuery(time, filter, maxLookbackTime);
         return retrieveAndBuild(retrieveConnection, filter, query);
     }

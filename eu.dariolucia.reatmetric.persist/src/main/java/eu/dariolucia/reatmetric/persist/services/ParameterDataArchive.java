@@ -146,6 +146,11 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
     }
 
     private List<ParameterData> doRetrieve(Connection connection, Instant time, ParameterDataFilter filter, Instant maxLookbackTime) throws SQLException {
+        if(time.isBefore(MINIMUM_TIME)) {
+            time = MINIMUM_TIME;
+        } else if(time.isAfter(MAXIMUM_TIME)) {
+            time = MAXIMUM_TIME;
+        }
         StringBuilder query = new StringBuilder("SELECT PARAMETER_DATA_TABLE.* FROM (SELECT DISTINCT Path, MAX(GenerationTime) as LatestTime FROM PARAMETER_DATA_TABLE WHERE GenerationTime <= '");
         query.append(toTimestamp(time));
         query.append("' ");

@@ -88,7 +88,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
                 query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
             }
             if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
-                query.append("AND Type IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
             }
             if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
                 query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");

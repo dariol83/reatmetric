@@ -46,8 +46,6 @@ import java.util.function.Consumer;
 /**
  * FXML Controller class
  *
- * FIXME: wrong assumption with InternaId (can change!), use ExternalId, to be fixed
- *
  * @author dario
  */
 public class ParameterDataViewController extends AbstractDisplayController implements IParameterDataSubscriber {
@@ -226,7 +224,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected void goToStart(ActionEvent e) {
         if(!isProgressBusy()) {
-            moveToTime(Instant.MIN); // FIXME: limit to 1958 AD
+            moveToTime(Instant.MIN);
         }
     }
 
@@ -263,7 +261,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected void goToEnd(ActionEvent e) {
         if(!isProgressBusy()) {
-            moveToTime(Instant.MAX); // FIXME: limit to 3000 AD
+            moveToTime(Instant.MAX);
         }
     }
 
