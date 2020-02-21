@@ -193,7 +193,7 @@ public class AlarmParameterDataViewController
 	            				this.dataItemTableView.getItems().remove(idx);
 	            			} else {
 	            				// If an alarm parameter is already in the table, then update the value in place (replace the item)
-	            				this.dataItemTableView.getItems().set(idx, apd);
+	            				this.dataItemTableView.getItems().set(idx, apd); // TODO: this is SLOW LIKE HELL!
 	            			}
 	            		} else {
 	            			if(apd.getCurrentAlarmState() == AlarmState.ALARM || apd.getCurrentAlarmState() == AlarmState.ERROR || apd.getCurrentAlarmState() == AlarmState.WARNING) {

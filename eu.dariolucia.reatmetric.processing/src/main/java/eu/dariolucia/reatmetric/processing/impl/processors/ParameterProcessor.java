@@ -108,6 +108,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                     }
                     // If latestGenerationTime is after the current generation time, then expression shall be re-evaluated
                     if(generationTime == null || (latestGenerationTime != null && latestGenerationTime.isAfter(generationTime))) {
+                        // Use the latest generation time
+                        generationTime = latestGenerationTime;
                         try {
                             sourceValue = definition.getExpression().execute(processor, null);
                             sourceValue = ValueUtil.convert(sourceValue, definition.getRawType());

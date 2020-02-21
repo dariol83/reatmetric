@@ -292,7 +292,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
     
     protected void moveToTime(Instant selectedTime) {
-        this.selectTimeBtn.setText(selectedTime.toString());
+        this.selectTimeBtn.setText(formatTime(selectedTime));
         markProgressBusy();
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
@@ -405,7 +405,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             if(pd == null || pd.getGenerationTime() == null) {
                 this.selectTimeBtn.setText("---");
             } else {
-                this.selectTimeBtn.setText(pd.getGenerationTime().toString());
+                this.selectTimeBtn.setText(formatTime(pd.getGenerationTime()));
             }
         }
     }

@@ -23,6 +23,9 @@ import javafx.scene.shape.Circle;
 import javafx.scene.transform.Scale;
 
 import java.net.URL;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
 
 /**
@@ -31,7 +34,9 @@ import java.util.ResourceBundle;
  * @author dario
  */
 public abstract class AbstractDisplayController implements Initializable, IReatmetricServiceListener {
- 
+
+    protected static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneId.of("UTC"));
+
     // Service availability control
     @FXML
     protected Circle serviceHealthStatus;
@@ -105,6 +110,14 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
             //
             // this.serviceConnected = false;
         });
+    }
+
+    protected static String formatTime(Instant time) {
+        if(time == null) {
+            return "---";
+        } else {
+            return DATE_TIME_FORMATTER.format(time);
+        }
     }
 
     protected abstract void doInitialize(URL url, ResourceBundle rb);

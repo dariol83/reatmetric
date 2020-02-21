@@ -12,6 +12,8 @@ package eu.dariolucia.reatmetric.ui.controller;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -54,8 +56,8 @@ import javafx.stage.Popup;
  */
 public abstract class AbstractDataItemLogViewController<T extends AbstractDataItem, V extends AbstractDataItemFilter> extends AbstractDisplayController {
 
-    protected static final int MAX_ENTRIES = 1000;
-    
+    protected static final int MAX_ENTRIES = 100;
+
     // Pane control
     @FXML
     protected TitledPane displayTitledPane;
@@ -330,13 +332,13 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
                 if (addOnTop) {
                     this.dataItemTableView.getItems().addAll(0, messages);
                     if (this.dataItemTableView.getItems().size() > MAX_ENTRIES) {
-                        int toRemove = MAX_ENTRIES - this.dataItemTableView.getItems().size();
+                        int toRemove = this.dataItemTableView.getItems().size() - MAX_ENTRIES;
                         this.dataItemTableView.getItems().remove(this.dataItemTableView.getItems().size() - toRemove, this.dataItemTableView.getItems().size());
                     }
                 } else {
                     this.dataItemTableView.getItems().addAll(messages);
                     if (this.dataItemTableView.getItems().size() > MAX_ENTRIES) {
-                        int toRemove = MAX_ENTRIES - this.dataItemTableView.getItems().size();
+                        int toRemove = this.dataItemTableView.getItems().size() - MAX_ENTRIES;
                         this.dataItemTableView.getItems().remove(0, toRemove);
                     }
                 }
@@ -360,6 +362,10 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
                     this.dataItemTableView.getItems().remove(0, toRemoveTop);
                 }
                 this.dataItemTableView.getItems().addAll(messages);
+                if (this.dataItemTableView.getItems().size() > MAX_ENTRIES) {
+                    int toRemove = this.dataItemTableView.getItems().size() - MAX_ENTRIES;
+                    this.dataItemTableView.getItems().remove(0, toRemove);
+                }
                 this.dataItemTableView.scrollTo(0);
                 this.dataItemTableView.refresh();
                 updateSelectTime();
@@ -398,8 +404,9 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             this.selectTimeBtn.setText("---");
         } else {
             T om = this.dataItemTableView.getItems().get(0);
-            this.selectTimeBtn.setText(doGetGenerationTime(om).toString());
-            this.dateTimePickerController.setSelectedTime(doGetGenerationTime(om));
+            Instant time = doGetGenerationTime(om);
+            this.selectTimeBtn.setText(formatTime(time));
+            this.dateTimePickerController.setSelectedTime(time);
         }
     }
 
@@ -439,7 +446,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
 
     private void moveToTime(Instant selectedTime, RetrievalDirection direction, int n, V currentFilter) {
     	if(this.selectTimeBtn != null) {
-    		this.selectTimeBtn.setText(selectedTime.toString());
+    		this.selectTimeBtn.setText(formatTime(selectedTime));
     	}
     	
         markProgressBusy();
