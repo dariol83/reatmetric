@@ -16,6 +16,7 @@ import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableCell;
@@ -54,7 +55,8 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
         this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getGenerationTime()));
         this.sourceCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getSource()));
         this.messageCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getMessage()));
-        
+
+        this.genTimeCol.setCellFactory(new InstantCellFactory<>());
         this.severityCol.setCellFactory(column -> {
             return new TableCell<OperationalMessage, Severity>() {
                 @Override

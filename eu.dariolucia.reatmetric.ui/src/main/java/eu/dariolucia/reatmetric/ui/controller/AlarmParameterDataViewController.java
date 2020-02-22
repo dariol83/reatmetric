@@ -18,6 +18,7 @@ import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.utils.ReferenceProperty;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
 import javafx.beans.Observable;
@@ -84,6 +85,8 @@ public class AlarmParameterDataViewController
 				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getLastNominalValueTime()));
 		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getPath().getParent().asString()));
 
+		this.genTimeCol.setCellFactory(new InstantCellFactory<>());
+		this.recTimeCol.setCellFactory(new InstantCellFactory<>());
 		this.currentAlarmStateCol.setCellFactory(column -> {
 			return new TableCell<ReferenceProperty<AlarmParameterData>, AlarmState>() {
 				@Override

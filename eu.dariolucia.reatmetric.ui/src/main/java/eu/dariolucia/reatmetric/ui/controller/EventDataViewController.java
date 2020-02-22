@@ -18,6 +18,7 @@ import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.fxml.FXML;
@@ -73,6 +74,8 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
 		this.qualifierCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getQualifier()));
 		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));
 
+		this.genTimeCol.setCellFactory(new InstantCellFactory<>());
+		this.recTimeCol.setCellFactory(new InstantCellFactory<>());
 		this.severityCol.setCellFactory(column -> {
 			return new TableCell<EventData, Severity>() {
 				@Override

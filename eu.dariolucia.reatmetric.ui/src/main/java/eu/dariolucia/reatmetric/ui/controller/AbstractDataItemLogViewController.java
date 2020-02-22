@@ -41,8 +41,6 @@ import java.util.function.Consumer;
 /**
  * FXML Controller class
  *
- * TODO: uniform Instant representation by creating a cellfactory to format Instant objects up to microseconds
- *
  * @author dario
  */
 public abstract class AbstractDataItemLogViewController<T extends AbstractDataItem, V extends AbstractDataItemFilter<T>> extends AbstractDisplayController {

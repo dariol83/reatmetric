@@ -12,6 +12,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
+import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -24,8 +25,6 @@ import javafx.scene.transform.Scale;
 
 import java.net.URL;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ResourceBundle;
 
 /**
@@ -34,8 +33,6 @@ import java.util.ResourceBundle;
  * @author dario
  */
 public abstract class AbstractDisplayController implements Initializable, IReatmetricServiceListener {
-
-    protected static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").withZone(ZoneId.of("UTC"));
 
     // Service availability control
     @FXML
@@ -116,7 +113,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
         if(time == null) {
             return "---";
         } else {
-            return DATE_TIME_FORMATTER.format(time);
+            return InstantCellFactory.DATE_TIME_FORMATTER.format(time);
         }
     }
 

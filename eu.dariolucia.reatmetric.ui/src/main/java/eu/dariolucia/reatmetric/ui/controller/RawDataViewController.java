@@ -16,6 +16,7 @@ import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
@@ -97,7 +98,9 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
         this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getGenerationTime()));
         this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getReceptionTime()));
         this.sourceCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getSource()));
-        
+
+        this.genTimeCol.setCellFactory(new InstantCellFactory<>());
+        this.recTimeCol.setCellFactory(new InstantCellFactory<>());
         this.qualityCol.setCellFactory(column -> {
             return new TableCell<RawData, Quality>() {
                 @Override

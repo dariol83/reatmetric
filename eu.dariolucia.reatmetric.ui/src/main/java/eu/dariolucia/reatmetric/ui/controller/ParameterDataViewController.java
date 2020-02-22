@@ -156,6 +156,9 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getReceptionTime()));
         this.alarmStateCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getAlarmState()));
         this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getPath().getParent().asString()));
+
+        this.genTimeCol.setCellFactory(new InstantCellFactory<>());
+        this.recTimeCol.setCellFactory(new InstantCellFactory<>());
     }
 
     protected Consumer<List<ParameterData>> buildIncomingDataDelegatorAction() {
