@@ -89,7 +89,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.log(Level.FINE, String.format("Sample of parameter %d (%s) discarded, generation time %s is before current time %s", definition.getId(), definition.getLocation(), newValue.getGenerationTime(), generationTime));
                 }
-                return Collections.emptyList();
+                // Before existing, compute the system entity state if needed
+                computeSystemEntityState(stateChanged, generatedStates);
+                return generatedStates;
             }
             Instant receptionTime;
             // Validity check
@@ -122,6 +124,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                         }
                     } else {
                         // Effectively, as there is no change in the depending elements, the processing can end here
+                        // Before existing, compute the system entity state if needed
+                        computeSystemEntityState(stateChanged, generatedStates);
                         return generatedStates;
                     }
                 }
@@ -190,14 +194,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             }
         }
         // Finalize entity state and prepare for the returned list of data items
-        if(stateChanged) {
-            this.systemEntityBuilder.setAlarmState(this.state.getAlarmState());
-        }
-        this.systemEntityBuilder.setStatus(entityStatus);
-        if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
-            this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
-            generatedStates.add(this.entityState);
-        }
+        computeSystemEntityState(stateChanged, generatedStates);
         // If there is an AlarmParameterData, then report it and save it
         if(alarmData != null) {
             generatedStates.add(alarmData);
@@ -210,6 +207,17 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         activateTriggers(newValue, previousValue, wasInAlarm, stateChanged);
         // Return the list
         return generatedStates;
+    }
+
+    private void computeSystemEntityState(boolean stateChanged, List<AbstractDataItem> generatedStates) {
+        if(stateChanged) {
+            this.systemEntityBuilder.setAlarmState(this.state.getAlarmState());
+        }
+        this.systemEntityBuilder.setStatus(entityStatus);
+        if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
+            this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+            generatedStates.add(this.entityState);
+        }
     }
 
     private void activateTriggers(ParameterSample sample, Object previousValue, boolean wasInAlarm, boolean stateChanged) {

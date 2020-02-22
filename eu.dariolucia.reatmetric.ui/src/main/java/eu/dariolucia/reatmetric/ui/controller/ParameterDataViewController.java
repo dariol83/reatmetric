@@ -10,7 +10,6 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IServiceFactory;
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -417,26 +416,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         this.dataItemTableView.refresh();
     }
 
-    private void addAdditionalHeaderFields() {
-        removeAdditionalHeaderFields();
-        try {
-            List<FieldDescriptor> items = doGetAdditionalFieldDescriptors();
-            int counter = 0;
-            for (FieldDescriptor item : items) {
-                final int i = counter++;
-                TableColumn<ParameterDataWrapper, String> tc = new TableColumn<>();
-                tc.setText(item.getName());
-                tc.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(String.valueOf(o.getValue().get().getAdditionalFields()[i])));
-                tc.setResizable(true);
-                tc.setSortable(false);
-                this.dataItemTableView.getColumns().add(tc);
-                this.additionalHeaderFields.add(tc);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private void markProgressBusy() {
         this.progressIndicator.setVisible(true);
     }
@@ -471,8 +450,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     protected void doSystemConnected(IServiceFactory system, boolean oldStatus) {
         this.liveTgl.setSelected(true);
         this.displayTitledPane.setDisable(false);
-        // Add the additional header fields
-        addAdditionalHeaderFields();
         // Restore column configuration
         restoreColumnConfiguration();
         // Start subscription if there
@@ -499,10 +476,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     
     protected List<ParameterData> doRetrieve(Instant selectedTime, ParameterDataFilter filter) throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(selectedTime, filter);
-    }
-
-    protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().getAdditionalFieldDescriptors();
     }
 
     protected String doGetComponentId() {

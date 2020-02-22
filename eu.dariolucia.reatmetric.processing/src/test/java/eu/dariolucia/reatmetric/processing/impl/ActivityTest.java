@@ -78,7 +78,7 @@ class ActivityTest {
                     .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
-            assertEquals(0L, id1.asLong());
+            assertEquals(1L, id1.asLong());
 
             //
             AwaitUtil.awaitAndVerify(10000, outList::size, 17);
@@ -135,7 +135,7 @@ class ActivityTest {
                     .build();
 
             IUniqueId id1 = model.startActivity(ar1);
-            assertEquals(1L, id1.asLong());
+            assertEquals(2L, id1.asLong());
 
             //
             AwaitUtil.awaitAndVerify(10000, outList::size, 17);
@@ -190,7 +190,7 @@ class ActivityTest {
                     .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
-            assertEquals(0L, id1.asLong());
+            assertEquals(1L, id1.asLong());
 
             //
             AwaitUtil.awaitAndVerify(10000, outList::size, 17);
@@ -253,7 +253,7 @@ class ActivityTest {
                     .build();
 
             IUniqueId id1 = model.startActivity(ar1);
-            assertEquals(1L, id1.asLong());
+            assertEquals(2L, id1.asLong());
 
             //
             AwaitUtil.awaitAndVerify(10000, outList::size, 17);
@@ -339,7 +339,7 @@ class ActivityTest {
                     .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
-            assertEquals(0L, id1.asLong());
+            assertEquals(1L, id1.asLong());
 
             //
             AwaitUtil.awaitAndVerify(10000, outList::size, 15);
@@ -396,7 +396,7 @@ class ActivityTest {
                     .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
-            assertEquals(0L, id1.asLong());
+            assertEquals(1L, id1.asLong());
 
             //
             AwaitUtil.awaitAndVerify(10000, outList::size, 17);
@@ -429,7 +429,7 @@ class ActivityTest {
                     .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
-            assertEquals(1L, id1.asLong());
+            assertEquals(2L, id1.asLong());
 
             //
             AwaitUtil.awaitAndVerify(10000, outList::size, 17);
@@ -500,7 +500,7 @@ class ActivityTest {
                     .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
-            assertEquals(0L, id1.asLong());
+            assertEquals(1L, id1.asLong());
 
             //
             AwaitUtil.awaitAndVerify(15000, outList::size, 19);
@@ -566,7 +566,7 @@ class ActivityTest {
                     .build();
 
             IUniqueId id1 = model.startActivity(ar1);
-            assertEquals(0L, id1.asLong());
+            assertEquals(1L, id1.asLong());
 
             //
             AwaitUtil.awaitAndVerify(5000, outList::size, 3);
@@ -620,7 +620,7 @@ class ActivityTest {
             ActivityProgress pr1 = ActivityProgress.of(1000, null, "Scheduled", Instant.now(), ActivityOccurrenceState.SCHEDULING, ActivityReportState.OK);
 
             IUniqueId id1 = model.createActivity(ar1, pr1);
-            assertEquals(0L, id1.asLong());
+            assertEquals(1L, id1.asLong());
 
             //
             AwaitUtil.awaitAndVerify(5000, outList::size, 2);
@@ -645,7 +645,7 @@ class ActivityTest {
             testLogger.info("Invocation 2");
 
             // Invoke purge
-            model.purgeActivities(Collections.singletonList(Pair.of(1000, new LongUniqueId(0))));
+            model.purgeActivities(Collections.singletonList(Pair.of(1000, new LongUniqueId(1))));
 
             //
             AwaitUtil.awaitAndVerify(5000, outList::size, 1);
@@ -700,7 +700,7 @@ class ActivityTest {
                     .withSource("XXX")
                     .build();
             IUniqueId id1 = model.startActivity(ar1);
-            assertEquals(0L, id1.asLong());
+            assertEquals(1L, id1.asLong());
 
             AwaitUtil.awaitCondition(4000, () -> outList.size() > 0);
             assertEquals(1, model.getActiveActivityOccurrences().size());

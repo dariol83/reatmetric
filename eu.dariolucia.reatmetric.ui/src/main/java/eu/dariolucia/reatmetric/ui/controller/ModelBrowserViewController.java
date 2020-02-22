@@ -17,7 +17,6 @@ import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;

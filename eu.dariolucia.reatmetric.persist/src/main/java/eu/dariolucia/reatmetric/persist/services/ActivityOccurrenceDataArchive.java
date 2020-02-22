@@ -12,7 +12,10 @@ import eu.dariolucia.reatmetric.persist.Archive;
 import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,7 +42,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
     }
 
     @Override
-    protected void doStore(Connection connection, List<ActivityOccurrenceData> itemsToStore) throws SQLException, IOException {
+    protected void doStore(Connection connection, List<ActivityOccurrenceData> itemsToStore) throws SQLException {
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - request to store " + itemsToStore.size() + " items");
         }
@@ -96,7 +99,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         preparedStatement.clearBatch();
     }
 
-    protected void setItemPropertiesToReportStatement(PreparedStatement storeStatement, ActivityOccurrenceData parent, ActivityOccurrenceReport item) throws SQLException, IOException {
+    protected void setItemPropertiesToReportStatement(PreparedStatement storeStatement, ActivityOccurrenceData parent, ActivityOccurrenceReport item) throws SQLException {
         storeStatement.setLong(1, item.getInternalId().asLong());
         storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
         storeStatement.setString(3, item.getName());
@@ -114,11 +117,16 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
             storeStatement.setBlob(8, toInputstream(item.getResult()));
         }
         storeStatement.setLong(9, parent.getInternalId().asLong());
-        storeStatement.setBlob(10, toInputstreamArray(item.getAdditionalFields()));
+        Object extension = item.getExtension();
+        if(extension == null) {
+            storeStatement.setNull(10, Types.BLOB);
+        } else {
+            storeStatement.setBlob(10, toInputstream(item.getExtension()));
+        }
     }
 
     @Override
-    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, ActivityOccurrenceData item) throws SQLException, IOException {
+    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, ActivityOccurrenceData item) throws SQLException {
         storeStatement.setLong(1, item.getInternalId().asLong());
         storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
         storeStatement.setInt(3, item.getExternalId());
@@ -129,7 +137,12 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         storeStatement.setString(8, item.getSource());
         storeStatement.setBlob(9, toInputstream(item.getArguments()));
         storeStatement.setBlob(10, toInputstream(item.getProperties()));
-        storeStatement.setBlob(11, toInputstreamArray(item.getAdditionalFields()));
+        Object extension = item.getExtension();
+        if(extension == null) {
+            storeStatement.setNull(11, Types.BLOB);
+        } else {
+            storeStatement.setBlob(11, toInputstream(item.getExtension()));
+        }
     }
 
     @Override
@@ -175,7 +188,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                 // Build the final activity occurrence
                 if(temporaryResult != null) {
                     result = new ActivityOccurrenceData(temporaryResult.getInternalId(), temporaryResult.getGenerationTime(),
-                            temporaryResult.getAdditionalFields(), temporaryResult.getExternalId(), temporaryResult.getName(),
+                            temporaryResult.getExtension(), temporaryResult.getExternalId(), temporaryResult.getName(),
                             temporaryResult.getPath(), temporaryResult.getType(), temporaryResult.getArguments(),
                             temporaryResult.getProperties(), reports, temporaryResult.getRoute(), temporaryResult.getSource());
                 }
@@ -198,9 +211,12 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         ActivityOccurrenceState nextState = ActivityOccurrenceState.values()[rs.getShort(offset + 6)];
         ActivityReportState reportStatus = ActivityReportState.values()[rs.getShort(offset + 7)];
         Object result = toObject(rs.getBlob(offset + 8));
-        Object[] additionalDataArray = toObjectArray(rs.getBlob(offset + 10));
-
-        return new ActivityOccurrenceReport(new LongUniqueId(uniqueId),toInstant(genTime),additionalDataArray, name, state, toInstant(execTime),reportStatus, nextState, result);
+        Blob extensionBlob = rs.getBlob(offset + 10);
+        Object extension = null;
+        if(extensionBlob != null && !rs.wasNull()) {
+            extension = toObject(extensionBlob);
+        }
+        return new ActivityOccurrenceReport(new LongUniqueId(uniqueId),toInstant(genTime),extension, name, state, toInstant(execTime),reportStatus, nextState, result);
     }
 
     private ActivityOccurrenceData mapToOccurrenceItem(ResultSet rs, List<ActivityOccurrenceReport> reports) throws SQLException, IOException {
@@ -214,10 +230,13 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         String source = rs.getString(8);
         Map<String, Object> arguments = (Map<String, Object>) toObject(rs.getBlob(9));
         Map<String, String> properties = (Map<String, String>) toObject(rs.getBlob(10));
-        Object[] additionalDataArray = toObjectArray(rs.getBlob(11));
-
+        Blob extensionBlob = rs.getBlob(11);
+        Object extension = null;
+        if(extensionBlob != null && !rs.wasNull()) {
+            extension = toObject(extensionBlob);
+        }
         return new ActivityOccurrenceData(new LongUniqueId(uniqueId), toInstant(genTime),
-                additionalDataArray, externalId, name, SystemEntityPath.fromString(path),
+                extension, externalId, name, SystemEntityPath.fromString(path),
                 type, arguments, properties, reports, route, source);
     }
 
@@ -255,7 +274,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                         } else if(!temporaryResult.getInternalId().equals(theOccurrence.getInternalId())) {
                             // Close the occurrence
                             ActivityOccurrenceData fullOccurrence = new ActivityOccurrenceData(temporaryResult.getInternalId(), temporaryResult.getGenerationTime(),
-                                    temporaryResult.getAdditionalFields(), temporaryResult.getExternalId(), temporaryResult.getName(),
+                                    temporaryResult.getExtension(), temporaryResult.getExternalId(), temporaryResult.getName(),
                                     temporaryResult.getPath(), temporaryResult.getType(), temporaryResult.getArguments(),
                                     temporaryResult.getProperties(), reports, temporaryResult.getRoute(), temporaryResult.getSource());
                             if(checkStateFilter(filter, fullOccurrence)) {
@@ -275,7 +294,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                 if(temporaryResult != null) {
                     // Close the occurrence
                     ActivityOccurrenceData fullOccurrence = new ActivityOccurrenceData(temporaryResult.getInternalId(), temporaryResult.getGenerationTime(),
-                            temporaryResult.getAdditionalFields(), temporaryResult.getExternalId(), temporaryResult.getName(),
+                            temporaryResult.getExtension(), temporaryResult.getExternalId(), temporaryResult.getName(),
                             temporaryResult.getPath(), temporaryResult.getType(), temporaryResult.getArguments(),
                             temporaryResult.getProperties(), reports, temporaryResult.getRoute(), temporaryResult.getSource());
                     if(checkStateFilter(filter, fullOccurrence)) {

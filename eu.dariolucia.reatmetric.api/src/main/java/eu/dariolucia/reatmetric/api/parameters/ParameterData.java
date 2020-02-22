@@ -48,8 +48,10 @@ public final class ParameterData extends AbstractDataItem implements Serializabl
 
     private final AlarmState alarmState;
 
-    public ParameterData(IUniqueId internalId, Instant generationTime, int externalId, String name, SystemEntityPath path, Object engValue, Object sourceValue, String route, Validity validity, AlarmState alarmState, IUniqueId rawDataContainerId, Instant receptionTime, Object[] additionalFields) {
-        super(internalId, generationTime, additionalFields);
+    public ParameterData(IUniqueId internalId, Instant generationTime, int externalId, String name, SystemEntityPath path,
+                         Object engValue, Object sourceValue, String route, Validity validity, AlarmState alarmState,
+                         IUniqueId rawDataContainerId, Instant receptionTime, Object extension) {
+        super(internalId, generationTime, extension);
         this.name = name;
         this.externalId = externalId;
         this.path = path;

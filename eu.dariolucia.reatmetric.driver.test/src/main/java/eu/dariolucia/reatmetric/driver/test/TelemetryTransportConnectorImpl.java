@@ -168,7 +168,7 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
         if(paramDef.getExpression() != null) {
             return null;
         }
-        return ParameterSample.of(paramDef.getId(), Instant.now(), Instant.now(), null, deriveValue(paramDef), routes[0]);
+        return ParameterSample.of(paramDef.getId(), Instant.now(), Instant.now(), null, deriveValue(paramDef), routes[0], null);
     }
 
     private Object deriveValue(ParameterProcessingDefinition paramDef) {

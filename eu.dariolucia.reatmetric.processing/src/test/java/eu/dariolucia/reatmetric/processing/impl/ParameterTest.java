@@ -224,8 +224,8 @@ class ParameterTest {
 
         model.enable(SystemEntityPath.fromString("ROOT.BATTERY"));
 
-        AwaitUtil.awaitAndVerify(5000, () -> outList.size() == 9);
-
+        AwaitUtil.await(5000);
+        assertEquals(8, outList.size());
         for(AbstractDataItem i : outList) {
             if(i instanceof SystemEntity) {
                 assertEquals(Status.ENABLED, ((SystemEntity) i).getStatus());

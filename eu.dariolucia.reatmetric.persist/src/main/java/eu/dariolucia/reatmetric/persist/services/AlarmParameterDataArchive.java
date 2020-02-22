@@ -8,7 +8,6 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.IOException;
@@ -32,7 +31,7 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
     }
 
     @Override
-    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, AlarmParameterData item) throws SQLException, IOException {
+    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, AlarmParameterData item) throws SQLException {
         storeStatement.setLong(1, item.getInternalId().asLong());
         storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
         storeStatement.setInt(3, item.getExternalId());
@@ -43,7 +42,12 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
         storeStatement.setTimestamp(8, toTimestamp(item.getReceptionTime()));
         storeStatement.setBlob(9, toInputstream(item.getLastNominalValue()));
         storeStatement.setTimestamp(10, toTimestamp(item.getLastNominalValueTime()));
-        storeStatement.setBlob(11, toInputstreamArray(item.getAdditionalFields()));
+        Object extension = item.getExtension();
+        if(extension == null) {
+            storeStatement.setNull(11, Types.BLOB);
+        } else {
+            storeStatement.setBlob(11, toInputstream(item.getExtension()));
+        }
     }
 
     @Override
@@ -90,7 +94,7 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
     }
 
     @Override
-    protected AlarmParameterData mapToItem(ResultSet rs, AlarmParameterDataFilter usedFilter) throws SQLException, IOException, ClassNotFoundException {
+    protected AlarmParameterData mapToItem(ResultSet rs, AlarmParameterDataFilter usedFilter) throws SQLException, IOException {
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
         int externalId = rs.getInt(3);
@@ -101,9 +105,12 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
         Timestamp receptionTime = rs.getTimestamp(8);
         Object lastNominalValue = toObject(rs.getBlob(9));
         Timestamp lastNominalValueTime = rs.getTimestamp(10);
-        Object[] additionalDataArray = toObjectArray(rs.getBlob(11));
-
-        return new AlarmParameterData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), currentAlarmState, currentValue, lastNominalValue, toInstant(lastNominalValueTime), toInstant(receptionTime), additionalDataArray);
+        Blob extensionBlob = rs.getBlob(11);
+        Object extension = null;
+        if(extensionBlob != null && !rs.wasNull()) {
+            extension = toObject(extensionBlob);
+        }
+        return new AlarmParameterData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), currentAlarmState, currentValue, lastNominalValue, toInstant(lastNominalValueTime), toInstant(receptionTime), extension);
     }
 
     @Override
@@ -153,7 +160,7 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
                     try {
                         AlarmParameterData object = mapToItem(rs, filter);
                         result.add(object);
-                    } catch (IOException | ClassNotFoundException e) {
+                    } catch (IOException e) {
                         throw new SQLException(e);
                     }
                 }

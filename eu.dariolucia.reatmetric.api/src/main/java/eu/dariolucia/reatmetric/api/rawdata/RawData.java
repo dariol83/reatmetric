@@ -41,8 +41,8 @@ public final class RawData extends AbstractDataItem implements Serializable {
 
     private final byte[] contents;
 
-    public RawData(IUniqueId internalId, Instant generationTime, String name, String type, String route, String source, Quality quality, IUniqueId relatedItem, byte[] contents, Instant receptionTime, Object[] additionalFields) {
-        super(internalId, generationTime, additionalFields);
+    public RawData(IUniqueId internalId, Instant generationTime, String name, String type, String route, String source, Quality quality, IUniqueId relatedItem, byte[] contents, Instant receptionTime, Object extension) {
+        super(internalId, generationTime, extension);
         this.name = name;
         this.type = type;
         this.route = route;

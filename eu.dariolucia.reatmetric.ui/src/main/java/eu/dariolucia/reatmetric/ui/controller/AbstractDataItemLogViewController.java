@@ -9,43 +9,32 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import java.io.IOException;
-import java.net.URL;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.function.Consumer;
-
 import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.TableViewUtil;
 import javafx.application.Platform;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
 import javafx.scene.Parent;
-import javafx.scene.control.Button;
-import javafx.scene.control.Control;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TitledPane;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.*;
 import javafx.stage.Popup;
+
+import java.io.IOException;
+import java.net.URL;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 /**
  * FXML Controller class
@@ -303,8 +292,6 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         }
         this.displayTitledPane.setDisable(false);
 
-        // Add the additional header fields
-        addAdditionalHeaderFields();
         // Restore column configuration
         restoreColumnConfiguration();
         // Start subscription if there
@@ -424,26 +411,6 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         this.dataItemTableView.refresh();
     }
 
-    private void addAdditionalHeaderFields() {
-        removeAdditionalHeaderFields();
-        try {
-            List<FieldDescriptor> items = doGetAdditionalFieldDescriptors();
-            int counter = 0;
-            for (FieldDescriptor item : items) {
-                final int i = counter++;
-                TableColumn<T, String> tc = new TableColumn<>();
-                tc.setText(item.getName());
-                tc.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(String.valueOf(o.getValue().getAdditionalFields()[i])));
-                tc.setResizable(true);
-                tc.setSortable(false);
-                this.dataItemTableView.getColumns().add(tc);
-                this.additionalHeaderFields.add(tc);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     private void moveToTime(Instant selectedTime, RetrievalDirection direction, int n, V currentFilter) {
     	if(this.selectTimeBtn != null) {
     		this.selectTimeBtn.setText(formatTime(selectedTime));
@@ -557,8 +524,6 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     protected abstract List<T> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, V filter) throws ReatmetricException;
 
     protected abstract Instant doGetGenerationTime(T om);
-
-    protected abstract List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException;;
 
     protected abstract URL doGetFilterWidget();
     

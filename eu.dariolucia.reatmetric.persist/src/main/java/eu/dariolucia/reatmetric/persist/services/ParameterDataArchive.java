@@ -61,7 +61,12 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
         } else {
             storeStatement.setLong(12, item.getRawDataContainerId().asLong());
         }
-        storeStatement.setBlob(13, toInputstreamArray(item.getAdditionalFields()));
+        Object extension = item.getExtension();
+        if(extension == null) {
+            storeStatement.setNull(13, Types.BLOB);
+        } else {
+            storeStatement.setBlob(13, toInputstream(item.getExtension()));
+        }
     }
 
     @Override
@@ -130,9 +135,12 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
         if(rs.wasNull()) {
             containerId = null;
         }
-        Object[] additionalDataArray = toObjectArray(rs.getBlob(13));
-
-        return new ParameterData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), engValue, sourceValue, route, validity, alarmState, containerId == null ? null : new LongUniqueId(containerId), toInstant(receptionTime), additionalDataArray);
+        Blob extensionBlob = rs.getBlob(13);
+        Object extension = null;
+        if(extensionBlob != null && !rs.wasNull()) {
+            extension = toObject(extensionBlob);
+        }
+        return new ParameterData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), engValue, sourceValue, route, validity, alarmState, containerId == null ? null : new LongUniqueId(containerId), toInstant(receptionTime), extension);
     }
 
     @Override

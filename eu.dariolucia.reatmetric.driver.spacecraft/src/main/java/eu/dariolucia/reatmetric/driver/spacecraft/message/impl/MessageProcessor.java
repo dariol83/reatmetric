@@ -7,7 +7,6 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.message.impl;
 
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.messages.*;
 import eu.dariolucia.reatmetric.driver.spacecraft.message.IMessageProcessor;

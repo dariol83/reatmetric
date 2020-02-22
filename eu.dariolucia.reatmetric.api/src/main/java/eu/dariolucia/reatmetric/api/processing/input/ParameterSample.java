@@ -16,15 +16,15 @@ import java.util.Objects;
 public final class ParameterSample extends AbstractInputDataItem {
 
     public static ParameterSample of(int id, Object value) {
-        return new ParameterSample(id, null, null, null, value, null);
+        return new ParameterSample(id, null, null, null, value, null, null);
     }
 
     public static ParameterSample of(int id, Instant generationTime, Instant receptionTime, Object value) {
-        return new ParameterSample(id, generationTime, receptionTime, null, value, null);
+        return new ParameterSample(id, generationTime, receptionTime, null, value, null, null);
     }
 
-    public static ParameterSample of(int id, Instant generationTime, Instant receptionTime, IUniqueId container, Object value, String route) {
-        return new ParameterSample(id, generationTime, receptionTime, container, value, route);
+    public static ParameterSample of(int id, Instant generationTime, Instant receptionTime, IUniqueId container, Object value, String route, Object extension) {
+        return new ParameterSample(id, generationTime, receptionTime, container, value, route, extension);
     }
 
     private final int id;
@@ -33,8 +33,9 @@ public final class ParameterSample extends AbstractInputDataItem {
     private final Object value;
     private final IUniqueId containerId;
     private final String route;
+    private final Object extension;
 
-    private ParameterSample(int id, Instant generationTime, Instant receptionTime, IUniqueId containerId, Object value, String route) {
+    private ParameterSample(int id, Instant generationTime, Instant receptionTime, IUniqueId containerId, Object value, String route, Object extension) {
         this.id = id;
         if(generationTime == null) {
             generationTime = Instant.now();
@@ -47,10 +48,15 @@ public final class ParameterSample extends AbstractInputDataItem {
         this.value = value;
         this.containerId = containerId;
         this.route = route;
+        this.extension = extension;
     }
 
     public int getId() {
         return id;
+    }
+
+    public Object getExtension() {
+        return extension;
     }
 
     public Instant getGenerationTime() {

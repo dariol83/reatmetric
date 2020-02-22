@@ -9,7 +9,6 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
@@ -170,11 +169,6 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
     @Override
     protected Instant doGetGenerationTime(RawData om) {
         return om.getGenerationTime();
-    }
-
-    @Override
-    protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().getAdditionalFieldDescriptors();
     }
 
     @Override

@@ -27,8 +27,8 @@ public final class ActivityOccurrenceReport extends AbstractDataItem {
     private final ActivityOccurrenceState stateTransition; // Always set, can be equal to state
     private final Object result; // If not null, this report provides the activity occurrence execution result (partial or final)
 
-    public ActivityOccurrenceReport(IUniqueId internalId, Instant generationTime, Object[] additionalFields, String name, ActivityOccurrenceState state, Instant executionTime, ActivityReportState status, ActivityOccurrenceState stateTransition, Object result) {
-        super(internalId, generationTime, additionalFields);
+    public ActivityOccurrenceReport(IUniqueId internalId, Instant generationTime, Object extension, String name, ActivityOccurrenceState state, Instant executionTime, ActivityReportState status, ActivityOccurrenceState stateTransition, Object result) {
+        super(internalId, generationTime, extension);
         if(state == null || stateTransition == null) {
             throw new NullPointerException("state or stateTransition set to null");
         }

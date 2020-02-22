@@ -23,10 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -74,7 +71,7 @@ class OperationalMessageArchiveTest {
             assertEquals(1L, messages.get(1).getInternalId().asLong());
             assertEquals("msgId2", messages.get(1).getId());
             assertEquals("Source2", messages.get(1).getSource());
-            assertArrayEquals(new Object[] {"test", 13, Instant.ofEpochMilli(1000)}, messages.get(1).getAdditionalFields());
+            assertArrayEquals(new Object[] {"test", 13, Instant.ofEpochMilli(1000)}, (Object[]) messages.get(1).getExtension());
             // dispose
             archive.dispose();
             // create a new connection and retrieve the data
@@ -87,7 +84,7 @@ class OperationalMessageArchiveTest {
             assertEquals(1L, messages.get(1).getInternalId().asLong());
             assertEquals("msgId2", messages.get(1).getId());
             assertEquals("Source2", messages.get(1).getSource());
-            assertArrayEquals(new Object[] {"test", 13, Instant.ofEpochMilli(1000)}, messages.get(1).getAdditionalFields());
+            assertArrayEquals(new Object[] {"test", 13, Instant.ofEpochMilli(1000)}, (Object[]) messages.get(1).getExtension());
             // last ID: expected 1
             assertEquals(1, messageArchive.retrieveLastId().asLong());
             // store one item

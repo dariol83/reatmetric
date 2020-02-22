@@ -8,7 +8,6 @@
 package eu.dariolucia.reatmetric.core.impl;
 
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
@@ -84,11 +83,6 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
         } else {
             return Collections.emptyList();
         }
-    }
-
-    @Override
-    public List<FieldDescriptor> getAdditionalFieldDescriptors() {
-        return Collections.emptyList();
     }
 
     private void distribute(List<OperationalMessage> items, boolean store) throws ReatmetricException {

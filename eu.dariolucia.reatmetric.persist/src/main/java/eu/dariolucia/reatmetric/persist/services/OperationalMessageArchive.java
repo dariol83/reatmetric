@@ -6,7 +6,6 @@ import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.IOException;
@@ -28,14 +27,19 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     }
 
     @Override
-    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, OperationalMessage item) throws SQLException, IOException {
+    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, OperationalMessage item) throws SQLException {
         storeStatement.setLong(1, item.getInternalId().asLong());
         storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
         storeStatement.setString(3, item.getId());
         storeStatement.setString(4, item.getMessage());
         storeStatement.setString(5, item.getSource());
         storeStatement.setShort(6, (short) item.getSeverity().ordinal());
-        storeStatement.setBlob(7, toInputstreamArray(item.getAdditionalFields()));
+        Object extension = item.getExtension();
+        if(extension == null) {
+            storeStatement.setNull(7, Types.BLOB);
+        } else {
+            storeStatement.setBlob(7, toInputstream(item.getExtension()));
+        }
     }
 
     @Override
@@ -85,16 +89,19 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     }
 
     @Override
-    protected OperationalMessage mapToItem(ResultSet rs, OperationalMessageFilter usedFilder) throws SQLException, IOException, ClassNotFoundException {
+    protected OperationalMessage mapToItem(ResultSet rs, OperationalMessageFilter usedFilder) throws SQLException, IOException {
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
         String messageId = rs.getString(3);
         String messageText = rs.getString(4);
         String messageSource = rs.getString(5);
         Severity severity = Severity.values()[rs.getShort(6)];
-        Object[] additionalDataArray = toObjectArray(rs.getBlob(7));
-
-        return new OperationalMessage(new LongUniqueId(uniqueId), toInstant(genTime), messageId, messageText, messageSource, severity, additionalDataArray);
+        Blob extensionBlob = rs.getBlob(7);
+        Object extension = null;
+        if(extensionBlob != null && !rs.wasNull()) {
+            extension = toObject(extensionBlob);
+        }
+        return new OperationalMessage(new LongUniqueId(uniqueId), toInstant(genTime), messageId, messageText, messageSource, severity, extension);
     }
 
     @Override

@@ -7,7 +7,6 @@ import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.IOException;
@@ -29,7 +28,7 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
     }
 
     @Override
-    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, EventData item) throws SQLException, IOException {
+    protected void setItemPropertiesToStatement(PreparedStatement storeStatement, EventData item) throws SQLException {
         storeStatement.setLong(1, item.getInternalId().asLong());
         storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
         storeStatement.setInt(3, item.getExternalId());
@@ -51,7 +50,12 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
         } else {
             storeStatement.setBlob(13, toInputstream(item.getReport()));
         }
-        storeStatement.setBlob(14, toInputstreamArray(item.getAdditionalFields()));
+        Object extension = item.getExtension();
+        if(extension == null) {
+            storeStatement.setNull(14, Types.BLOB);
+        } else {
+            storeStatement.setBlob(14, toInputstream(item.getExtension()));
+        }
     }
 
     @Override
@@ -104,7 +108,7 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
     }
 
     @Override
-    protected EventData mapToItem(ResultSet rs, EventDataFilter usedFilter) throws SQLException, IOException, ClassNotFoundException {
+    protected EventData mapToItem(ResultSet rs, EventDataFilter usedFilter) throws SQLException, IOException {
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
         int externalId = rs.getInt(3);
@@ -121,9 +125,12 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
             containerId = null;
         }
         Object report = toObject(rs.getBlob(13));
-        Object[] additionalDataArray = toObjectArray(rs.getBlob(14));
-
-        return new EventData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), qualifier, type, route, source, severity, report, containerId == null ? null : new LongUniqueId(containerId), toInstant(receptionTime), additionalDataArray);
+        Blob extensionBlob = rs.getBlob(14);
+        Object extension = null;
+        if(extensionBlob != null && !rs.wasNull()) {
+            extension = toObject(extensionBlob);
+        }
+        return new EventData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), qualifier, type, route, source, severity, report, containerId == null ? null : new LongUniqueId(containerId), toInstant(receptionTime), extension);
     }
 
     @Override

@@ -2,7 +2,6 @@ package eu.dariolucia.reatmetric.persist.services;
 
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
@@ -11,7 +10,6 @@ import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.sql.*;
 import java.time.Instant;
 import java.util.logging.Level;
@@ -50,7 +48,12 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         } else {
             storeStatement.setNull(10, Types.BLOB);
         }
-        storeStatement.setBlob(11, toInputstreamArray(item.getAdditionalFields()));
+        Object extension = item.getExtension();
+        if(extension == null) {
+            storeStatement.setNull(11, Types.BLOB);
+        } else {
+            storeStatement.setBlob(11, toInputstream(item.getExtension()));
+        }
     }
 
     @Override
@@ -120,7 +123,11 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         if(rs.wasNull()) {
             relatedItemUniqueId = null;
         }
-        Object[] additionalDataArray = toObjectArray(rs.getBlob(10));
+        Blob extensionBlob = rs.getBlob(10);
+        Object extension = null;
+        if(extensionBlob != null && !rs.wasNull()) {
+            extension = toObject(extensionBlob);
+        }
         // retrieve Contents if present
         byte[] contents = null;
         if(usedFilter == null || usedFilter.isWithData()) {
@@ -129,7 +136,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
                 contents = toByteArray(blob.getBinaryStream());
             }
         }
-        return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, relatedItemUniqueId != null ? new LongUniqueId(relatedItemUniqueId) : null, contents, toInstant(receptionTime), additionalDataArray);
+        return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, relatedItemUniqueId != null ? new LongUniqueId(relatedItemUniqueId) : null, contents, toInstant(receptionTime), extension);
     }
 
     @Override

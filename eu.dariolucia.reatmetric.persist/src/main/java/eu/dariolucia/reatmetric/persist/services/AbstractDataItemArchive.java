@@ -375,24 +375,6 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         return toReturn;
     }
 
-    // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
-    protected Object[] toObjectArray(Blob b) throws IOException, SQLException {
-        Object[] toReturn = null;
-        if(b != null) {
-            InputStream ois = b.getBinaryStream();
-            toReturn = (Object[]) ValueUtil.deserialize(ois.readAllBytes());
-        }
-        return toReturn;
-    }
-
-    // TODO: define efficient serialisation for typical types, fallback to Java Serialisation if not available
-    protected InputStream toInputstreamArray(Object[] data) {
-        if(data == null) {
-            return null;
-        }
-        return new ByteArrayInputStream(ValueUtil.serialize(data));
-    }
-
     protected InputStream toInputstream(Object data) {
         if(data == null) {
             return null;

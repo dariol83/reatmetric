@@ -12,7 +12,6 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterDataFilter;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataSubscriber;
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -277,12 +276,6 @@ public class AlarmParameterDataViewController
 	@Override
 	protected Instant doGetGenerationTime(AlarmParameterData om) {
 		return om.getGenerationTime();
-	}
-
-	@Override
-	protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException {
-		return ReatmetricUI.selectedSystem().getSystem().getAlarmParameterDataMonitorService()
-				.getAdditionalFieldDescriptors();
 	}
 
 	@Override

@@ -44,8 +44,8 @@ public final class AlarmParameterData extends AbstractDataItem implements Serial
 
 	public AlarmParameterData(IUniqueId internalId, Instant generationTime, int externalId, String name, SystemEntityPath path, AlarmState currentAlarmState,
 			Object currentValue, Object lastNominalValue,
-			Instant lastNominalValueTime, Instant receptionTime, Object[] additionalFields) {
-		super(internalId, generationTime, additionalFields);
+			Instant lastNominalValueTime, Instant receptionTime, Object extension) {
+		super(internalId, generationTime, extension);
 		this.name = name;
 		this.path = path;
 		this.currentAlarmState = currentAlarmState;

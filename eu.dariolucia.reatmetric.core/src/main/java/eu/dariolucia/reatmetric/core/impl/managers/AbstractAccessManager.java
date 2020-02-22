@@ -9,12 +9,14 @@ package eu.dariolucia.reatmetric.core.impl.managers;
 
 import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
-import eu.dariolucia.reatmetric.api.common.*;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
+import eu.dariolucia.reatmetric.api.common.IDataItemSubscriber;
+import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -98,12 +100,8 @@ public abstract class AbstractAccessManager<T extends AbstractDataItem, K extend
         }
     }
 
-    public List<FieldDescriptor> getAdditionalFieldDescriptors() {
-        return Collections.emptyList();
-    }
-
     public void dispose() {
-        for(AbstractAccessSubscriber aas : this.subscribers.values()) {
+        for(AbstractAccessSubscriber<T, K, J> aas : this.subscribers.values()) {
             aas.terminate();
         }
         this.subscribers.clear();

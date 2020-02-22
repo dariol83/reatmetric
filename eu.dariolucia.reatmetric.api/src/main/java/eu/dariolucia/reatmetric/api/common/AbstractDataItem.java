@@ -22,26 +22,22 @@ public abstract class AbstractDataItem extends UniqueItem implements Serializabl
 	 */
 	private static final long serialVersionUID = -7442923730308757888L;
 
-	protected final Object[] additionalFields;
+	protected final Object extension;
     
     protected final Instant generationTime;
     
-    public AbstractDataItem(IUniqueId internalId, Instant generationTime, Object[] additionalFields) {
+    public AbstractDataItem(IUniqueId internalId, Instant generationTime, Object extension) {
         super(internalId, null);
         this.generationTime = generationTime;
-        if(additionalFields != null) {
-            this.additionalFields = additionalFields.clone();
-        } else {
-            this.additionalFields = new Object[0];
-        }
+        this.extension = extension;
     }
 
     public Instant getGenerationTime() {
         return generationTime;
     }
 
-    public Object[] getAdditionalFields() {
-        return additionalFields.clone();
+    public Object getExtension() {
+        return extension;
     }
 
     @Override
@@ -75,7 +71,7 @@ public abstract class AbstractDataItem extends UniqueItem implements Serializabl
 
     @Override
     public String toString() {
-        return "AbstractDataItem [" + "internalId=" + internalId + ", additionalFields=" + Arrays.toString(additionalFields) + ", generationTime=" + generationTime + ']';
+        return "AbstractDataItem [" + "internalId=" + internalId + ", extension=" + extension + ", generationTime=" + generationTime + ']';
     }
 
 }

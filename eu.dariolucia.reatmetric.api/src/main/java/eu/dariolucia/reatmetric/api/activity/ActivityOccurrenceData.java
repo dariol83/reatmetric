@@ -49,8 +49,8 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
     // Derived
     private final Object result;
 
-    public ActivityOccurrenceData(IUniqueId internalId, Instant generationTime, Object[] additionalFields, int externalId, String name, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> progressReports, String route, String source) {
-        super(internalId, generationTime, additionalFields);
+    public ActivityOccurrenceData(IUniqueId internalId, Instant generationTime, Object extension, int externalId, String name, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> progressReports, String route, String source) {
+        super(internalId, generationTime, extension);
         this.externalId = externalId;
         this.name = name;
         this.path = path;

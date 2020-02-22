@@ -29,6 +29,5 @@ public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R e
     List<K> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException;
     
     List<K> retrieve(K startItem, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException;
-    
-    List<FieldDescriptor> getAdditionalFieldDescriptors();
+
 }

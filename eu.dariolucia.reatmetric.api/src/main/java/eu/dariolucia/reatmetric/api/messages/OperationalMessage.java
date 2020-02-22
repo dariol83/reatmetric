@@ -34,8 +34,8 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
 
     private final Severity severity;
 
-    public OperationalMessage(IUniqueId internalId, Instant generationTime, String id, String message, String source, Severity severity, Object[] additionalFields) {
-        super(internalId, generationTime, additionalFields);
+    public OperationalMessage(IUniqueId internalId, Instant generationTime, String id, String message, String source, Severity severity, Object extension) {
+        super(internalId, generationTime, extension);
         this.id = id;
         this.message = message;
         this.source = source;

@@ -9,7 +9,6 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
@@ -183,12 +182,6 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
 	@Override
 	protected Instant doGetGenerationTime(EventData om) {
 		return om.getGenerationTime();
-	}
-
-	@Override
-	protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException {
-		return ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService()
-				.getAdditionalFieldDescriptors();
 	}
 
 	@Override

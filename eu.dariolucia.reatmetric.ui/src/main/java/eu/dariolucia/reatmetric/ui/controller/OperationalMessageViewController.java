@@ -9,7 +9,6 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.common.FieldDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageSubscriber;
@@ -116,11 +115,6 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
     @Override
     protected Instant doGetGenerationTime(OperationalMessage om) {
         return om.getGenerationTime();
-    }
-
-    @Override
-    protected List<FieldDescriptor> doGetAdditionalFieldDescriptors() throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().getAdditionalFieldDescriptors();
     }
 
     @Override

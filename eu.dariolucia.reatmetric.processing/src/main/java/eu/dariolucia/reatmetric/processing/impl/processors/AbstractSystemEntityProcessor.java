@@ -10,6 +10,7 @@ import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.SystemEntityBuilder;
 import eu.dariolucia.reatmetric.api.processing.input.AbstractInputDataItem;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -68,13 +69,21 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     }
 
     public List<AbstractDataItem> enable() throws ProcessingModelException {
-        this.entityStatus = Status.ENABLED;
-        return evaluate();
+        if(this.entityStatus != Status.ENABLED) {
+            this.entityStatus = Status.ENABLED;
+            return evaluate();
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     public List<AbstractDataItem> disable() throws ProcessingModelException {
-        this.entityStatus = Status.DISABLED;
-        return evaluate();
+        if(this.entityStatus != Status.DISABLED) {
+            this.entityStatus = Status.DISABLED;
+            return evaluate();
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     public abstract List<AbstractDataItem> process(K input) throws ProcessingModelException;

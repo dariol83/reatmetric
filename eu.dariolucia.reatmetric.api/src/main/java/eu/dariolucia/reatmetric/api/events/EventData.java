@@ -15,7 +15,6 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 import java.io.Serializable;
 import java.time.Instant;
-import java.util.Objects;
 
 /**
  *
@@ -52,8 +51,8 @@ public final class EventData extends AbstractDataItem implements Serializable {
 
 	public EventData(IUniqueId internalId, Instant generationTime, int externalId, String name,
                      SystemEntityPath path, String qualifier, String type, String route, String source, Severity severity, Object report, IUniqueId rawDataContainerId, Instant receptionTime,
-                     Object[] additionalFields) {
-		super(internalId, generationTime, additionalFields);
+					 Object extension) {
+		super(internalId, generationTime, extension);
 		this.externalId = externalId;
 		this.name = name;
 		this.path = path;
