@@ -273,7 +273,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     
     protected void fetchPreviousStateChange() {
         markProgressBusy();
-        // Retrieve the parameter with the latest reception time
+        // Retrieve the parameter with the latest generation time
         ParameterData om = retrieveLatest();
         if(om == null) {
             markProgressReady();

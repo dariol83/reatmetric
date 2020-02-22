@@ -20,7 +20,6 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.ReferenceProperty;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
-import javafx.application.Platform;
 import javafx.beans.Observable;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
@@ -43,6 +42,8 @@ import java.util.ResourceBundle;
 
 /**
  * FXML Controller class
+ *
+ * TODO: use same approach as per parameter for retrieval (move back-next of one)
  *
  * @author dario
  */
