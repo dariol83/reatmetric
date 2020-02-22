@@ -18,9 +18,13 @@ import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.ReferenceProperty;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
 import javafx.application.Platform;
+import javafx.beans.Observable;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableCell;
@@ -29,6 +33,7 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
+import javafx.util.Callback;
 
 import java.net.URL;
 import java.time.Instant;
@@ -39,49 +44,47 @@ import java.util.ResourceBundle;
 /**
  * FXML Controller class
  *
- * FIXME: wrong assumption with InternaId (can change!), use ExternalId, to be fixed
- *
  * @author dario
  */
 public class AlarmParameterDataViewController
-		extends AbstractDataItemLogViewController<AlarmParameterData, AlarmParameterDataFilter>
+		extends AbstractDataItemCurrentViewController<AlarmParameterData, AlarmParameterDataFilter>
 		implements IAlarmParameterDataSubscriber {
 
 	@FXML
-	private TableColumn<AlarmParameterData, String> nameCol;
+	private TableColumn<ReferenceProperty<AlarmParameterData>, String> nameCol;
 	@FXML
-	private TableColumn<AlarmParameterData, String> currentValueCol;
+	private TableColumn<ReferenceProperty<AlarmParameterData>, String> currentValueCol;
 	@FXML
-	private TableColumn<AlarmParameterData, AlarmState> currentAlarmStateCol;
+	private TableColumn<ReferenceProperty<AlarmParameterData>, AlarmState> currentAlarmStateCol;
 	@FXML
-	private TableColumn<AlarmParameterData, Instant> genTimeCol;
+	private TableColumn<ReferenceProperty<AlarmParameterData>, Instant> genTimeCol;
 	@FXML
-	private TableColumn<AlarmParameterData, Instant> recTimeCol;
+	private TableColumn<ReferenceProperty<AlarmParameterData>, Instant> recTimeCol;
 	@FXML
-	private TableColumn<AlarmParameterData, String> lastNomValueCol;
+	private TableColumn<ReferenceProperty<AlarmParameterData>, String> lastNomValueCol;
 	@FXML
-	private TableColumn<AlarmParameterData, Instant> lastNomValueTimeCol;
+	private TableColumn<ReferenceProperty<AlarmParameterData>, Instant> lastNomValueTimeCol;
 	@FXML
-	private TableColumn<AlarmParameterData, String> parentCol;
+	private TableColumn<ReferenceProperty<AlarmParameterData>, String> parentCol;
 
 	@Override
 	protected void doInitialize(URL url, ResourceBundle rb) {
 		super.doInitialize(url, rb);
-		this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getName()));
+		this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getName()));
 		this.currentValueCol.setCellValueFactory(
-				o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().getCurrentValue())));
+				o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().get().getCurrentValue())));
 		this.currentAlarmStateCol
-				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getCurrentAlarmState()));
-		this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getGenerationTime()));
-		this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getReceptionTime()));
+				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getCurrentAlarmState()));
+		this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getGenerationTime()));
+		this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getReceptionTime()));
 		this.lastNomValueCol.setCellValueFactory(
-				o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().getLastNominalValue())));
+				o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().get().getLastNominalValue())));
 		this.lastNomValueTimeCol
-				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getLastNominalValueTime()));
-		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));
+				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getLastNominalValueTime()));
+		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getPath().getParent().asString()));
 
 		this.currentAlarmStateCol.setCellFactory(column -> {
-			return new TableCell<AlarmParameterData, AlarmState>() {
+			return new TableCell<ReferenceProperty<AlarmParameterData>, AlarmState>() {
 				@Override
 				protected void updateItem(AlarmState item, boolean empty) {
 					super.updateItem(item, empty);
@@ -117,6 +120,19 @@ public class AlarmParameterDataViewController
 				}
 			};
 		});
+
+		final ObservableList<ReferenceProperty<AlarmParameterData>> dataList = FXCollections.observableArrayList(
+				new Callback<ReferenceProperty<AlarmParameterData>, Observable[]>() {
+					@Override
+					public Observable[] call(ReferenceProperty<AlarmParameterData> param) {
+						return new Observable[]{
+								param.referenceProperty()
+						};
+					}
+				}
+		);
+
+		this.dataItemTableView.setItems(dataList);
 	}
 
 	@FXML
@@ -162,7 +178,6 @@ public class AlarmParameterDataViewController
 		}
 
 		event.setDropCompleted(success);
-
 		event.consume();
 	}
 
@@ -178,71 +193,34 @@ public class AlarmParameterDataViewController
             updateSelectTime();
         }
     }
-	
-	@Override
-    protected void addDataItems(List<AlarmParameterData> messages, boolean fromLive, boolean addOnTop) {
-		if(this.liveTgl.isSelected()) {
-	        Platform.runLater(() -> {
-	            if (!this.displayTitledPane.isDisabled() && (!fromLive || (fromLive && (this.liveTgl == null || this.liveTgl.isSelected())))) {
-	            	for(AlarmParameterData apd : messages) {
-	            		int idx = findIndexOf(apd);
-	            		if(idx > -1) {
-	            			if(apd.getCurrentAlarmState() != AlarmState.ALARM && apd.getCurrentAlarmState() != AlarmState.ERROR && apd.getCurrentAlarmState() != AlarmState.WARNING) {
-	                			// If in the table, and the current alarm state is not ERROR, ALARM or WARNING, remove it from the table
-	            				this.dataItemTableView.getItems().remove(idx);
-	            			} else {
-	            				// If an alarm parameter is already in the table, then update the value in place (replace the item)
-	            				this.dataItemTableView.getItems().set(idx, apd); // TODO: this is SLOW LIKE HELL!
-	            			}
-	            		} else {
-	            			if(apd.getCurrentAlarmState() == AlarmState.ALARM || apd.getCurrentAlarmState() == AlarmState.ERROR || apd.getCurrentAlarmState() == AlarmState.WARNING) {
-	            				// If not in the table, add it to top if addOnTop is true, add it to bottom if addOnTop is false
-	            				if(addOnTop) {
-	            					this.dataItemTableView.getItems().add(0, apd);
-	            				} else {
-	            					this.dataItemTableView.getItems().add(apd);
-	            				}
-	            			}
-	            		}
-		            	// If not in the table, and the current alarm state is not ERROR, ALARM or WARNING, ignore
-	            	}
-	                if (!fromLive) {
-	                    this.dataItemTableView.scrollTo(0);
-	                }
-	                this.dataItemTableView.refresh();
-	                updateSelectTime();
-	                // updateApplicationAlarmStatus();
-	            }
-	        });
-		} else {
-			super.addDataItems(messages, fromLive, addOnTop);
-		}
-    }
-	
-//  private void updateApplicationAlarmStatus() {
-//		AlarmState currentState = AlarmState.NOMINAL;
-//		for(AlarmParameterData apd : this.dataItemTableView.getItems()) {
-//			if(apd.getCurrentAlarmState() == AlarmState.WARNING && (currentState != AlarmState.ALARM && currentState != AlarmState.ERROR)) {
-//				currentState = apd.getCurrentAlarmState();
-//			}
-//			if(apd.getCurrentAlarmState() == AlarmState.ALARM || apd.getCurrentAlarmState() == AlarmState.ERROR) {
-//				currentState = apd.getCurrentAlarmState();
-//			}
-//		}
-//		MonitoringCentreUI.setStatusIndicator(currentState);
-//	}
 
-	private int findIndexOf(AlarmParameterData apd) {
-		// XXX: hash index recommended
-		for(int i = 0; i < this.dataItemTableView.getItems().size(); ++i) {
-			AlarmParameterData existingData = this.dataItemTableView.getItems().get(i);
-			// Compare by path
-			if(existingData.getPath().equals(apd.getPath())) {
-				return i;
-			}
-		}
-		return -1;
+	@Override
+	protected boolean doCheckForItemAddition(AlarmParameterData apd) {
+		return apd.getCurrentAlarmState() == AlarmState.ALARM || apd.getCurrentAlarmState() == AlarmState.ERROR || apd.getCurrentAlarmState() == AlarmState.WARNING;
 	}
+
+	@Override
+	protected boolean doCheckForItemRemoval(AlarmParameterData apd) {
+		return apd.getCurrentAlarmState() != AlarmState.ALARM && apd.getCurrentAlarmState() != AlarmState.ERROR && apd.getCurrentAlarmState() != AlarmState.WARNING;
+	}
+
+	@Override
+	protected int doGetItemId(AlarmParameterData apd) {
+		return apd.getExternalId();
+	}
+
+    //  private void updateApplicationAlarmStatus() {
+    //		AlarmState currentState = AlarmState.NOMINAL;
+    //		for(AlarmParameterData apd : this.dataItemTableView.getItems()) {
+    //			if(apd.getCurrentAlarmState() == AlarmState.WARNING && (currentState != AlarmState.ALARM && currentState != AlarmState.ERROR)) {
+    //				currentState = apd.getCurrentAlarmState();
+    //			}
+    //			if(apd.getCurrentAlarmState() == AlarmState.ALARM || apd.getCurrentAlarmState() == AlarmState.ERROR) {
+    //				currentState = apd.getCurrentAlarmState();
+    //			}
+    //		}
+    //		MonitoringCentreUI.setStatusIndicator(currentState);
+    //	}
 
 	@Override
 	public void dataItemsReceived(List<AlarmParameterData> messages) {

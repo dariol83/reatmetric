@@ -123,18 +123,18 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         if(rs.wasNull()) {
             relatedItemUniqueId = null;
         }
-        Blob extensionBlob = rs.getBlob(10);
-        Object extension = null;
-        if(extensionBlob != null && !rs.wasNull()) {
-            extension = toObject(extensionBlob);
-        }
         // retrieve Contents if present
         byte[] contents = null;
         if(usedFilter == null || usedFilter.isWithData()) {
-            Blob blob = rs.getBlob(11);
-            if(blob != null) {
+            Blob blob = rs.getBlob(10);
+            if(blob != null && !rs.wasNull()) {
                 contents = toByteArray(blob.getBinaryStream());
             }
+        }
+        Blob extensionBlob = rs.getBlob(11);
+        Object extension = null;
+        if(extensionBlob != null && !rs.wasNull()) {
+            extension = toObject(extensionBlob);
         }
         return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, relatedItemUniqueId != null ? new LongUniqueId(relatedItemUniqueId) : null, contents, toInstant(receptionTime), extension);
     }

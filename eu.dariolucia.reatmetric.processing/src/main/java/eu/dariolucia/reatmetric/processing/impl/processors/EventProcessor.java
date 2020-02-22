@@ -30,8 +30,6 @@ import java.util.logging.Logger;
 
 /**
  * This class is used to process a system entity of type EVENT.
- *
- * TODO: from MMI filter on INFO events, and add some more logs to understand what is happening, it seems that random events are emitted
  */
 public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessingDefinition, EventData, EventOccurrence> implements IEventBinding {
 

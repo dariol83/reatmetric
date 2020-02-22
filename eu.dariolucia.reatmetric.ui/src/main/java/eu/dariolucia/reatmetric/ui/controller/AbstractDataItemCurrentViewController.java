@@ -16,11 +16,10 @@ import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
+import eu.dariolucia.reatmetric.ui.utils.ReferenceProperty;
 import eu.dariolucia.reatmetric.ui.utils.TableViewUtil;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -32,10 +31,7 @@ import javafx.stage.Popup;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.function.Consumer;
 
 /**
@@ -43,9 +39,7 @@ import java.util.function.Consumer;
  *
  * @author dario
  */
-public abstract class AbstractDataItemLogViewController<T extends AbstractDataItem, V extends AbstractDataItemFilter<T>> extends AbstractDisplayController {
-
-    protected static final int MAX_ENTRIES = 100;
+public abstract class AbstractDataItemCurrentViewController<T extends AbstractDataItem, V extends AbstractDataItemFilter> extends AbstractDisplayController {
 
     // Pane control
     @FXML
@@ -81,12 +75,9 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
 
     // Table
     @FXML
-    protected TableView<T> dataItemTableView;
+    protected TableView<ReferenceProperty<T>> dataItemTableView;
 
-    // Filtered items
-    protected FilteredList<T> filteredItemList;
-
-    protected ObservableList<T> dataItemList;
+    protected final Map<Integer, ReferenceProperty<T>> id2item = new HashMap<>();
 
     // Popup selector for date/time
     protected final Popup dateTimePopup = new Popup();
@@ -102,7 +93,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     
     // Temporary object queue
     protected DataProcessingDelegator<T> delegator;
-
+       
     /**
      * Initializes the controller class.
      */
@@ -127,7 +118,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent dateTimePicker = loader.load();
-            this.dateTimePickerController = (DateTimePickerWidgetController) loader.getController();
+            this.dateTimePickerController = loader.getController();
             this.dateTimePopup.getContent().addAll(dateTimePicker);
             // Load the controller hide with select
             this.dateTimePickerController.setActionAfterSelection(() -> {
@@ -145,7 +136,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             URL filterWidgetUrl = doGetFilterWidget();
             FXMLLoader loader = new FXMLLoader(filterWidgetUrl);
             Parent filterSelector = loader.load();
-            this.dataItemFilterController = (IFilterController<V>) loader.getController();
+            this.dataItemFilterController = loader.getController();
             this.filterPopup.getContent().addAll(filterSelector);
             // Load the controller hide with select
             this.dataItemFilterController.setActionAfterSelection(() -> {
@@ -157,11 +148,6 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         }
 
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
-
-        // Enable filtering
-        dataItemList = dataItemTableView.getItems();
-        filteredItemList = new FilteredList<>(dataItemList, p -> true);
-        dataItemTableView.setItems(filteredItemList);
     }
 
     protected Consumer<List<T>> buildIncomingDataDelegatorAction() {
@@ -174,11 +160,9 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     protected void liveToggleSelected(ActionEvent e) {
         if (this.liveTgl.isSelected()) {
         	clearTable();
-        	moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter());
-            startSubscription();
+        	startSubscription();
         } else {
             stopSubscription();
-            // moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), getCurrentFilter());
             updateSelectTime();
         }
     }
@@ -199,7 +183,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     @FXML
     protected void goToStart(ActionEvent e) {
         if(!isProgressBusy()) {
-            moveToTime(Instant.ofEpochMilli(0), RetrievalDirection.TO_FUTURE, 1, this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.MIN, RetrievalDirection.TO_FUTURE, 1, this.dataItemFilterController.getSelectedFilter());
         }
     }
 
@@ -220,7 +204,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     @FXML
     protected void goToEnd(ActionEvent e) {
         if(!isProgressBusy()) {
-            moveToTime(Instant.ofEpochSecond(3600*24*365*1000L), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.MAX, RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
         }
     }
 
@@ -249,13 +233,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 List<T> messages = doRetrieve(om, n, direction, this.dataItemFilterController.getSelectedFilter());
-                if (direction == RetrievalDirection.TO_FUTURE) {
-                    // Reverse the list before adding it
-                    Collections.reverse(messages);
-                    addDataItems(messages, false, true);
-                } else {
-                    addDataItemsBack(messages, n, false);
-                }
+                addDataItems(messages, false, true);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -322,18 +300,36 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
 
     protected void addDataItems(List<T> messages, boolean fromLive, boolean addOnTop) {
         Platform.runLater(() -> {
-            if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
-                if (addOnTop) {
-                    this.dataItemList.addAll(0, messages);
-                    if (this.filteredItemList.size() > MAX_ENTRIES) {
-                        int toRemove = dataItemList.size() - MAX_ENTRIES;
-                        dataItemList.remove(dataItemList.size() - toRemove, dataItemList.size());
-                    }
-                } else {
-                    this.dataItemList.addAll(messages);
-                    if (this.filteredItemList.size() > MAX_ENTRIES) {
-                        int toRemove = dataItemList.size() - MAX_ENTRIES;
-                        dataItemList.remove(0, toRemove);
+            if (!this.displayTitledPane.isDisabled() && (!fromLive || (fromLive && (this.liveTgl == null || this.liveTgl.isSelected())))) {
+                for(T apd : messages) {
+                    System.out.println("Checking... " + apd);
+                    int externalId = doGetItemId(apd);
+                    ReferenceProperty<T> prop = id2item.get(externalId);
+                    if(prop != null) {
+                        // In table already
+                        if(doCheckForItemRemoval(apd)) {
+                            // If in the table, remove it from the table
+                            System.out.println("REMOVE: " + apd);
+                            this.id2item.remove(externalId);
+                            this.dataItemTableView.getItems().remove(prop);
+                        } else {
+                            // If it is already in the table, then update the value in place
+                            System.out.println("UPDATE: " + apd);
+                            prop.set(apd);
+                        }
+                    } else {
+                        // Not in table
+                        if(doCheckForItemAddition(apd)) {
+                            // If not in the table, add it to top if addOnTop is true, add it to bottom if addOnTop is false
+                            System.out.println("ADD: " + apd);
+                            prop = new ReferenceProperty<>(apd);
+                            this.id2item.put(doGetItemId(apd), prop);
+                            if(addOnTop) {
+                                this.dataItemTableView.getItems().add(0, prop);
+                            } else {
+                                this.dataItemTableView.getItems().add(prop);
+                            }
+                        }
                     }
                 }
                 if (!fromLive) {
@@ -345,27 +341,11 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         });
     }
 
-    protected void addDataItemsBack(List<T> messages, int n, boolean clearTable) {
-        Platform.runLater(() -> {
-            if (!this.displayTitledPane.isDisabled()) {
-                if (clearTable) {
-                    clearTable();
-                }
-                int toRemoveTop = dataItemList.size() > n ? n : dataItemList.size() - 1;
-                if (toRemoveTop > 0) {
-                    dataItemList.remove(0, toRemoveTop);
-                }
-                dataItemList.addAll(messages);
-                if (this.filteredItemList.size() > MAX_ENTRIES) {
-                    int toRemove = dataItemList.size() - MAX_ENTRIES;
-                    dataItemList.remove(0, toRemove);
-                }
-                this.dataItemTableView.scrollTo(0);
-                this.dataItemTableView.refresh();
-                updateSelectTime();
-            }
-        });
-    }
+    protected abstract boolean doCheckForItemAddition(T apd);
+
+    protected abstract boolean doCheckForItemRemoval(T apd);
+
+    protected abstract int doGetItemId(T apd);
 
     protected final void startSubscription() {
         ReatmetricUI.threadPool(getClass()).execute(() -> {
@@ -394,18 +374,18 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     		return;
     	}
         // Take the first item from the table and use the generation time as value of the text
-        if (filteredItemList.isEmpty()) {
+        if (this.dataItemTableView.getItems().isEmpty()) {
             this.selectTimeBtn.setText("---");
         } else {
-            T om = filteredItemList.get(0);
-            Instant time = doGetGenerationTime(om);
+            ReferenceProperty<T> om = this.dataItemTableView.getItems().get(0);
+            Instant time = doGetGenerationTime(om.get());
             this.selectTimeBtn.setText(formatTime(time));
             this.dateTimePickerController.setSelectedTime(time);
         }
     }
 
     protected void clearTable() {
-        dataItemList.clear();
+        this.dataItemTableView.getItems().clear();
         this.dataItemTableView.layout();
         this.dataItemTableView.refresh();
         updateSelectTime();
@@ -425,7 +405,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 List<T> messages = doRetrieve(selectedTime, n, direction, currentFilter);
-                addDataItemsBack(messages, n, true);
+                addDataItems(messages, false, true);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -448,11 +428,11 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
     
     private T getFirst() {
-        return this.dataItemTableView.getItems().get(0);
+        return this.dataItemTableView.getItems().get(0).get();
     }
 
     private T getLast() {
-        return this.dataItemTableView.getItems().get(this.dataItemTableView.getItems().size() - 1);
+        return this.dataItemTableView.getItems().get(this.dataItemTableView.getItems().size() - 1).get();
     }
 
     private int getNumVisibleRow() {
@@ -462,13 +442,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     protected void applyFilter(V selectedFilter) {
-        this.dataItemFilterController.setSelectedFilter(selectedFilter);
-        // Apply the filter on the current table
-        if(selectedFilter != null && !selectedFilter.isClear()) {
-            this.filteredItemList.setPredicate(selectedFilter);
-        } else {
-            this.filteredItemList.setPredicate(p -> true);
-        }
+    	this.dataItemFilterController.setSelectedFilter(selectedFilter);
         if(this.liveTgl == null || this.liveTgl.isSelected()) {
             if(selectedFilter == null || selectedFilter.isClear()) {
                 ReatmetricUI.threadPool(getClass()).execute(() -> {
