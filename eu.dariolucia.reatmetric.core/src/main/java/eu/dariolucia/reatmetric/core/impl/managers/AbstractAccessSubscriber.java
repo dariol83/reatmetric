@@ -42,7 +42,7 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
         boolean initialiseFromModel = true;
         boolean firstInitialisation = false;
         Map<Pair<Integer, Long>, IUniqueId> lastDelivered = new HashMap<>();
-        List<T> toDistribute = new LinkedList<>();
+
         while(running) {
             K theFilter = filter;
             // And here we start first by getting the current values subject to filter, by retrieving them from the model and
@@ -66,6 +66,7 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
             // the first initialisation.
 
             // Wait to have elements in the queue
+            List<T> toDistribute = new LinkedList<>();
             synchronized (queue) {
                 while(queue.isEmpty() && running && theFilter == filter) {
                     try {
