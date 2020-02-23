@@ -20,6 +20,7 @@ import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
+import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
@@ -41,6 +42,7 @@ import java.net.URL;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * FXML Controller class
@@ -226,7 +228,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected void goToStart(ActionEvent e) {
         if(!isProgressBusy()) {
-            moveToTime(Instant.MIN);
+            moveToTime(Instant.ofEpochSecond(0));
         }
     }
 
@@ -243,18 +245,26 @@ public class ParameterDataViewController extends AbstractDisplayController imple
 
     protected void fetchNextStateChange() {
         markProgressBusy();
-        // Retrieve the parameter with the latest reception time
-        ParameterData om = retrieveLatest();
-        if(om == null) {
+        // Retrieve the parameters sorted with the oldest generation time: this is a list sorted from oldest to latest
+        List<ParameterData> oms = getParameterSamplesSortedByGenerationTimeAscending();
+        if(oms.isEmpty()) {
             markProgressReady();
             return;
         }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
-            try {
-                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()),null,null,null));
-                updateDataItems(messages);
-            } catch (Exception e) {
-                e.printStackTrace();
+            // Keep looking for all parameters: as soon as one is returning a result, stop
+            for (ParameterData om : oms) {
+                try {
+                    System.out.println("Retrieving previous of " + om);
+                    List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(null, Collections.singletonList(om.getPath()), null, null, null));
+                    System.out.println("Returned " + messages);
+                    if (!messages.isEmpty()) {
+                        updateDataItems(messages);
+                        break;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             markProgressReady();
         });
@@ -263,7 +273,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected void goToEnd(ActionEvent e) {
         if(!isProgressBusy()) {
-            moveToTime(Instant.MAX);
+            moveToTime(Instant.ofEpochSecond(3600*24*365*1000L));
         }
     }
 
@@ -277,7 +287,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     protected void fetchPreviousStateChange() {
         markProgressBusy();
         // Retrieve the parameter with the latest generation time
-        ParameterData om = retrieveLatest();
+        ParameterData om = findOutLatestParameterSample();
         if(om == null) {
             markProgressReady();
             return;
@@ -403,7 +413,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         if (this.dataItemTableView.getItems().isEmpty()) {
             this.selectTimeBtn.setText("---");
         } else {
-            ParameterData pd = retrieveLatest();
+            ParameterData pd = findOutLatestParameterSample();
             if(pd == null || pd.getGenerationTime() == null) {
                 this.selectTimeBtn.setText("---");
             } else {
@@ -485,14 +495,54 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         return "ParameterDataView";
     }
 
-    private ParameterData retrieveLatest() {
+    private List<ParameterData> getParameterSamplesSortedByGenerationTimeAscending() {
+        List<ParameterData> data = this.path2wrapper.values().stream().map(ParameterDataWrapper::get).collect(Collectors.toCollection(ArrayList::new));
+        data.sort((a,b) -> {
+            int timeComparison = a.getGenerationTime().compareTo(b.getGenerationTime());
+            if(timeComparison == 0) {
+                if(a.getInternalId() != null && b.getInternalId() != null) {
+                    return (int) (a.getInternalId().asLong() - b.getInternalId().asLong());
+                } else if(a.getInternalId() != null) {
+                    return 1;
+                } else if(b.getInternalId() != null) {
+                    return -1;
+                } else {
+                    return 0;
+                }
+            } else {
+                return timeComparison;
+            }
+        });
+        return data;
+    }
+
+    /*
+    private ParameterData findOutOldestParameterSample() {
+        ParameterData oldest = null;
+        for(ParameterDataWrapper pdw : this.path2wrapper.values()) {
+            if(oldest == null) {
+                oldest = pdw.get();
+            } else if(pdw.get() != null) {
+                if(oldest.getGenerationTime() != null && pdw.get().getGenerationTime() != null) {
+                    if(oldest.getGenerationTime().isAfter(pdw.get().getGenerationTime()) ||
+                            (oldest.getInternalId() != null && pdw.get().getInternalId() != null && oldest.getGenerationTime().equals(pdw.get().getGenerationTime()) && oldest.getInternalId().asLong() > pdw.get().getInternalId().asLong())) {
+                        oldest = pdw.get();
+                    }
+                }
+            }
+        }
+        return oldest;
+    }
+    */
+    private ParameterData findOutLatestParameterSample() {
         ParameterData latest = null;
         for(ParameterDataWrapper pdw : this.path2wrapper.values()) {
             if(latest == null) {
                 latest = pdw.get();
             } else if(pdw.get() != null) {
                 if(latest.getGenerationTime() != null && pdw.get().getGenerationTime() != null) {
-                    if(latest.getGenerationTime().isBefore(pdw.get().getGenerationTime())) {
+                    if(latest.getGenerationTime().isBefore(pdw.get().getGenerationTime()) ||
+                            (latest.getInternalId() != null && pdw.get().getInternalId() != null && latest.getGenerationTime().equals(pdw.get().getGenerationTime()) && latest.getInternalId().asLong() < pdw.get().getInternalId().asLong())) {
                         latest = pdw.get();
                     }
                 }
@@ -509,7 +559,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
                    pdw.set(pd);
                }
            }
-           this.dataItemTableView.refresh();
+           this.dataItemTableView.refresh(); // TODO: improve by using Callback registered on ParameterDataWrapper property
            updateSelectTime();
         });
     }

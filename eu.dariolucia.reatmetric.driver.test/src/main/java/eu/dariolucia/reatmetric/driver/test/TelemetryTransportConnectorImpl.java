@@ -33,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -51,6 +52,7 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
     private volatile boolean initialised;
     private volatile String message;
     private volatile Thread generator;
+    private final Map<Integer, AtomicLong> intParamValueMap = new HashMap<>();
 
     public TelemetryTransportConnectorImpl(String name, String[] routes, ProcessingDefinition definitions, IProcessingModel model, IRawDataBroker broker) {
         this.name = name;
@@ -174,10 +176,10 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
     private Object deriveValue(ParameterProcessingDefinition paramDef) {
         switch(paramDef.getRawType()) {
             case REAL: return Math.sin(paramDef.hashCode() / (double) (Instant.now().toEpochMilli() % 10000));
-            case SIGNED_INTEGER: return (long) (paramDef.hashCode() * (Instant.now().toEpochMilli() % 10000));
-            case UNSIGNED_INTEGER: return (long) Math.abs(paramDef.hashCode() * (Instant.now().toEpochMilli() % 10000));
+            case SIGNED_INTEGER: return generateSignedIntParameter(paramDef.getId());
+            case UNSIGNED_INTEGER: return (long) Math.abs(generateSignedIntParameter(paramDef.getId()));
             case BOOLEAN: return Instant.now().toEpochMilli() % 2 == 0;
-            case ENUMERATED: return Instant.now().toEpochMilli() % 8;
+            case ENUMERATED: return generateEnumParameter(paramDef.getId());
             case ABSOLUTE_TIME: return Instant.now().plusMillis(paramDef.hashCode());
             case RELATIVE_TIME: return Duration.ofMillis((Instant.now().toEpochMilli() % 10000));
             case CHARACTER_STRING: return "TEST" + (Instant.now().toEpochMilli() % 10);
@@ -185,6 +187,22 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
             case BIT_STRING: return new BitString(new byte[] {0x00, (byte) 0xFF, (byte) 0xA3}, 23);
             default: return null;
         }
+    }
+
+    private int generateEnumParameter(int id) {
+        AtomicLong val = intParamValueMap.computeIfAbsent(id, (a) -> new AtomicLong(0));
+        if(val.get() > 10) {
+            val.set(0);
+        }
+        return (int) val.getAndIncrement();
+    }
+
+    private long generateSignedIntParameter(int id) {
+        AtomicLong val = intParamValueMap.computeIfAbsent(id, (a) -> new AtomicLong(0));
+        if(val.get() > 100) {
+            val.set(-10);
+        }
+        return val.getAndIncrement();
     }
 
     @Override

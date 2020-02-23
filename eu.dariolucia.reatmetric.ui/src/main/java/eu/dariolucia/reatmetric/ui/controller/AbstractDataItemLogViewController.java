@@ -490,6 +490,11 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
                 });
             }
         } else {
+            if(selectedFilter == null || selectedFilter.isClear()) {
+                markFilterDeactivated();
+            } else {
+                markFilterActivated();
+            }
             moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, getNumVisibleRow(), selectedFilter);
         }
     }

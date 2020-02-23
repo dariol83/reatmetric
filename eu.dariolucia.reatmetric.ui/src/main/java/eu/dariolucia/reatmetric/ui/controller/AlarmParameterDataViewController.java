@@ -44,51 +44,49 @@ import java.util.ResourceBundle;
 /**
  * FXML Controller class
  *
- * TODO: use same approach as per parameter for retrieval (move back-next of one)
- *
  * @author dario
  */
 public class AlarmParameterDataViewController
-		extends AbstractDataItemCurrentViewController<AlarmParameterData, AlarmParameterDataFilter>
+		extends AbstractDataItemLogViewController<AlarmParameterData, AlarmParameterDataFilter>
 		implements IAlarmParameterDataSubscriber {
 
 	@FXML
-	private TableColumn<ReferenceProperty<AlarmParameterData>, String> nameCol;
+	private TableColumn<AlarmParameterData, String> nameCol;
 	@FXML
-	private TableColumn<ReferenceProperty<AlarmParameterData>, String> currentValueCol;
+	private TableColumn<AlarmParameterData, String> currentValueCol;
 	@FXML
-	private TableColumn<ReferenceProperty<AlarmParameterData>, AlarmState> currentAlarmStateCol;
+	private TableColumn<AlarmParameterData, AlarmState> currentAlarmStateCol;
 	@FXML
-	private TableColumn<ReferenceProperty<AlarmParameterData>, Instant> genTimeCol;
+	private TableColumn<AlarmParameterData, Instant> genTimeCol;
 	@FXML
-	private TableColumn<ReferenceProperty<AlarmParameterData>, Instant> recTimeCol;
+	private TableColumn<AlarmParameterData, Instant> recTimeCol;
 	@FXML
-	private TableColumn<ReferenceProperty<AlarmParameterData>, String> lastNomValueCol;
+	private TableColumn<AlarmParameterData, String> lastNomValueCol;
 	@FXML
-	private TableColumn<ReferenceProperty<AlarmParameterData>, Instant> lastNomValueTimeCol;
+	private TableColumn<AlarmParameterData, Instant> lastNomValueTimeCol;
 	@FXML
-	private TableColumn<ReferenceProperty<AlarmParameterData>, String> parentCol;
+	private TableColumn<AlarmParameterData, String> parentCol;
 
 	@Override
 	protected void doInitialize(URL url, ResourceBundle rb) {
 		super.doInitialize(url, rb);
-		this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getName()));
+		this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getName()));
 		this.currentValueCol.setCellValueFactory(
-				o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().get().getCurrentValue())));
+				o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().getCurrentValue())));
 		this.currentAlarmStateCol
-				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getCurrentAlarmState()));
-		this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getGenerationTime()));
-		this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getReceptionTime()));
+				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getCurrentAlarmState()));
+		this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getGenerationTime()));
+		this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getReceptionTime()));
 		this.lastNomValueCol.setCellValueFactory(
-				o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().get().getLastNominalValue())));
+				o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().getLastNominalValue())));
 		this.lastNomValueTimeCol
-				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getLastNominalValueTime()));
-		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getPath().getParent().asString()));
+				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getLastNominalValueTime()));
+		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));
 
 		this.genTimeCol.setCellFactory(new InstantCellFactory<>());
 		this.recTimeCol.setCellFactory(new InstantCellFactory<>());
 		this.currentAlarmStateCol.setCellFactory(column -> {
-			return new TableCell<ReferenceProperty<AlarmParameterData>, AlarmState>() {
+			return new TableCell<AlarmParameterData, AlarmState>() {
 				@Override
 				protected void updateItem(AlarmState item, boolean empty) {
 					super.updateItem(item, empty);
@@ -124,19 +122,6 @@ public class AlarmParameterDataViewController
 				}
 			};
 		});
-
-		final ObservableList<ReferenceProperty<AlarmParameterData>> dataList = FXCollections.observableArrayList(
-				new Callback<ReferenceProperty<AlarmParameterData>, Observable[]>() {
-					@Override
-					public Observable[] call(ReferenceProperty<AlarmParameterData> param) {
-						return new Observable[]{
-								param.referenceProperty()
-						};
-					}
-				}
-		);
-
-		this.dataItemTableView.setItems(dataList);
 	}
 
 	@FXML
@@ -197,21 +182,6 @@ public class AlarmParameterDataViewController
             updateSelectTime();
         }
     }
-
-	@Override
-	protected boolean doCheckForItemAddition(AlarmParameterData apd) {
-		return apd.getCurrentAlarmState() == AlarmState.ALARM || apd.getCurrentAlarmState() == AlarmState.ERROR || apd.getCurrentAlarmState() == AlarmState.WARNING;
-	}
-
-	@Override
-	protected boolean doCheckForItemRemoval(AlarmParameterData apd) {
-		return apd.getCurrentAlarmState() != AlarmState.ALARM && apd.getCurrentAlarmState() != AlarmState.ERROR && apd.getCurrentAlarmState() != AlarmState.WARNING;
-	}
-
-	@Override
-	protected int doGetItemId(AlarmParameterData apd) {
-		return apd.getExternalId();
-	}
 
     //  private void updateApplicationAlarmStatus() {
     //		AlarmState currentState = AlarmState.NOMINAL;

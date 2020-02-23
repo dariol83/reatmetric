@@ -96,7 +96,7 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
             if(filter.getParentPath() != null) {
                 query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
             }
-            if(filter.getParameterPathList() != null) {
+            if(filter.getParameterPathList() != null && !filter.getParameterPathList().isEmpty()) {
                 query.append("AND Path IN (").append(toFilterListString(filter.getParameterPathList(), SystemEntityPath::asString, "'")).append(") ");
             }
             if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
@@ -169,7 +169,7 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
             if (filter.getParentPath() != null) {
                 query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
             }
-            if (filter.getParameterPathList() != null) {
+            if (filter.getParameterPathList() != null && !filter.getParameterPathList().isEmpty()) {
                 query.append("AND Path IN (").append(toFilterListString(filter.getParameterPathList(), SystemEntityPath::asString, "'")).append(") ");
             }
             if (filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
