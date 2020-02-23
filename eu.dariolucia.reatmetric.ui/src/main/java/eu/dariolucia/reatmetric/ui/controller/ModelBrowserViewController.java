@@ -12,11 +12,20 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.*;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -28,10 +37,12 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 import org.controlsfx.control.textfield.CustomTextField;
 
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 
 /**
  * FXML Controller class
@@ -60,7 +71,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private TreeTableColumn<SystemEntity, Status> statusCol;
 
     private final Lock mapLock = new ReentrantLock();
-    private final Map<SystemEntityPath, TreeItem<SystemEntity>> path2item = new TreeMap<>();
+    private final Map<SystemEntityPath, FilterableTreeItem<SystemEntity>> path2item = new TreeMap<>();
     private SystemEntity root = null;
     
     // Temporary message queue
@@ -96,7 +107,42 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         
         e.consume();
     }
-    
+
+    @FXML
+    private void enableItemAction(ActionEvent event) {
+        TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
+        if(se != null && se.getValue().getStatus() != Status.ENABLED) {
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                // TODO: missing enable operations in the interface, to be added!
+            });
+        }
+    }
+
+    @FXML
+    private void disableItemAction(ActionEvent event) {
+        TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
+        if(se != null && se.getValue().getStatus() != Status.ENABLED) {
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                // TODO: missing disable operations in the interface, to be added!
+            });
+        }
+    }
+
+    @FXML
+    private void expandItemAction(ActionEvent event) {
+        TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
+        if(se != null) {
+            expandItem(se);
+        }
+    }
+
+    private void expandItem(TreeItem<SystemEntity> item) {
+        item.expandedProperty().set(true);
+        for(TreeItem<SystemEntity> child : item.getChildren()) {
+            expandItem(child);
+        }
+    }
+
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
         ImageView clearButton = new ImageView(new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/clear_input.png")));
@@ -181,6 +227,18 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 this.mapLock.unlock();
             }
         });
+
+        filterText.textProperty().addListener((obs, oldValue, newValue) -> {
+            updatePredicate(newValue);
+        });
+    }
+
+    private void updatePredicate(String newValue) {
+        if(newValue.isBlank()) {
+            ((FilterableTreeItem<SystemEntity>) modelTree.getRoot()).predicateProperty().setValue(p -> true);
+        } else {
+            ((FilterableTreeItem<SystemEntity>) modelTree.getRoot()).predicateProperty().setValue(p -> p.getPath().asString().contains(newValue));
+        }
     }
 
     @Override
@@ -241,8 +299,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().unsubscribe(this);
             // Subscribe to updates
             ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().subscribe(this);
-            // Callbacks might come now, but they cannot update the model (TODO: make it better)
-            
+
             // Get the root node
             this.root = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getRoot();
             Queue<SystemEntity> constructionQueue = new LinkedList<>();
@@ -272,10 +329,10 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
 
     private TreeItem<SystemEntity> addOrUpdateItemToTree(SystemEntity toAdd) {
         // If there is already an item in the map, update the item
-        TreeItem<SystemEntity> item = this.path2item.get(toAdd.getPath());
+        FilterableTreeItem<SystemEntity> item = this.path2item.get(toAdd.getPath());
         if(item == null) {
             // Create the item
-            item = new TreeItem<>(toAdd); //, new ImageView(getImageFromType(toAdd.getType())));
+            item = new FilterableTreeItem<>(toAdd); //, new ImageView(getImageFromType(toAdd.getType())));
             // Add it to the map
             this.path2item.put(toAdd.getPath(), item);
             // Add it to the parent tree item
@@ -290,28 +347,17 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         return item;
     }
 
-    private Image getImageFromType(SystemEntityType t) {
-        switch(t) {
-            case CONTAINER: return containerImage;
-            case ACTIVITY: return activityImage;
-            case EVENT: return eventImage;
-            case PARAMETER: return parameterImage;
-            case REPORT: return reportImage;
-            default: return null;
-        }
-    }
-    
     private void addToParent(TreeItem<SystemEntity> item) {
         SystemEntityPath parentPath = item.getValue().getPath().getParent();
         if(parentPath == null) {
             // This is the root, do not do anything
             return;
         }
-        TreeItem<SystemEntity> parent = this.path2item.get(parentPath);
+        FilterableTreeItem<SystemEntity> parent = this.path2item.get(parentPath);
         if(parent == null) {
             // TODO: log problem
         } else {
-            parent.getChildren().add(item);
+            parent.getSourceChildren().add(item);
         }
     }
 
@@ -327,4 +373,50 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             }
         });
     }
+
+    /*
+     * Stack Overflow snippet from: https://stackoverflow.com/questions/15897936/javafx-2-treeview-filtering/34426897#34426897
+     *
+     * Thanks to kaznovac (https://stackoverflow.com/users/382655/kaznovac)
+     */
+    public class FilterableTreeItem<T> extends TreeItem<T> {
+        private final ObservableList<TreeItem<T>> sourceChildren = FXCollections.observableArrayList();
+        private final FilteredList<TreeItem<T>> filteredChildren = new FilteredList<>(sourceChildren);
+        private final ObjectProperty<Predicate<T>> predicate = new SimpleObjectProperty<>();
+
+        public FilterableTreeItem(T value) {
+            super(value);
+
+            filteredChildren.predicateProperty().bind(Bindings.createObjectBinding(() -> {
+                Predicate<TreeItem<T>> p = child -> {
+                    if (child instanceof FilterableTreeItem) {
+                        ((FilterableTreeItem<T>) child).predicateProperty().set(predicate.get());
+                    }
+                    if (predicate.get() == null || !child.getChildren().isEmpty()) {
+                        return true;
+                    }
+                    return predicate.get().test(child.getValue());
+                };
+                return p;
+            } , predicate));
+
+            filteredChildren.addListener((ListChangeListener<TreeItem<T>>) c -> {
+                while (c.next()) {
+                    getChildren().removeAll(c.getRemoved());
+                    getChildren().addAll(c.getAddedSubList());
+                }
+            });
+        }
+
+        public ObservableList<TreeItem<T>> getSourceChildren() {
+            return sourceChildren;
+        }
+
+        public ObjectProperty<Predicate<T>> predicateProperty() {
+            return predicate;
+        }
+    }
+    /*
+     * End of Stack Overflow snippet
+     */
 }
