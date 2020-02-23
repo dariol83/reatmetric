@@ -52,7 +52,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         if(extension == null) {
             storeStatement.setNull(11, Types.BLOB);
         } else {
-            storeStatement.setBlob(11, toInputstream(item.getExtension()));
+            storeStatement.setBlob(11, toInputstream(extension));
         }
     }
 
@@ -71,10 +71,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     @Override
     protected String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, RawDataFilter filter) {
-        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,RelatedItem,AdditionalData");
-        if(filter == null || filter.isWithData()) {
-            query.append(",Contents");
-        }
+        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,RelatedItem,Contents,AdditionalData");
         query.append(" FROM RAW_DATA_TABLE WHERE ");
         // add time info
         if(direction == RetrievalDirection.TO_FUTURE) {
