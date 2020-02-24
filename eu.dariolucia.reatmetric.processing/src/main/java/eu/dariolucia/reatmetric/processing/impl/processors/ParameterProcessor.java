@@ -226,7 +226,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 if ((ptd.getTriggerCondition() == TriggerCondition.ON_NEW_SAMPLE && sample != null && stateChanged) ||
                         (ptd.getTriggerCondition() == TriggerCondition.ON_ALARM_RAISED && !wasInAlarm && inAlarm()) ||
                         (ptd.getTriggerCondition() == TriggerCondition.ON_BACK_TO_NOMINAL && wasInAlarm && !inAlarm()) ||
-                        (ptd.getTriggerCondition() == TriggerCondition.ON_VALUE_CHANGE && !Objects.equals(previousValue, this.state.getEngValue()))) {
+                        (ptd.getTriggerCondition() == TriggerCondition.ON_VALUE_CHANGE && !Objects.equals(previousValue, this.state == null ? null : this.state.getEngValue()))) {
                     // Raise event
                     raiseEvent(ptd.getEvent().getId());
                 }

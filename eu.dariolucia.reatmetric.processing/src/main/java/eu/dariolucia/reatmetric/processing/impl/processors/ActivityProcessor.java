@@ -13,6 +13,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.model.Status;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
@@ -48,99 +49,107 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     public List<AbstractDataItem> invoke(ActivityRequest request) throws ProcessingModelException {
-        // Start with the checks of the activity request: argument presence and type, route presence
-        // Check if the route exists
-        processor.checkHandlerAvailability(request.getRoute(), definition.getType());
-        // Build the map of activity arguments with the corresponding raw values
-        Map<String, Object> name2value = new TreeMap<>();
-        for(ActivityArgument arg : request.getArguments()) {
-            ArgumentDefinition argDef = name2argumentDefinition.get(arg.getName());
-            // Argument is defined?
-            if(argDef == null) {
-                throw new ProcessingModelException("Argument " + arg.getName() + " not present in the activity definition");
-            }
-            // Type is correct?
-            if(arg.getEngValue() != null && !ValueUtil.typeMatch(argDef.getEngineeringType(), arg.getEngValue())) {
-                throw new ProcessingModelException("Argument " + arg.getName() + " set with engineering value not matching the argument engineering value definition type " + argDef.getEngineeringType() + ", expected " + argDef.getEngineeringType().getAssignedClass().getSimpleName());
-            }
-            if(arg.getRawValue() != null && !ValueUtil.typeMatch(argDef.getRawType(), arg.getRawValue())) {
-                throw new ProcessingModelException("Argument " + arg.getName() + " set with raw value not matching the argument raw value definition type " + argDef.getRawType() + ", expected " + argDef.getRawType().getAssignedClass().getSimpleName());
-            }
-            // Argument is fixed? Then check if there is corresponding value.
-            if(argDef.isFixed()) {
-                checkSameValue(argDef, arg);
-            }
-            // If it is engineering value and there is a decalibration function, decalibrate
-            Object finalValue = arg.getRawValue() != null ? arg.getRawValue() : arg.getEngValue();
-            if(arg.getRawValue() == null) {
-                try {
-                    finalValue = CalibrationDefinition.performCalibration(argDef.getDecalibration(), finalValue, argDef.getRawType(), processor);
-                } catch (CalibrationException e) {
-                    throw new ProcessingModelException("Cannot decalibrate argument " + arg.getName() + ": " + e.getMessage(), e);
+        if(entityStatus == Status.ENABLED) {
+            // Start with the checks of the activity request: argument presence and type, route presence
+            // Check if the route exists
+            processor.checkHandlerAvailability(request.getRoute(), definition.getType());
+            // Build the map of activity arguments with the corresponding raw values
+            Map<String, Object> name2value = new TreeMap<>();
+            for (ActivityArgument arg : request.getArguments()) {
+                ArgumentDefinition argDef = name2argumentDefinition.get(arg.getName());
+                // Argument is defined?
+                if (argDef == null) {
+                    throw new ProcessingModelException("Argument " + arg.getName() + " not present in the activity definition");
                 }
-            }
-            // Check and add the value to the final value map: if null do not add it but do not raise an exception
-            verifyAndAdd(name2value, argDef, finalValue, false);
-        }
-        // Verify that all arguments are specified and, if some are not, use the default values if specified. If not, throw exception
-        for(ArgumentDefinition ad : definition.getArguments()) {
-            // If the argument was not provided, use the default value
-            if(!name2value.containsKey(ad.getName())) {
-                Object finalValue;
-                DefaultValueType valueType = ad.getDefaultValue().getType();
-                // Argument not specified in the request: add default
-                if(ad.getDefaultValue() == null) {
-                    throw new ProcessingModelException("Argument " + ad.getName() + " not specified in the request, and default value not present");
+                // Type is correct?
+                if (arg.getEngValue() != null && !ValueUtil.typeMatch(argDef.getEngineeringType(), arg.getEngValue())) {
+                    throw new ProcessingModelException("Argument " + arg.getName() + " set with engineering value not matching the argument engineering value definition type " + argDef.getEngineeringType() + ", expected " + argDef.getEngineeringType().getAssignedClass().getSimpleName());
                 }
-                // If default value is fixed, then use it
-                if(ad.getDefaultValue() instanceof FixedDefaultValue) {
-                    String formattedValue = ((FixedDefaultValue) ad.getDefaultValue()).getValue();
-                    if(valueType == DefaultValueType.RAW) {
-                        finalValue = ValueUtil.parse(ad.getRawType(), formattedValue);
-                    } else if(valueType ==  DefaultValueType.ENGINEERING) {
-                        finalValue = ValueUtil.parse(ad.getEngineeringType(), formattedValue);
+                if (arg.getRawValue() != null && !ValueUtil.typeMatch(argDef.getRawType(), arg.getRawValue())) {
+                    throw new ProcessingModelException("Argument " + arg.getName() + " set with raw value not matching the argument raw value definition type " + argDef.getRawType() + ", expected " + argDef.getRawType().getAssignedClass().getSimpleName());
+                }
+                // Argument is fixed? Then check if there is corresponding value.
+                if (argDef.isFixed()) {
+                    checkSameValue(argDef, arg);
+                }
+                // If it is engineering value and there is a decalibration function, decalibrate
+                Object finalValue = arg.getRawValue() != null ? arg.getRawValue() : arg.getEngValue();
+                if (arg.getRawValue() == null) {
+                    try {
+                        finalValue = CalibrationDefinition.performCalibration(argDef.getDecalibration(), finalValue, argDef.getRawType(), processor);
+                    } catch (CalibrationException e) {
+                        throw new ProcessingModelException("Cannot decalibrate argument " + arg.getName() + ": " + e.getMessage(), e);
+                    }
+                }
+                // Check and add the value to the final value map: if null do not add it but do not raise an exception
+                verifyAndAdd(name2value, argDef, finalValue, false);
+            }
+            // Verify that all arguments are specified and, if some are not, use the default values if specified. If not, throw exception
+            for (ArgumentDefinition ad : definition.getArguments()) {
+                // If the argument was not provided, use the default value
+                if (!name2value.containsKey(ad.getName())) {
+                    Object finalValue;
+                    DefaultValueType valueType = ad.getDefaultValue().getType();
+                    // Argument not specified in the request: add default
+                    if (ad.getDefaultValue() == null) {
+                        throw new ProcessingModelException("Argument " + ad.getName() + " not specified in the request, and default value not present");
+                    }
+                    // If default value is fixed, then use it
+                    if (ad.getDefaultValue() instanceof FixedDefaultValue) {
+                        String formattedValue = ((FixedDefaultValue) ad.getDefaultValue()).getValue();
+                        if (valueType == DefaultValueType.RAW) {
+                            finalValue = ValueUtil.parse(ad.getRawType(), formattedValue);
+                        } else if (valueType == DefaultValueType.ENGINEERING) {
+                            finalValue = ValueUtil.parse(ad.getEngineeringType(), formattedValue);
+                            try {
+                                finalValue = CalibrationDefinition.performCalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
+                            } catch (CalibrationException e) {
+                                throw new ProcessingModelException("Cannot decalibrate default (fixed) value of argument " + ad.getName() + ": " + e.getMessage(), e);
+                            }
+                        } else {
+                            throw new ProcessingModelException("Default value of argument " + ad.getName() + " has undefined value type: " + valueType);
+                        }
+                        // If default value comes from another parameter, then retrieve and use it
+                    } else if (ad.getDefaultValue() instanceof ReferenceDefaultValue) {
                         try {
-                            finalValue = CalibrationDefinition.performCalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
-                        } catch (CalibrationException e) {
-                            throw new ProcessingModelException("Cannot decalibrate default (fixed) value of argument " + ad.getName() + ": " + e.getMessage(), e);
+                            finalValue = ((ReferenceDefaultValue) ad.getDefaultValue()).readTargetValue(ad.getName(), processor);
+                        } catch (ValueReferenceException e) {
+                            throw new ProcessingModelException(e);
+                        }
+                        if (valueType == DefaultValueType.ENGINEERING) {
+                            try {
+                                finalValue = CalibrationDefinition.performCalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
+                            } catch (CalibrationException e) {
+                                throw new ProcessingModelException("Cannot decalibrate default (reference) value of argument " + ad.getName() + ": " + e.getMessage(), e);
+                            }
                         }
                     } else {
-                        throw new ProcessingModelException("Default value of argument " + ad.getName() + " has undefined value type: " + valueType);
+                        throw new ProcessingModelException("Default value of argument " + ad.getName() + " has unsupported type: " + ad.getDefaultValue().getClass().getName());
                     }
-                    // If default value comes from another parameter, then retrieve and use it
-                } else if(ad.getDefaultValue() instanceof ReferenceDefaultValue) {
-                    try {
-                        finalValue = ((ReferenceDefaultValue) ad.getDefaultValue()).readTargetValue(ad.getName(), processor);
-                    } catch (ValueReferenceException e) {
-                        throw new ProcessingModelException(e);
-                    }
-                    if(valueType ==  DefaultValueType.ENGINEERING) {
-                        try {
-                            finalValue = CalibrationDefinition.performCalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
-                        } catch (CalibrationException e) {
-                            throw new ProcessingModelException("Cannot decalibrate default (reference) value of argument " + ad.getName() + ": " + e.getMessage(), e);
-                        }
-                    }
-                } else {
-                    throw new ProcessingModelException("Default value of argument " + ad.getName() + " has unsupported type: " + ad.getDefaultValue().getClass().getName());
+                    // Check and add the value to the final value map: if null do not add it and raise an exception
+                    verifyAndAdd(name2value, ad, finalValue, true);
                 }
-                // Check and add the value to the final value map: if null do not add it and raise an exception
-                verifyAndAdd(name2value, ad, finalValue, true);
             }
+            // At this stage, the map name2value is complete and everything is setup according to definition
+            Map<String, String> properties = new TreeMap<>();
+            for (KeyValue kv : definition.getProperties()) {
+                properties.put(kv.getKey(), kv.getValue());
+            }
+            properties.putAll(request.getProperties());
+            ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), Instant.now(), name2value, properties, new LinkedList<>(), request.getRoute(), request.getSource());
+            id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
+            // inform the processor that the activity occurrence has been created, use equality to 1 to avoid calling the registration for every activity
+            if (id2occurrence.size() == 1) {
+                processor.registerActiveActivityProcessor(this);
+            }
+            return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.dispatch());
+        } else {
+            // Completely ignore the processing
+            if(LOG.isLoggable(Level.WARNING)) {
+                LOG.log(Level.WARNING, "Activity invocation request not processed for activity " + getPath() + ": activity processing is disabled");
+            }
+            return Collections.emptyList();
         }
-        // At this stage, the map name2value is complete and everything is setup according to definition
-        Map<String, String> properties = new TreeMap<>();
-        for(KeyValue kv : definition.getProperties()) {
-            properties.put(kv.getKey(), kv.getValue());
-        }
-        properties.putAll(request.getProperties());
-        ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), Instant.now(), name2value, properties, new LinkedList<>(), request.getRoute(), request.getSource());
-        id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
-        // inform the processor that the activity occurrence has been created, use equality to 1 to avoid calling the registration for every activity
-        if(id2occurrence.size() == 1) {
-            processor.registerActiveActivityProcessor(this);
-        }
-        return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.dispatch());
     }
 
     private void checkSameValue(ArgumentDefinition argumentDefinition, ActivityArgument suppliedArgument) throws ProcessingModelException {
@@ -214,31 +223,47 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     public List<AbstractDataItem> create(ActivityRequest request, ActivityProgress progress) {
-        // Build the map of activity arguments with the corresponding raw values
-        Map<String, Object> name2value = new TreeMap<>();
-        for(ActivityArgument arg : request.getArguments()) {
-            name2value.put(arg.getName(), arg.getRawValue()); // XXX: raw value only
+        if(entityStatus == Status.ENABLED) {
+            // Build the map of activity arguments with the corresponding raw values
+            Map<String, Object> name2value = new TreeMap<>();
+            for (ActivityArgument arg : request.getArguments()) {
+                name2value.put(arg.getName(), arg.getRawValue()); // XXX: raw value only
+            }
+            //
+            ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), progress.getGenerationTime(), name2value, request.getProperties(), new LinkedList<>(), request.getRoute(), request.getSource());
+            id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
+            // inform the processor that the activity occurrence has been created, check equality to 1 to avoid calling the registration for every occurrence
+            if (id2occurrence.size() == 1) {
+                processor.registerActiveActivityProcessor(this);
+            }
+            return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.create(progress));
+        } else {
+            // Completely ignore the processing
+            if(LOG.isLoggable(Level.WARNING)) {
+                LOG.log(Level.WARNING, "Activity creation request not computed for activity " + getPath() + ": activity processing is disabled");
+            }
+            return Collections.emptyList();
         }
-        //
-        ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), progress.getGenerationTime(), name2value, request.getProperties(), new LinkedList<>(), request.getRoute(), request.getSource());
-        id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
-        // inform the processor that the activity occurrence has been created, check equality to 1 to avoid calling the registration for every occurrence
-        if(id2occurrence.size() == 1) {
-            processor.registerActiveActivityProcessor(this);
-        }
-        return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.create(progress));
     }
 
     @Override
     public List<AbstractDataItem> process(ActivityProgress input) {
-        ActivityOccurrenceProcessor aop = id2occurrence.get(input.getOccurrenceId());
-        if(aop == null) {
+        if(entityStatus == Status.ENABLED) {
+            ActivityOccurrenceProcessor aop = id2occurrence.get(input.getOccurrenceId());
+            if (aop == null) {
+                if (LOG.isLoggable(Level.WARNING)) {
+                    LOG.warning("No activity occurrence with ID " + input.getOccurrenceId() + " found, progress report not processed");
+                }
+                return Collections.emptyList();
+            } else {
+                return removeActivityOccurrenceIfCompleted(input.getOccurrenceId(), aop.progress(input));
+            }
+        } else {
+            // Completely ignore the processing
             if(LOG.isLoggable(Level.WARNING)) {
-                LOG.warning("No activity occurrence with ID " + input.getOccurrenceId() + " found, progress report not processed");
+                LOG.log(Level.WARNING, "Activity progress report not computed for activity " + getPath() + ": activity processing is disabled");
             }
             return Collections.emptyList();
-        } else {
-            return removeActivityOccurrenceIfCompleted(input.getOccurrenceId(), aop.progress(input));
         }
     }
 
@@ -247,13 +272,25 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer("Evaluating all activity occurrences for activity " + getSystemEntityId());
         }
-        // Copy the keys
-        Set<IUniqueId> keys = new HashSet<>(id2occurrence.keySet());
         List<AbstractDataItem> result = new LinkedList<>();
-        for(IUniqueId k : keys) {
-            result.addAll(evaluate(k));
+        if(entityStatus == Status.ENABLED) {
+            // Copy the keys
+            Set<IUniqueId> keys = new HashSet<>(id2occurrence.keySet());
+            for(IUniqueId k : keys) {
+                result.addAll(evaluate(k));
+            }
+        } else {
+            // Completely ignore the processing
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Activity re-evaluation not computed for activity " + getPath() + ": activity processing is disabled");
+            }
         }
-        // TODO: enablement state to be supported
+        // enablement state to be supported
+        this.systemEntityBuilder.setStatus(entityStatus);
+        if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
+            this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+            result.add(this.entityState);
+        }
         return result;
     }
 
@@ -261,14 +298,22 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer("Evaluating activity occurrence " + occurrenceId + " of activity " + getSystemEntityId());
         }
-        ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
-        if(aop == null) {
-            if(LOG.isLoggable(Level.WARNING)) {
-                LOG.warning("No activity occurrence with ID " + occurrenceId + " found, evaluation not processed");
+        if(entityStatus == Status.ENABLED) {
+            ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
+            if (aop == null) {
+                if (LOG.isLoggable(Level.WARNING)) {
+                    LOG.warning("No activity occurrence with ID " + occurrenceId + " found, evaluation not processed");
+                }
+                return Collections.emptyList();
+            } else {
+                return removeActivityOccurrenceIfCompleted(occurrenceId, aop.evaluate());
+            }
+        } else {
+            // Completely ignore the processing
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Activity re-evaluation not computed for activity " + getPath() + ": activity processing is disabled");
             }
             return Collections.emptyList();
-        } else {
-            return removeActivityOccurrenceIfCompleted(occurrenceId, aop.evaluate());
         }
     }
 
@@ -276,14 +321,22 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer("Purging activity occurrence " + occurrenceId + " of activity " + getSystemEntityId());
         }
-        ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
-        if(aop == null) {
-            if(LOG.isLoggable(Level.WARNING)) {
-                LOG.warning("No activity occurrence with ID " + occurrenceId + " found, purge request not processed");
+        if(entityStatus == Status.ENABLED) {
+            ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
+            if (aop == null) {
+                if (LOG.isLoggable(Level.WARNING)) {
+                    LOG.warning("No activity occurrence with ID " + occurrenceId + " found, purge request not processed");
+                }
+                return Collections.emptyList();
+            } else {
+                return removeActivityOccurrenceIfCompleted(occurrenceId, aop.purge());
+            }
+        } else {
+            // Completely ignore the processing
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Activity purge request not processed for activity " + getPath() + ": activity processing is disabled");
             }
             return Collections.emptyList();
-        } else {
-            return removeActivityOccurrenceIfCompleted(occurrenceId, aop.purge());
         }
     }
 
