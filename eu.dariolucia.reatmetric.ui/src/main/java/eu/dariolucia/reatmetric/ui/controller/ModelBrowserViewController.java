@@ -113,7 +113,12 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
         if(se != null && se.getValue().getStatus() != Status.ENABLED) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
-                // TODO: missing enable operations in the interface, to be added!
+                try {
+                    ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().enable(se.getValue().getPath());
+                } catch (ReatmetricException e) {
+                    // TODO: log
+                    e.printStackTrace();
+                }
             });
         }
     }
@@ -121,9 +126,14 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     @FXML
     private void disableItemAction(ActionEvent event) {
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
-        if(se != null && se.getValue().getStatus() != Status.ENABLED) {
+        if(se != null && se.getValue().getStatus() != Status.DISABLED) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
-                // TODO: missing disable operations in the interface, to be added!
+                try {
+                    ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().disable(se.getValue().getPath());
+                } catch (ReatmetricException e) {
+                    // TODO: log
+                    e.printStackTrace();
+                }
             });
         }
     }

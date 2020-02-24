@@ -253,6 +253,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         for(IUniqueId k : keys) {
             result.addAll(evaluate(k));
         }
+        // TODO: enablement state to be supported
         return result;
     }
 

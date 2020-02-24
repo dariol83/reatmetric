@@ -28,7 +28,11 @@ public abstract class AbstractDataItem extends UniqueItem implements Serializabl
     
     public AbstractDataItem(IUniqueId internalId, Instant generationTime, Object extension) {
         super(internalId, null);
-        this.generationTime = generationTime;
+        if(generationTime != null) {
+            this.generationTime = generationTime;
+        } else {
+            this.generationTime = Instant.EPOCH;
+        }
         this.extension = extension;
     }
 

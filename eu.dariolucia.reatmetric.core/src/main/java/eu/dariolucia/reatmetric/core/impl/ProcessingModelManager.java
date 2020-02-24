@@ -48,11 +48,6 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
 
     private static final Logger LOG = Logger.getLogger(ProcessingModelManager.class.getName());
 
-    private final IParameterDataArchive parameterArchive;
-    private final IEventDataArchive eventArchive;
-    private final IActivityOccurrenceDataArchive activityArchive;
-    private final IAlarmParameterDataArchive alarmArchive;
-
     private final IProcessingModel processingModel;
 
     private final ParameterDataAccessManager parameterDataAccessManager;
@@ -64,6 +59,10 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
 
     public ProcessingModelManager(IArchive archive, String definitionsLocation) throws ReatmetricException {
         Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters = new HashMap<>();
+        IParameterDataArchive parameterArchive;
+        IEventDataArchive eventArchive;
+        IActivityOccurrenceDataArchive activityArchive;
+        IAlarmParameterDataArchive alarmArchive;
         if(archive != null) {
             parameterArchive = archive.getArchive(IParameterDataArchive.class);
             eventArchive = archive.getArchive(IEventDataArchive.class);
@@ -193,6 +192,16 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
     @Override
     public SystemEntityPath getPathOf(int externalId) throws ReatmetricException {
         return processingModel.getPathOf(externalId);
+    }
+
+    @Override
+    public void enable(SystemEntityPath path) throws ReatmetricException {
+        processingModel.enable(path);
+    }
+
+    @Override
+    public void disable(SystemEntityPath path) throws ReatmetricException {
+        processingModel.disable(path);
     }
 
     @Override

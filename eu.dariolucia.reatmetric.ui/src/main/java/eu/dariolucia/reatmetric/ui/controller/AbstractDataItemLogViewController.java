@@ -199,7 +199,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     @FXML
     protected void goToStart(ActionEvent e) {
         if(!isProgressBusy()) {
-            moveToTime(Instant.ofEpochMilli(0), RetrievalDirection.TO_FUTURE, 1, this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.EPOCH, RetrievalDirection.TO_FUTURE, 1, this.dataItemFilterController.getSelectedFilter());
         }
     }
 

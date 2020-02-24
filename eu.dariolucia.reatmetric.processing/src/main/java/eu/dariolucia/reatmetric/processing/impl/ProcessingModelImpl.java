@@ -331,11 +331,17 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void enable(SystemEntityPath path) throws ProcessingModelException {
+        if(LOG.isLoggable(Level.INFO)) {
+            LOG.info("Enabling system entity " + path);
+        }
         doEnable(path, true);
     }
 
     @Override
     public void disable(SystemEntityPath path) throws ProcessingModelException {
+        if(LOG.isLoggable(Level.INFO)) {
+            LOG.info("Disabling system entity " + path);
+        }
         doEnable(path, false);
     }
 

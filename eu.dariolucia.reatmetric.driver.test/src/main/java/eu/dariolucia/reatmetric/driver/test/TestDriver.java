@@ -19,6 +19,7 @@ import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
+import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.core.api.IDriver;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
@@ -94,6 +95,14 @@ public class TestDriver implements IDriver, IActivityHandler {
     @Override
     public void dispose() {
         running = false;
+        for(ITransportConnector ctr : connectors) {
+            try {
+                ctr.abort();
+            } catch (TransportException e) {
+                // Ignore, it is test driver
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override

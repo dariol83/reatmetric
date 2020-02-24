@@ -22,6 +22,7 @@ import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 
 import java.util.List;
 
+// TODO introduce a dispose operation, to avoid archive exceptions when the system is shutdown
 public interface IProcessingModel {
 
     void injectParameters(List<ParameterSample> sampleList);

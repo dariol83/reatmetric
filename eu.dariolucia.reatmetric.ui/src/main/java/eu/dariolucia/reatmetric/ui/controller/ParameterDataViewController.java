@@ -228,7 +228,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected void goToStart(ActionEvent e) {
         if(!isProgressBusy()) {
-            moveToTime(Instant.ofEpochSecond(0));
+            moveToTime(Instant.EPOCH);
         }
     }
 
@@ -623,7 +623,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
                     ParameterDataWrapper pdw = new ParameterDataWrapper(
                             new ParameterData(
                             		null,
-                                    Instant.ofEpochMilli(0),
+                                    Instant.EPOCH,
                                     systemEntity.getExternalId(),
                                     systemEntity.getName(),
                                     systemEntity.getPath(),
@@ -659,7 +659,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
                 ParameterDataWrapper pdw = new ParameterDataWrapper(
                         new ParameterData(
                         		null,
-                                Instant.ofEpochMilli(0),
+                                Instant.EPOCH,
                                 externalId, //
                                 sep.getLastPathElement(),
                                 sep, 

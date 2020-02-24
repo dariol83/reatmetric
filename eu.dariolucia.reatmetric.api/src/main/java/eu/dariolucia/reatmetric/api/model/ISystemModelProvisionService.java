@@ -35,4 +35,7 @@ public interface ISystemModelProvisionService {
 
     SystemEntityPath getPathOf(int externalId) throws ReatmetricException;
 
+    void enable(SystemEntityPath path) throws ReatmetricException;
+
+    void disable(SystemEntityPath path) throws ReatmetricException;
 }
