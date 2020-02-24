@@ -9,13 +9,6 @@
 
 package eu.dariolucia.reatmetric.ui.udd;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Observer;
-
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
@@ -28,12 +21,18 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Observer;
+
 public class XYBarChartManager extends AbstractChartManager {
 
-	private final BarChart chart;
-	private final Map<SystemEntityPath, XYChart.Series> parameter2series = new HashMap<>();
+	private final BarChart<String, Number> chart;
+	private final Map<SystemEntityPath, XYChart.Series<String, Number>> parameter2series = new HashMap<>();
 	
-    public XYBarChartManager(Observer informer, BarChart<String, ? extends Number> n) {
+    public XYBarChartManager(Observer informer, BarChart<String, Number> n) {
     	super(informer);
 		this.chart = n;
 		this.chart.setOnDragOver(this::onDragOver);
@@ -73,31 +72,31 @@ public class XYBarChartManager extends AbstractChartManager {
         	return;
         }
 		
-		XYChart.Series series = new XYChart.Series();
+		XYChart.Series<String, Number> series = new XYChart.Series<>();
         series.setName(content.getName());
         this.parameter2series.put(content.getPath(), series);
         this.chart.getData().add(series);
-        
+
         addPlottedParameter(content.getPath());
 	}
 
 	@Override
 	public void plot(List<ParameterData> datas) {
 		for(ParameterData pd : datas) {
-			XYChart.Series s = parameter2series.get(pd.getPath());
-			if(s != null) {
-				XYChart.Data data = new XYChart.Data(pd.getPath().toString(), pd.getEngValue());
+			XYChart.Series<String, Number> s = parameter2series.get(pd.getPath());
+			if(s != null && pd.getEngValue() != null) {
+				XYChart.Data<String, Number> data = new XYChart.Data<>(pd.getPath().toString(), (Number) pd.getEngValue());
 				s.getData().add(data);
 				// data.getNode().setVisible(false);
-				Tooltip.install(data.getNode(), new Tooltip(Objects.toString(pd.getEngValue()) + "\n" +
-						pd.getGenerationTime().toString()));
+				Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
+						(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
 			}
 		}
 	}
 
 	@Override
 	public void clear() {
-		this.parameter2series.values().stream().forEach(a -> a.getData().clear());
+		this.parameter2series.values().forEach(a -> a.getData().clear());
 	}
 
 	@Override

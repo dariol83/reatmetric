@@ -84,19 +84,19 @@ public class XYTimeChartManager extends AbstractChartManager {
 	public void plot(List<ParameterData> datas) {
 		for(ParameterData pd : datas) {
 			XYChart.Series s = parameter2series.get(pd.getPath());
-			if(s != null) {
-				XYChart.Data data = new XYChart.Data(pd.getGenerationTime(), pd.getEngValue());
+			if(s != null && pd.getEngValue() != null) {
+				XYChart.Data data = new XYChart.Data(live ? pd.getReceptionTime() : pd.getGenerationTime(), pd.getEngValue());
 				s.getData().add(data);
 				// data.getNode().setVisible(false);
 				Tooltip.install(data.getNode(), new Tooltip(Objects.toString(pd.getEngValue()) + "\n" +
-						pd.getGenerationTime().toString()));
+						(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
 			}
 		}
 	}
 
 	@Override
 	public void clear() {
-		this.parameter2series.values().stream().forEach(a -> a.getData().clear());
+		this.parameter2series.values().forEach(a -> a.getData().clear());
 	}
 
 	@Override

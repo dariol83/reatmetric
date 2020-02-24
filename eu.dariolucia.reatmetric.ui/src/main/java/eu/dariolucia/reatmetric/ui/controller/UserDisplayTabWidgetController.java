@@ -63,6 +63,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.transform.Scale;
 import javafx.stage.Popup;
 
+import static eu.dariolucia.reatmetric.ui.controller.AbstractDisplayController.formatTime;
+
 /**
  * FXML Controller class
  *
@@ -71,9 +73,7 @@ import javafx.stage.Popup;
 public class UserDisplayTabWidgetController implements Initializable {
 
 	// TODO: scatter chart for events
-	// TODO: bar charts for parameters
-	// TODO: ANDs for parameters (name, eng. value, gen. time, alarm state)
-	// TODO: scrollables for parameters (name, eng. value, gen. time, alarm state)
+	// TODO: scrollables for parameters (name, eng. value, gen. time, alarm state) --> not here, as LogView!
 
 	// Live/retrieval controls
 	@FXML
@@ -192,11 +192,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 							.retrieve(messages.get(messages.size() - 1), 100, RetrievalDirection.TO_FUTURE, pdf);
 					messages.addAll(newMessages);
 				}
-				for (Iterator<ParameterData> it = messages.iterator(); it.hasNext();) {
-					if (it.next().getGenerationTime().isAfter(maxTime)) {
-						it.remove();
-					}
-				}
+				messages.removeIf(parameterData -> parameterData.getGenerationTime().isAfter(maxTime));
 
 				setData(minTime, maxTime, messages, clear);
 			} catch (Exception e) {
@@ -213,15 +209,15 @@ public class UserDisplayTabWidgetController implements Initializable {
 			}
 			this.currentMin = minTime;
 			this.currentMax = maxTime;
-			this.charts.stream().forEach(a -> a.setBoundaries(minTime, maxTime));
-			this.charts.stream().forEach(a -> a.plot(messages));
+			this.charts.forEach(a -> a.setBoundaries(minTime, maxTime));
+			this.charts.forEach(a -> a.plot(messages));
 		});
 	}
 
-	public void updateDataItems(List<ParameterData> messages) {
+	public void updateDataItems(List<ParameterData> items) {
 		// TODO Partition the messages
 		if (this.live) {
-			this.charts.stream().forEach(a -> a.plot(messages));
+			this.charts.forEach(a -> a.plot(items));
 		}
 	}
 
@@ -237,7 +233,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 	}
 
 	private void clearCharts() {
-		this.charts.forEach(a -> a.clear());
+		this.charts.forEach(AbstractChartManager::clear);
 	}
 
 	private int getTimeWindowSize() {
@@ -264,12 +260,13 @@ public class UserDisplayTabWidgetController implements Initializable {
 				Instant minTime = null;
 				if (messages.size() > 0) {
 					minTime = messages.get(0).getGenerationTime().minusMillis(timeWindow);
-				}
-				if (messages.size() > 0 && messages.get(messages.size() - 1).getGenerationTime().isAfter(minTime)) {
-					List<ParameterData> newMessages = ReatmetricUI.selectedSystem().getSystem()
-							.getParameterDataMonitorService()
-							.retrieve(messages.get(messages.size() - 1), 100, RetrievalDirection.TO_PAST, pdf);
-					messages.addAll(newMessages);
+
+					if (messages.get(messages.size() - 1).getGenerationTime().isAfter(minTime)) {
+						List<ParameterData> newMessages = ReatmetricUI.selectedSystem().getSystem()
+								.getParameterDataMonitorService()
+								.retrieve(messages.get(messages.size() - 1), 100, RetrievalDirection.TO_PAST, pdf);
+						messages.addAll(newMessages);
+					}
 				}
 				for (Iterator<ParameterData> it = messages.iterator(); it.hasNext();) {
 					if (it.next().getGenerationTime().isBefore(minTime)) {
@@ -297,12 +294,13 @@ public class UserDisplayTabWidgetController implements Initializable {
 				Instant maxTime = null;
 				if (messages.size() > 0) {
 					maxTime = messages.get(0).getGenerationTime().plusMillis(timeWindow);
-				}
-				if (messages.size() > 0 && messages.get(messages.size() - 1).getGenerationTime().isBefore(maxTime)) {
-					List<ParameterData> newMessages = ReatmetricUI.selectedSystem().getSystem()
-							.getParameterDataMonitorService()
-							.retrieve(messages.get(messages.size() - 1), 100, RetrievalDirection.TO_FUTURE, pdf);
-					messages.addAll(newMessages);
+
+					if (messages.get(messages.size() - 1).getGenerationTime().isBefore(maxTime)) {
+						List<ParameterData> newMessages = ReatmetricUI.selectedSystem().getSystem()
+								.getParameterDataMonitorService()
+								.retrieve(messages.get(messages.size() - 1), 100, RetrievalDirection.TO_FUTURE, pdf);
+						messages.addAll(newMessages);
+					}
 				}
 				for (Iterator<ParameterData> it = messages.iterator(); it.hasNext();) {
 					if (it.next().getGenerationTime().isAfter(maxTime)) {
@@ -398,13 +396,6 @@ public class UserDisplayTabWidgetController implements Initializable {
 		this.innerBox.getParent().getParent().setDisable(false);
 	}
 
-	public void doUserConnectionFailed(String system, String user, String reason) {
-		if (this.liveTgl != null) {
-			this.liveTgl.setSelected(false);
-		}
-		this.innerBox.getParent().getParent().setDisable(true);
-	}
-
 	public void doServiceDisconnected(boolean oldState) {
 		stopSubscription();
 		clearCharts();
@@ -434,10 +425,11 @@ public class UserDisplayTabWidgetController implements Initializable {
 
 	protected final void startSubscription() {
 		this.live = true;
+		this.charts.forEach(a -> a.switchToLive(true));
 		if (this.currentMin == null) {
 			this.currentMax = Instant.now().plusMillis(getTimeUnit());
 			this.currentMin = this.currentMax.minusMillis(getTimeWindowSize());
-			this.charts.stream().forEach(a -> a.setBoundaries(this.currentMin, this.currentMax));
+			this.charts.forEach(a -> a.setBoundaries(this.currentMin, this.currentMax));
 		}
 		if (this.timer != null) {
 			this.timer.cancel();
@@ -449,7 +441,8 @@ public class UserDisplayTabWidgetController implements Initializable {
 				Platform.runLater(() -> {
 					currentMax = Instant.now().plusMillis(getTimeUnit());
 					currentMin = currentMax.minusMillis(getTimeWindowSize());
-					charts.stream().forEach(a -> a.setBoundaries(currentMin, currentMax));
+					charts.forEach(a -> a.setBoundaries(currentMin, currentMax));
+					selectTimeBtn.setText(formatTime(currentMax.minusMillis(getTimeUnit())));
 				});
 			}
 		}, getTimeUnit(), getTimeUnit());
@@ -464,6 +457,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 			this.timer.cancel();
 		}
 		this.timer = null;
+		this.charts.forEach(a -> a.switchToLive(false));
 
 		this.live = false;
 	}
@@ -524,12 +518,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 		l.getXAxis().setTickLabelsVisible(true);
 
 		// Add to list
-		AbstractChartManager udd = new XYBarChartManager(new Observer() {
-			@Override
-			public void update(Observable o, Object arg) {
-				updateFilter();
-			}
-		}, l);
+		AbstractChartManager udd = new XYBarChartManager((o, arg) -> updateFilter(), l);
 		// l.setPrefHeight(200);
 		addToPane(l);
 		// l.prefWidthProperty().bind(this.innerBox.widthProperty());

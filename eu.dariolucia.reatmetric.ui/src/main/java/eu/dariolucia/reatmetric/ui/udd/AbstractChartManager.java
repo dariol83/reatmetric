@@ -22,7 +22,9 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 public abstract class AbstractChartManager extends Observable {
 
 	private final Set<SystemEntityPath> parameters = new TreeSet<>();
-	
+
+	protected volatile boolean live = true;
+
 	public AbstractChartManager(Observer informer) {
 		addObserver(informer);
 	}
@@ -42,5 +44,8 @@ public abstract class AbstractChartManager extends Observable {
 	public abstract void plot(List<ParameterData> data);
 
 	public abstract void clear();
-	
+
+	public void switchToLive(boolean b) {
+		this.live = b;
+	}
 }
