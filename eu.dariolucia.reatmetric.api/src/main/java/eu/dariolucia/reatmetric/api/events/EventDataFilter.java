@@ -16,7 +16,6 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Objects;
 
 /**
  *
@@ -30,7 +29,9 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
 	private static final long serialVersionUID = 1L;
 
 	private final SystemEntityPath parentPath;
-    
+
+    private final List<SystemEntityPath> eventPathList;
+
     private final List<String> routeList;
     
     private final List<String> typeList;
@@ -39,8 +40,13 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
     
     private final List<Severity> severityList;
 
-    public EventDataFilter(SystemEntityPath parentPath, List<String> routeList, List<String> typeList, List<String> sourceList, List<Severity> severityList) {
+    public EventDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> eventPathList, List<String> routeList, List<String> typeList, List<String> sourceList, List<Severity> severityList) {
         this.parentPath = parentPath;
+        if(eventPathList != null) {
+            this.eventPathList = List.copyOf(eventPathList);
+        } else {
+            this.eventPathList = null;
+        }
         if(routeList != null) {
             this.routeList = List.copyOf(routeList);
         } else {
@@ -67,6 +73,10 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
         return parentPath;
     }
 
+    public List<SystemEntityPath> getEventPathList() {
+        return eventPathList;
+    }
+
     public List<String> getSourceList() {
         return sourceList;
     }
@@ -85,12 +95,15 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
     
     @Override
     public boolean isClear() {
-        return this.parentPath == null && this.severityList == null && this.sourceList == null && this.routeList == null && this.typeList == null;
+        return this.parentPath == null && this.eventPathList == null &&this.severityList == null && this.sourceList == null && this.routeList == null && this.typeList == null;
     }
 
     @Override
     public boolean test(EventData item) {
         if(parentPath != null && !parentPath.isParentOf(item.getPath())) {
+            return false;
+        }
+        if(eventPathList != null && !eventPathList.contains(item.getPath())) {
             return false;
         }
         if(severityList != null && !severityList.contains(item.getSeverity())) {
@@ -118,52 +131,5 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
     public Class<EventData> getDataItemType() {
         return EventData.class;
     }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 19 * hash + Objects.hashCode(this.parentPath);
-        hash = 19 * hash + Objects.hashCode(this.sourceList);
-        hash = 19 * hash + Objects.hashCode(this.severityList);
-        hash = 19 * hash + Objects.hashCode(this.routeList);
-        hash = 19 * hash + Objects.hashCode(this.typeList);
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final EventDataFilter other = (EventDataFilter) obj;
-        if (!Objects.equals(this.parentPath, other.parentPath)) {
-            return false;
-        }
-        if (!Objects.equals(this.sourceList, other.sourceList)) {
-            return false;
-        }
-        if (!Objects.equals(this.severityList, other.severityList)) {
-            return false;
-        }
-        if (!Objects.equals(this.routeList, other.routeList)) {
-            return false;
-        }
-        if (!Objects.equals(this.typeList, other.typeList)) {
-            return false;
-        }
-        return true;
-    }
-
-	@Override
-	public String toString() {
-		return "EventDataFilter [parentPath=" + parentPath + ", routeList=" + routeList + ", typeList=" + typeList
-				+ ", sourceList=" + sourceList + ", severityList=" + severityList + "]";
-	}
 
 }

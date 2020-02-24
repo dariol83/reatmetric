@@ -138,7 +138,8 @@ public class EventDataFilterWidgetController implements Initializable, IFilterCo
         List<String> typeList = deriveSelectedType();
         List<String> routeList = deriveSelectedRoute();
         SystemEntityPath parentPath = deriveParentPath();
-        return new EventDataFilter(parentPath, routeList, typeList, sourceList, qList);
+        // TODO: add capability to filter on event path
+        return new EventDataFilter(parentPath, null, routeList, typeList, sourceList, qList);
     }
 
     private List<String> deriveSelectedSource() {

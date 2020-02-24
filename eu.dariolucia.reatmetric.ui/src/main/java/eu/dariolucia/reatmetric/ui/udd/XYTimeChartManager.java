@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Observer;
 
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
@@ -81,15 +82,18 @@ public class XYTimeChartManager extends AbstractChartManager {
 	}
 
 	@Override
-	public void plot(List<ParameterData> datas) {
-		for(ParameterData pd : datas) {
-			XYChart.Series s = parameter2series.get(pd.getPath());
-			if(s != null && pd.getEngValue() != null) {
-				XYChart.Data data = new XYChart.Data(live ? pd.getReceptionTime() : pd.getGenerationTime(), pd.getEngValue());
-				s.getData().add(data);
-				// data.getNode().setVisible(false);
-				Tooltip.install(data.getNode(), new Tooltip(Objects.toString(pd.getEngValue()) + "\n" +
-						(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
+	public void plot(List<AbstractDataItem> datas) {
+		for(AbstractDataItem item : datas) {
+			if(item instanceof ParameterData) {
+				ParameterData pd = (ParameterData) item;
+				XYChart.Series s = parameter2series.get(pd.getPath());
+				if (s != null && pd.getEngValue() != null) {
+					XYChart.Data data = new XYChart.Data(live ? pd.getReceptionTime() : pd.getGenerationTime(), pd.getEngValue());
+					s.getData().add(data);
+					// data.getNode().setVisible(false);
+					Tooltip.install(data.getNode(), new Tooltip(Objects.toString(pd.getEngValue()) + "\n" +
+							(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
+				}
 			}
 		}
 	}

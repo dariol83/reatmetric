@@ -27,6 +27,8 @@ package eu.dariolucia.reatmetric.ui.udd;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -46,6 +48,8 @@ import javafx.util.StringConverter;
  * Derivative work from Christian Schudt and Diego Cirujano "DateAxis"
  */
 public final class InstantAxis extends Axis<Instant> {
+
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss").withZone(ZoneId.of("UTC"));
 
     /**
      * These property are used for animation.
@@ -384,8 +388,7 @@ public final class InstantAxis extends Axis<Instant> {
                     break;
             }
         }
-        // TODO: use proper formatter
-        return dateFormat.format(new Date(date.toEpochMilli()));
+        return DATE_TIME_FORMATTER.format(date);
     }
 
     /**

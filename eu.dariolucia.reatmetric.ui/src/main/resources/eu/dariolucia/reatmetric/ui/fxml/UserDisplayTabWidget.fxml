@@ -27,6 +27,7 @@
                 	<MenuItem mnemonicParsing="false" onAction="#addLineChartMenuItemSelected" text="Line Chart" />
                 	<MenuItem mnemonicParsing="false" onAction="#addAreaChartMenuItemSelected" text="Area Chart" />
                 	<MenuItem mnemonicParsing="false" onAction="#addBarChartMenuItemSelected" text="Bar Chart" />
+					<MenuItem mnemonicParsing="false" onAction="#addScatterChartMenuItemSelected" text="Scatter Chart" />
                 </items>
                 </MenuButton>
 				<ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" prefHeight="25.0" prefWidth="91.0" selected="true" text="Live" />

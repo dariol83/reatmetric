@@ -85,6 +85,9 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
             if(filter.getParentPath() != null) {
                 query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
             }
+            if(filter.getEventPathList() != null && !filter.getEventPathList().isEmpty()) {
+                query.append("AND Path IN (").append(toFilterListString(filter.getEventPathList(), SystemEntityPath::asString, "'")).append(") ");
+            }
             if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
                 query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
             }

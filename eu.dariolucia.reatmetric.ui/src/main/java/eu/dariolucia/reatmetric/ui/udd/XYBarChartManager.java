@@ -9,6 +9,7 @@
 
 package eu.dariolucia.reatmetric.ui.udd;
 
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
@@ -81,15 +82,18 @@ public class XYBarChartManager extends AbstractChartManager {
 	}
 
 	@Override
-	public void plot(List<ParameterData> datas) {
-		for(ParameterData pd : datas) {
-			XYChart.Series<String, Number> s = parameter2series.get(pd.getPath());
-			if(s != null && pd.getEngValue() != null) {
-				XYChart.Data<String, Number> data = new XYChart.Data<>(pd.getPath().toString(), (Number) pd.getEngValue());
-				s.getData().add(data);
-				// data.getNode().setVisible(false);
-				Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
-						(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
+	public void plot(List<AbstractDataItem> datas) {
+		for(AbstractDataItem item : datas) {
+			if (item instanceof ParameterData) {
+				ParameterData pd = (ParameterData) item;
+				XYChart.Series<String, Number> s = parameter2series.get(pd.getPath());
+				if (s != null && pd.getEngValue() != null) {
+					XYChart.Data<String, Number> data = new XYChart.Data<>(pd.getPath().toString(), (Number) pd.getEngValue());
+					s.getData().add(data);
+					// data.getNode().setVisible(false);
+					Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
+							(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
+				}
 			}
 		}
 	}

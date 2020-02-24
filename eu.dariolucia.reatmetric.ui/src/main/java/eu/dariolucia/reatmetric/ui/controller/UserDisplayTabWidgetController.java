@@ -24,15 +24,15 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.events.EventData;
+import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.udd.AbstractChartManager;
-import eu.dariolucia.reatmetric.ui.udd.InstantAxis;
-import eu.dariolucia.reatmetric.ui.udd.XYBarChartManager;
-import eu.dariolucia.reatmetric.ui.udd.XYTimeChartManager;
+import eu.dariolucia.reatmetric.ui.udd.*;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -47,12 +47,7 @@ import javafx.print.Printer;
 import javafx.print.PrinterAttributes;
 import javafx.print.PrinterJob;
 import javafx.scene.Parent;
-import javafx.scene.chart.AreaChart;
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.CategoryAxis;
-import javafx.scene.chart.LineChart;
-import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
+import javafx.scene.chart.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Control;
 import javafx.scene.control.ProgressIndicator;
@@ -72,7 +67,6 @@ import static eu.dariolucia.reatmetric.ui.controller.AbstractDisplayController.f
  */
 public class UserDisplayTabWidgetController implements Initializable {
 
-	// TODO: scatter chart for events
 	// TODO: scrollables for parameters (name, eng. value, gen. time, alarm state) --> not here, as LogView!
 
 	// Live/retrieval controls
@@ -109,12 +103,12 @@ public class UserDisplayTabWidgetController implements Initializable {
 	//
 	protected final List<AbstractChartManager> charts = new CopyOnWriteArrayList<>();
 
-	protected volatile ParameterDataFilter currentFilter = new ParameterDataFilter(null, new LinkedList<>(),null,null,null);
+	protected volatile ParameterDataFilter currentParameterFilter = new ParameterDataFilter(null, new LinkedList<>(),null,null,null);
 
-	// TODO: make it configurable
+	protected volatile EventDataFilter currentEventFilter = new EventDataFilter(null, new LinkedList<>(),null, null,null,null);
+
 	protected final int timeWindowSize = 60000;
 
-	// TODO: make it configurable
 	protected final int timeUnit = 5000;
 
 	private Instant currentMin = null;
@@ -177,22 +171,44 @@ public class UserDisplayTabWidgetController implements Initializable {
 		addBarChart();
 	}
 
+	@FXML
+	protected void addScatterChartMenuItemSelected(ActionEvent e) {
+		addScatterChart();
+	}
+
 	private void fetchRecords(final Instant minTime, final Instant maxTime, final boolean clear) {
-		final ParameterDataFilter pdf = getCurrentFilter();
+		final ParameterDataFilter pdf = getCurrentParameterFilter();
+		final EventDataFilter edf = getCurrentEventFilter();
 		// Retrieve the next one and add it on top
 		markProgressBusy();
 		ReatmetricUI.threadPool(getClass()).execute(() -> {
 			try {
-				List<ParameterData> messages = ReatmetricUI.selectedSystem().getSystem()
+				List<AbstractDataItem> messages = new LinkedList<>();
+
+				// Retrieve the parameters
+				List<ParameterData> pmessages = ReatmetricUI.selectedSystem().getSystem()
 						.getParameterDataMonitorService().retrieve(minTime, 100, RetrievalDirection.TO_FUTURE, pdf);
+				messages.addAll(pmessages);
 				// Repeat until endTime is reached
-				if (messages.size() > 0 && messages.get(messages.size() - 1).getGenerationTime().isBefore(maxTime)) {
+				if (pmessages.size() > 0 && pmessages.get(pmessages.size() - 1).getGenerationTime().isBefore(maxTime)) {
 					List<ParameterData> newMessages = ReatmetricUI.selectedSystem().getSystem()
 							.getParameterDataMonitorService()
-							.retrieve(messages.get(messages.size() - 1), 100, RetrievalDirection.TO_FUTURE, pdf);
+							.retrieve(pmessages.get(messages.size() - 1), 100, RetrievalDirection.TO_FUTURE, pdf);
 					messages.addAll(newMessages);
 				}
-				messages.removeIf(parameterData -> parameterData.getGenerationTime().isAfter(maxTime));
+
+				// Retrieve the events
+				List<EventData> emessages = ReatmetricUI.selectedSystem().getSystem()
+						.getEventDataMonitorService().retrieve(minTime, 100, RetrievalDirection.TO_FUTURE, edf);
+				messages.addAll(emessages);
+				// Repeat until endTime is reached
+				if (emessages.size() > 0 && emessages.get(emessages.size() - 1).getGenerationTime().isBefore(maxTime)) {
+					List<EventData> newMessages = ReatmetricUI.selectedSystem().getSystem()
+							.getEventDataMonitorService()
+							.retrieve(emessages.get(emessages.size() - 1), 100, RetrievalDirection.TO_FUTURE, edf);
+					messages.addAll(newMessages);
+				}
+				messages.removeIf(eventData -> eventData.getGenerationTime().isAfter(maxTime));
 
 				setData(minTime, maxTime, messages, clear);
 			} catch (Exception e) {
@@ -202,7 +218,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 		});
 	}
 
-	protected void setData(Instant minTime, Instant maxTime, List<ParameterData> messages, boolean clear) {
+	protected void setData(Instant minTime, Instant maxTime, List<AbstractDataItem> messages, boolean clear) {
 		Platform.runLater(() -> {
 			if (clear) {
 				clearCharts();
@@ -214,10 +230,9 @@ public class UserDisplayTabWidgetController implements Initializable {
 		});
 	}
 
-	public void updateDataItems(List<ParameterData> items) {
-		// TODO Partition the messages
+	public void updateDataItems(List<? extends AbstractDataItem> items) {
 		if (this.live) {
-			this.charts.forEach(a -> a.plot(items));
+			this.charts.forEach(a -> a.plot((List<AbstractDataItem>)items));
 		}
 	}
 
@@ -248,29 +263,56 @@ public class UserDisplayTabWidgetController implements Initializable {
 	}
 
 	private void moveToTimeEnd() {
-		final ParameterDataFilter pdf = getCurrentFilter();
+		final ParameterDataFilter pdf = getCurrentParameterFilter();
+		final EventDataFilter edf = getCurrentEventFilter();
 		final int timeWindow = getTimeWindowSize();
 		// Retrieve the next one and add it on top
 		markProgressBusy();
 		ReatmetricUI.threadPool(getClass()).execute(() -> {
 			try {
-				List<ParameterData> messages = ReatmetricUI.selectedSystem().getSystem()
-						.getParameterDataMonitorService().retrieve(Instant.MAX, 100, RetrievalDirection.TO_PAST, pdf);
+				List<AbstractDataItem> messages = new LinkedList<>();
+
+				// Retrieve the parameters
+				List<ParameterData> pmessages = ReatmetricUI.selectedSystem().getSystem()
+						.getParameterDataMonitorService().retrieve(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L), 100, RetrievalDirection.TO_PAST, pdf);
+				messages.addAll(pmessages);
 				// Repeat until endTime is reached
 				Instant minTime = null;
-				if (messages.size() > 0) {
-					minTime = messages.get(0).getGenerationTime().minusMillis(timeWindow);
+				if (pmessages.size() > 0) {
+					minTime = pmessages.get(0).getGenerationTime().minusMillis(timeWindow);
 
-					if (messages.get(messages.size() - 1).getGenerationTime().isAfter(minTime)) {
+					if (pmessages.get(pmessages.size() - 1).getGenerationTime().isAfter(minTime)) {
 						List<ParameterData> newMessages = ReatmetricUI.selectedSystem().getSystem()
 								.getParameterDataMonitorService()
-								.retrieve(messages.get(messages.size() - 1), 100, RetrievalDirection.TO_PAST, pdf);
+								.retrieve(pmessages.get(pmessages.size() - 1), 100, RetrievalDirection.TO_PAST, pdf);
 						messages.addAll(newMessages);
 					}
 				}
-				for (Iterator<ParameterData> it = messages.iterator(); it.hasNext();) {
-					if (it.next().getGenerationTime().isBefore(minTime)) {
-						it.remove();
+				// Retrieve the events
+				List<EventData> emessages = ReatmetricUI.selectedSystem().getSystem()
+						.getEventDataMonitorService().retrieve(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L), 100, RetrievalDirection.TO_PAST, edf);
+				messages.addAll(emessages);
+				// Repeat until endTime is reached
+				if (emessages.size() > 0) {
+					if(minTime == null) {
+						minTime = emessages.get(0).getGenerationTime().minusMillis(timeWindow);
+					} else {
+						minTime = emessages.get(0).getGenerationTime().minusMillis(timeWindow).isBefore(minTime) ? emessages.get(0).getGenerationTime().minusMillis(timeWindow) : minTime;
+					}
+
+					if (emessages.get(emessages.size() - 1).getGenerationTime().isAfter(minTime)) {
+						List<EventData> newMessages = ReatmetricUI.selectedSystem().getSystem()
+								.getEventDataMonitorService()
+								.retrieve(emessages.get(emessages.size() - 1), 100, RetrievalDirection.TO_PAST, edf);
+						messages.addAll(newMessages);
+					}
+				}
+				// Remove too old items
+				if(minTime != null) {
+					for (Iterator<AbstractDataItem> it = messages.iterator(); it.hasNext(); ) {
+						if (it.next().getGenerationTime().isBefore(minTime)) {
+							it.remove();
+						}
 					}
 				}
 				setData(minTime, messages.get(0).getGenerationTime(), messages, false);
@@ -282,29 +324,57 @@ public class UserDisplayTabWidgetController implements Initializable {
 	}
 
 	private void moveToTimeBeginning() {
-		final ParameterDataFilter pdf = getCurrentFilter();
+		final ParameterDataFilter pdf = getCurrentParameterFilter();
+		final EventDataFilter edf = getCurrentEventFilter();
 		final int timeWindow = getTimeWindowSize();
 		// Retrieve the next one and add it on top
 		markProgressBusy();
 		ReatmetricUI.threadPool(getClass()).execute(() -> {
 			try {
-				List<ParameterData> messages = ReatmetricUI.selectedSystem().getSystem()
-						.getParameterDataMonitorService().retrieve(Instant.MIN, 100, RetrievalDirection.TO_FUTURE, pdf);
+				List<AbstractDataItem> messages = new LinkedList<>();
+
+				List<ParameterData> pmessages = ReatmetricUI.selectedSystem().getSystem()
+						.getParameterDataMonitorService().retrieve(Instant.EPOCH, 100, RetrievalDirection.TO_FUTURE, pdf);
+				messages.addAll(pmessages);
+
 				// Repeat until endTime is reached
 				Instant maxTime = null;
-				if (messages.size() > 0) {
-					maxTime = messages.get(0).getGenerationTime().plusMillis(timeWindow);
+				if (pmessages.size() > 0) {
+					maxTime = pmessages.get(0).getGenerationTime().plusMillis(timeWindow);
 
-					if (messages.get(messages.size() - 1).getGenerationTime().isBefore(maxTime)) {
+					if (pmessages.get(pmessages.size() - 1).getGenerationTime().isBefore(maxTime)) {
 						List<ParameterData> newMessages = ReatmetricUI.selectedSystem().getSystem()
 								.getParameterDataMonitorService()
-								.retrieve(messages.get(messages.size() - 1), 100, RetrievalDirection.TO_FUTURE, pdf);
+								.retrieve(pmessages.get(pmessages.size() - 1), 100, RetrievalDirection.TO_FUTURE, pdf);
 						messages.addAll(newMessages);
 					}
 				}
-				for (Iterator<ParameterData> it = messages.iterator(); it.hasNext();) {
-					if (it.next().getGenerationTime().isAfter(maxTime)) {
-						it.remove();
+				// Retrieve the events
+				List<EventData> emessages = ReatmetricUI.selectedSystem().getSystem()
+						.getEventDataMonitorService().retrieve(Instant.EPOCH, 100, RetrievalDirection.TO_FUTURE, edf);
+				messages.addAll(emessages);
+				// Repeat until endTime is reached
+				if (emessages.size() > 0) {
+					if(maxTime == null) {
+						maxTime = emessages.get(0).getGenerationTime().plusMillis(timeWindow);
+					} else {
+						maxTime = emessages.get(0).getGenerationTime().plusMillis(timeWindow).isAfter(maxTime) ? emessages.get(0).getGenerationTime().plusMillis(timeWindow) : maxTime;
+					}
+
+					if (emessages.get(emessages.size() - 1).getGenerationTime().isBefore(maxTime)) {
+						List<EventData> newMessages = ReatmetricUI.selectedSystem().getSystem()
+								.getEventDataMonitorService()
+								.retrieve(emessages.get(emessages.size() - 1), 100, RetrievalDirection.TO_FUTURE, edf);
+						messages.addAll(newMessages);
+					}
+				}
+
+				// Remove too late items
+				if(maxTime != null) {
+					for (Iterator<AbstractDataItem> it = messages.iterator(); it.hasNext(); ) {
+						if (it.next().getGenerationTime().isAfter(maxTime)) {
+							it.remove();
+						}
 					}
 				}
 				setData(messages.get(0).getGenerationTime(), maxTime, messages, false);
@@ -448,8 +518,12 @@ public class UserDisplayTabWidgetController implements Initializable {
 		}, getTimeUnit(), getTimeUnit());
 	}
 
-	public ParameterDataFilter getCurrentFilter() {
-		return this.currentFilter;
+	public ParameterDataFilter getCurrentParameterFilter() {
+		return this.currentParameterFilter;
+	}
+
+	public EventDataFilter getCurrentEventFilter() {
+		return this.currentEventFilter;
 	}
 
 	protected final void stopSubscription() {
@@ -513,6 +587,11 @@ public class UserDisplayTabWidgetController implements Initializable {
 		initialiseBarChart(l);
 	}
 
+	private void addScatterChart() {
+		ScatterChart<Instant, Number> l = new ScatterChart<>(new InstantAxis(), new NumberAxis());
+		initialiseScatterChart(l);
+	}
+
 	private void initialiseBarChart(BarChart<String, Number> l) {
 		l.setAnimated(false);
 		l.getXAxis().setTickLabelsVisible(true);
@@ -549,34 +628,50 @@ public class UserDisplayTabWidgetController implements Initializable {
 		l.setAnimated(false);
 		l.getXAxis().setTickLabelsVisible(true);
 
-		((InstantAxis) l.getXAxis()).setAutoRanging(false);
+		l.getXAxis().setAutoRanging(false);
 		((InstantAxis) l.getXAxis()).setLowerBound(Instant.now().minusMillis(getTimeWindowSize() - getTimeUnit()));
 		((InstantAxis) l.getXAxis()).setUpperBound(Instant.now().plusMillis(getTimeUnit()));
 
 		// Add to list
-		XYTimeChartManager udd = new XYTimeChartManager(new Observer() {
-			@Override
-			public void update(Observable o, Object arg) {
-				updateFilter();
-			}
-		}, l);
+		XYTimeChartManager udd = new XYTimeChartManager((o, arg) -> updateFilter(), l);
 
 		addToPane(l);
-		// l.setPrefHeight(200);
-		// l.prefWidthProperty().bind(this.innerBox.widthProperty());
-		// this.innerBox.getChildren().add(l);
+
+		this.charts.add(udd);
+		this.innerBox.getParent().layout();
+	}
+
+	private void initialiseScatterChart(ScatterChart<Instant, Number> l) {
+		l.setAnimated(false);
+		l.getXAxis().setTickLabelsVisible(true);
+
+		l.getXAxis().setAutoRanging(false);
+		((InstantAxis) l.getXAxis()).setLowerBound(Instant.now().minusMillis(getTimeWindowSize() - getTimeUnit()));
+		((InstantAxis) l.getXAxis()).setUpperBound(Instant.now().plusMillis(getTimeUnit()));
+
+		((NumberAxis) l.getYAxis()).setTickUnit(1.0);
+		((NumberAxis) l.getYAxis()).setTickLabelsVisible(false);
+
+		// Add to list
+		XYScatterChartManager udd = new XYScatterChartManager((o, arg) -> updateFilter(), l);
+
+		addToPane(l);
+
 		this.charts.add(udd);
 		this.innerBox.getParent().layout();
 	}
 
 	protected void updateFilter() {
-		Set<SystemEntityPath> selected = new LinkedHashSet<>();
+		Set<SystemEntityPath> selectedParameters = new LinkedHashSet<>();
+		Set<SystemEntityPath> selectedEvents = new LinkedHashSet<>();
 		for (AbstractChartManager acm : this.charts) {
-			selected.addAll(acm.getPlottedParameters());
+			selectedParameters.addAll(acm.getPlottedParameters());
+			selectedEvents.addAll(acm.getPlottedEvents());
 		}
-		this.currentFilter = new ParameterDataFilter(null, new LinkedList<>(selected),null,null,null);
-
-		this.controller.filterUpdated(this, this.currentFilter);
+		this.currentParameterFilter = new ParameterDataFilter(null, new LinkedList<>(selectedParameters),null,null,null);
+		this.currentEventFilter = new EventDataFilter(null, new LinkedList<>(selectedEvents),null,null,null, null);
+		// Update the subscriptions
+		this.controller.filterUpdated(this, this.currentParameterFilter, this.currentEventFilter);
 	}
 
 	public void setParentController(UserDisplayViewController userDisplayViewController) {

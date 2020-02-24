@@ -140,9 +140,9 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
 			// Get the first
 			EventDataFilter filter = getCurrentFilter();
 			if (filter == null) {
-				filter = new EventDataFilter(null, null, null, null, null);
+				filter = new EventDataFilter(null, null, null, null, null, null);
 			}
-			EventDataFilter newFilter = new EventDataFilter(entities.get(0).getPath(), filter.getRouteList(),
+			EventDataFilter newFilter = new EventDataFilter(entities.get(0).getPath(), filter.getEventPathList(), filter.getRouteList(),
 					filter.getTypeList(), filter.getSourceList(), filter.getSeverityList());
 			applyFilter(newFilter);
 			success = true;
