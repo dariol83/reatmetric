@@ -177,7 +177,6 @@ public class UserDisplayTabWidgetController implements Initializable {
 	}
 
 	private void fetchRecords(final Instant minTime, final Instant maxTime, final boolean clear) {
-		// TODO: update button label text
 		final ParameterDataFilter pdf = getCurrentParameterFilter();
 		final EventDataFilter edf = getCurrentEventFilter();
 		// Retrieve the next one and add it on top
@@ -228,6 +227,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 			this.currentMax = maxTime;
 			this.charts.forEach(a -> a.setBoundaries(minTime, maxTime));
 			this.charts.forEach(a -> a.plot(messages));
+			this.selectTimeBtn.setText(formatTime(maxTime));
 		});
 	}
 
