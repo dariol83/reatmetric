@@ -118,10 +118,16 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
         });
     }
 
+    /**
+     * TODO: implement something visually nice here
+     */
     private class TransportConnectorCell extends ListCell<ITransportConnector> {
         private HBox content;
         private Text name;
         private Text update;
+        private Text connectionStatus;
+        private Text rxRate;
+        private Text txRate;
         private ImageView imageView = new ImageView();
         private Button playStopButton = new Button("Open");
         private Button abortButton = new Button("Abort");
@@ -137,11 +143,22 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
             this.name.setFont(Font.font(Font.getDefault().getFamily(), FontWeight.BOLD, Font.getDefault().getSize()));
             this.update = new Text();
             this.update.setSmooth(true);
+            this.connectionStatus = new Text();
+            this.connectionStatus.setSmooth(true);
+            this.connectionStatus.setText(TransportConnectionStatus.NOT_INIT.name());
+            this.rxRate = new Text();
+            this.rxRate.setSmooth(true);
+            this.rxRate.setText("RX: " + 0);
+            this.txRate = new Text();
+            this.txRate.setSmooth(true);
+            this.rxRate.setText("TX: " + 0);
             this.playStopButton.setOnAction(this::onPlayStopButtonClicked);
             this.initialiseButton.setOnAction(this::onInitialiseButtonClicked);
             this.abortButton.setOnAction(this::onAbortButtonClicked);
-            VBox vBox = new VBox(this.name, this.update);
-            this.content = new HBox(playStopButton, abortButton, initialiseButton, this.imageView, vBox);
+            VBox vBox = new VBox(this.name, this.update,
+                    new HBox(connectionStatus, rxRate, txRate),
+                    new HBox(playStopButton, abortButton, initialiseButton));
+            this.content = new HBox(this.imageView, vBox);
             this.content.setSpacing(10);
         }
 
@@ -201,6 +218,9 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
             } else {
                 connector = item;
                 TransportStatus ts = connector2status.get(item);
+                connectionStatus.setText(ts.getStatus().name());
+                rxRate.setText("RX: " + ts.getRxRate());
+                txRate.setText("TX: " + ts.getTxRate());
                 if(ts.getStatus() == TransportConnectionStatus.IDLE || ts.getStatus() == TransportConnectionStatus.ERROR ||
                         ts.getStatus() == TransportConnectionStatus.NOT_INIT || ts.getStatus() == TransportConnectionStatus.ABORTED) {
                     playStopButton.setText("Open");

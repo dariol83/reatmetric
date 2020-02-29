@@ -113,6 +113,9 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                if(!connected) {
+                    return;
+                }
                 List<ParameterSample> samples = new LinkedList<>();
                 for(int i = 0; i < 80; ++i) {
                     ParameterSample ps = generateTmSample(paramCurrentIdx);
@@ -125,6 +128,9 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
                         notifyState();
                     }
                 }
+                if(!connected) {
+                    return;
+                }
                 if(model != null) {
                     try {
                         storeRawData("TM00" + (System.currentTimeMillis() % 15), Instant.now(), routes[0], "TM Packet");
@@ -133,12 +139,18 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
                     }
                     model.injectParameters(samples);
                 }
+                if(!connected) {
+                    return;
+                }
                 for(int i = 0; i < 3; ++i) {
                     EventOccurrence event = generateEvent(eventCurrentIdx);
                     if(++eventCurrentIdx >= definitions.getEventDefinitions().size()) {
                         eventCurrentIdx = 0;
                         message = "Wrapping around events";
                         notifyState();
+                    }
+                    if(!connected) {
+                        return;
                     }
                     if(model != null && event != null) {
                         try {
