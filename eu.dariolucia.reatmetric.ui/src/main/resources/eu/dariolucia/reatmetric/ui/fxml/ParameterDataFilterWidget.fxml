@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<!--
+  ~ Copyright (c) 2019.  Dario Lucia (dario.lucia@gmail.com)
+  ~ All rights reserved
+  ~
+  ~ Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes
+  ~ shall be granted by the author in writing.
+  -->
+
+<VBox spacing="5.0" style="-fx-border-color: -fx-faint-focus-color;" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ParameterDataLogFilterWidgetController">
+   <children>
+      <CheckBox fx:id="pathCheckbox" mnemonicParsing="false" text="Parent Path" />
+      <TextField fx:id="pathText">
+         <tooltip>
+            <Tooltip text="Parent M-C element path (recursive)" />
+         </tooltip>
+      </TextField>
+      <CheckBox fx:id="validityCheckbox" mnemonicParsing="false" text="Validity" />
+      <ListView fx:id="validityList" prefHeight="80.0" VBox.vgrow="NEVER" />
+      <CheckBox fx:id="alarmCheckbox" mnemonicParsing="false" text="Alarm State" />
+      <ListView fx:id="alarmList" prefHeight="80.0" VBox.vgrow="NEVER" />
+      <CheckBox fx:id="routeCheckbox" mnemonicParsing="false" text="Route" />
+      <TextField fx:id="routeText">
+         <tooltip>
+            <Tooltip text="Comma-separated values" />
+         </tooltip>
+      </TextField>
+      <HBox prefWidth="200.0">
+         <children>
+            <Button fx:id="selectBtn" mnemonicParsing="false" onAction="#selectButtonPressed" text="Select" />
+         </children>
+         <padding>
+            <Insets top="5.0" />
+         </padding>
+      </HBox>
+   </children>
+   <padding>
+      <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+   </padding>
+</VBox>

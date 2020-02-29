@@ -67,8 +67,6 @@ import static eu.dariolucia.reatmetric.ui.controller.AbstractDisplayController.f
  */
 public class UserDisplayTabWidgetController implements Initializable {
 
-	// TODO: scrollables for parameters (name, eng. value, gen. time, alarm state) --> not here, as LogView!
-
 	// Live/retrieval controls
 	@FXML
 	protected ToggleButton liveTgl;
@@ -453,31 +451,25 @@ public class UserDisplayTabWidgetController implements Initializable {
 		return this.live;
 	}
 
-	public void doUserDisconnected(String system, String user) {
+	public void doSystemDisconnected() {
 		if (this.liveTgl != null) {
 			this.liveTgl.setSelected(false);
 		}
 		this.innerBox.getParent().getParent().setDisable(true);
-	}
-
-	public void doUserConnected(String system, String user) {
-		if (this.liveTgl != null) {
-			this.liveTgl.setSelected(true);
-		}
-		this.innerBox.getParent().getParent().setDisable(false);
-	}
-
-	public void doServiceDisconnected(boolean oldState) {
 		stopSubscription();
 		clearCharts();
 	}
 
-	public void doServiceConnected(boolean oldState) {
+	public void doSystemConnected() {
 		// Start subscription if there
 		if (this.liveTgl == null || this.liveTgl.isSelected()) {
 			clearCharts();
 			startSubscription();
 		}
+		if (this.liveTgl != null) {
+			this.liveTgl.setSelected(true);
+		}
+		this.innerBox.getParent().getParent().setDisable(false);
 	}
 
 	private void markProgressBusy() {

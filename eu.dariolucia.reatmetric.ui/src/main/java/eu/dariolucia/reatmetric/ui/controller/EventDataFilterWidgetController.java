@@ -118,8 +118,8 @@ public class EventDataFilterWidgetController implements Initializable, IFilterCo
             this.severityCheckbox.setSelected(this.selectedFilter.getSeverityList() != null);
             this.sourceCheckbox.setSelected(this.selectedFilter.getSourceList() != null);
             this.pathCheckbox.setSelected(this.selectedFilter.getParentPath() != null);
-            this.routeCheckbox.setSelected(this.selectedFilter.getTypeList() != null);
-            this.typeCheckbox.setSelected(this.selectedFilter.getRouteList() != null);
+            this.routeCheckbox.setSelected(this.selectedFilter.getRouteList() != null);
+            this.typeCheckbox.setSelected(this.selectedFilter.getTypeList() != null);
              
             this.sourceText.setText(IFilterController.toStringList(this.selectedFilter.getSourceList()));
             this.routeText.setText(IFilterController.toStringList(this.selectedFilter.getRouteList()));

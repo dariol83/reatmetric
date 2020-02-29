@@ -36,14 +36,15 @@
           </Menu>
           <Menu mnemonicParsing="false" text="View">
               <items>
-                  <RadioMenuItem fx:id="parameterTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Parameters">
+                  <RadioMenuItem fx:id="parameterTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Monitoring">
                       <toggleGroup>
                           <ToggleGroup fx:id="perspectiveGroup" />
                       </toggleGroup>
                   </RadioMenuItem>
-                  <RadioMenuItem fx:id="eventTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Events" toggleGroup="$perspectiveGroup" />
-                  <RadioMenuItem fx:id="rawDataTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Raw Data" toggleGroup="$perspectiveGroup" />
-                  <RadioMenuItem fx:id="alarmsTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Alarms" toggleGroup="$perspectiveGroup" />
+                  <RadioMenuItem fx:id="parameterLogTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Parameter Log" toggleGroup="$perspectiveGroup" />
+                  <RadioMenuItem fx:id="eventTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Event Log" toggleGroup="$perspectiveGroup" />
+                  <RadioMenuItem fx:id="rawDataTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Raw Data Log" toggleGroup="$perspectiveGroup" />
+                  <RadioMenuItem fx:id="alarmsTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Alarm Log" toggleGroup="$perspectiveGroup" />
                   <RadioMenuItem fx:id="userDisplaysTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="User Displays" toggleGroup="$perspectiveGroup" />
               </items>
           </Menu>
@@ -75,6 +76,7 @@
                   <StackPane fx:id="perspectiveStackPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
                       <children>
                           <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="ParameterPerspective.fxml" />
+                          <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="ParameterLogPerspective.fxml" />
                           <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="EventPerspective.fxml" />
                           <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="RawDataPerspective.fxml" />
                           <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="AlarmPerspective.fxml" />

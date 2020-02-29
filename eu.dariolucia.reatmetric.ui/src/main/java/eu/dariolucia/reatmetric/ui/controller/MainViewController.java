@@ -46,6 +46,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	@FXML
 	private RadioMenuItem parameterTgl;
 	@FXML
+	private RadioMenuItem parameterLogTgl;
+	@FXML
 	private RadioMenuItem eventTgl;
 	@FXML
 	private RadioMenuItem userDisplaysTgl;
@@ -184,6 +186,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		this.perspectiveMap.put(this.alarmsTgl, "alarmPerspective");
 		this.perspectiveMap.put(this.rawDataTgl, "rawDataPerspective");
 		this.perspectiveMap.put(this.parameterTgl, "monitoringPerspective");
+		this.perspectiveMap.put(this.parameterLogTgl, "parameterLogPerspective");
 		this.perspectiveMap.put(this.eventTgl, "eventPerspective");
 		this.perspectiveMap.put(this.userDisplaysTgl, "userDisplayPerspective");
 		this.systemTextLbl.disableProperty().bind(this.systemLbl.disableProperty());
@@ -215,6 +218,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		this.alarmsTgl.setDisable(true);
 		this.rawDataTgl.setDisable(true);
 		this.parameterTgl.setDisable(true);
+		this.parameterLogTgl.setDisable(true);
 		this.eventTgl.setDisable(true);
 		this.userDisplaysTgl.setDisable(true);
 		// Disable the logout menu item and enable the other one
@@ -232,6 +236,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		this.alarmsTgl.setDisable(false);
 		this.rawDataTgl.setDisable(false);
 		this.parameterTgl.setDisable(false);
+		this.parameterLogTgl.setDisable(false);
 		this.eventTgl.setDisable(false);
 		this.userDisplaysTgl.setDisable(false);
 		// Enable the logout menu item and enable the other one

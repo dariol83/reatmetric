@@ -165,23 +165,19 @@ public class UserDisplayViewController extends AbstractDisplayController {
 
 	@Override
 	protected void doSystemDisconnected(IServiceFactory system, boolean oldStatus) {
-		// TODO: review double call
 		stopSubscription();
-		this.tab2contents.values().stream().forEach(c -> c.doUserDisconnected(system.getSystem(), user));
+		this.tab2contents.values().forEach(UserDisplayTabWidgetController::doSystemDisconnected);
 		this.displayTitledPane.setDisable(true);
-		this.tab2contents.values().stream().forEach(c -> c.doServiceDisconnected(oldStatus));
 	}
 
 	@Override
 	protected void doSystemConnected(IServiceFactory system, boolean oldStatus) {
-		// TODO: review double call
-		this.tab2contents.values().stream().forEach(c -> c.doServiceConnected(oldStatus));
+		this.tab2contents.values().forEach(UserDisplayTabWidgetController::doSystemConnected);
 		ParameterDataFilter globalFilter = buildParameterFilter();
 		EventDataFilter globalEventFilter = buildEventFilter();
 		if(mustSubscribe(globalFilter, globalEventFilter)) {
 			startSubscription(globalFilter, globalEventFilter);
 		}
-		this.tab2contents.values().stream().forEach(c -> c.doUserConnected(system.getSystem(), user));
 		this.displayTitledPane.setDisable(false);
 	}
 
