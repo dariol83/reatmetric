@@ -20,11 +20,14 @@ import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
-import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
+import javafx.beans.Observable;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -36,6 +39,7 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.stage.Popup;
+import javafx.util.Callback;
 
 import java.io.IOException;
 import java.net.URL;
@@ -101,9 +105,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     // Preset menu
     @FXML
     private Menu loadPresetMenu;
-    
-    // Additional header fields
-    protected List<TableColumn> additionalHeaderFields = new ArrayList<>();
 
     // Popup selector for date/time
     protected final Popup dateTimePopup = new Popup();
@@ -161,6 +162,18 @@ public class ParameterDataViewController extends AbstractDisplayController imple
 
         this.genTimeCol.setCellFactory(new InstantCellFactory<>());
         this.recTimeCol.setCellFactory(new InstantCellFactory<>());
+
+        final ObservableList<ParameterDataWrapper> dataList = FXCollections.observableArrayList(
+                new Callback<ParameterDataWrapper, Observable[]>() {
+                    @Override
+                    public Observable[] call(ParameterDataWrapper param) {
+                        return new Observable[]{
+                                param.property()
+                        };
+                    }
+                }
+        );
+        this.dataItemTableView.setItems(dataList);
     }
 
     protected Consumer<List<ParameterData>> buildIncomingDataDelegatorAction() {
@@ -421,13 +434,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             }
         }
     }
-    
-    private void removeAdditionalHeaderFields() {
-        this.dataItemTableView.getColumns().removeAll(this.additionalHeaderFields);
-        this.additionalHeaderFields.clear();
-        this.dataItemTableView.layout();
-        this.dataItemTableView.refresh();
-    }
 
     private void markProgressBusy() {
         this.progressIndicator.setVisible(true);
@@ -455,8 +461,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         if(oldStatus) {
             persistColumnConfiguration();
         }
-        // Remove the additional header fields
-        removeAdditionalHeaderFields();
     }
 
     @Override
@@ -559,7 +563,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
                    pdw.set(pd);
                }
            }
-           this.dataItemTableView.refresh(); // TODO: improve by using Callback registered on ParameterDataWrapper property
+           this.dataItemTableView.refresh();
            updateSelectTime();
         });
     }
@@ -681,22 +685,26 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     
     public static class ParameterDataWrapper {
         
-        private volatile ParameterData data;
         private final SystemEntityPath path;
-        
+        private final SimpleObjectProperty<ParameterData> property = new SimpleObjectProperty<>();
+
         public ParameterDataWrapper(ParameterData data, SystemEntityPath path) {
-            this.data = data;
+            property.set(data);
             this.path = path;
         }
-        
-        public ParameterData get() {
-            return this.data;
-        }
-        
+
         public void set(ParameterData pd) {
-            this.data = pd;
+            property.set(pd);
         }
-        
+
+        public ParameterData get() {
+            return property.getValue();
+        }
+
+        public SimpleObjectProperty<ParameterData> property() {
+            return property;
+        }
+
         public SystemEntityPath getPath() {
         	return this.path;
         }

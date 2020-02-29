@@ -8,11 +8,17 @@
 package eu.dariolucia.reatmetric.ui.utils;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import javafx.beans.Observable;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.util.Callback;
 
 import java.util.Objects;
 
 public class ReferenceProperty<T extends AbstractDataItem> {
+
+    public static Callback<ReferenceProperty<?>, Observable[]> extractor() {
+        return (ReferenceProperty<?> p) -> new Observable[]{p.referenceProperty()};
+    }
 
     private final SimpleObjectProperty<T> reference = new SimpleObjectProperty<>();
 
