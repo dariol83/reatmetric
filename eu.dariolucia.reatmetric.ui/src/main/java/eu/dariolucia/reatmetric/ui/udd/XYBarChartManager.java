@@ -88,7 +88,7 @@ public class XYBarChartManager extends AbstractChartManager {
 				ParameterData pd = (ParameterData) item;
 				XYChart.Series<String, Number> s = parameter2series.get(pd.getPath());
 				if (s != null && pd.getEngValue() != null) {
-					XYChart.Data<String, Number> data = new XYChart.Data<>(pd.getPath().toString(), (Number) pd.getEngValue());
+					XYChart.Data<String, Number> data = new XYChart.Data<>(pd.getPath().toString(), (Number) pd.getEngValue()); // TODO: if not a number, remove the parameter from the plot
 					s.getData().add(data);
 					// data.getNode().setVisible(false);
 					Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
