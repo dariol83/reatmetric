@@ -128,6 +128,8 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
             archive.dispose();
             archive = null;
         }
+        drivers.clear();
+        transportConnectors.clear();
     }
 
     private void registerActivityHandlers(String driverName, List<IActivityHandler> activityHandlers) {

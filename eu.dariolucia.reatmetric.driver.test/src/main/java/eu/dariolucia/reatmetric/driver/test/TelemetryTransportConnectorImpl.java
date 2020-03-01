@@ -247,7 +247,12 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
 
     @Override
     public Map<String, Pair<String, ValueTypeEnum>> getSupportedProperties() {
-        return Collections.emptyMap();
+        Map<String, Pair<String, ValueTypeEnum>> toReturn = new LinkedHashMap<>();
+        toReturn.put("key1", Pair.of("Boolean parameter", ValueTypeEnum.BOOLEAN));
+        toReturn.put("key2", Pair.of("Integer parameter", ValueTypeEnum.SIGNED_INTEGER));
+        toReturn.put("key3", Pair.of("Real parameter", ValueTypeEnum.REAL));
+        toReturn.put("key4", Pair.of("String parameter", ValueTypeEnum.OCTET_STRING));
+        return toReturn;
     }
 
     @Override

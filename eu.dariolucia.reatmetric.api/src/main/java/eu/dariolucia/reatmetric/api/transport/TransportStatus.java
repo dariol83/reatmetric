@@ -39,10 +39,20 @@ public final class TransportStatus {
         return status;
     }
 
+    /**
+     * The transmission bitrate.
+     *
+     * @return the transmission bitrate (bps)
+     */
     public long getTxRate() {
         return txRate;
     }
 
+    /**
+     * The reception bitrate.
+     *
+     * @return the reception bitrate (bps)
+     */
     public long getRxRate() {
         return rxRate;
     }

@@ -35,6 +35,8 @@ public interface ITransportConnector {
 
     Map<String, Pair<String, ValueTypeEnum>> getSupportedProperties();
 
+    // TODO: get current initialised properties
+
     void register(ITransportSubscriber listener);
 
     void deregister(ITransportSubscriber listener);
