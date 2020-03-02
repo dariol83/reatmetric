@@ -16,6 +16,7 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
 import javafx.scene.chart.BarChart;
+import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.DragEvent;
@@ -88,11 +89,17 @@ public class XYBarChartManager extends AbstractChartManager {
 				ParameterData pd = (ParameterData) item;
 				XYChart.Series<String, Number> s = parameter2series.get(pd.getPath());
 				if (s != null && pd.getEngValue() != null) {
-					XYChart.Data<String, Number> data = new XYChart.Data<>(pd.getPath().toString(), (Number) pd.getEngValue()); // TODO: if not a number, remove the parameter from the plot
-					s.getData().add(data);
-					// data.getNode().setVisible(false);
-					Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
-							(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
+					// if not a number, remove the parameter from the plot
+					if(pd.getEngValue() instanceof Number) {
+						XYChart.Data<String, Number> data = new XYChart.Data<>(pd.getPath().toString(), (Number) pd.getEngValue());
+						s.getData().add(data);
+						// data.getNode().setVisible(false);
+						Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
+								(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
+					} else {
+						parameter2series.remove(pd.getPath());
+						chart.getData().remove(s);
+					}
 				}
 			}
 		}

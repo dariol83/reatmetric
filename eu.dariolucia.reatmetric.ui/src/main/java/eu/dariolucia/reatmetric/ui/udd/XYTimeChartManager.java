@@ -88,11 +88,17 @@ public class XYTimeChartManager extends AbstractChartManager {
 				ParameterData pd = (ParameterData) item;
 				XYChart.Series s = parameter2series.get(pd.getPath());
 				if (s != null && pd.getEngValue() != null) {
-					XYChart.Data data = new XYChart.Data(live ? pd.getReceptionTime() : pd.getGenerationTime(), pd.getEngValue());
-					s.getData().add(data);
-					// data.getNode().setVisible(false);
-					Tooltip.install(data.getNode(), new Tooltip(Objects.toString(pd.getEngValue()) + "\n" +
-							(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
+					// if not a number, remove the parameter from the plot
+					if(pd.getEngValue() instanceof Number) {
+						XYChart.Data data = new XYChart.Data(live ? pd.getReceptionTime() : pd.getGenerationTime(), pd.getEngValue());
+						s.getData().add(data);
+						// data.getNode().setVisible(false);
+						Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
+								(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
+					} else {
+						parameter2series.remove(pd.getPath());
+						chart.getData().remove(s);
+					}
 				}
 			}
 		}
