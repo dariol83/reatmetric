@@ -20,15 +20,15 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
-import eu.dariolucia.reatmetric.ui.utils.UserDisplayStorageManager;
+import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
+import eu.dariolucia.reatmetric.ui.utils.PresetStorageManager;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.Control;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.TitledPane;
+import javafx.scene.control.*;
+import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
@@ -52,7 +52,8 @@ public class UserDisplayViewController extends AbstractDisplayController {
 	@FXML
 	protected TabPane tabPane;
 
-	private final UserDisplayStorageManager uddManager = new UserDisplayStorageManager();
+	@FXML
+	protected MenuButton loadBtn;
 
 	private final Map<Tab, UserDisplayTabWidgetController> tab2contents = new ConcurrentHashMap<>();
 	
@@ -62,13 +63,17 @@ public class UserDisplayViewController extends AbstractDisplayController {
 
     private IParameterDataSubscriber parameterSubscriber;
     private IEventDataSubscriber eventSubscriber;
-	
+
+	// Preset manager
+	private final PresetStorageManager presetManager = new PresetStorageManager();
+
 	@Override
 	public final void doInitialize(URL url, ResourceBundle rb) {
 		this.parameterDelegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingParameterDataDelegatorAction());
 		this.eventDelegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingEventDataDelegatorAction());
 		this.parameterSubscriber = items -> parameterDelegator.delegate(items);
 		this.eventSubscriber = items -> eventDelegator.delegate(items);
+		this.loadBtn.setOnShowing(this::onShowingPresetMenu);
 	}
 	
 	protected Consumer<List<ParameterData>> buildIncomingParameterDataDelegatorAction() {
@@ -131,28 +136,51 @@ public class UserDisplayViewController extends AbstractDisplayController {
     
 	@FXML
 	protected void newButtonSelected(ActionEvent e) throws IOException {
-		Tab t = new Tab("Display");
-		// TODO: add context menu on tab to rename tab
+		createNewTab("Display");
+	}
+
+	private Tab createNewTab(String tabText) throws IOException {
+		Tab t = new Tab(tabText);
+		t.setContextMenu(new ContextMenu());
+		MenuItem renameTabMenuItem = new MenuItem("Rename...");
+		t.getContextMenu().getItems().add(renameTabMenuItem);
+		renameTabMenuItem.setOnAction(event -> {
+			// Traditional way to get the response value.
+			Optional<String> result = DialogUtils.input(t.getText(), "Rename Tab", "Change name of the chart tab", "Please provide the name of the chart tab:");
+			result.ifPresent(t::setText);
+		});
+		MenuItem saveTabMenuItem = new MenuItem("Save chart preset...");
+		t.getContextMenu().getItems().add(saveTabMenuItem);
+		saveTabMenuItem.setOnAction(event -> {
+			// Traditional way to get the response value.
+			Optional<String> result = DialogUtils.input(t.getText(), "Save Chart Preset", "Chart Preset", "Please provide the name of the preset:");
+			if(result.isPresent()) {
+				UserDisplayTabWidgetController controller = tab2contents.get(t);
+				this.presetManager.save(system.getSystem(), user, result.get(), doGetComponentId(), controller.getChartDescription());
+			}
+		});
+
 		URL userDisplayWidgetUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/UserDisplayTabWidget.fxml");
-        FXMLLoader loader = new FXMLLoader(userDisplayWidgetUrl);
-        VBox userDisplayWidget = (VBox) loader.load();	
-		UserDisplayTabWidgetController ctrl = (UserDisplayTabWidgetController) loader.getController();
+		FXMLLoader loader = new FXMLLoader(userDisplayWidgetUrl);
+		VBox userDisplayWidget = loader.load();
+		UserDisplayTabWidgetController ctrl = loader.getController();
 		ctrl.setParentController(this);
-		
+
 		userDisplayWidget.prefWidthProperty().bind(this.tabPane.widthProperty());
 		// userDisplayWidget.prefHeightProperty().bind(t.heightProperty()); // this creates problems with the height
 		t.setContent(userDisplayWidget);
 		this.tabPane.getTabs().add(t);
 		this.tabPane.getParent().layout();
 		this.tab2contents.put(t, ctrl);
-		
+
 		ctrl.startSubscription();
+		return t;
 	}
 
 	@FXML
 	protected void closeButtonSelected(ActionEvent e) {
 		Tab t = this.tabPane.getSelectionModel().getSelectedItem();
-		if(t != null) {
+		if(t != null && DialogUtils.confirm("Close chart tab", "About to close chart tab " + t.getText(), "Do you want to close chart tab " + t.getText() + "? Unsaved chart updates will be lost!")) {
 			this.tabPane.getTabs().remove(t);
 			this.tab2contents.remove(t);
 		}
@@ -228,14 +256,43 @@ public class UserDisplayViewController extends AbstractDisplayController {
         });
     }
 
-	public void filterUpdated(UserDisplayTabWidgetController userDisplayTabWidgetController,
-			ParameterDataFilter currentParameterFilter, EventDataFilter currentEventFilter) {
+	public void filterUpdated() {
 		ParameterDataFilter globalParameterFilter = buildParameterFilter();
 		EventDataFilter globalEventFilter = buildEventFilter();
 		if(globalParameterFilter.getParameterPathList().isEmpty() && globalEventFilter.getEventPathList().isEmpty()) {
 			stopSubscription();
 		} else {
 			startSubscription(globalParameterFilter, globalEventFilter);
+		}
+	}
+
+	private void onShowingPresetMenu(Event contextMenuEvent) {
+		this.loadBtn.getItems().remove(0, this.loadBtn.getItems().size());
+		List<String> presets = this.presetManager.getAvailablePresets(system.getSystem(), user, doGetComponentId());
+		for(String preset : presets) {
+			final String fpreset = preset;
+			MenuItem mi = new MenuItem(preset);
+			mi.setOnAction((event) -> {
+				Properties p = this.presetManager.load(system.getSystem(), user, fpreset, doGetComponentId());
+				if(p != null) {
+					try {
+						addChartTabFromPreset(fpreset, p);
+					} catch (IOException e) {
+						// TODO: log
+						e.printStackTrace();
+					}
+				}
+			});
+			this.loadBtn.getItems().add(mi);
+		}
+	}
+
+	private void addChartTabFromPreset(String tabName, Properties p) throws IOException {
+		Tab t = createNewTab(tabName);
+		Set<String> chartSets = p.keySet().stream().map(Object::toString).collect(Collectors.toCollection(TreeSet::new));
+		for(String chartSet : chartSets) {
+			String chartType = chartSet.substring(4);
+			// TODO: implement preset loading in class UserDisplayTabWidgetController ... forward the props and the class is responsible for the update
 		}
 	}
 }

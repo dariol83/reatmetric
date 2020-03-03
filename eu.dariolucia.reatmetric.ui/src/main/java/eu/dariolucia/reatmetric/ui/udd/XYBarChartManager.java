@@ -24,15 +24,13 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Observer;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class XYBarChartManager extends AbstractChartManager {
 
 	private final BarChart<String, Number> chart;
-	private final Map<SystemEntityPath, XYChart.Series<String, Number>> parameter2series = new HashMap<>();
+	private final Map<SystemEntityPath, XYChart.Series<String, Number>> parameter2series = new LinkedHashMap<>();
 	
     public XYBarChartManager(Observer informer, BarChart<String, Number> n) {
     	super(informer);
@@ -110,7 +108,17 @@ public class XYBarChartManager extends AbstractChartManager {
 		this.parameter2series.values().forEach(a -> a.getData().clear());
 	}
 
-	@Override
+    @Override
+    public String getChartType() {
+        return "bar";
+    }
+
+    @Override
+    public List<String> getCurrentEntityPaths() {
+        return parameter2series.keySet().stream().map(SystemEntityPath::asString).collect(Collectors.toList());
+    }
+
+    @Override
 	public void setBoundaries(Instant min, Instant max) {
 		// Nothing to do
 	}

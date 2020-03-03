@@ -183,13 +183,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected void onActionSavePresetMenuItem(ActionEvent e) {
         if(!this.path2wrapper.isEmpty()) {
-            TextInputDialog dialog = new TextInputDialog("PresetName");
-            dialog.setTitle("Save Parameter Preset");
-            dialog.setHeaderText("Parameter Preset");
-            dialog.setContentText("Please provide the name of the preset:");
-
-            // Traditional way to get the response value.
-            Optional<String> result = dialog.showAndWait();
+            Optional<String> result = DialogUtils.input("PresetName", "Save Parameter Preset", "Parameter Preset", "Please provide the name of the preset:");
             if (result.isPresent()){
                 Properties props = new OrderedProperties();
                 this.dataItemTableView.getItems().forEach((o) -> props.put(o.getPath().asString(), String.valueOf(o.get().getExternalId())));

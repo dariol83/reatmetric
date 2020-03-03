@@ -47,14 +47,18 @@ public abstract class AbstractChartManager extends Observable {
 		setChanged();
 		notifyObservers();
 	}
-	
+
+	public void switchToLive(boolean b) {
+		this.live = b;
+	}
+
 	public abstract void setBoundaries(Instant min, Instant max);
 	
 	public abstract void plot(List<AbstractDataItem> data);
 
 	public abstract void clear();
 
-	public void switchToLive(boolean b) {
-		this.live = b;
-	}
+	public abstract String getChartType();
+
+	public abstract List<String> getCurrentEntityPaths();
 }

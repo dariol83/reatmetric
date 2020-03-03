@@ -18,6 +18,7 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.udd.*;
+import eu.dariolucia.reatmetric.ui.utils.OrderedProperties;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -650,10 +651,24 @@ public class UserDisplayTabWidgetController implements Initializable {
 		this.currentParameterFilter = new ParameterDataFilter(null, new LinkedList<>(selectedParameters),null,null,null);
 		this.currentEventFilter = new EventDataFilter(null, new LinkedList<>(selectedEvents),null,null,null, null);
 		// Update the subscriptions
-		this.controller.filterUpdated(this, this.currentParameterFilter, this.currentEventFilter);
+		this.controller.filterUpdated();
 	}
 
 	public void setParentController(UserDisplayViewController userDisplayViewController) {
 		this.controller = userDisplayViewController;
+	}
+
+	public Properties getChartDescription() {
+		// Iterate on the chart managers
+		Properties props = new OrderedProperties();
+		int incrementalId = 0;
+		for(AbstractChartManager acm : charts) {
+			String chartType = acm.getChartType();
+			List<String> items = acm.getCurrentEntityPaths();
+			// Add the type as incremental key (3 digits, padded) plus type, and value is the list of paths, split by comma
+			props.put(String.format("%03d", incrementalId) + "." + chartType, items.stream().reduce("", (a,b) -> a.isEmpty() ? b : a + "," + b));
+			++incrementalId;
+		}
+		return props;
 	}
 }

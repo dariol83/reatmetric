@@ -29,8 +29,7 @@ public class OrderedProperties extends Properties {
 	
 	private int nextPosition = 0;
 	
-	private final Comparator<Object> insertionComparator = (o1, o2) ->
-						key2position.get(o1) - key2position.get(o2);
+	private final Comparator<Object> insertionComparator = Comparator.comparingInt(key2position::get);
 	
 	
 	@Override

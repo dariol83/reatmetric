@@ -12,6 +12,7 @@ package eu.dariolucia.reatmetric.ui;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.ui.plugin.ReatmetricServiceHolder;
 import eu.dariolucia.reatmetric.ui.preferences.PreferencesManager;
+import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -126,15 +127,7 @@ public class ReatmetricUI extends Application {
     }
 
     public static void shutdown() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Exit Reatmetric UI");
-        alert.setHeaderText("Exit Reatmetric UI");
-        String s = "Do you want to close Reatmetric UI?";
-        alert.setContentText(s);
-        alert.getDialogPane().getStylesheets().add(ReatmetricUI.class.getClassLoader()
-                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
-        Optional<ButtonType> result = alert.showAndWait();
-        if ((result.isPresent()) && (result.get() == ButtonType.OK)) {
+        if (DialogUtils.confirm("Exit Reatmetric UI", "Exit Reatmetric UI", "Do you want to close Reatmetric UI?")) {
             ReatmetricUI.shutdownThreadPool();
             ReatmetricUI.selectedSystem().setSystem(null);
             Platform.exit();

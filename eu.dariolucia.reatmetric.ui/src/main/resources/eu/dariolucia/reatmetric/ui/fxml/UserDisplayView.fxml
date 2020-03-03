@@ -4,8 +4,6 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.MenuButton?>
-<?import javafx.scene.control.MenuItem?>
-<?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.ToolBar?>
@@ -20,7 +18,7 @@
   ~ shall be granted by the author in writing.
   -->
 
-<TitledPane fx:id="displayTitledPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="User Displays" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.UserDisplayViewController">
+<TitledPane fx:id="displayTitledPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="User Displays" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.UserDisplayViewController">
    <content>
       <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
          <children>
@@ -28,12 +26,13 @@
                <items>
                   <Circle fx:id="serviceHealthStatus" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
                   <Label text=" " />
-                  <Button fx:id="newBtn" mnemonicParsing="false" onAction="#newButtonSelected" text="New" />
+                  <Button mnemonicParsing="false" onAction="#newButtonSelected" text="New" />
+                  <MenuButton fx:id="loadBtn" mnemonicParsing="false" text="Load" />
                   <!-- 
                   <MenuButton fx:id="loadMenuBtn" mnemonicParsing="false" text="Load" />
                   <Button fx:id="saveBtn" mnemonicParsing="false" onAction="#saveButtonSelected" text="Save..." />
                    -->
-                  <Button fx:id="closeBtn" mnemonicParsing="false" onAction="#closeButtonSelected" text="Close..." />
+                  <Button mnemonicParsing="false" onAction="#closeButtonSelected" text="Close..." />
                </items>
             </ToolBar>
             <TabPane fx:id="tabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">

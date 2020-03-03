@@ -30,11 +30,12 @@ import javafx.util.StringConverter;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class XYScatterChartManager extends AbstractChartManager {
 
 	private final ScatterChart chart;
-	private final Map<String, ScatterChart.Series> event2series = new HashMap<>();
+	private final Map<String, ScatterChart.Series> event2series = new LinkedHashMap<>();
 	private final Map<String, Integer> event2position = new TreeMap<>();
 	private final Map<Integer, String> position2event = new HashMap<>();
 
@@ -111,6 +112,16 @@ public class XYScatterChartManager extends AbstractChartManager {
 	@Override
 	public void clear() {
 		this.event2series.values().forEach(a -> a.getData().clear());
+	}
+
+	@Override
+	public String getChartType() {
+		return "scatter";
+	}
+
+	@Override
+	public List<String> getCurrentEntityPaths() {
+		return new ArrayList<>(event2series.keySet());
 	}
 
 	@Override

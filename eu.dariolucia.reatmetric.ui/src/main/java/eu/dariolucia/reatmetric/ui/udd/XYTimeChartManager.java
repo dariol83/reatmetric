@@ -10,11 +10,8 @@
 package eu.dariolucia.reatmetric.ui.udd;
 
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Observer;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
@@ -22,6 +19,8 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
+import javafx.scene.chart.AreaChart;
+import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.DragEvent;
@@ -31,7 +30,7 @@ import javafx.scene.input.TransferMode;
 public class XYTimeChartManager extends AbstractChartManager {
 
 	private final XYChart chart;
-	private final Map<SystemEntityPath, XYChart.Series> parameter2series = new HashMap<>();
+	private final Map<SystemEntityPath, XYChart.Series> parameter2series = new LinkedHashMap<>();
 	
     public XYTimeChartManager(Observer informer, XYChart<Instant, ? extends Number> n) {
     	super(informer);
@@ -107,6 +106,22 @@ public class XYTimeChartManager extends AbstractChartManager {
 	@Override
 	public void clear() {
 		this.parameter2series.values().forEach(a -> a.getData().clear());
+	}
+
+	@Override
+	public String getChartType() {
+		if(chart instanceof AreaChart) {
+			return "area";
+		} else if(chart instanceof LineChart) {
+			return "line";
+		} else {
+			return "unknown";
+		}
+	}
+
+	@Override
+	public List<String> getCurrentEntityPaths() {
+		return parameter2series.keySet().stream().map(SystemEntityPath::asString).collect(Collectors.toList());
 	}
 
 	@Override
