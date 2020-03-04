@@ -44,6 +44,7 @@ import java.net.URL;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 import static eu.dariolucia.reatmetric.ui.controller.AbstractDisplayController.formatTime;
 
@@ -552,27 +553,27 @@ public class UserDisplayTabWidgetController implements Initializable {
 		return null;
 	}
 
-	private void addLineChart() {
+	private AbstractChartManager addLineChart() {
 		LineChart<Instant, Number> l = new LineChart<>(new InstantAxis(), new NumberAxis());
-		initialiseTimeChart(l);
+		return initialiseTimeChart(l);
 	}
 
-	private void addAreaChart() {
+	private AbstractChartManager addAreaChart() {
 		AreaChart<Instant, Number> l = new AreaChart<>(new InstantAxis(), new NumberAxis());
-		initialiseTimeChart(l);
+		return initialiseTimeChart(l);
 	}
 
-	private void addBarChart() {
+	private AbstractChartManager addBarChart() {
 		BarChart<String, Number> l = new BarChart<>(new CategoryAxis(), new NumberAxis());
-		initialiseBarChart(l);
+		return initialiseBarChart(l);
 	}
 
-	private void addScatterChart() {
+	private AbstractChartManager addScatterChart() {
 		ScatterChart<Instant, Number> l = new ScatterChart<>(new InstantAxis(), new NumberAxis());
-		initialiseScatterChart(l);
+		return initialiseScatterChart(l);
 	}
 
-	private void initialiseBarChart(BarChart<String, Number> l) {
+	private AbstractChartManager initialiseBarChart(BarChart<String, Number> l) {
 		l.setAnimated(false);
 		l.getXAxis().setTickLabelsVisible(true);
 
@@ -584,6 +585,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 		// this.innerBox.getChildren().add(l);
 		this.charts.add(udd);
 		this.innerBox.getParent().layout();
+		return udd;
 	}
 
 	private void addToPane(XYChart<?, ?> l) {
@@ -604,7 +606,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 		}
 	}
 
-	private void initialiseTimeChart(XYChart<Instant, Number> l) {
+	private AbstractChartManager initialiseTimeChart(XYChart<Instant, Number> l) {
 		l.setAnimated(false);
 		l.getXAxis().setTickLabelsVisible(true);
 
@@ -619,9 +621,10 @@ public class UserDisplayTabWidgetController implements Initializable {
 
 		this.charts.add(udd);
 		this.innerBox.getParent().layout();
+		return udd;
 	}
 
-	private void initialiseScatterChart(ScatterChart<Instant, Number> l) {
+	private AbstractChartManager initialiseScatterChart(ScatterChart<Instant, Number> l) {
 		l.setAnimated(false);
 		l.getXAxis().setTickLabelsVisible(true);
 
@@ -639,6 +642,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 
 		this.charts.add(udd);
 		this.innerBox.getParent().layout();
+		return udd;
 	}
 
 	protected void updateFilter() {
@@ -670,5 +674,39 @@ public class UserDisplayTabWidgetController implements Initializable {
 			++incrementalId;
 		}
 		return props;
+	}
+
+	public void loadPreset(Properties p) {
+		Set<String> chartSets = p.keySet().stream().map(Object::toString).collect(Collectors.toCollection(TreeSet::new));
+		for(String chartSet : chartSets) {
+			String chartType = chartSet.substring(4);
+			AbstractChartManager chartManager = null;
+			List<String> items = Arrays.asList(((String) p.get(chartSet)).split(","));
+			switch(chartType) {
+				case "line":
+				{
+					chartManager = addLineChart();
+				}
+				break;
+				case "area":
+				{
+					chartManager = addAreaChart();
+				}
+				break;
+				case "bar":
+				{
+					chartManager = addBarChart();
+				}
+				break;
+				case "scatter":
+				{
+					chartManager = addScatterChart();
+				}
+				break;
+			}
+			if(chartManager != null) {
+				chartManager.addItems(items);
+			}
+		}
 	}
 }

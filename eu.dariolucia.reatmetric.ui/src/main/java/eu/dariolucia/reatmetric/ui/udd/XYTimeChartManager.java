@@ -9,10 +9,6 @@
 
 package eu.dariolucia.reatmetric.ui.udd;
 
-import java.time.Instant;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
@@ -27,12 +23,19 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Observer;
+import java.util.stream.Collectors;
+
 public class XYTimeChartManager extends AbstractChartManager {
 
-	private final XYChart chart;
-	private final Map<SystemEntityPath, XYChart.Series> parameter2series = new LinkedHashMap<>();
+	private final XYChart<Instant, Number> chart;
+	private final Map<SystemEntityPath, XYChart.Series<Instant, Number>> parameter2series = new LinkedHashMap<>();
 	
-    public XYTimeChartManager(Observer informer, XYChart<Instant, ? extends Number> n) {
+    public XYTimeChartManager(Observer informer, XYChart<Instant, Number> n) {
     	super(informer);
 		this.chart = n;
 		this.chart.setOnDragOver(this::onDragOver);
@@ -60,24 +63,24 @@ public class XYTimeChartManager extends AbstractChartManager {
         Dragboard db = event.getDragboard();
         boolean success = false;
         if (db.hasContent(SystemEntityDataFormats.PARAMETER)) {
-            addParameter((SystemEntity)db.getContent(SystemEntityDataFormats.PARAMETER));
+            addParameter(((SystemEntity)db.getContent(SystemEntityDataFormats.PARAMETER)).getPath());
             success = true;
         }
         event.setDropCompleted(success);
         event.consume();
     }
 
-	private void addParameter(SystemEntity content) {
-		if(this.parameter2series.containsKey(content.getPath())) {
+	private void addParameter(SystemEntityPath content) {
+		if(this.parameter2series.containsKey(content)) {
         	return;
         }
 		
-		XYChart.Series series = new XYChart.Series();
-        series.setName(content.getName());
-        this.parameter2series.put(content.getPath(), series);
+		XYChart.Series<Instant, Number> series = new XYChart.Series<>();
+        series.setName(content.getLastPathElement());
+        this.parameter2series.put(content, series);
         this.chart.getData().add(series);
         
-        addPlottedParameter(content.getPath());
+        addPlottedParameter(content);
 	}
 
 	@Override
@@ -85,11 +88,11 @@ public class XYTimeChartManager extends AbstractChartManager {
 		for(AbstractDataItem item : datas) {
 			if(item instanceof ParameterData) {
 				ParameterData pd = (ParameterData) item;
-				XYChart.Series s = parameter2series.get(pd.getPath());
+				XYChart.Series<Instant, Number> s = parameter2series.get(pd.getPath());
 				if (s != null && pd.getEngValue() != null) {
 					// if not a number, remove the parameter from the plot
 					if(pd.getEngValue() instanceof Number) {
-						XYChart.Data data = new XYChart.Data(live ? pd.getReceptionTime() : pd.getGenerationTime(), pd.getEngValue());
+						XYChart.Data<Instant, Number> data = new XYChart.Data<>(live ? pd.getReceptionTime() : pd.getGenerationTime(), (Number) pd.getEngValue());
 						s.getData().add(data);
 						// data.getNode().setVisible(false);
 						Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
@@ -128,5 +131,12 @@ public class XYTimeChartManager extends AbstractChartManager {
 	public void setBoundaries(Instant min, Instant max) {
 		((InstantAxis) this.chart.getXAxis()).setLowerBound(min);
 		((InstantAxis) this.chart.getXAxis()).setUpperBound(max);
+	}
+
+	@Override
+	public void addItems(List<String> items) {
+		for(String item : items) {
+			addParameter(SystemEntityPath.fromString(item));
+		}
 	}
 }

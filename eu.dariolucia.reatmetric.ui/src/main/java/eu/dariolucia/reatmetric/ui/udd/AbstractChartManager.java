@@ -61,4 +61,6 @@ public abstract class AbstractChartManager extends Observable {
 	public abstract String getChartType();
 
 	public abstract List<String> getCurrentEntityPaths();
+
+    public abstract void addItems(List<String> items);
 }

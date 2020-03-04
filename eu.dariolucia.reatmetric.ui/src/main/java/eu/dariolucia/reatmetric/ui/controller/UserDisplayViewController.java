@@ -289,10 +289,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
 
 	private void addChartTabFromPreset(String tabName, Properties p) throws IOException {
 		Tab t = createNewTab(tabName);
-		Set<String> chartSets = p.keySet().stream().map(Object::toString).collect(Collectors.toCollection(TreeSet::new));
-		for(String chartSet : chartSets) {
-			String chartType = chartSet.substring(4);
-			// TODO: implement preset loading in class UserDisplayTabWidgetController ... forward the props and the class is responsible for the update
-		}
+		UserDisplayTabWidgetController tabController = this.tab2contents.get(t);
+		tabController.loadPreset(p);
 	}
 }

@@ -16,7 +16,6 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
 import javafx.scene.chart.BarChart;
-import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.DragEvent;
@@ -24,7 +23,10 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Observer;
 import java.util.stream.Collectors;
 
 public class XYBarChartManager extends AbstractChartManager {
@@ -60,24 +62,24 @@ public class XYBarChartManager extends AbstractChartManager {
         Dragboard db = event.getDragboard();
         boolean success = false;
         if (db.hasContent(SystemEntityDataFormats.PARAMETER)) {
-            addParameter((SystemEntity)db.getContent(SystemEntityDataFormats.PARAMETER));
+            addParameter(((SystemEntity)db.getContent(SystemEntityDataFormats.PARAMETER)).getPath());
             success = true;
         }
         event.setDropCompleted(success);
         event.consume();
     }
 
-	private void addParameter(SystemEntity content) {
-		if(this.parameter2series.containsKey(content.getPath())) {
+	private void addParameter(SystemEntityPath content) {
+		if(this.parameter2series.containsKey(content)) {
         	return;
         }
 		
 		XYChart.Series<String, Number> series = new XYChart.Series<>();
-        series.setName(content.getName());
-        this.parameter2series.put(content.getPath(), series);
+        series.setName(content.getLastPathElement());
+        this.parameter2series.put(content, series);
         this.chart.getData().add(series);
 
-        addPlottedParameter(content.getPath());
+        addPlottedParameter(content);
 	}
 
 	@Override
@@ -118,7 +120,14 @@ public class XYBarChartManager extends AbstractChartManager {
         return parameter2series.keySet().stream().map(SystemEntityPath::asString).collect(Collectors.toList());
     }
 
-    @Override
+	@Override
+	public void addItems(List<String> items) {
+		for(String item : items) {
+			addParameter(SystemEntityPath.fromString(item));
+		}
+	}
+
+	@Override
 	public void setBoundaries(Instant min, Instant max) {
 		// Nothing to do
 	}
