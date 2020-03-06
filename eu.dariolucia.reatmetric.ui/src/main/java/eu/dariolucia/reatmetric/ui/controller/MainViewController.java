@@ -32,12 +32,16 @@ import javafx.scene.shape.Circle;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author dario
  */
 public class MainViewController implements Initializable, IReatmetricServiceListener {
+
+	private static final Logger LOG = Logger.getLogger(MainViewController.class.getName());
 
 	private static final String NULL_PERSPECTIVE = "nullPerspective";
 
@@ -94,7 +98,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
 	private void activatePerspective(String perspectiveId) {
 		if (perspectiveId == null) {
-			// TODO: error dialog box
+			LOG.log(Level.SEVERE, "Perspective not found");
 			return;
 		}
 		Node found = null;

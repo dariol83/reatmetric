@@ -107,7 +107,7 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
             this.messageText.setText(this.selectedFilter.getMessageTextContains() != null ? this.selectedFilter.getMessageTextContains() : "");
             this.severityList.getSelectionModel().clearSelection();
             if(this.selectedFilter.getSeverityList() != null) {    
-            	this.selectedFilter.getSeverityList().stream().forEach((s) -> this.severityList.getSelectionModel().select(s));
+            	this.selectedFilter.getSeverityList().forEach((s) -> this.severityList.getSelectionModel().select(s));
             }
         }
     }

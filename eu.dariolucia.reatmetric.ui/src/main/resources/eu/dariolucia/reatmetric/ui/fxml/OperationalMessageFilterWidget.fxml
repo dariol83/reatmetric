@@ -31,7 +31,7 @@
       <CheckBox fx:id="messageCheckbox" mnemonicParsing="false" text="Message" />
       <TextField fx:id="messageText">
          <tooltip>
-            <Tooltip text="Regular expression (Java regexp)" />
+            <Tooltip text="Part of the text contained in the message (no wildcards allowed)" />
          </tooltip>
       </TextField>
       <HBox prefWidth="200.0">

@@ -11,16 +11,21 @@ package eu.dariolucia.reatmetric.ui.plugin;
 
 import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.ui.controller.ConnectorsBrowserViewController;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author dario
  */
 public class ReatmetricServiceHolder {
-    
+
+    private static final Logger LOG = Logger.getLogger(ReatmetricServiceHolder.class.getName());
+
     private volatile IServiceFactory system;
     
     private final List<IReatmetricServiceListener> listeners = new CopyOnWriteArrayList<IReatmetricServiceListener>();
@@ -32,19 +37,17 @@ public class ReatmetricServiceHolder {
             try {
                 oldSystem.dispose();
             } catch (ReatmetricException e) {
-                // TODO: log
-                e.printStackTrace();
+                LOG.log(Level.WARNING, "Exception while disposing system " + oldSystem.getSystem() + ": " + e.getMessage(), e);
             }
         }
         this.system = system;
         if(this.system != null) {
             try {
                 this.system.initialise();
+                this.listeners.forEach(o -> o.systemConnected(this.system));
             } catch (ReatmetricException e) {
-                // TODO: log
-                e.printStackTrace();
+                LOG.log(Level.SEVERE, "Exception while initialising system " + this.system.getSystem() + ": " + e.getMessage(), e);
             }
-            this.listeners.forEach(o -> o.systemConnected(this.system));
         }
     }
     

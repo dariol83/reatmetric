@@ -549,7 +549,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 	}
 
 	protected Control doBuildNodeForPrinting() {
-		// TODO
+		// TODO implement printing support
 		return null;
 	}
 

@@ -39,6 +39,8 @@ public interface IProcessingModel {
 
     List<ActivityOccurrenceData> getActiveActivityOccurrences();
 
+    // TODO add a way to set parameter value
+
     void visit(IProcessingModelVisitor visitor);
 
     List<AbstractDataItem> get(AbstractDataItemFilter<?> filter);

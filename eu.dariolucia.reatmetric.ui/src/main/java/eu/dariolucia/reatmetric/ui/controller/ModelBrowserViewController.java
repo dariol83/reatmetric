@@ -12,7 +12,6 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.IServiceFactory;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.*;
-import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
@@ -37,12 +36,13 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 import org.controlsfx.control.textfield.CustomTextField;
 
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * FXML Controller class
@@ -50,6 +50,8 @@ import java.util.function.Predicate;
  * @author dario
  */
 public class ModelBrowserViewController extends AbstractDisplayController implements ISystemModelSubscriber {
+
+    private static final Logger LOG = Logger.getLogger(ModelBrowserViewController.class.getName());
 
     private final Image containerImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/elements_obj.gif"));
     private final Image parameterImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/genericvariable_obj.gif"));
@@ -116,8 +118,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().enable(se.getValue().getPath());
                 } catch (ReatmetricException e) {
-                    // TODO: log
-                    e.printStackTrace();
+                    LOG.log(Level.SEVERE, "Problem while enabling system entity " + se.getValue().getPath() + ": " + e.getMessage(), e);
                 }
             });
         }
@@ -131,8 +132,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().disable(se.getValue().getPath());
                 } catch (ReatmetricException e) {
-                    // TODO: log
-                    e.printStackTrace();
+                    LOG.log(Level.SEVERE, "Problem while disabling system entity " + se.getValue().getPath() + ": " + e.getMessage(), e);
                 }
             });
         }
@@ -276,8 +276,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             try {
                 buildTreeModel();
             } catch (ReatmetricException e) {
-                // TODO: log
-                e.printStackTrace();
+                LOG.log(Level.SEVERE, "Problem while building tree model: " + e.getMessage(), e);
             }
         });
     }
@@ -365,7 +364,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
         FilterableTreeItem<SystemEntity> parent = this.path2item.get(parentPath);
         if(parent == null) {
-            // TODO: log problem
+            LOG.log(Level.WARNING, "Parent entity at path " + parentPath + " while adding " + item.getValue().getPath() + " not found: object skipped");
         } else {
             parent.getSourceChildren().add(item);
         }
@@ -389,7 +388,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
      *
      * Thanks to kaznovac (https://stackoverflow.com/users/382655/kaznovac)
      */
-    public class FilterableTreeItem<T> extends TreeItem<T> {
+    public static class FilterableTreeItem<T> extends TreeItem<T> {
         private final ObservableList<TreeItem<T>> sourceChildren = FXCollections.observableArrayList();
         private final FilteredList<TreeItem<T>> filteredChildren = new FilteredList<>(sourceChildren);
         private final ObjectProperty<Predicate<T>> predicate = new SimpleObjectProperty<>();
@@ -398,7 +397,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             super(value);
 
             filteredChildren.predicateProperty().bind(Bindings.createObjectBinding(() -> {
-                Predicate<TreeItem<T>> p = child -> {
+                return child -> {
                     if (child instanceof FilterableTreeItem) {
                         ((FilterableTreeItem<T>) child).predicateProperty().set(predicate.get());
                     }
@@ -407,7 +406,6 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     }
                     return predicate.get().test(child.getValue());
                 };
-                return p;
             } , predicate));
 
             filteredChildren.addListener((ListChangeListener<TreeItem<T>>) c -> {

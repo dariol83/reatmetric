@@ -28,7 +28,6 @@ import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
-import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
@@ -36,6 +35,8 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -44,6 +45,8 @@ import java.util.stream.Collectors;
  * @author dario
  */
 public class UserDisplayViewController extends AbstractDisplayController {
+
+	private static final Logger LOG = Logger.getLogger(UserDisplayViewController.class.getName());
 
 	// Pane control
 	@FXML
@@ -171,8 +174,8 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		t.setContent(userDisplayWidget);
 		this.tabPane.getTabs().add(t);
 		this.tabPane.getParent().layout();
+		this.tabPane.getSelectionModel().select(t);
 		this.tab2contents.put(t, ctrl);
-
 		ctrl.startSubscription();
 		return t;
 	}
@@ -278,8 +281,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
 					try {
 						addChartTabFromPreset(fpreset, p);
 					} catch (IOException e) {
-						// TODO: log
-						e.printStackTrace();
+						LOG.log(Level.WARNING, "Cannot initialise chart tab preset " + preset + ": " + e.getMessage(), e);
 					}
 				}
 			});
@@ -289,7 +291,12 @@ public class UserDisplayViewController extends AbstractDisplayController {
 
 	private void addChartTabFromPreset(String tabName, Properties p) throws IOException {
 		Tab t = createNewTab(tabName);
-		UserDisplayTabWidgetController tabController = this.tab2contents.get(t);
-		tabController.loadPreset(p);
+		// After adding the tab, you need to initialise it in a new round of the UI thread,
+		// to allow the layouting of the tab and the correct definition of the parent elements,
+		// hence avoiding a null pointer exception
+		Platform.runLater(() -> {
+			UserDisplayTabWidgetController tabController = this.tab2contents.get(t);
+			tabController.loadPreset(p);
+		});
 	}
 }
