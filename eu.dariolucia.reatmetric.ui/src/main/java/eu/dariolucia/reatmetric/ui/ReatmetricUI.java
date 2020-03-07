@@ -94,15 +94,7 @@ public class ReatmetricUI extends Application {
             }
         });
     }
-    
-    public static void registerStatusIndicator(Consumer<AlarmState> statusIndicator) {
-		STATUS_INDICATOR = statusIndicator;
-	}
-    
-    public static void setStatusIndicator(AlarmState t) {
-    	STATUS_INDICATOR.accept(t);
-    }
-    
+
     @Override
     public void start(Stage stage) throws Exception {
         Parent root = FXMLLoader.load(ReatmetricUI.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/MainView.fxml"));

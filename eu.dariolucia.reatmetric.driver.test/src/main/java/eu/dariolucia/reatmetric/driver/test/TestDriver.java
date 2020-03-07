@@ -10,6 +10,7 @@ package eu.dariolucia.reatmetric.driver.test;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
@@ -21,6 +22,7 @@ import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.core.api.IDriver;
+import eu.dariolucia.reatmetric.core.api.IDriverListener;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
@@ -45,6 +47,7 @@ public class TestDriver implements IDriver, IActivityHandler {
     private volatile IServiceCoreContext context;
     private volatile IProcessingModel model;
     private volatile ProcessingDefinition definitions;
+    private volatile IDriverListener subscriber;
 
     // For activity execution
     private final ExecutorService executor = Executors.newFixedThreadPool(4, (t) -> {
@@ -61,8 +64,9 @@ public class TestDriver implements IDriver, IActivityHandler {
     }
 
     @Override
-    public void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration) throws DriverException {
+    public void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException {
         this.context = context;
+        this.subscriber = subscriber;
         try {
             this.definitions = ProcessingDefinition.loadAll(coreConfiguration.getDefinitionsLocation());
         } catch (ReatmetricException e) {
@@ -72,6 +76,11 @@ public class TestDriver implements IDriver, IActivityHandler {
         this.connectors.add(createTcConnector("Custom", "RouteA", "RouteB"));
         this.connectors.add(createTmConnector("TM", context.getRawDataBroker(), "RouteA"));
         this.running = true;
+    }
+
+    @Override
+    public SystemStatus getDriverStatus() {
+        return SystemStatus.NOMINAL;
     }
 
     private ITransportConnector createTcConnector(String type, String... routes) {

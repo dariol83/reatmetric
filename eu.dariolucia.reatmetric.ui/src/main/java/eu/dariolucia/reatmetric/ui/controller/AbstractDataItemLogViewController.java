@@ -9,7 +9,7 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
@@ -277,7 +277,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     @Override
-    protected void doSystemDisconnected(IServiceFactory system, boolean oldState) {
+    protected void doSystemDisconnected(IReatmetricSystem system, boolean oldState) {
         if(this.liveTgl != null) {
             this.liveTgl.setSelected(false);
         }
@@ -293,7 +293,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     @Override
-    protected void doSystemConnected(IServiceFactory system, boolean oldState) {
+    protected void doSystemConnected(IReatmetricSystem system, boolean oldState) {
         if(this.liveTgl != null) {
             this.liveTgl.setSelected(true);
         }
@@ -309,11 +309,11 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
     
     private void restoreColumnConfiguration() {
-        TableViewUtil.restoreColumnConfiguration(this.system.getSystem(), this.user, doGetComponentId(), this.dataItemTableView);
+        TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
     }
     
     private void persistColumnConfiguration() {
-        TableViewUtil.persistColumnConfiguration(this.system.getSystem(), this.user, doGetComponentId(), this.dataItemTableView);
+        TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
     }
 
     protected void informDataItemsReceived(List<T> objects) {

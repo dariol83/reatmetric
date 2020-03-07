@@ -9,7 +9,7 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
@@ -203,23 +203,23 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     switch (item) {
                         case ENABLED:
                             setTextFill(Color.LIMEGREEN);
-                            setStyle("-fx-font-weight: bold");
+                            // setStyle("-fx-font-weight: bold");
                             // setStyle("-fx-font-weight: bold; -fx-background-color: Lime");
                             break;
                         case DISABLED:
                             setTextFill(Color.DARKGRAY);
-                            setStyle("-fx-font-weight: bold");
+                            // setStyle("-fx-font-weight: bold");
                             // setStyle("-fx-font-weight: bold; -fx-background-color: LightGray");
                             break;
                         case UNKNOWN:
                             setTextFill(Color.DARKORANGE);
-                            setStyle("-fx-font-weight: bold");
+                            // setStyle("-fx-font-weight: bold");
                             // setStyle("-fx-font-weight: bold; -fx-background-color: DarkKhaki");
                             break;
                         default:
                             setText("");
                             setTextFill(Color.BLACK);
-                            setStyle("");
+                            // setStyle("");
                             break;
                     }
                 } else {
@@ -258,14 +258,14 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     }
 
     @Override
-    protected void doSystemDisconnected(IServiceFactory system, boolean oldStatus) {
+    protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
         this.displayTitledPane.setDisable(true);
         // Clear the table
         clearTreeModel();
     }
 
     @Override
-    protected void doSystemConnected(IServiceFactory system, boolean oldStatus) {
+    protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
         this.displayTitledPane.setDisable(false);
         startSubscription();
     }

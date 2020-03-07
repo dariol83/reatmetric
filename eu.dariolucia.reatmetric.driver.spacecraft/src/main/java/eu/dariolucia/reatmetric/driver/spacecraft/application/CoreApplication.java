@@ -7,7 +7,7 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.application;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.common.ServiceType;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
@@ -23,7 +23,7 @@ import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class CoreApplication implements IServiceFactory {
+public class CoreApplication implements IReatmetricSystem {
 
     private final List<IUserMonitorCallback> userListeners = new CopyOnWriteArrayList<>();
     private final List<IServiceMonitorCallback> serviceListeners = new CopyOnWriteArrayList<>();
@@ -47,7 +47,7 @@ public class CoreApplication implements IServiceFactory {
     }
 
     @Override
-    public String getSystem() {
+    public String getName() {
         return "Monitoring Centre CORE 1.0";
     }
 
@@ -103,7 +103,7 @@ public class CoreApplication implements IServiceFactory {
     public void login(String username, String password) throws ReatmetricException {
         if(this.username != null) {
             String reason = "User already connected";
-            this.userListeners.stream().forEach((o) -> o.userConnectionFailed(getSystem(), username, reason));
+            this.userListeners.stream().forEach((o) -> o.userConnectionFailed(getName(), username, reason));
             throw new ReatmetricException(reason);
         }
         this.username = username;
@@ -111,13 +111,13 @@ public class CoreApplication implements IServiceFactory {
         // correct databases
         // TODO
 
-        this.userListeners.stream().forEach((o) -> o.userConnected(getSystem(), username));
-        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getSystem(), ServiceType.OPERATIONAL_MESSAGES));
-        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getSystem(), ServiceType.RAW_DATA));
-        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getSystem(), ServiceType.SYSTEM_MODEL));
-        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getSystem(), ServiceType.PARAMETERS));
-        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getSystem(), ServiceType.EVENTS));
-        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getSystem(), ServiceType.ALARMS));
+        this.userListeners.stream().forEach((o) -> o.userConnected(getName(), username));
+        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getName(), ServiceType.OPERATIONAL_MESSAGES));
+        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getName(), ServiceType.RAW_DATA));
+        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getName(), ServiceType.SYSTEM_MODEL));
+        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getName(), ServiceType.PARAMETERS));
+        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getName(), ServiceType.EVENTS));
+        this.serviceListeners.stream().forEach((o) -> o.serviceConnected(getName(), ServiceType.ALARMS));
     }
 
     @Override
@@ -125,13 +125,13 @@ public class CoreApplication implements IServiceFactory {
         String oldUser = this.username;
         this.username = null;
         if(oldUser != null) {
-            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getSystem(), ServiceType.ALARMS));
-            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getSystem(), ServiceType.EVENTS));
-            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getSystem(), ServiceType.PARAMETERS));
-            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getSystem(), ServiceType.SYSTEM_MODEL));
-            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getSystem(), ServiceType.OPERATIONAL_MESSAGES));
-            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getSystem(), ServiceType.RAW_DATA));
-            this.userListeners.stream().forEach((o) -> o.userDisconnected(getSystem(), oldUser));
+            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getName(), ServiceType.ALARMS));
+            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getName(), ServiceType.EVENTS));
+            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getName(), ServiceType.PARAMETERS));
+            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getName(), ServiceType.SYSTEM_MODEL));
+            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getName(), ServiceType.OPERATIONAL_MESSAGES));
+            this.serviceListeners.stream().forEach((o) -> o.serviceDisconnected(getName(), ServiceType.RAW_DATA));
+            this.userListeners.stream().forEach((o) -> o.userDisconnected(getName(), oldUser));
         }
 
         // Close and cleanup

@@ -9,7 +9,8 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
@@ -39,7 +40,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     protected Circle serviceHealthStatus;
 
     // Info
-    protected IServiceFactory system = null;
+    protected IReatmetricSystem system = null;
     protected String user = System.getProperty("user.name");
 
     protected boolean serviceConnected = false;
@@ -92,7 +93,12 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     }
 
     @Override
-    public void systemConnected(IServiceFactory system) {
+    public void systemStatusUpdate(SystemStatus status) {
+        // Nothing here, subclasses can override
+    }
+
+    @Override
+    public void systemConnected(IReatmetricSystem system) {
         Platform.runLater(() -> {
             this.system = system;
             // Set indicator
@@ -106,7 +112,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     }
 
     @Override
-    public void systemDisconnected(IServiceFactory system) {
+    public void systemDisconnected(IReatmetricSystem system) {
         Platform.runLater(() -> {
             boolean oldStatus = this.serviceConnected;
             //
@@ -131,9 +137,9 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
 
     protected abstract Control doBuildNodeForPrinting();
 
-    protected abstract void doSystemDisconnected(IServiceFactory system, boolean oldStatus);
+    protected abstract void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus);
 
-    protected abstract void doSystemConnected(IServiceFactory system, boolean oldStatus);
+    protected abstract void doSystemConnected(IReatmetricSystem system, boolean oldStatus);
 
 }
 

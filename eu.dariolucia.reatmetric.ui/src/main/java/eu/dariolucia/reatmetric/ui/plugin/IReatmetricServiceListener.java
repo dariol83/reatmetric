@@ -9,7 +9,8 @@
 
 package eu.dariolucia.reatmetric.ui.plugin;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.common.SystemStatus;
 
 /**
  *
@@ -21,8 +22,9 @@ public interface IReatmetricServiceListener {
 
     void stopGlobalOperationProgress();
 
-    void systemConnected(IServiceFactory system);
+    void systemConnected(IReatmetricSystem system);
     
-    void systemDisconnected(IServiceFactory system);
-    
+    void systemDisconnected(IReatmetricSystem system);
+
+    void systemStatusUpdate(SystemStatus status);
 }

@@ -9,7 +9,7 @@
 
 package eu.dariolucia.reatmetric.ui.plugin;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 
 import java.util.*;
 
@@ -19,14 +19,14 @@ import java.util.*;
  */
 public class ReatmetricPluginInspector {
 
-    private final Map<String, IServiceFactory> serviceFactories = new TreeMap<>();
+    private final Map<String, IReatmetricSystem> serviceFactories = new TreeMap<>();
 
     public synchronized List<String> getAvailableSystems() {
         if(this.serviceFactories.isEmpty()) {
-            ServiceLoader<IServiceFactory> loader
-                    = ServiceLoader.load(IServiceFactory.class);
-            for (IServiceFactory cp : loader) {
-                String system = cp.getSystem();
+            ServiceLoader<IReatmetricSystem> loader
+                    = ServiceLoader.load(IReatmetricSystem.class);
+            for (IReatmetricSystem cp : loader) {
+                String system = cp.getName();
                 if (system != null) {
                     this.serviceFactories.put(system, cp);
                 }
@@ -36,7 +36,7 @@ public class ReatmetricPluginInspector {
         return new ArrayList<>(this.serviceFactories.keySet());
     }
     
-    public synchronized IServiceFactory getSystem(String system) {
+    public synchronized IReatmetricSystem getSystem(String system) {
         return this.serviceFactories.get(system);
     }
 }

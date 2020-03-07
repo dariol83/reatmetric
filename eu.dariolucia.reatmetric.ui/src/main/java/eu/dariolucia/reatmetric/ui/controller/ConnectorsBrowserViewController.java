@@ -9,27 +9,19 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
-import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.TransportStatus;
-import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
-import javafx.scene.text.Text;
 
 import java.io.IOException;
 import java.net.URL;
@@ -70,14 +62,14 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
     }
 
     @Override
-    protected void doSystemDisconnected(IServiceFactory system, boolean oldStatus) {
+    protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
         this.displayTitledPane.setDisable(true);
         // Clear the list view
         clearConnectorsModel();
     }
 
     @Override
-    protected void doSystemConnected(IServiceFactory system, boolean oldStatus) {
+    protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
         this.displayTitledPane.setDisable(false);
         startSubscription();
     }

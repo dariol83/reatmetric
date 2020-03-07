@@ -7,12 +7,13 @@
 
 package eu.dariolucia.reatmetric.core;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.activity.IActivityExecutionService;
 import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
+import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
@@ -25,10 +26,7 @@ import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelExcepti
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
-import eu.dariolucia.reatmetric.core.api.IDriver;
-import eu.dariolucia.reatmetric.core.api.IOperationalMessageBroker;
-import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
-import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
+import eu.dariolucia.reatmetric.core.api.*;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.DriverConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
@@ -39,11 +37,12 @@ import eu.dariolucia.reatmetric.core.impl.RawDataBrokerImpl;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
+public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, IDriverListener {
 
     private static final Logger LOG = Logger.getLogger(ServiceCoreImpl.class.getName());
     private static final String INIT_FILE_KEY = "reatmetric.core.config"; // Absolute location of the configuration file, to configure the core instance
@@ -53,10 +52,13 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
     private final List<ITransportConnector> transportConnectorsImmutable = Collections.unmodifiableList(transportConnectors);
     private final ServiceCoreConfiguration configuration;
 
+    private volatile SystemStatus systemStatus = SystemStatus.UNKNOWN;
+
     private IArchive archive;
     private OperationalMessageBrokerImpl messageBroker;
     private RawDataBrokerImpl rawDataBroker;
     private ProcessingModelManager processingModelManager;
+    private Consumer<SystemStatus> statusSubscriber;
 
     public ServiceCoreImpl() {
         try {
@@ -68,7 +70,7 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
     }
 
     @Override
-    public void initialise() throws ReatmetricException {
+    public void initialise(Consumer<SystemStatus> consumer) throws ReatmetricException {
         // Prepare the logging facility
         if(configuration.getLogPropertyFile() != null) {
             try {
@@ -107,7 +109,23 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
                 registerActivityHandlers(dc.getName(), driver.getActivityHandlers());
             }
         }
+        // Derive system status
+        statusSubscriber = consumer;
+        deriveSystemStatus();
         // Done and ready to go
+    }
+
+    private void deriveSystemStatus() {
+        SystemStatus cumulative = SystemStatus.UNKNOWN;
+        for(IDriver d : drivers) {
+            if(d.getDriverStatus().ordinal() > cumulative.ordinal()) {
+                cumulative = d.getDriverStatus();
+            }
+        }
+        if(systemStatus != cumulative) {
+            systemStatus = cumulative;
+            statusSubscriber.accept(cumulative);
+        }
     }
 
     @Override
@@ -130,6 +148,7 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
         }
         drivers.clear();
         transportConnectors.clear();
+        statusSubscriber = null;
     }
 
     private void registerActivityHandlers(String driverName, List<IActivityHandler> activityHandlers) {
@@ -152,13 +171,13 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
         IDriver driver = null;
         if(provider.isPresent()) {
             driver = provider.get().get();
-            driver.initialise(dc.getName(), dc.getConfiguration(), this, this.configuration);
+            driver.initialise(dc.getName(), dc.getConfiguration(), this, this.configuration, this);
         }
         return driver;
     }
 
     @Override
-    public String getSystem() {
+    public String getName() {
         return configuration.getName();
     }
 
@@ -213,7 +232,7 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
     }
 
     @Override
-    public IServiceFactory getServiceFactory() {
+    public IReatmetricSystem getServiceFactory() {
         return this;
     }
 
@@ -225,5 +244,10 @@ public class ServiceCoreImpl implements IServiceFactory, IServiceCoreContext {
     @Override
     public IOperationalMessageBroker getOperationalMessageBroker() {
         return messageBroker;
+    }
+
+    @Override
+    public void driverStatusUpdate(String driverName, SystemStatus status) {
+        deriveSystemStatus();
     }
 }

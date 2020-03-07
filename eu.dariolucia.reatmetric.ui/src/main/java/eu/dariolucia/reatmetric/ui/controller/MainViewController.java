@@ -9,8 +9,8 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
-import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import eu.dariolucia.reatmetric.ui.plugin.ReatmetricPluginInspector;
@@ -62,7 +62,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	@FXML
 	private StackPane perspectiveStackPane;
 
-	// TODO: use the circles below to report the global status of the system factory platform (separate notification) ...
 	@FXML
 	private Circle nominalCrl;
 	@FXML
@@ -202,7 +201,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		ReatmetricUI.selectedSystem().addSubscriber(this);
 		// Register the status label
 		ReatmetricUI.registerStatusLabel(this.statusLbl);
-		ReatmetricUI.registerStatusIndicator(this::updateStatusIndicator);
 	}
 
 	@Override
@@ -222,19 +220,26 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	}
 
 	@Override
-	public void systemConnected(IServiceFactory system) {
+	public void systemConnected(IReatmetricSystem system) {
 		Platform.runLater(() -> {
 			enableMainViewItems();
-			this.systemLbl.setText(system.getSystem());
-			ReatmetricUI.setStatusLabel("System " + system.getSystem() + " connected");
+			this.systemLbl.setText(system.getName());
+			ReatmetricUI.setStatusLabel("System " + system.getName() + " connected");
 		});
 	}
 
 	@Override
-	public void systemDisconnected(IServiceFactory system) {
+	public void systemDisconnected(IReatmetricSystem system) {
 		Platform.runLater(() -> {
 			disableMainViewItems();
-			ReatmetricUI.setStatusLabel("System " + system.getSystem() + " disconnected");
+			ReatmetricUI.setStatusLabel("System " + system.getName() + " disconnected");
+		});
+	}
+
+	@Override
+	public void systemStatusUpdate(SystemStatus status) {
+		Platform.runLater(() -> {
+			updateStatusIndicator(status);
 		});
 	}
 
@@ -271,23 +276,26 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		this.systemLbl.setDisable(false);
 	}
 
-	public void updateStatusIndicator(AlarmState state) {
+	public void updateStatusIndicator(SystemStatus state) {
 		Platform.runLater(() -> {
 			switch (state) {
 			case ALARM:
-			case ERROR:
 				this.nominalCrl.setFill(Paint.valueOf("#003915"));
 				this.warningCrl.setFill(Paint.valueOf("#382700"));
 				this.alarmCrl.setFill(Paint.valueOf("#CC0000"));
 				break;
 			case WARNING:
-			case VIOLATED:
 				this.nominalCrl.setFill(Paint.valueOf("#003915"));
 				this.warningCrl.setFill(Paint.valueOf("#CCAA00"));
 				this.alarmCrl.setFill(Paint.valueOf("#360000"));
 				break;
-			default:
+			case NOMINAL:
 				this.nominalCrl.setFill(Paint.valueOf("#00FF15"));
+				this.warningCrl.setFill(Paint.valueOf("#382700"));
+				this.alarmCrl.setFill(Paint.valueOf("#360000"));
+				break;
+			default:
+				this.nominalCrl.setFill(Paint.valueOf("#003915"));
 				this.warningCrl.setFill(Paint.valueOf("#382700"));
 				this.alarmCrl.setFill(Paint.valueOf("#360000"));
 				break;

@@ -67,17 +67,17 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
                         switch (item) {
                             case ALARM:
                                 setTextFill(Color.DARKRED);
-                                setStyle("-fx-font-weight: bold");
+                                // setStyle("-fx-font-weight: bold");
                                 // setStyle("-fx-font-weight: bold; -fx-background-color: DarkRed; -fx-border-width: 0 1 1 0; -fx-border-color: Black");
                                 break;
                             case WARN:
                                 setTextFill(Color.DARKORANGE);
-                                setStyle("-fx-font-weight: bold");
+                                // setStyle("-fx-font-weight: bold");
                                 // setStyle("-fx-font-weight: bold; -fx-background-color: Chocolate; -fx-border-width: 0 1 1 0; -fx-border-color: Black");
                                 break;
                             default:
                                 setTextFill(Color.BLACK);
-                                setStyle("");
+                                // setStyle("");
                                 break;
                         }
                     } else {

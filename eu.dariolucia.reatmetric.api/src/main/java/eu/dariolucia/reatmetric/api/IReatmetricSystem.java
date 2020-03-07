@@ -11,6 +11,7 @@ package eu.dariolucia.reatmetric.api;
 import eu.dariolucia.reatmetric.api.activity.IActivityExecutionService;
 import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
+import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService;
@@ -20,18 +21,19 @@ import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  *
  * @author dario
  */
-public interface IServiceFactory {
+public interface IReatmetricSystem {
 
-    void initialise() throws ReatmetricException;
+    void initialise(Consumer<SystemStatus> statusUpdateSubscriber) throws ReatmetricException;
 
     void dispose() throws ReatmetricException;
 
-    String getSystem();
+    String getName();
     
     IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException;
     

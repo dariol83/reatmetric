@@ -9,9 +9,9 @@
 
 package eu.dariolucia.reatmetric.ui.plugin;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.ui.controller.ConnectorsBrowserViewController;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -26,34 +26,39 @@ public class ReatmetricServiceHolder {
 
     private static final Logger LOG = Logger.getLogger(ReatmetricServiceHolder.class.getName());
 
-    private volatile IServiceFactory system;
+    private volatile IReatmetricSystem system;
     
     private final List<IReatmetricServiceListener> listeners = new CopyOnWriteArrayList<IReatmetricServiceListener>();
     
-    public synchronized void setSystem(IServiceFactory system) {
+    public synchronized void setSystem(IReatmetricSystem system) {
         this.listeners.forEach(IReatmetricServiceListener::startGlobalOperationProgress);
-        IServiceFactory oldSystem = this.system;
+        IReatmetricSystem oldSystem = this.system;
         if(oldSystem != null) {
             this.listeners.forEach(o -> o.systemDisconnected(oldSystem));
             try {
                 oldSystem.dispose();
             } catch (ReatmetricException e) {
-                LOG.log(Level.WARNING, "Exception while disposing system " + oldSystem.getSystem() + ": " + e.getMessage(), e);
+                LOG.log(Level.WARNING, "Exception while disposing system " + oldSystem.getName() + ": " + e.getMessage(), e);
             }
         }
         this.system = system;
+        this.listeners.forEach(o -> o.systemStatusUpdate(SystemStatus.UNKNOWN));
         if(this.system != null) {
             try {
-                this.system.initialise();
+                this.system.initialise(this::statusUpdateFunction);
                 this.listeners.forEach(o -> o.systemConnected(this.system));
             } catch (ReatmetricException e) {
-                LOG.log(Level.SEVERE, "Exception while initialising system " + this.system.getSystem() + ": " + e.getMessage(), e);
+                LOG.log(Level.SEVERE, "Exception while initialising system " + this.system.getName() + ": " + e.getMessage(), e);
             }
         }
         this.listeners.forEach(IReatmetricServiceListener::stopGlobalOperationProgress);
     }
-    
-    public IServiceFactory getSystem() {
+
+    private void statusUpdateFunction(SystemStatus systemStatus) {
+        this.listeners.forEach(o -> o.systemStatusUpdate(systemStatus));
+    }
+
+    public IReatmetricSystem getSystem() {
         return this.system;
     }
     

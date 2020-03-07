@@ -7,6 +7,7 @@
 
 package eu.dariolucia.reatmetric.core.api;
 
+import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
@@ -17,9 +18,10 @@ import java.util.List;
 public interface IDriver {
 
     // TODO: add a service for drivers, to enable property storage and retrieve (per driver, use prop file with driver name)
-    // TODO: add a subscription for the core to be notified by the driver about its status change (NOMINAL, WARNING, ALARM)
 
-    void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration) throws DriverException;
+    void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException;
+
+    SystemStatus getDriverStatus();
 
     List<IActivityHandler> getActivityHandlers();
 

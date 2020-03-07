@@ -9,7 +9,7 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -187,7 +187,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             if (result.isPresent()){
                 Properties props = new OrderedProperties();
                 this.dataItemTableView.getItems().forEach((o) -> props.put(o.getPath().asString(), String.valueOf(o.get().getExternalId())));
-                this.presetManager.save(system.getSystem(), user, result.get(), doGetComponentId(), props);
+                this.presetManager.save(system.getName(), user, result.get(), doGetComponentId(), props);
             }
         }
     }
@@ -195,12 +195,12 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected void onShowingPresetMenu(Event e) {
         this.loadPresetMenu.getItems().remove(0, this.loadPresetMenu.getItems().size());
-        List<String> presets = this.presetManager.getAvailablePresets(system.getSystem(), user, doGetComponentId());
+        List<String> presets = this.presetManager.getAvailablePresets(system.getName(), user, doGetComponentId());
         for(String preset : presets) {
             final String fpreset = preset;
             MenuItem mi = new MenuItem(preset);
             mi.setOnAction((event) -> {
-                Properties p = this.presetManager.load(system.getSystem(), user, fpreset, doGetComponentId());
+                Properties p = this.presetManager.load(system.getName(), user, fpreset, doGetComponentId());
                 if(p != null) {
                     addItemsFromPreset(p);
                 }
@@ -383,11 +383,11 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
 
     private void restoreColumnConfiguration() {
-        TableViewUtil.restoreColumnConfiguration(this.system.getSystem(), this.user, doGetComponentId(), this.dataItemTableView);
+        TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
     }
     
     private void persistColumnConfiguration() {
-        TableViewUtil.persistColumnConfiguration(this.system.getSystem(), this.user, doGetComponentId(), this.dataItemTableView);
+        TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
     }
 
     protected void informDataItemsReceived(List<ParameterData> objects) {
@@ -449,7 +449,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
     
     @Override
-    protected void doSystemDisconnected(IServiceFactory system, boolean oldStatus) {
+    protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
         this.liveTgl.setSelected(false);
         this.displayTitledPane.setDisable(true);
         if(oldStatus) {
@@ -458,7 +458,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
 
     @Override
-    protected void doSystemConnected(IServiceFactory system, boolean oldStatus) {
+    protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
         this.liveTgl.setSelected(true);
         this.displayTitledPane.setDisable(false);
         // Restore column configuration

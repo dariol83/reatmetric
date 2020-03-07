@@ -86,15 +86,15 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
 						switch (item) {
 						case ALARM:
 							setTextFill(Color.DARKRED);
-							setStyle("-fx-font-weight: bold");
+							// setStyle("-fx-font-weight: bold");
 							break;
 						case WARN:
 							setTextFill(Color.CHOCOLATE);
-							setStyle("-fx-font-weight: bold");
+							// setStyle("-fx-font-weight: bold");
 							break;
 						default:
 							setTextFill(Color.DARKGREEN);
-							setStyle("-fx-font-weight: bold");
+							// setStyle("-fx-font-weight: bold");
 							break;
 						}
 					} else {

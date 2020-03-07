@@ -1,3 +1,5 @@
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+
 open module eu.dariolucia.reatmetric.ui {
 
     requires java.logging;
@@ -13,5 +15,5 @@ open module eu.dariolucia.reatmetric.ui {
 
     exports eu.dariolucia.reatmetric.ui;
 
-    uses eu.dariolucia.reatmetric.api.IServiceFactory;
+    uses IReatmetricSystem;
 }

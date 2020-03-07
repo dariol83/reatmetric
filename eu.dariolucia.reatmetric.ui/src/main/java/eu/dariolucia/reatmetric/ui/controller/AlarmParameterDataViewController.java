@@ -114,7 +114,7 @@ public class AlarmParameterDataViewController
 							setTextFill(Color.DARKGREEN);
 							break;
 						}
-						setStyle("-fx-font-weight: bold");
+						// setStyle("-fx-font-weight: bold");
 					} else {
 						setText("");
 						setGraphic(null);

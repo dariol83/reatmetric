@@ -1,3 +1,5 @@
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+
 open module eu.dariolucia.reatmetric.core {
     requires java.logging;
     requires java.xml.bind;
@@ -13,5 +15,5 @@ open module eu.dariolucia.reatmetric.core {
     uses eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
     uses eu.dariolucia.reatmetric.api.processing.IProcessingModelFactory;
 
-    provides eu.dariolucia.reatmetric.api.IServiceFactory with eu.dariolucia.reatmetric.core.ServiceCoreImpl;
+    provides IReatmetricSystem with eu.dariolucia.reatmetric.core.ServiceCoreImpl;
 }

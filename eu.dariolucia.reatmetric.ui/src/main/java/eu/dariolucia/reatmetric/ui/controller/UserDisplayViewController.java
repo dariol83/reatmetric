@@ -9,7 +9,7 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.IServiceFactory;
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
@@ -159,7 +159,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
 			Optional<String> result = DialogUtils.input(t.getText(), "Save Chart Preset", "Chart Preset", "Please provide the name of the preset:");
 			if(result.isPresent()) {
 				UserDisplayTabWidgetController controller = tab2contents.get(t);
-				this.presetManager.save(system.getSystem(), user, result.get(), doGetComponentId(), controller.getChartDescription());
+				this.presetManager.save(system.getName(), user, result.get(), doGetComponentId(), controller.getChartDescription());
 			}
 		});
 
@@ -195,14 +195,14 @@ public class UserDisplayViewController extends AbstractDisplayController {
 	}
 
 	@Override
-	protected void doSystemDisconnected(IServiceFactory system, boolean oldStatus) {
+	protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
 		stopSubscription();
 		this.tab2contents.values().forEach(UserDisplayTabWidgetController::doSystemDisconnected);
 		this.displayTitledPane.setDisable(true);
 	}
 
 	@Override
-	protected void doSystemConnected(IServiceFactory system, boolean oldStatus) {
+	protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
 		this.tab2contents.values().forEach(UserDisplayTabWidgetController::doSystemConnected);
 		ParameterDataFilter globalFilter = buildParameterFilter();
 		EventDataFilter globalEventFilter = buildEventFilter();
@@ -246,7 +246,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
 	private void stopSubscription() {
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-				IServiceFactory service = ReatmetricUI.selectedSystem().getSystem();
+				IReatmetricSystem service = ReatmetricUI.selectedSystem().getSystem();
 				if(service != null && service.getParameterDataMonitorService() != null) {
 					ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().unsubscribe(this.parameterSubscriber);
 				}
@@ -271,12 +271,12 @@ public class UserDisplayViewController extends AbstractDisplayController {
 
 	private void onShowingPresetMenu(Event contextMenuEvent) {
 		this.loadBtn.getItems().remove(0, this.loadBtn.getItems().size());
-		List<String> presets = this.presetManager.getAvailablePresets(system.getSystem(), user, doGetComponentId());
+		List<String> presets = this.presetManager.getAvailablePresets(system.getName(), user, doGetComponentId());
 		for(String preset : presets) {
 			final String fpreset = preset;
 			MenuItem mi = new MenuItem(preset);
 			mi.setOnAction((event) -> {
-				Properties p = this.presetManager.load(system.getSystem(), user, fpreset, doGetComponentId());
+				Properties p = this.presetManager.load(system.getName(), user, fpreset, doGetComponentId());
 				if(p != null) {
 					try {
 						addChartTabFromPreset(fpreset, p);
