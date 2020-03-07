@@ -15,10 +15,7 @@ import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,6 +31,7 @@ class TelecommandTransportConnectorImpl implements ITransportConnector {
     private volatile boolean initialised;
     private volatile String message;
     private volatile Thread generator;
+    private final Map<String, Object> properties = new HashMap<>();
 
     public TelecommandTransportConnectorImpl(String name, String type, String[] routes) {
         this.name = name;
@@ -75,8 +73,10 @@ class TelecommandTransportConnectorImpl implements ITransportConnector {
 
     @Override
     public void initialise(Map<String, Object> properties) {
-        initialised = true;
-        message = "Initialised";
+        this.initialised = true;
+        this.message = "Initialised";
+        this.properties.clear();
+        this.properties.putAll(properties);
         notifyState();
     }
 
@@ -113,6 +113,11 @@ class TelecommandTransportConnectorImpl implements ITransportConnector {
         for(ITransportSubscriber s : subscriber) {
             notifyState(s);
         }
+    }
+
+    @Override
+    public Map<String, Object> getCurrentProperties() {
+        return Collections.unmodifiableMap(this.properties);
     }
 
     @Override

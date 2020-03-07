@@ -16,7 +16,11 @@ import eu.dariolucia.reatmetric.api.IServiceFactory;
  * @author dario
  */
 public interface IReatmetricServiceListener {
-    
+
+    void startGlobalOperationProgress();
+
+    void stopGlobalOperationProgress();
+
     void systemConnected(IServiceFactory system);
     
     void systemDisconnected(IServiceFactory system);

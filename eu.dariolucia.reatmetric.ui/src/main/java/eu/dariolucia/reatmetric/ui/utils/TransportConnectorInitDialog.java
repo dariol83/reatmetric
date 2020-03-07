@@ -31,6 +31,7 @@ import javafx.stage.StageStyle;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -116,15 +117,16 @@ public class TransportConnectorInitDialog extends Dialog<Boolean> {
 		private void initPageWith(ITransportConnector connector) {
 			if (connector != null) {
 				Map<String, Pair<String, ValueTypeEnum>> currentDescriptor = connector.getSupportedProperties();
+				Map<String, Object> values = connector.getCurrentProperties();
 				for (Map.Entry<String, Pair<String, ValueTypeEnum>> cpd : currentDescriptor.entrySet()) {
-					addPropertyItem(cpd.getKey(), cpd.getValue().getFirst(), cpd.getValue().getSecond());
+					addPropertyItem(cpd.getKey(), cpd.getValue().getFirst(), cpd.getValue().getSecond(), values.get(cpd.getKey()));
 				}
 			}
 			validate();
 			layout();
 		}
 
-		private void addPropertyItem(String key, String fieldName, ValueTypeEnum value) {
+		private void addPropertyItem(String key, String fieldName, ValueTypeEnum value, Object currentValue) {
 			Control toReturn;
 			Label propertyName = new Label(fieldName);
 			propertyName.setUserData(key);
@@ -156,6 +158,10 @@ public class TransportConnectorInitDialog extends Dialog<Boolean> {
 				});
 				// Set verification on change
 				t.textProperty().addListener(change -> validate());
+				// Set current value if any
+				if(currentValue != null) {
+					t.setText(ValueUtil.toString(value, currentValue));
+				}
 				// Set the outer object
 				toReturn = t;
 			} else if (value == ValueTypeEnum.BOOLEAN) {
@@ -166,7 +172,11 @@ public class TransportConnectorInitDialog extends Dialog<Boolean> {
 				// Set the validator
 				this.validators.put(t, ctrl -> null);
 				// Set verification on change
-				t.textProperty().addListener(change -> validate());
+				t.selectedProperty().addListener(change -> validate());
+				// Set current value if any
+				if(currentValue != null) {
+					t.setSelected((Boolean) currentValue);
+				}
 				// Set the outer object
 				toReturn = t;
 			} else {
@@ -181,6 +191,10 @@ public class TransportConnectorInitDialog extends Dialog<Boolean> {
 				this.validators.put(t, ctrl -> null);
 				// Set verification on change
 				t.textProperty().addListener(change -> validate());
+				// Set current value if any
+				if(currentValue != null) {
+					t.setText(Objects.toString(currentValue));
+				}
 				// Set the outer object
 				toReturn = t;
 			}

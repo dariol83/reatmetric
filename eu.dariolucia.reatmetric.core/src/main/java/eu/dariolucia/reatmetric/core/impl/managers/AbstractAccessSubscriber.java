@@ -13,9 +13,13 @@ import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K extends AbstractDataItemFilter<T>, J extends IDataItemSubscriber<T>> {
+
+    private static final Logger LOG = Logger.getLogger(AbstractAccessSubscriber.class.getName());
 
     private final J subscriber;
     private final BlockingQueue<T> queue;
@@ -49,7 +53,7 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
             // distributing them
             if(initialiseFromModel) {
                 lastDelivered.clear();
-                List<T> initialItems = (List<T>) (List) model.get(theFilter);
+                List<T> initialItems = (List<T>) model.get(theFilter);
                 // Remember what you are sending
                 for(T pd : initialItems) {
                     lastDelivered.put(computeId(pd), computeUniqueCounter(pd));
@@ -131,12 +135,20 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
 
     public void update(K filter) {
         this.filter = filter;
+        synchronized (queue) {
+            queue.notifyAll();
+        }
     }
 
     public void terminate() {
         this.running = false;
         synchronized (queue) {
             queue.notifyAll();
+        }
+        try {
+            this.managerThread.join();
+        } catch (InterruptedException e) {
+            LOG.log(Level.FINE, "Interrupted while waiting for termination of access subscriber " + getName() + " for inner subscriber " + subscriber);
         }
     }
 

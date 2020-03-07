@@ -31,6 +31,7 @@ public class ReatmetricServiceHolder {
     private final List<IReatmetricServiceListener> listeners = new CopyOnWriteArrayList<IReatmetricServiceListener>();
     
     public synchronized void setSystem(IServiceFactory system) {
+        this.listeners.forEach(IReatmetricServiceListener::startGlobalOperationProgress);
         IServiceFactory oldSystem = this.system;
         if(oldSystem != null) {
             this.listeners.forEach(o -> o.systemDisconnected(oldSystem));
@@ -49,6 +50,7 @@ public class ReatmetricServiceHolder {
                 LOG.log(Level.SEVERE, "Exception while initialising system " + this.system.getSystem() + ": " + e.getMessage(), e);
             }
         }
+        this.listeners.forEach(IReatmetricServiceListener::stopGlobalOperationProgress);
     }
     
     public IServiceFactory getSystem() {

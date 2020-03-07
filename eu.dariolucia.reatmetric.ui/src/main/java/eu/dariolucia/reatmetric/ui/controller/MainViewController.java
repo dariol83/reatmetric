@@ -74,7 +74,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	@FXML
 	private Label statusLbl;
 	@FXML
-	private Label systemTextLbl;
+	private ProgressBar globalProgress;
 
 	@FXML
 	private MenuItem connectMenuItem;
@@ -158,7 +158,12 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 					.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
 
 			Optional<String[]> data = d.showAndWait();
-			data.ifPresent(strings -> ReatmetricUI.selectedSystem().setSystem(this.serviceInspector.getSystem(strings[0])));
+			// Start in a separate thread, as connection can take time
+			data.ifPresent(strings -> {
+				ReatmetricUI.threadPool(getClass()).execute(() -> {
+					ReatmetricUI.selectedSystem().setSystem(this.serviceInspector.getSystem(strings[0]));
+				});
+			});
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -193,11 +198,26 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		this.perspectiveMap.put(this.parameterLogTgl, "parameterLogPerspective");
 		this.perspectiveMap.put(this.eventTgl, "eventPerspective");
 		this.perspectiveMap.put(this.userDisplaysTgl, "userDisplayPerspective");
-		this.systemTextLbl.disableProperty().bind(this.systemLbl.disableProperty());
 		ReatmetricUI.selectedSystem().addSubscriber(this);
 		// Register the status label
 		ReatmetricUI.registerStatusLabel(this.statusLbl);
 		ReatmetricUI.registerStatusIndicator(this::updateStatusIndicator);
+	}
+
+	@Override
+	public void startGlobalOperationProgress() {
+		Platform.runLater(() -> {
+			this.globalProgress.setVisible(true);
+			this.globalProgress.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
+		});
+	}
+
+	@Override
+	public void stopGlobalOperationProgress() {
+		Platform.runLater(() -> {
+			this.globalProgress.setProgress(0);
+			this.globalProgress.setVisible(false);
+		});
 	}
 
 	@Override

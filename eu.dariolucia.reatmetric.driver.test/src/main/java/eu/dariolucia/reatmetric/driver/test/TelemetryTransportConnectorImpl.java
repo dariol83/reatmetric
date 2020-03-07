@@ -53,6 +53,7 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
     private volatile String message;
     private volatile Thread generator;
     private final Map<Integer, AtomicLong> intParamValueMap = new HashMap<>();
+    private final Map<String, Object> properties = new HashMap<>();
 
     public TelemetryTransportConnectorImpl(String name, String[] routes, ProcessingDefinition definitions, IProcessingModel model, IRawDataBroker broker) {
         this.name = name;
@@ -84,8 +85,10 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
 
     @Override
     public void initialise(Map<String, Object> properties) {
-        initialised = true;
-        message = "Initialised";
+        this.initialised = true;
+        this.message = "Initialised";
+        this.properties.clear();
+        this.properties.putAll(properties);
         notifyState();
     }
 
@@ -253,6 +256,11 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
         toReturn.put("key3", Pair.of("Real parameter", ValueTypeEnum.REAL));
         toReturn.put("key4", Pair.of("String parameter", ValueTypeEnum.OCTET_STRING));
         return toReturn;
+    }
+
+    @Override
+    public Map<String, Object> getCurrentProperties() {
+        return Collections.unmodifiableMap(this.properties);
     }
 
     @Override

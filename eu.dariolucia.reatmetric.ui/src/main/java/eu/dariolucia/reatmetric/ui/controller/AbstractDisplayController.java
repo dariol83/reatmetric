@@ -82,6 +82,16 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     }
 
     @Override
+    public void startGlobalOperationProgress() {
+        // Nothing here, subclasses can override
+    }
+
+    @Override
+    public void stopGlobalOperationProgress() {
+        // Nothing here, subclasses can override
+    }
+
+    @Override
     public void systemConnected(IServiceFactory system) {
         Platform.runLater(() -> {
             this.system = system;

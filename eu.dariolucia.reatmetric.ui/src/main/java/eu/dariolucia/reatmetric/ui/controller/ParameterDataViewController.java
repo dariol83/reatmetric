@@ -480,10 +480,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     protected List<ParameterData> doRetrieve(ParameterData om, int n, RetrievalDirection direction, ParameterDataFilter filter) throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(om, n, direction, filter);
     }
-
-    protected List<ParameterData> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, ParameterDataFilter filter) throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(selectedTime, n, direction, filter);
-    }
     
     protected List<ParameterData> doRetrieve(Instant selectedTime, ParameterDataFilter filter) throws ReatmetricException {
         return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(selectedTime, filter);
@@ -514,24 +510,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         return data;
     }
 
-    /*
-    private ParameterData findOutOldestParameterSample() {
-        ParameterData oldest = null;
-        for(ParameterDataWrapper pdw : this.path2wrapper.values()) {
-            if(oldest == null) {
-                oldest = pdw.get();
-            } else if(pdw.get() != null) {
-                if(oldest.getGenerationTime() != null && pdw.get().getGenerationTime() != null) {
-                    if(oldest.getGenerationTime().isAfter(pdw.get().getGenerationTime()) ||
-                            (oldest.getInternalId() != null && pdw.get().getInternalId() != null && oldest.getGenerationTime().equals(pdw.get().getGenerationTime()) && oldest.getInternalId().asLong() > pdw.get().getInternalId().asLong())) {
-                        oldest = pdw.get();
-                    }
-                }
-            }
-        }
-        return oldest;
-    }
-    */
     private ParameterData findOutLatestParameterSample() {
         ParameterData latest = null;
         for(ParameterDataWrapper pdw : this.path2wrapper.values()) {
@@ -576,23 +554,11 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     
     @FXML
     private void onDragEntered(DragEvent event) {
-        if (event.getGestureSource() != this.dataItemTableView &&
-                (
-                    event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.PARAMETER)) ||
-                    event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.CONTAINER))
-                )) {
-        }
         event.consume();
     }
     
     @FXML
     private void onDragExited(DragEvent event) {
-        if (event.getGestureSource() != this.dataItemTableView &&
-                (
-                    event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.PARAMETER)) ||
-                    event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.CONTAINER))
-                )) {
-        }
         event.consume();        
     }
     
@@ -617,7 +583,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         for(SystemEntity systemEntity : systemEntities) {
             if(systemEntity.getType() == SystemEntityType.PARAMETER) {
                 if(!this.path2wrapper.containsKey(systemEntity.getPath())) {
-                    // TODO: this sounds a bit ugly, find a better solution: introduce a get operation on the service, in addition to the retrieve
+                    // Add a fake item to initialise the entry
                     ParameterDataWrapper pdw = new ParameterDataWrapper(
                             new ParameterData(
                             		null,
@@ -653,7 +619,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             SystemEntityPath sep = SystemEntityPath.fromString(systemEntity.toString());
             int externalId = Integer.parseInt(p.getProperty(sep.toString()));
             if(!this.path2wrapper.containsKey(sep)) {
-                // TODO: this sounds a bit ugly, find a better solution: introduce a get operation on the service, in addition to the retrieve
+                // Add a fake item to initialise the entry
                 ParameterDataWrapper pdw = new ParameterDataWrapper(
                         new ParameterData(
                         		null,

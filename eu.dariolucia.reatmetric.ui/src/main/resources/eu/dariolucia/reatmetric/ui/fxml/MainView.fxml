@@ -10,6 +10,7 @@
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.shape.Circle?>
 <?import javafx.scene.text.Font?>
 
@@ -23,6 +24,8 @@
 
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.layout.Pane?>
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="900.0" prefWidth="1600.0" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.MainViewController">
    <children>
       <MenuBar>
@@ -55,12 +58,6 @@
           </Menu>
         </menus>
       </MenuBar>
-      <ToolBar prefHeight="40.0" prefWidth="200.0">
-         <items>
-            <Label fx:id="systemTextLbl" disable="true" prefHeight="17.0" prefWidth="44.0" text="System" />
-            <Label fx:id="systemLbl" alignment="CENTER" disable="true" prefHeight="17.0" prefWidth="141.0" style="-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;" text="---" />
-         </items>
-      </ToolBar>
       <SplitPane dividerPositions="0.7" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" VBox.vgrow="ALWAYS">
          <items>
             <SplitPane dividerPositions="0.17" prefHeight="160.0" prefWidth="200.0">
@@ -91,6 +88,7 @@
       </SplitPane>
       <ToolBar prefHeight="24.0">
          <items>
+            <Label fx:id="systemLbl" alignment="CENTER" disable="true" prefHeight="17.0" prefWidth="120.0" style="-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;" text="---" />
             <Circle fx:id="nominalCrl" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
             <Circle fx:id="warningCrl" fill="#382700" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
             <Circle fx:id="alarmCrl" fill="#360000" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
@@ -99,6 +97,8 @@
                   <Font size="11.0" />
                </font>
             </Label>
+            <Pane prefHeight="1.0" HBox.hgrow="ALWAYS" />
+            <ProgressBar fx:id="globalProgress" prefWidth="100.0" visible="false" progress="0" />
          </items>
       </ToolBar>
    </children>
