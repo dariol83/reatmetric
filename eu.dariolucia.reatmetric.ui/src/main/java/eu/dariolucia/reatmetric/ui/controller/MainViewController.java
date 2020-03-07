@@ -62,6 +62,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	@FXML
 	private StackPane perspectiveStackPane;
 
+	// TODO: use the circles below to report the global status of the system factory platform (separate notification) ...
 	@FXML
 	private Circle nominalCrl;
 	@FXML

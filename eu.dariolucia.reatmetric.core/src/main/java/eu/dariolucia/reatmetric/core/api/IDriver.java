@@ -17,6 +17,7 @@ import java.util.List;
 public interface IDriver {
 
     // TODO: add a service for drivers, to enable property storage and retrieve (per driver, use prop file with driver name)
+    // TODO: add a subscription for the core to be notified by the driver about its status change (NOMINAL, WARNING, ALARM)
 
     void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration) throws DriverException;
 
