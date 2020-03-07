@@ -21,6 +21,9 @@ public interface IActivityExecutionService {
 
     IUniqueId createActivity(ActivityRequest request, ActivityProgress currentProgress) throws ReatmetricException;
 
+    // TODO add a way to set parameter value
+    // IUniqueId setParameter(SetParameterRequest request) throws ReatmetricException
+
     void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) throws ReatmetricException;
 
 }

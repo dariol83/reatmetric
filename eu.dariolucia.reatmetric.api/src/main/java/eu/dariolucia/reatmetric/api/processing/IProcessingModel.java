@@ -22,7 +22,6 @@ import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 
 import java.util.List;
 
-// TODO introduce a dispose operation, to avoid archive exceptions when the system is shutdown
 public interface IProcessingModel {
 
     void injectParameters(List<ParameterSample> sampleList);
@@ -40,6 +39,11 @@ public interface IProcessingModel {
     List<ActivityOccurrenceData> getActiveActivityOccurrences();
 
     // TODO add a way to set parameter value
+    // IUniqueId setParameterValue(SetParameterRequest request) throws ProcessingModelException;
+    // The model looks for the parameter processor, and depending on whether the parameter is settable or not,
+    // the activity related to the setting is found (part of the parameter definition), and it is invoked with the
+    // correct arguments. The following properties shall be allowed to be set: parameter external id as unsigned int,
+    // provided value as argument source or eng, parameter path as string. Route must be provided in the invocation.
 
     void visit(IProcessingModelVisitor visitor);
 

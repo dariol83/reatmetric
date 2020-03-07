@@ -36,8 +36,6 @@ import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.CommandRequestStatus;
 import eu.dariolucia.reatmetric.driver.spacecraft.message.IMessageProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.storage.impl.StorageProcessor;
-import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.ITmTcProcessor;
-import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.ITmTcProcessorListener;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.definition.CdsConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.definition.CucConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.definition.TmTcConfiguration;
@@ -386,17 +384,4 @@ public class TmTcProcessor implements ITmTcProcessor {
         return this.storer.retrieveRawData(startItem, numRecords, direction, filter);
     }
 
-    @Override
-    public List<FieldDescriptor> getAdditionalFieldDescriptors() {
-        return Arrays.asList(
-                new FieldDescriptor("SCID", FieldType.INTEGER, FieldFilterStrategy.SINGLE_VALUE),
-                new FieldDescriptor("VC", FieldType.INTEGER, FieldFilterStrategy.LIST_VALUE),
-                new FieldDescriptor("APID", FieldType.INTEGER, FieldFilterStrategy.LIST_VALUE),
-                new FieldDescriptor("SCC", FieldType.INTEGER, FieldFilterStrategy.SINGLE_VALUE),
-                new FieldDescriptor("PUS Type", FieldType.INTEGER, FieldFilterStrategy.SINGLE_VALUE),
-                new FieldDescriptor("PUS SubType", FieldType.INTEGER, FieldFilterStrategy.SINGLE_VALUE),
-                new FieldDescriptor("Annotations", FieldType.HIDDEN, FieldFilterStrategy.SINGLE_VALUE),
-                new FieldDescriptor("Data", FieldType.HIDDEN, FieldFilterStrategy.SINGLE_VALUE)
-        );
-    }
 }
