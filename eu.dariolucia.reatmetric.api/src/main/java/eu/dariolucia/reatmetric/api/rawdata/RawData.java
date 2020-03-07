@@ -15,6 +15,7 @@ import java.io.Serializable;
 import java.time.Instant;
 
 /**
+ * // TODO: add 3 integer fields
  *
  * @author dario
  */
