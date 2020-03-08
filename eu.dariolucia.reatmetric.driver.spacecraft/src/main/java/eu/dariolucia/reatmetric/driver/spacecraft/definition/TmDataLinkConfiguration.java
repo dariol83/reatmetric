@@ -5,17 +5,20 @@
  * Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes shall be granted by the author in writing.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.tmtc.definition;
+package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
 import javax.xml.bind.annotation.*;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class TmVirtualChannelConfiguration {
+public class TmDataLinkConfiguration {
 
     @XmlElementWrapper(name = "vc_limit")
     @XmlElement(name = "vc")
     private List<Integer> processVcs;
+
+    @XmlElement(name = "type")
+    private TransferFrameType type = TransferFrameType.TM;
 
     @XmlAttribute(name = "fecf")
     private boolean fecfPresent = false;
@@ -23,13 +26,16 @@ public class TmVirtualChannelConfiguration {
     @XmlAttribute(name = "ocf")
     private boolean ocfPresent = true;
 
+    @XmlAttribute(name = "derandomize")
+    private boolean derandomize = false;
+
     @XmlAttribute(name = "aos_fhec")
     private boolean aosFrameHeaderErrorControlPresent = false;
 
     @XmlAttribute(name = "aos_insert_zone_length")
     private int aosTransferFrameInsertZoneLength = 0;
 
-    public TmVirtualChannelConfiguration() {
+    public TmDataLinkConfiguration() {
     }
 
     public List<Integer> getProcessVcs() {
@@ -70,5 +76,21 @@ public class TmVirtualChannelConfiguration {
 
     public void setAosTransferFrameInsertZoneLength(int aosTransferFrameInsertZoneLength) {
         this.aosTransferFrameInsertZoneLength = aosTransferFrameInsertZoneLength;
+    }
+
+    public boolean isDerandomize() {
+        return derandomize;
+    }
+
+    public void setDerandomize(boolean derandomize) {
+        this.derandomize = derandomize;
+    }
+
+    public TransferFrameType getType() {
+        return type;
+    }
+
+    public void setType(TransferFrameType type) {
+        this.type = type;
     }
 }

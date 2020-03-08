@@ -5,13 +5,11 @@
  * Right to reproduce, use, modify and distribute (in whole or in part) this library for demonstrations/trainings/study/commercial purposes shall be granted by the author in writing.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.transport.impl;
+package eu.dariolucia.reatmetric.driver.spacecraft.sle.impl;
 
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TcTransferFrame;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.driver.spacecraft.message.IMessageProcessor;
-import eu.dariolucia.reatmetric.driver.spacecraft.transport.ITransportProcessor;
-import eu.dariolucia.reatmetric.driver.spacecraft.transport.ITransportProcessorListener;
 import eu.dariolucia.reatmetric.driver.spacecraft.util.SleepUtil;
 import eu.dariolucia.sle.generated.ccsds.sle.transfer.service.common.types.Time;
 import eu.dariolucia.sle.generated.ccsds.sle.transfer.service.raf.outgoing.pdus.RafSyncNotifyInvocation;

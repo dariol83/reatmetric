@@ -36,9 +36,9 @@ import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.CommandRequestStatus;
 import eu.dariolucia.reatmetric.driver.spacecraft.message.IMessageProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.storage.impl.StorageProcessor;
-import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.definition.CdsConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.definition.CucConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.definition.TmTcConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.CdsConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.CucConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.util.ThreadUtil;
 import eu.dariolucia.reatmetric.driver.spacecraft.util.UniqueIdUtil;
 
@@ -66,7 +66,7 @@ public class TmTcProcessor implements ITmTcProcessor {
 
     private final long startupTime = System.currentTimeMillis();
 
-    private final TmTcConfiguration configuration;
+    private final SpacecraftConfiguration configuration;
 
     private final Definition encodingDecodingDefinition;
 
@@ -139,9 +139,9 @@ public class TmTcProcessor implements ITmTcProcessor {
         }
     }
 
-    private TmTcConfiguration readTmTcConfiguration() {
+    private SpacecraftConfiguration readTmTcConfiguration() {
         try {
-            return TmTcConfiguration.load(new FileInputStream(System.getProperty(TMTC_CONFIGURATION_KEY)));
+            return SpacecraftConfiguration.load(new FileInputStream(System.getProperty(TMTC_CONFIGURATION_KEY)));
         } catch (IOException e) {
             throw new RuntimeException("Error in configuration of the TM TC processor when reading configuration at " + System.getProperty(TMTC_CONFIGURATION_KEY), e);
         }
@@ -202,18 +202,18 @@ public class TmTcProcessor implements ITmTcProcessor {
         // Check if AOS or TM: first 2 bits: if 00 is TM, if 01 is AOS
         boolean tm = (frame[0] & (byte) 0xC0) == 0;
         if (tm) {
-            TmTransferFrame ttf = new TmTransferFrame(frame, configuration.getTmVirtualChannelConfigurations().isFecfPresent());
+            TmTransferFrame ttf = new TmTransferFrame(frame, configuration.getTmDataLinkConfigurations().isFecfPresent());
             storeAndDistributeFrame(ttf, ert, annotations);
             if(!ttf.isIdleFrame()) {
                 injectPipeline(ttf);
             }
         } else {
             AosTransferFrame ttf = new AosTransferFrame(frame,
-                    configuration.getTmVirtualChannelConfigurations().isAosFrameHeaderErrorControlPresent(),
-                    configuration.getTmVirtualChannelConfigurations().getAosTransferFrameInsertZoneLength(),
+                    configuration.getTmDataLinkConfigurations().isAosFrameHeaderErrorControlPresent(),
+                    configuration.getTmDataLinkConfigurations().getAosTransferFrameInsertZoneLength(),
                     AosTransferFrame.UserDataType.M_PDU,
-                    configuration.getTmVirtualChannelConfigurations().isOcfPresent(),
-                    configuration.getTmVirtualChannelConfigurations().isFecfPresent());
+                    configuration.getTmDataLinkConfigurations().isOcfPresent(),
+                    configuration.getTmDataLinkConfigurations().isFecfPresent());
             storeAndDistributeFrame(ttf, ert, annotations);
             // CLCW processing for COP-1
             if(!ttf.isIdleFrame()) {

@@ -80,7 +80,7 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
             try {
                 buildConnectorsModel();
             } catch (ReatmetricException e) {
-                LOG.log(Level.SEVERE, "Cannot retrieve transport connectors: " + e.getMessage(), e);
+                LOG.log(Level.SEVERE, "Cannot retrieve sle connectors: " + e.getMessage(), e);
             }
         });
     }

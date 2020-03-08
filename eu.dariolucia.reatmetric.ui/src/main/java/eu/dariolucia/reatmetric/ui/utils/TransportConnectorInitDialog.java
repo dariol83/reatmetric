@@ -53,7 +53,7 @@ public class TransportConnectorInitDialog extends Dialog<Boolean> {
 		setWidth(400);
 		setHeight(500);
 		setTitle("Initialisation Properties");
-		setHeaderText("Define transport connector " + connector.getName() + " runtime properties");
+		setHeaderText("Define sle connector " + connector.getName() + " runtime properties");
 
 		getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 		createPages();

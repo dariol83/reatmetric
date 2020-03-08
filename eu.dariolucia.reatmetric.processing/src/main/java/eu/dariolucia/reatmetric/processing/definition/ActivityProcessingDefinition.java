@@ -19,7 +19,7 @@ import java.util.List;
  * An activity is an operation that can be requested through a route. An activity request spawns
  * an activity occurrence, whose lifecycle is tracked by the following states:
  * <ul>
- *     <li>Release: completed when the request leaves the transport identified by the route</li>
+ *     <li>Release: completed when the request leaves the sle identified by the route</li>
  *     <li>Transmission: completed when the request reaches the target system</li>
  *     <li>Scheduled: if the activity occurrence is remotely scheduled</li>
  *     <li>Execution: completed when the request has been executed by the target system</li>

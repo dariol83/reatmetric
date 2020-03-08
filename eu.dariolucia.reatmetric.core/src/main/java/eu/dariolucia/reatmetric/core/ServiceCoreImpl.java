@@ -103,7 +103,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
             if(driver != null) {
                 // Register the driver
                 drivers.add(driver);
-                // Get and register the transport connectors
+                // Get and register the sle connectors
                 registerConnectors(driver.getTransportConnectors());
                 // Get and register the activity handlers
                 registerActivityHandlers(dc.getName(), driver.getActivityHandlers());
