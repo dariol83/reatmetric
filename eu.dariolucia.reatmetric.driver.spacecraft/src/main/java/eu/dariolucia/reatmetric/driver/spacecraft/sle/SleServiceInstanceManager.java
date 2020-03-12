@@ -14,7 +14,9 @@ import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.ServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.si.*;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
@@ -28,8 +30,12 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 abstract public class SleServiceInstanceManager<T extends ServiceInstance, K extends ServiceInstanceConfiguration> implements ITransportConnector, IServiceInstanceListener {
+
+    private static final Logger LOG = Logger.getLogger(SleServiceInstanceManager.class.getName());
 
     public static final String SLE_VERSION_KEY = "sle.version";
 
@@ -102,6 +108,14 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         }
     }
 
+    protected void distribute(RawData rd) {
+        try {
+            broker.distribute(Collections.singletonList(rd));
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, serviceInstance.getServiceInstanceIdentifier() + ": Error when distributing frame: " + e.getMessage(), e);
+        }
+    }
+
     @Override
     public String getName() {
         return name;
@@ -131,7 +145,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
 
     @Override
     public Map<String, Pair<String, ValueTypeEnum>> getSupportedProperties() {
-        return initialisationDescriptionMap;
+        return Collections.unmodifiableMap(initialisationDescriptionMap);
     }
 
     @Override
@@ -242,8 +256,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
             try {
                 s.status(this, new TransportStatus(name, lastMessage, connectionStatus, lastTxRate, lastRxRate, lastAlarmState));
             } catch(Exception e) {
-                // TODO: log
-                e.printStackTrace();
+                LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": Cannot notify subscriber " + s + ": " + e.getMessage(), e);
             }
         });
     }
@@ -307,6 +320,10 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
                 updateConnectionStatus(initialised ? TransportConnectionStatus.IDLE : TransportConnectionStatus.NOT_INIT);
                 break;
         }
+        if(state.getLastError() != null) {
+            LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": " + state.getLastError());
+            updateMessage(state.getLastError());
+        }
     }
 
     @Override
@@ -331,17 +348,17 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
 
     @Override
     public void onPduSentError(ServiceInstance si, Object operation, String name, byte[] encodedOperation, String error, Exception exception) {
-        // TODO: log SEVERE
+        LOG.log(Level.SEVERE, serviceInstance.getServiceInstanceIdentifier() + ": SLE PDU " + name + "sending error: " + error, exception);
     }
 
     @Override
     public void onPduDecodingError(ServiceInstance serviceInstance, byte[] encodedOperation) {
-        // TODO: log SEVERE
+        LOG.log(Level.SEVERE, serviceInstance.getServiceInstanceIdentifier() + ": SLE PDU decoding error");
     }
 
     @Override
     public void onPduHandlingError(ServiceInstance serviceInstance, Object operation, byte[] encodedOperation) {
-        // TODO: log SEVERE
+        LOG.log(Level.SEVERE, serviceInstance.getServiceInstanceIdentifier() + ": SLE PDU handling error" + operation.getClass().getName());
     }
 
     protected abstract boolean isStartReturn(Object operation);

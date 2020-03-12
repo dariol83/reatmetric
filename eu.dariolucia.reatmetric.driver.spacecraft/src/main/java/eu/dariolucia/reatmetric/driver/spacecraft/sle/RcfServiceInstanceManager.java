@@ -8,16 +8,16 @@
 package eu.dariolucia.reatmetric.driver.spacecraft.sle;
 
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.common.pdus.SleScheduleStatusReportReturn;
-import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.outgoing.pdus.*;
-import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.structures.AntennaId;
+import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.rcf.outgoing.pdus.*;
+import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.rcf.structures.AntennaId;
 import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
-import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
+import eu.dariolucia.ccsds.sle.utl.config.rcf.RcfServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.pdu.PduFactoryUtil;
 import eu.dariolucia.ccsds.sle.utl.si.LockStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ProductionStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ServiceInstanceBindingStateEnum;
-import eu.dariolucia.ccsds.sle.utl.si.raf.RafDiagnosticsStrings;
-import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstance;
+import eu.dariolucia.ccsds.sle.utl.si.rcf.RcfDiagnosticsStrings;
+import eu.dariolucia.ccsds.sle.utl.si.rcf.RcfServiceInstance;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -33,42 +33,42 @@ import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class RafServiceInstanceManager extends SleServiceInstanceManager<RafServiceInstance, RafServiceInstanceConfiguration> {
+public class RcfServiceInstanceManager extends SleServiceInstanceManager<RcfServiceInstance, RcfServiceInstanceConfiguration> {
 
-    private static final Logger LOG = Logger.getLogger(RafServiceInstanceManager.class.getName());
+    private static final Logger LOG = Logger.getLogger(RcfServiceInstanceManager.class.getName());
 
-    public RafServiceInstanceManager(PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
+    public RcfServiceInstanceManager(PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
         super(peerConfiguration, siConfiguration, spacecraftConfiguration, broker);
     }
 
     @Override
-    protected RafServiceInstance createServiceInstance(PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration siConfiguration) {
-        return new RafServiceInstance(peerConfiguration, siConfiguration);
+    protected RcfServiceInstance createServiceInstance(PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration siConfiguration) {
+        return new RcfServiceInstance(peerConfiguration, siConfiguration);
     }
 
     @Override
     protected boolean isStartReturn(Object operation) {
-        return operation instanceof RafStartReturn;
+        return operation instanceof RcfStartReturn;
     }
 
     @Override
     protected void handleOperation(Object operation) {
-        if(operation instanceof RafSyncNotifyInvocation) {
-            process((RafSyncNotifyInvocation) operation);
-        } else if(operation instanceof RafTransferDataInvocation) {
-            process((RafTransferDataInvocation) operation);
+        if(operation instanceof RcfSyncNotifyInvocation) {
+            process((RcfSyncNotifyInvocation) operation);
+        } else if(operation instanceof RcfTransferDataInvocation) {
+            process((RcfTransferDataInvocation) operation);
         } else if(operation instanceof SleScheduleStatusReportReturn) {
             process((SleScheduleStatusReportReturn) operation);
-        } else if(operation instanceof RafStatusReportInvocation) {
-            process((RafStatusReportInvocation) operation);
-        } else if(operation instanceof RafStatusReportInvocationV1toV2) {
-            process((RafStatusReportInvocationV1toV2) operation);
+        } else if(operation instanceof RcfStatusReportInvocation) {
+            process((RcfStatusReportInvocation) operation);
+        } else if(operation instanceof RcfStatusReportInvocationV1) {
+            process((RcfStatusReportInvocationV1) operation);
         } else {
-            LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": Discarding unhandled RAF operation: " + operation.getClass().getName());
+            LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": Discarding unhandled RCF operation: " + operation.getClass().getName());
         }
     }
 
-    private void process(RafStatusReportInvocationV1toV2 operation) {
+    private void process(RcfStatusReportInvocationV1 operation) {
         LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": Status report received: carrier=" + LockStatusEnum.fromCode(operation.getCarrierLockStatus().intValue()) +
                 ", subcarrier=" + LockStatusEnum.fromCode(operation.getSubcarrierLockStatus().intValue()) +
                 ", bitlock=" + LockStatusEnum.fromCode(operation.getSymbolSyncLockStatus().intValue()) +
@@ -77,7 +77,7 @@ public class RafServiceInstanceManager extends SleServiceInstanceManager<RafServ
         updateProductionStatus(prodStatus);
     }
 
-    private void process(RafStatusReportInvocation operation) {
+    private void process(RcfStatusReportInvocation operation) {
         LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": Status report received: carrier=" + LockStatusEnum.fromCode(operation.getCarrierLockStatus().intValue()) +
                 ", subcarrier=" + LockStatusEnum.fromCode(operation.getSubcarrierLockStatus().intValue()) +
                 ", bitlock=" + LockStatusEnum.fromCode(operation.getSymbolSyncLockStatus().intValue()) +
@@ -88,16 +88,16 @@ public class RafServiceInstanceManager extends SleServiceInstanceManager<RafServ
 
     private void process(SleScheduleStatusReportReturn operation) {
         if(operation.getResult().getNegativeResult() != null) {
-            LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Negative RAF SCHEDULE STATUS REPORT return: " + RafDiagnosticsStrings.getScheduleStatusReportDiagnostic(operation.getResult().getNegativeResult()));
+            LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Negative RCF SCHEDULE STATUS REPORT return: " + RcfDiagnosticsStrings.getScheduleStatusReportDiagnostic(operation.getResult().getNegativeResult()));
         } else {
-            LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": RAF SCHEDULE STATUS REPORT positive return");
+            LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": RCF SCHEDULE STATUS REPORT positive return");
         }
     }
 
-    private void process(RafTransferDataInvocation operation) {
+    private void process(RcfTransferDataInvocation operation) {
         // Get the frame
         byte[] frameContents = operation.getData().value;
-        Quality quality =  Quality.values()[operation.getDeliveredFrameQuality().intValue()];
+        Quality quality =  Quality.GOOD;
         Instant genTimeInstant;
         if(operation.getEarthReceiveTime().getCcsdsFormat() != null) {
             long[] genTime = PduFactoryUtil.buildTimeMillis(operation.getEarthReceiveTime().getCcsdsFormat().value);
@@ -156,7 +156,7 @@ public class RafServiceInstanceManager extends SleServiceInstanceManager<RafServ
         }
     }
 
-    private void process(RafSyncNotifyInvocation operation) {
+    private void process(RcfSyncNotifyInvocation operation) {
         if(operation.getNotification().getEndOfData() != null) {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": End of data received");
             updateMessage("End of data received");
@@ -196,7 +196,7 @@ public class RafServiceInstanceManager extends SleServiceInstanceManager<RafServ
 
     @Override
     protected void sendStart() {
-        serviceInstance.start(null, null, siConfiguration.getRequestedFrameQuality());
+        serviceInstance.start(null, null, siConfiguration.getRequestedGvcid());
     }
 
     @Override

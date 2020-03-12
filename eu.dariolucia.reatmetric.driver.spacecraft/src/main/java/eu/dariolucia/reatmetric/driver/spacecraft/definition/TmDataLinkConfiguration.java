@@ -35,6 +35,9 @@ public class TmDataLinkConfiguration {
     @XmlAttribute(name = "aos_insert_zone_length")
     private int aosTransferFrameInsertZoneLength = 0;
 
+    @XmlAttribute(name = "reception_delay")
+    private long receptionDelay = 0; // From frame generation onboard to reception of the first bit at the antenna, in microseconds
+
     public TmDataLinkConfiguration() {
     }
 
@@ -92,5 +95,13 @@ public class TmDataLinkConfiguration {
 
     public void setType(TransferFrameType type) {
         this.type = type;
+    }
+
+    public long getReceptionDelay() {
+        return receptionDelay;
+    }
+
+    public void setReceptionDelay(long receptionDelay) {
+        this.receptionDelay = receptionDelay;
     }
 }
