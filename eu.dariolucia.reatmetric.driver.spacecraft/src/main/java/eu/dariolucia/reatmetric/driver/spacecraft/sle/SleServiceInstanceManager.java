@@ -10,12 +10,17 @@ package eu.dariolucia.reatmetric.driver.spacecraft.sle;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.bind.types.SleBindReturn;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.bind.types.SleUnbindReturn;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.common.pdus.SleAcknowledgement;
+import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.common.types.Time;
 import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.ServiceInstanceConfiguration;
+import eu.dariolucia.ccsds.sle.utl.pdu.PduFactoryUtil;
 import eu.dariolucia.ccsds.sle.utl.si.*;
+import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
+import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
@@ -24,8 +29,10 @@ import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
@@ -47,6 +54,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
     protected final T serviceInstance;
     protected final K siConfiguration;
     protected final PeerConfiguration peerConfiguration;
+    protected final String serviceInstanceLastPart;
 
     protected final SpacecraftConfiguration spacecraftConfiguration;
     protected final IRawDataBroker broker;
@@ -73,6 +81,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         this.description = siConfiguration.getType().name() + " " + siConfiguration.getServiceInstanceIdentifier();
         this.peerConfiguration = peerConfiguration;
         this.siConfiguration = siConfiguration;
+        this.serviceInstanceLastPart = siConfiguration.getServiceInstanceIdentifier().substring(siConfiguration.getServiceInstanceIdentifier().lastIndexOf('=') + 1);
         this.broker = broker;
         this.spacecraftConfiguration = spacecraftConfiguration;
         this.bitrateTimer = new Timer(name + " Bitrate Timer", true);
@@ -88,6 +97,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         }, 2000, 2000);
 
         this.serviceInstance = createServiceInstance(peerConfiguration, siConfiguration);
+        this.serviceInstance.configure();
         this.serviceInstance.register(this);
 
         this.initialisationMap.put(SLE_VERSION_KEY, siConfiguration.getServiceVersionNumber());
@@ -300,6 +310,63 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         if(toNotify) {
             notifySubscribers();
         }
+    }
+
+    protected Instant parseTime(Time time) {
+        if(time.getCcsdsFormat() != null) {
+            long[] genTime = PduFactoryUtil.buildTimeMillis(time.getCcsdsFormat().value);
+            return Instant.ofEpochMilli(genTime[0]).plusNanos(genTime[1] * 1000);
+        } else {
+            long[] genTime = PduFactoryUtil.buildTimeMillisPico(time.getCcsdsPicoFormat().value);
+            return Instant.ofEpochMilli(genTime[0]).plusNanos(genTime[1] / 1000);
+        }
+    }
+
+    protected void distributeTmFrame(byte[] frameContents, Quality quality, Instant genTimeInstant, Instant receivedTime, String antennaId) {
+        // add source and route in the frame annotated map, route is ANTENNA.SERVICE_TYPE.SERVICE_ID.SCID.VCID, e.g. ANT01.RAF.raf001.123.7
+        if(quality == Quality.GOOD) { // GOOD
+            TmTransferFrame frame = new TmTransferFrame(frameContents, spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
+            if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() != null && spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
+                StringBuilder route = new StringBuilder().append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart).append('.').append(frame.getSpacecraftId()).append('.').append(frame.getVirtualChannelId());
+                RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_TM_FRAME, route.toString(), String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, receivedTime, null);
+                frame.setAnnotationValue(Constants.ANNOTATION_ROUTE, rd.getRoute());
+                frame.setAnnotationValue(Constants.ANNOTATION_SOURCE, rd.getSource());
+                frame.setAnnotationValue(Constants.ANNOTATION_GEN_TIME, rd.getGenerationTime());
+                frame.setAnnotationValue(Constants.ANNOTATION_RCP_TIME, rd.getReceptionTime());
+                rd.setData(frame);
+                distribute(rd);
+            }
+        } else {
+            distributeBadFrame(frameContents, quality, genTimeInstant, receivedTime, antennaId);
+        }
+    }
+
+    protected void distributeAosFrame(byte[] frameContents, Quality quality, Instant genTimeInstant, Instant receivedTime, String antennaId) {
+        // add source and route in the frame annotated map, route is ANTENNA.SERVICE_TYPE.SERVICE_ID.SCID.VCID
+        if(quality == Quality.GOOD) { // GOOD
+            AosTransferFrame frame = new AosTransferFrame(frameContents, spacecraftConfiguration.getTmDataLinkConfigurations().isAosFrameHeaderErrorControlPresent(),
+                    spacecraftConfiguration.getTmDataLinkConfigurations().getAosTransferFrameInsertZoneLength(), AosTransferFrame.UserDataType.M_PDU,
+                    spacecraftConfiguration.getTmDataLinkConfigurations().isOcfPresent(), spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
+            if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() != null && spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
+                StringBuilder route = new StringBuilder().append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart).append('.').append(frame.getSpacecraftId()).append('.').append(frame.getVirtualChannelId());
+                RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_AOS_FRAME, route.toString(), String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, receivedTime, null);
+                frame.setAnnotationValue(Constants.ANNOTATION_ROUTE, rd.getRoute());
+                frame.setAnnotationValue(Constants.ANNOTATION_SOURCE, rd.getSource());
+                frame.setAnnotationValue(Constants.ANNOTATION_GEN_TIME, rd.getGenerationTime());
+                frame.setAnnotationValue(Constants.ANNOTATION_RCP_TIME, rd.getReceptionTime());
+                rd.setData(frame);
+                distribute(rd);
+            }
+        } else {
+            distributeBadFrame(frameContents, quality, genTimeInstant, receivedTime, antennaId);
+        }
+    }
+
+    private void distributeBadFrame(byte[] frameContents, Quality quality, Instant genTimeInstant, Instant receivedTime, String antennaId) {
+        LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Bad frame received");
+        StringBuilder route = new StringBuilder().append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart);
+        RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_BAD_TM, route.toString(), "", quality, null, frameContents, receivedTime, null);
+        distribute(rd);
     }
 
     @Override

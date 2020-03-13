@@ -7,6 +7,13 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft;
 
+import eu.dariolucia.ccsds.encdec.definition.Definition;
+import eu.dariolucia.ccsds.encdec.identifier.impl.FieldGroupBasedPacketIdentifier;
+import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
+import eu.dariolucia.ccsds.sle.utl.config.ServiceInstanceConfiguration;
+import eu.dariolucia.ccsds.sle.utl.config.UtlConfigurationFile;
+import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
+import eu.dariolucia.ccsds.sle.utl.config.rcf.RcfServiceInstanceConfiguration;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
@@ -16,10 +23,19 @@ import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
+import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.SleServiceInstanceManager;
+import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmDataLinkProcessor;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * The Reatmetric Spacecraft Driver is a driver decomposed in the following functional layers:
@@ -45,6 +61,8 @@ import java.util.List;
  */
 public class SpacecraftDriver implements IDriver {
 
+    private static final Logger LOG = Logger.getLogger(SpacecraftDriver.class.getName());
+
     private static final String SLE_FOLDER = "sle";
     private static final String CONFIGURATION_FILE = "configuration.xml";
     private static final String ENCODING_DECODING_DEFINITION_FILE = "tmtc.xml";
@@ -54,8 +72,11 @@ public class SpacecraftDriver implements IDriver {
     private ServiceCoreConfiguration coreConfiguration;
     private IServiceCoreContext context;
     private IDriverListener listener;
+    private Definition encodingDecodingDefinitions;
 
-    private List<SleServiceInstanceManager> sleManagers;
+    private volatile SystemStatus status = SystemStatus.UNKNOWN;
+
+    private List<SleServiceInstanceManager<?,?>> sleManagers;
     private TmDataLinkProcessor tmDataLinkProcessor;
     private TmPacketProcessor tmPacketProcessor;
 
@@ -65,34 +86,105 @@ public class SpacecraftDriver implements IDriver {
         this.context = context;
         this.coreConfiguration = coreConfiguration;
         this.listener = subscriber;
-        // Load the driver configuration
-        loadDriverConfiguration(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE);
-        // Load the SLE service instances
-        loadSleServiceInstances(driverConfigurationDirectory + File.separator + SLE_FOLDER);
-        // Load the TM Data Link processor
-        loadTmDataLinkProcessor();
-        // Load the TM Packet processor
-        loadTmPacketProcessor();
-        // Ready to go
+        try {
+            // Load the driver configuration
+            loadDriverConfiguration(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE);
+            // Load the SLE service instances
+            loadSleServiceInstances(driverConfigurationDirectory + File.separator + SLE_FOLDER);
+            // Load encoding/decoding definitions
+            loadEncodingDecodingDefinitions(driverConfigurationDirectory + File.separator + ENCODING_DECODING_DEFINITION_FILE);
+            // Load the TM Data Link processor
+            loadTmDataLinkProcessor();
+            // Load the TM Packet processor
+            loadTmPacketProcessor();
+            // Ready to go
+            updateStatus(SystemStatus.NOMINAL);
+        } catch (IOException e) {
+            updateStatus(SystemStatus.ALARM);
+            throw new DriverException(e);
+        }
+    }
+
+    private void loadEncodingDecodingDefinitions(String filePath) throws IOException {
+        this.encodingDecodingDefinitions = Definition.load(new FileInputStream(filePath));
+    }
+
+    private void loadTmDataLinkProcessor() {
+        this.tmDataLinkProcessor = new TmDataLinkProcessor(new FieldGroupBasedPacketIdentifier(this.encodingDecodingDefinitions), context.getRawDataBroker(), configuration.getTmDataLinkConfigurations());
+        this.tmDataLinkProcessor.initialise();
+    }
+
+    private void loadSleServiceInstances(String sleFolder) throws IOException {
+        if(sleFolder == null) {
+            LOG.info("Driver " + this.name + " has no SLE folder configured. Skipping SLE configuration.");
+            return;
+        }
+        File sleFolderFile = new File(sleFolder);
+        if(!sleFolderFile.exists()) {
+            LOG.warning("Driver " + this.name + " points to non-existing SLE folder: " + sleFolderFile.getAbsolutePath());
+            return;
+        }
+        File[] files = sleFolderFile.listFiles();
+        if(files == null) {
+            LOG.warning("Driver " + this.name + " cannot read contents of SLE folder: " + sleFolderFile.getAbsolutePath());
+            return;
+        }
+        for(File sleConfFile : files) {
+            UtlConfigurationFile confFile = UtlConfigurationFile.load(new FileInputStream(sleConfFile));
+            for(ServiceInstanceConfiguration sic : confFile.getServiceInstances()) {
+                if(sic instanceof RafServiceInstanceConfiguration) {
+                    createRafServiceInstance(confFile.getPeerConfiguration(), (RafServiceInstanceConfiguration) sic);
+                } else if(sic instanceof RcfServiceInstanceConfiguration) {
+                    createRcfServiceInstance(confFile.getPeerConfiguration(), (RcfServiceInstanceConfiguration) sic);
+                } else {
+                    LOG.warning("Driver " + this.name + " cannot load service instance configuration for " + sic.getServiceInstanceIdentifier() + " in file " + sleConfFile + ": SLE service type not supported");
+                }
+            }
+        }
+    }
+
+    private void createRcfServiceInstance(PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration sic) {
+        RcfServiceInstanceManager m = new RcfServiceInstanceManager(peerConfiguration, sic, configuration, context.getRawDataBroker());
+        this.sleManagers.add(m);
+    }
+
+    private void createRafServiceInstance(PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration sic) {
+        RafServiceInstanceManager m = new RafServiceInstanceManager(peerConfiguration, sic, configuration, context.getRawDataBroker());
+        this.sleManagers.add(m);
+    }
+
+    private void loadDriverConfiguration(String filePath) throws IOException {
+        this.configuration = SpacecraftConfiguration.load(new FileInputStream(filePath));
     }
 
     @Override
     public SystemStatus getDriverStatus() {
-        return null;
+        return status;
     }
 
     @Override
     public List<IActivityHandler> getActivityHandlers() {
-        return null;
+        // TODO implement command handler
+        return Collections.emptyList();
     }
 
     @Override
     public List<ITransportConnector> getTransportConnectors() {
-        return null;
+        return this.sleManagers.stream().map(o -> (ITransportConnector) o).collect(Collectors.toList());
     }
 
     @Override
-    public void dispose() throws DriverException {
+    public void dispose() {
+        this.sleManagers.forEach(SleServiceInstanceManager::abort);
+        this.sleManagers.clear();
+        updateStatus(SystemStatus.UNKNOWN);
+    }
 
+    private void updateStatus(SystemStatus s) {
+        boolean toNotify = s != this.status;
+        this.status = s;
+        if(toNotify) {
+            this.listener.driverStatusUpdate(this.name, this.status);
+        }
     }
 }

@@ -24,7 +24,7 @@ import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
-import eu.dariolucia.reatmetric.driver.spacecraft.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
 
@@ -98,54 +98,16 @@ public class RafServiceInstanceManager extends SleServiceInstanceManager<RafServ
         // Get the frame
         byte[] frameContents = operation.getData().value;
         Quality quality =  Quality.values()[operation.getDeliveredFrameQuality().intValue()];
-        Instant genTimeInstant;
-        if(operation.getEarthReceiveTime().getCcsdsFormat() != null) {
-            long[] genTime = PduFactoryUtil.buildTimeMillis(operation.getEarthReceiveTime().getCcsdsFormat().value);
-            genTimeInstant = Instant.ofEpochMilli(genTime[0]).plusNanos(genTime[1] * 1000).plusNanos(spacecraftConfiguration.getTmDataLinkConfigurations().getReceptionDelay() * 1000);
-        } else {
-            long[] genTime = PduFactoryUtil.buildTimeMillisPico(operation.getEarthReceiveTime().getCcsdsPicoFormat().value);
-            genTimeInstant = Instant.ofEpochMilli(genTime[0]).plusNanos(genTime[1] / 1000).plusNanos(spacecraftConfiguration.getTmDataLinkConfigurations().getReceptionDelay() * 1000);
-        }
+        Instant receptionTime = parseTime(operation.getEarthReceiveTime());
+        Instant genTimeInstant = receptionTime.minusNanos(spacecraftConfiguration.getTmDataLinkConfigurations().getReceptionDelay() * 1000);
         String antennaId = toString(operation.getAntennaId());
         // Build frame to distribute
         if(spacecraftConfiguration.getTmDataLinkConfigurations().getType() == TransferFrameType.TM) {
-            distributeTmFrame(frameContents, quality, genTimeInstant, antennaId);
+            distributeTmFrame(frameContents, quality, genTimeInstant, receptionTime, antennaId);
         } else if(spacecraftConfiguration.getTmDataLinkConfigurations().getType() == TransferFrameType.AOS) {
-            distributeAosFrame(frameContents, quality, genTimeInstant, antennaId);
+            distributeAosFrame(frameContents, quality, genTimeInstant, receptionTime, antennaId);
         }
         // Ignore, it would fail at configuration time
-    }
-
-    private void distributeTmFrame(byte[] frameContents, Quality quality, Instant genTimeInstant, String antennaId) {
-        if(quality == Quality.GOOD) { // GOOD
-            TmTransferFrame frame = new TmTransferFrame(frameContents, spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
-            if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() != null && spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
-                RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_TM_FRAME, antennaId, String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, Instant.now(), null);
-                rd.setData(frame);
-                distribute(rd);
-            }
-        } else {
-            LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Bad frame received");
-            RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_BAD_TM, antennaId, "", quality, null, frameContents, Instant.now(), null);
-            distribute(rd);
-        }
-    }
-
-    private void distributeAosFrame(byte[] frameContents, Quality quality, Instant genTimeInstant, String antennaId) {
-        if(quality == Quality.GOOD) { // GOOD
-            AosTransferFrame frame = new AosTransferFrame(frameContents, spacecraftConfiguration.getTmDataLinkConfigurations().isAosFrameHeaderErrorControlPresent(),
-                    spacecraftConfiguration.getTmDataLinkConfigurations().getAosTransferFrameInsertZoneLength(), AosTransferFrame.UserDataType.M_PDU,
-                    spacecraftConfiguration.getTmDataLinkConfigurations().isOcfPresent(), spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
-            if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() != null && spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
-                RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_AOS_FRAME, antennaId, String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, Instant.now(), null);
-                rd.setData(frame);
-                distribute(rd);
-            }
-        } else {
-            LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Bad frame received");
-            RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_BAD_TM, antennaId, "", quality, null, frameContents, Instant.now(), null);
-            distribute(rd);
-        }
     }
 
     private String toString(AntennaId antennaId) {
