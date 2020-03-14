@@ -18,6 +18,7 @@ import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.TmReceiverVirtualChann
 import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.demux.VirtualChannelReceiverDemux;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
@@ -48,15 +49,17 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     private final IRawDataBroker broker;
     private final TmDataLinkConfiguration configuration;
     private final BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver;
+    private final BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker;
     private VirtualChannelReceiverDemux demultiplexer;
 
-    public TmDataLinkProcessor(int spacecraftId, IPacketIdentifier packetIdentifier, IRawDataBroker rawDataBroker, TmDataLinkConfiguration tmDataLinkConfigurations, BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver) {
+    public TmDataLinkProcessor(int spacecraftId, IPacketIdentifier packetIdentifier, IRawDataBroker rawDataBroker, TmDataLinkConfiguration tmDataLinkConfigurations, BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver, BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker) {
         this.spacecraftId = spacecraftId;
         this.packetIdentifier = packetIdentifier;
         this.broker = rawDataBroker;
         this.configuration = tmDataLinkConfigurations;
         this.processedVCs = new boolean[64];
         this.generationTimeResolver = generationTimeResolver;
+        this.packetQualityChecker = packetQualityChecker;
     }
 
     public void initialise() {
@@ -132,20 +135,53 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         } else {
             // Make an attempt to identify the packet
             String packetName = Constants.N_UNKNOWN_PACKET;
-            boolean identified = false;
-            try {
-                packetName = packetIdentifier.identify(packet);
-                identified = true;
-            } catch (PacketNotIdentifiedException e) {
-                LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + " not identified: " + e.getMessage(), e);
-            } catch (PacketAmbiguityException e) {
-                LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + " ambiguous: " + e.getMessage(), e);
+            String packetType = Constants.T_UNKNOWN_PACKET;
+            if(sp.isIdle()) {
+                packetType = Constants.T_IDLE_PACKET;
+            } else {
+                try {
+                    packetName = packetIdentifier.identify(packet);
+                    packetType = Constants.T_TM_PACKET;
+                } catch (PacketNotIdentifiedException e) {
+                    LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + " not identified: " + e.getMessage(), e);
+                } catch (PacketAmbiguityException e) {
+                    LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + " ambiguous: " + e.getMessage(), e);
+                }
             }
             // Perform time generation extraction/time correlation
             Instant generationTime = generationTimeResolver.apply(firstFrame, sp);
+            Quality quality = packetQualityChecker.apply(firstFrame, sp);
             String source = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_SOURCE);
             // Now we distribute it and store it as well
-            distributeSpacePacket(sp, packetName, generationTime, receptionTime, route, source, identified ? Constants.T_TM_PACKET : Constants.T_UNKNOWN_PACKET);
+            distributeSpacePacket(sp, packetName, generationTime, receptionTime, route, source, packetType, quality);
+        }
+    }
+
+    private void distributeSpacePacket(SpacePacket sp, String packetName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality) {
+        RawData rd = new RawData(broker.nextRawDataId(), generationTime, packetName, type, route, source, quality, null, sp.getPacket(), receptionTime, null);
+        rd.setData(sp);
+        try {
+            broker.distribute(Collections.singletonList(rd));
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Error while distributing packet " + packetName + " from route " + rd.getRoute(), e);
+        }
+    }
+
+    private void distributeBadPacket(AbstractTransferFrame firstFrame, String route, SpacePacket sp) {
+        Instant genTime = (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_GEN_TIME);
+        Instant rcpTime = (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME);
+        if(genTime == null) {
+            genTime = Instant.now();
+        }
+        if(rcpTime == null) {
+            rcpTime = Instant.now();
+        }
+        RawData rd = new RawData(broker.nextRawDataId(), genTime, Constants.N_UNKNOWN_PACKET, Constants.T_BAD_PACKET, route, String.valueOf(firstFrame.getSpacecraftId()), Quality.BAD, null, sp.getPacket(), rcpTime, null);
+        rd.setData(sp);
+        try {
+            broker.distribute(Collections.singletonList(rd));
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Error while distributing bad packet from route " + rd.getRoute(), e);
         }
     }
 

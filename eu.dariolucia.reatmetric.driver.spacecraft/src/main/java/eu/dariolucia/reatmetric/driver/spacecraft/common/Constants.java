@@ -16,6 +16,7 @@ public class Constants {
     public static final String T_TM_FRAME = "TM FRAME";
     public static final String T_AOS_FRAME = "AOS FRAME";
     public static final String T_TM_PACKET = "TM PACKET";
+    public static final String T_IDLE_PACKET = "IDLE PACKET";
     public static final String T_TC_PACKET = "TC PACKET";
     public static final String T_BAD_TM = "BAD TM";
     public static final String T_BAD_PACKET = "BAD PACKET";
@@ -26,4 +27,5 @@ public class Constants {
     public static final String ANNOTATION_SOURCE = "##SOURCE";
     public static final String ANNOTATION_GEN_TIME = "##GENTIME";
     public static final String ANNOTATION_RCP_TIME = "##RCPTIME";
+
 }
