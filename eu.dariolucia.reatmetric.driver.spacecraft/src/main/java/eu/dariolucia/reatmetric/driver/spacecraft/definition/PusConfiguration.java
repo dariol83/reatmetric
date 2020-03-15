@@ -10,10 +10,11 @@ package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 import javax.xml.bind.annotation.*;
 import java.time.Instant;
 
+// TODO: Rename to TmPacketConfiguration
 @XmlAccessorType(XmlAccessType.FIELD)
 public class PusConfiguration {
 
-    // TODO: group the time configuration in one class and introduce a default and a per-APID configuration
+    // TODO: group the time/CRC configuration in one class and introduce a default and a per-APID configuration
     @XmlAttribute(name = "source_field_length")
     private int sourceLength = 0;
 
