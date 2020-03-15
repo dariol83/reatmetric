@@ -9,6 +9,8 @@ package eu.dariolucia.reatmetric.driver.spacecraft;
 
 import eu.dariolucia.ccsds.encdec.definition.Definition;
 import eu.dariolucia.ccsds.encdec.identifier.impl.FieldGroupBasedPacketIdentifier;
+import eu.dariolucia.ccsds.encdec.structure.PacketDefinitionIndexer;
+import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketDecoder;
 import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.ServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.UtlConfigurationFile;
@@ -89,14 +91,14 @@ public class SpacecraftDriver implements IDriver {
         try {
             // Load the driver configuration
             loadDriverConfiguration(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE);
-            // Load the SLE service instances
-            loadSleServiceInstances(driverConfigurationDirectory + File.separator + SLE_FOLDER);
             // Load encoding/decoding definitions
             loadEncodingDecodingDefinitions(driverConfigurationDirectory + File.separator + ENCODING_DECODING_DEFINITION_FILE);
-            // Load the TM Data Link processor
-            loadTmDataLinkProcessor();
             // Load the TM Packet processor
             loadTmPacketProcessor();
+            // Load the TM Data Link processor
+            loadTmDataLinkProcessor();
+            // Load the SLE service instances
+            loadSleServiceInstances(driverConfigurationDirectory + File.separator + SLE_FOLDER);
             // Ready to go
             updateStatus(SystemStatus.NOMINAL);
         } catch (IOException e) {
@@ -105,12 +107,26 @@ public class SpacecraftDriver implements IDriver {
         }
     }
 
+    private void loadTmPacketProcessor() {
+        this.tmPacketProcessor = new TmPacketProcessor(context.getProcessingModel(),
+                new DefaultPacketDecoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), configuration.getPusConfiguration().getEpoch()),
+                context.getRawDataBroker(),
+                configuration.getPusConfiguration());
+        this.tmPacketProcessor.initialise();
+    }
+
     private void loadEncodingDecodingDefinitions(String filePath) throws IOException {
         this.encodingDecodingDefinitions = Definition.load(new FileInputStream(filePath));
     }
 
     private void loadTmDataLinkProcessor() {
-        this.tmDataLinkProcessor = new TmDataLinkProcessor(new FieldGroupBasedPacketIdentifier(this.encodingDecodingDefinitions), context.getRawDataBroker(), configuration.getTmDataLinkConfigurations());
+        this.tmDataLinkProcessor = new TmDataLinkProcessor(configuration.getId(),
+                new FieldGroupBasedPacketIdentifier(this.encodingDecodingDefinitions),
+                context.getRawDataBroker(),
+                configuration.getTmDataLinkConfigurations(),
+                tmPacketProcessor::extractPacketGenerationTime,
+                tmPacketProcessor::checkPacketQuality
+                );
         this.tmDataLinkProcessor.initialise();
     }
 

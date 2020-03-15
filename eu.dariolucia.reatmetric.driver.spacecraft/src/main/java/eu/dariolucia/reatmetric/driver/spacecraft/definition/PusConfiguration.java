@@ -13,6 +13,7 @@ import java.time.Instant;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class PusConfiguration {
 
+    // TODO: group the time configuration in one class and introduce a default and a per-APID configuration
     @XmlAttribute(name = "source_field_length")
     private int sourceLength = 0;
 
@@ -35,7 +36,13 @@ public class PusConfiguration {
     private Instant epoch = null;
 
     @XmlAttribute(name = "tm_pec_present")
-    private boolean tmPecPresent = true;
+    private PacketErrorControlType tmPecPresent = PacketErrorControlType.NONE;
+
+    @XmlAttribute(name = "parameter_id_offset")
+    private int parameterIdOffset = 0;
+
+    @XmlAttribute(name = "event_id_offset")
+    private int eventIdOffset = 0;
 
     @XmlElements({
             @XmlElement(name = "obt_cuc_config", type = CucConfiguration.class),
@@ -70,11 +77,11 @@ public class PusConfiguration {
         this.epoch = epoch;
     }
 
-    public boolean isTmPecPresent() {
+    public PacketErrorControlType getTmPecPresent() {
         return tmPecPresent;
     }
 
-    public void setTmPecPresent(boolean tmPecPresent) {
+    public void setTmPecPresent(PacketErrorControlType tmPecPresent) {
         this.tmPecPresent = tmPecPresent;
     }
 
@@ -116,5 +123,21 @@ public class PusConfiguration {
 
     public void setTmSpareLength(int tmSpareLength) {
         this.tmSpareLength = tmSpareLength;
+    }
+
+    public int getParameterIdOffset() {
+        return parameterIdOffset;
+    }
+
+    public void setParameterIdOffset(int parameterIdOffset) {
+        this.parameterIdOffset = parameterIdOffset;
+    }
+
+    public int getEventIdOffset() {
+        return eventIdOffset;
+    }
+
+    public void setEventIdOffset(int eventIdOffset) {
+        this.eventIdOffset = eventIdOffset;
     }
 }

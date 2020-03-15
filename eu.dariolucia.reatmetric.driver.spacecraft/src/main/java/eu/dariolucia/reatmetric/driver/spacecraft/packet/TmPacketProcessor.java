@@ -13,6 +13,8 @@ import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.encdec.structure.IPacketDecoder;
 import eu.dariolucia.ccsds.encdec.structure.ParameterValue;
 import eu.dariolucia.ccsds.encdec.time.IGenerationTimeProcessor;
+import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
+import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
@@ -62,9 +64,10 @@ public class TmPacketProcessor implements IRawDataSubscriber, IGenerationTimePro
     public void dataItemsReceived(List<RawData> messages) {
         for(RawData rd : messages) {
             try {
+                // TODO: remember which raw data is used, as we need the generation time. In the worst case, use an anonymous class instead of this
                 DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), this);
                 forwardParameterResult(rd, result.getDecodedParameters());
-                notifyExtensionServices(rd, result); // TODO: notify the result and the packet to the registered PUS services
+                notifyExtensionServices(rd, result); // TODO: notify the decoding result and the packet to the registered PUS services
             } catch (DecodingException e) {
                 LOG.log(Level.SEVERE, "Cannot decode packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
             }
@@ -81,12 +84,22 @@ public class TmPacketProcessor implements IRawDataSubscriber, IGenerationTimePro
     }
 
     private ParameterSample mapSample(RawData packet, ParameterValue pv) {
-        return ParameterSample.of(pv.getId(), pv.getGenerationTime(), packet.getReceptionTime(), packet.getInternalId(), pv.getValue(), packet.getRoute(), null); // TODO use configured offset, change ccsds encdec to return the external id
+        return ParameterSample.of((int) (pv.getExternalId() + configuration.getParameterIdOffset()), pv.getGenerationTime(), packet.getReceptionTime(), packet.getInternalId(), pv.getValue(), packet.getRoute(), null);
     }
 
     @Override
     public Instant computeGenerationTime(EncodedParameter ei, Object value, Instant derivedGenerationTime, Duration derivedOffset, Integer fixedOffsetMs) {
-        // TODO
+        // TODO: if derivedGenerationTime is not null, then use time correlation to derive the correct reference time. Otherwise use the packet generation time (already correlated).
         return null;
+    }
+
+    public Instant extractPacketGenerationTime(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {
+        // TODO: 1. extract OBT according to PUS configuration (per APID); 2. apply time correlation
+        return null;
+    }
+
+    public Quality checkPacketQuality(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {
+        // TODO: if tmPecPresent in PUS configuration is CRC or ISO, check packet PEC: implement in ccsds.encdec (ISO, CRC)
+        return Quality.GOOD;
     }
 }
