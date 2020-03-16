@@ -153,7 +153,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
             Quality quality = packetQualityChecker.apply(firstFrame, sp);
             String source = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_SOURCE);
             // Now we distribute it and store it as well
-            // TODO: provide also the frame, in order to add annotations such as related ID and annotations (VCID, VCC) -> needed for time correlation
+            // TODO: provide also the frame, in order to add annotations such as related ID and annotations (VCID, VCC) -> needed for time correlation ... they could even go in the extension
             distributeSpacePacket(sp, packetName, generationTime, receptionTime, route, source, packetType, quality);
         }
     }
