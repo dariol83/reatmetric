@@ -333,6 +333,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
                 frame.setAnnotationValue(Constants.ANNOTATION_SOURCE, rd.getSource());
                 frame.setAnnotationValue(Constants.ANNOTATION_GEN_TIME, rd.getGenerationTime());
                 frame.setAnnotationValue(Constants.ANNOTATION_RCP_TIME, rd.getReceptionTime());
+                frame.setAnnotationValue(Constants.ANNOTATION_UNIQUE_ID, rd.getInternalId());
                 rd.setData(frame);
                 distribute(rd);
             }
@@ -354,6 +355,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
                 frame.setAnnotationValue(Constants.ANNOTATION_SOURCE, rd.getSource());
                 frame.setAnnotationValue(Constants.ANNOTATION_GEN_TIME, rd.getGenerationTime());
                 frame.setAnnotationValue(Constants.ANNOTATION_RCP_TIME, rd.getReceptionTime());
+                frame.setAnnotationValue(Constants.ANNOTATION_UNIQUE_ID, rd.getInternalId());
                 rd.setData(frame);
                 distribute(rd);
             }
