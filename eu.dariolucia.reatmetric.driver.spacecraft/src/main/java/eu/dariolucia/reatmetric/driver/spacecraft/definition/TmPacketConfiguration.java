@@ -8,7 +8,6 @@
 package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
 import javax.xml.bind.annotation.*;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,10 +23,10 @@ public class TmPacketConfiguration {
     private int eventIdOffset = 0;
 
     @XmlElement(name = "default-pus-configuration")
-    private PusConfiguration defaultPusConfiguration;
+    private TmPusConfiguration defaultTmPusConfiguration;
 
     @XmlElement(name = "apid-pus-configuration")
-    private List<ApidPusConfiguration> apidPusConfiguration = new LinkedList<>();
+    private List<ApidTmPusConfiguration> apidPusConfiguration = new LinkedList<>();
 
     public int getParameterIdOffset() {
         return parameterIdOffset;
@@ -45,34 +44,34 @@ public class TmPacketConfiguration {
         this.eventIdOffset = eventIdOffset;
     }
 
-    public PusConfiguration getDefaultPusConfiguration() {
-        return defaultPusConfiguration;
+    public TmPusConfiguration getDefaultTmPusConfiguration() {
+        return defaultTmPusConfiguration;
     }
 
-    public void setDefaultPusConfiguration(PusConfiguration defaultPusConfiguration) {
-        this.defaultPusConfiguration = defaultPusConfiguration;
+    public void setDefaultTmPusConfiguration(TmPusConfiguration defaultTmPusConfiguration) {
+        this.defaultTmPusConfiguration = defaultTmPusConfiguration;
     }
 
-    public List<ApidPusConfiguration> getApidPusConfiguration() {
+    public List<ApidTmPusConfiguration> getApidPusConfiguration() {
         return apidPusConfiguration;
     }
 
-    public void setApidPusConfiguration(List<ApidPusConfiguration> apidPusConfiguration) {
+    public void setApidPusConfiguration(List<ApidTmPusConfiguration> apidPusConfiguration) {
         this.apidPusConfiguration = apidPusConfiguration;
     }
 
     // -------------------------------------------------------------
     // Transient data
     // -------------------------------------------------------------
-    private transient final Map<Short, PusConfiguration> apid2pusConfiguration = new HashMap<>();
+    private transient final Map<Short, TmPusConfiguration> apid2pusConfiguration = new HashMap<>();
 
     public void buildLookupMap() {
-        for(ApidPusConfiguration apidConf : this.apidPusConfiguration) {
+        for(ApidTmPusConfiguration apidConf : this.apidPusConfiguration) {
             apid2pusConfiguration.put(apidConf.getApid(), apidConf);
         }
     }
 
-    public PusConfiguration getPusConfigurationFor(short apid) {
-        return apid2pusConfiguration.getOrDefault(apid, defaultPusConfiguration);
+    public TmPusConfiguration getPusConfigurationFor(short apid) {
+        return apid2pusConfiguration.getOrDefault(apid, defaultTmPusConfiguration);
     }
 }

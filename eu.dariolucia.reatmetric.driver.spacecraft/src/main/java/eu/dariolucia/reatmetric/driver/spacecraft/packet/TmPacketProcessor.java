@@ -7,6 +7,7 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.packet;
 
+import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingException;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.encdec.structure.IPacketDecoder;
@@ -21,6 +22,7 @@ import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPacketConfiguration;
 
 import java.time.Instant;
@@ -34,12 +36,14 @@ public class TmPacketProcessor implements IRawDataSubscriber {
 
     private static final Logger LOG = Logger.getLogger(TmPacketProcessor.class.getName());
 
+    private final Instant epoch;
     private final IProcessingModel processingModel;
     private final IPacketDecoder packetDecoder;
     private final IRawDataBroker broker;
     private final TmPacketConfiguration configuration;
 
-    public TmPacketProcessor(IProcessingModel processingModel, IPacketDecoder packetDecoder, IRawDataBroker broker, TmPacketConfiguration configuration) {
+    public TmPacketProcessor(Instant epoch, IProcessingModel processingModel, IPacketDecoder packetDecoder, IRawDataBroker broker, TmPacketConfiguration configuration) {
+        this.epoch = epoch;
         this.processingModel = processingModel;
         this.packetDecoder = packetDecoder;
         this.broker = broker;
@@ -88,6 +92,17 @@ public class TmPacketProcessor implements IRawDataSubscriber {
 
     public Instant extractPacketGenerationTime(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {
         // TODO: 1. extract OBT according to PUS configuration (per APID); 2. apply time correlation
+        if(spacePacket.isSecondaryHeaderFlag()) {
+            TmPusConfiguration conf = configuration.getPusConfigurationFor(spacePacket.getApid());
+            if (conf != null) {
+                TmPusHeader pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.isExplicitPField(), epoch, conf.getTimeDescriptor());
+                spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
+                Instant generationTime = pusHeader.getAbsoluteTime();
+                if(generationTime != null) {
+                    // TODO: Time correlate ... should we do it here?!??
+                }
+            }
+        }
         return null;
     }
 

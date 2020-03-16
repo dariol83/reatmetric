@@ -27,5 +27,5 @@ public class Constants {
     public static final String ANNOTATION_SOURCE = "##SOURCE";
     public static final String ANNOTATION_GEN_TIME = "##GENTIME";
     public static final String ANNOTATION_RCP_TIME = "##RCPTIME";
-
+    public static final String ANNOTATION_TM_PUS_HEADER = "##TM_PUS_HEADER";
 }

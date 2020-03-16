@@ -8,53 +8,30 @@
 package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
 import javax.xml.bind.annotation.*;
-import java.time.Instant;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class PusConfiguration {
+public class TmPusConfiguration {
 
-    @XmlAttribute(name = "source_field_length")
-    private int sourceLength = 0;
-
-    @XmlAttribute(name = "tc_spare_length")
-    private int tcSpareLength = 0;
-
-    @XmlAttribute(name = "destination_field_length")
+    @XmlAttribute(name = "destination-field-length")
     private int destinationLength = 0;
 
-    @XmlAttribute(name = "packet_subcounter_length")
-    private int packetSubCounterLength = 0;
+    @XmlAttribute(name = "packet-subcounter-present")
+    private boolean packetSubCounterPresent = false;
 
-    @XmlAttribute(name = "tm_spare_length")
+    @XmlAttribute(name = "tm-spare-length")
     private int tmSpareLength = 0;
 
-    @XmlAttribute(name = "explicit_p_field")
+    @XmlAttribute(name = "explicit-p-field")
     private boolean explicitPField = false;
 
-    @XmlAttribute(name = "tm_pec_present")
+    @XmlAttribute(name = "tm-pec-present")
     private PacketErrorControlType tmPecPresent = PacketErrorControlType.NONE;
 
     @XmlElements({
-            @XmlElement(name = "obt_cuc_config", type = CucConfiguration.class),
-            @XmlElement(name = "obt_cds_config", type = CdsConfiguration.class)
+            @XmlElement(name = "obt-cuc-config", type = CucConfiguration.class),
+            @XmlElement(name = "obt-cds-config", type = CdsConfiguration.class)
     })
-    private ObtConfiguration obtConfiguration = new CucConfiguration();
-
-    public int getSourceLength() {
-        return sourceLength;
-    }
-
-    public void setSourceLength(int sourceLength) {
-        this.sourceLength = sourceLength;
-    }
-
-    public int getTcSpareLength() {
-        return tcSpareLength;
-    }
-
-    public void setTcSpareLength(int tcSpareLength) {
-        this.tcSpareLength = tcSpareLength;
-    }
+    private ObtConfiguration obtConfiguration = null; // null means not present
 
     public int getDestinationLength() {
         return destinationLength;
@@ -64,12 +41,12 @@ public class PusConfiguration {
         this.destinationLength = destinationLength;
     }
 
-    public int getPacketSubCounterLength() {
-        return packetSubCounterLength;
+    public boolean isPacketSubCounterPresent() {
+        return packetSubCounterPresent;
     }
 
-    public void setPacketSubCounterLength(int packetSubCounterLength) {
-        this.packetSubCounterLength = packetSubCounterLength;
+    public void setPacketSubCounterPresent(boolean packetSubCounterPresent) {
+        this.packetSubCounterPresent = packetSubCounterPresent;
     }
 
     public int getTmSpareLength() {

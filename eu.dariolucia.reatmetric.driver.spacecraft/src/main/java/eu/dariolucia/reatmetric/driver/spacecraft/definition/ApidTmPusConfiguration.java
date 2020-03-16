@@ -12,7 +12,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ApidPusConfiguration extends PusConfiguration {
+public class ApidTmPusConfiguration extends TmPusConfiguration {
 
     @XmlAttribute(name = "apid", required = true)
     private short apid;

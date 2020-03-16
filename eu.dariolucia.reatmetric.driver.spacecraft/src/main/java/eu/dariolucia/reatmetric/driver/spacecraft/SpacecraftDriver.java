@@ -108,7 +108,8 @@ public class SpacecraftDriver implements IDriver {
     }
 
     private void loadTmPacketProcessor() {
-        this.tmPacketProcessor = new TmPacketProcessor(context.getProcessingModel(),
+        this.tmPacketProcessor = new TmPacketProcessor(configuration.getEpoch(),
+                context.getProcessingModel(),
                 new DefaultPacketDecoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), configuration.getEpoch()),
                 context.getRawDataBroker(),
                 configuration.getTmPacketConfiguration());
