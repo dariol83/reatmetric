@@ -109,9 +109,9 @@ public class SpacecraftDriver implements IDriver {
 
     private void loadTmPacketProcessor() {
         this.tmPacketProcessor = new TmPacketProcessor(context.getProcessingModel(),
-                new DefaultPacketDecoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), configuration.getPusConfiguration().getEpoch()),
+                new DefaultPacketDecoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), configuration.getEpoch()),
                 context.getRawDataBroker(),
-                configuration.getPusConfiguration());
+                configuration.getTmPacketConfiguration());
         this.tmPacketProcessor.initialise();
     }
 
@@ -171,6 +171,8 @@ public class SpacecraftDriver implements IDriver {
 
     private void loadDriverConfiguration(String filePath) throws IOException {
         this.configuration = SpacecraftConfiguration.load(new FileInputStream(filePath));
+        // Optimise PUS configuration
+        this.configuration.getTmPacketConfiguration().buildLookupMap();
     }
 
     @Override

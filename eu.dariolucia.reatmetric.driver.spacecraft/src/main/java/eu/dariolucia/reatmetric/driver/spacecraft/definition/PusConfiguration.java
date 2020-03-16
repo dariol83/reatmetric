@@ -10,11 +10,9 @@ package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 import javax.xml.bind.annotation.*;
 import java.time.Instant;
 
-// TODO: Rename to TmPacketConfiguration
 @XmlAccessorType(XmlAccessType.FIELD)
 public class PusConfiguration {
 
-    // TODO: group the time/CRC configuration in one class and introduce a default and a per-APID configuration
     @XmlAttribute(name = "source_field_length")
     private int sourceLength = 0;
 
@@ -33,66 +31,14 @@ public class PusConfiguration {
     @XmlAttribute(name = "explicit_p_field")
     private boolean explicitPField = false;
 
-    @XmlAttribute(name = "obt_epoch")
-    private Instant epoch = null;
-
     @XmlAttribute(name = "tm_pec_present")
     private PacketErrorControlType tmPecPresent = PacketErrorControlType.NONE;
-
-    @XmlAttribute(name = "parameter_id_offset")
-    private int parameterIdOffset = 0;
-
-    @XmlAttribute(name = "event_id_offset")
-    private int eventIdOffset = 0;
 
     @XmlElements({
             @XmlElement(name = "obt_cuc_config", type = CucConfiguration.class),
             @XmlElement(name = "obt_cds_config", type = CdsConfiguration.class)
     })
     private ObtConfiguration obtConfiguration = new CucConfiguration();
-
-    public PusConfiguration() {
-    }
-
-    public int getDestinationLength() {
-        return destinationLength;
-    }
-
-    public void setDestinationLength(int destinationLength) {
-        this.destinationLength = destinationLength;
-    }
-
-    public boolean isExplicitPField() {
-        return explicitPField;
-    }
-
-    public void setExplicitPField(boolean explicitPField) {
-        this.explicitPField = explicitPField;
-    }
-
-    public Instant getEpoch() {
-        return epoch;
-    }
-
-    public void setEpoch(Instant epoch) {
-        this.epoch = epoch;
-    }
-
-    public PacketErrorControlType getTmPecPresent() {
-        return tmPecPresent;
-    }
-
-    public void setTmPecPresent(PacketErrorControlType tmPecPresent) {
-        this.tmPecPresent = tmPecPresent;
-    }
-
-    public ObtConfiguration getObtConfiguration() {
-        return obtConfiguration;
-    }
-
-    public void setObtConfiguration(ObtConfiguration obtConfiguration) {
-        this.obtConfiguration = obtConfiguration;
-    }
 
     public int getSourceLength() {
         return sourceLength;
@@ -108,6 +54,14 @@ public class PusConfiguration {
 
     public void setTcSpareLength(int tcSpareLength) {
         this.tcSpareLength = tcSpareLength;
+    }
+
+    public int getDestinationLength() {
+        return destinationLength;
+    }
+
+    public void setDestinationLength(int destinationLength) {
+        this.destinationLength = destinationLength;
     }
 
     public int getPacketSubCounterLength() {
@@ -126,19 +80,27 @@ public class PusConfiguration {
         this.tmSpareLength = tmSpareLength;
     }
 
-    public int getParameterIdOffset() {
-        return parameterIdOffset;
+    public boolean isExplicitPField() {
+        return explicitPField;
     }
 
-    public void setParameterIdOffset(int parameterIdOffset) {
-        this.parameterIdOffset = parameterIdOffset;
+    public void setExplicitPField(boolean explicitPField) {
+        this.explicitPField = explicitPField;
     }
 
-    public int getEventIdOffset() {
-        return eventIdOffset;
+    public PacketErrorControlType getTmPecPresent() {
+        return tmPecPresent;
     }
 
-    public void setEventIdOffset(int eventIdOffset) {
-        this.eventIdOffset = eventIdOffset;
+    public void setTmPecPresent(PacketErrorControlType tmPecPresent) {
+        this.tmPecPresent = tmPecPresent;
+    }
+
+    public ObtConfiguration getObtConfiguration() {
+        return obtConfiguration;
+    }
+
+    public void setObtConfiguration(ObtConfiguration obtConfiguration) {
+        this.obtConfiguration = obtConfiguration;
     }
 }

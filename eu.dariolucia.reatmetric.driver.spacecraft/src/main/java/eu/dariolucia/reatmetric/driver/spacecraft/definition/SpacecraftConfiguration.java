@@ -10,12 +10,10 @@ package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Instant;
 
 @XmlRootElement(name = "spacecraft", namespace = "http://dariolucia.eu/reatmetric/driver/spacecraft")
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -38,6 +36,9 @@ public class SpacecraftConfiguration {
     @XmlElement(name = "id", required = true)
     private int id;
 
+    @XmlElement(name = "obt-epoch")
+    private Instant epoch = null;
+
     @XmlElement(name = "tc")
     private TcDataLinkConfiguration tcDataLinkConfiguration = new TcDataLinkConfiguration();
 
@@ -45,7 +46,7 @@ public class SpacecraftConfiguration {
     private TmDataLinkConfiguration tmDataLinkConfigurations = new TmDataLinkConfiguration();
 
     @XmlElement(name = "pus", required = true)
-    private PusConfiguration pusConfiguration = new PusConfiguration();
+    private TmPacketConfiguration tmPacketConfiguration = new TmPacketConfiguration();
 
     public SpacecraftConfiguration() {
     }
@@ -66,6 +67,14 @@ public class SpacecraftConfiguration {
         this.id = id;
     }
 
+    public Instant getEpoch() {
+        return epoch;
+    }
+
+    public void setEpoch(Instant epoch) {
+        this.epoch = epoch;
+    }
+
     public TcDataLinkConfiguration getTcDataLinkConfiguration() {
         return tcDataLinkConfiguration;
     }
@@ -82,11 +91,11 @@ public class SpacecraftConfiguration {
         this.tmDataLinkConfigurations = tmDataLinkConfigurations;
     }
 
-    public PusConfiguration getPusConfiguration() {
-        return pusConfiguration;
+    public TmPacketConfiguration getTmPacketConfiguration() {
+        return tmPacketConfiguration;
     }
 
-    public void setPusConfiguration(PusConfiguration pusConfiguration) {
-        this.pusConfiguration = pusConfiguration;
+    public void setTmPacketConfiguration(TmPacketConfiguration tmPacketConfiguration) {
+        this.tmPacketConfiguration = tmPacketConfiguration;
     }
 }

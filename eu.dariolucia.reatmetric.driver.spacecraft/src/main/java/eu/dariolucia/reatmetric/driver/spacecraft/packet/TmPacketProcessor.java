@@ -7,12 +7,10 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.packet;
 
-import eu.dariolucia.ccsds.encdec.definition.EncodedParameter;
 import eu.dariolucia.ccsds.encdec.structure.DecodingException;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.encdec.structure.IPacketDecoder;
 import eu.dariolucia.ccsds.encdec.structure.ParameterValue;
-import eu.dariolucia.ccsds.encdec.time.IGenerationTimeProcessor;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
@@ -23,9 +21,8 @@ import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.PusConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPacketConfiguration;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,16 +30,16 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class TmPacketProcessor implements IRawDataSubscriber, IGenerationTimeProcessor {
+public class TmPacketProcessor implements IRawDataSubscriber {
 
     private static final Logger LOG = Logger.getLogger(TmPacketProcessor.class.getName());
 
     private final IProcessingModel processingModel;
     private final IPacketDecoder packetDecoder;
     private final IRawDataBroker broker;
-    private final PusConfiguration configuration;
+    private final TmPacketConfiguration configuration;
 
-    public TmPacketProcessor(IProcessingModel processingModel, IPacketDecoder packetDecoder, IRawDataBroker broker, PusConfiguration configuration) {
+    public TmPacketProcessor(IProcessingModel processingModel, IPacketDecoder packetDecoder, IRawDataBroker broker, TmPacketConfiguration configuration) {
         this.processingModel = processingModel;
         this.packetDecoder = packetDecoder;
         this.broker = broker;
@@ -64,8 +61,10 @@ public class TmPacketProcessor implements IRawDataSubscriber, IGenerationTimePro
     public void dataItemsReceived(List<RawData> messages) {
         for(RawData rd : messages) {
             try {
-                // TODO: remember which raw data is used, as we need the generation time. In the worst case, use an anonymous class instead of this
-                DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), this);
+                // To correctly apply generation time derivation ,we need to remember which raw data is used, as we need the generation time of the packet.
+                // We build an anonymous class for this purpose.
+                ParameterTimeGenerationComputer timeGenerationComputer = new ParameterTimeGenerationComputer(rd);
+                DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), timeGenerationComputer);
                 forwardParameterResult(rd, result.getDecodedParameters());
                 notifyExtensionServices(rd, result); // TODO: notify the decoding result and the packet to the registered PUS services
             } catch (DecodingException e) {
@@ -85,12 +84,6 @@ public class TmPacketProcessor implements IRawDataSubscriber, IGenerationTimePro
 
     private ParameterSample mapSample(RawData packet, ParameterValue pv) {
         return ParameterSample.of((int) (pv.getExternalId() + configuration.getParameterIdOffset()), pv.getGenerationTime(), packet.getReceptionTime(), packet.getInternalId(), pv.getValue(), packet.getRoute(), null);
-    }
-
-    @Override
-    public Instant computeGenerationTime(EncodedParameter ei, Object value, Instant derivedGenerationTime, Duration derivedOffset, Integer fixedOffsetMs) {
-        // TODO: if derivedGenerationTime is not null, then use time correlation to derive the correct reference time. Otherwise use the packet generation time (already correlated).
-        return null;
     }
 
     public Instant extractPacketGenerationTime(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {
