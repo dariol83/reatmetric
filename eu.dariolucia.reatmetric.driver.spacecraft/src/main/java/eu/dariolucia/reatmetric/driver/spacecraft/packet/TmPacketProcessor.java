@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPacketConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -41,13 +42,15 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     private final IPacketDecoder packetDecoder;
     private final IRawDataBroker broker;
     private final TmPacketConfiguration configuration;
+    private final TimeCorrelationService timeCorrelationService;
 
-    public TmPacketProcessor(Instant epoch, IProcessingModel processingModel, IPacketDecoder packetDecoder, IRawDataBroker broker, TmPacketConfiguration configuration) {
+    public TmPacketProcessor(Instant epoch, IProcessingModel processingModel, IPacketDecoder packetDecoder, IRawDataBroker broker, TmPacketConfiguration configuration, TimeCorrelationService timeCorrelationService) {
         this.epoch = epoch;
         this.processingModel = processingModel;
         this.packetDecoder = packetDecoder;
         this.broker = broker;
         this.configuration = configuration;
+        this.timeCorrelationService = timeCorrelationService;
     }
 
     public void initialise() {
@@ -70,7 +73,23 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                 ParameterTimeGenerationComputer timeGenerationComputer = new ParameterTimeGenerationComputer(rd);
                 DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), timeGenerationComputer);
                 forwardParameterResult(rd, result.getDecodedParameters());
-                notifyExtensionServices(rd, result); // TODO: notify the decoding result and the packet to the registered PUS services
+                // At this stage, we need to have the TmPusHeader available, or a clear indication that the packet does not have such header
+                // If the RawData data property has no SpacePacket, we have to instantiate one
+                SpacePacket spacePacket = (SpacePacket) rd.getData();
+                if(spacePacket == null) {
+                    spacePacket = new SpacePacket(rd.getContents(), rd.getQuality() == Quality.GOOD);
+                }
+                // If the header is already part of the SpacePacket annotation, then good. If not, we have to compute it (we are in playback, maybe)
+                TmPusHeader pusHeader = (TmPusHeader) spacePacket.getAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER);
+                if(pusHeader == null && spacePacket.isSecondaryHeaderFlag()) {
+                    TmPusConfiguration conf = configuration.getPusConfigurationFor(spacePacket.getApid());
+                    if (conf != null) {
+                        pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.isExplicitPField(), epoch, conf.getTimeDescriptor());
+                        spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
+                    }
+                }
+                // Finally, notify all services about the new TM packet
+                notifyExtensionServices(rd, spacePacket, pusHeader, result); // TODO: notify the decoding result and the packet to the registered PUS services
             } catch (DecodingException e) {
                 LOG.log(Level.SEVERE, "Cannot decode packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
             }
@@ -91,19 +110,21 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     }
 
     public Instant extractPacketGenerationTime(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {
-        // TODO: 1. extract OBT according to PUS configuration (per APID); 2. apply time correlation
+        // 1. extract OBT according to PUS configuration (per APID)
         if(spacePacket.isSecondaryHeaderFlag()) {
             TmPusConfiguration conf = configuration.getPusConfigurationFor(spacePacket.getApid());
             if (conf != null) {
                 TmPusHeader pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.isExplicitPField(), epoch, conf.getTimeDescriptor());
                 spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
                 Instant generationTime = pusHeader.getAbsoluteTime();
+                // 2. apply time correlation
                 if(generationTime != null) {
-                    // TODO: Time correlate ... should we do it here?!??
+                    return timeCorrelationService.toUtc(generationTime);
                 }
             }
         }
-        return null;
+        // In case the packet time cannot be derived, then use the frame generation time, which is the best approximation possible
+        return (Instant) abstractTransferFrame.getAnnotationValue(Constants.ANNOTATION_GEN_TIME);
     }
 
     public Quality checkPacketQuality(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {

@@ -7,6 +7,8 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
+import eu.dariolucia.ccsds.encdec.time.AbsoluteTimeDescriptor;
+
 import javax.xml.bind.annotation.*;
 
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -79,5 +81,21 @@ public class TmPusConfiguration {
 
     public void setObtConfiguration(ObtConfiguration obtConfiguration) {
         this.obtConfiguration = obtConfiguration;
+    }
+
+    public AbsoluteTimeDescriptor getTimeDescriptor() {
+        if(obtConfiguration == null) {
+            return null;
+        } else {
+            if(obtConfiguration instanceof CucConfiguration) {
+                CucConfiguration cuc = (CucConfiguration) obtConfiguration;
+                return AbsoluteTimeDescriptor.newCucDescriptor(cuc.getCoarse(), cuc.getFine());
+            } else if(obtConfiguration instanceof CdsConfiguration) {
+                CdsConfiguration cds = (CdsConfiguration) obtConfiguration;
+                return AbsoluteTimeDescriptor.newCdsDescriptor(cds.isShortDays(), cds.getSubtimeResolution());
+            } else {
+                return null;
+            }
+        }
     }
 }

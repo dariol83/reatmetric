@@ -1,3 +1,5 @@
+import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptorValueExtensionHandler;
+
 module eu.dariolucia.reatmetric.driver.spacecraft {
     requires java.logging;
     requires java.xml.bind;
@@ -8,4 +10,6 @@ module eu.dariolucia.reatmetric.driver.spacecraft {
     requires eu.dariolucia.ccsds.encdec;
     requires eu.dariolucia.ccsds.tmtc;
     requires eu.dariolucia.ccsds.sle.utl;
+
+    provides eu.dariolucia.reatmetric.api.value.IValueExtensionHandler with TmFrameDescriptorValueExtensionHandler;
 }

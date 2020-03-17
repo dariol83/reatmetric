@@ -153,13 +153,13 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
             Quality quality = packetQualityChecker.apply(firstFrame, sp);
             String source = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_SOURCE);
             // Now we distribute it and store it as well
-            // TODO: provide also the frame, in order to add annotations such as related ID and annotations (VCID, VCC) -> needed for time correlation ... they could even go in the extension
-            distributeSpacePacket(sp, packetName, generationTime, receptionTime, route, source, packetType, quality);
+            // Provide also the frame information, needed for time correlation ... they go as extension
+            distributeSpacePacket(sp, packetName, generationTime, receptionTime, route, source, packetType, quality, new TmFrameDescriptor(firstFrame.getVirtualChannelId(), firstFrame.getVirtualChannelFrameCount(), (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME)));
         }
     }
 
-    private void distributeSpacePacket(SpacePacket sp, String packetName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality) {
-        RawData rd = new RawData(broker.nextRawDataId(), generationTime, packetName, type, route, source, quality, null, sp.getPacket(), receptionTime, null);
+    private void distributeSpacePacket(SpacePacket sp, String packetName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality, TmFrameDescriptor frameDescriptor) {
+        RawData rd = new RawData(broker.nextRawDataId(), generationTime, packetName, type, route, source, quality, null, sp.getPacket(), receptionTime, frameDescriptor);
         rd.setData(sp);
         try {
             broker.distribute(Collections.singletonList(rd));
