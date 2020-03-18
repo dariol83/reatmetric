@@ -21,7 +21,9 @@ import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
+import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPacketConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
@@ -44,12 +46,12 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     private final TmPacketConfiguration configuration;
     private final TimeCorrelationService timeCorrelationService;
 
-    public TmPacketProcessor(Instant epoch, IProcessingModel processingModel, IPacketDecoder packetDecoder, IRawDataBroker broker, TmPacketConfiguration configuration, TimeCorrelationService timeCorrelationService) {
-        this.epoch = epoch;
-        this.processingModel = processingModel;
+    public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, TimeCorrelationService timeCorrelationService) {
+        this.epoch = configuration.getEpoch();
+        this.processingModel = context.getProcessingModel();
         this.packetDecoder = packetDecoder;
-        this.broker = broker;
-        this.configuration = configuration;
+        this.broker = context.getRawDataBroker();
+        this.configuration = configuration.getTmPacketConfiguration();
         this.timeCorrelationService = timeCorrelationService;
     }
 
@@ -84,7 +86,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                 if(pusHeader == null && spacePacket.isSecondaryHeaderFlag()) {
                     TmPusConfiguration conf = configuration.getPusConfigurationFor(spacePacket.getApid());
                     if (conf != null) {
-                        pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.isExplicitPField(), epoch, conf.getTimeDescriptor());
+                        pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.getObtConfiguration() != null && conf.getObtConfiguration().isExplicitPField(), epoch, conf.getTimeDescriptor());
                         spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
                     }
                 }
@@ -114,7 +116,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
         if(spacePacket.isSecondaryHeaderFlag()) {
             TmPusConfiguration conf = configuration.getPusConfigurationFor(spacePacket.getApid());
             if (conf != null) {
-                TmPusHeader pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.isExplicitPField(), epoch, conf.getTimeDescriptor());
+                TmPusHeader pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.getObtConfiguration() != null && conf.getObtConfiguration().isExplicitPField(), epoch, conf.getTimeDescriptor());
                 spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
                 Instant generationTime = pusHeader.getAbsoluteTime();
                 // 2. apply time correlation

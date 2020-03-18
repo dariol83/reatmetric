@@ -13,7 +13,7 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class TmDataLinkConfiguration {
 
-    @XmlElementWrapper(name = "vc_limit")
+    @XmlElementWrapper(name = "vc-limit")
     @XmlElement(name = "vc")
     private List<Integer> processVcs;
 
@@ -29,14 +29,11 @@ public class TmDataLinkConfiguration {
     @XmlAttribute(name = "derandomize")
     private boolean derandomize = false;
 
-    @XmlAttribute(name = "aos_fhec")
+    @XmlAttribute(name = "aos-fhec")
     private boolean aosFrameHeaderErrorControlPresent = false;
 
-    @XmlAttribute(name = "aos_insert_zone_length")
+    @XmlAttribute(name = "aos-insert-zone-length")
     private int aosTransferFrameInsertZoneLength = 0;
-
-    @XmlAttribute(name = "reception_delay")
-    private long receptionDelay = 0; // From frame generation onboard to reception of the first bit at the antenna, in microseconds
 
     public TmDataLinkConfiguration() {
     }
@@ -97,11 +94,4 @@ public class TmDataLinkConfiguration {
         this.type = type;
     }
 
-    public long getReceptionDelay() {
-        return receptionDelay;
-    }
-
-    public void setReceptionDelay(long receptionDelay) {
-        this.receptionDelay = receptionDelay;
-    }
 }

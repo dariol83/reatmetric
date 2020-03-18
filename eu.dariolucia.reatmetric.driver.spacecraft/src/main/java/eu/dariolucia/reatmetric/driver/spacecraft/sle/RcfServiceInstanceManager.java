@@ -12,19 +12,14 @@ import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.rcf.outgoing
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.rcf.structures.AntennaId;
 import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.rcf.RcfServiceInstanceConfiguration;
-import eu.dariolucia.ccsds.sle.utl.pdu.PduFactoryUtil;
 import eu.dariolucia.ccsds.sle.utl.si.LockStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ProductionStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ServiceInstanceBindingStateEnum;
 import eu.dariolucia.ccsds.sle.utl.si.rcf.RcfDiagnosticsStrings;
 import eu.dariolucia.ccsds.sle.utl.si.rcf.RcfServiceInstance;
-import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
-import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
-import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
-import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
 
@@ -99,7 +94,7 @@ public class RcfServiceInstanceManager extends SleServiceInstanceManager<RcfServ
         byte[] frameContents = operation.getData().value;
         Quality quality =  Quality.GOOD;
         Instant receptionTime = parseTime(operation.getEarthReceiveTime());
-        Instant genTimeInstant = receptionTime.minusNanos(spacecraftConfiguration.getTmDataLinkConfigurations().getReceptionDelay() * 1000);
+        Instant genTimeInstant = receptionTime.minusNanos(spacecraftConfiguration.getPropagationDelay() * 1000);
         String antennaId = toString(operation.getAntennaId());
         // Build frame to distribute
         if(spacecraftConfiguration.getTmDataLinkConfigurations().getType() == TransferFrameType.TM) {

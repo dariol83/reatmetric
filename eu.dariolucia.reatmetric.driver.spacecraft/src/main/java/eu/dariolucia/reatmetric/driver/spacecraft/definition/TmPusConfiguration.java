@@ -23,9 +23,6 @@ public class TmPusConfiguration {
     @XmlAttribute(name = "tm-spare-length")
     private int tmSpareLength = 0;
 
-    @XmlAttribute(name = "explicit-p-field")
-    private boolean explicitPField = false;
-
     @XmlAttribute(name = "tm-pec-present")
     private PacketErrorControlType tmPecPresent = PacketErrorControlType.NONE;
 
@@ -57,14 +54,6 @@ public class TmPusConfiguration {
 
     public void setTmSpareLength(int tmSpareLength) {
         this.tmSpareLength = tmSpareLength;
-    }
-
-    public boolean isExplicitPField() {
-        return explicitPField;
-    }
-
-    public void setExplicitPField(boolean explicitPField) {
-        this.explicitPField = explicitPField;
     }
 
     public PacketErrorControlType getTmPecPresent() {

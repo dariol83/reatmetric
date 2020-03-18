@@ -26,6 +26,8 @@ import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TmPacketProcessor;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.SleServiceInstanceManager;
@@ -82,6 +84,9 @@ public class SpacecraftDriver implements IDriver {
     private TmDataLinkProcessor tmDataLinkProcessor;
     private TmPacketProcessor tmPacketProcessor;
 
+    private ServiceBroker serviceBroker;
+    private TimeCorrelationService timeCorrelationService;
+
     @Override
     public void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException {
         this.name = name;
@@ -93,6 +98,10 @@ public class SpacecraftDriver implements IDriver {
             loadDriverConfiguration(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE);
             // Load encoding/decoding definitions
             loadEncodingDecodingDefinitions(driverConfigurationDirectory + File.separator + ENCODING_DECODING_DEFINITION_FILE);
+            // Load the service broker
+            loadServiceBroker();
+            // Load the different TM packet services
+            loadPacketServices();
             // Load the TM Packet processor
             loadTmPacketProcessor();
             // Load the TM Data Link processor
@@ -107,12 +116,20 @@ public class SpacecraftDriver implements IDriver {
         }
     }
 
+    private void loadPacketServices() {
+        // Time correlation service
+        this.timeCorrelationService = new TimeCorrelationService(this.configuration, this.context, this.serviceBroker);
+    }
+
+    private void loadServiceBroker() {
+        this.serviceBroker = new ServiceBroker();
+    }
+
     private void loadTmPacketProcessor() {
-        this.tmPacketProcessor = new TmPacketProcessor(configuration.getEpoch(),
-                context.getProcessingModel(),
+        this.tmPacketProcessor = new TmPacketProcessor(this.configuration,
+                this.context,
                 new DefaultPacketDecoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), configuration.getEpoch()),
-                context.getRawDataBroker(),
-                configuration.getTmPacketConfiguration());
+                this.timeCorrelationService);
         this.tmPacketProcessor.initialise();
     }
 
@@ -121,10 +138,9 @@ public class SpacecraftDriver implements IDriver {
     }
 
     private void loadTmDataLinkProcessor() {
-        this.tmDataLinkProcessor = new TmDataLinkProcessor(configuration.getId(),
+        this.tmDataLinkProcessor = new TmDataLinkProcessor(this.configuration,
+                this.context,
                 new FieldGroupBasedPacketIdentifier(this.encodingDecodingDefinitions),
-                context.getRawDataBroker(),
-                configuration.getTmDataLinkConfigurations(),
                 tmPacketProcessor::extractPacketGenerationTime,
                 tmPacketProcessor::checkPacketQuality
                 );

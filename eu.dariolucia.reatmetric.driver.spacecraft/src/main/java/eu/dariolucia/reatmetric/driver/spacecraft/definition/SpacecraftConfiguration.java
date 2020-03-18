@@ -39,6 +39,9 @@ public class SpacecraftConfiguration {
     @XmlElement(name = "obt-epoch")
     private Instant epoch = null;
 
+    @XmlElement(name = "propagation-delay")
+    private long propagationDelay = 0; // From first bit ASM generation onboard to reception of the first bit ASM at the antenna, in microseconds
+
     @XmlElement(name = "tc")
     private TcDataLinkConfiguration tcDataLinkConfiguration = new TcDataLinkConfiguration();
 
@@ -48,8 +51,8 @@ public class SpacecraftConfiguration {
     @XmlElement(name = "pus", required = true)
     private TmPacketConfiguration tmPacketConfiguration = new TmPacketConfiguration();
 
-    public SpacecraftConfiguration() {
-    }
+    @XmlElement(name = "services")
+    private PacketServiceConfiguration packetServiceConfiguration = new PacketServiceConfiguration();
 
     public String getName() {
         return name;
@@ -75,6 +78,14 @@ public class SpacecraftConfiguration {
         this.epoch = epoch;
     }
 
+    public long getPropagationDelay() {
+        return propagationDelay;
+    }
+
+    public void setPropagationDelay(long propagationDelay) {
+        this.propagationDelay = propagationDelay;
+    }
+
     public TcDataLinkConfiguration getTcDataLinkConfiguration() {
         return tcDataLinkConfiguration;
     }
@@ -97,5 +108,13 @@ public class SpacecraftConfiguration {
 
     public void setTmPacketConfiguration(TmPacketConfiguration tmPacketConfiguration) {
         this.tmPacketConfiguration = tmPacketConfiguration;
+    }
+
+    public PacketServiceConfiguration getPacketServiceConfiguration() {
+        return packetServiceConfiguration;
+    }
+
+    public void setPacketServiceConfiguration(PacketServiceConfiguration packetServiceConfiguration) {
+        this.packetServiceConfiguration = packetServiceConfiguration;
     }
 }

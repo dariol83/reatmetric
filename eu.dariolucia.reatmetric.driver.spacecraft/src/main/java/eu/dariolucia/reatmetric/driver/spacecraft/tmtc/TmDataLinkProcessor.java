@@ -24,7 +24,9 @@ import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
+import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmDataLinkConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
 
@@ -52,11 +54,11 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     private final BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker;
     private VirtualChannelReceiverDemux demultiplexer;
 
-    public TmDataLinkProcessor(int spacecraftId, IPacketIdentifier packetIdentifier, IRawDataBroker rawDataBroker, TmDataLinkConfiguration tmDataLinkConfigurations, BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver, BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker) {
-        this.spacecraftId = spacecraftId;
+    public TmDataLinkProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketIdentifier packetIdentifier, BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver, BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker) {
+        this.spacecraftId = configuration.getId();
         this.packetIdentifier = packetIdentifier;
-        this.broker = rawDataBroker;
-        this.configuration = tmDataLinkConfigurations;
+        this.broker = context.getRawDataBroker();
+        this.configuration = configuration.getTmDataLinkConfigurations();
         this.processedVCs = new boolean[64];
         this.generationTimeResolver = generationTimeResolver;
         this.packetQualityChecker = packetQualityChecker;
