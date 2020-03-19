@@ -11,7 +11,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import java.time.Instant;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class TimeCorrelationServiceConfiguration {
@@ -22,11 +21,11 @@ public class TimeCorrelationServiceConfiguration {
     @XmlAttribute(name = "on-board-delay")
     private long onBoardDelay = 0L; // The amount of microseconds for the onboard delay
 
-    @XmlAttribute(name = "sampling-rate-reported")
-    private boolean samplingRateReported = false;
+    @XmlAttribute(name = "generation-period-reported")
+    private boolean generationPeriodReported = false; // Whether the generation period is reported
 
     @XmlElement(name = "time-format", required = true)
-    private CucConfiguration timeFormat;
+    private CucConfiguration timeFormat; // The time format in the time packet
 
     public int getGenerationPeriod() {
         return generationPeriod;
@@ -44,11 +43,19 @@ public class TimeCorrelationServiceConfiguration {
         this.onBoardDelay = onBoardDelay;
     }
 
-    public boolean isSamplingRateReported() {
-        return samplingRateReported;
+    public boolean isGenerationPeriodReported() {
+        return generationPeriodReported;
     }
 
-    public void setSamplingRateReported(boolean samplingRateReported) {
-        this.samplingRateReported = samplingRateReported;
+    public void setGenerationPeriodReported(boolean generationPeriodReported) {
+        this.generationPeriodReported = generationPeriodReported;
+    }
+
+    public CucConfiguration getTimeFormat() {
+        return timeFormat;
+    }
+
+    public void setTimeFormat(CucConfiguration timeFormat) {
+        this.timeFormat = timeFormat;
     }
 }

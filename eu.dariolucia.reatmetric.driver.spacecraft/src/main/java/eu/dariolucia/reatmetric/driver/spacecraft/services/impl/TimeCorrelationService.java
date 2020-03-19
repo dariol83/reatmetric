@@ -11,6 +11,7 @@ import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
@@ -22,6 +23,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfigura
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TimeCorrelationServiceConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketSubscriber;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
+import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -34,15 +36,18 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     private static final int MATCHING_FRAMES_MAX_SIZE = 16;
 
     private int spacecraftId;
+    private long propagationDelay;
     private IRawDataBroker broker;
     private TimeCorrelationServiceConfiguration configuration;
     private ServiceBroker serviceBroker;
     private volatile int generationPeriod;
 
     private List<RawData> matchingFrames = new LinkedList<>();
+    private List<Pair<Instant, Instant>> timeCouples = new LinkedList<>();
 
     public TimeCorrelationService(SpacecraftConfiguration configuration, IServiceCoreContext context, ServiceBroker serviceBroker) {
         this.spacecraftId = configuration.getId();
+        this.propagationDelay = configuration.getPropagationDelay();
         this.broker = context.getRawDataBroker();
         this.configuration = configuration.getPacketServiceConfiguration().getTimeCorrelationServiceConfiguration();
         this.serviceBroker = serviceBroker;
@@ -109,5 +114,14 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     @Override
     public void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
         // TODO: this is a time packet, so apply C.4 Spacecraft time correlation procedures, ECSS-E-70-41A
+        // 1. Locate the correct frame: get the TmFrameDescriptor associated to the packet (extension), the ERT and retrieve the previous frame that respects the generation period
+        RawData frame = locateFrame((TmFrameDescriptor) packetRawData.getExtension(), this.generationPeriod);
+        // 2. If the frame is located, then compute the time couple: (Earth reception time - propagation delay - onboard delay, on board time)
+        if(frame != null) {
+            Instant utcTime = frame.getReceptionTime().minusNanos(this.propagationDelay * 1000).minusNanos(configuration.getOnBoardDelay() * 1000);
+            Instant onboardTime = extractOnboardTime(spacePacket);
+            // 3. Add the time couple: this method triggers a best-fit correlation taking into account the available time couples
+            addTimeCouple(utcTime, onboardTime);
+        }
     }
 }
