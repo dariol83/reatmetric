@@ -44,7 +44,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     private volatile int generationPeriod;
 
     private List<RawData> matchingFrames = new LinkedList<>();
-    private List<Pair<Instant, BigInteger>> timeCouples = new LinkedList<>();
+    private List<Pair<Instant, Instant>> timeCouples = new LinkedList<>();
 
     public TimeCorrelationService(SpacecraftConfiguration configuration, IServiceCoreContext context, ServiceBroker serviceBroker) {
         this.spacecraftId = configuration.getId();
@@ -120,7 +120,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         // 2. If the frame is located, then compute the time couple: (Earth reception time - propagation delay - onboard delay, on board time)
         if(frame != null) {
             Instant utcTime = frame.getReceptionTime().minusNanos(this.propagationDelay * 1000).minusNanos(configuration.getOnBoardDelay() * 1000);
-            BigInteger onboardTime = extractOnboardTime(spacePacket);
+            Instant onboardTime = extractOnboardTime(spacePacket);
             // 3. Add the time couple: this method triggers a best-fit correlation taking into account the available time couples
             addTimeCouple(utcTime, onboardTime);
         }
