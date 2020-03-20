@@ -154,6 +154,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
             BigDecimal m = (fTc.getSecond().subtract(sTc.getSecond())).divide(fTc.getFirst().subtract(sTc.getFirst()));
             BigDecimal q = sTc.getSecond().subtract(m.multiply(sTc.getFirst()));
             this.obt2gtCoefficients = Pair.of(m, q);
+            // TODO: distribute this coefficient as RawData
         }
     }
 
