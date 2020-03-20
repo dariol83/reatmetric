@@ -24,6 +24,9 @@ public class TimeCorrelationServiceConfiguration {
     @XmlAttribute(name = "generation-period-reported")
     private boolean generationPeriodReported = false; // Whether the generation period is reported
 
+    @XmlAttribute(name = "maximum-frame-time-delay")
+    private long maximumFrameTimeDelay = 1200000000L; // The maximum delay in microseconds that it is allows to match a frame identified by the generation period with the corresponding time packet
+
     @XmlElement(name = "time-format", required = true)
     private CucConfiguration timeFormat; // The time format in the time packet
 
@@ -57,5 +60,13 @@ public class TimeCorrelationServiceConfiguration {
 
     public void setTimeFormat(CucConfiguration timeFormat) {
         this.timeFormat = timeFormat;
+    }
+
+    public long getMaximumFrameTimeDelay() {
+        return maximumFrameTimeDelay;
+    }
+
+    public void setMaximumFrameTimeDelay(long maximumFrameTimeDelay) {
+        this.maximumFrameTimeDelay = maximumFrameTimeDelay;
     }
 }

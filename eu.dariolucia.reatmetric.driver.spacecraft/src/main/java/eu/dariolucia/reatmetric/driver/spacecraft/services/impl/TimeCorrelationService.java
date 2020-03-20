@@ -7,8 +7,10 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.services.impl;
 
+import eu.dariolucia.ccsds.encdec.bit.BitEncoderDecoder;
 import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
+import eu.dariolucia.ccsds.encdec.value.TimeUtil;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.common.Pair;
@@ -25,7 +27,9 @@ import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketSubscri
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,23 +40,25 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
 
     private static final int MATCHING_FRAMES_MAX_SIZE = 16;
 
-    private int spacecraftId;
-    private long propagationDelay;
-    private IRawDataBroker broker;
-    private TimeCorrelationServiceConfiguration configuration;
-    private ServiceBroker serviceBroker;
+    private final int spacecraftId;
+    private final long propagationDelay;
+    private final IRawDataBroker broker;
+    private final SpacecraftConfiguration configuration;
+    private final ServiceBroker serviceBroker;
     private volatile int generationPeriod;
 
-    private List<RawData> matchingFrames = new LinkedList<>();
-    private List<Pair<Instant, Instant>> timeCouples = new LinkedList<>();
+    private final List<RawData> matchingFrames = new LinkedList<>();
+    private final List<Pair<Instant, Instant>> timeCouples = new LinkedList<>();
+    // Why BigDecimal? If you want to keep nanosecond precision, double resolution can keep up to microsecond and CUC 4,3 has a resolution of 59.6 nsec, CUC 4,4 is at picosecond level
+    private volatile Pair<BigDecimal, BigDecimal> obt2gtCoefficients;
 
     public TimeCorrelationService(SpacecraftConfiguration configuration, IServiceCoreContext context, ServiceBroker serviceBroker) {
         this.spacecraftId = configuration.getId();
         this.propagationDelay = configuration.getPropagationDelay();
         this.broker = context.getRawDataBroker();
-        this.configuration = configuration.getPacketServiceConfiguration().getTimeCorrelationServiceConfiguration();
+        this.configuration = configuration;
         this.serviceBroker = serviceBroker;
-        this.generationPeriod =  this.configuration.getGenerationPeriod();
+        this.generationPeriod =  timeCorrelationConfiguration().getGenerationPeriod();
         subscribeToBrokers();
     }
 
@@ -79,19 +85,20 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     }
 
     public Instant toUtc(Instant obt) {
-
+        Pair<BigDecimal, BigDecimal> coeffs = this.obt2gtCoefficients;
+        if(coeffs == null) {
+            return obt;
+        }
+        BigDecimal obtBd = convertToBigDecimal(obt);
+        BigDecimal converted = obtBd.multiply(coeffs.getFirst()).add(coeffs.getSecond());
+        // Integral part: seconds. Decimal part: nanos. Ugly. Ugly ugly ugly. But there is no precision loss.
+        BigInteger epochSeconds = converted.toBigInteger();
+        BigInteger nanoSeconds = converted.subtract(new BigDecimal(epochSeconds.longValue())).multiply(new BigDecimal(1000000000)).toBigInteger();
+        return Instant.ofEpochSecond(epochSeconds.longValue(), nanoSeconds.intValue());
     }
 
     public Instant toObt(Instant utc) {
-
-    }
-
-    public void setGenerationPeriod(int frameGenerationPeriod) {
-        this.generationPeriod = frameGenerationPeriod;
-    }
-
-    public int getGenerationPeriod() {
-        return this.generationPeriod;
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
@@ -106,23 +113,107 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     }
 
     private void addMatchingFrame(RawData frame) {
-        this.matchingFrames.add(0, frame);
-        if(matchingFrames.size() > MATCHING_FRAMES_MAX_SIZE) {
-            matchingFrames.remove(matchingFrames.size() - 1);
+        synchronized (matchingFrames) {
+            this.matchingFrames.add(0, frame);
+            if (matchingFrames.size() > MATCHING_FRAMES_MAX_SIZE) {
+                matchingFrames.remove(matchingFrames.size() - 1);
+            }
         }
     }
 
     @Override
     public void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
-        // TODO: this is a time packet, so apply C.4 Spacecraft time correlation procedures, ECSS-E-70-41A
+        // This is a time packet, so apply C.4 Spacecraft time correlation procedures, ECSS-E-70-41A
         // 1. Locate the correct frame: get the TmFrameDescriptor associated to the packet (extension), the ERT and retrieve the previous frame that respects the generation period
         RawData frame = locateFrame((TmFrameDescriptor) packetRawData.getExtension(), this.generationPeriod);
         // 2. If the frame is located, then compute the time couple: (Earth reception time - propagation delay - onboard delay, on board time)
         if(frame != null) {
-            Instant utcTime = frame.getReceptionTime().minusNanos(this.propagationDelay * 1000).minusNanos(configuration.getOnBoardDelay() * 1000);
+            Instant utcTime = frame.getReceptionTime().minusNanos(this.propagationDelay * 1000).minusNanos(timeCorrelationConfiguration().getOnBoardDelay() * 1000);
             Instant onboardTime = extractOnboardTime(spacePacket);
             // 3. Add the time couple: this method triggers a best-fit correlation taking into account the available time couples
-            addTimeCouple(utcTime, onboardTime);
+            addTimeCouple(onboardTime, utcTime);
         }
+    }
+
+    private void addTimeCouple(Instant onboardTime, Instant utcTime) {
+        this.timeCouples.add(Pair.of(onboardTime, utcTime));
+        if(this.timeCouples.size() > 2) {
+            this.timeCouples.remove(0);
+        }
+        updateCoefficients();
+    }
+
+    private void updateCoefficients() {
+        // Use the two time couples, if available
+        if(timeCouples.size() >= 2) {
+            Pair<Instant, Instant> firstTimeCouple = timeCouples.get(0);
+            Pair<Instant, Instant> secondTimeCouple = timeCouples.get(1);
+            // Convert to big decimals: integral part seconds, decimal part nanoseconds
+            Pair<BigDecimal, BigDecimal> fTc = convert(firstTimeCouple);
+            Pair<BigDecimal, BigDecimal> sTc = convert(secondTimeCouple);
+            BigDecimal m = (fTc.getSecond().subtract(sTc.getSecond())).divide(fTc.getFirst().subtract(sTc.getFirst()));
+            BigDecimal q = sTc.getSecond().subtract(m.multiply(sTc.getFirst()));
+            this.obt2gtCoefficients = Pair.of(m, q);
+        }
+    }
+
+    private Pair<BigDecimal, BigDecimal> convert(Pair<Instant, Instant> firstTimeCouple) {
+        BigDecimal first = convertToBigDecimal(firstTimeCouple.getFirst());
+        BigDecimal second = convertToBigDecimal(firstTimeCouple.getSecond());
+        return Pair.of(first, second);
+    }
+
+    private BigDecimal convertToBigDecimal(Instant instant) {
+        // Highly inefficient, but avoids rounding errors, should be changed to something more efficient later
+        return new BigDecimal(instant.getEpochSecond() + "." + String.format("%09d", instant.getNano()));
+    }
+
+    private Instant extractOnboardTime(SpacePacket spacePacket) {
+        // According to the standard, the time packet has no secondary header, so after SpacePacket.SP_PRIMARY_HEADER_LENGTH, we should have:
+        // 1. generation rate field (optional) -> check configuration.isGenerationPeriodReported()
+        int idx = SpacePacket.SP_PRIMARY_HEADER_LENGTH;
+        if(timeCorrelationConfiguration().isGenerationPeriodReported()) {
+            this.generationPeriod = (int) Math.pow(2, Byte.toUnsignedInt(spacePacket.getPacket()[idx]));
+            ++idx;
+        }
+        // 2. time field -> check configuration.getTimeFormat()
+        if(timeCorrelationConfiguration().getTimeFormat().isExplicitPField()) {
+            // P-Field, easy
+            return TimeUtil.fromCUC(new BitEncoderDecoder(spacePacket.getPacket(), idx, spacePacket.getPacket().length - idx), configuration.getEpoch());
+        } else {
+            return TimeUtil.fromCUC(spacePacket.getPacket(), idx, spacePacket.getPacket().length - idx,
+                    configuration.getEpoch(),
+                    timeCorrelationConfiguration().getTimeFormat().getCoarse(),
+                    timeCorrelationConfiguration().getTimeFormat().getFine());
+        }
+        // 3. status -> mission specific, reported as parameter already, not relevant here
+    }
+
+    private TimeCorrelationServiceConfiguration timeCorrelationConfiguration() {
+        return configuration.getPacketServiceConfiguration().getTimeCorrelationServiceConfiguration();
+    }
+
+    private RawData locateFrame(TmFrameDescriptor packetFrameDescriptor, int generationPeriod) {
+        // From the frame counter of the frame delivering the time packet, calculate the frame referred by the time packet
+        int targetVcc = packetFrameDescriptor.getVirtualChannelFrameCounter() - (packetFrameDescriptor.getVirtualChannelFrameCounter() % generationPeriod);
+        // Now look for the frame
+        synchronized (matchingFrames) {
+            for (RawData frame : matchingFrames) {
+                if (frame.getData() != null) {
+                    AbstractTransferFrame atf = (AbstractTransferFrame) frame.getData();
+                    // The frame might be the correct one...
+                    if (atf.getVirtualChannelFrameCount() == targetVcc) {
+                        // ... but check time consistency with this frame
+                        Duration timeBetweenFrames = Duration.between(packetFrameDescriptor.getEarthReceptionTime(), frame.getReceptionTime());
+                        if (timeBetweenFrames.toNanos() / 1000 <= timeCorrelationConfiguration().getMaximumFrameTimeDelay()) {
+                            // That's the one
+                            return frame;
+                        }
+                    }
+                }
+            }
+        }
+        // No frame available
+        return null;
     }
 }

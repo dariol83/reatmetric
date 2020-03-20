@@ -26,6 +26,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPacketConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
 
 import java.time.Instant;
@@ -45,14 +46,16 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     private final IRawDataBroker broker;
     private final TmPacketConfiguration configuration;
     private final TimeCorrelationService timeCorrelationService;
+    private final ServiceBroker serviceBroker;
 
-    public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, TimeCorrelationService timeCorrelationService) {
+    public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, TimeCorrelationService timeCorrelationService, ServiceBroker serviceBroker) {
         this.epoch = configuration.getEpoch();
         this.processingModel = context.getProcessingModel();
         this.packetDecoder = packetDecoder;
         this.broker = context.getRawDataBroker();
         this.configuration = configuration.getTmPacketConfiguration();
         this.timeCorrelationService = timeCorrelationService;
+        this.serviceBroker = serviceBroker;
     }
 
     public void initialise() {
@@ -74,6 +77,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                 // We build an anonymous class for this purpose.
                 ParameterTimeGenerationComputer timeGenerationComputer = new ParameterTimeGenerationComputer(rd);
                 DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), timeGenerationComputer);
+                // TODO: should result contain a reference to the packet definition -> useful to retrieve the mapping information to events/stuff
                 forwardParameterResult(rd, result.getDecodedParameters());
                 // At this stage, we need to have the TmPusHeader available, or a clear indication that the packet does not have such header
                 // If the RawData data property has no SpacePacket, we have to instantiate one
@@ -91,11 +95,15 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                     }
                 }
                 // Finally, notify all services about the new TM packet
-                notifyExtensionServices(rd, spacePacket, pusHeader, result); // TODO: notify the decoding result and the packet to the registered PUS services
+                notifyExtensionServices(rd, spacePacket, pusHeader, result);
             } catch (DecodingException e) {
                 LOG.log(Level.SEVERE, "Cannot decode packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
             }
         }
+    }
+
+    private void notifyExtensionServices(RawData rd, SpacePacket spacePacket, TmPusHeader pusHeader, DecodingResult result) {
+        this.serviceBroker.distributeTmPacket(rd, spacePacket, pusHeader, result);
     }
 
     private void forwardParameterResult(RawData packet, List<ParameterValue> decodedParameters) {

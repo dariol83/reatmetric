@@ -117,8 +117,9 @@ public class SpacecraftDriver implements IDriver {
     }
 
     private void loadPacketServices() {
-        // Time correlation service
+        // Time correlation service (PUS 9)
         this.timeCorrelationService = new TimeCorrelationService(this.configuration, this.context, this.serviceBroker);
+        // TODO: on-board event service (PUS 5)
     }
 
     private void loadServiceBroker() {
@@ -129,7 +130,8 @@ public class SpacecraftDriver implements IDriver {
         this.tmPacketProcessor = new TmPacketProcessor(this.configuration,
                 this.context,
                 new DefaultPacketDecoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), configuration.getEpoch()),
-                this.timeCorrelationService);
+                this.timeCorrelationService,
+                this.serviceBroker);
         this.tmPacketProcessor.initialise();
     }
 
