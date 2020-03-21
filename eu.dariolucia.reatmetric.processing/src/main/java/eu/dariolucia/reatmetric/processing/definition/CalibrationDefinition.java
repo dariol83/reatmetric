@@ -19,6 +19,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 @XmlAccessorType(XmlAccessType.FIELD)
 public abstract class CalibrationDefinition {
 
+    // TODO: add calibration condition (as for validity)
     public abstract Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException;
 
     protected final double convertToDouble(Object valueToCheck) throws CalibrationException {
