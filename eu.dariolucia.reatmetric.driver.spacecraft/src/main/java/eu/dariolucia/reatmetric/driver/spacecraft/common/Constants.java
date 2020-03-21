@@ -11,6 +11,7 @@ public class Constants {
     // Names
     public static final String N_TM_TRANSFER_FRAME = "TRANSFER FRAME";
     public static final String N_UNKNOWN_PACKET = "UNKNOWN";
+    public static final String N_TIME_COEFFICIENTS = "TIME COEFFICIENT";
 
     // Types
     public static final String T_TM_FRAME = "TM FRAME";
@@ -21,6 +22,7 @@ public class Constants {
     public static final String T_BAD_TM = "BAD TM";
     public static final String T_BAD_PACKET = "BAD PACKET";
     public static final String T_UNKNOWN_PACKET = "UNKNOWN PACKET";
+    public static final String T_TIME_COEFFICIENTS = "TIME COEFF";
 
     // Annotations at AbstractTransferFrame/SpacePacket level
     public static final String ANNOTATION_ROUTE = "##ROUTE";
@@ -29,4 +31,6 @@ public class Constants {
     public static final String ANNOTATION_RCP_TIME = "##RCPTIME";
     public static final String ANNOTATION_TM_PUS_HEADER = "##TM_PUS_HEADER";
     public static final String ANNOTATION_UNIQUE_ID = "##UNIQUE_ID";
+
+
 }

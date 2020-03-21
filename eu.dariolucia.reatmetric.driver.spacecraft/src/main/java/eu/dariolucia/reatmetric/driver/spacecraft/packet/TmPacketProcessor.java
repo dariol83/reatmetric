@@ -77,7 +77,6 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                 // We build an anonymous class for this purpose.
                 ParameterTimeGenerationComputer timeGenerationComputer = new ParameterTimeGenerationComputer(rd);
                 DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), timeGenerationComputer);
-                // TODO: should result contain a reference to the packet definition -> useful to retrieve the mapping information to events/stuff
                 forwardParameterResult(rd, result.getDecodedParameters());
                 // At this stage, we need to have the TmPusHeader available, or a clear indication that the packet does not have such header
                 // If the RawData data property has no SpacePacket, we have to instantiate one
@@ -140,5 +139,9 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     public Quality checkPacketQuality(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {
         // TODO: if tmPecPresent in PUS configuration is CRC or ISO, check packet PEC: implement in ccsds.encdec (ISO, CRC)
         return Quality.GOOD;
+    }
+
+    public void dispose() {
+        this.broker.unsubscribe(this);
     }
 }

@@ -200,4 +200,8 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
             demultiplexer.accept(atf);
         }
     }
+
+    public void dispose() {
+        broker.unsubscribe(this);
+    }
 }

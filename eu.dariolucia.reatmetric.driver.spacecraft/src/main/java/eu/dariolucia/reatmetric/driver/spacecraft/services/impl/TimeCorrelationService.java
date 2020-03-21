@@ -14,6 +14,7 @@ import eu.dariolucia.ccsds.encdec.value.TimeUtil;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
@@ -29,14 +30,22 @@ import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class TimeCorrelationService implements IServicePacketSubscriber, IRawDataSubscriber {
+
+    private static final Logger LOG = Logger.getLogger(TimeCorrelationService.class.getName());
 
     private static final int MATCHING_FRAMES_MAX_SIZE = 16;
 
@@ -45,11 +54,13 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     private final IRawDataBroker broker;
     private final SpacecraftConfiguration configuration;
     private final ServiceBroker serviceBroker;
+    private final ExecutorService timeCoefficientsDistributor;
     private volatile int generationPeriod;
 
     private final List<RawData> matchingFrames = new LinkedList<>();
     private final List<Pair<Instant, Instant>> timeCouples = new LinkedList<>();
-    // Why BigDecimal? If you want to keep nanosecond precision, double resolution can keep up to microsecond and CUC 4,3 has a resolution of 59.6 nsec, CUC 4,4 is at picosecond level
+    // Why BigDecimal? If you want to keep nanosecond precision, double resolution can keep up to microsecond and
+    // CUC 4,3 has a resolution of 59.6 nsec, CUC 4,4 is at picosecond level
     private volatile Pair<BigDecimal, BigDecimal> obt2gtCoefficients;
 
     public TimeCorrelationService(SpacecraftConfiguration configuration, IServiceCoreContext context, ServiceBroker serviceBroker) {
@@ -59,6 +70,11 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         this.configuration = configuration;
         this.serviceBroker = serviceBroker;
         this.generationPeriod =  timeCorrelationConfiguration().getGenerationPeriod();
+        this.timeCoefficientsDistributor = Executors.newSingleThreadExecutor((r) -> {
+            Thread t = new Thread(r, "Spacecraft " + configuration.getName() + " - Time Correlation Service Coefficients Distributor");
+            t.setDaemon(true);
+            return t;
+        });
         subscribeToBrokers();
     }
 
@@ -80,7 +96,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         serviceBroker.register(this, this::packetFilter);
     }
 
-    private boolean packetFilter(RawData rawData, SpacePacket spacePacket, int type, int subtype, String destination, String source) {
+    private boolean packetFilter(RawData rawData, SpacePacket spacePacket, Integer type, Integer subtype, Integer destination, Integer source) {
         return spacePacket.getApid() == 0;
     }
 
@@ -91,14 +107,24 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         }
         BigDecimal obtBd = convertToBigDecimal(obt);
         BigDecimal converted = obtBd.multiply(coeffs.getFirst()).add(coeffs.getSecond());
+        return convertToInstant(converted);
+    }
+
+    public Instant toObt(Instant utc) {
+        Pair<BigDecimal, BigDecimal> coeffs = this.obt2gtCoefficients;
+        if(coeffs == null) {
+            return utc;
+        }
+        BigDecimal utcBd = convertToBigDecimal(utc);
+        BigDecimal converted = utcBd.subtract(coeffs.getSecond()).divide(coeffs.getFirst(), 9, RoundingMode.HALF_UP); // 9 digits after dot
+        return convertToInstant(converted);
+    }
+
+    private Instant convertToInstant(BigDecimal converted) {
         // Integral part: seconds. Decimal part: nanos. Ugly. Ugly ugly ugly. But there is no precision loss.
         BigInteger epochSeconds = converted.toBigInteger();
         BigInteger nanoSeconds = converted.subtract(new BigDecimal(epochSeconds.longValue())).multiply(new BigDecimal(1000000000)).toBigInteger();
         return Instant.ofEpochSecond(epochSeconds.longValue(), nanoSeconds.intValue());
-    }
-
-    public Instant toObt(Instant utc) {
-        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
@@ -151,10 +177,26 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
             // Convert to big decimals: integral part seconds, decimal part nanoseconds
             Pair<BigDecimal, BigDecimal> fTc = convert(firstTimeCouple);
             Pair<BigDecimal, BigDecimal> sTc = convert(secondTimeCouple);
-            BigDecimal m = (fTc.getSecond().subtract(sTc.getSecond())).divide(fTc.getFirst().subtract(sTc.getFirst()));
+            BigDecimal m = (fTc.getSecond().subtract(sTc.getSecond())).divide(fTc.getFirst().subtract(sTc.getFirst()), 9, RoundingMode.HALF_UP);
             BigDecimal q = sTc.getSecond().subtract(m.multiply(sTc.getFirst()));
             this.obt2gtCoefficients = Pair.of(m, q);
-            // TODO: distribute this coefficient as RawData
+            // Distribute the coefficients: generation time is the UTC generation time of the most recent time couple
+            distributeCoefficients(this.obt2gtCoefficients, secondTimeCouple.getSecond());
+        }
+    }
+
+    private void distributeCoefficients(Pair<BigDecimal, BigDecimal> obt2gtCoefficients, Instant generationTime) {
+        if(obt2gtCoefficients != null) {
+            // Serialize coefficients as String
+            String mCoeff = obt2gtCoefficients.getFirst().toPlainString();
+            String qCoeff = obt2gtCoefficients.getSecond().toPlainString();
+            String derivedString = mCoeff + "|" + qCoeff;
+            RawData rd = new RawData(broker.nextRawDataId(), generationTime, Constants.N_TIME_COEFFICIENTS, Constants.T_TIME_COEFFICIENTS, "", String.valueOf(spacecraftId), Quality.GOOD, null, derivedString.getBytes(StandardCharsets.US_ASCII), Instant.now(), null);
+            try {
+                broker.distribute(Collections.singletonList(rd));
+            } catch (ReatmetricException e) {
+                LOG.log(Level.SEVERE, "Cannot store time coefficients [" + derivedString + "] for spacecraft " + spacecraftId + ": " + e.getMessage(), e);
+            }
         }
     }
 
@@ -216,5 +258,18 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         }
         // No frame available
         return null;
+    }
+
+    public void dispose() {
+        serviceBroker.deregister(this);
+        broker.unsubscribe(this);
+        timeCoefficientsDistributor.shutdown();
+    }
+
+    @Override
+    public String toString() {
+        return "TimeCorrelationService{" +
+                "spacecraftId=" + spacecraftId +
+                '}';
     }
 }

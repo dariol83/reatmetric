@@ -12,5 +12,5 @@ import eu.dariolucia.reatmetric.api.rawdata.RawData;
 
 public interface IServicePacketFilter {
 
-    boolean filter(RawData rd, SpacePacket sp, int pusType, int pusSubtype, String destination, String source);
+    boolean filter(RawData rd, SpacePacket sp, Integer pusType, Integer pusSubtype, Integer destination, Integer source);
 }

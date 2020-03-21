@@ -214,6 +214,10 @@ public class SpacecraftDriver implements IDriver {
     public void dispose() {
         this.sleManagers.forEach(SleServiceInstanceManager::abort);
         this.sleManagers.clear();
+        this.tmDataLinkProcessor.dispose();
+        this.tmPacketProcessor.dispose();
+        this.timeCorrelationService.dispose();
+        this.serviceBroker.dispose();
         updateStatus(SystemStatus.UNKNOWN);
     }
 
