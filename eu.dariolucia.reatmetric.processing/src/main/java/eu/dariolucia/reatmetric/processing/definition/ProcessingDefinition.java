@@ -12,12 +12,10 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -28,6 +26,25 @@ import java.util.logging.Logger;
 public class ProcessingDefinition {
 
     private static final Logger LOG = Logger.getLogger(ProcessingDefinition.class.getName());
+
+    /**
+     * This method serialises the provided {@link ProcessingDefinition} object to the provided
+     * {@link OutputStream}.
+     *
+     * @param d   the processing definition to serialise
+     * @param out the output stream
+     * @throws IOException in case of problems while serialising or writing to the stream
+     */
+    public static void save(ProcessingDefinition d, OutputStream out) throws IOException {
+        try {
+            JAXBContext context = JAXBContext.newInstance(ProcessingDefinition.class);
+            Marshaller marshaller = context.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+            marshaller.marshal(d, out);
+        } catch (JAXBException e) {
+            throw new IOException(e);
+        }
+    }
 
     public static ProcessingDefinition load(InputStream is) throws JAXBException {
         JAXBContext jc = JAXBContext.newInstance(ProcessingDefinition.class);
