@@ -28,6 +28,9 @@ public abstract class CheckDefinition {
     @XmlAttribute
     private int numViolations = 1;
 
+    @XmlAttribute
+    private boolean rawValueChecked = false;
+
     public CheckDefinition() {
     }
 
@@ -59,6 +62,14 @@ public abstract class CheckDefinition {
 
     public void setNumViolations(int numViolations) {
         this.numViolations = numViolations;
+    }
+
+    public boolean isRawValueChecked() {
+        return rawValueChecked;
+    }
+
+    public void setRawValueChecked(boolean rawValueChecked) {
+        this.rawValueChecked = rawValueChecked;
     }
 
     public abstract AlarmState check(Object currentValue, Instant valueGenerationTime, int currentViolations, IBindingResolver resolver) throws CheckException;

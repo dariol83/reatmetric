@@ -165,7 +165,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                         // Calibrate the source value
                         engValue = CalibrationDefinition.performCalibration(definition.getCalibrations(), sourceValue, definition.getEngineeringType(), this.processor);
                         // Then run checks
-                        alarmState = check(engValue, generationTime, newValue == null);
+                        alarmState = check(sourceValue, engValue, generationTime, newValue == null);
                     } catch (CalibrationException e) {
                         LOG.log(Level.SEVERE, "Error when calibrating parameter " + id() + " (" + path() + ") with source value " + sourceValue + ": " + e.getMessage(), e);
                         // Validity is INVALID, to prevent other processors to take the null eng. value as good value
@@ -297,7 +297,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         }
     }
 
-    private AlarmState check(Object engValue, Instant generationTime, boolean reevaluation) {
+    private AlarmState check(Object rawValue, Object engValue, Instant generationTime, boolean reevaluation) {
         // If there are no checks, then value is NOT_CHECKED
         if(definition.getChecks().isEmpty()) {
             return AlarmState.NOT_CHECKED;
@@ -309,7 +309,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             AtomicInteger violationCounter = checkViolationNumber.computeIfAbsent(cd.getName(), k -> new AtomicInteger(0));
             AlarmState state;
             try {
-                state = cd.check(engValue, generationTime, violationCounter.get(), processor);
+                state = cd.check(cd.isRawValueChecked() ? rawValue : engValue, generationTime, violationCounter.get(), processor);
             } catch (CheckException e) {
                 LOG.log(Level.SEVERE, "Error when evaluating check " + cd.getName() + " on parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
                 // Return immediately (fail fast)
