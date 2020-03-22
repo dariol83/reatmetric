@@ -8,12 +8,12 @@
 package eu.dariolucia.reatmetric.driver.spacecraft.common;
 
 public class Constants {
-    // Names
+    // RawData Names
     public static final String N_TM_TRANSFER_FRAME = "TRANSFER FRAME";
     public static final String N_UNKNOWN_PACKET = "UNKNOWN";
     public static final String N_TIME_COEFFICIENTS = "TIME COEFFICIENT";
 
-    // Types
+    // RawData Types
     public static final String T_TM_FRAME = "TM FRAME";
     public static final String T_AOS_FRAME = "AOS FRAME";
     public static final String T_TM_PACKET = "TM PACKET";
@@ -35,4 +35,8 @@ public class Constants {
     // encdec definition: TM/TC packet type
     public static final String ENCDEC_TM_PACKET_TYPE = "TM";
     public static final String ENCDEC_TC_PACKET_TYPE = "TC";
+
+    // Processing model: event types
+    public static final String EVT_T_ONBOARD_EVENT = "ONBOARD EVENT";
+    public static final String EVT_T_TC_VERIFICATION_EVENT = "TC VERIFICATION";
 }
