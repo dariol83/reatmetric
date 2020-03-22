@@ -76,8 +76,6 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                 // To correctly apply generation time derivation ,we need to remember which raw data is used, as we need the generation time of the packet.
                 // We build an anonymous class for this purpose.
                 ParameterTimeGenerationComputer timeGenerationComputer = new ParameterTimeGenerationComputer(rd);
-                DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), timeGenerationComputer);
-                forwardParameterResult(rd, result.getDecodedParameters());
                 // At this stage, we need to have the TmPusHeader available, or a clear indication that the packet does not have such header
                 // If the RawData data property has no SpacePacket, we have to instantiate one
                 SpacePacket spacePacket = (SpacePacket) rd.getData();
@@ -85,14 +83,19 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                     spacePacket = new SpacePacket(rd.getContents(), rd.getQuality() == Quality.GOOD);
                 }
                 // If the header is already part of the SpacePacket annotation, then good. If not, we have to compute it (we are in playback, maybe)
+                // TODO: the TmPusHeader must also report the actual length (in bytes) of the header (following decoding) - Update in encdec
                 TmPusHeader pusHeader = (TmPusHeader) spacePacket.getAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER);
+                TmPusConfiguration conf = null;
                 if(pusHeader == null && spacePacket.isSecondaryHeaderFlag()) {
-                    TmPusConfiguration conf = configuration.getPusConfigurationFor(spacePacket.getApid());
+                    conf = configuration.getPusConfigurationFor(spacePacket.getApid());
                     if (conf != null) {
                         pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.getObtConfiguration() != null && conf.getObtConfiguration().isExplicitPField(), epoch, conf.getTimeDescriptor());
                         spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
                     }
                 }
+                // TODO: use offset and length, check TmPusConfiguration to understand where you have to start decoding from
+                DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), timeGenerationComputer);
+                forwardParameterResult(rd, result.getDecodedParameters());
                 // Finally, notify all services about the new TM packet
                 notifyExtensionServices(rd, spacePacket, pusHeader, result);
             } catch (DecodingException e) {
