@@ -28,6 +28,9 @@ public class MatcherDefinition {
     @XmlAttribute(name = "operator", required = true)
     private MatcherType operator;
 
+    @XmlAttribute(name = "useRawValue")
+    private boolean useRawValue = false;
+
     @XmlAttribute(name = "valueType")
     private ValueTypeEnum valueType;
 
@@ -37,6 +40,9 @@ public class MatcherDefinition {
     @XmlIDREF
     @XmlAttribute(name = "reference")
     private ParameterProcessingDefinition reference;
+
+    @XmlAttribute(name = "useReferenceRawValue")
+    private boolean useReferenceRawValue = false;
 
     public MatcherDefinition() {
     }
@@ -94,6 +100,22 @@ public class MatcherDefinition {
         this.reference = reference;
     }
 
+    public boolean isUseRawValue() {
+        return useRawValue;
+    }
+
+    public void setUseRawValue(boolean useRawValue) {
+        this.useRawValue = useRawValue;
+    }
+
+    public boolean isUseReferenceRawValue() {
+        return useReferenceRawValue;
+    }
+
+    public void setUseReferenceRawValue(boolean useReferenceRawValue) {
+        this.useReferenceRawValue = useReferenceRawValue;
+    }
+
     /**
      * Execute the comparison between the parameter and either the provided value or the value of the referenced parameter.
      * This method does not take into consideration any validity or alarm state of the referenced parameter.
@@ -105,14 +127,23 @@ public class MatcherDefinition {
     public boolean execute(IBindingResolver resolver) throws MatcherException {
         // Get the value of the parameter
         IParameterBinding param = (IParameterBinding) resolver.resolve(parameter.getId());
-        Object paramValue = param.value();
+        Object paramValue = null;
+        if(isUseRawValue()) {
+            paramValue = param.rawValue();
+        } else {
+            paramValue = param.value();
+        }
         Object compareValue = null;
         if(valueType != null && value != null) {
             // Construct the value
             compareValue = ValueUtil.parse(valueType, value);
         } else if(reference != null) {
             IParameterBinding ref = (IParameterBinding) resolver.resolve(reference.getId());
-            compareValue = ref.value();
+            if(isUseReferenceRawValue()) {
+                compareValue = ref.rawValue();
+            } else {
+                compareValue = ref.value();
+            }
         } else {
             throw new MatcherException("Neither value nor reference attributes are set, cannot compare");
         }
