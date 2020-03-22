@@ -83,7 +83,6 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                     spacePacket = new SpacePacket(rd.getContents(), rd.getQuality() == Quality.GOOD);
                 }
                 // If the header is already part of the SpacePacket annotation, then good. If not, we have to compute it (we are in playback, maybe)
-                // TODO: the TmPusHeader must also report the actual length (in bytes) of the header (following decoding) - Update in encdec
                 TmPusHeader pusHeader = (TmPusHeader) spacePacket.getAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER);
                 TmPusConfiguration conf = null;
                 if(pusHeader == null && spacePacket.isSecondaryHeaderFlag()) {
@@ -93,8 +92,9 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                         spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
                     }
                 }
-                // TODO: use offset and length, check TmPusConfiguration to understand where you have to start decoding from
-                DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), timeGenerationComputer);
+                // Use offset and length, check pusHeader.getEncodedLength to understand where you have to start decoding from
+                int offset = SpacePacket.SP_PRIMARY_HEADER_LENGTH + (pusHeader != null ? pusHeader.getEncodedLength() : 0);
+                DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), offset, rd.getContents().length - offset, timeGenerationComputer);
                 forwardParameterResult(rd, result.getDecodedParameters());
                 // Finally, notify all services about the new TM packet
                 notifyExtensionServices(rd, spacePacket, pusHeader, result);
