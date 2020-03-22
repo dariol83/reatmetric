@@ -71,8 +71,23 @@ public class GraphModel {
                     }
                 }
             }
-            if(param.getCalibration() instanceof ExpressionCalibration) {
-                addEdges(param, ((ExpressionCalibration) param.getCalibration()).getDefinition());
+            if(param.getCalibrations() != null) {
+                for(CalibrationDefinition cd : param.getCalibrations()) {
+                    if(cd.getApplicability() != null) {
+                        if (cd.getApplicability().getCondition() != null) {
+                            addEdges(param, cd.getApplicability().getCondition());
+                        }
+                        if (cd.getApplicability().getMatch() != null) {
+                            new DependencyEdge(getVertexOf(param.getId()), getVertexOf(cd.getApplicability().getMatch().getParameter().getId()));
+                            if(cd.getApplicability().getMatch().getReference() != null) {
+                                new DependencyEdge(getVertexOf(param.getId()), getVertexOf(cd.getApplicability().getMatch().getReference().getId()));
+                            }
+                        }
+                    }
+                    if(cd instanceof ExpressionCalibration) {
+                        addEdges(param, ((ExpressionCalibration) cd).getDefinition());
+                    }
+                }
             }
             for(CheckDefinition cd : param.getChecks()) {
                 if(cd instanceof ExpressionCheck) {

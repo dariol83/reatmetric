@@ -40,7 +40,7 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
             @XmlElement(name="calib_expression",type=ExpressionCalibration.class),
             @XmlElement(name="calib_external",type=ExternalCalibration.class),
     })
-    private CalibrationDefinition calibration;
+    private List<CalibrationDefinition> calibrations;
 
     @XmlElementWrapper(name = "checks")
     @XmlElements({
@@ -60,13 +60,13 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         super();
     }
 
-    public ParameterProcessingDefinition(int id, String description, String location, ValueTypeEnum rawType, ValueTypeEnum engineeringType, String unit, ValidityCondition validity, CalibrationDefinition calibration, List<CheckDefinition> checks, ExpressionDefinition expression, List<ParameterTriggerDefinition> triggers) {
+    public ParameterProcessingDefinition(int id, String description, String location, ValueTypeEnum rawType, ValueTypeEnum engineeringType, String unit, ValidityCondition validity, List<CalibrationDefinition> calibrations, List<CheckDefinition> checks, ExpressionDefinition expression, List<ParameterTriggerDefinition> triggers) {
         super(id, description, location);
         this.rawType = rawType;
         this.engineeringType = engineeringType;
         this.unit = unit;
         this.validity = validity;
-        this.calibration = calibration;
+        this.calibrations = calibrations;
         this.checks = checks;
         this.expression = expression;
         this.triggers = triggers;
@@ -104,12 +104,12 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.validity = validity;
     }
 
-    public CalibrationDefinition getCalibration() {
-        return calibration;
+    public List<CalibrationDefinition> getCalibrations() {
+        return calibrations;
     }
 
-    public void setCalibration(CalibrationDefinition calibration) {
-        this.calibration = calibration;
+    public void setCalibrations(List<CalibrationDefinition> calibrations) {
+        this.calibrations = calibrations;
     }
 
     public List<CheckDefinition> getChecks() {

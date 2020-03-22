@@ -132,7 +132,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 if(validity == Validity.VALID) {
                     try {
                         // Calibrate the source value
-                        engValue = CalibrationDefinition.performCalibration(definition.getCalibration(), sourceValue, definition.getEngineeringType(), this.processor);
+                        engValue = CalibrationDefinition.performCalibration(definition.getCalibrations(), sourceValue, definition.getEngineeringType(), this.processor);
                         // Then run checks
                         alarmState = check(engValue, generationTime, newValue == null);
                     } catch (CalibrationException e) {

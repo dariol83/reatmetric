@@ -218,5 +218,25 @@
             </checks>
         </parameter>
 
+        <!-- Conditional calibrations -->
+        <parameter id="#1065" location="ROOT.CTEST.BASE2" description="Conditional Base parameter 2" raw_type="ABSOLUTE_TIME"
+                   eng_type="ABSOLUTE_TIME" eng_unit=""/>
+        <parameter id="#1066" location="ROOT.CTEST.BASE3" description="Conditional Base parameter 3" raw_type="ABSOLUTE_TIME"
+                   eng_type="ABSOLUTE_TIME" eng_unit=""/>
+        <parameter id="#1061" location="ROOT.TEST.CONDPARAM" description="Parameter with conditional calibrations" raw_type="REAL" eng_type="REAL">
+            <calib_log a0="5" a1="2">
+                <applicability>
+                    <match parameter="#1065" operator="LT" reference="#1066" />
+                </applicability>
+            </calib_log>
+            <calib_xy extrapolate="true">
+                <point x="0" y="0" />
+                <point x="10" y="10" />
+                <point x="15" y="20" />
+                <point x="17.5" y="30" />
+                <point x="20" y="0" />
+            </calib_xy>
+        </parameter>
+
     </parameters>
 </ns1:processing>

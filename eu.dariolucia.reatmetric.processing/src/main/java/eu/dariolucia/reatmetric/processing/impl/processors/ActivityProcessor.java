@@ -76,7 +76,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                 Object finalValue = arg.getRawValue() != null ? arg.getRawValue() : arg.getEngValue();
                 if (arg.getRawValue() == null) {
                     try {
-                        finalValue = CalibrationDefinition.performCalibration(argDef.getDecalibration(), finalValue, argDef.getRawType(), processor);
+                        finalValue = CalibrationDefinition.performDecalibration(argDef.getDecalibration(), finalValue, argDef.getRawType(), processor);
                     } catch (CalibrationException e) {
                         throw new ProcessingModelException("Cannot decalibrate argument " + arg.getName() + ": " + e.getMessage(), e);
                     }
@@ -102,7 +102,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                         } else if (valueType == DefaultValueType.ENGINEERING) {
                             finalValue = ValueUtil.parse(ad.getEngineeringType(), formattedValue);
                             try {
-                                finalValue = CalibrationDefinition.performCalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
+                                finalValue = CalibrationDefinition.performDecalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
                             } catch (CalibrationException e) {
                                 throw new ProcessingModelException("Cannot decalibrate default (fixed) value of argument " + ad.getName() + ": " + e.getMessage(), e);
                             }
@@ -118,7 +118,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                         }
                         if (valueType == DefaultValueType.ENGINEERING) {
                             try {
-                                finalValue = CalibrationDefinition.performCalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
+                                finalValue = CalibrationDefinition.performDecalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
                             } catch (CalibrationException e) {
                                 throw new ProcessingModelException("Cannot decalibrate default (reference) value of argument " + ad.getName() + ": " + e.getMessage(), e);
                             }

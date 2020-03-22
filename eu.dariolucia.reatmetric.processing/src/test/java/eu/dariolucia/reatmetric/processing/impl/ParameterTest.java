@@ -675,6 +675,62 @@ class ParameterTest {
     }
 
     @Test
+    void testConditionalCalibrations() throws JAXBException, ProcessingModelException, InterruptedException {
+        Logger testLogger = Logger.getLogger(getClass().getName());
+        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
+        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
+        List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
+        // All output data items go in the outList
+        IProcessingModelOutput output = outList::addAll;
+        IProcessingModel model = factory.build(pd, output, null);
+
+        testLogger.info("Injection - Batch 1");
+
+        Instant current = Instant.ofEpochMilli(500000);
+        Instant next = current.plusMillis(30000);
+        ParameterSample b = ParameterSample.of(1065, current);
+        ParameterSample c = ParameterSample.of(1066, next);
+        model.injectParameters(Arrays.asList(b, c));
+        // 6 updates out
+        ParameterSample paramSample = ParameterSample.of(1061, 3.2);
+        // 1 out
+        model.injectParameters(Collections.singletonList(paramSample));
+
+        // Expect 7 updates
+        AwaitUtil.awaitAndVerify(5000, outList::size, 7);
+
+        boolean firstEntry = true;
+        for(int i = 0; i < outList.size(); ++i) {
+            if(outList.get(i) instanceof ParameterData && ((ParameterData) outList.get(i)).getExternalId() == 1061) {
+                if(firstEntry) {
+                    assertNull(((ParameterData) outList.get(i)).getSourceValue());
+                    assertNull(((ParameterData) outList.get(i)).getEngValue());
+                    firstEntry = false;
+                } else {
+                    assertEquals(1061, ((ParameterData) outList.get(i)).getExternalId());
+                    assertEquals(3.2, ((ParameterData) outList.get(i)).getSourceValue());
+                    assertEquals(0.13649, (Double) ((ParameterData) outList.get(i)).getEngValue(), 0.00001);
+                }
+            }
+        }
+
+        testLogger.info("Injection - Batch 2");
+        outList.clear();
+        c = ParameterSample.of(1066, next.minusMillis(700000));
+        model.injectParameters(Collections.singletonList(c));
+        // Expect 2 updates out
+        AwaitUtil.awaitAndVerify(5000, outList::size, 2);
+
+        for (AbstractDataItem dataItem : outList) {
+            if (dataItem instanceof ParameterData && ((ParameterData) dataItem).getExternalId() == 1061) {
+                assertEquals(1061, ((ParameterData) dataItem).getExternalId());
+                assertEquals(3.2, ((ParameterData) dataItem).getSourceValue());
+                assertEquals(3.2, (Double) ((ParameterData) dataItem).getEngValue(), 0.00001);
+            }
+        }
+    }
+
+    @Test
     void testOldGenerationTime() throws JAXBException, ProcessingModelException, InterruptedException {
         Logger testLogger = Logger.getLogger(getClass().getName());
         ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
