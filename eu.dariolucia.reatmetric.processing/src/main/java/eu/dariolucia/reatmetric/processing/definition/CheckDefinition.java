@@ -29,7 +29,7 @@ public abstract class CheckDefinition {
     private int numViolations = 1;
 
     @XmlAttribute
-    private boolean rawValueChecked = false;
+    private boolean rawValueChecked = false; // Apply check on raw/source value (used by parameters only)
 
     public CheckDefinition() {
     }
