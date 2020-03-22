@@ -27,17 +27,6 @@ public class EventProcessingDefinition extends AbstractProcessingDefinition {
     @XmlElement(name = "condition")
     private ExpressionDefinition condition;
 
-    public EventProcessingDefinition() {
-        super();
-    }
-
-    public EventProcessingDefinition(int id, String description, String location, Severity severity, ExpressionDefinition condition, String type, int inhibitionPeriod) {
-        super(id, description, location);
-        this.severity = severity;
-        this.condition = condition;
-        this.inhibitionPeriod = inhibitionPeriod;
-    }
-
     public int getInhibitionPeriod() {
         return inhibitionPeriod;
     }

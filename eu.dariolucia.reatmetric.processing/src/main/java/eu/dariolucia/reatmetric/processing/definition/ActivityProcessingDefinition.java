@@ -59,22 +59,6 @@ public class ActivityProcessingDefinition extends AbstractProcessingDefinition {
     @XmlElement(name = "verification")
     private ExpressionDefinition verification;
 
-    public ActivityProcessingDefinition() {
-        super();
-    }
-
-    public ActivityProcessingDefinition(int id, String description, String location, String type, String defaultRoute, int transmissionTimeout, int executionTimeout, int verificationTimeout, List<ArgumentDefinition> arguments, List<KeyValue> properties, ExpressionDefinition verification) {
-        super(id, description, location);
-        this.type = type;
-        this.defaultRoute = defaultRoute;
-        this.transmissionTimeout = transmissionTimeout;
-        this.executionTimeout = executionTimeout;
-        this.verificationTimeout = verificationTimeout;
-        this.arguments = arguments;
-        this.properties = properties;
-        this.verification = verification;
-    }
-
     public String getType() {
         return type;
     }

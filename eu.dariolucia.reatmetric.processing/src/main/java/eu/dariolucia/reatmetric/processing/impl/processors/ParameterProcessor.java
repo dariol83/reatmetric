@@ -50,6 +50,37 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         super(definition, processor, SystemEntityType.PARAMETER);
         this.builder = new ParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
         this.alarmBuilder = new AlarmParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
+        // Check presence of default value: if so, build the state right away
+        if(definition.getDefaultValue() != null) {
+            buildDefaultState();
+        }
+    }
+
+    private void buildDefaultState() {
+        Object sourceValue = null;
+        Object engValue = null;
+        String valueStr = definition.getDefaultValue().getValue();
+        if(definition.getDefaultValue().getType() == DefaultValueType.RAW) {
+            sourceValue = ValueUtil.parse(definition.getRawType(), valueStr);
+        } else {
+            engValue = ValueUtil.parse(definition.getEngineeringType(), valueStr);
+        }
+        // Set validity
+        this.builder.setValidity(Validity.UNKNOWN);
+        // Set the source value and the generation time
+        this.builder.setSourceValue(sourceValue);
+        this.builder.setGenerationTime(Instant.EPOCH);
+        // Set engineering value - If not valid, the engineering value is not computed
+        this.builder.setEngValue(engValue);
+        // The checks are not run
+        this.builder.setAlarmState(AlarmState.UNKNOWN);
+        // Build final state, set it and return it
+        this.builder.setRoute(null);
+        this.builder.setContainerId(null);
+        // Sanitize the reception time
+        this.builder.setReceptionTime(Instant.EPOCH);
+        // Replace the state
+        this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
     }
 
     @Override

@@ -32,6 +32,9 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlElement(name = "synthetic")
     private ExpressionDefinition expression;
 
+    @XmlElement(name = "default_value")
+    private FixedDefaultValue defaultValue = null;
+
     @XmlElements({
             @XmlElement(name="calib_xy",type=XYCalibration.class),
             @XmlElement(name="calib_poly",type=PolyCalibration.class),
@@ -55,22 +58,6 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlElementWrapper(name = "triggers")
     @XmlElement(name="trigger")
     private List<ParameterTriggerDefinition> triggers = new LinkedList<>();
-
-    public ParameterProcessingDefinition() {
-        super();
-    }
-
-    public ParameterProcessingDefinition(int id, String description, String location, ValueTypeEnum rawType, ValueTypeEnum engineeringType, String unit, ValidityCondition validity, List<CalibrationDefinition> calibrations, List<CheckDefinition> checks, ExpressionDefinition expression, List<ParameterTriggerDefinition> triggers) {
-        super(id, description, location);
-        this.rawType = rawType;
-        this.engineeringType = engineeringType;
-        this.unit = unit;
-        this.validity = validity;
-        this.calibrations = calibrations;
-        this.checks = checks;
-        this.expression = expression;
-        this.triggers = triggers;
-    }
 
     public ValueTypeEnum getRawType() {
         return rawType;
@@ -134,5 +121,13 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
 
     public void setTriggers(List<ParameterTriggerDefinition> triggers) {
         this.triggers = triggers;
+    }
+
+    public FixedDefaultValue getDefaultValue() {
+        return defaultValue;
+    }
+
+    public void setDefaultValue(FixedDefaultValue defaultValue) {
+        this.defaultValue = defaultValue;
     }
 }
