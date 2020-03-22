@@ -32,5 +32,7 @@ public class Constants {
     public static final String ANNOTATION_TM_PUS_HEADER = "##TM_PUS_HEADER";
     public static final String ANNOTATION_UNIQUE_ID = "##UNIQUE_ID";
 
-
+    // encdec definition: TM/TC packet type
+    public static final String ENCDEC_TM_PACKET_TYPE = "TM";
+    public static final String ENCDEC_TC_PACKET_TYPE = "TC";
 }

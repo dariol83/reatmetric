@@ -19,9 +19,6 @@ public class TmPacketConfiguration {
     @XmlAttribute(name = "parameter-id-offset")
     private int parameterIdOffset = 0;
 
-    @XmlAttribute(name = "event-id-offset")
-    private int eventIdOffset = 0;
-
     @XmlElement(name = "default-pus-configuration")
     private TmPusConfiguration defaultTmPusConfiguration;
 
@@ -34,14 +31,6 @@ public class TmPacketConfiguration {
 
     public void setParameterIdOffset(int parameterIdOffset) {
         this.parameterIdOffset = parameterIdOffset;
-    }
-
-    public int getEventIdOffset() {
-        return eventIdOffset;
-    }
-
-    public void setEventIdOffset(int eventIdOffset) {
-        this.eventIdOffset = eventIdOffset;
     }
 
     public TmPusConfiguration getDefaultTmPusConfiguration() {

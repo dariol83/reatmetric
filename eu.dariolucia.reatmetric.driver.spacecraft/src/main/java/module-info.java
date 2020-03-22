@@ -11,5 +11,9 @@ module eu.dariolucia.reatmetric.driver.spacecraft {
     requires eu.dariolucia.ccsds.tmtc;
     requires eu.dariolucia.ccsds.sle.utl;
 
+    exports eu.dariolucia.reatmetric.driver.spacecraft;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.common;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.definition;
+
     provides eu.dariolucia.reatmetric.api.value.IValueExtensionHandler with TmFrameDescriptorValueExtensionHandler;
 }

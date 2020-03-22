@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.core.api.IDriverListener;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TmPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
@@ -147,7 +148,7 @@ public class SpacecraftDriver implements IDriver {
     private void loadTmDataLinkProcessor() {
         this.tmDataLinkProcessor = new TmDataLinkProcessor(this.configuration,
                 this.context,
-                new FieldGroupBasedPacketIdentifier(this.encodingDecodingDefinitions),
+                new FieldGroupBasedPacketIdentifier(this.encodingDecodingDefinitions, true, Collections.singletonList(Constants.ENCDEC_TM_PACKET_TYPE)),
                 tmPacketProcessor::extractPacketGenerationTime,
                 tmPacketProcessor::checkPacketQuality
                 );
