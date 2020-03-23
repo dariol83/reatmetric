@@ -305,6 +305,20 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         // Otherwise evaluate the checks and derive the result
         AlarmState result = AlarmState.NOMINAL;
         for(CheckDefinition cd : definition.getChecks()) {
+            // applicability condition: if not applicable, ignore the check
+            if(cd.getApplicability() != null) {
+                try {
+                    boolean applicable = cd.getApplicability().execute(processor);
+                    if(!applicable) {
+                        // Next check
+                        continue;
+                    }
+                } catch (ValidityException e) {
+                    LOG.log(Level.SEVERE, "Error when evaluating applicability for check " + cd.getName() + " on parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
+                    // Stop here, it is in ERROR
+                    return AlarmState.ERROR;
+                }
+            }
             // violationCounter is in the checkViolationNumber map after the next instruction
             AtomicInteger violationCounter = checkViolationNumber.computeIfAbsent(cd.getName(), k -> new AtomicInteger(0));
             AlarmState state;

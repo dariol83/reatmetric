@@ -40,6 +40,7 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
             @XmlElement(name="calib_poly",type=PolyCalibration.class),
             @XmlElement(name="calib_log",type=LogCalibration.class),
             @XmlElement(name="calib_enum",type=EnumCalibration.class),
+            @XmlElement(name="calib_range_enum",type=RangeEnumCalibration.class),
             @XmlElement(name="calib_expression",type=ExpressionCalibration.class),
             @XmlElement(name="calib_external",type=ExternalCalibration.class),
     })

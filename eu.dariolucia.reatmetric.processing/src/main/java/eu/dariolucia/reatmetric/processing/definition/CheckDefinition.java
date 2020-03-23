@@ -14,6 +14,7 @@ import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
 import java.time.Instant;
 
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -30,6 +31,9 @@ public abstract class CheckDefinition {
 
     @XmlAttribute
     private boolean rawValueChecked = false; // Apply check on raw/source value (used by parameters only)
+
+    @XmlElement(name = "applicability")
+    private ValidityCondition applicability = null;
 
     public CheckDefinition() {
     }
@@ -73,6 +77,14 @@ public abstract class CheckDefinition {
     }
 
     public abstract AlarmState check(Object currentValue, Instant valueGenerationTime, int currentViolations, IBindingResolver resolver) throws CheckException;
+
+    public ValidityCondition getApplicability() {
+        return applicability;
+    }
+
+    public void setApplicability(ValidityCondition applicability) {
+        this.applicability = applicability;
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // Transient objects

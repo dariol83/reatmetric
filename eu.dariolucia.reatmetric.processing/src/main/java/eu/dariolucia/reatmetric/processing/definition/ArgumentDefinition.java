@@ -46,6 +46,7 @@ public class ArgumentDefinition {
             @XmlElement(name="decalib_poly",type=PolyCalibration.class),
             @XmlElement(name="decalib_log",type=LogCalibration.class),
             @XmlElement(name="decalib_enum",type=EnumCalibration.class),
+            @XmlElement(name="decalib_range_enum",type=RangeEnumCalibration.class),
             @XmlElement(name="decalib_ienum",type=InvertedEnumCalibration.class),
             @XmlElement(name="decalib_expression",type=ExpressionCalibration.class),
             @XmlElement(name="decalib_external",type=ExternalCalibration.class),

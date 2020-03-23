@@ -203,6 +203,18 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     private void verifyAndAdd(Map<String, Object> argumentMap, ArgumentDefinition argDef, Object finalValue, boolean throwExceptionOfFinalNull) throws ProcessingModelException {
         // Apply checks
         for(CheckDefinition cd : argDef.getChecks()) {
+            // applicability condition: if not applicable, ignore the check
+            if(cd.getApplicability() != null) {
+                try {
+                    boolean applicable = cd.getApplicability().execute(processor);
+                    if(!applicable) {
+                        // Next check
+                        continue;
+                    }
+                } catch (ValidityException e) {
+                    throw new ProcessingModelException("Error when evaluating applicability for check " + cd.getName() + " on activity " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
+                }
+            }
             try {
                 AlarmState as = cd.check(finalValue, null, 0, processor);
                 if(as != AlarmState.NOMINAL) {
