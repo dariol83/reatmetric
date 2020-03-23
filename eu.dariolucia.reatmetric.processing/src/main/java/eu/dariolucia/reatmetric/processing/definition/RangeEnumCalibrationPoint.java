@@ -18,10 +18,10 @@ public class RangeEnumCalibrationPoint {
     @XmlAttribute(name = "min", required = true)
     private double minValue;
 
-    @XmlAttribute(name = "min", required = true)
+    @XmlAttribute(name = "max", required = true)
     private double maxValue;
 
-    @XmlAttribute(name = "y", required = true)
+    @XmlAttribute(name = "value", required = true)
     private String value;
 
     public RangeEnumCalibrationPoint() {
