@@ -71,6 +71,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
 
     @Override
     public void initialise(Consumer<SystemStatus> consumer) throws ReatmetricException {
+        LOG.info("Reatmetric Core System initialisation");
         // Prepare the logging facility
         if(configuration.getLogPropertyFile() != null) {
             try {
@@ -81,6 +82,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         }
         // Load the archive
         if(configuration.getArchiveLocation() != null) {
+            LOG.info("Loading archive at location " + configuration.getArchiveLocation());
             ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
             if(archiveLoader.findFirst().isPresent()) {
                 archive = archiveLoader.findFirst().get().buildArchive(configuration.getArchiveLocation());
@@ -90,15 +92,19 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
             }
         }
         // Load the operational data broker
+        LOG.info("Loading operational message broker");
         IOperationalMessageArchive messageArchive = archive != null ? archive.getArchive(IOperationalMessageArchive.class) : null;
         messageBroker = new OperationalMessageBrokerImpl(messageArchive);
         // Load the raw data broker
+        LOG.info("Loading raw data broker");
         IRawDataArchive rawDataArchive = archive != null ? archive.getArchive(IRawDataArchive.class) : null;
         rawDataBroker = new RawDataBrokerImpl(rawDataArchive);
         // Load the processing model manager and services
+        LOG.info("Loading processing model");
         processingModelManager = new ProcessingModelManager(archive, configuration.getDefinitionsLocation());
         // Load the drivers
         for(DriverConfiguration dc : configuration.getDrivers()) {
+            LOG.info("Loading driver " + dc.getName());
             IDriver driver = loadDriver(dc);
             if(driver != null) {
                 // Register the driver
@@ -107,12 +113,16 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
                 registerConnectors(driver.getTransportConnectors());
                 // Get and register the activity handlers
                 registerActivityHandlers(dc.getName(), driver.getActivityHandlers());
+                LOG.info("Driver " + dc.getName() + " successfully loaded");
+            } else {
+                LOG.severe("Driver " + dc.getName() + " not found in the service registry");
             }
         }
         // Derive system status
         statusSubscriber = consumer;
         deriveSystemStatus();
         // Done and ready to go
+        LOG.info("Reatmetric Core System loaded with status " + systemStatus);
     }
 
     private void deriveSystemStatus() {

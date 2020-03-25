@@ -39,6 +39,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmDataLinkProcessor;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
@@ -120,7 +121,7 @@ public class SpacecraftDriver implements IDriver {
             loadSleServiceInstances(driverConfigurationDirectory + File.separator + SLE_FOLDER);
             // Ready to go
             updateStatus(SystemStatus.NOMINAL);
-        } catch (IOException e) {
+        } catch (Exception e) {
             updateStatus(SystemStatus.ALARM);
             throw new DriverException(e);
         }
@@ -149,6 +150,7 @@ public class SpacecraftDriver implements IDriver {
     }
 
     private void loadEncodingDecodingDefinitions(String filePath) throws IOException {
+        LOG.info("Loading TM/TC packet configuration at " + filePath);
         this.encodingDecodingDefinitions = Definition.load(new FileInputStream(filePath));
     }
 
@@ -163,6 +165,8 @@ public class SpacecraftDriver implements IDriver {
     }
 
     private void loadSleServiceInstances(String sleFolder) throws IOException {
+        LOG.info("Loading SLE configuration at " + sleFolder);
+        this.sleManagers = new ArrayList<>();
         if(sleFolder == null) {
             LOG.info("Driver " + this.name + " has no SLE folder configured. Skipping SLE configuration.");
             return;
@@ -192,16 +196,19 @@ public class SpacecraftDriver implements IDriver {
     }
 
     private void createRcfServiceInstance(PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration sic) {
+        LOG.info("Creating SLE RCF endpoint for " + sic.getServiceInstanceIdentifier());
         RcfServiceInstanceManager m = new RcfServiceInstanceManager(peerConfiguration, sic, configuration, context.getRawDataBroker());
         this.sleManagers.add(m);
     }
 
     private void createRafServiceInstance(PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration sic) {
+        LOG.info("Creating SLE RAF endpoint for " + sic.getServiceInstanceIdentifier());
         RafServiceInstanceManager m = new RafServiceInstanceManager(peerConfiguration, sic, configuration, context.getRawDataBroker());
         this.sleManagers.add(m);
     }
 
     private void loadDriverConfiguration(String filePath) throws IOException {
+        LOG.info("Loading driver configuration at " + filePath);
         this.configuration = SpacecraftConfiguration.load(new FileInputStream(filePath));
         // Optimise PUS configuration
         this.configuration.getTmPacketConfiguration().buildLookupMap();

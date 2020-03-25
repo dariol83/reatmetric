@@ -189,24 +189,11 @@ public class ConnectorStatusWidgetController implements Initializable {
     }
 
     public void startStopButtonClicked(MouseEvent mouseEvent) {
-        if(lastStatus != null) {
-            if(!connector.isInitialised() && !connector.getSupportedProperties().isEmpty()) {
-                // Init now
-                Optional<Boolean> initialise = TransportConnectorInitDialog.openWizard(connector);
-                if(initialise.isPresent() && initialise.get()) {
-                    // Then start
-                    ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
-                        try {
-                            connector.connect();
-                        } catch (TransportException e) {
-                            LOG.log(Level.WARNING, "Cannot open connection from " + connector.getName() + ": " + e.getMessage(), e);
-                        }
-                    });
-                }
-            } else if(lastStatus.getStatus() == TransportConnectionStatus.NOT_INIT
-                    || lastStatus.getStatus() == TransportConnectionStatus.IDLE
-                    || lastStatus.getStatus() == TransportConnectionStatus.ERROR
-                    || lastStatus.getStatus() == TransportConnectionStatus.ABORTED) {
+        if(!connector.isInitialised() && !connector.getSupportedProperties().isEmpty()) {
+            // Init now
+            Optional<Boolean> initialise = TransportConnectorInitDialog.openWizard(connector);
+            if(initialise.isPresent() && initialise.get()) {
+                // Then start
                 ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
                     try {
                         connector.connect();
@@ -214,15 +201,26 @@ public class ConnectorStatusWidgetController implements Initializable {
                         LOG.log(Level.WARNING, "Cannot open connection from " + connector.getName() + ": " + e.getMessage(), e);
                     }
                 });
-            } else {
-                ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
-                    try {
-                        connector.disconnect();
-                    } catch (TransportException e) {
-                        LOG.log(Level.WARNING, "Cannot close connection of " + connector.getName() + ": " + e.getMessage(), e);
-                    }
-                });
             }
+        } else if(lastStatus == null || lastStatus.getStatus() == TransportConnectionStatus.NOT_INIT
+                || lastStatus.getStatus() == TransportConnectionStatus.IDLE
+                || lastStatus.getStatus() == TransportConnectionStatus.ERROR
+                || lastStatus.getStatus() == TransportConnectionStatus.ABORTED) {
+            ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
+                try {
+                    connector.connect();
+                } catch (TransportException e) {
+                    LOG.log(Level.WARNING, "Cannot open connection from " + connector.getName() + ": " + e.getMessage(), e);
+                }
+            });
+        } else {
+            ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
+                try {
+                    connector.disconnect();
+                } catch (TransportException e) {
+                    LOG.log(Level.WARNING, "Cannot close connection of " + connector.getName() + ": " + e.getMessage(), e);
+                }
+            });
         }
     }
 

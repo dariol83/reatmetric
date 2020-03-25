@@ -14,7 +14,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class TcDataLinkConfiguration {
 
-    @XmlAttribute(name = "tc_vc")
+    @XmlAttribute(name = "tc-vc")
     private int commandVc = 0;
 
     @XmlAttribute(name = "randomize")
@@ -23,7 +23,7 @@ public class TcDataLinkConfiguration {
     @XmlAttribute(name = "segmentation")
     private boolean segmentation = false;
 
-    @XmlAttribute(name = "mapId")
+    @XmlAttribute(name = "map-id")
     private int mapId = 0;
 
     public TcDataLinkConfiguration() {

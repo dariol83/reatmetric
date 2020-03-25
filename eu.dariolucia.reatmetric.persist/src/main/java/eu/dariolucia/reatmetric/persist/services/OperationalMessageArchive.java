@@ -31,7 +31,7 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
         storeStatement.setLong(1, item.getInternalId().asLong());
         storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
         storeStatement.setString(3, item.getId());
-        storeStatement.setString(4, item.getMessage());
+        storeStatement.setString(4, item.getMessage().length() > 255 ? item.getMessage().substring(0,255) : item.getMessage());
         storeStatement.setString(5, item.getSource());
         storeStatement.setShort(6, (short) item.getSeverity().ordinal());
         Object extension = item.getExtension();

@@ -100,7 +100,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         this.serviceInstance.configure();
         this.serviceInstance.register(this);
 
-        this.initialisationMap.put(SLE_VERSION_KEY, siConfiguration.getServiceVersionNumber());
+        this.initialisationMap.put(SLE_VERSION_KEY, (long) siConfiguration.getServiceVersionNumber()); // long because the data type is UNSIGNED_INTEGER
         this.initialisationDescriptionMap.put(SLE_VERSION_KEY, Pair.of("SLE Version", ValueTypeEnum.UNSIGNED_INTEGER));
         addToInitialisationMap(initialisationMap, initialisationDescriptionMap);
     }
@@ -168,7 +168,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         bindSemaphore.drainPermits();
         startSemaphore.drainPermits();
         try {
-            serviceInstance.bind((Integer) initialisationMap.get(SLE_VERSION_KEY));
+            serviceInstance.bind(((Long) initialisationMap.get(SLE_VERSION_KEY)).intValue());
 
             boolean bindReturned = bindSemaphore.tryAcquire(5, TimeUnit.SECONDS);
             if (!bindReturned) {

@@ -5,5 +5,5 @@
 	<definitionsLocation>$HOME/.reatmetric/processing</definitionsLocation>
 	<driver name="Spacecraft Driver"
 		type="eu.dariolucia.reatmetric.driver.spacecraft.SpacecraftDriver"
-		configuration="$HOME/.reatmetric/driver_spacecraft.xml" />
+		configuration="$HOME/.reatmetric/spacecraft1" />
 </ns1:core>

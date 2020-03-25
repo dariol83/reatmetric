@@ -48,7 +48,7 @@ public class SpacecraftConfiguration {
     @XmlElement(name = "tm")
     private TmDataLinkConfiguration tmDataLinkConfigurations = new TmDataLinkConfiguration();
 
-    @XmlElement(name = "pus", required = true)
+    @XmlElement(name = "tm-packet", required = true)
     private TmPacketConfiguration tmPacketConfiguration = new TmPacketConfiguration();
 
     @XmlElement(name = "services")
