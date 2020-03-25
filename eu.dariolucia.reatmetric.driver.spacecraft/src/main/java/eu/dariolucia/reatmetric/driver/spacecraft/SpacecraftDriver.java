@@ -28,6 +28,8 @@ import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TmPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
@@ -92,6 +94,8 @@ public class SpacecraftDriver implements IDriver {
 
     private ServiceBroker serviceBroker;
     private TimeCorrelationService timeCorrelationService;
+    private OnboardEventService onboardEventService;
+    private CommandVerificationService commandVerificationService;
 
     @Override
     public void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException {
@@ -125,7 +129,10 @@ public class SpacecraftDriver implements IDriver {
     private void loadPacketServices() {
         // Time correlation service (PUS 9)
         this.timeCorrelationService = new TimeCorrelationService(this.configuration, this.context, this.serviceBroker);
-        // TODO: on-board event service (PUS 5)
+        // On-board event service (PUS 5)
+        this.onboardEventService = new OnboardEventService(this.configuration, this.context, this.serviceBroker);
+        // Command verification service (PUS 1)
+        this.commandVerificationService = new CommandVerificationService(this.configuration, this.context, this.serviceBroker);
     }
 
     private void loadServiceBroker() {
@@ -223,6 +230,8 @@ public class SpacecraftDriver implements IDriver {
         this.tmDataLinkProcessor.dispose();
         this.tmPacketProcessor.dispose();
         this.timeCorrelationService.dispose();
+        this.onboardEventService.dispose();
+        this.commandVerificationService.dispose();
         this.serviceBroker.dispose();
         updateStatus(SystemStatus.UNKNOWN);
     }
