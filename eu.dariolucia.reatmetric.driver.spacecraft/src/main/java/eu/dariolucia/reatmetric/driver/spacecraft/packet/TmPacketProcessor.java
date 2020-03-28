@@ -92,14 +92,19 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                         spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
                     }
                 }
-                // Use offset and length, check pusHeader.getEncodedLength to understand where you have to start decoding from
-                int offset = SpacePacket.SP_PRIMARY_HEADER_LENGTH + (pusHeader != null ? pusHeader.getEncodedLength() : 0);
+                // NOT TRUE: Use offset and length, check pusHeader.getEncodedLength to understand where you have to start decoding from
+                // int offset = SpacePacket.SP_PRIMARY_HEADER_LENGTH + (pusHeader != null ? pusHeader.getEncodedLength() : 0);
+
+                // Expectation is that the definitions refer to the start of the space packet
+                int offset = 0;
                 DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), offset, rd.getContents().length - offset, timeGenerationComputer);
                 forwardParameterResult(rd, result.getDecodedParameters());
                 // Finally, notify all services about the new TM packet
                 notifyExtensionServices(rd, spacePacket, pusHeader, result);
             } catch (DecodingException e) {
                 LOG.log(Level.SEVERE, "Cannot decode packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Unforeseen exception when processing packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
             }
         }
     }

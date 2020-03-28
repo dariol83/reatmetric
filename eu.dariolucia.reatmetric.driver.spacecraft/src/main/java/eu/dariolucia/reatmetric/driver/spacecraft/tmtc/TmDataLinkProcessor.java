@@ -145,9 +145,9 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                     packetName = packetIdentifier.identify(packet);
                     packetType = Constants.T_TM_PACKET;
                 } catch (PacketNotIdentifiedException e) {
-                    LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + " not identified: " + e.getMessage(), e);
+                    LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " not identified: " + e.getMessage(), e);
                 } catch (PacketAmbiguityException e) {
-                    LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + " ambiguous: " + e.getMessage(), e);
+                    LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " ambiguous: " + e.getMessage(), e);
                 }
             }
             // Perform time generation extraction/time correlation

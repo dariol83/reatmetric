@@ -30,4 +30,10 @@ public class ParameterSampleProcessOperation extends AbstractModelOperation<Para
     public int getSystemEntityId() {
         return input.getId();
     }
+
+    @Override
+    public String toString() {
+        return "'Inject Parameter " +
+                input.getId() + " with value " + input.getValue() + "'";
+    }
 }

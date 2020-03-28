@@ -326,7 +326,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         // add source and route in the frame annotated map, route is ANTENNA.SERVICE_TYPE.SERVICE_ID.SCID.VCID, e.g. ANT01.RAF.raf001.123.7
         if(quality == Quality.GOOD) { // GOOD
             TmTransferFrame frame = new TmTransferFrame(frameContents, spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
-            if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() != null && spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
+            if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() == null || spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
                 StringBuilder route = new StringBuilder().append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart).append('.').append(frame.getSpacecraftId()).append('.').append(frame.getVirtualChannelId());
                 RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_TM_FRAME, route.toString(), String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, receivedTime, null);
                 frame.setAnnotationValue(Constants.ANNOTATION_ROUTE, rd.getRoute());
@@ -417,7 +417,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
 
     @Override
     public void onPduSentError(ServiceInstance si, Object operation, String name, byte[] encodedOperation, String error, Exception exception) {
-        LOG.log(Level.SEVERE, serviceInstance.getServiceInstanceIdentifier() + ": SLE PDU " + name + "sending error: " + error, exception);
+        LOG.log(Level.SEVERE, serviceInstance.getServiceInstanceIdentifier() + ": SLE PDU " + name + " sending error: " + error, exception);
     }
 
     @Override

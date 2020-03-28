@@ -41,6 +41,10 @@ public class LimitCheck extends CheckDefinition {
         this.type = type;
     }
 
+    public void setType(ValueTypeEnum type) {
+        this.type = type;
+    }
+
     public ValueTypeEnum getType() {
         return type;
     }
