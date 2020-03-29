@@ -39,6 +39,7 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.stage.Popup;
+import javafx.stage.Window;
 import javafx.util.Callback;
 
 import java.io.IOException;
@@ -120,7 +121,12 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     
     // Preset manager
     private final PresetStorageManager presetManager = new PresetStorageManager();
-    
+
+    @Override
+    protected Window retrieveWindow() {
+        return displayTitledPane.getScene().getWindow();
+    }
+
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
     	this.dataItemTableView.setPlaceholder(new Label(""));

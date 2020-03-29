@@ -28,8 +28,6 @@
          <children>
             <ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
                <items>
-                  <Circle fx:id="serviceHealthStatus" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
-                  <Label text=" " />
                   <ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" prefHeight="25.0" prefWidth="91.0" selected="true" text="Live" />
                   <Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart" text="|&lt;" />
                   <Button fx:id="goBackFastBtn" disable="true" mnemonicParsing="false" onAction="#goBackFast" text="&lt;&lt;" />

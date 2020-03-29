@@ -22,6 +22,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
@@ -49,6 +50,11 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
     private ScrollPane scrollpane;
 
     private Map<ITransportConnector, ConnectorStatusWidgetController> connector2controller = new ConcurrentHashMap<>();
+
+    @Override
+    protected Window retrieveWindow() {
+        return displayTitledPane.getScene().getWindow();
+    }
 
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {

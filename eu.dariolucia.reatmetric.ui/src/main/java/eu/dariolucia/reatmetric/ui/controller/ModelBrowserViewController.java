@@ -34,6 +34,7 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
+import javafx.stage.Window;
 import org.controlsfx.control.textfield.CustomTextField;
 
 import java.net.URL;
@@ -142,15 +143,28 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private void expandItemAction(ActionEvent event) {
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
         if(se != null) {
-            expandItem(se);
+            expandItem(se, true);
         }
     }
 
-    private void expandItem(TreeItem<SystemEntity> item) {
-        item.expandedProperty().set(true);
-        for(TreeItem<SystemEntity> child : item.getChildren()) {
-            expandItem(child);
+    @FXML
+    private void collapseItemAction(ActionEvent event) {
+        TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
+        if(se != null) {
+            expandItem(se, false);
         }
+    }
+
+    private void expandItem(TreeItem<SystemEntity> item, boolean expand) {
+        item.expandedProperty().set(expand);
+        for(TreeItem<SystemEntity> child : item.getChildren()) {
+            expandItem(child, expand);
+        }
+    }
+
+    @Override
+    protected Window retrieveWindow() {
+        return displayTitledPane.getScene().getWindow();
     }
 
     @Override

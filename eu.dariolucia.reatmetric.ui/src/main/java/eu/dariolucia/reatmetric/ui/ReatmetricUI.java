@@ -21,6 +21,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import java.util.Map;
@@ -104,7 +105,10 @@ public class ReatmetricUI extends Application {
         
         stage.setScene(scene);
         stage.setTitle("Reatmetric UI");
-        
+
+        Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logo_icon.png"));
+        stage.getIcons().add(icon);
+
         stage.setOnCloseRequest(event -> {
             event.consume();
             shutdown();

@@ -23,6 +23,7 @@ import javafx.scene.control.Control;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.transform.Scale;
+import javafx.stage.Window;
 
 import java.net.URL;
 import java.time.Instant;
@@ -34,10 +35,6 @@ import java.util.ResourceBundle;
  * @author dario
  */
 public abstract class AbstractDisplayController implements Initializable, IReatmetricServiceListener {
-
-    // Service availability control
-    @FXML
-    protected Circle serviceHealthStatus;
 
     // Info
     protected IReatmetricSystem system = null;
@@ -67,7 +64,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
                 Scale scale = new Scale(scaleX, scaleX); // Homogeneus scale, assuming width larger than height ... 
                 n.getTransforms().add(scale);
                 
-                if (job != null && job.showPrintDialog(this.serviceHealthStatus.getScene().getWindow())) {
+                if (job != null && job.showPrintDialog(retrieveWindow())) {
                     boolean success = job.printPage(pageLayout, n);
                     if (success) {
                         ReatmetricUI.setStatusLabel("Job printed successfully");
@@ -81,6 +78,8 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
             ReatmetricUI.setStatusLabel("Printing not supported on this display");
         }
     }
+
+    protected abstract Window retrieveWindow();
 
     @Override
     public void startGlobalOperationProgress() {
@@ -101,8 +100,6 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     public void systemConnected(IReatmetricSystem system) {
         Platform.runLater(() -> {
             this.system = system;
-            // Set indicator
-            this.serviceHealthStatus.setFill(Paint.valueOf("#00ca00"));
             //
             boolean oldStatus = this.serviceConnected;
             this.serviceConnected = true;
@@ -118,8 +115,6 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
             //
             doSystemDisconnected(system, oldStatus);
             this.system = null;
-            // Set indicator
-            this.serviceHealthStatus.setFill(Paint.valueOf("#003915"));
             //
             // this.serviceConnected = false;
         });

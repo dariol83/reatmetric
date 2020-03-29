@@ -19,11 +19,6 @@
    <content>
       <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
          <children>
-            <ToolBar maxWidth="1.7976931348623157E308" prefHeight="32.0">
-               <items>
-                  <Circle fx:id="serviceHealthStatus" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
-               </items>
-            </ToolBar>
             <ScrollPane fx:id="scrollpane" fitToWidth="true" VBox.vgrow="ALWAYS">
                <content>
                   <VBox fx:id="vbox" />

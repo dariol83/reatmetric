@@ -29,8 +29,6 @@
          <children>
             <ToolBar maxWidth="1.7976931348623157E308" prefHeight="32.0">
                <items>
-                  <Circle fx:id="serviceHealthStatus" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
-                  <Label text=" " />
                   <CustomTextField fx:id="filterText" maxWidth="1.7976931348623157E308" prefHeight="25.0" prefWidth="260.0">
                       <tooltip>
                           <Tooltip text="Text matching with wildcard (*)" />
@@ -49,6 +47,7 @@
                             <MenuItem mnemonicParsing="false" onAction="#enableItemAction" text="Enable" />
                             <MenuItem mnemonicParsing="false" onAction="#disableItemAction" text="Disable" />
                             <MenuItem mnemonicParsing="false" onAction="#expandItemAction" text="Expand all" />
+                            <MenuItem mnemonicParsing="false" onAction="#collapseItemAction" text="Collapse all" />
                         </items>
                     </ContextMenu>
               </contextMenu>

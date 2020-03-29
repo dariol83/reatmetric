@@ -28,6 +28,7 @@ import javafx.geometry.Bounds;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.stage.Popup;
+import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
@@ -529,6 +530,11 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     
     protected V getCurrentFilter() {
     	return this.dataItemFilterController != null ? this.dataItemFilterController.getSelectedFilter() : null; 
+    }
+
+    @Override
+    protected Window retrieveWindow() {
+        return displayTitledPane.getScene().getWindow();
     }
 
     protected abstract void doServiceSubscribe(V selectedFilter) throws ReatmetricException;

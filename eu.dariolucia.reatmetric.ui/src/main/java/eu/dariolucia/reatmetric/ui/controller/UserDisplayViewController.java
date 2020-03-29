@@ -29,6 +29,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
@@ -69,6 +70,11 @@ public class UserDisplayViewController extends AbstractDisplayController {
 
 	// Preset manager
 	private final PresetStorageManager presetManager = new PresetStorageManager();
+
+	@Override
+	protected Window retrieveWindow() {
+		return displayTitledPane.getScene().getWindow();
+	}
 
 	@Override
 	public final void doInitialize(URL url, ResourceBundle rb) {
