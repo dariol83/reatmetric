@@ -12,6 +12,7 @@ import eu.dariolucia.ccsds.encdec.structure.DecodingException;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.encdec.structure.IPacketDecoder;
 import eu.dariolucia.ccsds.encdec.structure.ParameterValue;
+import eu.dariolucia.ccsds.encdec.value.BitString;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
@@ -24,8 +25,8 @@ import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPacketConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
 
@@ -126,7 +127,13 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     }
 
     private ParameterSample mapSample(RawData packet, ParameterValue pv) {
-        return ParameterSample.of((int) (pv.getExternalId() + configuration.getParameterIdOffset()), pv.getGenerationTime(), packet.getReceptionTime(), packet.getInternalId(), pv.getValue(), packet.getRoute(), null);
+        if(pv.getValue() instanceof BitString) {
+            // Conversion is necessary at this stage, due to different types (avoid dependency of reatmetric.api to ccsds.encdec
+            eu.dariolucia.reatmetric.api.value.BitString bitString = new eu.dariolucia.reatmetric.api.value.BitString(((BitString) pv.getValue()).getData(), ((BitString) pv.getValue()).getLength());
+            return ParameterSample.of((int) (pv.getExternalId() + configuration.getParameterIdOffset()), pv.getGenerationTime(), packet.getReceptionTime(), packet.getInternalId(), bitString, packet.getRoute(), null);
+        } else {
+            return ParameterSample.of((int) (pv.getExternalId() + configuration.getParameterIdOffset()), pv.getGenerationTime(), packet.getReceptionTime(), packet.getInternalId(), pv.getValue(), packet.getRoute(), null);
+        }
     }
 
     public Instant extractPacketGenerationTime(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {

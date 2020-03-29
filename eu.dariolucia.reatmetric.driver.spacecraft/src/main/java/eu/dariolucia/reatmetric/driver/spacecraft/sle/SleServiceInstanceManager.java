@@ -327,7 +327,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         if(quality == Quality.GOOD) { // GOOD
             TmTransferFrame frame = new TmTransferFrame(frameContents, spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
             if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() == null || spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
-                StringBuilder route = new StringBuilder().append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart).append('.').append(frame.getSpacecraftId()).append('.').append(frame.getVirtualChannelId());
+                StringBuilder route = new StringBuilder().append(frame.getSpacecraftId()).append('.').append(frame.getVirtualChannelId()).append('.').append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart);
                 RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_TM_FRAME, route.toString(), String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, receivedTime, null);
                 frame.setAnnotationValue(Constants.ANNOTATION_ROUTE, rd.getRoute());
                 frame.setAnnotationValue(Constants.ANNOTATION_SOURCE, rd.getSource());
@@ -349,7 +349,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
                     spacecraftConfiguration.getTmDataLinkConfigurations().getAosTransferFrameInsertZoneLength(), AosTransferFrame.UserDataType.M_PDU,
                     spacecraftConfiguration.getTmDataLinkConfigurations().isOcfPresent(), spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
             if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() != null && spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
-                StringBuilder route = new StringBuilder().append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart).append('.').append(frame.getSpacecraftId()).append('.').append(frame.getVirtualChannelId());
+                StringBuilder route = new StringBuilder().append(frame.getSpacecraftId()).append('.').append(frame.getVirtualChannelId()).append('.').append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart);
                 RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_AOS_FRAME, route.toString(), String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, receivedTime, null);
                 frame.setAnnotationValue(Constants.ANNOTATION_ROUTE, rd.getRoute());
                 frame.setAnnotationValue(Constants.ANNOTATION_SOURCE, rd.getSource());
