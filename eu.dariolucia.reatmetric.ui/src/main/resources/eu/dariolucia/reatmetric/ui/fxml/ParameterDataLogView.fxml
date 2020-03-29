@@ -11,7 +11,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.shape.Circle?>
+
 <TitledPane fx:id="displayTitledPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" text="Parameter Log" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ParameterDataLogViewController">
    <content>
       <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0">

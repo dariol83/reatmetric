@@ -160,6 +160,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 			Optional<String[]> data = d.showAndWait();
 			// Start in a separate thread, as connection can take time
 			data.ifPresent(strings -> {
+				// Avoid that the user clicks again on the menu item
+				connectMenuItem.setDisable(true);
 				ReatmetricUI.threadPool(getClass()).execute(() -> {
 					ReatmetricUI.selectedSystem().setSystem(this.serviceInspector.getSystem(strings[0]));
 				});

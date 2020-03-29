@@ -36,7 +36,9 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 import javafx.stage.Window;
 import org.controlsfx.control.textfield.CustomTextField;
+import org.controlsfx.control.textfield.TextFields;
 
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -173,6 +175,9 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         clearButton.setStyle("-fx-cursor: hand");
         clearButton.setOnMouseClicked(this::filterClearButtonPressed);
         this.filterText.setRight(clearButton);
+        filterText.textProperty().addListener((obs, oldValue, newValue) -> {
+            updatePredicate(newValue);
+        });
 
         this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getName()));
         this.nameCol.setCellFactory(column -> new TreeTableCell<>() {
@@ -251,13 +256,12 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 this.mapLock.unlock();
             }
         });
-
-        filterText.textProperty().addListener((obs, oldValue, newValue) -> {
-            updatePredicate(newValue);
-        });
     }
 
     private void updatePredicate(String newValue) {
+        if(modelTree.getRoot() == null) {
+            return;
+        }
         if(newValue.isBlank()) {
             ((FilterableTreeItem<SystemEntity>) modelTree.getRoot()).predicateProperty().setValue(p -> true);
         } else {

@@ -11,11 +11,9 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TitledPane?>
-<?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.shape.Circle?>
 
-<TitledPane fx:id="displayTitledPane" collapsible="false" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ConnectorsBrowserViewController">
+<TitledPane fx:id="displayTitledPane" text="Available Connectors" collapsible="false" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ConnectorsBrowserViewController">
    <content>
       <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
          <children>
