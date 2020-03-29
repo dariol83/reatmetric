@@ -39,6 +39,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmDataLinkProcessor;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -81,6 +82,7 @@ public class SpacecraftDriver implements IDriver {
     private static final String ENCODING_DECODING_DEFINITION_FILE = "tmtc.xml";
 
     private String name;
+    private Instant epoch;
     private SpacecraftConfiguration configuration;
     private ServiceCoreConfiguration coreConfiguration;
     private IServiceCoreContext context;
@@ -143,7 +145,7 @@ public class SpacecraftDriver implements IDriver {
     private void loadTmPacketProcessor() {
         this.tmPacketProcessor = new TmPacketProcessor(this.configuration,
                 this.context,
-                new DefaultPacketDecoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), configuration.getEpoch()),
+                new DefaultPacketDecoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), epoch),
                 this.timeCorrelationService,
                 this.serviceBroker);
         this.tmPacketProcessor.initialise();
@@ -212,6 +214,8 @@ public class SpacecraftDriver implements IDriver {
         this.configuration = SpacecraftConfiguration.load(new FileInputStream(filePath));
         // Optimise PUS configuration
         this.configuration.getTmPacketConfiguration().buildLookupMap();
+        // Get SC epoch
+        this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
     }
 
     @Override

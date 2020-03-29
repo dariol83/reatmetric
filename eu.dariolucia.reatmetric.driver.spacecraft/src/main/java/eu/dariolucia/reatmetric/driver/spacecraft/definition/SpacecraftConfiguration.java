@@ -14,6 +14,7 @@ import javax.xml.bind.annotation.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
+import java.util.Date;
 
 @XmlRootElement(name = "spacecraft", namespace = "http://dariolucia.eu/reatmetric/driver/spacecraft")
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -37,7 +38,7 @@ public class SpacecraftConfiguration {
     private int id;
 
     @XmlElement(name = "obt-epoch")
-    private Instant epoch = null;
+    private Date epoch = null;
 
     @XmlElement(name = "propagation-delay")
     private long propagationDelay = 0; // From first bit ASM generation onboard to reception of the first bit ASM at the antenna, in microseconds
@@ -70,11 +71,11 @@ public class SpacecraftConfiguration {
         this.id = id;
     }
 
-    public Instant getEpoch() {
+    public Date getEpoch() {
         return epoch;
     }
 
-    public void setEpoch(Instant epoch) {
+    public void setEpoch(Date epoch) {
         this.epoch = epoch;
     }
 

@@ -49,7 +49,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     private final ServiceBroker serviceBroker;
 
     public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, TimeCorrelationService timeCorrelationService, ServiceBroker serviceBroker) {
-        this.epoch = configuration.getEpoch();
+        this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
         this.processingModel = context.getProcessingModel();
         this.packetDecoder = packetDecoder;
         this.broker = context.getRawDataBroker();
@@ -79,13 +79,13 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                 // At this stage, we need to have the TmPusHeader available, or a clear indication that the packet does not have such header
                 // If the RawData data property has no SpacePacket, we have to instantiate one
                 SpacePacket spacePacket = (SpacePacket) rd.getData();
-                if(spacePacket == null) {
+                if (spacePacket == null) {
                     spacePacket = new SpacePacket(rd.getContents(), rd.getQuality() == Quality.GOOD);
                 }
                 // If the header is already part of the SpacePacket annotation, then good. If not, we have to compute it (we are in playback, maybe)
                 TmPusHeader pusHeader = (TmPusHeader) spacePacket.getAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER);
                 TmPusConfiguration conf = null;
-                if(pusHeader == null && spacePacket.isSecondaryHeaderFlag()) {
+                if (pusHeader == null && spacePacket.isSecondaryHeaderFlag()) {
                     conf = configuration.getPusConfigurationFor(spacePacket.getApid());
                     if (conf != null) {
                         pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.getObtConfiguration() != null && conf.getObtConfiguration().isExplicitPField(), epoch, conf.getTimeDescriptor());
@@ -97,12 +97,15 @@ public class TmPacketProcessor implements IRawDataSubscriber {
 
                 // Expectation is that the definitions refer to the start of the space packet
                 int offset = 0;
-                DecodingResult result = packetDecoder.decode(rd.getName(), rd.getContents(), offset, rd.getContents().length - offset, timeGenerationComputer);
-                forwardParameterResult(rd, result.getDecodedParameters());
+                DecodingResult result = null;
+                try {
+                    result = packetDecoder.decode(rd.getName(), rd.getContents(), offset, rd.getContents().length - offset, timeGenerationComputer);
+                    forwardParameterResult(rd, result.getDecodedParameters());
+                } catch (DecodingException e) {
+                    LOG.log(Level.SEVERE, "Cannot decode packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
+                }
                 // Finally, notify all services about the new TM packet
                 notifyExtensionServices(rd, spacePacket, pusHeader, result);
-            } catch (DecodingException e) {
-                LOG.log(Level.SEVERE, "Cannot decode packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Unforeseen exception when processing packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
             }

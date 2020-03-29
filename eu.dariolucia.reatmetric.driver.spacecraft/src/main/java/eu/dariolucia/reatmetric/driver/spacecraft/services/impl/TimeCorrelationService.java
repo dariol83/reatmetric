@@ -55,6 +55,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     private final SpacecraftConfiguration configuration;
     private final ServiceBroker serviceBroker;
     private final ExecutorService timeCoefficientsDistributor;
+    private final Instant epoch;
     private volatile int generationPeriod;
 
     private final List<RawData> matchingFrames = new LinkedList<>();
@@ -64,6 +65,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     private volatile Pair<BigDecimal, BigDecimal> obt2gtCoefficients;
 
     public TimeCorrelationService(SpacecraftConfiguration configuration, IServiceCoreContext context, ServiceBroker serviceBroker) {
+        this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
         this.spacecraftId = configuration.getId();
         this.propagationDelay = configuration.getPropagationDelay();
         this.broker = context.getRawDataBroker();
@@ -222,10 +224,10 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         // 2. time field -> check configuration.getTimeFormat()
         if(timeCorrelationConfiguration().getTimeFormat().isExplicitPField()) {
             // P-Field, easy
-            return TimeUtil.fromCUC(new BitEncoderDecoder(spacePacket.getPacket(), idx, spacePacket.getPacket().length - idx), configuration.getEpoch());
+            return TimeUtil.fromCUC(new BitEncoderDecoder(spacePacket.getPacket(), idx, spacePacket.getPacket().length - idx), epoch);
         } else {
             return TimeUtil.fromCUC(spacePacket.getPacket(), idx, spacePacket.getPacket().length - idx,
-                    configuration.getEpoch(),
+                    epoch,
                     timeCorrelationConfiguration().getTimeFormat().getCoarse(),
                     timeCorrelationConfiguration().getTimeFormat().getFine());
         }

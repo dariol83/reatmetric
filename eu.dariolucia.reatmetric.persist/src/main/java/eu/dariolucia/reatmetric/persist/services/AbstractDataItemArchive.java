@@ -10,13 +10,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,7 +25,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
 
     private static final Logger LOG = Logger.getLogger(AbstractDataItemArchive.class.getName());
 
-    protected static final int MAX_STORAGE_QUEUE = 1000; // items
+    protected static final int MAX_STORAGE_QUEUE = 10000; // items
     protected static final int STORAGE_QUEUE_FLUSH_LIMIT = MAX_STORAGE_QUEUE - 100; // size for flush
     protected static final int MAX_LATENCY_TIME = 1000; // milliseconds
     protected static final int LOOK_AHEAD_SPAN = 100; // items to look ahead
@@ -45,6 +45,11 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     private PreparedStatement storeStatement;
 
     protected Connection retrieveConnection; // subclasses should access this field in a synchronized block/method
+
+    private final AtomicLong storedItemsInLastSamplingPeriod = new AtomicLong();
+    private Instant lastSamplingTime;
+    private volatile boolean samplingActive;
+    private final Timer sampler = new Timer();
 
     private volatile boolean disposed;
 
@@ -85,6 +90,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
                     LOG.log(Level.SEVERE, this + " - exception on rollback", e);
                 }
             }
+            storedItemsInLastSamplingPeriod.addAndGet(drainingQueue.size());
         }
     }
 
@@ -129,7 +135,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             LOG.finest(this + " - store(List) called: items.size() = " + items.size());
         }
         checkDisposed();
-        checkStorageQueueFull();
+        checkStorageQueueFull(items.size());
         storageQueue.addAll(items);
     }
 
@@ -138,7 +144,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             LOG.finest(this + " - store(T) called");
         }
         checkDisposed();
-        checkStorageQueueFull();
+        checkStorageQueueFull(1);
         storageQueue.add(item);
     }
 
@@ -148,9 +154,9 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
     }
 
-    private void checkStorageQueueFull() {
+    private synchronized void checkStorageQueueFull(int wishToInsert) {
         // Close to full: try storage
-        if (storageQueue.size() > STORAGE_QUEUE_FLUSH_LIMIT) {
+        if (storageQueue.size() + wishToInsert > STORAGE_QUEUE_FLUSH_LIMIT) {
             if (LOG.isLoggable(Level.FINEST)) {
                 LOG.finest(this + " - storageQueue almost full: storageQueue.size() = " + storageQueue.size());
             }
@@ -406,5 +412,28 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             }
         }
         return sb.toString();
+    }
+
+    private void sample() {
+        Instant now = Instant.now();
+        long items = storedItemsInLastSamplingPeriod.getAndSet(0);
+        if(lastSamplingTime == null) {
+            lastSamplingTime = now;
+        } else {
+            long millis = now.toEpochMilli() - lastSamplingTime.toEpochMilli();
+            double itemsPerSec = (items / (double) millis) * 1000;
+            if(LOG.isLoggable(Level.INFO)) {
+                LOG.info(this + " storage rate: " + itemsPerSec + " items/sec");
+            }
+        }
+    }
+
+    protected void setSamplingOn() {
+        sampler.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                sample();
+            }
+        }, 1000, 1000);
     }
 }

@@ -135,7 +135,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                     Instant latestGenerationTime = null;
                     for(SymbolDefinition sd : definition.getExpression().getSymbols()) {
                         Instant theGenTime = processor.resolve(sd.getReference().getId()).generationTime();
-                        if(latestGenerationTime == null || theGenTime.isAfter(latestGenerationTime)) {
+                        if(latestGenerationTime == null || (theGenTime != null && theGenTime.isAfter(latestGenerationTime))) {
                             latestGenerationTime = theGenTime;
                         }
                     }

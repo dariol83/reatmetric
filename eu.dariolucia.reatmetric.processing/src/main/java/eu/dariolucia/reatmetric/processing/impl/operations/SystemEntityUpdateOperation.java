@@ -7,7 +7,7 @@ import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityP
 import java.time.Instant;
 import java.util.List;
 
-public class SystemEntityUpdateOperation extends AbstractModelOperation<AbstractSystemEntityProcessor> {
+public class SystemEntityUpdateOperation extends AbstractModelOperation<AbstractSystemEntityProcessor<?,?,?>> {
 
     private final Instant creationTime = Instant.now();
 
@@ -24,5 +24,10 @@ public class SystemEntityUpdateOperation extends AbstractModelOperation<Abstract
     @Override
     public int getSystemEntityId() {
         return getProcessor().getSystemEntityId();
+    }
+
+    @Override
+    public String toString() {
+        return "'Update system entity " + getSystemEntityId() + " state'";
     }
 }

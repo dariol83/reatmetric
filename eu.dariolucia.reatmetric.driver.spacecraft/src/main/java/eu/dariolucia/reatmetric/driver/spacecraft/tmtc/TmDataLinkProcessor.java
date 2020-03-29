@@ -137,13 +137,12 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         } else {
             // Make an attempt to identify the packet
             String packetName = Constants.N_UNKNOWN_PACKET;
-            String packetType = Constants.T_UNKNOWN_PACKET;
+            String packetType = Constants.T_TM_PACKET;
             if(sp.isIdle()) {
                 packetType = Constants.T_IDLE_PACKET;
             } else {
                 try {
                     packetName = packetIdentifier.identify(packet);
-                    packetType = Constants.T_TM_PACKET;
                 } catch (PacketNotIdentifiedException e) {
                     LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " not identified: " + e.getMessage(), e);
                 } catch (PacketAmbiguityException e) {
