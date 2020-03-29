@@ -75,6 +75,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
     private final List<ITransportSubscriber> subscribers = new CopyOnWriteArrayList<>();
     private volatile TransportConnectionStatus connectionStatus = TransportConnectionStatus.NOT_INIT;
     private volatile boolean initialised = false;
+    private volatile boolean busy = false;
 
     protected SleServiceInstanceManager(PeerConfiguration peerConfiguration, K siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
         this.name = siConfiguration.getServiceInstanceIdentifier();
@@ -165,6 +166,10 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
 
     @Override
     public void connect() throws TransportException {
+        if(busy) {
+            return;
+        }
+        busy = true;
         bindSemaphore.drainPermits();
         startSemaphore.drainPermits();
         try {
@@ -198,11 +203,17 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
             // Up and running
         } catch (InterruptedException e) {
             throw new TransportException(e);
+        } finally {
+            busy = false;
         }
     }
 
     @Override
     public void disconnect() throws TransportException {
+        if(busy) {
+            return;
+        }
+        busy = true;
         unbindSemaphore.drainPermits();
         stopSemaphore.drainPermits();
         try {
@@ -233,6 +244,8 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
             //
         } catch (InterruptedException e) {
             throw new TransportException(e);
+        } finally {
+            busy = false;
         }
     }
 

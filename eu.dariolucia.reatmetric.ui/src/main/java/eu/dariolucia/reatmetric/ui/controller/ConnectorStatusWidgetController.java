@@ -23,6 +23,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
+import org.controlsfx.control.ToggleSwitch;
 
 import java.net.URL;
 import java.util.Optional;
@@ -34,10 +35,8 @@ public class ConnectorStatusWidgetController implements Initializable {
 
     private static final Logger LOG = Logger.getLogger(ConnectorStatusWidgetController.class.getName());
 
-    private static final Image ACTION_INIT_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/menu.png"));
-    private static final Image ACTION_START_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/play-circle.png"));
-    private static final Image ACTION_STOP_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/stop-circle.png"));
-    private static final Image ACTION_ABORT_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/close-circle.png"));
+    private static final Image ACTION_INIT_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/equalizer.png"));
+    private static final Image ACTION_ABORT_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/cancel-circle.png"));
 
     @FXML
     public Circle statusCircle;
@@ -54,7 +53,7 @@ public class ConnectorStatusWidgetController implements Initializable {
     @FXML
     public Label txLabel;
     @FXML
-    public ImageView startStopImg;
+    public ToggleSwitch startStopSwitch;
     @FXML
     public ImageView abortImg;
 
@@ -89,9 +88,9 @@ public class ConnectorStatusWidgetController implements Initializable {
     private void updateStatusButton(TransportConnectionStatus status) {
         if(status == TransportConnectionStatus.IDLE || status == TransportConnectionStatus.ERROR ||
                 status == TransportConnectionStatus.NOT_INIT || status == TransportConnectionStatus.ABORTED) {
-            startStopImg.setImage(ACTION_START_IMG);
+            startStopSwitch.setSelected(false);
         } else {
-            startStopImg.setImage(ACTION_STOP_IMG);
+            startStopSwitch.setSelected(true);
         }
     }
 
