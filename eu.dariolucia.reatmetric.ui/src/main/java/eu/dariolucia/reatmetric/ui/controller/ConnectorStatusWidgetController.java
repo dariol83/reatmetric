@@ -35,8 +35,8 @@ public class ConnectorStatusWidgetController implements Initializable {
 
     private static final Logger LOG = Logger.getLogger(ConnectorStatusWidgetController.class.getName());
 
-    private static final Image ACTION_INIT_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/equalizer.png"));
-    private static final Image ACTION_ABORT_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/cancel-circle.png"));
+    private static final Image ACTION_INIT_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/cog.svg.png"));
+    private static final Image ACTION_ABORT_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/close-circle.svg.png"));
 
     @FXML
     public Circle statusCircle;

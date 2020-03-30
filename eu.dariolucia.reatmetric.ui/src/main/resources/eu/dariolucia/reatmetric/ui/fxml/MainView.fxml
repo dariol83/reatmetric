@@ -34,7 +34,7 @@
             <items>
                   <MenuItem fx:id="connectMenuItem" mnemonicParsing="false" onAction="#connectMenuAction" text="Connect..." />
                   <MenuItem fx:id="disconnectMenuItem" disable="true" mnemonicParsing="false" onAction="#disconnectMenuAction" text="Disconnect..." />
-              <MenuItem mnemonicParsing="false" onAction="#exitMenuAction" text="Exit" />
+                  <MenuItem fx:id="exitMenuItem" mnemonicParsing="false" onAction="#exitMenuAction" text="Exit..." />
             </items>
           </Menu>
           <Menu mnemonicParsing="false" text="View">
@@ -53,7 +53,7 @@
           </Menu>
           <Menu mnemonicParsing="false" text="Help">
             <items>
-              <MenuItem mnemonicParsing="false" text="About" />
+              <MenuItem fx:id="aboutMenuItem" mnemonicParsing="false" text="About ReatMetric..." onAction="#menubarAboutAction" />
             </items>
           </Menu>
         </menus>

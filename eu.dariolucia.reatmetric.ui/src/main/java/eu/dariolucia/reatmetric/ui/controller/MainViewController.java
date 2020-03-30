@@ -14,6 +14,7 @@ import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import eu.dariolucia.reatmetric.ui.plugin.ReatmetricPluginInspector;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -80,6 +81,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	private MenuItem connectMenuItem;
 	@FXML
 	private MenuItem disconnectMenuItem;
+	@FXML
+	private MenuItem aboutMenuItem;
+	@FXML
+	private MenuItem exitMenuItem;
 
 	/**
 	 * Map the toggle button to the perspective to activate (by fx:id)
@@ -188,12 +193,40 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	}
 
 	@FXML
+	public void menubarAboutAction(ActionEvent actionEvent) {
+		try {
+			Dialog<Void> d = new Dialog<>();
+			d.setTitle("About ReatMetric...");
+			d.setHeaderText(null);
+
+			// Set the button types.
+			d.getDialogPane().getButtonTypes().addAll(ButtonType.CLOSE);
+
+			Parent root = FXMLLoader.load(getClass().getClassLoader()
+					.getResource("eu/dariolucia/reatmetric/ui/fxml/AboutDialog.fxml"));
+			d.getDialogPane().setContent(root);
+			// Set the CSS
+			d.getDialogPane().getStylesheets().add(getClass().getClassLoader()
+					.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+
+			d.showAndWait();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@FXML
 	private void exitMenuAction(ActionEvent event) {
 		ReatmetricUI.shutdown();
 	}
 
 	@Override
 	public void initialize(URL url, ResourceBundle rb) {
+		FxUtils.setMenuItemImage(aboutMenuItem,"/eu/dariolucia/reatmetric/ui/fxml/images/16px/info.svg.png");
+		FxUtils.setMenuItemImage(exitMenuItem,"/eu/dariolucia/reatmetric/ui/fxml/images/16px/power.svg.png");
+		FxUtils.setMenuItemImage(connectMenuItem,"/eu/dariolucia/reatmetric/ui/fxml/images/16px/plug-f.svg.png");
+		FxUtils.setMenuItemImage(disconnectMenuItem,"/eu/dariolucia/reatmetric/ui/fxml/images/16px/plug.svg.png");
+
 		this.perspectiveMap.put(this.alarmsTgl, "alarmPerspective");
 		this.perspectiveMap.put(this.rawDataTgl, "rawDataPerspective");
 		this.perspectiveMap.put(this.parameterTgl, "monitoringPerspective");

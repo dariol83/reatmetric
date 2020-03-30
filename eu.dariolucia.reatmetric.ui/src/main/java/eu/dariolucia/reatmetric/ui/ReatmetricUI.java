@@ -24,6 +24,11 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
+import java.awt.*;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,7 +42,7 @@ import java.util.function.Consumer;
  */
 public class ReatmetricUI extends Application {
     
-    public static final String APPLICATION_NAME = "Reatmetric UI";
+    public static final String APPLICATION_NAME = "ReatMetric UI";
     
     public static final String APPLICATION_VERSION = "0.1.0";
     
@@ -48,7 +53,7 @@ public class ReatmetricUI extends Application {
     }
     
     private static final Map<Class<?>, ExecutorService> THREAD_POOL = new ConcurrentHashMap<>();
-    
+
     public static ExecutorService threadPool(final Class<?> clazz) {
     	ExecutorService toReturn = null;
     	synchronized (THREAD_POOL) {
