@@ -236,7 +236,8 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     private Instant extractOnboardTime(SpacePacket spacePacket) {
         // TODO: to be checked -> OBT does not have the concept of "leap second", so the extraction shall consider this and not apply
         //  UTC correction. The function used in TimeUtil reads the CUC and then converts it into UTC, by removing the leap seconds up to the
-        //  TAI date. In theory this should not harm, because it will consistently applied but the difference in the computation should be checked.
+        //  TAI date. In theory this should not harm on the slope computation, because it will consistently applied but the difference in the computation
+        //  of q should be checked.
         //  In the worst case, the returned value can be reported to a TAI Instant, by using the toTAI function in the TimeUtil class and then stored.
         //  The transformation is in fact reversible at second level.
         // According to the standard, the time packet has no secondary header, so after SpacePacket.SP_PRIMARY_HEADER_LENGTH, we should have:
