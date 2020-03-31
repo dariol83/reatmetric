@@ -127,7 +127,10 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     @Override
     public void spacePacketExtracted(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, byte[] packet, boolean qualityIndicator) {
         // Read route from the frame annotated map
-        Instant receptionTime = Instant.now();
+        Instant receptionTime = (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME);
+        if(receptionTime == null) {
+            receptionTime = Instant.now();
+        }
         SpacePacket sp = new SpacePacket(packet, qualityIndicator);
         String route = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_ROUTE);
         // If the packet is a bad packet, we do not even try to identify it

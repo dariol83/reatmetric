@@ -160,10 +160,19 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
             Instant onboardTime = extractOnboardTime(spacePacket);
             // 3. Add the time couple: this method triggers a best-fit correlation taking into account the available time couples
             addTimeCouple(onboardTime, utcTime);
+        } else {
+            if(LOG.isLoggable(Level.WARNING))
+            {
+                LOG.log(Level.WARNING, "Cannot find corresponding TM frame for time packet");
+            }
         }
     }
 
     private void addTimeCouple(Instant onboardTime, Instant utcTime) {
+        if(LOG.isLoggable(Level.INFO))
+        {
+            LOG.log(Level.INFO, String.format("Adding time couple: OBT=%s, UTC=%s", onboardTime.toString(), utcTime.toString()));
+        }
         this.timeCouples.add(Pair.of(onboardTime, utcTime));
         if(this.timeCouples.size() > 2) {
             this.timeCouples.remove(0);
@@ -176,11 +185,22 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         if(timeCouples.size() >= 2) {
             Pair<Instant, Instant> firstTimeCouple = timeCouples.get(0);
             Pair<Instant, Instant> secondTimeCouple = timeCouples.get(1);
+            // Order so that firstTimeCouple.getFirst() is lower than secondTimeCouple.getFirst()
+            if(firstTimeCouple.getFirst().isAfter(secondTimeCouple.getFirst())) {
+                // Swap
+                Pair<Instant, Instant> temp = firstTimeCouple;
+                firstTimeCouple = secondTimeCouple;
+                secondTimeCouple = temp;
+            }
             // Convert to big decimals: integral part seconds, decimal part nanoseconds
             Pair<BigDecimal, BigDecimal> fTc = convert(firstTimeCouple);
             Pair<BigDecimal, BigDecimal> sTc = convert(secondTimeCouple);
             BigDecimal m = (fTc.getSecond().subtract(sTc.getSecond())).divide(fTc.getFirst().subtract(sTc.getFirst()), 9, RoundingMode.HALF_UP);
             BigDecimal q = sTc.getSecond().subtract(m.multiply(sTc.getFirst()));
+            if(LOG.isLoggable(Level.INFO))
+            {
+                LOG.log(Level.INFO, String.format("Time coefficient generated: m=%s, q=%s", m.toPlainString(), q.toPlainString()));
+            }
             this.obt2gtCoefficients = Pair.of(m, q);
             // Distribute the coefficients: generation time is the UTC generation time of the most recent time couple
             distributeCoefficients(this.obt2gtCoefficients, secondTimeCouple.getSecond());
@@ -214,6 +234,11 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     }
 
     private Instant extractOnboardTime(SpacePacket spacePacket) {
+        // TODO: to be checked -> OBT does not have the concept of "leap second", so the extraction shall consider this and not apply
+        //  UTC correction. The function used in TimeUtil reads the CUC and then converts it into UTC, by removing the leap seconds up to the
+        //  TAI date. In theory this should not harm, because it will consistently applied but the difference in the computation should be checked.
+        //  In the worst case, the returned value can be reported to a TAI Instant, by using the toTAI function in the TimeUtil class and then stored.
+        //  The transformation is in fact reversible at second level.
         // According to the standard, the time packet has no secondary header, so after SpacePacket.SP_PRIMARY_HEADER_LENGTH, we should have:
         // 1. generation rate field (optional) -> check configuration.isGenerationPeriodReported()
         int idx = SpacePacket.SP_PRIMARY_HEADER_LENGTH;

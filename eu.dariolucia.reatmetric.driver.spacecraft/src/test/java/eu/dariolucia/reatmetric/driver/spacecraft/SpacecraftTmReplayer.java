@@ -13,9 +13,12 @@ import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.pdu.PduStringUtil;
 import eu.dariolucia.ccsds.sle.utl.si.*;
 import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstanceProvider;
-import eu.dariolucia.ccsds.tmtc.coding.reader.LineHexDumpChannelReader;
+import eu.dariolucia.reatmetric.api.value.StringUtil;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.time.Instant;
 import java.util.logging.Logger;
 
@@ -96,14 +99,24 @@ public class SpacecraftTmReplayer {
                 return;
             }
             running = true;
-            // Open file, it must contain 1 frame per line, hexdump
+            // Open file, it must contain 1 frame per line, hexdump, optionally prefixed with Instant toString() output and pipe: i.e. <yyyy-mm-dd'T'hh:mm:ss.SSSSSS'Z'>'|'
             fileSender = new Thread(() -> {
                 try {
                     provider.updateProductionStatus(Instant.now(), LockStatusEnum.IN_LOCK, LockStatusEnum.IN_LOCK, LockStatusEnum.IN_LOCK, LockStatusEnum.IN_LOCK, ProductionStatusEnum.RUNNING);
-                    LineHexDumpChannelReader reader = new LineHexDumpChannelReader(new FileInputStream(this.tmFrameFile));
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(this.tmFrameFile)));
                     byte[] frame = null;
-                    while((frame = reader.readNext()) != null && running) {
-                        provider.transferData(frame, ReturnServiceInstanceProvider.FRAME_QUALITY_GOOD, 0, Instant.now(), false, PduStringUtil.toHexDump("ANTENNA".getBytes()), false, null);
+                    String line = null;
+                    while((line = reader.readLine()) != null && running) {
+                        int timeSep = line.indexOf('|');
+                        Instant ert = Instant.now();
+                        if(timeSep != -1) {
+                            // There is a ERT time in the frame
+                            ert = Instant.parse(line.substring(0, timeSep));
+                            frame = StringUtil.toByteArray(line.substring(timeSep + 1));
+                        } else {
+                            frame = StringUtil.toByteArray(line);
+                        }
+                        provider.transferData(frame, ReturnServiceInstanceProvider.FRAME_QUALITY_GOOD, 0, ert, false, PduStringUtil.toHexDump("ANTENNA".getBytes()), false, null);
                         Thread.sleep(1000);
                     }
                     provider.endOfData();
