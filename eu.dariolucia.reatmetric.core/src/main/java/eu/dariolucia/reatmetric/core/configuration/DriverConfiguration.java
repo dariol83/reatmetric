@@ -26,12 +26,6 @@ public class DriverConfiguration {
     public DriverConfiguration() {
     }
 
-    public DriverConfiguration(String name, String type, String configuration) {
-        this.name = name;
-        this.type = type;
-        this.configuration = configuration;
-    }
-
     public String getName() {
         return name;
     }

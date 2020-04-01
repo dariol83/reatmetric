@@ -101,7 +101,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         rawDataBroker = new RawDataBrokerImpl(rawDataArchive);
         // Load the processing model manager and services
         LOG.info("Loading processing model");
-        processingModelManager = new ProcessingModelManager(archive, configuration.getDefinitionsLocation());
+        processingModelManager = new ProcessingModelManager(archive, configuration.getDefinitionsLocation(), configuration.getInitialisation());
         // Load the drivers
         for(DriverConfiguration dc : configuration.getDrivers()) {
             LOG.info("Loading driver " + dc.getName());

@@ -27,9 +27,11 @@ import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelFactory;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.core.configuration.StateInitialisationConfiguration;
 import eu.dariolucia.reatmetric.core.impl.managers.ActivityOccurrenceDataAccessManager;
 import eu.dariolucia.reatmetric.core.impl.managers.AlarmParameterDataAccessManager;
 import eu.dariolucia.reatmetric.core.impl.managers.EventDataAccessManager;
@@ -57,7 +59,7 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
 
     private final Map<ISystemModelSubscriber, SystemModelSubscriberWrapper> subscribers = new LinkedHashMap<>();
 
-    public ProcessingModelManager(IArchive archive, String definitionsLocation) throws ReatmetricException {
+    public ProcessingModelManager(IArchive archive, String definitionsLocation, StateInitialisationConfiguration initialisation) throws ReatmetricException {
         Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters = new HashMap<>();
         IParameterDataArchive parameterArchive;
         IEventDataArchive eventArchive;
@@ -107,11 +109,16 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
         alarmDataAccessManager = new AlarmParameterDataAccessManager(alarmArchive);
         eventDataAccessManager = new EventDataAccessManager(eventArchive);
         activityOccurrenceDataAccessManager = new ActivityOccurrenceDataAccessManager(activityArchive);
+        // If the processing model initialisation is needed, create the initialiser
+        IProcessingModelInitialiser initialiser = null;
+        if(initialisation != null) {
+            initialiser = new ArchiveInitialiser(initialisation.getTime(), initialisation.getArchiveLocation());
+        }
         // Create the model
         ServiceLoader<IProcessingModelFactory> modelLoader = ServiceLoader.load(IProcessingModelFactory.class);
         if(modelLoader.findFirst().isPresent()) {
             IProcessingModelFactory modelFactory = modelLoader.findFirst().get();
-            processingModel = modelFactory.build(defs, this, initialUniqueCounters);
+            processingModel = modelFactory.build(defs, this, initialUniqueCounters, initialiser);
             parameterDataAccessManager.setProcessingModel(processingModel);
             alarmDataAccessManager.setProcessingModel(processingModel);
             eventDataAccessManager.setProcessingModel(processingModel);

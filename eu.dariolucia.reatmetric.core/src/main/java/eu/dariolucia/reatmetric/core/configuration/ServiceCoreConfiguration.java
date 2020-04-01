@@ -51,18 +51,13 @@ public class ServiceCoreConfiguration {
     @XmlElement(name = "definitionsLocation", required = true)
     private String definitionsLocation;
 
+    @XmlElement(name = "initialisation")
+    private StateInitialisationConfiguration initialisation;
+
     @XmlElement(name = "driver", required = true)
     private List<DriverConfiguration> drivers = new LinkedList<>();
 
     public ServiceCoreConfiguration() {
-    }
-
-    public ServiceCoreConfiguration(String name, String logPropertyFile, String archiveLocation, String definitionsLocation, List<DriverConfiguration> drivers) {
-        this.name = name;
-        this.logPropertyFile = logPropertyFile;
-        this.archiveLocation = archiveLocation;
-        this.definitionsLocation = definitionsLocation;
-        this.drivers = drivers;
     }
 
     public String getName() {
@@ -108,5 +103,13 @@ public class ServiceCoreConfiguration {
     public ServiceCoreConfiguration setDrivers(List<DriverConfiguration> drivers) {
         this.drivers = drivers;
         return this;
+    }
+
+    public StateInitialisationConfiguration getInitialisation() {
+        return initialisation;
+    }
+
+    public void setInitialisation(StateInitialisationConfiguration initialisation) {
+        this.initialisation = initialisation;
     }
 }
