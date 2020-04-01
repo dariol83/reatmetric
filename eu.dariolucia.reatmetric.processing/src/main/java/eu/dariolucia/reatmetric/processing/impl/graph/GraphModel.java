@@ -3,6 +3,7 @@ package eu.dariolucia.reatmetric.processing.impl.graph;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
@@ -34,20 +35,20 @@ public class GraphModel {
         this.processingModel = processingModel;
     }
 
-    public void build() throws ProcessingModelException {
+    public void build(IProcessingModelInitialiser initialiser) throws ProcessingModelException {
         // Navigate the model and add all the system entity nodes:
         // - parameters
         // - events
         // - containers
         // - activities
         for(ParameterProcessingDefinition param : definition.getParameterDefinitions()) {
-            addEntities(param, () -> new ParameterProcessor(param, processingModel));
+            addEntities(param, () -> new ParameterProcessor(param, processingModel), initialiser);
         }
         for(EventProcessingDefinition event : definition.getEventDefinitions()) {
-             addEntities(event, () -> new EventProcessor(event, processingModel));
+             addEntities(event, () -> new EventProcessor(event, processingModel), initialiser);
         }
         for(ActivityProcessingDefinition act : definition.getActivityDefinitions()) {
-            addEntities(act, () -> new ActivityProcessor(act, processingModel));
+            addEntities(act, () -> new ActivityProcessor(act, processingModel), initialiser);
         }
 
         // Now add the links for:
@@ -179,7 +180,7 @@ public class GraphModel {
         return idMap.get(id);
     }
 
-    private void addEntities(AbstractProcessingDefinition param, Supplier<AbstractSystemEntityProcessor> processorBuilder) throws ProcessingModelException {
+    private void addEntities(AbstractProcessingDefinition param, Supplier<AbstractSystemEntityProcessor> processorBuilder, IProcessingModelInitialiser initialiser) throws ProcessingModelException {
         SystemEntityPath location = SystemEntityPath.fromString(param.getLocation());
         // Add the parameter
         AbstractSystemEntityProcessor definitionProcessor = processorBuilder.get();

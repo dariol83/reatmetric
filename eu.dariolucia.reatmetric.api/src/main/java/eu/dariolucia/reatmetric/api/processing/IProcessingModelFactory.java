@@ -13,5 +13,9 @@ import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelExcepti
 import java.util.Map;
 
 public interface IProcessingModelFactory {
-    IProcessingModel build(Object definitionDatabase, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters) throws ProcessingModelException;
+    default IProcessingModel build(Object definitionDatabase, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters) throws ProcessingModelException {
+        return build(definitionDatabase, output, initialUniqueCounters, null);
+    }
+
+    IProcessingModel build(Object definitionDatabase, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters, IProcessingModelInitialiser initialState) throws ProcessingModelException;
 }

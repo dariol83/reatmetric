@@ -102,6 +102,13 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         return spacePacket.getApid() == 0;
     }
 
+    /**
+     * Given the OBT as extracted by the encdec functions (and therefore already mapped to UTC time), this method
+     * returns the corresponding ground-correlated UTC time.
+     *
+     * @param obt the OBT in UTC time scale
+     * @return the corresponding ground correlated time in UTC time scale
+     */
     public Instant toUtc(Instant obt) {
         Pair<BigDecimal, BigDecimal> coeffs = this.obt2gtCoefficients;
         if(coeffs == null) {
@@ -112,6 +119,14 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         return convertToInstant(converted);
     }
 
+    /**
+     * Given the ground-correlated UTC, this method returns the corresponding OBT in UTC time. Note that encoding the
+     * return value using the eu.dariolucia.encdec.TimeUtil class using CUC will cause the correct transformation into
+     * TAI time.
+     *
+     * @param utc the ground time in UTC time scale
+     * @return the corresponding OBT in UTC time scale
+     */
     public Instant toObt(Instant utc) {
         Pair<BigDecimal, BigDecimal> coeffs = this.obt2gtCoefficients;
         if(coeffs == null) {
@@ -234,12 +249,11 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     }
 
     private Instant extractOnboardTime(SpacePacket spacePacket) {
-        // TODO: to be checked -> OBT does not have the concept of "leap second", so the extraction shall consider this and not apply
-        //  UTC correction. The function used in TimeUtil reads the CUC and then converts it into UTC, by removing the leap seconds up to the
-        //  TAI date. In theory this should not harm on the slope computation, because it will consistently applied but the difference in the computation
-        //  of q should be checked.
-        //  In the worst case, the returned value can be reported to a TAI Instant, by using the toTAI function in the TimeUtil class and then stored.
-        //  The transformation is in fact reversible at second level.
+        // The extraction of the OBT time applies by default UTC correction. In fact, the function used in TimeUtil
+        // reads the CUC and then converts it into UTC, by applying the epoch (converted to TAI) and then removing the
+        // leap seconds up to the TAI date. This action does not harm the the slope computation, because it will
+        // consistently applied. The q computation is affected.
+
         // According to the standard, the time packet has no secondary header, so after SpacePacket.SP_PRIMARY_HEADER_LENGTH, we should have:
         // 1. generation rate field (optional) -> check configuration.isGenerationPeriodReported()
         int idx = SpacePacket.SP_PRIMARY_HEADER_LENGTH;

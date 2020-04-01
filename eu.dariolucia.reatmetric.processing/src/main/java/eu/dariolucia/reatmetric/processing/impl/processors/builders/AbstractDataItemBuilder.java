@@ -30,4 +30,6 @@ public abstract class AbstractDataItemBuilder<T extends AbstractDataItem> {
     }
 
     public abstract T build(IUniqueId updateId);
+
+    public abstract void setInitialisation(T item);
 }

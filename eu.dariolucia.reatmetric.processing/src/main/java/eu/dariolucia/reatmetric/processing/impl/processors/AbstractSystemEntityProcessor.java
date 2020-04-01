@@ -1,14 +1,13 @@
 package eu.dariolucia.reatmetric.processing.impl.processors;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
-import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.input.AbstractInputDataItem;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.SystemEntityBuilder;
-import eu.dariolucia.reatmetric.api.processing.input.AbstractInputDataItem;
 
 import java.util.Collections;
 import java.util.List;
@@ -48,8 +47,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         this.entityStatus = Status.ENABLED;
         this.systemEntityBuilder = new SystemEntityBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()), type);
         this.systemEntityBuilder.setStatus(entityStatus);
-        this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
-        this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+        // The entity state is created in the child constructor
     }
 
     protected AlarmState getInitialAlarmState() {
@@ -100,11 +98,6 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
 
     public final SystemEntity getEntityState() {
         return entityState;
-    }
-
-    public void initialise(List<T> state, SystemEntity entityState) {
-        this.state = state.isEmpty() ? null : state.get(0);
-        this.entityState = entityState;
     }
 
     public abstract void visit(IProcessingModelVisitor visitor);

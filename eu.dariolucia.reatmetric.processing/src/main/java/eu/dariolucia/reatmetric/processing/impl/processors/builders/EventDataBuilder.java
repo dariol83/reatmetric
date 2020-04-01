@@ -71,4 +71,14 @@ public class EventDataBuilder extends AbstractDataItemBuilder<EventData> {
         return new EventData(updateId, generationTime, id, path.getLastPathElement(), path, qualifier, type, route,  source, severity, report, containerId, receptionTime, null);
     }
 
+    @Override
+    public void setInitialisation(EventData item) {
+        this.generationTime = item.getGenerationTime();
+        this.receptionTime = item.getReceptionTime();
+        this.report = item.getReport();
+        this.source = item.getSource();
+        this.route = item.getRoute();
+        this.qualifier = item.getQualifier();
+        this.containerId = item.getRawDataContainerId();
+    }
 }

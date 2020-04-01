@@ -14,6 +14,7 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.value.ValueException;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
@@ -50,10 +51,18 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         super(definition, processor, SystemEntityType.PARAMETER);
         this.builder = new ParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
         this.alarmBuilder = new AlarmParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
-        // Check presence of default value: if so, build the state right away
-        if(definition.getDefaultValue() != null) {
-            buildDefaultState();
+        // Check if there is an initialiser
+        if(processor.getInitialiser() != null) {
+            initialise(processor.getInitialiser());
+        } else {
+            // Check presence of default value: if so, build the state right away
+            if (definition.getDefaultValue() != null) {
+                buildDefaultState();
+            }
         }
+        // Initialise the entity state
+        this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
+        this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
     }
 
     private void buildDefaultState() {
@@ -83,9 +92,26 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
     }
 
+    private void initialise(IProcessingModelInitialiser initialiser) {
+        List<AbstractDataItem> stateList = initialiser.getState(getSystemEntityId(), SystemEntityType.PARAMETER);
+        if(!stateList.isEmpty()) {
+            this.state = (ParameterData) stateList.get(0); // TODO: generate a copy-state with a new internal ID? Archive the internal ID?
+            builder.setInitialisation(this.state);
+            if (stateList.size() > 1) {
+                AlarmParameterData alarmData = (AlarmParameterData) stateList.get(1);
+                currentAlarmData = alarmData;
+                alarmBuilder.setInitialisation(alarmData);
+            }
+        }
+    }
+
     @Override
     protected AlarmState getInitialAlarmState() {
-        return AlarmState.UNKNOWN;
+        if(state == null) {
+            return AlarmState.UNKNOWN;
+        } else {
+            return state.getAlarmState();
+        }
     }
 
     @Override

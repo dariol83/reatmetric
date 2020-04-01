@@ -102,4 +102,16 @@ public class ParameterDataBuilder extends AbstractDataItemBuilder<ParameterData>
     public ParameterData build(IUniqueId updateId) {
         return new ParameterData(updateId, generationTime, id, path.getLastPathElement(), path, engValue, sourceValue, route, validity, alarmState, containerId, receptionTime, null);
     }
+
+    @Override
+    public void setInitialisation(ParameterData item) {
+        this.generationTime = item.getGenerationTime();
+        this.receptionTime = item.getReceptionTime();
+        this.sourceValue = item.getSourceValue();
+        this.engValue = item.getEngValue();
+        this.validity = item.getValidity();
+        this.alarmState = item.getAlarmState();
+        this.route = item.getRoute();
+        this.containerId = item.getRawDataContainerId();
+    }
 }

@@ -39,4 +39,9 @@ public class SystemEntityBuilder extends AbstractDataItemBuilder<SystemEntity> {
         this.changedSinceLastBuild = false;
         return se;
     }
+
+    @Override
+    public void setInitialisation(SystemEntity item) {
+        // Nothing to do here
+    }
 }

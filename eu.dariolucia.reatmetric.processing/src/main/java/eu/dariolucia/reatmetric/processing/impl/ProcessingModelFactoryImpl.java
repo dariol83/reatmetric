@@ -10,6 +10,7 @@ package eu.dariolucia.reatmetric.processing.impl;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelFactory;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
@@ -19,7 +20,7 @@ import java.util.Map;
 public class ProcessingModelFactoryImpl implements IProcessingModelFactory {
 
     @Override
-    public IProcessingModel build(Object definitionDatabase, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters) throws ProcessingModelException {
-        return new ProcessingModelImpl((ProcessingDefinition) definitionDatabase, output, initialUniqueCounters);
+    public IProcessingModel build(Object definitionDatabase, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters, IProcessingModelInitialiser initialState) throws ProcessingModelException {
+        return new ProcessingModelImpl((ProcessingDefinition) definitionDatabase, output, initialUniqueCounters, initialState);
     }
 }

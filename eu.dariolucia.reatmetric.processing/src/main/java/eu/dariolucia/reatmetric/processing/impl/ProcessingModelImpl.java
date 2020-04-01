@@ -17,10 +17,7 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
-import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
-import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
-import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
+import eu.dariolucia.reatmetric.api.processing.*;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
@@ -85,15 +82,18 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private final Consumer<List<AbstractDataItem>> outputRedirector;
 
+    private final IProcessingModelInitialiser initialiser;
+
     /**
      * The set of running activity processors, i.e. those processors that have at least one activity occurrence currently
      * loaded.
      */
     private final Set<ActivityProcessor> activeActivityProcessors = new HashSet<>();
 
-    public ProcessingModelImpl(ProcessingDefinition processingDefinition, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialSequencerMap) throws ProcessingModelException {
+    public ProcessingModelImpl(ProcessingDefinition processingDefinition, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialSequencerMap, IProcessingModelInitialiser initialiser) throws ProcessingModelException {
         this.processingDefinition = processingDefinition;
         this.output = output;
+        this.initialiser = initialiser;
         // Initialise the sequencer
         if(initialSequencerMap != null) {
             for(Map.Entry<Class<? extends AbstractDataItem>, Long> entry : initialSequencerMap.entrySet()) {
@@ -102,12 +102,16 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         }
         // Build the graph model and compute the topological sort
         graphModel = new GraphModel(processingDefinition, this);
-        graphModel.build();
+        graphModel.build(initialiser);
         // Activate the dispatchers
         tmDispatcher.submit(() -> doDispatch(tmDispatcher, tmUpdateTaskQueue));
         activityDispatcher.submit(() -> doDispatch(activityDispatcher, activityUpdateTaskQueue));
         // Create redirector that uses the asynchronous notifier
         outputRedirector = createOutputRedirector();
+    }
+
+    public IProcessingModelInitialiser getInitialiser() {
+        return initialiser;
     }
 
     private Consumer<List<AbstractDataItem>> createOutputRedirector() {

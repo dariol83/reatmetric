@@ -16,14 +16,15 @@ import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.Status;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
-import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
-import eu.dariolucia.reatmetric.processing.definition.*;
-import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import eu.dariolucia.reatmetric.processing.definition.*;
+import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 
 import java.time.Instant;
 import java.util.*;
@@ -46,6 +47,13 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             // XXX: argument name duplication to be checked
             name2argumentDefinition.put(ad.getName(), ad);
         }
+        // Check if there is an initialiser
+        if(processor.getInitialiser() != null) {
+            initialise(processor.getInitialiser());
+        }
+        // Initialise the entity state
+        this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
+        this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
     }
 
     public List<AbstractDataItem> invoke(ActivityRequest request) throws ProcessingModelException {
@@ -366,10 +374,10 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         }
     }
 
-    @Override
-    public void initialise(List<ActivityOccurrenceData> state, SystemEntity entityState) {
-        this.entityState = entityState;
-        for(ActivityOccurrenceData aod : state) {
+    private void initialise(IProcessingModelInitialiser initialiser) {
+        List<AbstractDataItem> stateList = initialiser.getState(getSystemEntityId(), SystemEntityType.ACTIVITY);
+        for(AbstractDataItem data : stateList) {
+            ActivityOccurrenceData aod = (ActivityOccurrenceData) data;
             if(aod.getCurrentState() != ActivityOccurrenceState.COMPLETION) {
                 id2occurrence.put(aod.getInternalId(), new ActivityOccurrenceProcessor(this, aod));
             }

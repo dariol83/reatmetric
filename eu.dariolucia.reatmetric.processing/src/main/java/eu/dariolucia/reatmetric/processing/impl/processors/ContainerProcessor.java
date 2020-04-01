@@ -29,6 +29,9 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
 
     public ContainerProcessor(Definition definition, ProcessingModelImpl processingModel) {
         super(definition, processingModel, SystemEntityType.CONTAINER);
+        // Initialise the entity state
+        this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
+        this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
     }
 
     public void addChildProcessor(AbstractSystemEntityProcessor processor) {

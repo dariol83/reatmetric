@@ -13,12 +13,13 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.*;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
-import eu.dariolucia.reatmetric.processing.definition.EventProcessingDefinition;
+import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEventBinding;
+import eu.dariolucia.reatmetric.processing.definition.EventProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.EventDataBuilder;
-import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 
 import javax.script.ScriptException;
 import java.time.Instant;
@@ -46,6 +47,21 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     public EventProcessor(EventProcessingDefinition definition, ProcessingModelImpl processor) {
         super(definition, processor, SystemEntityType.EVENT);
         this.builder = new EventDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()), definition.getSeverity(), definition.getType());
+        // Check if there is an initialiser
+        if(processor.getInitialiser() != null) {
+            initialise(processor.getInitialiser());
+        }
+        // Initialise the entity state
+        this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
+        this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+    }
+
+    private void initialise(IProcessingModelInitialiser initialiser) {
+        List<AbstractDataItem> stateList = initialiser.getState(getSystemEntityId(), SystemEntityType.EVENT);
+        if(!stateList.isEmpty()) {
+            this.state = (EventData) stateList.get(0);
+            builder.setInitialisation(this.state);
+        }
     }
 
     @Override

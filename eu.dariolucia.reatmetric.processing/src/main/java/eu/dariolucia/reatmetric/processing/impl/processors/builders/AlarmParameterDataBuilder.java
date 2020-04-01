@@ -12,10 +12,8 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
-import eu.dariolucia.reatmetric.api.parameters.Validity;
 
 import java.time.Instant;
-import java.util.Objects;
 
 /**
  * This helper class is used to build a {@link ParameterData} instance.
@@ -56,5 +54,15 @@ public class AlarmParameterDataBuilder extends AbstractDataItemBuilder<AlarmPara
     @Override
     public AlarmParameterData build(IUniqueId updateId) {
         return new AlarmParameterData(updateId, generationTime, id, path.getLastPathElement(), path, currentState, currentValue, lastNominalValue, lastNominalValueTime, receptionTime, null);
+    }
+
+    @Override
+    public void setInitialisation(AlarmParameterData item) {
+        this.generationTime = item.getGenerationTime();
+        this.receptionTime = item.getReceptionTime();
+        this.currentState = item.getCurrentAlarmState();
+        this.currentValue = item.getCurrentValue();
+        this.lastNominalValue = item.getLastNominalValue();
+        this.lastNominalValueTime = item.getLastNominalValueTime();
     }
 }
