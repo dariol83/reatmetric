@@ -130,7 +130,7 @@ public class SpacecraftDriver implements IDriver {
     }
 
     private void loadPacketServices() {
-        // Time correlation service (PUS 9)
+        // Time correlation service (PUS 9) -> if start from time, initialise time coefficients
         this.timeCorrelationService = new TimeCorrelationService(this.configuration, this.context, this.serviceBroker);
         // On-board event service (PUS 5)
         this.onboardEventService = new OnboardEventService(this.configuration, this.context, this.serviceBroker);

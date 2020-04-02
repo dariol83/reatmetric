@@ -91,6 +91,9 @@ public class GraphModel {
                 }
             }
             for(CheckDefinition cd : param.getChecks()) {
+                if (cd.getApplicability() != null && cd.getApplicability().getCondition() != null) {
+                    addEdges(param, cd.getApplicability().getCondition());
+                }
                 if(cd instanceof ExpressionCheck) {
                     addEdges(param, ((ExpressionCheck) cd).getDefinition());
                 }

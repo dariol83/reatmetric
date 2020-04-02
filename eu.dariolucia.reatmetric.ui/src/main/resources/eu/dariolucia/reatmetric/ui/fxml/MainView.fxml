@@ -30,7 +30,7 @@
    <children>
       <MenuBar>
         <menus>
-          <Menu mnemonicParsing="false" text="Reatmetric UI">
+          <Menu mnemonicParsing="false" text="ReatMetric UI">
             <items>
                   <MenuItem fx:id="connectMenuItem" mnemonicParsing="false" onAction="#connectMenuAction" text="Connect..." />
                   <MenuItem fx:id="disconnectMenuItem" disable="true" mnemonicParsing="false" onAction="#disconnectMenuAction" text="Disconnect..." />

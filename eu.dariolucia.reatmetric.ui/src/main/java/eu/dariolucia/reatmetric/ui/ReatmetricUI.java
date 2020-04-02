@@ -18,19 +18,11 @@ import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
-import java.awt.*;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -109,7 +101,7 @@ public class ReatmetricUI extends Application {
         // scene.getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/css/MainView.css").toExternalForm());
         
         stage.setScene(scene);
-        stage.setTitle("Reatmetric UI");
+        stage.setTitle(APPLICATION_NAME);
 
         Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logo_icon.png"));
         stage.getIcons().add(icon);
@@ -128,7 +120,7 @@ public class ReatmetricUI extends Application {
     }
 
     public static void shutdown() {
-        if (DialogUtils.confirm("Exit Reatmetric UI", "Exit Reatmetric UI", "Do you want to close Reatmetric UI?")) {
+        if (DialogUtils.confirm("Exit " + APPLICATION_NAME, "Exit " + APPLICATION_NAME, "Do you want to close " + APPLICATION_NAME + "?")) {
             ReatmetricUI.shutdownThreadPool();
             ReatmetricUI.selectedSystem().setSystem(null);
             Platform.exit();
