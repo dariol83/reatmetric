@@ -158,10 +158,10 @@ public class AlarmParameterDataViewController
 			// Get the first
 			AlarmParameterDataFilter filter = getCurrentFilter();
 			if (filter == null) {
-				filter = new AlarmParameterDataFilter(null, null,null);
+				filter = new AlarmParameterDataFilter(null, null,null, null);
 			}
 			AlarmParameterDataFilter newFilter = new AlarmParameterDataFilter(entities.get(0).getPath(), null,
-					filter.getAlarmStateList());
+					filter.getAlarmStateList(), null);
 			applyFilter(newFilter);
 			success = true;
 		}

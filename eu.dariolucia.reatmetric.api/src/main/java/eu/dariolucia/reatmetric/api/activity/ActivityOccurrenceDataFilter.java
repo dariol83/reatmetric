@@ -14,7 +14,10 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -29,40 +32,40 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
 
 	private final SystemEntityPath parentPath;
 
-    private final List<String> routeList;
+    private final Set<String> routeList;
 
-    private final List<String> sourceList;
+    private final Set<String> sourceList;
 
-    private final List<String> typeList;
+    private final Set<String> typeList;
 
-    private final List<ActivityOccurrenceState> stateList;
+    private final Set<ActivityOccurrenceState> stateList;
 
-    private final List<Integer> externalIdList;
+    private final Set<Integer> externalIdList;
 
     public ActivityOccurrenceDataFilter(SystemEntityPath parentPath, List<String> routeList, List<String> typeList, List<ActivityOccurrenceState> stateList, List<String> sourceList, List<Integer> externalIdList) {
         this.parentPath = parentPath;
         if(routeList != null) {
-            this.routeList = List.copyOf(routeList);
+            this.routeList = Collections.unmodifiableSet(new LinkedHashSet<>(routeList));
         } else {
             this.routeList = null;
         }
         if(sourceList != null) {
-            this.sourceList = List.copyOf(sourceList);
+            this.sourceList = Collections.unmodifiableSet(new LinkedHashSet<>(sourceList));
         } else {
             this.sourceList = null;
         }
         if(typeList != null) {
-            this.typeList = List.copyOf(typeList);
+            this.typeList = Collections.unmodifiableSet(new LinkedHashSet<>(typeList));
         } else {
             this.typeList = null;
         }
         if(stateList != null) {
-            this.stateList = List.copyOf(stateList);
+            this.stateList = Collections.unmodifiableSet(new LinkedHashSet<>(stateList));
         } else {
             this.stateList = null;
         }
         if(externalIdList != null) {
-            this.externalIdList = List.copyOf(externalIdList);
+            this.externalIdList = Collections.unmodifiableSet(new LinkedHashSet<>(externalIdList));
         } else {
             this.externalIdList = null;
         }
@@ -72,23 +75,23 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
         return parentPath;
     }
 
-    public List<ActivityOccurrenceState> getStateList() {
+    public Set<ActivityOccurrenceState> getStateList() {
         return stateList;
     }
 
-    public List<String> getRouteList() {
+    public Set<String> getRouteList() {
         return routeList;
     }
     
-    public List<String> getTypeList() {
+    public Set<String> getTypeList() {
         return typeList;
     }
 
-    public List<String> getSourceList() {
+    public Set<String> getSourceList() {
         return sourceList;
     }
 
-    public List<Integer> getExternalIdList() {
+    public Set<Integer> getExternalIdList() {
         return externalIdList;
     }
 

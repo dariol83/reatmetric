@@ -10,7 +10,8 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
-import java.util.List;
+
+import java.util.Set;
 
 /**
  *
@@ -24,7 +25,7 @@ public interface IFilterController<T extends AbstractDataItemFilter> {
     
     T getSelectedFilter();
     
-    static String toStringList(List<?> sourceList) {
+    static String toStringList(Set<?> sourceList) {
         if(sourceList == null) {
             return "";
         }

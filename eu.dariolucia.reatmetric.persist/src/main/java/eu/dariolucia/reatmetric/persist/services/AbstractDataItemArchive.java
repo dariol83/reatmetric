@@ -10,10 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -21,7 +18,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K extends AbstractDataItemFilter> {
+public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K extends AbstractDataItemFilter<T>> {
 
     private static final Logger LOG = Logger.getLogger(AbstractDataItemArchive.class.getName());
 
@@ -393,23 +390,25 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         return is.readAllBytes();
     }
 
-    protected <E extends Enum<E>> String toEnumFilterListString(List<E> enumList) {
+    protected <E extends Enum<E>> String toEnumFilterListString(Set<E> enumList) {
         return toFilterListString(enumList, Enum::ordinal, null);
     }
 
-    protected <E> String toFilterListString(List<E> list, Function<E, Object> extractor, String delimiter) {
+    protected <E> String toFilterListString(Set<E> list, Function<E, Object> extractor, String delimiter) {
         StringBuilder sb = new StringBuilder();
-        for(int i = 0; i < list.size(); ++i) {
+        int i = 0;
+        for(E o : list) {
             if(delimiter != null) {
                 sb.append(delimiter);
             }
-            sb.append(extractor.apply(list.get(i)));
+            sb.append(extractor.apply(o));
             if(delimiter != null) {
                 sb.append(delimiter);
             }
             if(i != list.size() - 1) {
                 sb.append(",");
             }
+            ++i;
         }
         return sb.toString();
     }

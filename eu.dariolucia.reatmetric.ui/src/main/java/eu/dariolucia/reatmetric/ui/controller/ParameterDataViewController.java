@@ -269,7 +269,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             for (ParameterData om : oms) {
                 try {
                     System.out.println("Retrieving previous of " + om);
-                    List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(null, Collections.singletonList(om.getPath()), null, null, null));
+                    List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(null, Collections.singletonList(om.getPath()), null, null, null, null));
                     System.out.println("Returned " + messages);
                     if (!messages.isEmpty()) {
                         updateDataItems(messages);
@@ -307,7 +307,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_PAST, new ParameterDataFilter(null, Collections.singletonList(om.getPath()),null,null,null ));
+                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_PAST, new ParameterDataFilter(null, Collections.singletonList(om.getPath()),null,null,null, null));
                 updateDataItems(messages);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -321,7 +321,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         markProgressBusy();
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<ParameterData> messages = doRetrieve(selectedTime, new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()),null,null,null));
+                List<ParameterData> messages = doRetrieve(selectedTime, new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()),null,null,null, null));
                 updateDataItems(messages);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -401,7 +401,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
     
     private void startSubscription() {
-        ParameterDataFilter pdf = new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()),null,null ,null );
+        ParameterDataFilter pdf = new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()),null,null ,null, null);
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 doServiceSubscribe(pdf);

@@ -89,9 +89,9 @@ public class UserDisplayTabWidgetController implements Initializable {
 	//
 	protected final List<AbstractChartManager> charts = new CopyOnWriteArrayList<>();
 
-	protected volatile ParameterDataFilter currentParameterFilter = new ParameterDataFilter(null, new LinkedList<>(),null,null,null);
+	protected volatile ParameterDataFilter currentParameterFilter = new ParameterDataFilter(null, new LinkedList<>(),null,null,null, null);
 
-	protected volatile EventDataFilter currentEventFilter = new EventDataFilter(null, new LinkedList<>(),null, null,null,null);
+	protected volatile EventDataFilter currentEventFilter = new EventDataFilter(null, new LinkedList<>(),null, null,null,null, null);
 
 	protected final int timeWindowSize = 60000;
 
@@ -652,8 +652,8 @@ public class UserDisplayTabWidgetController implements Initializable {
 			selectedParameters.addAll(acm.getPlottedParameters());
 			selectedEvents.addAll(acm.getPlottedEvents());
 		}
-		this.currentParameterFilter = new ParameterDataFilter(null, new LinkedList<>(selectedParameters),null,null,null);
-		this.currentEventFilter = new EventDataFilter(null, new LinkedList<>(selectedEvents),null,null,null, null);
+		this.currentParameterFilter = new ParameterDataFilter(null, new LinkedList<>(selectedParameters),null,null,null, null);
+		this.currentEventFilter = new EventDataFilter(null, new LinkedList<>(selectedEvents),null,null,null, null, null);
 		// Update the subscriptions
 		this.controller.filterUpdated();
 	}

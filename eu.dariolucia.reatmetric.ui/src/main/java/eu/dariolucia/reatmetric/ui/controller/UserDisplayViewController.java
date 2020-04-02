@@ -238,7 +238,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		for(UserDisplayTabWidgetController c : this.tab2contents.values()) {
 			params.addAll(c.getCurrentParameterFilter().getParameterPathList());
 		}
-		return new ParameterDataFilter(null, new ArrayList<>(params),null,null,null);
+		return new ParameterDataFilter(null, new ArrayList<>(params),null,null,null, null);
 	}
 
 	private EventDataFilter buildEventFilter() {
@@ -246,7 +246,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		for(UserDisplayTabWidgetController c : this.tab2contents.values()) {
 			params.addAll(c.getCurrentEventFilter().getEventPathList());
 		}
-		return new EventDataFilter(null, new ArrayList<>(params),null, null,null,null);
+		return new EventDataFilter(null, new ArrayList<>(params),null, null,null,null, null);
 	}
 
 	private void stopSubscription() {

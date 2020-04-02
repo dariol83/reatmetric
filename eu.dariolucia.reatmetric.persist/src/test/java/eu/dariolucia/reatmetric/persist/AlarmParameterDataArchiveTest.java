@@ -82,7 +82,7 @@ class AlarmParameterDataArchiveTest {
             d = alarmDataArchive.retrieve(new LongUniqueId(31));
             assertNull(d);
             // Retrieve at t + 250 ms in AlarmState ALARM or WARNING
-            params = alarmDataArchive.retrieve(t.plusMillis(250), new AlarmParameterDataFilter(null, null, Arrays.asList(AlarmState.ALARM, AlarmState.WARNING)), null);
+            params = alarmDataArchive.retrieve(t.plusMillis(250), new AlarmParameterDataFilter(null, null, Arrays.asList(AlarmState.ALARM, AlarmState.WARNING), null), null);
             assertEquals(1, params.size());
             for (AlarmParameterData pd : params) {
                 if (pd.getPath().asString().equals("TEST.PARAM3")) {
@@ -96,7 +96,7 @@ class AlarmParameterDataArchiveTest {
             params = alarmDataArchive.retrieve(t, 20, RetrievalDirection.TO_FUTURE, new AlarmParameterDataFilter(SystemEntityPath.fromString("TEST"), Arrays.asList(
                     SystemEntityPath.fromString("TEST.PARAM1"),
                     SystemEntityPath.fromString("TEST.PARAM2")
-            ), Arrays.asList(AlarmState.VIOLATED, AlarmState.ALARM, AlarmState.NOMINAL)));
+            ), Arrays.asList(AlarmState.VIOLATED, AlarmState.ALARM, AlarmState.NOMINAL), null));
             int p1count = 0;
             int p2count = 0;
             assertEquals(3, params.size());

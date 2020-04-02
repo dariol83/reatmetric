@@ -108,6 +108,9 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
             if(filter.getAlarmStateList() != null && !filter.getAlarmStateList().isEmpty()) {
                 query.append("AND AlarmState IN (").append(toEnumFilterListString(filter.getAlarmStateList())).append(") ");
             }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
+            }
         }
         // order by and limit
         if(direction == RetrievalDirection.TO_FUTURE) {
@@ -174,6 +177,9 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
             }
             if (filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
                 query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
             }
         }
         query.append(" GROUP BY Path) AS LATEST_SAMPLES INNER JOIN PARAMETER_DATA_TABLE ON PARAMETER_DATA_TABLE.Path = LATEST_SAMPLES.Path AND PARAMETER_DATA_TABLE.GenerationTime = LATEST_SAMPLES.LatestTime ");

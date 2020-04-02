@@ -83,7 +83,7 @@ class ParameterDataArchiveTest {
             d = parameterDataArchive.retrieve(new LongUniqueId(31));
             assertNull(d);
             // Retrieve at t + 250 ms in AlarmState ALARM or VIOLATED
-            params = parameterDataArchive.retrieve(t.plusMillis(250), new ParameterDataFilter(null, null, Arrays.asList("R1", "R2"), null, Arrays.asList(AlarmState.ALARM, AlarmState.VIOLATED)), null);
+            params = parameterDataArchive.retrieve(t.plusMillis(250), new ParameterDataFilter(null, null, Arrays.asList("R1", "R2"), null, Arrays.asList(AlarmState.ALARM, AlarmState.VIOLATED), null), null);
             assertEquals(1, params.size());
             for (ParameterData pd : params) {
                 if (pd.getPath().asString().equals("TEST.PARAM2")) {
@@ -97,7 +97,7 @@ class ParameterDataArchiveTest {
             params = parameterDataArchive.retrieve(t, 20, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(SystemEntityPath.fromString("TEST"), Arrays.asList(
                     SystemEntityPath.fromString("TEST.PARAM1"),
                     SystemEntityPath.fromString("TEST.PARAM2")
-            ), Arrays.asList("R1", "R2"), Arrays.asList(Validity.ERROR, Validity.VALID), Arrays.asList(AlarmState.VIOLATED, AlarmState.ALARM, AlarmState.NOMINAL)));
+            ), Arrays.asList("R1", "R2"), Arrays.asList(Validity.ERROR, Validity.VALID), Arrays.asList(AlarmState.VIOLATED, AlarmState.ALARM, AlarmState.NOMINAL), null));
             int p1count = 0;
             int p2count = 0;
             assertEquals(4, params.size());

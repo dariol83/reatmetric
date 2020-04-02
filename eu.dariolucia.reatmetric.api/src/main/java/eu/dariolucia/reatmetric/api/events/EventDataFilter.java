@@ -15,7 +15,7 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -30,47 +30,47 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
 
 	private final SystemEntityPath parentPath;
 
-    private final List<SystemEntityPath> eventPathList;
+    private final Set<SystemEntityPath> eventPathList;
 
-    private final List<String> routeList;
+    private final Set<String> routeList;
     
-    private final List<String> typeList;
+    private final Set<String> typeList;
     
-    private final List<String> sourceList;
+    private final Set<String> sourceList;
     
-    private final List<Severity> severityList;
+    private final Set<Severity> severityList;
 
-    private final List<Integer> externalIdList;
+    private final Set<Integer> externalIdList;
 
-    public EventDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> eventPathList, List<String> routeList, List<String> typeList, List<String> sourceList, List<Severity> severityList, List<Integer> externalIdList) {
+    public EventDataFilter(SystemEntityPath parentPath, Collection<SystemEntityPath> eventPathList, Collection<String> routeList, Collection<String> typeList, Collection<String> sourceList, Collection<Severity> severityList, Collection<Integer> externalIdList) {
         this.parentPath = parentPath;
         if(eventPathList != null) {
-            this.eventPathList = List.copyOf(eventPathList);
+            this.eventPathList = Collections.unmodifiableSet(new LinkedHashSet<>(eventPathList));
         } else {
             this.eventPathList = null;
         }
         if(routeList != null) {
-            this.routeList = List.copyOf(routeList);
+            this.routeList = Collections.unmodifiableSet(new LinkedHashSet<>(routeList));
         } else {
             this.routeList = null;
         }
         if(typeList != null) {
-            this.typeList = List.copyOf(typeList);
+            this.typeList = Collections.unmodifiableSet(new LinkedHashSet<>(typeList));
         } else {
             this.typeList = null;
         }
         if(sourceList != null) {
-            this.sourceList = List.copyOf(sourceList);
+            this.sourceList = Collections.unmodifiableSet(new LinkedHashSet<>(sourceList));
         } else {
             this.sourceList = null;
         }
         if(severityList != null) {
-            this.severityList = List.copyOf(severityList);
+            this.severityList = Collections.unmodifiableSet(new LinkedHashSet<>(severityList));
         } else {
             this.severityList = null;
         }
         if(externalIdList != null) {
-            this.externalIdList = List.copyOf(externalIdList);
+            this.externalIdList = Collections.unmodifiableSet(new LinkedHashSet<>(externalIdList));
         } else {
             this.externalIdList = null;
         }
@@ -80,27 +80,27 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
         return parentPath;
     }
 
-    public List<SystemEntityPath> getEventPathList() {
+    public Set<SystemEntityPath> getEventPathList() {
         return eventPathList;
     }
 
-    public List<String> getSourceList() {
+    public Set<String> getSourceList() {
         return sourceList;
     }
 
-    public List<Severity> getSeverityList() {
+    public Set<Severity> getSeverityList() {
         return severityList;
     }
     
-    public List<String> getRouteList() {
+    public Set<String> getRouteList() {
         return routeList;
     }
     
-    public List<String> getTypeList() {
+    public Set<String> getTypeList() {
         return typeList;
     }
 
-    public List<Integer> getExternalIdList() {
+    public Set<Integer> getExternalIdList() {
         return externalIdList;
     }
 

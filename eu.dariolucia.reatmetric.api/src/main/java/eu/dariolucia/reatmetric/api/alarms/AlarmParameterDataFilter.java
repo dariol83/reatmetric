@@ -13,7 +13,7 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -28,26 +28,26 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
 
 	private final SystemEntityPath parentPath;
 
-    private final List<SystemEntityPath> parameterPathList;
+    private final Set<SystemEntityPath> parameterPathList;
 
-    private final List<AlarmState> alarmStateList;
+    private final Set<AlarmState> alarmStateList;
 
-    private final List<Integer> externalIdList;
+    private final Set<Integer> externalIdList;
 
-    public AlarmParameterDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> pathList, List<AlarmState> alarmStateList, List<Integer> externalIdList) {
+    public AlarmParameterDataFilter(SystemEntityPath parentPath, Collection<SystemEntityPath> pathList, Collection<AlarmState> alarmStateList, Collection<Integer> externalIdList) {
         this.parentPath = parentPath;
         if(pathList != null) {
-            this.parameterPathList = List.copyOf(pathList);
+            this.parameterPathList = Collections.unmodifiableSet(new LinkedHashSet<>(pathList));
         } else {
             this.parameterPathList = null;
         }
         if(alarmStateList != null) {
-            this.alarmStateList = List.copyOf(alarmStateList);
+            this.alarmStateList = Collections.unmodifiableSet(new LinkedHashSet<>(alarmStateList));
         } else {
             this.alarmStateList = null;
         }
         if(externalIdList != null) {
-            this.externalIdList = List.copyOf(externalIdList);
+            this.externalIdList = Collections.unmodifiableSet(new LinkedHashSet<>(externalIdList));
         } else {
             this.externalIdList = null;
         }
@@ -57,15 +57,15 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
         return parentPath;
     }
 
-    public List<SystemEntityPath> getParameterPathList() {
+    public Set<SystemEntityPath> getParameterPathList() {
         return parameterPathList;
     }
 
-    public List<AlarmState> getAlarmStateList() {
+    public Set<AlarmState> getAlarmStateList() {
         return alarmStateList;
     }
 
-    public List<Integer> getExternalIdList() {
+    public Set<Integer> getExternalIdList() {
         return externalIdList;
     }
 

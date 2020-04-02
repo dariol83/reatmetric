@@ -12,8 +12,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -30,34 +29,34 @@ public final class RawDataFilter extends AbstractDataItemFilter<RawData> impleme
 
 	private final String nameContains;
     
-    private final List<String> routeList;
+    private final Set<String> routeList;
     
-    private final List<String> typeList;
+    private final Set<String> typeList;
     
-    private final List<String> sourceList;
+    private final Set<String> sourceList;
     
-    private final List<Quality> qualityList;
+    private final Set<Quality> qualityList;
 
-    public RawDataFilter(boolean withData, String nameContains, List<String> routeList, List<String> typeList, List<String> sourceList, List<Quality> qualityList) {
+    public RawDataFilter(boolean withData, String nameContains, Collection<String> routeList, Collection<String> typeList, Collection<String> sourceList, Collection<Quality> qualityList) {
         this.withData = withData;
         this.nameContains = nameContains;
         if(sourceList != null) {
-            this.sourceList = new ArrayList<>(sourceList);
+            this.sourceList = Collections.unmodifiableSet(new LinkedHashSet<>(sourceList));
         } else {
             this.sourceList = null;
         }
         if(routeList != null) {
-            this.routeList = new ArrayList<>(routeList);
+            this.routeList = Collections.unmodifiableSet(new LinkedHashSet<>(routeList));
         } else {
             this.routeList = null;
         }
         if(typeList != null) {
-            this.typeList = new ArrayList<>(typeList);
+            this.typeList = Collections.unmodifiableSet(new LinkedHashSet<>(typeList));
         } else {
             this.typeList = null;
         }
         if(qualityList != null) {
-            this.qualityList = new ArrayList<>(qualityList);
+            this.qualityList = Collections.unmodifiableSet(new LinkedHashSet<>(qualityList));
         } else {
             this.qualityList = null;
         }
@@ -71,34 +70,22 @@ public final class RawDataFilter extends AbstractDataItemFilter<RawData> impleme
         return nameContains;
     }
 
-    public List<String> getSourceList() {
-        if(sourceList == null) {
-            return null;
-        }
-        return new ArrayList<>(sourceList);
+    public Set<String> getRouteList() {
+        return routeList;
     }
 
-    public List<Quality> getQualityList() {
-        if(qualityList == null) {
-            return null;
-        }
-        return new ArrayList<>(qualityList);
+    public Set<String> getTypeList() {
+        return typeList;
     }
-    
-    public List<String> getTypeList() {
-        if(typeList == null) {
-            return null;
-        }
-        return new ArrayList<>(typeList);
+
+    public Set<String> getSourceList() {
+        return sourceList;
     }
-    
-    public List<String> getRouteList() {
-        if(routeList == null) {
-            return null;
-        }
-        return new ArrayList<>(routeList);
+
+    public Set<Quality> getQualityList() {
+        return qualityList;
     }
-    
+
     @Override
     public boolean isClear() {
         return this.qualityList == null && this.nameContains == null && this.sourceList == null && this.typeList == null && this.routeList == null;

@@ -83,6 +83,9 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
             if(filter.getAlarmStateList() != null && !filter.getAlarmStateList().isEmpty()) {
                 query.append("AND CurrentAlarmState IN (").append(toEnumFilterListString(filter.getAlarmStateList())).append(") ");
             }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
+            }
         }
         // order by and limit
         if(direction == RetrievalDirection.TO_FUTURE) {
@@ -141,6 +144,9 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
             }
             if (filter.getParameterPathList() != null) {
                 query.append("AND Path IN (").append(toFilterListString(filter.getParameterPathList(), SystemEntityPath::asString, "'")).append(") ");
+            }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
             }
         }
         query.append(" GROUP BY Path) AS LATEST_SAMPLES INNER JOIN ALARM_PARAMETER_DATA_TABLE ON ALARM_PARAMETER_DATA_TABLE.Path = LATEST_SAMPLES.Path AND ALARM_PARAMETER_DATA_TABLE.GenerationTime = LATEST_SAMPLES.LatestTime ");

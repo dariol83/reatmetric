@@ -132,7 +132,7 @@ public class ParameterDataLogFilterWidgetController implements Initializable, IF
         List<String> routeList = deriveSelectedRoute();
         SystemEntityPath parentPath = deriveParentPath();
         // TODO: add capability to filter on parameter path
-        return new ParameterDataFilter(parentPath, null, routeList, qList, aList);
+        return new ParameterDataFilter(parentPath, null, routeList, qList, aList, null);
     }
 
     private List<String> deriveSelectedRoute() {

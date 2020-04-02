@@ -10,12 +10,9 @@ package eu.dariolucia.reatmetric.api.messages;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
-import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  *
@@ -30,26 +27,26 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter<Opera
 
 	private final String messageTextContains;
 
-	private final List<String> idList;
+	private final Set<String> idList;
 
-    private final List<String> sourceList;
+    private final Set<String> sourceList;
     
-    private final List<Severity> severityList;
+    private final Set<Severity> severityList;
 
-    public OperationalMessageFilter(String messageTextContains, List<String> idList, List<String> sourceList, List<Severity> severityList) {
+    public OperationalMessageFilter(String messageTextContains, Collection<String> idList, Collection<String> sourceList, Collection<Severity> severityList) {
         this.messageTextContains = messageTextContains;
         if(idList != null) {
-            this.idList = List.copyOf(idList);
+            this.idList = Collections.unmodifiableSet(new LinkedHashSet<>(idList));
         } else {
             this.idList = null;
         }
         if(sourceList != null) {
-            this.sourceList = List.copyOf(sourceList);
+            this.sourceList = Collections.unmodifiableSet(new LinkedHashSet<>(sourceList));
         } else {
             this.sourceList = null;
         }
         if(severityList != null) {
-            this.severityList = List.copyOf(severityList);
+            this.severityList = Collections.unmodifiableSet(new LinkedHashSet<>(severityList));
         } else {
             this.severityList = null;
         }
@@ -59,15 +56,15 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter<Opera
         return messageTextContains;
     }
 
-    public List<String> getSourceList() {
+    public Set<String> getSourceList() {
         return sourceList;
     }
 
-    public List<String> getIdList() {
+    public Set<String> getIdList() {
         return idList;
     }
 
-    public List<Severity> getSeverityList() {
+    public Set<Severity> getSeverityList() {
         return severityList;
     }
     

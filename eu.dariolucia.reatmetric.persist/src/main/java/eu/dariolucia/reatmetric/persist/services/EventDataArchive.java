@@ -100,6 +100,9 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
             if(filter.getSeverityList() != null && !filter.getSeverityList().isEmpty()) {
                 query.append("AND Severity IN (").append(toEnumFilterListString(filter.getSeverityList())).append(") ");
             }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
+            }
         }
         // order by and limit
         if(direction == RetrievalDirection.TO_FUTURE) {

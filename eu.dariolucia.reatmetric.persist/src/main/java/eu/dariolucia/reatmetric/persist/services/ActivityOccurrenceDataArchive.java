@@ -338,6 +338,9 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
             if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
                 query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
             }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
+            }
             // For the activity occurrence state we use application post-filtering... for the time being
         }
         // order by and limit
@@ -401,6 +404,9 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
             }
             if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
                 query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
             }
             // For the activity occurrence state we use application post-filtering... for the time being
         }

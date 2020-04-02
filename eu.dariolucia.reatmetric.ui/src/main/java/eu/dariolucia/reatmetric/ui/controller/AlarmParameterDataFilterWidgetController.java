@@ -108,7 +108,7 @@ public class AlarmParameterDataFilterWidgetController implements Initializable, 
     private AlarmParameterDataFilter deriveFromWidgets() {
         List<AlarmState> qList = deriveSelectedAlarmState();
         SystemEntityPath parentPath = deriveParentPath();
-        return new AlarmParameterDataFilter(parentPath, null, qList);
+        return new AlarmParameterDataFilter(parentPath, null, qList, null);
     }
 
     private List<AlarmState> deriveSelectedAlarmState() {
