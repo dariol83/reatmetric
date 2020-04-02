@@ -12,6 +12,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.Status;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
@@ -49,7 +50,11 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         }
         // Check if there is an initialiser
         if(processor.getInitialiser() != null) {
-            initialise(processor.getInitialiser());
+            try {
+                initialise(processor.getInitialiser());
+            } catch(ReatmetricException re) {
+                LOG.log(Level.SEVERE, String.format("Cannot initialise activity %d (%s) with archived occurrences as defined by the initialisation time", definition.getId(), definition.getLocation()), re);
+            }
         }
         // Initialise the entity state
         this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
@@ -374,7 +379,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         }
     }
 
-    private void initialise(IProcessingModelInitialiser initialiser) {
+    private void initialise(IProcessingModelInitialiser initialiser) throws ReatmetricException {
         List<AbstractDataItem> stateList = initialiser.getState(getSystemEntityId(), SystemEntityType.ACTIVITY);
         for(AbstractDataItem data : stateList) {
             ActivityOccurrenceData aod = (ActivityOccurrenceData) data;

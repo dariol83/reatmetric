@@ -8,12 +8,13 @@
 package eu.dariolucia.reatmetric.api.processing;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.util.List;
 
 public interface IProcessingModelInitialiser {
 
-    List<AbstractDataItem> getState(int externalId, SystemEntityType type);
+    List<AbstractDataItem> getState(int externalId, SystemEntityType type) throws ReatmetricException;
 
 }

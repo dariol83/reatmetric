@@ -10,6 +10,7 @@ package eu.dariolucia.reatmetric.processing.impl.processors;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.*;
@@ -49,14 +50,18 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
         this.builder = new EventDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()), definition.getSeverity(), definition.getType());
         // Check if there is an initialiser
         if(processor.getInitialiser() != null) {
-            initialise(processor.getInitialiser());
+            try {
+                initialise(processor.getInitialiser());
+            } catch(ReatmetricException re) {
+                LOG.log(Level.SEVERE, String.format("Cannot initialise event %d (%s) with archived state as defined by the initialisation time", definition.getId(), definition.getLocation()), re);
+            }
         }
         // Initialise the entity state
         this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
         this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
     }
 
-    private void initialise(IProcessingModelInitialiser initialiser) {
+    private void initialise(IProcessingModelInitialiser initialiser) throws ReatmetricException {
         List<AbstractDataItem> stateList = initialiser.getState(getSystemEntityId(), SystemEntityType.EVENT);
         if(!stateList.isEmpty()) {
             this.state = (EventData) stateList.get(0);

@@ -11,6 +11,7 @@ package eu.dariolucia.reatmetric.processing.impl.processors;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
@@ -53,7 +54,11 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         this.alarmBuilder = new AlarmParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
         // Check if there is an initialiser
         if(processor.getInitialiser() != null) {
-            initialise(processor.getInitialiser());
+            try {
+                initialise(processor.getInitialiser());
+            } catch(ReatmetricException re) {
+                LOG.log(Level.SEVERE, String.format("Cannot initialise parameter %d (%s) with archived state as defined by the initialisation time", definition.getId(), definition.getLocation()), re);
+            }
         } else {
             // Check presence of default value: if so, build the state right away
             if (definition.getDefaultValue() != null) {
@@ -92,7 +97,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
     }
 
-    private void initialise(IProcessingModelInitialiser initialiser) {
+    private void initialise(IProcessingModelInitialiser initialiser) throws ReatmetricException {
         List<AbstractDataItem> stateList = initialiser.getState(getSystemEntityId(), SystemEntityType.PARAMETER);
         if(!stateList.isEmpty()) {
             this.state = (ParameterData) stateList.get(0); // TODO: generate a copy-state with a new internal ID? Archive the internal ID?
