@@ -15,7 +15,6 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Objects;
 
 /**
  *
@@ -38,7 +37,9 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
 
     private final List<ActivityOccurrenceState> stateList;
 
-    public ActivityOccurrenceDataFilter(SystemEntityPath parentPath, List<String> routeList, List<String> typeList, List<ActivityOccurrenceState> stateList, List<String> sourceList) {
+    private final List<Integer> externalIdList;
+
+    public ActivityOccurrenceDataFilter(SystemEntityPath parentPath, List<String> routeList, List<String> typeList, List<ActivityOccurrenceState> stateList, List<String> sourceList, List<Integer> externalIdList) {
         this.parentPath = parentPath;
         if(routeList != null) {
             this.routeList = List.copyOf(routeList);
@@ -59,6 +60,11 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
             this.stateList = List.copyOf(stateList);
         } else {
             this.stateList = null;
+        }
+        if(externalIdList != null) {
+            this.externalIdList = List.copyOf(externalIdList);
+        } else {
+            this.externalIdList = null;
         }
     }
 
@@ -82,9 +88,13 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
         return sourceList;
     }
 
+    public List<Integer> getExternalIdList() {
+        return externalIdList;
+    }
+
     @Override
     public boolean isClear() {
-        return this.parentPath == null && this.stateList == null && this.routeList == null && this.typeList == null && this.sourceList == null;
+        return this.parentPath == null && this.stateList == null && this.routeList == null && this.typeList == null && this.sourceList == null && this.externalIdList == null;
     }
 
     @Override
@@ -104,6 +114,9 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
         if(typeList != null && !typeList.contains(item.getType())) {
             return false;
         }
+        if(externalIdList != null && !externalIdList.contains(item.getExternalId())) {
+            return false;
+        }
         return true;
     }
 
@@ -116,52 +129,5 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
     public Class<ActivityOccurrenceData> getDataItemType() {
         return ActivityOccurrenceData.class;
     }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 19 * hash + Objects.hashCode(this.parentPath);
-        hash = 19 * hash + Objects.hashCode(this.stateList);
-        hash = 19 * hash + Objects.hashCode(this.routeList);
-        hash = 19 * hash + Objects.hashCode(this.sourceList);
-        hash = 19 * hash + Objects.hashCode(this.typeList);
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final ActivityOccurrenceDataFilter other = (ActivityOccurrenceDataFilter) obj;
-        if (!Objects.equals(this.parentPath, other.parentPath)) {
-            return false;
-        }
-        if (!Objects.equals(this.stateList, other.stateList)) {
-            return false;
-        }
-        if (!Objects.equals(this.routeList, other.routeList)) {
-            return false;
-        }
-        if (!Objects.equals(this.sourceList, other.sourceList)) {
-            return false;
-        }
-        if (!Objects.equals(this.typeList, other.typeList)) {
-            return false;
-        }
-        return true;
-    }
-
-	@Override
-	public String toString() {
-		return "EventDataFilter [parentPath=" + parentPath + ", routeList=" + routeList + ", sourceList=" + sourceList + ", typeList=" + typeList
-				+ ", stateList=" + stateList + "]";
-	}
 
 }

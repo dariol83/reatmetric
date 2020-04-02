@@ -32,7 +32,9 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
 
     private final List<AlarmState> alarmStateList;
 
-    public AlarmParameterDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> pathList, List<AlarmState> alarmStateList) {
+    private final List<Integer> externalIdList;
+
+    public AlarmParameterDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> pathList, List<AlarmState> alarmStateList, List<Integer> externalIdList) {
         this.parentPath = parentPath;
         if(pathList != null) {
             this.parameterPathList = List.copyOf(pathList);
@@ -43,6 +45,11 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
             this.alarmStateList = List.copyOf(alarmStateList);
         } else {
             this.alarmStateList = null;
+        }
+        if(externalIdList != null) {
+            this.externalIdList = List.copyOf(externalIdList);
+        } else {
+            this.externalIdList = null;
         }
     }
 
@@ -57,10 +64,14 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
     public List<AlarmState> getAlarmStateList() {
         return alarmStateList;
     }
-    
+
+    public List<Integer> getExternalIdList() {
+        return externalIdList;
+    }
+
     @Override
     public boolean isClear() {
-        return this.parentPath == null && this.parameterPathList == null && this.alarmStateList == null;
+        return this.parentPath == null && this.parameterPathList == null && this.alarmStateList == null && this.externalIdList == null;
     }
 
     @Override
@@ -72,6 +83,9 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
             return false;
         }
         if(alarmStateList != null && !alarmStateList.contains(item.getCurrentAlarmState())) {
+            return false;
+        }
+        if(externalIdList != null && !externalIdList.contains(item.getExternalId())) {
             return false;
         }
         return true;

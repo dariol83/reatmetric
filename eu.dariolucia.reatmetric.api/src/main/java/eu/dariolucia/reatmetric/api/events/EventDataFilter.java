@@ -40,7 +40,9 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
     
     private final List<Severity> severityList;
 
-    public EventDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> eventPathList, List<String> routeList, List<String> typeList, List<String> sourceList, List<Severity> severityList) {
+    private final List<Integer> externalIdList;
+
+    public EventDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> eventPathList, List<String> routeList, List<String> typeList, List<String> sourceList, List<Severity> severityList, List<Integer> externalIdList) {
         this.parentPath = parentPath;
         if(eventPathList != null) {
             this.eventPathList = List.copyOf(eventPathList);
@@ -67,6 +69,11 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
         } else {
             this.severityList = null;
         }
+        if(externalIdList != null) {
+            this.externalIdList = List.copyOf(externalIdList);
+        } else {
+            this.externalIdList = null;
+        }
     }
 
     public SystemEntityPath getParentPath() {
@@ -92,10 +99,14 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
     public List<String> getTypeList() {
         return typeList;
     }
-    
+
+    public List<Integer> getExternalIdList() {
+        return externalIdList;
+    }
+
     @Override
     public boolean isClear() {
-        return this.parentPath == null && this.eventPathList == null &&this.severityList == null && this.sourceList == null && this.routeList == null && this.typeList == null;
+        return this.parentPath == null && this.eventPathList == null &&this.severityList == null && this.sourceList == null && this.routeList == null && this.typeList == null && this.externalIdList == null;
     }
 
     @Override
@@ -116,6 +127,9 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
             return false;
         }
         if(typeList != null && !typeList.contains(item.getType())) {
+            return false;
+        }
+        if(externalIdList != null && !externalIdList.contains(item.getExternalId())) {
             return false;
         }
         return true;

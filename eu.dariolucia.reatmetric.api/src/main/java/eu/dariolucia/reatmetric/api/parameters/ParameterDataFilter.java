@@ -38,7 +38,9 @@ public final class ParameterDataFilter extends AbstractDataItemFilter<ParameterD
 
     private final List<AlarmState> alarmStateList;
 
-    public ParameterDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> pathList, List<String> routeList, List<Validity> validityList, List<AlarmState> alarmStateList) {
+    private final List<Integer> externalIdList;
+
+    public ParameterDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> pathList, List<String> routeList, List<Validity> validityList, List<AlarmState> alarmStateList, List<Integer> externalIdList) {
         this.parentPath = parentPath;
         if(pathList != null) {
             this.parameterPathList = List.copyOf(pathList);
@@ -59,6 +61,11 @@ public final class ParameterDataFilter extends AbstractDataItemFilter<ParameterD
             this.alarmStateList = List.copyOf(alarmStateList);
         } else {
             this.alarmStateList = null;
+        }
+        if(externalIdList != null) {
+            this.externalIdList = List.copyOf(externalIdList);
+        } else {
+            this.externalIdList = null;
         }
     }
 
@@ -82,9 +89,13 @@ public final class ParameterDataFilter extends AbstractDataItemFilter<ParameterD
         return routeList;
     }
 
+    public List<Integer> getExternalIdList() {
+        return externalIdList;
+    }
+
     @Override
     public boolean isClear() {
-        return this.parentPath == null && this.parameterPathList == null && this.routeList == null && this.alarmStateList == null && this.validityList == null;
+        return this.parentPath == null && this.parameterPathList == null && this.routeList == null && this.alarmStateList == null && this.validityList == null && this.externalIdList == null;
     }
 
     @Override
@@ -102,6 +113,9 @@ public final class ParameterDataFilter extends AbstractDataItemFilter<ParameterD
             return false;
         }
         if(validityList != null && !validityList.contains(item.getValidity())) {
+            return false;
+        }
+        if(externalIdList != null && !externalIdList.contains(item.getExternalId())) {
             return false;
         }
         return true;
