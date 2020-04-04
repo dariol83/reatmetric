@@ -10,10 +10,7 @@ package eu.dariolucia.reatmetric.core.configuration;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.*;
 import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,17 +39,20 @@ public class ServiceCoreConfiguration {
     @XmlElement(name = "name")
     private String name;
 
-    @XmlElement(name = "logPropertyFile")
+    @XmlElement(name = "log-property-file")
     private String logPropertyFile;
 
-    @XmlElement(name = "archiveLocation", required = true)
+    @XmlElement(name = "archive-location", required = true)
     private String archiveLocation;
 
-    @XmlElement(name = "definitionsLocation", required = true)
+    @XmlElement(name = "definitions-location", required = true)
     private String definitionsLocation;
 
-    @XmlElement(name = "initialisation")
-    private StateInitialisationConfiguration initialisation;
+    @XmlElements({
+            @XmlElement(name="init-resume",type=ResumeInitialisationConfiguration.class),
+            @XmlElement(name="init-from-time",type=TimeInitialisationConfiguration.class)
+    })
+    private AbstractInitialisationConfiguration initialisation;
 
     @XmlElement(name = "driver", required = true)
     private List<DriverConfiguration> drivers = new LinkedList<>();
@@ -105,11 +105,11 @@ public class ServiceCoreConfiguration {
         return this;
     }
 
-    public StateInitialisationConfiguration getInitialisation() {
+    public AbstractInitialisationConfiguration getInitialisation() {
         return initialisation;
     }
 
-    public void setInitialisation(StateInitialisationConfiguration initialisation) {
+    public void setInitialisation(AbstractInitialisationConfiguration initialisation) {
         this.initialisation = initialisation;
     }
 }

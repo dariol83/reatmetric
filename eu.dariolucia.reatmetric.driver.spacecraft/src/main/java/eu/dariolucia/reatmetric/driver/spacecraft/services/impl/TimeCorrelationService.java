@@ -13,14 +13,19 @@ import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.encdec.value.TimeUtil;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.reatmetric.api.archive.IArchive;
+import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
+import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
-import eu.dariolucia.reatmetric.api.rawdata.Quality;
-import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
+import eu.dariolucia.reatmetric.api.rawdata.*;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
+import eu.dariolucia.reatmetric.core.configuration.AbstractInitialisationConfiguration;
+import eu.dariolucia.reatmetric.core.configuration.ResumeInitialisationConfiguration;
+import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
+import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TimeCorrelationServiceConfiguration;
@@ -34,10 +39,7 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -64,7 +66,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     // CUC 4,3 has a resolution of 59.6 nsec, CUC 4,4 is at picosecond level
     private volatile Pair<BigDecimal, BigDecimal> obt2gtCoefficients;
 
-    public TimeCorrelationService(SpacecraftConfiguration configuration, IServiceCoreContext context, ServiceBroker serviceBroker) {
+    public TimeCorrelationService(SpacecraftConfiguration configuration, ServiceCoreConfiguration coreConfiguration, IServiceCoreContext context, ServiceBroker serviceBroker) throws ReatmetricException {
         this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
         this.spacecraftId = configuration.getId();
         this.propagationDelay = configuration.getPropagationDelay();
@@ -78,6 +80,45 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
             return t;
         });
         subscribeToBrokers();
+        if(coreConfiguration.getInitialisation() != null) {
+            initialiseTimeCoefficients(coreConfiguration.getInitialisation(), context.getArchive().getArchive(IRawDataArchive.class));
+        }
+    }
+
+    private void initialiseTimeCoefficients(AbstractInitialisationConfiguration initialisation, IRawDataArchive archive) throws ReatmetricException {
+        if(initialisation instanceof TimeInitialisationConfiguration) {
+            // Get the time coefficient with generation time at the specified one from the reference archive
+            ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
+            if (archiveLoader.findFirst().isPresent()) {
+                IArchive externalArchive = archiveLoader.findFirst().get().buildArchive(((TimeInitialisationConfiguration) initialisation).getArchiveLocation());
+                externalArchive.connect();
+                IRawDataArchive rawDataArchive = externalArchive.getArchive(IRawDataArchive.class);
+                retrieveTimeCoefficients(rawDataArchive, ((TimeInitialisationConfiguration) initialisation).getTime().toInstant());
+                externalArchive.dispose();
+            } else {
+                throw new ReatmetricException("Initialisation archive configured to " + ((TimeInitialisationConfiguration) initialisation).getArchiveLocation() + ", but no archive factory deployed");
+            }
+        } else if(initialisation instanceof ResumeInitialisationConfiguration) {
+            // Get the latest time coefficients in the raw data broker
+            Instant latestGenerationTime = archive.retrieveLastGenerationTime();
+            retrieveTimeCoefficients(archive, latestGenerationTime);
+        } else {
+            throw new IllegalArgumentException("Initialisation configuration for time correlation service not supported: " + initialisation.getClass().getName());
+        }
+    }
+
+    private void retrieveTimeCoefficients(IRawDataArchive archive, Instant latestGenerationTime) throws ArchiveException {
+        List<RawData> data = archive.retrieve(latestGenerationTime, 1, RetrievalDirection.TO_PAST, new RawDataFilter(true, Constants.N_TIME_COEFFICIENTS, null, Collections.singletonList(Constants.T_TIME_COEFFICIENTS), Collections.singletonList(String.valueOf(spacecraftId)), Collections.singletonList(Quality.GOOD)));
+        if(!data.isEmpty()) {
+            String coeffs = new String(data.get(0).getContents(), StandardCharsets.US_ASCII);
+            BigDecimal first = new BigDecimal(coeffs.substring(0, coeffs.indexOf('|')));
+            BigDecimal second = new BigDecimal(coeffs.substring(coeffs.indexOf('|') + 1));
+            this.obt2gtCoefficients = Pair.of(first, second);
+        } else {
+            if(LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, "Time coefficients for spacecraft " + spacecraftId + " at time " + latestGenerationTime + " not found");
+            }
+        }
     }
 
     private void subscribeToBrokers() {

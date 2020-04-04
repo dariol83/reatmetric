@@ -12,10 +12,7 @@ import eu.dariolucia.reatmetric.persist.Archive;
 import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,6 +30,9 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
             "r.UniqueId,r.GenerationTime,r.Name,r.ExecutionTime,r.State,r.NextState,r.ReportStatus,r.Result,r.ActivityOccurrenceId,r.AdditionalData " +
             "FROM ACTIVITY_OCCURRENCE_DATA_TABLE AS ao JOIN ACTIVITY_REPORT_DATA_TABLE AS r ON ao.UniqueId = r.ActivityOccurrenceId ";
     private static final String RETRIEVE_BY_ID_QUERY = START_FULL_JOIN_QUERY + "WHERE ao.UniqueId=? ORDER BY r.GenerationTime ASC, r.UniqueId ASC";
+
+    private static final String OCCURRENCE_LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM ACTIVITY_OCCURRENCE_DATA_TABLE";
+    private static final String REPORT_LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM ACTIVITY_REPORT_DATA_TABLE";
 
     private PreparedStatement occurrenceStoreStatement;
     private PreparedStatement reportStoreStatement;
@@ -437,6 +437,25 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
     @Override
     protected String getLastIdQuery() {
         return OCCURRENCE_LAST_ID_QUERY;
+    }
+
+    @Override
+    protected String getLastGenerationTimeQuery(Class<? extends AbstractDataItem> type) {
+        if(type.equals(ActivityOccurrenceData.class)) {
+            return OCCURRENCE_LAST_GENERATION_TIME_QUERY;
+        } else if(type.equals(ActivityOccurrenceReport.class)) {
+            return REPORT_LAST_GENERATION_TIME_QUERY;
+        } else {
+            throw new UnsupportedOperationException("Provided type " + type.getName() + " not supported by " + this);
+        }
+    }
+
+    @Override
+    protected List<String> getPurgeQuery(Instant referenceTime, RetrievalDirection direction) {
+        return Arrays.asList(
+                "DELETE FROM ACTIVITY_REPORT_DATA_TABLE WHERE GenerationTime " + (direction == RetrievalDirection.TO_FUTURE ? ">" : "<") + "'" + toTimestamp(referenceTime) + "'",
+                "DELETE FROM ACTIVITY_OCCURRENCE_DATA_TABLE WHERE GenerationTime " + (direction == RetrievalDirection.TO_FUTURE ? ">" : "<") + "'" + toTimestamp(referenceTime) + "'"
+        );
     }
 
     @Override

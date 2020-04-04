@@ -1,5 +1,6 @@
 package eu.dariolucia.reatmetric.persist.services;
 
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.events.EventData;
@@ -12,6 +13,8 @@ import eu.dariolucia.reatmetric.persist.Archive;
 import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,8 +23,9 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
     private static final Logger LOG = Logger.getLogger(EventDataArchive.class.getName());
 
     private static final String STORE_STATEMENT = "INSERT INTO EVENT_DATA_TABLE(UniqueId,GenerationTime,ExternalId,Name,Path,Qualifier,ReceptionTime,Type,Route,Source,Severity,ContainerId,Report,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-    private static final String LAST_ID_QUERY = "SELECT UniqueId FROM EVENT_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
+    private static final String LAST_ID_QUERY = "SELECT MAX(UniqueId) FROM EVENT_DATA_TABLE";
     private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ExternalId,Name,Path,Qualifier,ReceptionTime,Type,Route,Source,Severity,ContainerId,Report,AdditionalData FROM EVENT_DATA_TABLE WHERE UniqueId=?";
+    private static final String LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM EVENT_DATA_TABLE";
 
     public EventDataArchive(Archive controller) throws SQLException {
         super(controller);
@@ -142,6 +146,18 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
     @Override
     protected String getLastIdQuery() {
         return LAST_ID_QUERY;
+    }
+
+    @Override
+    protected String getLastGenerationTimeQuery(Class<? extends AbstractDataItem> type) {
+        return LAST_GENERATION_TIME_QUERY;
+    }
+
+    @Override
+    protected List<String> getPurgeQuery(Instant referenceTime, RetrievalDirection direction) {
+        return Arrays.asList(
+                "DELETE FROM EVENT_DATA_TABLE WHERE GenerationTime " + (direction == RetrievalDirection.TO_FUTURE ? ">" : "<") + "'" + toTimestamp(referenceTime) + "'"
+        );
     }
 
     @Override

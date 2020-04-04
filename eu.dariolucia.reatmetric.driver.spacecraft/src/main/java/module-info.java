@@ -2,6 +2,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.SpacecraftDriver;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptorValueExtensionHandler;
 
 open module eu.dariolucia.reatmetric.driver.spacecraft {
+    uses eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
     requires java.logging;
     requires java.xml.bind;
 

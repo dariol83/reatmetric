@@ -4,6 +4,7 @@ import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterDataFilter;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -13,6 +14,7 @@ import eu.dariolucia.reatmetric.persist.Archive;
 import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
@@ -25,6 +27,7 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
     private static final String STORE_STATEMENT = "INSERT INTO ALARM_PARAMETER_DATA_TABLE(UniqueId,GenerationTime,ExternalId,Name,Path,CurrentAlarmState,CurrentValue,ReceptionTime,LastNominalValue,LastNominalValueTime,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM ALARM_PARAMETER_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
     private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ExternalId,Name,Path,CurrentAlarmState,CurrentValue,ReceptionTime,LastNominalValue,LastNominalValueTime,AdditionalData FROM ALARM_PARAMETER_DATA_TABLE WHERE UniqueId=?";
+    private static final String LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM ALARM_PARAMETER_DATA_TABLE";
 
     public AlarmParameterDataArchive(Archive controller) throws SQLException {
         super(controller);
@@ -180,6 +183,18 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
     @Override
     protected String getLastIdQuery() {
         return LAST_ID_QUERY;
+    }
+
+    @Override
+    protected String getLastGenerationTimeQuery(Class<? extends AbstractDataItem> type) {
+        return LAST_GENERATION_TIME_QUERY;
+    }
+
+    @Override
+    protected List<String> getPurgeQuery(Instant referenceTime, RetrievalDirection direction) {
+        return Arrays.asList(
+                "DELETE FROM ALARM_PARAMETER_DATA_TABLE WHERE GenerationTime " + (direction == RetrievalDirection.TO_FUTURE ? ">" : "<") + "'" + toTimestamp(referenceTime) + "'"
+        );
     }
 
     @Override

@@ -237,6 +237,11 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
     }
 
     @Override
+    public IArchive getArchive() {
+        return archive;
+    }
+
+    @Override
     public IProcessingModel getProcessingModel() {
         return processingModelManager.getProcessingModel();
     }

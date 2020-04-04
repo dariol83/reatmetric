@@ -17,6 +17,7 @@ import eu.dariolucia.ccsds.sle.utl.config.UtlConfigurationFile;
 import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.rcf.RcfServiceInstanceConfiguration;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.IDriver;
@@ -68,7 +69,6 @@ import java.util.stream.Collectors;
  *     Support for PUS services is limited to Service 1 and Service 11, both with limitations</li>
  * </ul>
  *
- * TODO: support to start at time T (e.g. initialisation of the time correlation service) from data coming from a specified archive (reatmetric.core system properties)
  * TODO: support to not process data from specific VCs (up to packet extraction, no packet processing) - avoid that playback data pollutes live data
  * TODO: support for packet replay from a given time, from data in one archive (implement additional transport connector)
  *
@@ -129,9 +129,9 @@ public class SpacecraftDriver implements IDriver {
         }
     }
 
-    private void loadPacketServices() {
+    private void loadPacketServices() throws ReatmetricException {
         // Time correlation service (PUS 9) -> if start from time, initialise time coefficients
-        this.timeCorrelationService = new TimeCorrelationService(this.configuration, this.context, this.serviceBroker);
+        this.timeCorrelationService = new TimeCorrelationService(this.configuration, this.coreConfiguration, this.context, this.serviceBroker);
         // On-board event service (PUS 5)
         this.onboardEventService = new OnboardEventService(this.configuration, this.context, this.serviceBroker);
         // Command verification service (PUS 1)

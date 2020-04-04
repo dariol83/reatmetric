@@ -102,6 +102,33 @@ public interface IDataItemArchive<T extends AbstractDataItem, K extends Abstract
     IUniqueId retrieveLastId(Class<? extends AbstractDataItem> type) throws ArchiveException;
 
     /**
+     * Retrieve the last (largest) stored generation time for the data item handled by this archive service.
+     *
+     * @return the last (largest) stored generation time or null if there is none
+     * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the retrieval operation to be completed successfully
+     */
+    Instant retrieveLastGenerationTime() throws ArchiveException;
+
+    /**
+     * Retrieve the last (largest) stored generation time for the specified data item type handled by this archive service.
+     *
+     * @param type the class of the data item type
+     * @return the last (largest) stored generation time or null if there is none
+     * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the retrieval operation to be completed successfully
+     */
+    Instant retrieveLastGenerationTime(Class<? extends AbstractDataItem> type) throws ArchiveException;
+
+    /**
+     * Delete all entries in the archive strictly following (generationTime > referenceTime) or preceeding (generationTime < referenceTime)
+     * the provided time.
+     *
+     * @param referenceTime the reference time
+     * @param direction the delete direction: TO_FUTURE removes all data items with generationTime > referenceTime
+     * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the purge operation to be completed successfully
+     */
+    void purge(Instant referenceTime, RetrievalDirection direction) throws ArchiveException;
+
+    /**
      * Close and dispose this archive service. Further calls to store/retrieve operations will throw an exception.
      *
      * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the operation to be completed successfully

@@ -317,7 +317,62 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
     }
 
+    public synchronized Instant retrieveLastGenerationTime() throws ArchiveException {
+        return retrieveLastGenerationTime(getMainType());
+    }
 
+    public synchronized Instant retrieveLastGenerationTime(Class<? extends AbstractDataItem> type) throws ArchiveException {
+        checkDisposed();
+        try {
+            try (Statement prepStmt = retrieveConnection.createStatement()) {
+                try (ResultSet rs = prepStmt.executeQuery(getLastGenerationTimeQuery(type))) {
+                    if (rs.next()) {
+                        return toInstant(rs.getTimestamp(1));
+                    } else {
+                        return null;
+                    }
+                } finally {
+                    retrieveConnection.commit();
+                }
+            }
+        } catch (SQLException|UnsupportedOperationException e) {
+            throw new ArchiveException(e);
+        }
+    }
+
+    /**
+     * This method must return: SELECT MAX(GenerationTime) FROM [TABLE from type].
+     *
+     * @param type the type of data item
+     * @return the query
+     */
+    protected abstract String getLastGenerationTimeQuery(Class<? extends AbstractDataItem> type);
+
+    public synchronized void purge(Instant referenceTime, RetrievalDirection direction) throws ArchiveException {
+        checkDisposed();
+        try {
+            try (Statement prepStmt = storeConnection.createStatement()) {
+                try {
+                    for(String query : getPurgeQuery(referenceTime, direction)) {
+                        prepStmt.executeQuery(query);
+                    }
+                } finally {
+                    storeConnection.commit();
+                }
+            }
+        } catch (SQLException|UnsupportedOperationException e) {
+            throw new ArchiveException(e);
+        }
+    }
+
+    /**
+     * This method must return a list of queries in the form: DELETE FROM [TABLE from type] WHERE GenerationTime [&lt; or &gt; from direction] 'referenceTime'
+     *
+     * @param referenceTime the reference time
+     * @param direction the direction of deletion
+     * @return the query
+     */
+    protected abstract List<String> getPurgeQuery(Instant referenceTime, RetrievalDirection direction);
 
     /**
      * This method must return the class type of the main data item type supported by this archive specific implementation.

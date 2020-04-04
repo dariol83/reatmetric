@@ -1,5 +1,6 @@
 package eu.dariolucia.reatmetric.persist.services;
 
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
@@ -11,6 +12,8 @@ import eu.dariolucia.reatmetric.persist.Archive;
 import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,6 +24,7 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     private static final String STORE_STATEMENT = "INSERT INTO OPERATIONAL_MESSAGE_TABLE(UniqueId,GenerationTime,Id,Text,Source,Severity,AdditionalData) VALUES (?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM OPERATIONAL_MESSAGE_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
     private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,Id,Text,Source,Severity,AdditionalData FROM OPERATIONAL_MESSAGE_TABLE WHERE UniqueId=?";
+    private static final String LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM OPERATIONAL_MESSAGE_TABLE";
 
     public OperationalMessageArchive(Archive controller) throws SQLException {
         super(controller);
@@ -107,6 +111,18 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     @Override
     protected String getLastIdQuery() {
         return LAST_ID_QUERY;
+    }
+
+    @Override
+    protected String getLastGenerationTimeQuery(Class<? extends AbstractDataItem> type) {
+        return LAST_GENERATION_TIME_QUERY;
+    }
+
+    @Override
+    protected List<String> getPurgeQuery(Instant referenceTime, RetrievalDirection direction) {
+        return Arrays.asList(
+                "DELETE FROM OPERATIONAL_MESSAGE_TABLE WHERE GenerationTime " + (direction == RetrievalDirection.TO_FUTURE ? ">" : "<") + "'" + toTimestamp(referenceTime) + "'"
+        );
     }
 
     @Override

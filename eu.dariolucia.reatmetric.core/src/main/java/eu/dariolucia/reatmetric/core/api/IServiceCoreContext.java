@@ -8,9 +8,12 @@
 package eu.dariolucia.reatmetric.core.api;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 
 public interface IServiceCoreContext {
+
+    IArchive getArchive();
 
     IProcessingModel getProcessingModel();
 

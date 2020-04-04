@@ -1,8 +1,8 @@
 <ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
 	<name>Spacecraft</name>
-	<logPropertyFile>$HOME/.reatmetric/log.properties</logPropertyFile>
-	<archiveLocation>$HOME/.reatmetric/archive</archiveLocation>
-	<definitionsLocation>$HOME/.reatmetric/processing</definitionsLocation>
+	<log-property-file>$HOME/.reatmetric/log.properties</log-property-file>
+	<archive-location>$HOME/.reatmetric/archive</archive-location>
+	<definitions-location>$HOME/.reatmetric/processing</definitions-location>
 	<driver name="Spacecraft Driver"
 		type="eu.dariolucia.reatmetric.driver.spacecraft.SpacecraftDriver"
 		configuration="$HOME/.reatmetric/spacecraft1" />

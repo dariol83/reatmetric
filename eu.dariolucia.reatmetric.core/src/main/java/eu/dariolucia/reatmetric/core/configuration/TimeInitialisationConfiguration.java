@@ -13,16 +13,13 @@ import javax.xml.bind.annotation.XmlAttribute;
 import java.util.Date;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class StateInitialisationConfiguration {
+public class TimeInitialisationConfiguration extends AbstractInitialisationConfiguration {
 
     @XmlAttribute(name = "time", required = true)
     private Date time;
 
-    @XmlAttribute(name = "archiveLocation", required = true)
+    @XmlAttribute(name = "archive-location", required = true)
     private String archiveLocation;
-
-    public StateInitialisationConfiguration() {
-    }
 
     public Date getTime() {
         return time;

@@ -11,9 +11,12 @@ import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
+import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
+import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
@@ -31,7 +34,8 @@ import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
-import eu.dariolucia.reatmetric.core.configuration.StateInitialisationConfiguration;
+import eu.dariolucia.reatmetric.core.configuration.AbstractInitialisationConfiguration;
+import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
 import eu.dariolucia.reatmetric.core.impl.managers.ActivityOccurrenceDataAccessManager;
 import eu.dariolucia.reatmetric.core.impl.managers.AlarmParameterDataAccessManager;
 import eu.dariolucia.reatmetric.core.impl.managers.EventDataAccessManager;
@@ -59,7 +63,11 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
 
     private final Map<ISystemModelSubscriber, SystemModelSubscriberWrapper> subscribers = new LinkedHashMap<>();
 
-    public ProcessingModelManager(IArchive archive, String definitionsLocation, StateInitialisationConfiguration initialisation) throws ReatmetricException {
+    public ProcessingModelManager(IArchive archive, String definitionsLocation, AbstractInitialisationConfiguration initialisation) throws ReatmetricException {
+        if(initialisation instanceof TimeInitialisationConfiguration) {
+            // Clean up required
+            cleanUp(archive, ((TimeInitialisationConfiguration) initialisation).getTime());
+        }
         Map<Class<? extends AbstractDataItem>, Long> initialUniqueCounters = new HashMap<>();
         IParameterDataArchive parameterArchive;
         IEventDataArchive eventArchive;
@@ -110,9 +118,9 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
         eventDataAccessManager = new EventDataAccessManager(eventArchive);
         activityOccurrenceDataAccessManager = new ActivityOccurrenceDataAccessManager(activityArchive);
         // If the processing model initialisation is needed, create the initialiser
-        IProcessingModelInitialiser initialiser = null;
+        ArchiveInitialiser initialiser = null;
         if(initialisation != null) {
-            initialiser = new ArchiveInitialiser(initialisation.getTime(), initialisation.getArchiveLocation());
+            initialiser = new ArchiveInitialiser(archive, initialisation);
         }
         // Create the model
         ServiceLoader<IProcessingModelFactory> modelLoader = ServiceLoader.load(IProcessingModelFactory.class);
@@ -123,8 +131,34 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
             alarmDataAccessManager.setProcessingModel(processingModel);
             eventDataAccessManager.setProcessingModel(processingModel);
             activityOccurrenceDataAccessManager.setProcessingModel(processingModel);
+            if(initialiser != null) {
+                initialiser.dispose();
+            }
         } else {
+            if(initialiser != null) {
+                initialiser.dispose();
+            }
             throw new ReatmetricException("Archive location configured, but no archive factory deployed");
+        }
+    }
+
+    private void cleanUp(IArchive archive, Date time) throws ReatmetricException {
+        List<Pair<Class<? extends IDataItemArchive>, Class<? extends AbstractDataItem>>> toCheckPairs = Arrays.asList(
+                Pair.of(IParameterDataArchive.class, ParameterData.class),
+                Pair.of(IAlarmParameterDataArchive.class, AlarmParameterData.class),
+                Pair.of(IEventDataArchive.class, EventData.class),
+                Pair.of(IActivityOccurrenceDataArchive.class, ActivityOccurrenceReport.class),
+                Pair.of(IActivityOccurrenceDataArchive.class, ActivityOccurrenceData.class)
+        );
+        for(Pair<Class<? extends IDataItemArchive>, Class<? extends AbstractDataItem>> pair : toCheckPairs) {
+            IDataItemArchive arc = archive.getArchive(pair.getFirst());
+            if(arc != null) {
+                try {
+                    arc.purge(time.toInstant(), RetrievalDirection.TO_FUTURE);
+                } catch (ArchiveException e) {
+                    throw new ReatmetricException("Archive purge problem for time " + time, e);
+                }
+            }
         }
     }
 
