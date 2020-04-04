@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+// TODO: refactor, add AbstractTransportConnector in eu.dariolucia.reatmetric.api.transport as utility class
 abstract public class SleServiceInstanceManager<T extends ServiceInstance, K extends ServiceInstanceConfiguration> implements ITransportConnector, IServiceInstanceListener {
 
     private static final Logger LOG = Logger.getLogger(SleServiceInstanceManager.class.getName());

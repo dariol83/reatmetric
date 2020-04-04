@@ -200,6 +200,8 @@ public class ConnectorStatusWidgetController implements Initializable {
                         LOG.log(Level.WARNING, "Cannot open connection from " + connector.getName() + ": " + e.getMessage(), e);
                     }
                 });
+            } else {
+                startStopSwitch.setSelected(false);
             }
         } else if(lastStatus == null || lastStatus.getStatus() == TransportConnectionStatus.NOT_INIT
                 || lastStatus.getStatus() == TransportConnectionStatus.IDLE
