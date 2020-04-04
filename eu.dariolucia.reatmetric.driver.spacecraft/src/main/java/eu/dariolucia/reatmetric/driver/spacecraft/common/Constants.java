@@ -31,6 +31,7 @@ public class Constants {
     public static final String ANNOTATION_RCP_TIME = "##RCPTIME";
     public static final String ANNOTATION_TM_PUS_HEADER = "##TM_PUS_HEADER";
     public static final String ANNOTATION_UNIQUE_ID = "##UNIQUE_ID";
+    public static final String ANNOTATION_VCID = "##VCID";
 
     // encdec definition: TM/TC packet type
     public static final String ENCDEC_TM_PACKET_TYPE = "TM";

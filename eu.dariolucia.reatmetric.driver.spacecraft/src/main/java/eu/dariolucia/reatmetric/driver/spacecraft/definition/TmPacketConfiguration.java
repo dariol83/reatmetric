@@ -25,6 +25,10 @@ public class TmPacketConfiguration {
     @XmlElement(name = "apid-pus-configuration")
     private List<ApidTmPusConfiguration> apidPusConfiguration = new LinkedList<>();
 
+    @XmlElementWrapper(name = "vc-limit")
+    @XmlElement(name = "vc")
+    private List<Integer> processVcs;
+
     public int getParameterIdOffset() {
         return parameterIdOffset;
     }
@@ -47,6 +51,14 @@ public class TmPacketConfiguration {
 
     public void setApidPusConfiguration(List<ApidTmPusConfiguration> apidPusConfiguration) {
         this.apidPusConfiguration = apidPusConfiguration;
+    }
+
+    public List<Integer> getProcessVcs() {
+        return processVcs;
+    }
+
+    public void setProcessVcs(List<Integer> processVcs) {
+        this.processVcs = processVcs;
     }
 
     // -------------------------------------------------------------

@@ -34,6 +34,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -41,6 +42,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
 
     private static final Logger LOG = Logger.getLogger(TmPacketProcessor.class.getName());
 
+    private final String spacecraft;
     private final Instant epoch;
     private final IProcessingModel processingModel;
     private final IPacketDecoder packetDecoder;
@@ -48,8 +50,10 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     private final TmPacketConfiguration configuration;
     private final TimeCorrelationService timeCorrelationService;
     private final ServiceBroker serviceBroker;
+    private final boolean[] processedVCs;
 
     public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, TimeCorrelationService timeCorrelationService, ServiceBroker serviceBroker) {
+        this.spacecraft = String.valueOf(configuration.getId());
         this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
         this.processingModel = context.getProcessingModel();
         this.packetDecoder = packetDecoder;
@@ -57,6 +61,12 @@ public class TmPacketProcessor implements IRawDataSubscriber {
         this.configuration = configuration.getTmPacketConfiguration();
         this.timeCorrelationService = timeCorrelationService;
         this.serviceBroker = serviceBroker;
+        this.processedVCs = new boolean[64];
+        for(int i = 0; i < this.processedVCs.length; ++i) {
+            if(this.configuration.getProcessVcs() != null && this.configuration.getProcessVcs().contains(i)) {
+                this.processedVCs[i] = true;
+            }
+        }
     }
 
     public void initialise() {
@@ -66,8 +76,27 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     private void subscribeToBroker() {
         // We want to receive only good space packets, quality must be good, from the configured spacecraft, not idle
         String typeName = Constants.T_TM_PACKET;
-        RawDataFilter filter = new RawDataFilter(true, null, null, Collections.singletonList(typeName), null, Collections.singletonList(Quality.GOOD));
-        broker.subscribe(this, null, filter, null);
+        RawDataFilter filter = new RawDataFilter(true, null, null, Collections.singletonList(typeName), Collections.singletonList(spacecraft), Collections.singletonList(Quality.GOOD));
+        // We want to get only packets that need to be processed, according to VC ID
+        broker.subscribe(this, null, filter, buildPostFilter());
+    }
+
+    private Predicate<RawData> buildPostFilter() {
+        if(configuration.getProcessVcs() != null) {
+            return o -> {
+                // If the packet has VC information, then check if it falls in the provided set. If the packet has no VC information, then discard it.
+                SpacePacket spacePacket = (SpacePacket) o.getData();
+                if (spacePacket != null) {
+                    Integer vcId = (Integer) spacePacket.getAnnotationValue(Constants.ANNOTATION_VCID);
+                    return vcId != null && processedVCs[vcId];
+                } else {
+                    return false;
+                }
+            };
+        } else {
+            // No filter at packet level
+            return o -> true;
+        }
     }
 
     @Override
@@ -83,6 +112,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                 if (spacePacket == null) {
                     spacePacket = new SpacePacket(rd.getContents(), rd.getQuality() == Quality.GOOD);
                 }
+
                 // If the header is already part of the SpacePacket annotation, then good. If not, we have to compute it (we are in playback, maybe)
                 TmPusHeader pusHeader = (TmPusHeader) spacePacket.getAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER);
                 TmPusConfiguration conf = null;
@@ -93,8 +123,6 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                         spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
                     }
                 }
-                // NOT TRUE: Use offset and length, check pusHeader.getEncodedLength to understand where you have to start decoding from
-                // int offset = SpacePacket.SP_PRIMARY_HEADER_LENGTH + (pusHeader != null ? pusHeader.getEncodedLength() : 0);
 
                 // Expectation is that the definitions refer to the start of the space packet
                 int offset = 0;

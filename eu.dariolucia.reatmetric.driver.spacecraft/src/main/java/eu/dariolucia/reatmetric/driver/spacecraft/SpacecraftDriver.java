@@ -69,7 +69,6 @@ import java.util.stream.Collectors;
  *     Support for PUS services is limited to Service 1 and Service 11, both with limitations</li>
  * </ul>
  *
- * TODO: support to not process data from specific VCs (up to packet extraction, no packet processing) - avoid that playback data pollutes live data
  * TODO: support for packet replay from a given time, from data in one archive (implement additional transport connector)
  *
  */
