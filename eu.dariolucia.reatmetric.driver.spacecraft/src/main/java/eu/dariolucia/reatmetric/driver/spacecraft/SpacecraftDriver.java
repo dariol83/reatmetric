@@ -199,12 +199,14 @@ public class SpacecraftDriver implements IDriver {
     private void createRcfServiceInstance(PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration sic) {
         LOG.info("Creating SLE RCF endpoint for " + sic.getServiceInstanceIdentifier());
         RcfServiceInstanceManager m = new RcfServiceInstanceManager(peerConfiguration, sic, configuration, context.getRawDataBroker());
+        m.prepare();
         this.sleManagers.add(m);
     }
 
     private void createRafServiceInstance(PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration sic) {
         LOG.info("Creating SLE RAF endpoint for " + sic.getServiceInstanceIdentifier());
         RafServiceInstanceManager m = new RafServiceInstanceManager(peerConfiguration, sic, configuration, context.getRawDataBroker());
+        m.prepare();
         this.sleManagers.add(m);
     }
 

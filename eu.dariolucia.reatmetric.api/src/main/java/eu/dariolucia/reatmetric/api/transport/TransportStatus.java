@@ -9,6 +9,9 @@ package eu.dariolucia.reatmetric.api.transport;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 
+/**
+ * This immutable class is used to deliver updates in the status of {@link ITransportConnector} objects.
+ */
 public final class TransportStatus {
 
     private final String name;
@@ -27,14 +30,29 @@ public final class TransportStatus {
         this.alarmState = alarmState;
     }
 
+    /**
+     * The name of the connector, typically immutable.
+     *
+     * @return the connector name, shall not be null
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * The message that the connector wants to report with this status update.
+     *
+     * @return the message, can be null
+     */
     public String getMessage() {
         return message;
     }
 
+    /**
+     * The status of the connection.
+     *
+     * @return the connection status
+     */
     public TransportConnectionStatus getStatus() {
         return status;
     }
@@ -57,6 +75,12 @@ public final class TransportStatus {
         return rxRate;
     }
 
+    /**
+     * The alarm state of the connector, i.e. an indication of the health state of the connector as object. The state of
+     * the connection handled by the connector is reported by {@link TransportStatus#getStatus()}.
+     *
+     * @return the alarm state of the connector
+     */
     public AlarmState getAlarmState() {
         return alarmState;
     }

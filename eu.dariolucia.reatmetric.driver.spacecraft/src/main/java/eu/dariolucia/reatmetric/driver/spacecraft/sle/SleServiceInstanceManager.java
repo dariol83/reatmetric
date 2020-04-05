@@ -19,13 +19,11 @@ import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.api.transport.AbstractTransportConnector;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
-import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
-import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
@@ -33,24 +31,18 @@ import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
 import java.time.Instant;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-// TODO: refactor, add AbstractTransportConnector in eu.dariolucia.reatmetric.api.transport as utility class
-abstract public class SleServiceInstanceManager<T extends ServiceInstance, K extends ServiceInstanceConfiguration> implements ITransportConnector, IServiceInstanceListener {
+abstract public class SleServiceInstanceManager<T extends ServiceInstance, K extends ServiceInstanceConfiguration> extends AbstractTransportConnector implements ITransportConnector, IServiceInstanceListener {
 
     private static final Logger LOG = Logger.getLogger(SleServiceInstanceManager.class.getName());
 
     public static final String SLE_VERSION_KEY = "sle.version";
-
-    private final String name;
-    private final String description;
-
-    private final Timer bitrateTimer;
 
     protected final T serviceInstance;
     protected final K siConfiguration;
@@ -60,63 +52,38 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
     protected final SpacecraftConfiguration spacecraftConfiguration;
     protected final IRawDataBroker broker;
 
-    private volatile long lastTxRate = 0;
-    private volatile long lastRxRate = 0;
-    private volatile String lastMessage = "";
-    private volatile AlarmState lastAlarmState = AlarmState.UNKNOWN;
-
-    private final Map<String, Object> initialisationMap = new HashMap<>();
-    private final Map<String, Pair<String, ValueTypeEnum>> initialisationDescriptionMap = new HashMap<>();
-
     private final Semaphore bindSemaphore = new Semaphore(0);
     private final Semaphore unbindSemaphore = new Semaphore(0);
     private final Semaphore startSemaphore = new Semaphore(0);
     private final Semaphore stopSemaphore = new Semaphore(0);
 
-    private final List<ITransportSubscriber> subscribers = new CopyOnWriteArrayList<>();
-    private volatile TransportConnectionStatus connectionStatus = TransportConnectionStatus.NOT_INIT;
-    private volatile boolean initialised = false;
-    private volatile boolean busy = false;
-
     protected SleServiceInstanceManager(PeerConfiguration peerConfiguration, K siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
-        this.name = siConfiguration.getServiceInstanceIdentifier();
-        this.description = siConfiguration.getType().name() + " " + siConfiguration.getServiceInstanceIdentifier();
+        super(siConfiguration.getServiceInstanceIdentifier(), siConfiguration.getType().name() + " " + siConfiguration.getServiceInstanceIdentifier());
         this.peerConfiguration = peerConfiguration;
         this.siConfiguration = siConfiguration;
         this.serviceInstanceLastPart = siConfiguration.getServiceInstanceIdentifier().substring(siConfiguration.getServiceInstanceIdentifier().lastIndexOf('=') + 1);
         this.broker = broker;
         this.spacecraftConfiguration = spacecraftConfiguration;
-        this.bitrateTimer = new Timer(name + " Bitrate Timer", true);
-        this.bitrateTimer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                if(connectionStatus == TransportConnectionStatus.OPEN) {
-                    computeBitrate();
-                } else {
-                    updateRates(0, 0);
-                }
-            }
-        }, 2000, 2000);
 
         this.serviceInstance = createServiceInstance(peerConfiguration, siConfiguration);
         this.serviceInstance.configure();
         this.serviceInstance.register(this);
-
-        this.initialisationMap.put(SLE_VERSION_KEY, (long) siConfiguration.getServiceVersionNumber()); // long because the data type is UNSIGNED_INTEGER
-        this.initialisationDescriptionMap.put(SLE_VERSION_KEY, Pair.of("SLE Version", ValueTypeEnum.UNSIGNED_INTEGER));
-        addToInitialisationMap(initialisationMap, initialisationDescriptionMap);
     }
 
     protected void addToInitialisationMap(Map<String, Object> initialisationMap, Map<String, Pair<String, ValueTypeEnum>> initialisationDescriptionMap) {
-        // Nothing, subclasses can override
+        initialisationMap.put(SLE_VERSION_KEY, (long) siConfiguration.getServiceVersionNumber()); // long because the data type is UNSIGNED_INTEGER
+        initialisationDescriptionMap.put(SLE_VERSION_KEY, Pair.of("SLE Version", ValueTypeEnum.UNSIGNED_INTEGER));
     }
 
     protected abstract T createServiceInstance(PeerConfiguration peerConfiguration, K siConfiguration);
 
-    private void computeBitrate() {
+    @Override
+    protected Pair<Long, Long> computeBitrate() {
         if(this.serviceInstance != null) {
             RateSample sample = this.serviceInstance.getCurrentRate();
-            updateRates(Math.round(sample.getByteSample().getOutRate() * 8), Math.round(sample.getByteSample().getInRate() * 8));
+            return Pair.of(Math.round(sample.getByteSample().getOutRate() * 8), Math.round(sample.getByteSample().getInRate() * 8));
+        } else {
+            return null;
         }
     }
 
@@ -124,57 +91,16 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         try {
             broker.distribute(Collections.singletonList(rd));
         } catch (ReatmetricException e) {
-            LOG.log(Level.SEVERE, serviceInstance.getServiceInstanceIdentifier() + ": Error when distributing frame: " + e.getMessage(), e);
+            LOG.log(Level.SEVERE, serviceInstance.getServiceInstanceIdentifier() + ": error when distributing frame: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public String getName() {
-        return name;
-    }
-
-    @Override
-    public String getDescription() {
-        return description;
-    }
-
-    @Override
-    public TransportConnectionStatus getConnectionStatus() {
-        return connectionStatus;
-    }
-
-    @Override
-    public boolean isInitialised() {
-        return initialised;
-    }
-
-    @Override
-    public void initialise(Map<String, Object> properties) {
-        initialisationMap.clear();
-        initialisationMap.putAll(properties);
-        updateInitialisation(true);
-    }
-
-    @Override
-    public Map<String, Pair<String, ValueTypeEnum>> getSupportedProperties() {
-        return Collections.unmodifiableMap(initialisationDescriptionMap);
-    }
-
-    @Override
-    public Map<String, Object> getCurrentProperties() {
-        return Collections.unmodifiableMap(initialisationMap);
-    }
-
-    @Override
-    public void connect() throws TransportException {
-        if(busy) {
-            return;
-        }
-        busy = true;
+    public void doConnect() throws TransportException {
         bindSemaphore.drainPermits();
         startSemaphore.drainPermits();
         try {
-            serviceInstance.bind(((Long) initialisationMap.get(SLE_VERSION_KEY)).intValue());
+            serviceInstance.bind(((Long) getInitialisationMap().get(SLE_VERSION_KEY)).intValue());
 
             boolean bindReturned = bindSemaphore.tryAcquire(5, TimeUnit.SECONDS);
             if (!bindReturned) {
@@ -204,17 +130,11 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
             // Up and running
         } catch (InterruptedException e) {
             throw new TransportException(e);
-        } finally {
-            busy = false;
         }
     }
 
     @Override
-    public void disconnect() throws TransportException {
-        if(busy) {
-            return;
-        }
-        busy = true;
+    public void doDisconnect() throws TransportException {
         unbindSemaphore.drainPermits();
         stopSemaphore.drainPermits();
         try {
@@ -245,85 +165,22 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
             //
         } catch (InterruptedException e) {
             throw new TransportException(e);
-        } finally {
-            busy = false;
         }
     }
 
     @Override
     public void abort() {
-        serviceInstance.peerAbort(PeerAbortReasonEnum.OPERATIONAL_REQUIREMENTS);
+        if (serviceInstance.getCurrentBindingState() != ServiceInstanceBindingStateEnum.UNBOUND) {
+            serviceInstance.peerAbort(PeerAbortReasonEnum.OPERATIONAL_REQUIREMENTS);
+        }
     }
 
     @Override
-    public void register(ITransportSubscriber listener) {
-        this.subscribers.add(listener);
-    }
-
-    @Override
-    public void deregister(ITransportSubscriber listener) {
-        this.subscribers.remove(listener);
-    }
-
-    @Override
-    public void dispose() {
-        this.subscribers.clear();
-        this.bitrateTimer.cancel();
+    public void doDispose() {
         if(serviceInstance.getCurrentBindingState() != ServiceInstanceBindingStateEnum.UNBOUND) {
             serviceInstance.peerAbort(PeerAbortReasonEnum.OPERATIONAL_REQUIREMENTS);
         }
-        this.initialised = false;
-    }
-
-    private void notifySubscribers() {
-        this.subscribers.forEach((s) -> {
-            try {
-                s.status(this, new TransportStatus(name, lastMessage, connectionStatus, lastTxRate, lastRxRate, lastAlarmState));
-            } catch(Exception e) {
-                LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": Cannot notify subscriber " + s + ": " + e.getMessage(), e);
-            }
-        });
-    }
-
-    protected void updateConnectionStatus(TransportConnectionStatus status) {
-        boolean toNotify = !Objects.equals(status, this.connectionStatus);
-        this.connectionStatus = status;
-        if(toNotify) {
-            notifySubscribers();
-        }
-    }
-
-    protected void updateMessage(String message) {
-        boolean toNotify = !Objects.equals(message, this.lastMessage);
-        this.lastMessage = message;
-        if(toNotify) {
-            notifySubscribers();
-        }
-    }
-
-    protected void updateAlarmState(AlarmState state) {
-        boolean toNotify = !Objects.equals(state, this.lastAlarmState);
-        this.lastAlarmState = state;
-        if(toNotify) {
-            notifySubscribers();
-        }
-    }
-
-    protected void updateRates(long txRate, long rxRate) {
-        boolean toNotify = txRate != lastTxRate || rxRate != lastRxRate;
-        this.lastRxRate = rxRate;
-        this.lastTxRate = txRate;
-        if(toNotify) {
-            notifySubscribers();
-        }
-    }
-
-    protected void updateInitialisation(boolean b) {
-        boolean toNotify = initialised != b;
-        initialised = b;
-        if(toNotify) {
-            notifySubscribers();
-        }
+        serviceInstance.dispose();
     }
 
     protected Instant parseTime(Time time) {
@@ -337,7 +194,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
     }
 
     protected void distributeTmFrame(byte[] frameContents, Quality quality, Instant genTimeInstant, Instant receivedTime, String antennaId) {
-        // add source and route in the frame annotated map, route is ANTENNA.SERVICE_TYPE.SERVICE_ID.SCID.VCID, e.g. ANT01.RAF.raf001.123.7
+        // add source and route in the frame annotated map, route is SCID.VCID.ANTENNA.SERVICE_TYPE.SERVICE_ID, e.g. 123.7.ANT01.RAF.raf001
         if(quality == Quality.GOOD) { // GOOD
             TmTransferFrame frame = new TmTransferFrame(frameContents, spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
             if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() == null || spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
@@ -400,7 +257,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
                 updateConnectionStatus(TransportConnectionStatus.OPEN);
                 break;
             case UNBOUND:
-                updateConnectionStatus(initialised ? TransportConnectionStatus.IDLE : TransportConnectionStatus.NOT_INIT);
+                updateConnectionStatus(isInitialised() ? TransportConnectionStatus.IDLE : TransportConnectionStatus.NOT_INIT);
                 break;
         }
         if(state.getLastError() != null) {
