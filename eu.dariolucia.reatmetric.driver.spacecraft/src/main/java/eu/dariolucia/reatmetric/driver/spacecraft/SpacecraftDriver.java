@@ -28,6 +28,7 @@ import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TmPacketProcessor;
+import eu.dariolucia.reatmetric.driver.spacecraft.replay.TmPacketReplayManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService;
@@ -43,6 +44,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -91,6 +93,7 @@ public class SpacecraftDriver implements IDriver {
     private volatile SystemStatus status = SystemStatus.UNKNOWN;
 
     private List<SleServiceInstanceManager<?,?>> sleManagers;
+    private TmPacketReplayManager tmPacketReplayer;
     private TmDataLinkProcessor tmDataLinkProcessor;
     private TmPacketProcessor tmPacketProcessor;
 
@@ -120,12 +123,19 @@ public class SpacecraftDriver implements IDriver {
             loadTmDataLinkProcessor();
             // Load the SLE service instances
             loadSleServiceInstances(driverConfigurationDirectory + File.separator + SLE_FOLDER);
+            // Load packet replayer
+            loadTmPacketReplayer();
             // Ready to go
             updateStatus(SystemStatus.NOMINAL);
         } catch (Exception e) {
             updateStatus(SystemStatus.ALARM);
             throw new DriverException(e);
         }
+    }
+
+    private void loadTmPacketReplayer() {
+        this.tmPacketReplayer = new TmPacketReplayManager(configuration, context.getRawDataBroker());
+        this.tmPacketReplayer.prepare();
     }
 
     private void loadPacketServices() throws ReatmetricException {
@@ -232,13 +242,16 @@ public class SpacecraftDriver implements IDriver {
 
     @Override
     public List<ITransportConnector> getTransportConnectors() {
-        return this.sleManagers.stream().map(o -> (ITransportConnector) o).collect(Collectors.toList());
+        List<ITransportConnector> toReturn = this.sleManagers.stream().map(o -> (ITransportConnector) o).collect(Collectors.toCollection(LinkedList::new));
+        toReturn.add(this.tmPacketReplayer);
+        return toReturn;
     }
 
     @Override
     public void dispose() {
         this.sleManagers.forEach(SleServiceInstanceManager::abort);
         this.sleManagers.clear();
+        this.tmPacketReplayer.dispose();
         this.tmDataLinkProcessor.dispose();
         this.tmPacketProcessor.dispose();
         this.timeCorrelationService.dispose();
