@@ -17,8 +17,6 @@ import java.util.List;
 
 public interface IDriver {
 
-    // TODO: add a service for drivers, to enable property storage and retrieve (per driver, use prop file with driver name)
-
     void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException;
 
     SystemStatus getDriverStatus();
