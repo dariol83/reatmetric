@@ -64,6 +64,11 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
         }, 2000, 2000);
     }
 
+    /**
+     * Return a pair TX rate, RX rate in bits per second.
+     *
+     * @return the tx-rx pair
+     */
     protected abstract Pair<Long, Long> computeBitrate();
 
     @Override
