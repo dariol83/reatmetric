@@ -97,15 +97,14 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     private void initialiseTimeCoefficients(AbstractInitialisationConfiguration initialisation, IRawDataArchive archive) throws ReatmetricException {
         if(initialisation instanceof TimeInitialisationConfiguration) {
             // Get the time coefficient with generation time at the specified one from the reference archive
-            ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
-            if (archiveLoader.findFirst().isPresent()) {
-                IArchive externalArchive = archiveLoader.findFirst().get().buildArchive(((TimeInitialisationConfiguration) initialisation).getArchiveLocation());
-                externalArchive.connect();
-                IRawDataArchive rawDataArchive = externalArchive.getArchive(IRawDataArchive.class);
-                retrieveTimeCoefficients(rawDataArchive, ((TimeInitialisationConfiguration) initialisation).getTime().toInstant());
-                externalArchive.dispose();
+            String location = ((TimeInitialisationConfiguration) initialisation).getArchiveLocation();
+            Instant time = ((TimeInitialisationConfiguration) initialisation).getTime().toInstant();
+            if(location == null) {
+                // No archive location -> use current archive
+                retrieveTimeCoefficients(archive, time);
             } else {
-                throw new ReatmetricException("Initialisation archive configured to " + ((TimeInitialisationConfiguration) initialisation).getArchiveLocation() + ", but no archive factory deployed");
+                // Archive location -> use external archive
+                initialiseFromExternalArchive(location, time);
             }
         } else if(initialisation instanceof ResumeInitialisationConfiguration) {
             // Get the latest time coefficients in the raw data broker
@@ -116,6 +115,19 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
             }
         } else {
             throw new IllegalArgumentException("Initialisation configuration for time correlation service not supported: " + initialisation.getClass().getName());
+        }
+    }
+
+    private void initialiseFromExternalArchive(String location, Instant time) throws ReatmetricException {
+        ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
+        if (archiveLoader.findFirst().isPresent()) {
+            IArchive externalArchive = archiveLoader.findFirst().get().buildArchive(location);
+            externalArchive.connect();
+            IRawDataArchive rawDataArchive = externalArchive.getArchive(IRawDataArchive.class);
+            retrieveTimeCoefficients(rawDataArchive, time);
+            externalArchive.dispose();
+        } else {
+            throw new ReatmetricException("Initialisation archive configured to " + location + ", but no archive factory deployed");
         }
     }
 

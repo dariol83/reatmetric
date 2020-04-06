@@ -27,8 +27,8 @@ public class TimeInitialisationConfiguration extends AbstractInitialisationConfi
     @XmlAttribute(name = "time", required = true)
     private Date time;
 
-    @XmlAttribute(name = "archive-location", required = true)
-    private String archiveLocation;
+    @XmlAttribute(name = "archive-location")
+    private String archiveLocation; // If not specified, the processing archive is used for this initialisation
 
     public Date getTime() {
         return time;

@@ -62,15 +62,21 @@ public class ArchiveInitialiser implements IProcessingModelInitialiser {
 
     public ArchiveInitialiser(IArchive processingArchive, AbstractInitialisationConfiguration configuration, ProcessingDefinition definitions) throws ReatmetricException {
         if(configuration instanceof TimeInitialisationConfiguration) {
-            this.externalArchive = true;
-            this.initTime = ((TimeInitialisationConfiguration) configuration).getTime().toInstant();
-            ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
-            if (archiveLoader.findFirst().isPresent()) {
-                initArchive = archiveLoader.findFirst().get().buildArchive(((TimeInitialisationConfiguration) configuration).getArchiveLocation());
-                initArchive.connect();
+            String archiveLocation = ((TimeInitialisationConfiguration) configuration).getArchiveLocation();
+            if(archiveLocation == null) {
+                this.initArchive = processingArchive;
+                this.externalArchive = false;
             } else {
-                throw new ReatmetricException("Initialisation archive configured to " + ((TimeInitialisationConfiguration) configuration).getArchiveLocation() + ", but no archive factory deployed");
+                this.externalArchive = true;
+                ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
+                if (archiveLoader.findFirst().isPresent()) {
+                    initArchive = archiveLoader.findFirst().get().buildArchive(((TimeInitialisationConfiguration) configuration).getArchiveLocation());
+                    initArchive.connect();
+                } else {
+                    throw new ReatmetricException("Initialisation archive configured to " + archiveLocation + ", but no archive factory deployed");
+                }
             }
+            this.initTime = ((TimeInitialisationConfiguration) configuration).getTime().toInstant();
         } else if(configuration instanceof ResumeInitialisationConfiguration) {
             this.externalArchive = false;
             initArchive = processingArchive;
