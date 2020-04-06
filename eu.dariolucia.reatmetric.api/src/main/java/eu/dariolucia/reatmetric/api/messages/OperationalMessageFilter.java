@@ -109,46 +109,4 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter<Opera
         return OperationalMessage.class;
     }
 
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 19 * hash + Objects.hashCode(this.messageTextContains);
-        hash = 19 * hash + Objects.hashCode(this.idList);
-        hash = 19 * hash + Objects.hashCode(this.sourceList);
-        hash = 19 * hash + Objects.hashCode(this.severityList);
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final OperationalMessageFilter other = (OperationalMessageFilter) obj;
-        if (!Objects.equals(this.messageTextContains, other.messageTextContains)) {
-            return false;
-        }
-        if (!Objects.equals(this.idList, other.idList)) {
-            return false;
-        }
-        if (!Objects.equals(this.sourceList, other.sourceList)) {
-            return false;
-        }
-        if (!Objects.equals(this.severityList, other.severityList)) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public String toString() {
-        return "OperationalMessageFilter [" + "messageRegExp=" + messageTextContains + ", sourceList=" + sourceList + ", severityList=" + severityList + ']';
-    }
-
 }

@@ -134,7 +134,7 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
 
     @Override
     public boolean select(SystemEntity entity) {
-        return entity.getType() == SystemEntityType.ACTIVITY && (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
+        return (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
     }
 
     @Override

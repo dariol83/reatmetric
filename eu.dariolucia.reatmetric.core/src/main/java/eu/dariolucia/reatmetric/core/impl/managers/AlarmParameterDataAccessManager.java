@@ -38,6 +38,9 @@ public class AlarmParameterDataAccessManager extends AbstractAccessManager<Alarm
 
     @Override
     protected AbstractAccessSubscriber<AlarmParameterData, AlarmParameterDataFilter, IAlarmParameterDataSubscriber> createSubscriber(IAlarmParameterDataSubscriber subscriber, AlarmParameterDataFilter filter, IProcessingModel model) {
+        if(filter == null) {
+            filter = new AlarmParameterDataFilter(null, null, null, null);
+        }
         return new AlarmParameterDataAccessSubscriber(subscriber, filter, model);
     }
 }

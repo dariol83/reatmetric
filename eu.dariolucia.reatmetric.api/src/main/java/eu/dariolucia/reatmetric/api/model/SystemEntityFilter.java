@@ -104,47 +104,4 @@ public class SystemEntityFilter extends AbstractDataItemFilter<SystemEntity> imp
         return SystemEntity.class;
     }
 
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 19 * hash + Objects.hashCode(this.parentPath);
-        hash = 19 * hash + Objects.hashCode(this.statusList);
-        hash = 19 * hash + Objects.hashCode(this.alarmStateList);
-        hash = 19 * hash + Objects.hashCode(this.typeList);
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final SystemEntityFilter other = (SystemEntityFilter) obj;
-        if (!Objects.equals(this.parentPath, other.parentPath)) {
-            return false;
-        }
-        if (!Objects.equals(this.statusList, other.statusList)) {
-            return false;
-        }
-        if (!Objects.equals(this.alarmStateList, other.alarmStateList)) {
-            return false;
-        }
-        if (!Objects.equals(this.typeList, other.typeList)) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public String toString() {
-        return "SystemEntityFilter [parentPath=" + parentPath + ", typeList=" + typeList
-                + ", statusList=" + statusList + ", alarmStateList=" + alarmStateList + "]";
-    }
-
 }

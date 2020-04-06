@@ -102,8 +102,7 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
 
     @Override
     public boolean select(SystemEntity entity) {
-        return entity.getType() == SystemEntityType.PARAMETER
-                && (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
+        return (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
     }
 
     @Override

@@ -146,8 +146,7 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
 
     @Override
     public boolean select(SystemEntity entity) {
-        return entity.getType() == SystemEntityType.EVENT
-                && (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
+        return (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
     }
 
     @Override

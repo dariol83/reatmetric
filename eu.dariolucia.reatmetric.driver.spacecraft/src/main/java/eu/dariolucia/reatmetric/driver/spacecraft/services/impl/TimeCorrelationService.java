@@ -110,7 +110,10 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         } else if(initialisation instanceof ResumeInitialisationConfiguration) {
             // Get the latest time coefficients in the raw data broker
             Instant latestGenerationTime = archive.retrieveLastGenerationTime();
-            retrieveTimeCoefficients(archive, latestGenerationTime);
+            // If latestGenerationTime is null, it means that the archive is empty for this data type
+            if(latestGenerationTime != null) {
+                retrieveTimeCoefficients(archive, latestGenerationTime);
+            }
         } else {
             throw new IllegalArgumentException("Initialisation configuration for time correlation service not supported: " + initialisation.getClass().getName());
         }

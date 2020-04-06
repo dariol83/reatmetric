@@ -38,18 +38,29 @@ import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.core.configuration.AbstractInitialisationConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.ResumeInitialisationConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
+import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
+import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class ArchiveInitialiser implements IProcessingModelInitialiser {
+
+    private static final Logger LOG = Logger.getLogger(ArchiveInitialiser.class.getName());
 
     private final Instant maxLookBackTime;
     private final Instant initTime;
     private final IArchive initArchive;
     private final boolean externalArchive;
 
-    public ArchiveInitialiser(IArchive processingArchive, AbstractInitialisationConfiguration configuration) throws ReatmetricException {
+    private final Map<Integer, List<AbstractDataItem>> parameter2state = new HashMap<>();
+    private final Map<Integer, List<AbstractDataItem>> event2state = new HashMap<>();
+    private final Map<Integer, List<AbstractDataItem>> activity2state = new HashMap<>();
+
+    public ArchiveInitialiser(IArchive processingArchive, AbstractInitialisationConfiguration configuration, ProcessingDefinition definitions) throws ReatmetricException {
         if(configuration instanceof TimeInitialisationConfiguration) {
             this.externalArchive = true;
             this.initTime = ((TimeInitialisationConfiguration) configuration).getTime().toInstant();
@@ -90,41 +101,124 @@ public class ArchiveInitialiser implements IProcessingModelInitialiser {
             throw new IllegalArgumentException("Initialisation configuration " + configuration + " not supported");
         }
         this.maxLookBackTime = this.initTime.minusSeconds(configuration.getLookBackTime());
+        // Now pre-load all definition states, according to the provided definitions
+        preloadStates(definitions);
     }
 
-    @Override
-    public List<AbstractDataItem> getState(int externalId, SystemEntityType type) throws ReatmetricException {
-        switch(type) {
-            case PARAMETER:
-                return retrieveParameterState(externalId);
-            case EVENT:
-                return retrieveEventState(externalId);
-            case ACTIVITY:
-                return retrieveActivityOccurranceStates(externalId);
-            default:
-                // Not supported, no state restored
-                return Collections.emptyList();
+    private void preloadStates(ProcessingDefinition defs) {
+        List<Integer> parameterDefs = defs.getParameterDefinitions().stream().map(AbstractProcessingDefinition::getId).collect(Collectors.toList());
+        List<Integer> eventDefs = defs.getEventDefinitions().stream().map(AbstractProcessingDefinition::getId).collect(Collectors.toList());
+        List<Integer> actDefs = defs.getActivityDefinitions().stream().map(AbstractProcessingDefinition::getId).collect(Collectors.toList());
+        // 1000 parameters per query
+        int chunkSize = 1000;
+        // Parameters
+        preloadParameters(parameterDefs, chunkSize);
+        // Events
+        preloadEvents(eventDefs, chunkSize);
+        // Activities
+        preloadActivities(actDefs, chunkSize);
+        // Done
+    }
+
+    private void preloadParameters(List<Integer> parameterDefs, int chunkSize) {
+        int startIdx = 0;
+        boolean isDone = false;
+        // Parameters
+        IParameterDataArchive arc = initArchive.getArchive(IParameterDataArchive.class);
+        IAlarmParameterDataArchive arc2 = initArchive.getArchive(IAlarmParameterDataArchive.class);
+        try {
+            while (!isDone) {
+                int maxIdx = Math.min(startIdx + chunkSize, parameterDefs.size());
+                List<Integer> chunk = parameterDefs.subList(startIdx, maxIdx);
+                List<ParameterData> paramData = arc.retrieve(initTime, new ParameterDataFilter(null, null, null, null, null, chunk), maxLookBackTime);
+                List<AlarmParameterData> alarmData = arc2.retrieve(initTime, new AlarmParameterDataFilter(null, null, null, chunk), maxLookBackTime);
+                // Add parameters first
+                for (ParameterData pd : paramData) {
+                    List<AbstractDataItem> paramList = new ArrayList<>(2);
+                    paramList.add(pd);
+                    parameter2state.put(pd.getExternalId(), paramList);
+                }
+                // Now add alarm data
+                for (AlarmParameterData ad : alarmData) {
+                    List<AbstractDataItem> paramList = parameter2state.get(ad.getExternalId());
+                    // If there is no such parameter, then do nothing.
+                    if (paramList != null) {
+                        paramList.add(ad);
+                    }
+                }
+                if (maxIdx == parameterDefs.size()) {
+                    isDone = true;
+                } else {
+                    startIdx = maxIdx;
+                }
+                LOG.log(Level.INFO, "Parameter cycle - Initial states: " + parameter2state.size() + ", current retrieval " + maxIdx + "/" + parameterDefs.size());
+            }
+            LOG.log(Level.INFO, "Retrieved parameter initial states: " + parameter2state.size());
+        } catch (ArchiveException e) {
+            LOG.log(Level.SEVERE, "Cannot retrieve parameters from initialising archive: " + e.getMessage());
         }
     }
 
-    private List<AbstractDataItem> retrieveActivityOccurranceStates(int externalId) throws ArchiveException {
+    private void preloadEvents(List<Integer> eventDefs, int chunkSize) {
+        int startIdx = 0;
+        boolean isDone = false;
+        IEventDataArchive arc = initArchive.getArchive(IEventDataArchive.class);
+        try {
+            while (!isDone) {
+                int maxIdx = Math.min(startIdx + chunkSize, eventDefs.size());
+                List<Integer> chunk = eventDefs.subList(startIdx, maxIdx);
+                List<EventData> eventData = arc.retrieve(initTime, new EventDataFilter(null, null, null, null, null, null, chunk), maxLookBackTime);
+                // Add events
+                for (EventData pd : eventData) {
+                    List<AbstractDataItem> eventList = new ArrayList<>(1);
+                    eventList.add(pd);
+                    event2state.put(pd.getExternalId(), eventList);
+                }
+                if (maxIdx == eventDefs.size()) {
+                    isDone = true;
+                } else {
+                    startIdx = maxIdx;
+                }
+            }
+            LOG.log(Level.INFO, "Retrieved event initial states: " + event2state.size());
+        } catch (ArchiveException e) {
+            LOG.log(Level.SEVERE, "Cannot retrieve events from initialising archive: " + e.getMessage());
+        }
+    }
+
+    private void preloadActivities(List<Integer> actDefs, int chunkSize) {
+        int startIdx = 0;
+        boolean isDone = false;
         IActivityOccurrenceDataArchive arc = initArchive.getArchive(IActivityOccurrenceDataArchive.class);
-        List<ActivityOccurrenceData> activities = arc.retrieve(initTime, new ActivityOccurrenceDataFilter(null, null, null, null, null, Collections.singletonList(externalId)), maxLookBackTime);
-        // Post processing: for each activity occurrence, remove the reports having verification time > initTime and rebuild the activity occurrence object
-        List<AbstractDataItem> toReturn = new ArrayList<>(activities.size());
-        for(ActivityOccurrenceData aod : activities) {
-            // Reports are sorted by generation time
-            ActivityOccurrenceData sanitized = aod;
-            if(!aod.getProgressReports().isEmpty()) {
-                // Remove old reports
-                sanitized = sanitize(aod);
+        try {
+            while (!isDone) {
+                int maxIdx = Math.min(startIdx + chunkSize, actDefs.size());
+                List<Integer> chunk = actDefs.subList(startIdx, maxIdx);
+                List<ActivityOccurrenceData> activities = arc.retrieve(initTime, new ActivityOccurrenceDataFilter(null, null, null, null, null, chunk), maxLookBackTime);
+                // Add activities
+                for(ActivityOccurrenceData aod : activities) {
+                    // Reports are sorted by generation time
+                    ActivityOccurrenceData sanitized = aod;
+                    if(!aod.getProgressReports().isEmpty()) {
+                        // Remove old reports
+                        sanitized = sanitize(aod);
+                    }
+                    // Check status
+                    if(sanitized.getCurrentState() != ActivityOccurrenceState.COMPLETION) {
+                        List<AbstractDataItem> items = activity2state.computeIfAbsent(sanitized.getExternalId(), o -> new LinkedList<>());
+                        items.add(sanitized);
+                    }
+                }
+                if (maxIdx == actDefs.size()) {
+                    isDone = true;
+                } else {
+                    startIdx = maxIdx;
+                }
             }
-            // Check status
-            if(sanitized.getCurrentState() != ActivityOccurrenceState.COMPLETION) {
-                toReturn.add(sanitized);
-            }
+            LOG.log(Level.INFO, "Retrieved activity initial states: " + activity2state.size());
+        } catch (ArchiveException e) {
+            LOG.log(Level.SEVERE, "Cannot retrieve activities from initialising archive: " + e.getMessage());
         }
-        return toReturn;
     }
 
     private ActivityOccurrenceData sanitize(ActivityOccurrenceData aod) {
@@ -139,32 +233,25 @@ public class ArchiveInitialiser implements IProcessingModelInitialiser {
         }
     }
 
-    private List<AbstractDataItem> retrieveParameterState(int externalId) throws ArchiveException {
-        IParameterDataArchive arc = initArchive.getArchive(IParameterDataArchive.class);
-        List<ParameterData> params = arc.retrieve(initTime, new ParameterDataFilter(null, null, null, null, null, Collections.singletonList(externalId)), maxLookBackTime);
-        IAlarmParameterDataArchive arc2 = initArchive.getArchive(IAlarmParameterDataArchive.class);
-        List<AlarmParameterData> alarms = arc2.retrieve(initTime, new AlarmParameterDataFilter(null, null, null, Collections.singletonList(externalId)), maxLookBackTime);
-        List<AbstractDataItem> toReturn = new ArrayList<>();
-        if(params.size() > 0) {
-            toReturn.add(params.get(0));
-            if(alarms.size() > 0) {
-                toReturn.add(alarms.get(0));
-            }
+    @Override
+    public List<AbstractDataItem> getState(int externalId, SystemEntityType type) {
+        switch(type) {
+            case PARAMETER:
+                return parameter2state.getOrDefault(externalId, Collections.emptyList());
+            case EVENT:
+                return event2state.getOrDefault(externalId, Collections.emptyList());
+            case ACTIVITY:
+                return activity2state.getOrDefault(externalId, Collections.emptyList());
+            default:
+                // Not supported, no state restored
+                return Collections.emptyList();
         }
-        return toReturn;
-    }
-
-    private List<AbstractDataItem> retrieveEventState(int externalId) throws ArchiveException {
-        IEventDataArchive arc = initArchive.getArchive(IEventDataArchive.class);
-        List<EventData> events = arc.retrieve(initTime, new EventDataFilter(null, null, null, null, null, null, Collections.singletonList(externalId)), maxLookBackTime);
-        List<AbstractDataItem> toReturn = new ArrayList<>();
-        if(events.size() > 0) {
-            toReturn.add(events.get(0));
-        }
-        return toReturn;
     }
 
     public void dispose() {
+        parameter2state.clear();
+        event2state.clear();
+        activity2state.clear();
         if(externalArchive) {
             try {
                 initArchive.dispose();

@@ -129,7 +129,7 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
         // If the processing model initialisation is needed, create the initialiser
         ArchiveInitialiser initialiser = null;
         if(initialisation != null) {
-            initialiser = new ArchiveInitialiser(archive, initialisation);
+            initialiser = new ArchiveInitialiser(archive, initialisation, defs);
         }
         // Create the model
         ServiceLoader<IProcessingModelFactory> modelLoader = ServiceLoader.load(IProcessingModelFactory.class);

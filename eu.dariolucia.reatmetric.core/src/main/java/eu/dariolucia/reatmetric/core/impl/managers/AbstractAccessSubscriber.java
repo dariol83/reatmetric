@@ -50,7 +50,6 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
         managerThread.start();
     }
 
-
     private void runDistribution() {
         boolean initialiseFromModel = true;
         boolean firstInitialisation = false;
@@ -90,6 +89,9 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
                 }
                 // If the queue is still empty, repeat the outer cycle
                 if(queue.isEmpty()) {
+                    if(theFilter != filter) {
+                        initialiseFromModel = true;
+                    }
                     continue;
                 } else if(theFilter == filter) {
                     // If you are here, there are elements in the queue: so drain them

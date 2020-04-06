@@ -20,6 +20,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.events.*;
 import eu.dariolucia.reatmetric.api.parameters.*;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import org.w3c.dom.events.Event;
 
 public class EventDataAccessManager extends AbstractAccessManager<EventData, EventDataFilter, IEventDataSubscriber> implements IEventDataProvisionService {
 
@@ -39,6 +40,9 @@ public class EventDataAccessManager extends AbstractAccessManager<EventData, Eve
 
     @Override
     protected AbstractAccessSubscriber<EventData, EventDataFilter, IEventDataSubscriber> createSubscriber(IEventDataSubscriber subscriber, EventDataFilter filter, IProcessingModel model) {
+        if(filter == null) {
+            filter = new EventDataFilter(null, null, null, null, null, null, null);
+        }
         return new EventDataAccessSubscriber(subscriber, filter, model);
     }
 }

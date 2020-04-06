@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.persist.services;
 
+import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
@@ -30,6 +31,7 @@ import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -158,6 +160,78 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
         }
         return new EventData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), qualifier, type, route, source, severity, report, containerId == null ? null : new LongUniqueId(containerId), toInstant(receptionTime), extension);
     }
+
+
+    @Override
+    public synchronized List<EventData> retrieve(Instant time, EventDataFilter filter, Instant maxLookbackTime) throws ArchiveException {
+        checkDisposed();
+        try {
+            return doRetrieve(retrieveConnection, time, filter, maxLookbackTime);
+        } catch (SQLException e) {
+            throw new ArchiveException(e);
+        }
+    }
+
+    private List<EventData> doRetrieve(Connection connection, Instant time, EventDataFilter filter, Instant maxLookbackTime) throws SQLException {
+        if(time.isBefore(MINIMUM_TIME)) {
+            time = MINIMUM_TIME;
+        } else if(time.isAfter(MAXIMUM_TIME)) {
+            time = MAXIMUM_TIME;
+        }
+        StringBuilder query = new StringBuilder("SELECT EVENT_DATA_TABLE.* FROM (SELECT DISTINCT Path, MAX(GenerationTime) as LatestTime FROM EVENT_DATA_TABLE WHERE GenerationTime <= '");
+        query.append(toTimestamp(time));
+        query.append("' ");
+        if(maxLookbackTime != null) {
+            query.append(" AND GenerationTime >= '").append(toTimestamp(maxLookbackTime)).append("' ");
+        }
+        if(filter != null) {
+            if (filter.getParentPath() != null) {
+                query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+            }
+            if (filter.getEventPathList() != null) {
+                query.append("AND Path IN (").append(toFilterListString(filter.getEventPathList(), SystemEntityPath::asString, "'")).append(") ");
+            }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
+            }
+        }
+        query.append(" GROUP BY Path) AS LATEST_SAMPLES INNER JOIN EVENT_DATA_TABLE ON EVENT_DATA_TABLE.Path = LATEST_SAMPLES.Path AND EVENT_DATA_TABLE.GenerationTime = LATEST_SAMPLES.LatestTime ");
+        if(filter != null) {
+            if (filter.getSeverityList() != null && !filter.getSeverityList().isEmpty()) {
+                query.append("AND Severity IN (").append(toEnumFilterListString(filter.getSeverityList())).append(") ");
+            }
+            if (filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
+                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+            }
+            if (filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
+                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
+            }
+            if (filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
+                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
+            }
+        }
+        String finalQuery = query.toString();
+        List<EventData> result = new LinkedList<>();
+        try (Statement prepStmt = connection.createStatement()) {
+            if(LOG.isLoggable(Level.FINEST)) {
+                LOG.finest(this + " - retrieve statement: " + finalQuery);
+            }
+            try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
+                while (rs.next()) {
+                    try {
+                        EventData object = mapToItem(rs, filter);
+                        result.add(object);
+                    } catch (IOException e) {
+                        throw new SQLException(e);
+                    }
+                }
+            } finally {
+                connection.commit();
+            }
+        }
+        return result;
+    }
+
 
     @Override
     protected String getLastIdQuery() {

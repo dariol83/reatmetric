@@ -132,8 +132,7 @@ public final class ParameterDataFilter extends AbstractDataItemFilter<ParameterD
 
     @Override
     public boolean select(SystemEntity entity) {
-        return entity.getType() == SystemEntityType.PARAMETER
-                && (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
+        return (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
     }
 
     @Override

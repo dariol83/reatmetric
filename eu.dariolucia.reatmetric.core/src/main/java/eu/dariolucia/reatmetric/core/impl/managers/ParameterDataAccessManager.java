@@ -38,6 +38,9 @@ public class ParameterDataAccessManager extends AbstractAccessManager<ParameterD
 
     @Override
     protected AbstractAccessSubscriber<ParameterData, ParameterDataFilter, IParameterDataSubscriber> createSubscriber(IParameterDataSubscriber subscriber, ParameterDataFilter filter, IProcessingModel model) {
+        if(filter == null) {
+            filter = new ParameterDataFilter(null, null, null, null, null, null);
+        }
         return new ParameterDataAccessSubscriber(subscriber, filter, model);
     }
 }
