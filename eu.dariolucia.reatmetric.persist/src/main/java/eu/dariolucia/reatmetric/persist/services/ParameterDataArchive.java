@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.persist.services;
 
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -105,11 +106,42 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
     protected String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, ParameterDataFilter filter) {
         StringBuilder query = new StringBuilder("SELECT * FROM PARAMETER_DATA_TABLE WHERE ");
         // add time info
-        if(direction == RetrievalDirection.TO_FUTURE) {
-            query.append("GenerationTime >= '").append(toTimestamp(startTime).toString()).append("' ");
-        } else {
-            query.append("GenerationTime <= '").append(toTimestamp(startTime).toString()).append("' ");
+        addTimeInfo(query, startTime, direction);
+        // process filter
+        if(filter != null && !filter.isClear()) {
+            if(filter.getParentPath() != null) {
+                query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+            }
+            if(filter.getParameterPathList() != null && !filter.getParameterPathList().isEmpty()) {
+                query.append("AND Path IN (").append(toFilterListString(filter.getParameterPathList(), SystemEntityPath::asString, "'")).append(") ");
+            }
+            if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
+                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getValidityList() != null && !filter.getValidityList().isEmpty()) {
+                query.append("AND Validity IN (").append(toEnumFilterListString(filter.getValidityList())).append(") ");
+            }
+            if(filter.getAlarmStateList() != null && !filter.getAlarmStateList().isEmpty()) {
+                query.append("AND AlarmState IN (").append(toEnumFilterListString(filter.getAlarmStateList())).append(") ");
+            }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
+            }
         }
+        // order by and limit
+        if(direction == RetrievalDirection.TO_FUTURE) {
+            query.append("ORDER BY GenerationTime ASC, UniqueId ASC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
+        } else {
+            query.append("ORDER BY GenerationTime DESC, UniqueId DESC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
+        }
+        return query.toString();
+    }
+
+    @Override
+    protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, ParameterDataFilter filter) {
+        StringBuilder query = new StringBuilder("SELECT * FROM PARAMETER_DATA_TABLE WHERE ");
+        // add time info
+        addTimeInfo(query, startTime, internalId, direction);
         // process filter
         if(filter != null && !filter.isClear()) {
             if(filter.getParentPath() != null) {

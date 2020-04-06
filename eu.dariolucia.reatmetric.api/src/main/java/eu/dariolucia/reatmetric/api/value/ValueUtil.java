@@ -21,12 +21,17 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.ServiceLoader;
+import java.util.*;
 
 public class ValueUtil {
+
+    public static String toString(Object valueObject) {
+        if(valueObject instanceof byte[]) {
+            return StringUtil.toHexDump((byte[]) valueObject);
+        } else {
+            return Objects.toString(valueObject);
+        }
+    }
 
     public static String toString(ValueTypeEnum type, Object valueObject) {
         if(type != ValueTypeEnum.EXTENSION || valueObject == null) {

@@ -28,6 +28,7 @@ import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
@@ -166,8 +167,8 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
         
         this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getName()));
-        this.engValueCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().get().getEngValue())));
-        this.sourceValueCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().get().getSourceValue())));
+        this.engValueCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(ValueUtil.toString(o.getValue().get().getEngValue())));
+        this.sourceValueCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(ValueUtil.toString(o.getValue().get().getSourceValue())));
         this.validityCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getValidity()));
         this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getGenerationTime()));
         this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getReceptionTime()));

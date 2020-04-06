@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.persist.services;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
@@ -93,11 +94,40 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,RelatedItem,Contents,AdditionalData");
         query.append(" FROM RAW_DATA_TABLE WHERE ");
         // add time info
-        if(direction == RetrievalDirection.TO_FUTURE) {
-            query.append("GenerationTime >= '").append(toTimestamp(startTime).toString()).append("' ");
-        } else {
-            query.append("GenerationTime <= '").append(toTimestamp(startTime).toString()).append("' ");
+        addTimeInfo(query, startTime, direction);
+        // process filter
+        if(filter != null && !filter.isClear()) {
+            if(filter.getNameContains() != null) {
+                query.append("AND Name LIKE '%").append(filter.getNameContains()).append("%' ");
+            }
+            if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
+                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
+                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
+                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getQualityList() != null && !filter.getQualityList().isEmpty()) {
+                query.append("AND Quality IN (").append(toEnumFilterListString(filter.getQualityList())).append(") ");
+            }
         }
+        // order by and limit
+        if(direction == RetrievalDirection.TO_FUTURE) {
+            query.append("ORDER BY GenerationTime ASC, UniqueId ASC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
+        } else {
+            query.append("ORDER BY GenerationTime DESC, UniqueId DESC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
+        }
+        return query.toString();
+    }
+
+    @Override
+    protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, RawDataFilter filter) {
+        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,RelatedItem,Contents,AdditionalData");
+        query.append(" FROM RAW_DATA_TABLE WHERE ");
+        // add time info
+        addTimeInfo(query, startTime, internalId, direction);
         // process filter
         if(filter != null && !filter.isClear()) {
             if(filter.getNameContains() != null) {

@@ -39,7 +39,7 @@
                <items>
                   <CustomTextField fx:id="filterText" maxWidth="1.7976931348623157E308" prefHeight="25.0" prefWidth="260.0">
                       <tooltip>
-                          <Tooltip text="Text matching with wildcard (*)" />
+                          <Tooltip text="Text matching (contains)" />
                       </tooltip>
                   </CustomTextField>
                </items>

@@ -41,6 +41,8 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected static final int MAX_STORAGE_QUEUE = 10000; // items
     protected static final int STORAGE_QUEUE_FLUSH_LIMIT = MAX_STORAGE_QUEUE - 100; // size for flush
     protected static final int MAX_LATENCY_TIME = 1000; // milliseconds
+    // TODO: this constant is fundamental: if there are many items with the same generation time, then if LOOK_AHEAD_SPAN is too small,
+    //  the retrieval won't work anymore
     protected static final int LOOK_AHEAD_SPAN = 100; // items to look ahead
 
     protected static final Instant MINIMUM_TIME = Instant.EPOCH;
@@ -178,6 +180,9 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     public synchronized T retrieve(IUniqueId uniqueId) throws ArchiveException {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - retrieve(IUniqueId) called: uniqueId=" + uniqueId);
+        }
         checkDisposed();
         try {
             return doRetrieve(retrieveConnection, uniqueId);
@@ -216,6 +221,9 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     public synchronized List<T> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, K filter) throws ArchiveException {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - retrieve(Instant,int,RetrievalDirection,K) called: startTime=" + startTime + ", numRecords=" + numRecords + ", direction=" + direction);
+        }
         checkDisposed();
         try {
             return doRetrieve(retrieveConnection, startTime, numRecords, direction, filter);
@@ -233,8 +241,8 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         String finalQuery = buildRetrieveQuery(startTime, numRecords, direction, filter);
         List<T> result = new ArrayList<>(numRecords);
         try (Statement prepStmt = connection.createStatement()) {
-            if(LOG.isLoggable(Level.FINEST)) {
-                LOG.finest(this + " - retrieve statement: " + finalQuery);
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer(this + " - retrieve statement: " + finalQuery);
             }
             try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
                 while (rs.next()) {
@@ -257,6 +265,9 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected abstract String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, K filter);
 
     public synchronized List<T> retrieve(T startItem, int numRecords, RetrievalDirection direction, K filter) throws ArchiveException {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - retrieve(T,int,RetrievalDirection,K) called: startItem=" + startItem + ", numRecords=" + numRecords + ", direction=" + direction);
+        }
         checkDisposed();
         try {
             return doRetrieve(retrieveConnection, startItem, numRecords, direction, filter);
@@ -267,7 +278,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
 
     protected List<T> doRetrieve(Connection connection, T startItem, int numRecords, RetrievalDirection direction, K filter) throws SQLException {
         // Use the startItem generationTime to retrieve all the items from that point in time: increase limit by 100
-        List<T> largeSize = doRetrieve(connection, startItem.getGenerationTime(), numRecords + LOOK_AHEAD_SPAN, direction, filter);
+        List<T> largeSize = doRetrieve(connection, startItem.getGenerationTime(), startItem.getInternalId(), numRecords + LOOK_AHEAD_SPAN, direction, filter);
         // Now scan and get rid of the startItem object: in order to work, equality must work correctly (typically only on the internalId)
         int position = largeSize.indexOf(startItem);
         if(position == -1) {
@@ -277,7 +288,58 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
     }
 
+    protected List<T> doRetrieve(Connection connection, Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, K filter) throws SQLException {
+        if(startTime.isBefore(MINIMUM_TIME)) {
+            startTime = MINIMUM_TIME;
+        } else if(startTime.isAfter(MAXIMUM_TIME)) {
+            startTime = MAXIMUM_TIME;
+        }
+        String finalQuery = buildRetrieveQuery(startTime, internalId, numRecords, direction, filter);
+        List<T> result = new ArrayList<>(numRecords);
+        try (Statement prepStmt = connection.createStatement()) {
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer(this + " - retrieve statement: " + finalQuery);
+            }
+            try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
+                while (rs.next()) {
+                    try {
+                        T object = mapToItem(rs, filter);
+                        result.add(object);
+                    } catch (IOException | ClassNotFoundException e) {
+                        throw new SQLException(e);
+                    }
+                }
+            } finally {
+                connection.commit();
+            }
+        }
+        return result;
+    }
+
+    protected abstract String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, K filter);
+
+    protected void addTimeInfo(StringBuilder query, Instant startTime, IUniqueId internalId, RetrievalDirection direction) {
+        if(direction == RetrievalDirection.TO_FUTURE) {
+            query.append("(GenerationTime > '").append(toTimestamp(startTime).toString())
+                    .append("' OR (GenerationTime = '").append(toTimestamp(startTime).toString()).append("' AND UniqueId >= ").append(internalId.asLong()).append(") ) ");
+        } else {
+            query.append("(GenerationTime < '").append(toTimestamp(startTime).toString())
+                    .append("' OR (GenerationTime = '").append(toTimestamp(startTime).toString()).append("' AND UniqueId <= ").append(internalId.asLong()).append(") ) ");
+        }
+    }
+
+    protected void addTimeInfo(StringBuilder query, Instant startTime, RetrievalDirection direction) {
+        if(direction == RetrievalDirection.TO_FUTURE) {
+            query.append("GenerationTime >= '").append(toTimestamp(startTime).toString()).append("' ");
+        } else {
+            query.append("GenerationTime <= '").append(toTimestamp(startTime).toString()).append("' ");
+        }
+    }
+
     public IUniqueId retrieveLastId() throws ArchiveException {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - retrieveLastId() called");
+        }
         checkDisposed();
         try {
             return doRetrieveLastId(retrieveConnection, getMainType());
@@ -287,6 +349,9 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     public IUniqueId retrieveLastId(Class<? extends AbstractDataItem> type) throws ArchiveException {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - retrieveLastId(Class) called: type=" + type.getSimpleName());
+        }
         checkDisposed();
         try {
             return doRetrieveLastId(retrieveConnection, type);
@@ -297,7 +362,11 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
 
     protected IUniqueId doRetrieveLastId(Connection connection, Class<? extends AbstractDataItem> type) throws SQLException {
         try (Statement prepStmt = connection.createStatement()) {
-            try (ResultSet rs = prepStmt.executeQuery(getLastIdQuery(type))) {
+            String finalQuery = getLastIdQuery(type);
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer(this + " - retrieve statement: " + finalQuery);
+            }
+            try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
                 if (rs.next()) {
                     return new LongUniqueId(rs.getLong(1));
                 } else {
@@ -338,10 +407,17 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     public synchronized Instant retrieveLastGenerationTime(Class<? extends AbstractDataItem> type) throws ArchiveException {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - retrieveLastGenerationTime(Class) called: type=" + type.getSimpleName());
+        }
         checkDisposed();
         try {
             try (Statement prepStmt = retrieveConnection.createStatement()) {
-                try (ResultSet rs = prepStmt.executeQuery(getLastGenerationTimeQuery(type))) {
+                String finalQuery = getLastGenerationTimeQuery(type);
+                if(LOG.isLoggable(Level.FINER)) {
+                    LOG.finer(this + " - retrieve statement: " + finalQuery);
+                }
+                try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
                     if (rs.next()) {
                         return toInstant(rs.getTimestamp(1));
                     } else {
@@ -365,11 +441,17 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected abstract String getLastGenerationTimeQuery(Class<? extends AbstractDataItem> type);
 
     public synchronized void purge(Instant referenceTime, RetrievalDirection direction) throws ArchiveException {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - purge(Instant,RetrievalDirection) called: referenceTime=" + referenceTime + ", direction=" + direction);
+        }
         checkDisposed();
         try {
             try (Statement prepStmt = storeConnection.createStatement()) {
                 try {
                     for(String query : getPurgeQuery(referenceTime, direction)) {
+                        if(LOG.isLoggable(Level.FINER)) {
+                            LOG.finer(this + " - delete statement: " + query);
+                        }
                         prepStmt.executeQuery(query);
                     }
                 } finally {

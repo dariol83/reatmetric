@@ -25,6 +25,7 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.utils.ReferenceProperty;
@@ -80,13 +81,13 @@ public class AlarmParameterDataViewController
 		super.doInitialize(url, rb);
 		this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getName()));
 		this.currentValueCol.setCellValueFactory(
-				o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().getCurrentValue())));
+				o -> new ReadOnlyObjectWrapper<>(ValueUtil.toString(o.getValue().getCurrentValue())));
 		this.currentAlarmStateCol
 				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getCurrentAlarmState()));
 		this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getGenerationTime()));
 		this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getReceptionTime()));
 		this.lastNomValueCol.setCellValueFactory(
-				o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().getLastNominalValue())));
+				o -> new ReadOnlyObjectWrapper<>(ValueUtil.toString(o.getValue().getLastNominalValue())));
 		this.lastNomValueTimeCol
 				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getLastNominalValueTime()));
 		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));

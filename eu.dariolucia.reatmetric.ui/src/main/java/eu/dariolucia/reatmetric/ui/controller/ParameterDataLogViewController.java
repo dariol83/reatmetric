@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -65,8 +66,8 @@ public class ParameterDataLogViewController extends AbstractDataItemLogViewContr
 	protected void doInitialize(URL url, ResourceBundle rb) {
 		super.doInitialize(url, rb);
 		this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getName()));
-		this.engValueCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().getEngValue())));
-		this.sourceValueCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().getSourceValue())));
+		this.engValueCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(ValueUtil.toString(o.getValue().getEngValue())));
+		this.sourceValueCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(ValueUtil.toString(o.getValue().getSourceValue())));
 		this.validityCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValidity()));
 		this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getGenerationTime()));
 		this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getReceptionTime()));

@@ -335,11 +335,52 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                 "FROM ACTIVITY_REPORT_DATA_TABLE AS r JOIN ");
         query.append("(SELECT UniqueId,GenerationTime,ExternalId,Name,Path,Type,Route,Source,Arguments,Properties,AdditionalData FROM ACTIVITY_OCCURRENCE_DATA_TABLE WHERE ");
         // add time info
-        if(direction == RetrievalDirection.TO_FUTURE) {
-            query.append("GenerationTime >= '").append(toTimestamp(startTime)).append("' ");
-        } else {
-            query.append("GenerationTime <= '").append(toTimestamp(startTime)).append("' ");
+        addTimeInfo(query, startTime, direction);
+        // process filter
+        if(filter != null && !filter.isClear()) {
+            if(filter.getParentPath() != null) {
+                query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+            }
+            if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
+                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
+                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
+                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
+            }
+            // For the activity occurrence state we use application post-filtering... for the time being
         }
+        // order by and limit
+        if(direction == RetrievalDirection.TO_FUTURE) {
+            query.append("ORDER BY GenerationTime ASC, UniqueId ASC ");
+        } else {
+            query.append("ORDER BY GenerationTime DESC, UniqueId DESC ");
+        }
+        query.append("FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
+        query.append(") AS ao ON ao.UniqueId = r.ActivityOccurrenceId ");
+        // order by and limit
+        if(direction == RetrievalDirection.TO_FUTURE) {
+            query.append("ORDER BY ao.GenerationTime ASC, ao.UniqueId ASC, r.UniqueId ASC");
+        } else {
+            query.append("ORDER BY ao.GenerationTime DESC, ao.UniqueId DESC, r.UniqueId ASC");
+        }
+        return query.toString();
+    }
+
+    @Override
+    protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, ActivityOccurrenceDataFilter filter) {
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT ao.UniqueId,ao.GenerationTime,ao.ExternalId,ao.Name,ao.Path,ao.Type,ao.Route,ao.Source,ao.Arguments,ao.Properties,ao.AdditionalData," +
+                "r.UniqueId,r.GenerationTime,r.Name,r.ExecutionTime,r.State,r.NextState,r.ReportStatus,r.Result,r.ActivityOccurrenceId,r.AdditionalData " +
+                "FROM ACTIVITY_REPORT_DATA_TABLE AS r JOIN ");
+        query.append("(SELECT UniqueId,GenerationTime,ExternalId,Name,Path,Type,Route,Source,Arguments,Properties,AdditionalData FROM ACTIVITY_OCCURRENCE_DATA_TABLE WHERE ");
+        // add time info
+        addTimeInfo(query, startTime, internalId, direction);
         // process filter
         if(filter != null && !filter.isClear()) {
             if(filter.getParentPath() != null) {
