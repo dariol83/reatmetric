@@ -24,17 +24,12 @@
   ~ limitations under the License.
   -->
 
-<TitledPane fx:id="displayTitledPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Chart Displays" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.UserDisplayViewController">
+<TitledPane fx:id="displayTitledPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Mimics Displays" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.MimicsDisplayViewController">
    <content>
       <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
          <children>
             <ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
                <items>
-                  <Button mnemonicParsing="false" onAction="#newButtonSelected" text="New" prefHeight="25.0" prefWidth="100.0" />
-                  <!-- 
-                  <MenuButton fx:id="loadMenuBtn" mnemonicParsing="false" text="Load" />
-                  <Button fx:id="saveBtn" mnemonicParsing="false" onAction="#saveButtonSelected" text="Save..." />
-                   -->
                   <MenuButton fx:id="loadBtn" mnemonicParsing="false" text="Load..." prefHeight="25.0" prefWidth="100.0" />
                   <Button mnemonicParsing="false" onAction="#closeButtonSelected" text="Close..." prefHeight="25.0" prefWidth="100.0" />
                </items>

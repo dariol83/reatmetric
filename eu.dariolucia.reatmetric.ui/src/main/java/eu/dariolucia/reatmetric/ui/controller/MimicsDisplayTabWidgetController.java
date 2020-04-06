@@ -20,37 +20,28 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
-import eu.dariolucia.reatmetric.api.parameters.Validity;
-import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.*;
+import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import javafx.application.Platform;
-import javafx.beans.Observable;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
 import javafx.scene.Parent;
-import javafx.scene.control.*;
-import javafx.scene.input.DragEvent;
-import javafx.scene.input.Dragboard;
-import javafx.scene.input.TransferMode;
+import javafx.scene.control.Button;
+import javafx.scene.control.Control;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TitledPane;
 import javafx.stage.Popup;
 import javafx.stage.Window;
-import javafx.util.Callback;
+import org.controlsfx.control.ToggleSwitch;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
@@ -63,7 +54,7 @@ import java.util.stream.Collectors;
  *
  * @author dario
  */
-public class ParameterDataViewController extends AbstractDisplayController implements IParameterDataSubscriber {
+public class MimicsDisplayTabWidgetController extends AbstractDisplayController implements IParameterDataSubscriber {
 
     // Pane control
     @FXML
@@ -71,7 +62,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
 
     // Live/retrieval controls
     @FXML
-    protected ToggleButton liveTgl;
+    protected ToggleSwitch liveTgl;
     @FXML
     protected Button goToStartBtn;
     @FXML
@@ -91,31 +82,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     @FXML
     protected ProgressIndicator progressIndicator;
 
-    // Table
-    @FXML
-    protected TableView<ParameterDataWrapper> dataItemTableView; // use a ParameterData wrapper class
-    
-    @FXML
-    private TableColumn<ParameterDataWrapper, String> nameCol;
-    @FXML
-    private TableColumn<ParameterDataWrapper, String> engValueCol;
-    @FXML
-    private TableColumn<ParameterDataWrapper, String> sourceValueCol;
-    @FXML
-    private TableColumn<ParameterDataWrapper, Validity> validityCol;
-    @FXML
-    private TableColumn<ParameterDataWrapper, AlarmState> alarmStateCol;
-    @FXML
-    private TableColumn<ParameterDataWrapper, Instant> genTimeCol;
-    @FXML
-    private TableColumn<ParameterDataWrapper, Instant> recTimeCol;
-    @FXML
-    private TableColumn<ParameterDataWrapper, String> parentCol;
-    
-    // Preset menu
-    @FXML
-    private Menu loadPresetMenu;
-
     // Popup selector for date/time
     protected final Popup dateTimePopup = new Popup();
 
@@ -127,9 +93,6 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     
     // Model map
     private final Map<SystemEntityPath, ParameterDataWrapper> path2wrapper = new TreeMap<>();
-    
-    // Preset manager
-    private final PresetStorageManager presetManager = new PresetStorageManager();
 
     @Override
     protected Window retrieveWindow() {
@@ -138,9 +101,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
 
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
-    	this.dataItemTableView.setPlaceholder(new Label(""));
-    	
-        this.goToStartBtn.disableProperty().bind(this.liveTgl.selectedProperty());
+    	this.goToStartBtn.disableProperty().bind(this.liveTgl.selectedProperty());
         this.goBackOneBtn.disableProperty().bind(this.liveTgl.selectedProperty());
         this.goToEndBtn.disableProperty().bind(this.liveTgl.selectedProperty());
         this.goForwardOneBtn.disableProperty().bind(this.liveTgl.selectedProperty());
@@ -165,65 +126,12 @@ public class ParameterDataViewController extends AbstractDisplayController imple
         }
         
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
-        
-        this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getName()));
-        this.engValueCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(ValueUtil.toString(o.getValue().get().getEngValue())));
-        this.sourceValueCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(ValueUtil.toString(o.getValue().get().getSourceValue())));
-        this.validityCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getValidity()));
-        this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getGenerationTime()));
-        this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getReceptionTime()));
-        this.alarmStateCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getAlarmState()));
-        this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getPath().getParent().asString()));
-
-        this.genTimeCol.setCellFactory(new InstantCellFactory<>());
-        this.recTimeCol.setCellFactory(new InstantCellFactory<>());
-
-        final ObservableList<ParameterDataWrapper> dataList = FXCollections.observableArrayList(
-                new Callback<ParameterDataWrapper, Observable[]>() {
-                    @Override
-                    public Observable[] call(ParameterDataWrapper param) {
-                        return new Observable[]{
-                                param.property()
-                        };
-                    }
-                }
-        );
-        this.dataItemTableView.setItems(dataList);
     }
 
     protected Consumer<List<ParameterData>> buildIncomingDataDelegatorAction() {
         return this::updateDataItems;
     }
-     
-    @FXML
-    protected void onActionSavePresetMenuItem(ActionEvent e) {
-        if(!this.path2wrapper.isEmpty()) {
-            Optional<String> result = DialogUtils.input("PresetName", "Save Parameter Preset", "Parameter Preset", "Please provide the name of the preset:");
-            if (result.isPresent()){
-                Properties props = new OrderedProperties();
-                this.dataItemTableView.getItems().forEach((o) -> props.put(o.getPath().asString(), String.valueOf(o.get().getExternalId())));
-                this.presetManager.save(system.getName(), user, result.get(), doGetComponentId(), props);
-            }
-        }
-    }
-    
-    @FXML
-    protected void onShowingPresetMenu(Event e) {
-        this.loadPresetMenu.getItems().remove(0, this.loadPresetMenu.getItems().size());
-        List<String> presets = this.presetManager.getAvailablePresets(system.getName(), user, doGetComponentId());
-        for(String preset : presets) {
-            final String fpreset = preset;
-            MenuItem mi = new MenuItem(preset);
-            mi.setOnAction((event) -> {
-                Properties p = this.presetManager.load(system.getName(), user, fpreset, doGetComponentId());
-                if(p != null) {
-                    addItemsFromPreset(p);
-                }
-            });
-            this.loadPresetMenu.getItems().add(mi);
-        }
-    }
-    
+
     @FXML
     protected void selectTimeButtonSelected(ActionEvent e) {
         if (this.dateTimePopup.isShowing()) {
@@ -277,9 +185,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             // Keep looking for all parameters: as soon as one is returning a result, stop
             for (ParameterData om : oms) {
                 try {
-                    System.out.println("Retrieving previous of " + om);
                     List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(null, Collections.singletonList(om.getPath()), null, null, null, null));
-                    System.out.println("Returned " + messages);
                     if (!messages.isEmpty()) {
                         updateDataItems(messages);
                         break;
@@ -338,71 +244,10 @@ public class ParameterDataViewController extends AbstractDisplayController imple
             markProgressReady();
         });
     }
-    
-    @FXML
-    protected void onActionRemoveMenuItem(ActionEvent e)
-    {
-    	// Get selected
-    	List<ParameterDataWrapper> selected = new ArrayList<>(this.dataItemTableView.getSelectionModel().getSelectedItems());
-    	// Remove them
-    	removeParameters(selected);
-    }
 
-	@FXML
-    protected void onActionRemoveAllMenuItem(ActionEvent e)
-    {
-    	// Get selected
-    	List<ParameterDataWrapper> selected = new ArrayList<>(this.dataItemTableView.getItems());
-    	// Remove them
-    	removeParameters(selected);
-    }
-
-	private void removeParameters(List<ParameterDataWrapper> selected) {
-		if(selected == null || selected.isEmpty()) {
-			return;
-		}
-		//	
-		stopSubscription();
-		this.dataItemTableView.getItems().removeAll(selected);
-		for(ParameterDataWrapper pdw : selected) {
-			this.path2wrapper.remove(pdw.getPath());
-		}
-		startSubscription();
-	}
-	
-    @FXML
-    protected void onActionMoveUpMenuItem(ActionEvent e)
-    {
-    	int selected = this.dataItemTableView.getSelectionModel().getSelectedIndex();
-    	if(selected >= 1) {
-    		ParameterDataWrapper pdw = this.dataItemTableView.getItems().get(selected);
-    		this.dataItemTableView.getItems().remove(selected);
-    		this.dataItemTableView.getItems().add(--selected, pdw);
-    	}
-    }
-    
-    @FXML
-    protected void onActionMoveDownMenuItem(ActionEvent e)
-    {
-    	int selected = this.dataItemTableView.getSelectionModel().getSelectedIndex();
-    	if(selected >= 0 && selected < this.dataItemTableView.getItems().size() - 1) {
-    		ParameterDataWrapper pdw = this.dataItemTableView.getItems().get(selected);
-    		this.dataItemTableView.getItems().remove(selected);
-    		this.dataItemTableView.getItems().add(++selected, pdw);
-    	}
-    }
-    
     @Override
     public void dataItemsReceived(List<ParameterData> messages) {
         informDataItemsReceived(messages);
-    }
-
-    private void restoreColumnConfiguration() {
-        TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
-    }
-    
-    private void persistColumnConfiguration() {
-        TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
     }
 
     protected void informDataItemsReceived(List<ParameterData> objects) {
@@ -432,15 +277,11 @@ public class ParameterDataViewController extends AbstractDisplayController imple
 
     protected void updateSelectTime() {
         // Take the latest generation time from the table
-        if (this.dataItemTableView.getItems().isEmpty()) {
+        ParameterData pd = findOutLatestParameterSample();
+        if(pd == null || pd.getGenerationTime() == null) {
             this.selectTimeBtn.setText("---");
         } else {
-            ParameterData pd = findOutLatestParameterSample();
-            if(pd == null || pd.getGenerationTime() == null) {
-                this.selectTimeBtn.setText("---");
-            } else {
-                this.selectTimeBtn.setText(formatTime(pd.getGenerationTime()));
-            }
+            this.selectTimeBtn.setText(formatTime(pd.getGenerationTime()));
         }
     }
 
@@ -460,24 +301,19 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     
     @Override
     protected Control doBuildNodeForPrinting() {
-        return TableViewUtil.buildNodeForPrinting(this.dataItemTableView);
+        return null;
     }
     
     @Override
     protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
         this.liveTgl.setSelected(false);
         this.displayTitledPane.setDisable(true);
-        if(oldStatus) {
-            persistColumnConfiguration();
-        }
     }
 
     @Override
     protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
         this.liveTgl.setSelected(true);
         this.displayTitledPane.setDisable(false);
-        // Restore column configuration
-        restoreColumnConfiguration();
         // Start subscription if there
         if (this.liveTgl.isSelected()) {
             startSubscription();
@@ -501,7 +337,7 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
 
     protected String doGetComponentId() {
-        return "ParameterDataView";
+        return "MimicsTabView";
     }
 
     private List<ParameterData> getParameterSamplesSortedByGenerationTimeAscending() {
@@ -550,114 +386,16 @@ public class ParameterDataViewController extends AbstractDisplayController imple
                    pdw.set(pd);
                }
            }
-           this.dataItemTableView.refresh();
+           // Inform the mimics manager about the changed parameters
+           this.mimicsManager.refresh(messages.stream().map(ParameterData::getPath).collect(Collectors.toList()));
            updateSelectTime();
         });
     }
-    
-    @FXML
-    protected void onDragOver(DragEvent event) {
-        if (event.getGestureSource() != this.dataItemTableView &&
-                (
-                    event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.PARAMETER)) ||
-                    event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.CONTAINER))
-                )) {
-            event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
-        }
-        event.consume();
-    }
-    
-    @FXML
-    private void onDragEntered(DragEvent event) {
-        event.consume();
-    }
-    
-    @FXML
-    private void onDragExited(DragEvent event) {
-        event.consume();        
-    }
-    
-    @FXML
-    private void onDragDropped(DragEvent event) {
-        Dragboard db = event.getDragboard();
-        boolean success = false;
-        if (db.hasContent(SystemEntityDataFormats.PARAMETER)) {
-            addParameters((SystemEntity)db.getContent(SystemEntityDataFormats.PARAMETER));
-            success = true;
-        } else if(db.hasContent(SystemEntityDataFormats.CONTAINER)) {
-            addContainer((List<SystemEntity>)db.getContent(SystemEntityDataFormats.CONTAINER));
-            success = true;
-        }
 
-        event.setDropCompleted(success);
-        
-        event.consume();
+    public void loadPreset(File svgFile) {
+        // TODO: create the mimics manager with the svgFile and the path2wrapper map, retrieve the required parameters, update the subscription and add them to the path2wrapper map
     }
 
-    private void addParameters(SystemEntity... systemEntities) {
-        for(SystemEntity systemEntity : systemEntities) {
-            if(systemEntity.getType() == SystemEntityType.PARAMETER) {
-                if(!this.path2wrapper.containsKey(systemEntity.getPath())) {
-                    // Add a fake item to initialise the entry
-                    ParameterDataWrapper pdw = new ParameterDataWrapper(
-                            new ParameterData(
-                            		null,
-                                    Instant.EPOCH,
-                                    systemEntity.getExternalId(),
-                                    systemEntity.getName(),
-                                    systemEntity.getPath(),
-                                    null,
-                                    null,
-                                    null,
-                                    Validity.UNKNOWN, AlarmState.UNKNOWN, null,
-                                    null, null),
-                            systemEntity.getPath()
-                    );
-                    this.path2wrapper.put(systemEntity.getPath(), pdw);
-                    this.dataItemTableView.getItems().add(pdw);
-                }
-            }
-        }
-        if (this.liveTgl.isSelected()) {
-            startSubscription();
-        }
-    }
-    
-    private void addContainer(List<SystemEntity> list) {
-        addParameters(list.toArray(new SystemEntity[list.size()]));
-    }
-
-    private void addItemsFromPreset(Properties p) {
-        this.path2wrapper.clear();
-        this.dataItemTableView.getItems().clear();
-        for(Object systemEntity : p.keySet()) {
-            SystemEntityPath sep = SystemEntityPath.fromString(systemEntity.toString());
-            int externalId = Integer.parseInt(p.getProperty(sep.toString()));
-            if(!this.path2wrapper.containsKey(sep)) {
-                // Add a fake item to initialise the entry
-                ParameterDataWrapper pdw = new ParameterDataWrapper(
-                        new ParameterData(
-                        		null,
-                                Instant.EPOCH,
-                                externalId, //
-                                sep.getLastPathElement(),
-                                sep, 
-                                null, 
-                                null, 
-                                null,
-                                Validity.UNKNOWN, AlarmState.UNKNOWN, null,
-                                null, null),
-                        sep
-                );
-                this.path2wrapper.put(sep, pdw);
-                this.dataItemTableView.getItems().add(pdw);
-            }
-        }
-        if (this.liveTgl.isSelected()) {
-            startSubscription();
-        }
-    }
-    
     public static class ParameterDataWrapper {
         
         private final SystemEntityPath path;
