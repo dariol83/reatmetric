@@ -56,7 +56,8 @@
                   <RadioMenuItem fx:id="eventTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Event Log" toggleGroup="$perspectiveGroup" />
                   <RadioMenuItem fx:id="rawDataTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Raw Data Log" toggleGroup="$perspectiveGroup" />
                   <RadioMenuItem fx:id="alarmsTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Alarm Log" toggleGroup="$perspectiveGroup" />
-                  <RadioMenuItem fx:id="userDisplaysTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="User Displays" toggleGroup="$perspectiveGroup" />
+                  <RadioMenuItem fx:id="userDisplaysTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Chart Displays" toggleGroup="$perspectiveGroup" />
+                  <RadioMenuItem fx:id="mimicsTgl" disable="true" mnemonicParsing="false" onAction="#menubarViewAction" text="Mimics Displays" toggleGroup="$perspectiveGroup" />
               </items>
           </Menu>
           <Menu mnemonicParsing="false" text="Help">

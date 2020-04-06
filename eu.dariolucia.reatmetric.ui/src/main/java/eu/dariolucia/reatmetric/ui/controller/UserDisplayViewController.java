@@ -148,7 +148,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
 	} 
 
 	protected String doGetComponentId() {
-        return "UserDisplayView";
+        return "ChartDisplayView";
     }
     
 	@FXML

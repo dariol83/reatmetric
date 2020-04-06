@@ -41,8 +41,6 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected static final int MAX_STORAGE_QUEUE = 10000; // items
     protected static final int STORAGE_QUEUE_FLUSH_LIMIT = MAX_STORAGE_QUEUE - 100; // size for flush
     protected static final int MAX_LATENCY_TIME = 1000; // milliseconds
-    // TODO: this constant is fundamental: if there are many items with the same generation time, then if LOOK_AHEAD_SPAN is too small,
-    //  the retrieval won't work anymore
     protected static final int LOOK_AHEAD_SPAN = 100; // items to look ahead
 
     protected static final Instant MINIMUM_TIME = Instant.EPOCH;

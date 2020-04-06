@@ -45,6 +45,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
+ * TODO: add mimics support
  *
  * @author dario
  */
@@ -68,6 +69,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	private RadioMenuItem alarmsTgl;
 	@FXML
 	private RadioMenuItem rawDataTgl;
+	@FXML
+	private RadioMenuItem mimicsTgl;
 	@FXML
 	private StackPane perspectiveStackPane;
 
@@ -237,6 +240,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
 		this.perspectiveMap.put(this.alarmsTgl, "alarmPerspective");
 		this.perspectiveMap.put(this.rawDataTgl, "rawDataPerspective");
+		this.perspectiveMap.put(this.mimicsTgl, "mimicsPerspective");
 		this.perspectiveMap.put(this.parameterTgl, "monitoringPerspective");
 		this.perspectiveMap.put(this.parameterLogTgl, "parameterLogPerspective");
 		this.perspectiveMap.put(this.eventTgl, "eventPerspective");
@@ -291,6 +295,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		this.alarmsTgl.setDisable(true);
 		this.rawDataTgl.setDisable(true);
 		this.parameterTgl.setDisable(true);
+		this.mimicsTgl.setDisable(true);
 		this.parameterLogTgl.setDisable(true);
 		this.eventTgl.setDisable(true);
 		this.userDisplaysTgl.setDisable(true);
@@ -309,6 +314,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		this.alarmsTgl.setDisable(false);
 		this.rawDataTgl.setDisable(false);
 		this.parameterTgl.setDisable(false);
+		this.mimicsTgl.setDisable(false);
 		this.parameterLogTgl.setDisable(false);
 		this.eventTgl.setDisable(false);
 		this.userDisplaysTgl.setDisable(false);
