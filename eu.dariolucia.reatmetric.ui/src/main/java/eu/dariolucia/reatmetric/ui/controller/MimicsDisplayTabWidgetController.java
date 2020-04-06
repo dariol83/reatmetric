@@ -308,6 +308,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
         this.liveTgl.setSelected(false);
         this.displayTitledPane.setDisable(true);
+        stopSubscription();
     }
 
     @Override
