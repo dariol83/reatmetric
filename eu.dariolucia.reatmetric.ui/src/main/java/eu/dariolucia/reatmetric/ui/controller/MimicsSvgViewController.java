@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.ui.mimics.MimicsEngine;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
@@ -28,6 +29,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
+import org.w3c.dom.Document;
 
 import java.io.File;
 import java.net.URL;
@@ -51,6 +53,8 @@ public class MimicsSvgViewController implements Initializable {
 
     private boolean loaded = false;
 
+    private MimicsEngine mimicsEngine;
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         webView.setDisable(true);
@@ -70,14 +74,23 @@ public class MimicsSvgViewController implements Initializable {
         zoomSlider.setDisable(false);
         WebEngine engine = webView.getEngine();
         String url = svgFile.toURI().toString();
-        // TODO: load SVG, build mimics processing engine
         engine.load(url);
+        // Get the DOM and process the elements
+        Document svgDom = engine.getDocument();
+        Set<String> parameters = prepareMimicsEngine(svgDom);
         loaded = true;
-        // TODO: return list of parameter paths
-        return Collections.emptySet();
+        return parameters;
+    }
+
+    private Set<String> prepareMimicsEngine(Document svgDom) {
+        mimicsEngine = new MimicsEngine(svgDom);
+        mimicsEngine.initialise();
+        return mimicsEngine.getParameters();
     }
 
     public void refresh(Map<SystemEntityPath, ParameterData> parameters, Set<SystemEntityPath> updatedItems) {
-        // TODO
+        if(mimicsEngine != null) {
+            mimicsEngine.refresh(parameters, updatedItems);
+        }
     }
 }

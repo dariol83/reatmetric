@@ -109,7 +109,7 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops. 
 
-Allowed expression values: any string.
+Allowed expression values: any string or _$eng_ or _$raw_ or _$alarm_ or _$validity_.
 
 #### data-rtmt-transform-[nn]
 
