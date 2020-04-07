@@ -27,7 +27,6 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import javafx.application.Platform;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -37,6 +36,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Control;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TitledPane;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.stage.Window;
 import org.controlsfx.control.ToggleSwitch;
@@ -47,7 +48,6 @@ import java.net.URL;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * FXML Controller class
@@ -56,9 +56,9 @@ import java.util.stream.Collectors;
  */
 public class MimicsDisplayTabWidgetController extends AbstractDisplayController implements IParameterDataSubscriber {
 
-    // Pane control
+    // Inner contents
     @FXML
-    protected TitledPane displayTitledPane;
+    protected VBox innerBox;
 
     // Live/retrieval controls
     @FXML
@@ -90,13 +90,16 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     
     // Temporary object queue
     protected DataProcessingDelegator<ParameterData> delegator;
-    
+
     // Model map
-    private final Map<SystemEntityPath, ParameterDataWrapper> path2wrapper = new TreeMap<>();
+    private final Map<SystemEntityPath, ParameterData> path2wrapper = new TreeMap<>();
+
+    // The mimics manager
+    private MimicsSvgViewController mimicsManager;
 
     @Override
     protected Window retrieveWindow() {
-        return displayTitledPane.getScene().getWindow();
+        return innerBox.getScene().getWindow();
     }
 
     @Override
@@ -114,7 +117,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
             URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent dateTimePicker = loader.load();
-            this.dateTimePickerController = (DateTimePickerWidgetController) loader.getController();
+            this.dateTimePickerController = loader.getController();
             this.dateTimePopup.getContent().addAll(dateTimePicker);
             // Load the controller hide with select
             this.dateTimePickerController.setActionAfterSelection(() -> {
@@ -126,6 +129,16 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         }
         
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
+        // Initialise and add SVG viewer
+        try {
+            URL svgUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/MimicsSvgView.fxml");
+            FXMLLoader loader = new FXMLLoader(svgUrl);
+            Parent svgUrlNode = loader.load();
+            this.mimicsManager = loader.getController();
+            this.innerBox.getChildren().addAll(svgUrlNode);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     protected Consumer<List<ParameterData>> buildIncomingDataDelegatorAction() {
@@ -141,12 +154,12 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
             this.dateTimePopup.setX(b.getMinX());
             this.dateTimePopup.setY(b.getMaxY());
             this.dateTimePopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
-            this.dateTimePopup.show(this.displayTitledPane.getScene().getWindow());
+            this.dateTimePopup.show(this.innerBox.getScene().getWindow());
         }
     }
 
     @FXML
-    protected void liveToggleSelected(ActionEvent e) {
+    protected void liveToggleSelected(MouseEvent e) {
         if (this.liveTgl.isSelected()) {
             startSubscription();
         } else {
@@ -307,14 +320,14 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     @Override
     protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
         this.liveTgl.setSelected(false);
-        this.displayTitledPane.setDisable(true);
+        this.innerBox.setDisable(true);
         stopSubscription();
     }
 
     @Override
     protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
         this.liveTgl.setSelected(true);
-        this.displayTitledPane.setDisable(false);
+        this.innerBox.setDisable(false);
         // Start subscription if there
         if (this.liveTgl.isSelected()) {
             startSubscription();
@@ -342,7 +355,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     }
 
     private List<ParameterData> getParameterSamplesSortedByGenerationTimeAscending() {
-        List<ParameterData> data = this.path2wrapper.values().stream().map(ParameterDataWrapper::get).collect(Collectors.toCollection(ArrayList::new));
+        List<ParameterData> data = new ArrayList<>(this.path2wrapper.values());
         data.sort((a,b) -> {
             int timeComparison = a.getGenerationTime().compareTo(b.getGenerationTime());
             if(timeComparison == 0) {
@@ -364,14 +377,14 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
 
     private ParameterData findOutLatestParameterSample() {
         ParameterData latest = null;
-        for(ParameterDataWrapper pdw : this.path2wrapper.values()) {
+        for(ParameterData pdw : this.path2wrapper.values()) {
             if(latest == null) {
-                latest = pdw.get();
-            } else if(pdw.get() != null) {
-                if(latest.getGenerationTime() != null && pdw.get().getGenerationTime() != null) {
-                    if(latest.getGenerationTime().isBefore(pdw.get().getGenerationTime()) ||
-                            (latest.getInternalId() != null && pdw.get().getInternalId() != null && latest.getGenerationTime().equals(pdw.get().getGenerationTime()) && latest.getInternalId().asLong() < pdw.get().getInternalId().asLong())) {
-                        latest = pdw.get();
+                latest = pdw;
+            } else if(pdw != null) {
+                if(latest.getGenerationTime() != null && pdw.getGenerationTime() != null) {
+                    if(latest.getGenerationTime().isBefore(pdw.getGenerationTime()) ||
+                            (latest.getInternalId() != null && pdw.getInternalId() != null && latest.getGenerationTime().equals(pdw.getGenerationTime()) && latest.getInternalId().asLong() < pdw.getInternalId().asLong())) {
+                        latest = pdw;
                     }
                 }
             }
@@ -381,46 +394,34 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
 
     private void updateDataItems(List<ParameterData> messages) {
         Platform.runLater(() -> {
+           Set<SystemEntityPath> updatedItems = new HashSet<>(messages.size());
            for(ParameterData pd : messages) {
-               ParameterDataWrapper pdw = this.path2wrapper.get(pd.getPath());
-               if(pdw != null) {
-                   pdw.set(pd);
+               ParameterData oldState = this.path2wrapper.get(pd.getPath());
+               if(oldState == null || isStateUpdate(oldState, pd)) {
+                   updatedItems.add(pd.getPath());
                }
+               this.path2wrapper.put(pd.getPath(), pd);
            }
            // Inform the mimics manager about the changed parameters
-           this.mimicsManager.refresh(messages.stream().map(ParameterData::getPath).collect(Collectors.toList()));
+           this.mimicsManager.refresh(path2wrapper, updatedItems);
            updateSelectTime();
         });
     }
 
-    public void loadPreset(File svgFile) {
-        // TODO: create the mimics manager with the svgFile and the path2wrapper map, retrieve the required parameters, update the subscription and add them to the path2wrapper map
+    private boolean isStateUpdate(ParameterData oldState, ParameterData pd) {
+        return !Objects.equals(oldState.getEngValue(), pd.getEngValue()) || !Objects.equals(oldState.getSourceValue(), pd.getSourceValue()) || pd.getAlarmState() != oldState.getAlarmState() || pd.getValidity() != oldState.getValidity();
     }
 
-    public static class ParameterDataWrapper {
-        
-        private final SystemEntityPath path;
-        private final SimpleObjectProperty<ParameterData> property = new SimpleObjectProperty<>();
-
-        public ParameterDataWrapper(ParameterData data, SystemEntityPath path) {
-            property.set(data);
-            this.path = path;
+    public void loadPreset(File svgFile) {
+        // configure the mimics manager with the svgFile, get back the required parameters
+        Set<String> parameters = this.mimicsManager.configure(svgFile);
+        // update the subscription and add them to the path2wrapper map
+        for(String p : parameters) {
+            this.path2wrapper.put(SystemEntityPath.fromString(p), null);
         }
-
-        public void set(ParameterData pd) {
-            property.set(pd);
-        }
-
-        public ParameterData get() {
-            return property.getValue();
-        }
-
-        public SimpleObjectProperty<ParameterData> property() {
-            return property;
-        }
-
-        public SystemEntityPath getPath() {
-        	return this.path;
+        // restart the subscription
+        if(this.liveTgl.isSelected()) {
+            startSubscription();
         }
     }
 }

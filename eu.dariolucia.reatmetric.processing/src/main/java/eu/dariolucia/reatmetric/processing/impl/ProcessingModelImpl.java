@@ -367,7 +367,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     @Override
-    public SystemEntity getRoot() {
+    public SystemEntity getRoot() throws ProcessingModelException {
         return graphModel.getRoot();
     }
 

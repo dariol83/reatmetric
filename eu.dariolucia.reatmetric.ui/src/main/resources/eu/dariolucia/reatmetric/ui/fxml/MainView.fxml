@@ -87,6 +87,7 @@
                           <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="RawDataPerspective.fxml" />
                           <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="AlarmPerspective.fxml" />
                           <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="UserDisplayPerspective.fxml" />
+                          <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="MimicsDisplayPerspective.fxml" />
                           <fx:include maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" source="NullPerspective.fxml" />
                       </children>
                   </StackPane>

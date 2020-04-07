@@ -63,6 +63,11 @@ class TelecommandTransportConnectorImpl implements ITransportConnector {
         return deriveStatus();
     }
 
+    @Override
+    public void prepare() {
+        // Nothing to be done
+    }
+
     public String getType() {
         return type;
     }

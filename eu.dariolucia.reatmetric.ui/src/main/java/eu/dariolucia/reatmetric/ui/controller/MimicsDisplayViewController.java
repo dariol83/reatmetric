@@ -76,25 +76,27 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
 
 	private Tab createNewTab(String tabText) throws IOException {
 		Tab t = new Tab(tabText);
+        try {
+            URL mimicsDisplayWidgetUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/MimicsDisplayTabWidget.fxml");
+            FXMLLoader loader = new FXMLLoader(mimicsDisplayWidgetUrl);
+            VBox mimicsDisplayWidget = loader.load();
+            MimicsDisplayTabWidgetController ctrl = loader.getController();
 
-		URL mimicsDisplayWidgetUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/MimicsDisplayTabWidget.fxml");
-		FXMLLoader loader = new FXMLLoader(mimicsDisplayWidgetUrl);
-		VBox mimicsDisplayWidget = loader.load();
-		MimicsDisplayTabWidgetController ctrl = loader.getController();
-
-		mimicsDisplayWidget.prefWidthProperty().bind(this.tabPane.widthProperty());
-		t.setContent(mimicsDisplayWidget);
-		this.tabPane.getTabs().add(t);
-		this.tabPane.getParent().layout();
-		this.tabPane.getSelectionModel().select(t);
-		this.tab2contents.put(t, ctrl);
-		//
-		if(system != null) {
-			ctrl.systemConnected(system);
-		} else {
-			ctrl.systemDisconnected(system);
-		}
-		return t;
+            mimicsDisplayWidget.prefWidthProperty().bind(this.tabPane.widthProperty());
+            t.setContent(mimicsDisplayWidget);
+            this.tabPane.getTabs().add(t);
+            this.tabPane.getParent().layout();
+            this.tabPane.getSelectionModel().select(t);
+            this.tab2contents.put(t, ctrl);
+            //
+            if (system != null) {
+                ctrl.systemConnected(system);
+            }
+            return t;
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Error", e);
+            throw new IOException(e);
+        }
 	}
 
 	@FXML
@@ -130,8 +132,8 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
 			final String fpreset = preset;
 			MenuItem mi = new MenuItem(preset);
 			mi.setOnAction((event) -> {
-				File p = new File(presetStorageLocation + File.separator + system + File.separator + user + File.separator + doGetComponentId() + File.separator + fpreset + ".svg");
-				if(p.exists() && p.canRead()) {
+				File p = new File(presetStorageLocation + File.separator + system.getName() + File.separator + user + File.separator + doGetComponentId() + File.separator + fpreset + ".svg");
+				if(p.exists()) {
 					try {
 						addMimicsTabFromPreset(fpreset, p);
 					} catch (IOException e) {

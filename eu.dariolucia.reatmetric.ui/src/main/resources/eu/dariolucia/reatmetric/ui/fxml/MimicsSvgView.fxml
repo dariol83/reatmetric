@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~          http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.web.WebView?>
+
+
+<?import javafx.scene.layout.Pane?>
+<VBox xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.MimicsSvgViewController" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+   <children>
+      <ScrollPane fx:id="scrollPane" fitToWidth="true" fitToHeight="true" VBox.vgrow="ALWAYS">
+         <content>
+            <HBox>
+               <children>
+                  <WebView fx:id="webView" minHeight="-1.0" minWidth="-1.0" prefHeight="300.0" prefWidth="400.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"/>
+               </children>
+            </HBox>
+         </content>
+      </ScrollPane>
+      <ToolBar prefHeight="24.0" prefWidth="200.0">
+         <items>
+            <Region HBox.hgrow="ALWAYS" prefHeight="8.0" />
+            <ImageView fx:id="zoomImage" fitHeight="16.0" fitWidth="16.0" pickOnBounds="true" preserveRatio="true" />
+            <Slider fx:id="zoomSlider" majorTickUnit="50.0" max="200.0" minorTickCount="1" prefHeight="16.0" showTickMarks="true" value="100.0" />
+         </items>
+      </ToolBar>
+   </children>
+</VBox>

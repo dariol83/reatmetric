@@ -114,7 +114,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
 	private void activatePerspective(String perspectiveId) {
 		if (perspectiveId == null) {
-			LOG.log(Level.SEVERE, "Perspective not found");
+			LOG.log(Level.SEVERE, "Perspective null");
 			return;
 		}
 		Node found = null;
@@ -126,6 +126,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		}
 		if (found != null) {
 			found.toFront();
+		} else {
+			LOG.log(Level.SEVERE, "Perspective not found: " + perspectiveId);
 		}
 	}
 
@@ -240,7 +242,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
 		this.perspectiveMap.put(this.alarmsTgl, "alarmPerspective");
 		this.perspectiveMap.put(this.rawDataTgl, "rawDataPerspective");
-		this.perspectiveMap.put(this.mimicsTgl, "mimicsPerspective");
+		this.perspectiveMap.put(this.mimicsTgl, "mimicsDisplayPerspective");
 		this.perspectiveMap.put(this.parameterTgl, "monitoringPerspective");
 		this.perspectiveMap.put(this.parameterLogTgl, "parameterLogPerspective");
 		this.perspectiveMap.put(this.eventTgl, "eventPerspective");

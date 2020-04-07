@@ -77,14 +77,16 @@ public class TmPacketReplayManager extends AbstractTransportConnector {
         initialisationDescriptionMap.put(END_TIME_KEY, Pair.of("End time", ValueTypeEnum.ABSOLUTE_TIME));
         initialisationDescriptionMap.put(SPACECRAFT_ID_KEY, Pair.of("Spacecraft ID", ValueTypeEnum.UNSIGNED_INTEGER));
 
-        initialisationMap.put(SPACECRAFT_ID_KEY, spacecraftConfiguration.getId());
+        initialisationMap.put(SPACECRAFT_ID_KEY, (long) spacecraftConfiguration.getId());
     }
 
     @Override
     protected Pair<Long, Long> computeBitrate() {
         Instant now = Instant.now();
         if(lastSamplingTime != null) {
-            long rxRate = Math.round((rxBytes * 8000.0) / (now.toEpochMilli() - lastSamplingTime.toEpochMilli()));
+            long theBytes = rxBytes; // Not atomic, but ... who cares
+            rxBytes = 0;
+            long rxRate = Math.round((theBytes * 8000.0) / (now.toEpochMilli() - lastSamplingTime.toEpochMilli()));
             lastSamplingTime = now;
             return Pair.of(9L, rxRate);
         } else {
@@ -164,6 +166,7 @@ public class TmPacketReplayManager extends AbstractTransportConnector {
                     } else {
                         // Map packet
                         mappedPackets.add(mapPacket(pkt));
+                        rxBytes += pkt.getContents().length;
                     }
                     lastExtracted = pkt;
                 }
@@ -206,7 +209,7 @@ public class TmPacketReplayManager extends AbstractTransportConnector {
     }
 
     @Override
-    protected synchronized void doDisconnect() throws TransportException {
+    protected synchronized void doDisconnect() {
         if(extracting) {
             extracting = false;
         }

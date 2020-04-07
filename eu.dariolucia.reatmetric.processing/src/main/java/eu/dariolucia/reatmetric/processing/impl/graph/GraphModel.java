@@ -297,8 +297,12 @@ public class GraphModel {
         return extendedOperations;
     }
 
-    public SystemEntity getRoot() {
-        return this.root.getProcessor().getEntityState();
+    public SystemEntity getRoot() throws ProcessingModelException {
+        if(this.root != null) {
+            return this.root.getProcessor().getEntityState();
+        } else {
+            throw new ProcessingModelException("No root node present");
+        }
     }
 
     public SystemEntity getSystemEntityOf(int id) throws ProcessingModelException {
@@ -351,8 +355,10 @@ public class GraphModel {
     }
 
     public void navigate(IProcessingModelVisitor visitor) {
-        // Start from root
-        this.root.getProcessor().visit(visitor);
+        if(this.root != null) {
+            // Start from root
+            this.root.getProcessor().visit(visitor);
+        }
     }
 
     public List<AbstractDataItem> getByPath(List<SystemEntityPath> paths) throws ProcessingModelException {

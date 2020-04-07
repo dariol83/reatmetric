@@ -88,6 +88,11 @@ class TelemetryTransportConnectorImpl implements ITransportConnector {
     }
 
     @Override
+    public void prepare() {
+        // Nothing to be done
+    }
+
+    @Override
     public boolean isInitialised() {
         return initialised;
     }

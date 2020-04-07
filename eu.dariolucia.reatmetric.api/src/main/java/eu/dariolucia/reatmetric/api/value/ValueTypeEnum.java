@@ -75,7 +75,7 @@ public enum ValueTypeEnum {
     private Function<?, String> toString;
     private Function<String, ?> toObject;
 
-    <T extends Object> ValueTypeEnum(int code, Class<T> assignedClass, Function<T, String> toString, Function<String, T> toObject) {
+    <T> ValueTypeEnum(int code, Class<T> assignedClass, Function<T, String> toString, Function<String, T> toObject) {
         this.code = code;
         this.assignedClass = assignedClass;
         this.toString = toString;
