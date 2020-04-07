@@ -18,7 +18,6 @@ package eu.dariolucia.reatmetric.ui.mimics.impl;
 
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.ui.mimics.SvgAttributeProcessor;
-import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 
 import java.util.function.Function;
@@ -27,12 +26,15 @@ public class FillAttributeProcessor extends SvgAttributeProcessor {
 
     protected Function<ParameterData, Boolean> condition;
     protected Function<ParameterData, String> expression;
-    protected String attributeToChange = "fill";
 
     public FillAttributeProcessor(Element element, String name, String conditionExpression) {
         super(element, name);
         // Parse condition expression
         parseConditionExpression(conditionExpression);
+    }
+
+    protected String getAttributeToChange() {
+        return "fill";
     }
 
     private void parseConditionExpression(String conditionExpression) {
@@ -57,7 +59,7 @@ public class FillAttributeProcessor extends SvgAttributeProcessor {
     @Override
     public Runnable buildUpdate(ParameterData parameterData) {
         String valueToApply = expression.apply(parameterData);
-        return new AttributeValueApplier(element, attributeToChange, valueToApply);
+        return new AttributeValueApplier(element, getAttributeToChange(), valueToApply);
     }
 
     private static class AttributeValueApplier implements Runnable {
