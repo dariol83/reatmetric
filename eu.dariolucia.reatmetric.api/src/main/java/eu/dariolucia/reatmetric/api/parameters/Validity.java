@@ -22,8 +22,18 @@ package eu.dariolucia.reatmetric.api.parameters;
  * @author dario
  */
 public enum Validity {
-    VALID,
-    INVALID,
-    UNKNOWN,
-    ERROR
+    VALID("Valid"),
+    INVALID("Invalid"),
+    UNKNOWN("Unknown"),
+    ERROR("Error");
+
+    private final String printableName;
+
+    Validity(String printableName) {
+        this.printableName = printableName;
+    }
+
+    public String getPrintableName() {
+        return printableName;
+    }
 }

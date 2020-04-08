@@ -157,7 +157,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             // Immediate check: if there is a sample and its generation time is before the current (not null) one, then exist now
             if(this.state != null && newValue != null && newValue.getGenerationTime().isBefore(state.getGenerationTime())) {
                 if(LOG.isLoggable(Level.FINE)) {
-                    LOG.log(Level.FINE, String.format("Sample of parameter %d (%s) discarded, generation time %s is before current time %s", definition.getId(), definition.getLocation(), newValue.getGenerationTime(), generationTime));
+                    LOG.log(Level.FINE, String.format("Sample of parameter %d (%s) discarded, generation time %s is before current time %s", definition.getId(), definition.getLocation(), newValue.getGenerationTime(), state.getGenerationTime()));
                 }
                 // Before existing, compute the system entity state if needed
                 computeSystemEntityState(stateChanged, generatedStates);

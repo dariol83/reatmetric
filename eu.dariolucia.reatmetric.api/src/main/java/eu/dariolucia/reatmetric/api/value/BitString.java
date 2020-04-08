@@ -84,7 +84,7 @@ public class BitString {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder("_");
         for(int i = 0; i < length; ++i) {
             int byteIdx = i / Byte.SIZE;
             int bitIdx = i % Byte.SIZE;
@@ -95,21 +95,24 @@ public class BitString {
     }
 
     /**
-     * This method parses a BitString encoded as a string. The expected format is a sequence of 0s and 1s. The data will
+     * This method parses a BitString encoded as a string. The expected format is an underscore, followed by a sequence of 0s and 1s. The data will
      * be converted into a byte array, and the length of the BitString will be set equal to the length of the string.
      *
-     * The first character (s.charAt(0)) is the most significant bit.
+     * The second character (s.charAt(1)) is the most significant bit.
      *
-     * @param s the BitString encoded as string of 0s and 1s
+     * @param s the BitString encoded as string of 0s and 1s, with an initial underscore '_'
      * @return the BitString object
      * @throws IllegalArgumentException if the format is not the expected one
      */
     public static BitString parse(String s) {
-        byte[] data = new byte[(int) Math.ceil(s.length() / 8.0)];
-        int length = s.length();
+        if(s.charAt(0) != '_') {
+            throw new IllegalArgumentException("Bitstream string representation must start with _");
+        }
+        byte[] data = new byte[(int) Math.ceil( (s.length()-1) / 8.0)];
+        int length = s.length()-1;
         int currentByteIdx = 0;
         int currentBitIdx = 0;
-        for(int i = 0; i < s.length(); ++i) {
+        for(int i = 1; i < s.length(); ++i) {
             // read the char
             char theChar = s.charAt(i);
             switch (theChar) {

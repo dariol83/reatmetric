@@ -18,9 +18,10 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.mimics.MimicsEngine;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import javafx.application.Platform;
+import javafx.concurrent.Worker;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ScrollPane;
@@ -33,10 +34,10 @@ import org.w3c.dom.Document;
 
 import java.io.File;
 import java.net.URL;
-import java.util.Collections;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class MimicsSvgViewController implements Initializable {
 
@@ -68,18 +69,30 @@ public class MimicsSvgViewController implements Initializable {
         });
     }
 
-    public Set<String> configure(File svgFile) {
+    public void configure(File svgFile, final Consumer<Set<String>> notifier) {
         zoomSlider.setValue(100);
         webView.setDisable(false);
         zoomSlider.setDisable(false);
         WebEngine engine = webView.getEngine();
         String url = svgFile.toURI().toString();
+        engine.getLoadWorker().stateProperty().addListener((observable, oldState, newState) -> {
+            if (newState == Worker.State.SUCCEEDED) {
+                // Get the DOM and process the elements (in the next run of the UI thread)
+                ReatmetricUI.threadPool(MimicsSvgViewController.class).execute(
+                        () -> prepareMimics(notifier)
+                );
+            }
+        });
         engine.load(url);
-        // Get the DOM and process the elements
-        Document svgDom = engine.getDocument();
-        Set<String> parameters = prepareMimicsEngine(svgDom);
         loaded = true;
-        return parameters;
+    }
+
+    private void prepareMimics(final Consumer<Set<String>> notifier) {
+        Document svgDom = webView.getEngine().getDocument();
+        final Set<String> parameters = prepareMimicsEngine(svgDom); // Time consuming operation, defer it to working thread
+        Platform.runLater(() -> {
+            notifier.accept(parameters);
+        });
     }
 
     private Set<String> prepareMimicsEngine(Document svgDom) {

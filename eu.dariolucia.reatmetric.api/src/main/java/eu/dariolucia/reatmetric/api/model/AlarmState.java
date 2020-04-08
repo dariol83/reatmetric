@@ -22,22 +22,28 @@ package eu.dariolucia.reatmetric.api.model;
  * @author dario
  */
 public enum AlarmState {
-    ALARM(true),
-    WARNING(true),
-    VIOLATED(false),
-    ERROR(true),
-    NOMINAL(false),
-    NOT_CHECKED(false),
-    NOT_APPLICABLE(false),
-    UNKNOWN(false);
+    ALARM(true, "Alarm"),
+    WARNING(true, "Warning"),
+    VIOLATED(false, "Violated"),
+    ERROR(true, "Error"),
+    NOMINAL(false, "Nominal"),
+    NOT_CHECKED(false, "Unchecked"),
+    NOT_APPLICABLE(false, "N/A"),
+    UNKNOWN(false, "Unknown");
 
     private final boolean alarm;
+    private final String printableName;
 
-    AlarmState(boolean alarm) {
+    AlarmState(boolean alarm, String printableName) {
         this.alarm = alarm;
+        this.printableName = printableName;
     }
 
     public boolean isAlarm() {
         return alarm;
+    }
+
+    public String getPrintableName() {
+        return printableName;
     }
 }

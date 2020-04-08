@@ -35,7 +35,6 @@ import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Control;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TitledPane;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
@@ -414,7 +413,10 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
 
     public void loadPreset(File svgFile) {
         // configure the mimics manager with the svgFile, get back the required parameters
-        Set<String> parameters = this.mimicsManager.configure(svgFile);
+        this.mimicsManager.configure(svgFile, this::updateParameters);
+    }
+
+    public void updateParameters(Set<String> parameters) {
         // update the subscription and add them to the path2wrapper map
         for(String p : parameters) {
             this.path2wrapper.put(SystemEntityPath.fromString(p), null);

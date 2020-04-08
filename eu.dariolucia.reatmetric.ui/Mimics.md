@@ -79,7 +79,7 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops. 
 
-Allowed expression values: _hidden_ or _visible_.
+Allowed expression values: _collapse_, _hidden_ or _visible_.
 
 #### data-rtmt-fill-color-[nn]
 
@@ -89,7 +89,7 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops. 
 
-Allowed expression values: #RRGGBBAA.
+Allowed expression values: #RRGGBBAA or CSS color names.
 
 #### data-rtmt-stroke-color-[nn]
 
@@ -99,7 +99,7 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops. 
 
-Allowed expression values: #RRGGBBAA.
+Allowed expression values: #RRGGBBAA or CSS color names.
 
 #### data-rtmt-text-[nn]
 

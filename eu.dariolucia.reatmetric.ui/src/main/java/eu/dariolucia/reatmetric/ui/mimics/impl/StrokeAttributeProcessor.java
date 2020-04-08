@@ -18,15 +18,15 @@ package eu.dariolucia.reatmetric.ui.mimics.impl;
 
 import org.w3c.dom.Element;
 
-public class FillAttributeProcessor extends AttributeSetterProcessor {
+public class StrokeAttributeProcessor extends AttributeSetterProcessor {
 
-    public FillAttributeProcessor(Element element, String name, String value) {
+    public StrokeAttributeProcessor(Element element, String name, String value) {
         super(element, name, value);
     }
 
     @Override
     protected String getAttributeToChange() {
-        return "fill";
+        return "stroke";
     }
 
 }

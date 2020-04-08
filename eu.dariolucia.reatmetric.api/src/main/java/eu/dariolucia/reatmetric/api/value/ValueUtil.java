@@ -16,6 +16,9 @@
 
 package eu.dariolucia.reatmetric.api.value;
 
+import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -45,6 +48,87 @@ public class ValueUtil {
                 return handler.toString(valueObject);
             }
         }
+    }
+
+    /**
+     * This method attempts to parse and detect the type of the provided string.
+     *
+     * @param s the string to parse
+     * @return a pair with the value (as object) and the detected {@link ValueTypeEnum}
+     */
+    public static Pair<Object, ValueTypeEnum> tryParse(String s) {
+        if(s == null) {
+            return null;
+        }
+        // String is empty -> can be an empty BIT_STRING, an empty OCTET_STRING, an empty CHARACTER_STRING. The latter is probable.
+        if(s.isEmpty()) {
+            return Pair.of(s, ValueTypeEnum.CHARACTER_STRING);
+        }
+        // String starts with 0x -> try OCTET_STRING, if you fail it is a CHARACTER_STRING
+        if(s.startsWith("0x")) {
+            try {
+                return Pair.of(parse(ValueTypeEnum.OCTET_STRING, s), ValueTypeEnum.OCTET_STRING);
+            } catch (Exception e) {
+                return Pair.of(s, ValueTypeEnum.CHARACTER_STRING);
+            }
+        }
+        // String ends with Z and contains T, -, : -> try ABSOLUTE_TIME, if you fail it is a CHARACTER_STRING
+        if(s.endsWith("Z") && s.contains("T") && s.contains(":") && s.contains("-")) {
+            try {
+                return Pair.of(parse(ValueTypeEnum.ABSOLUTE_TIME, s), ValueTypeEnum.ABSOLUTE_TIME);
+            } catch (Exception e) {
+                return Pair.of(s, ValueTypeEnum.CHARACTER_STRING);
+            }
+        }
+        // String starts with PT -> try RELATIVE_TIME, if you fail it is a CHARACTER_STRING
+        if(s.startsWith("PT")) {
+            try {
+                return Pair.of(parse(ValueTypeEnum.RELATIVE_TIME, s), ValueTypeEnum.RELATIVE_TIME);
+            } catch (Exception e) {
+                return Pair.of(s, ValueTypeEnum.CHARACTER_STRING);
+            }
+        }
+        // String starts with _ -> try BIT_STRING, if you fail it is a CHARACTER_STRING
+        if(s.startsWith("_")) {
+            try {
+                return Pair.of(parse(ValueTypeEnum.BIT_STRING, s), ValueTypeEnum.BIT_STRING);
+            } catch (Exception e) {
+                return Pair.of(s, ValueTypeEnum.CHARACTER_STRING);
+            }
+        }
+        // If string is equal to true or false -> boolean
+        if(s.equals(Boolean.TRUE.toString()) || s.equals(Boolean.FALSE.toString())) {
+            return Pair.of(s.equals(Boolean.TRUE.toString()), ValueTypeEnum.BOOLEAN);
+        }
+        // At this stage, try with an integer number... if fail, try with long, if fail, try with double.
+        try {
+            int value = Integer.parseInt(s);
+            if(value < 0) {
+                return Pair.of((long) value, ValueTypeEnum.SIGNED_INTEGER);
+            } else {
+                return Pair.of(value, ValueTypeEnum.ENUMERATED);
+            }
+        } catch (NumberFormatException e) {
+            // Skip
+        }
+        try {
+            long value = Long.parseLong(s);
+            if(value < 0) {
+                return Pair.of(value, ValueTypeEnum.SIGNED_INTEGER);
+            } else {
+                return Pair.of(value, ValueTypeEnum.UNSIGNED_INTEGER);
+            }
+        } catch (NumberFormatException e) {
+            // Skip
+        }
+        try {
+            double value = Double.parseDouble(s);
+            return Pair.of(value, ValueTypeEnum.REAL);
+        } catch (NumberFormatException e) {
+            // Skip
+        }
+        // If fail, it is a string.
+        return Pair.of(s, ValueTypeEnum.CHARACTER_STRING);
     }
 
     public static Object parse(ValueTypeEnum type, String valueAsString) {

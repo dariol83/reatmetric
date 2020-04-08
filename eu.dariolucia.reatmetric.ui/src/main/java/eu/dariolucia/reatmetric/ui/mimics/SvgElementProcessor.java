@@ -17,30 +17,22 @@
 package eu.dariolucia.reatmetric.ui.mimics;
 
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
-import eu.dariolucia.reatmetric.ui.mimics.impl.FillAttributeProcessor;
+import eu.dariolucia.reatmetric.ui.mimics.impl.*;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 
 import java.util.*;
 
+import static eu.dariolucia.reatmetric.ui.mimics.SvgConstants.*;
+
 public class SvgElementProcessor {
 
-    public static final String FILL_PREFIX = "data-rtmt-fill-color";
-    public static final String STROKE_PREFIX = "data-rtmt-stroke-color";
-    public static final String VISIBILITY_PREFIX = "data-rtmt-visibility";
-    public static final String TEXT_PREFIX = "data-rtmt-text";
-    public static final String TRANSFORM_PREFIX = "data-rtmt-transform";
-    public static final String BLINK_PREFIX = "data-rtmt-blink";
+    private final Element element;
+    private final Map<SvgAttributeType, List<SvgAttributeProcessor>> type2processorList = new EnumMap<>(SvgAttributeType.class);
 
-    private Element element;
-    private String reatmetricParameter;
-
-    private Map<SvgAttributeType, List<SvgAttributeProcessor>> type2processorList = new EnumMap<>(SvgAttributeType.class);
-
-    public SvgElementProcessor(String reatmetricParameter, Element element) {
+    public SvgElementProcessor(Element element) {
         this.element = element;
-        this.reatmetricParameter = reatmetricParameter;
     }
 
     public void initialise() {
@@ -76,18 +68,28 @@ public class SvgElementProcessor {
     }
 
     private void buildBlinkProcessor(Attr attribute) {
+        BlinkNodeProcessor proc = new BlinkNodeProcessor(element, attribute.getName(), attribute.getValue());
+        type2processorList.computeIfAbsent(SvgAttributeType.BLINK, o -> new ArrayList<>()).add(proc);
     }
 
     private void buildTransformProcessor(Attr attribute) {
+        TransformAttributeProcessor proc = new TransformAttributeProcessor(element, attribute.getName(), attribute.getValue());
+        type2processorList.computeIfAbsent(SvgAttributeType.TRANSFORM, o -> new ArrayList<>()).add(proc);
     }
 
     private void buildTextProcessor(Attr attribute) {
+        TextSetterProcessor proc = new TextSetterProcessor(element, attribute.getName(), attribute.getValue());
+        type2processorList.computeIfAbsent(SvgAttributeType.TEXT, o -> new ArrayList<>()).add(proc);
     }
 
     private void buildVisibilityProcessor(Attr attribute) {
+        VisibilityAttributeProcessor proc = new VisibilityAttributeProcessor(element, attribute.getName(), attribute.getValue());
+        type2processorList.computeIfAbsent(SvgAttributeType.VISIBILITY, o -> new ArrayList<>()).add(proc);
     }
 
     private void buildStrokeProcessor(Attr attribute) {
+        StrokeAttributeProcessor proc = new StrokeAttributeProcessor(element, attribute.getName(), attribute.getValue());
+        type2processorList.computeIfAbsent(SvgAttributeType.STROKE, o -> new ArrayList<>()).add(proc);
     }
 
     private void buildFillProcessor(Attr attribute) {
@@ -101,7 +103,7 @@ public class SvgElementProcessor {
             List<SvgAttributeProcessor> procs = type2processorList.get(type);
             if(procs != null) {
                 for(SvgAttributeProcessor processor : procs) {
-                    if(processor.apply(parameterData)) {
+                    if(processor.test(parameterData)) {
                         runnable.add(processor.buildUpdate(parameterData));
                         break;
                     }

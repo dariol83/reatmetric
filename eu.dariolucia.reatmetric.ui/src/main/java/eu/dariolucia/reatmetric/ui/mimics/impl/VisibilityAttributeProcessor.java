@@ -14,7 +14,19 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.ui.mimics;
+package eu.dariolucia.reatmetric.ui.mimics.impl;
 
-public class SvgExpression {
+import org.w3c.dom.Element;
+
+public class VisibilityAttributeProcessor extends AttributeSetterProcessor {
+
+    public VisibilityAttributeProcessor(Element element, String name, String value) {
+        super(element, name, value);
+    }
+
+    @Override
+    protected String getAttributeToChange() {
+        return "visibility";
+    }
+
 }

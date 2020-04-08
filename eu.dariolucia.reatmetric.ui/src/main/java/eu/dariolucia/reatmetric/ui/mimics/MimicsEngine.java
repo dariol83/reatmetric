@@ -20,15 +20,19 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class MimicsEngine {
 
+    private static final Logger LOG = Logger.getLogger(MimicsEngine.class.getName());
+
     public static final String DATA_RTMT_BINDING_ID = "data-rtmt-binding-id";
-    public static final String ID = "id";
+
     private Document svgDom;
 
     private Map<SystemEntityPath, List<SvgElementProcessor>> path2processors;
@@ -54,12 +58,17 @@ public class MimicsEngine {
     }
 
     private void processElement(Element element) {
-        String id = element.getAttribute(ID);
-        String reatmetricParameter = element.getAttribute(DATA_RTMT_BINDING_ID);
-
-        if(id != null && reatmetricParameter != null) {
+        NamedNodeMap map = element.getAttributes();
+        String reatmetricParameter = null;
+        // need to iterate because getAttribute does not work...
+        for(int i = 0; i < map.getLength(); ++i) {
+            if(map.item(i).getNodeName().equals(DATA_RTMT_BINDING_ID)) {
+                reatmetricParameter = map.item(i).getNodeValue();
+            }
+        }
+        if(reatmetricParameter != null && !reatmetricParameter.isBlank()) {
             // Good element, build an SvgElementProcessor and initialise it
-            SvgElementProcessor processor = new SvgElementProcessor(reatmetricParameter, element);
+            SvgElementProcessor processor = new SvgElementProcessor(element);
             processor.initialise();
             path2processors.computeIfAbsent(SystemEntityPath.fromString(reatmetricParameter), o -> new ArrayList<>()).add(processor);
         }
