@@ -30,4 +30,5 @@ public class SvgConstants {
     public static final String TRANSFORM_PREFIX = "data-rtmt-transform";
     public static final String BLINK_PREFIX = "data-rtmt-blink";
 
+    public static final String NO_BLINK = "none";
 }
