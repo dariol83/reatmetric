@@ -18,10 +18,10 @@ package eu.dariolucia.reatmetric.ui.mimics;
 
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Node;
+import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.controller.MimicsSvgViewController;
+import javafx.application.Platform;
+import org.w3c.dom.*;
 
 import java.util.*;
 import java.util.logging.Logger;
@@ -72,6 +72,27 @@ public class MimicsEngine {
             processor.initialise();
             path2processors.computeIfAbsent(SystemEntityPath.fromString(reatmetricParameter), o -> new ArrayList<>()).add(processor);
         }
+        // FIXME: remove
+        if(element.getTagName().equals("animate")) {
+            fullPrint(element);
+        }
+    }
+
+    public static void fullPrint(Element element) {
+        System.out.println("Element: " + element.getTagName() + " - NS URI: " + element.getNamespaceURI() + " - Base URI: " + element.getBaseURI() + " - Local Name: " + element.getLocalName());
+        System.out.println("Node Name: " + element.getNodeName() + " - Node Value: " + element.getNodeValue() + " - Node Type: " + element.getNodeType() + " - Prefix: " + element.getPrefix());
+        NamedNodeMap map = element.getAttributes();
+        // need to iterate because getAttribute does not work...
+        for(int i = 0; i < map.getLength(); ++i) {
+            Attr attr = (Attr) map.item(i);
+            System.out.println("\t Attribute: " + attr.getName() + " - NS URI: " + attr.getNamespaceURI() + " - Base URI: " + attr.getBaseURI() + " - Local Name: " + attr.getLocalName() + " - Value: " + attr.getValue());
+            System.out.println("\t\tNode Name: " + attr.getNodeName() + " - Node Value: " + attr.getNodeValue() + " - Node Type: " + attr.getNodeType() + " - Prefix: " + attr.getPrefix());
+        }
+        for(int i = 0; i < element.getChildNodes().getLength(); ++i) {
+            if (element.getChildNodes().item(i) instanceof Element){
+                fullPrint((Element) element.getChildNodes().item(i));
+            }
+        }
     }
 
     public Set<String> getParameters() {
@@ -79,15 +100,28 @@ public class MimicsEngine {
     }
 
     public void refresh(Map<SystemEntityPath, ParameterData> parameters, Set<SystemEntityPath> updatedItems) {
+        final List<ParameterData> toProcess = new ArrayList<>(updatedItems.size());
         for(SystemEntityPath updated : updatedItems) {
             ParameterData parameterData = parameters.get(updated);
-            List<SvgElementProcessor> processors = path2processors.get(updated);
-            if(parameterData != null && processors != null) {
-                for(SvgElementProcessor proc : processors) {
-                    Runnable run = proc.buildUpdate(parameterData); // The Runnable is a mere applier of the change to the DOM. Good for further optimization.
-                    run.run();
+            toProcess.add(parameterData);
+        }
+        // The construction of the operations to be done is done by a different thread
+        // The application is done by the UI thread
+        ReatmetricUI.threadPool(MimicsSvgViewController.class).execute(() -> {
+            List<Runnable> toBeApplied = new ArrayList<>();
+            for(ParameterData parameterData : toProcess) {
+                List<SvgElementProcessor> processors = path2processors.get(parameterData.getPath());
+                if (processors != null) {
+                    for (SvgElementProcessor proc : processors) {
+                        Runnable run = proc.buildUpdate(parameterData); // The Runnable is a mere applier of the change to the DOM. Good for further optimization.
+                        toBeApplied.add(run);
+                    }
                 }
             }
-        }
+            // Now run
+            Platform.runLater(() -> {
+                toBeApplied.forEach(Runnable::run);
+            });
+        });
     }
 }

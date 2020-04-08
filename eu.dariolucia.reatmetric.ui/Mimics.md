@@ -129,8 +129,8 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops.
 
-Allowed expression values: _true_ or _false_
+Allowed expression values: #RRGGBBAA or CSS color names or _none_ to disable blinking
 
-If set to true, the fill attribute value is taken from the current value and the tone is decreased by half. The 
-_animate_ tag attached to the SVG element is: 
+If set to a colour, the fill attribute value is taken from the specified color and the tone is decreased by half. The 
+_animate_ tag attached to the SVG element is (example): 
 `<animate attributeType="XML" attributeName="fill" values="#800;#f00;#800;#800" dur="1.0s" repeatCount="indefinite"/>`

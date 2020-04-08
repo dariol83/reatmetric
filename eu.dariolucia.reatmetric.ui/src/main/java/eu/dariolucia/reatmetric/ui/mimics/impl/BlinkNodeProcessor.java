@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.ui.mimics.impl;
 
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.ui.mimics.MimicsEngine;
 import eu.dariolucia.reatmetric.ui.mimics.SvgAttributeProcessor;
 import javafx.scene.paint.Color;
 import org.w3c.dom.Element;
@@ -24,6 +25,7 @@ import org.w3c.dom.Node;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 
 public class BlinkNodeProcessor extends SvgAttributeProcessor {
 
@@ -34,7 +36,7 @@ public class BlinkNodeProcessor extends SvgAttributeProcessor {
 
     public BlinkNodeProcessor(Element element, String name, String value) {
         super(element, name, value);
-        currentAnimationNode = element.getOwnerDocument().createElement("animate");
+        currentAnimationNode = element.getOwnerDocument().createElementNS("http://www.w3.org/2000/svg", "animate");
         currentAnimationNode.setAttribute("attributeType", "XML");
         currentAnimationNode.setAttribute("attributeName", "fill");
         currentAnimationNode.setAttribute("dur", "1.0s");
@@ -45,9 +47,9 @@ public class BlinkNodeProcessor extends SvgAttributeProcessor {
     public Runnable buildUpdate(ParameterData parameterData) {
         try {
             String valueToApply = expression.apply(parameterData);
-            if (valueToApply.equals("true")) {
+            if (valueToApply.equals("true")) { // TODO: fix this: colour or 'empty'
                 // Derive colour
-                final String colour = deriveStringColour(element.getAttribute("fill"));
+                final String colour = deriveStringColour(element.getAttribute("fill")); // TODO: the colour to be used shall be part of the blink expression, it can be determined on processor construction
                 Runnable deferredSet = () -> currentAnimationNode.setAttribute("values", colour);
                 LOG.log(Level.WARNING, "Applying blink with value " + colour);
                 // Apply
@@ -101,6 +103,8 @@ public class BlinkNodeProcessor extends SvgAttributeProcessor {
                     this.element.appendChild(toAdd);
                     nodeAdded = true;
                 }
+                // TODO: remove
+                MimicsEngine.fullPrint(BlinkNodeProcessor.super.element);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Error when running blink applier", e);
             }
@@ -124,6 +128,8 @@ public class BlinkNodeProcessor extends SvgAttributeProcessor {
                     element.removeChild(toRemove);
                     nodeAdded = false;
                 }
+                // TODO: remove
+                MimicsEngine.fullPrint(BlinkNodeProcessor.super.element);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Error when running blink remover", e);
             }
