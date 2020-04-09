@@ -18,7 +18,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.mimics.MimicsEngine;
+import eu.dariolucia.reatmetric.ui.mimics.SvgMimicsEngine;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -63,7 +63,11 @@ public class MimicsSvgViewController implements Initializable {
 
     private boolean loaded = false;
 
-    private MimicsEngine mimicsEngine;
+    private SvgMimicsEngine svgMimicsEngine;
+
+    private boolean measuresInited = false;
+    private double svgHeight;
+    private double svgWidth;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -82,13 +86,20 @@ public class MimicsSvgViewController implements Initializable {
             }
         });
 
-        // TODO: remove
+        // Once you load the SVG, retrieve its dimensions
         webView.getEngine().documentProperty().addListener((prop, oldDoc, newDoc) -> {
-            String heightText = webView.getEngine().executeScript(
-                    "window.getComputedStyle(document.svg, null).getPropertyValue('height')"
-            ).toString();
+            if(!measuresInited) {
+                String heightText = webView.getEngine().executeScript(
+                        "window.getComputedStyle(document.firstElementChild,null).height"
+                ).toString();
+                svgHeight = Double.parseDouble(heightText.replace("px", ""));
 
-            System.out.println("heighttext: " + heightText);
+                String widthText = webView.getEngine().executeScript(
+                        "window.getComputedStyle(document.firstElementChild,null).width"
+                ).toString();
+                svgWidth = Double.parseDouble(widthText.replace("px", ""));
+                measuresInited = true;
+            }
         });
     }
 
@@ -99,10 +110,12 @@ public class MimicsSvgViewController implements Initializable {
 
     @FXML
     public void fitToAreaClick(MouseEvent mouseEvent) {
+        if(!measuresInited) {
+            return;
+        }
         // Real size
-        double currHeight = webView.getHeight() / webView.getZoom();
-        Object jsHeight = webView.getEngine().executeScript("document.height");
-        double currWidth = webView.getWidth() / webView.getZoom();
+        double currHeight = svgHeight;
+        double currWidth = svgWidth;
         // Viewport size
         double vHeight = scrollPane.getViewportBounds().getHeight();
         double vWidth = scrollPane.getViewportBounds().getWidth();
@@ -159,14 +172,14 @@ public class MimicsSvgViewController implements Initializable {
     }
 
     private Set<String> prepareMimicsEngine(Document svgDom) {
-        mimicsEngine = new MimicsEngine(svgDom);
-        mimicsEngine.initialise();
-        return mimicsEngine.getParameters();
+        svgMimicsEngine = new SvgMimicsEngine(svgDom);
+        svgMimicsEngine.initialise();
+        return svgMimicsEngine.getParameters();
     }
 
     public void refresh(List<ParameterData> updatedItems) {
-        if(mimicsEngine != null) {
-            mimicsEngine.refresh(updatedItems);
+        if(svgMimicsEngine != null) {
+            svgMimicsEngine.refresh(updatedItems);
         }
     }
 

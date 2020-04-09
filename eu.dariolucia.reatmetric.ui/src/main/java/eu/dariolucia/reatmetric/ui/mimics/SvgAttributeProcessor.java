@@ -25,11 +25,8 @@ import org.w3c.dom.Element;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.logging.Logger;
 
 abstract public class SvgAttributeProcessor implements Comparable<SvgAttributeProcessor>, Predicate<ParameterData> {
-
-    private static final Logger LOG = Logger.getLogger(SvgAttributeProcessor.class.getName());
 
     protected final Function<ParameterData, Object> ENG_VALUE_EXTRACTOR = ParameterData::getEngValue;
     protected final Function<ParameterData, Object> RAW_VALUE_EXTRACTOR = ParameterData::getSourceValue;
@@ -89,17 +86,23 @@ abstract public class SvgAttributeProcessor implements Comparable<SvgAttributePr
     }
 
     private void parseExpression(String expression) {
-        if(expression.equals(SvgConstants.REF_VALUE_ENG)) {
-            this.expression = ENG_VALUE_EXTRACTOR.andThen(ValueUtil::toString);
-        } else if(expression.equals(SvgConstants.REF_VALUE_RAW)) {
-            this.expression = RAW_VALUE_EXTRACTOR.andThen(ValueUtil::toString);
-        } else if(expression.equals(SvgConstants.REF_VALUE_VALIDITY)) {
-            this.expression = VALIDITY_EXTRACTOR.andThen(ValueUtil::toString);
-        } else if(expression.equals(SvgConstants.REF_VALUE_ALARM)) {
-            this.expression = ALARM_EXTRACTOR.andThen(ValueUtil::toString);
-        } else {
-            // Flat string
-            this.expression = parameterData -> expression;
+        switch (expression) {
+            case SvgConstants.REF_VALUE_ENG:
+                this.expression = ENG_VALUE_EXTRACTOR.andThen(ValueUtil::toString);
+                break;
+            case SvgConstants.REF_VALUE_RAW:
+                this.expression = RAW_VALUE_EXTRACTOR.andThen(ValueUtil::toString);
+                break;
+            case SvgConstants.REF_VALUE_VALIDITY:
+                this.expression = VALIDITY_EXTRACTOR.andThen(ValueUtil::toString);
+                break;
+            case SvgConstants.REF_VALUE_ALARM:
+                this.expression = ALARM_EXTRACTOR.andThen(ValueUtil::toString);
+                break;
+            default:
+                // Flat string
+                this.expression = parameterData -> expression;
+                break;
         }
     }
 
@@ -146,7 +149,7 @@ abstract public class SvgAttributeProcessor implements Comparable<SvgAttributePr
         }
     }
 
-    private class ConditionEvaluator implements Function<ParameterData, Boolean> {
+    private static class ConditionEvaluator implements Function<ParameterData, Boolean> {
 
         private final Function<ParameterData, Object> referenceExtractor;
         private final Function<ParameterData, Object> referenceValueExtractor;
@@ -172,7 +175,6 @@ abstract public class SvgAttributeProcessor implements Comparable<SvgAttributePr
                     o2 = Validity.valueOf(o2.toString());
                 }
             }
-            LOG.info("Checking condition for attribute " + attributeName + ", " + o1 + " " + operator + " " + o2 + " - " + parameterData.getPath().asString());
             return operator.apply(o1, o2);
         }
     }

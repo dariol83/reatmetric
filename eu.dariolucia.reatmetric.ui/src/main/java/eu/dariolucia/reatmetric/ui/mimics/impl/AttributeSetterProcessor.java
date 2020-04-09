@@ -56,6 +56,7 @@ abstract public class AttributeSetterProcessor extends SvgAttributeProcessor {
                 }
             }
         }
+        // If the attribute is not there, then it will be created
     }
 
     protected abstract String getAttributeToChange();
@@ -76,6 +77,8 @@ abstract public class AttributeSetterProcessor extends SvgAttributeProcessor {
         public void run() {
             if(attribute != null) {
                 attribute.setValue(value);
+            } else {
+
             }
         }
     }

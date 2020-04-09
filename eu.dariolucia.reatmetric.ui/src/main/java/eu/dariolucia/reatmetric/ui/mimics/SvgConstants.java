@@ -17,6 +17,9 @@
 package eu.dariolucia.reatmetric.ui.mimics;
 
 public class SvgConstants {
+
+    public static final String DATA_RTMT_BINDING_ID = "data-rtmt-binding-id";
+
     public static final String REF_VALUE_ENG = "$eng";
     public static final String REF_VALUE_RAW = "$raw";
     public static final String REF_VALUE_VALIDITY = "$validity";

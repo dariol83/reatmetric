@@ -18,39 +18,22 @@ package eu.dariolucia.reatmetric.ui.mimics;
 
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
-import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.controller.MimicsSvgViewController;
 import javafx.application.Platform;
-import org.w3c.dom.*;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import java.io.StringWriter;
-import java.lang.reflect.Parameter;
 import java.util.*;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class MimicsEngine {
-
-    private static final Logger LOG = Logger.getLogger(MimicsEngine.class.getName());
-
-    public static final String DATA_RTMT_BINDING_ID = "data-rtmt-binding-id";
+public class SvgMimicsEngine {
 
     private Document svgDom;
 
     private Map<SystemEntityPath, List<SvgElementProcessor>> path2processors;
 
-    // FIXME: remove, temporary
-    private Element animationNode;
-    private Node parentNode;
-    private boolean nodeAttached;
-
-    public MimicsEngine(Document svgDom) {
+    public SvgMimicsEngine(Document svgDom) {
         this.svgDom = svgDom;
         this.path2processors = new HashMap<>();
     }
@@ -75,7 +58,7 @@ public class MimicsEngine {
         String reatmetricParameter = null;
         // need to iterate because getAttribute does not work...
         for(int i = 0; i < map.getLength(); ++i) {
-            if(map.item(i).getNodeName().equals(DATA_RTMT_BINDING_ID)) {
+            if(map.item(i).getNodeName().equals(SvgConstants.DATA_RTMT_BINDING_ID)) {
                 reatmetricParameter = map.item(i).getNodeValue();
             }
         }
@@ -103,8 +86,6 @@ public class MimicsEngine {
             }
         }
         // Now run in UI thread
-        Platform.runLater(() -> {
-            toBeApplied.forEach(Runnable::run);
-        });
+        Platform.runLater(() -> toBeApplied.forEach(Runnable::run));
     }
 }
