@@ -54,16 +54,6 @@ Explanation: if the validity is INVALID, set the visibility to hidden (SVG eleme
  
 ### Attributes
 
-#### id
-
-In order to refer to specific SVG elements, the ReatMetric Mimics display uses the _id_ attribute. This
-attribute is mandatory on all SVG elements that have ReatMetric-specific attributes. If this attribute is
-missing, potential ReatMetric attributes in the SVG element are ignored. The value of the _id_ attribute 
-does not have any specific meaning or convention. It is only required to be present (if the SVG element 
-contains ReatMetric attributes) and unique within the whole SVG document.
-
-`Example: id="my-custom-id-001"`
-
 #### data-rtmt-binding-id
 
 This attribute contains the path of the parameter that is bound to the SVG element. 
@@ -79,7 +69,7 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops. 
 
-Allowed expression values: _collapse_, _hidden_ or _visible_.
+Allowed expression values: _collapse_, _hidden_ or _visible_. Null value _##NULL##_ removes the attribute.
 
 #### data-rtmt-fill-color-[nn]
 
@@ -89,7 +79,7 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops. 
 
-Allowed expression values: #RRGGBBAA or CSS color names.
+Allowed expression values: #RRGGBBAA. Null value _##NULL##_ removes the attribute.
 
 #### data-rtmt-stroke-color-[nn]
 
@@ -99,7 +89,7 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops. 
 
-Allowed expression values: #RRGGBBAA or CSS color names.
+Allowed expression values: #RRGGBBAA. Null value _##NULL##_ removes the attribute.
 
 #### data-rtmt-text-[nn]
 
@@ -119,7 +109,7 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops. 
 
-Allowed expression values: string, syntax as per https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform.
+Allowed expression values: string, syntax as per https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform.  Null value _##NULL##_ removes the attribute.
 
 #### data-rtmt-blink-[nn]
 
@@ -129,7 +119,7 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops.
 
-Allowed expression values: #RRGGBBAA or CSS color names or _none_ to disable blinking
+Allowed expression values: #RRGGBBAA or _none_ to disable blinking.
 
 If set to a colour, the fill attribute value is taken from the specified color and the tone is decreased by half. The 
 _animate_ tag attached to the SVG element is (example): 

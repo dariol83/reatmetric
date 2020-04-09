@@ -31,32 +31,11 @@ abstract public class AttributeSetterProcessor extends SvgAttributeProcessor {
         super(element, name, value);
     }
 
-    protected volatile Attr attributeToSet;
-
     @Override
     public Runnable buildUpdate(ParameterData parameterData) {
         String valueToApply = expression.apply(parameterData);
-        if(valueToApply == null) {
-            valueToApply = "";
-        }
-        if(attributeToSet == null) {
-            findAttributeToSet(getAttributeToChange());
-        }
-        return new AttributeValueApplier(element, attributeToSet, valueToApply);
-    }
-
-    private void findAttributeToSet(String attributeToChange) {
-        NamedNodeMap attributesMap = element.getAttributes();
-        if(attributesMap != null) {
-            for(int i = 0; i < attributesMap.getLength(); ++i) {
-                Attr attribute = (Attr) attributesMap.item(i);
-                if(attribute.getName().equals(attributeToChange)) {
-                    attributeToSet = attribute;
-                    return;
-                }
-            }
-        }
-        // If the attribute is not there, then it will be created
+        // If value is null, then the attribute is removed
+        return new AttributeValueApplier(element, getAttributeToChange(), valueToApply);
     }
 
     protected abstract String getAttributeToChange();
@@ -64,21 +43,21 @@ abstract public class AttributeSetterProcessor extends SvgAttributeProcessor {
     private static class AttributeValueApplier implements Runnable {
 
         private final Element element;
-        private final Attr attribute;
         private final String value;
+        private final String attributeName;
 
-        public AttributeValueApplier(Element element, Attr attribute, String value) {
+        public AttributeValueApplier(Element element, String attributeName, String value) {
             this.element = element;
-            this.attribute = attribute;
             this.value = value;
+            this.attributeName = attributeName;
         }
 
         @Override
         public void run() {
-            if(attribute != null) {
-                attribute.setValue(value);
+            if(value == null) {
+                element.removeAttribute(attributeName);
             } else {
-
+                element.setAttribute(attributeName, value);
             }
         }
     }
