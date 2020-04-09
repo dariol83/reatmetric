@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -248,13 +249,19 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         markProgressBusy();
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<ParameterData> messages = doRetrieve(selectedTime, new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()),null,null,null, null));
+                List<ParameterData> messages = doRetrieve(selectedTime, new ParameterDataFilter(null, new ArrayList<>(getCurrentPaths()), null, null, null, null));
                 updateDataItems(messages);
             } catch (Exception e) {
                 e.printStackTrace();
             }
             markProgressReady();
         });
+    }
+
+    private Set<SystemEntityPath> getCurrentPaths() {
+        synchronized (path2wrapper) {
+            return path2wrapper.keySet();
+        }
     }
 
     @Override
@@ -267,7 +274,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     }
     
     private void startSubscription() {
-        ParameterDataFilter pdf = new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()),null,null ,null, null);
+        ParameterDataFilter pdf = new ParameterDataFilter(null, new ArrayList<>(getCurrentPaths()),null,null ,null, null);
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 doServiceSubscribe(pdf);
@@ -354,7 +361,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     }
 
     private List<ParameterData> getParameterSamplesSortedByGenerationTimeAscending() {
-        List<ParameterData> data = new ArrayList<>(this.path2wrapper.values());
+        List<ParameterData> data = new ArrayList<>(getCurrentParameterStates());
         data.sort((a,b) -> {
             int timeComparison = a.getGenerationTime().compareTo(b.getGenerationTime());
             if(timeComparison == 0) {
@@ -374,9 +381,15 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         return data;
     }
 
+    private Collection<ParameterData> getCurrentParameterStates() {
+        synchronized (path2wrapper) {
+            return new ArrayList<>(path2wrapper.values());
+        }
+    }
+
     private ParameterData findOutLatestParameterSample() {
         ParameterData latest = null;
-        for(ParameterData pdw : this.path2wrapper.values()) {
+        for(ParameterData pdw : getCurrentParameterStates()) {
             if(latest == null) {
                 latest = pdw;
             } else if(pdw != null) {
@@ -391,20 +404,23 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         return latest;
     }
 
+    // Typically called from outside the UI thread: in normal situations (log displays) this call is immediately
+    // delegated to the UI thread. In this situation though, we perform the checks on the separate thread.
     private void updateDataItems(List<ParameterData> messages) {
-        Platform.runLater(() -> {
-           Set<SystemEntityPath> updatedItems = new HashSet<>(messages.size());
-           for(ParameterData pd : messages) {
-               ParameterData oldState = this.path2wrapper.get(pd.getPath());
-               if(oldState == null || isStateUpdate(oldState, pd)) {
-                   updatedItems.add(pd.getPath());
+       List<ParameterData> updatedData = new ArrayList<>(messages.size());
+       synchronized (path2wrapper) {
+           for (ParameterData pd : messages) {
+               ParameterData oldState = path2wrapper.get(pd.getPath());
+               if (oldState == null || isStateUpdate(oldState, pd)) {
+                   updatedData.add(pd);
                }
-               this.path2wrapper.put(pd.getPath(), pd);
+               path2wrapper.put(pd.getPath(), pd);
            }
-           // Inform the mimics manager about the changed parameters
-           this.mimicsManager.refresh(path2wrapper, updatedItems);
-           updateSelectTime();
-        });
+       }
+       // Inform the mimics manager about the changed parameters
+       this.mimicsManager.refresh(updatedData);
+       // Next shall be run in the UI thread
+       Platform.runLater(this::updateSelectTime);
     }
 
     private boolean isStateUpdate(ParameterData oldState, ParameterData pd) {
@@ -418,8 +434,10 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
 
     public void updateParameters(Set<String> parameters) {
         // update the subscription and add them to the path2wrapper map
-        for(String p : parameters) {
-            this.path2wrapper.put(SystemEntityPath.fromString(p), null);
+        synchronized (path2wrapper) {
+            for (String p : parameters) {
+                this.path2wrapper.put(SystemEntityPath.fromString(p), null);
+            }
         }
         // restart the subscription
         if(this.liveTgl.isSelected()) {

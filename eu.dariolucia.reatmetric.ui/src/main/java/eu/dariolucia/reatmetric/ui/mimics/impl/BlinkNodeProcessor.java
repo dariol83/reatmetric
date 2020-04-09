@@ -17,7 +17,6 @@
 package eu.dariolucia.reatmetric.ui.mimics.impl;
 
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
-import eu.dariolucia.reatmetric.ui.mimics.MimicsEngine;
 import eu.dariolucia.reatmetric.ui.mimics.SvgAttributeProcessor;
 import eu.dariolucia.reatmetric.ui.mimics.SvgConstants;
 import javafx.scene.paint.Color;
@@ -32,99 +31,105 @@ public class BlinkNodeProcessor extends SvgAttributeProcessor {
 
     private static final Logger LOG = Logger.getLogger(BlinkNodeProcessor.class.getName());
 
-    private final Element currentAnimationNode;
+    private volatile Runnable cachedOperation;
 
     public BlinkNodeProcessor(Element element, String name, String value) {
         super(element, name, value);
-        // For this type of processor, the expression has a value independent of the parameter state
-        String colourText = expression.apply(null);
-        if(colourText.equals(SvgConstants.NO_BLINK)) {
-            currentAnimationNode = null;
-        } else {
-            currentAnimationNode = element.getOwnerDocument().createElementNS("http://www.w3.org/2000/svg", "animate");
-            currentAnimationNode.setAttribute("attributeType", "XML");
-            currentAnimationNode.setAttribute("attributeName", "fill");
-            currentAnimationNode.setAttribute("dur", "1.0s");
-            currentAnimationNode.setAttribute("repeatCount", "indefinite");
-            currentAnimationNode.setAttribute("values", deriveStringColour(colourText));
-        }
     }
 
     @Override
     public Runnable buildUpdate(ParameterData parameterData) {
         try {
-            if(currentAnimationNode != null) {
-                // Apply
-                return new BlinkNodeApplier(element, currentAnimationNode);
-            } else {
-                // Remove
-                return new BlinkNodeRemover(element);
+            if(cachedOperation == null) {
+                // Build the operation once
+                String colourText = expression.apply(parameterData);
+                if(colourText.equals(SvgConstants.NO_BLINK)) {
+                    cachedOperation = new BlinkNodeRemover(element);
+                } else {
+                    cachedOperation = new BlinkNodeApplier(element, colourText);
+                }
             }
+            return cachedOperation;
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Error when building blink update", e);
             return () -> {};
         }
     }
 
-    private String deriveStringColour(String fill) {
+    private static String deriveStringColour(String fill) {
         Color baseColor = Color.web(fill);
         // Resulting string is baseColor/2, baseColor/2, baseColor, baseColor/2
         Color half = Color.color(baseColor.getRed()/2, baseColor.getGreen()/2, baseColor.getBlue()/2, 1);
         return toString(half) + ";" + toString(half) + ";" + toString(baseColor) + ";" + toString(half);
     }
 
-    private String toString(Color c) {
+    private static String toString(Color c) {
         return "#" + hex(c.getRed()) + hex(c.getGreen()) + hex(c.getBlue()) + "FF";
     }
 
-    private String hex(double v) {
+    private static String hex(double v) {
         int vv = (int) (v * 255); // 0 - 255
         return String.format("%02X", vv);
     }
 
-    private class BlinkNodeApplier implements Runnable {
+    /**
+     * Remove the first "animate" node from the provided element, if the node is not equal to the provided animateNode.
+     *
+     * @param element
+     * @param animateNode
+     * @return true if the animate element was found and removed, or was not found, otherwise false
+     */
+    private static boolean removeAnimateNodeIfNotEqual(Node element, Node animateNode) {
+        for(int i = 0; i < element.getChildNodes().getLength(); ++i) {
+            Node child = element.getChildNodes().item(i);
+            if(child instanceof Element) {
+                if(((Element) child).getTagName().equals("animate")) {
+                    // Found the node: if not equal, remove, otherwise done
+                    if(child != animateNode) {
+                        element.removeChild(child);
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    private static class BlinkNodeApplier implements Runnable {
 
         private final Element element;
-        private final Node toAdd;
+        private final String colourText;
+        private Element toAdd;
 
-        public BlinkNodeApplier(Element element, Node toAdd) {
+        public BlinkNodeApplier(Element element, String colourText) {
             this.element = element;
-            this.toAdd = toAdd;
+            this.colourText = colourText;
         }
 
         @Override
         public void run() {
             try {
-                LOG.warning("Appending: " + toAdd);
-                LOG.log(Level.SEVERE, "Before add");
-                MimicsEngine.fullPrint(BlinkNodeProcessor.super.element);
-
-                // First remove the "animate" node if any. If the node to remove is exactly equals to toAdd, don't do anything, you are done
-                for(int i = 0; i < element.getChildNodes().getLength(); ++i) {
-                    Node child = element.getChildNodes().item(i);
-                    if(child instanceof Element) {
-                        if(((Element) child).getTagName().equals("animate")) {
-                            if(child != toAdd) {
-                                element.removeChild(child);
-                                break;
-                            } else {
-                                // Do nothing
-                                return;
-                            }
-                        }
-                    }
+                if(toAdd == null) {
+                    toAdd = element.getOwnerDocument().createElementNS("http://www.w3.org/2000/svg", "animate");
+                    toAdd.setAttribute("attributeType", "XML");
+                    toAdd.setAttribute("attributeName", "fill");
+                    toAdd.setAttribute("dur", "1.0s");
+                    toAdd.setAttribute("repeatCount", "indefinite");
+                    toAdd.setAttribute("values", deriveStringColour(colourText));
                 }
-                element.appendChild(toAdd);
-                // TODO: remove
-                LOG.log(Level.SEVERE, "Before add");
-                MimicsEngine.fullPrint(BlinkNodeProcessor.super.element);
+                // First remove the "animate" node if any. If the node to remove is exactly equals to toAdd, don't do anything, you are done
+                if(removeAnimateNodeIfNotEqual(element, toAdd)) {
+                    element.appendChild(toAdd);
+                }
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Error when running blink applier", e);
             }
         }
     }
 
-    private class BlinkNodeRemover implements Runnable {
+    private static class BlinkNodeRemover implements Runnable {
 
         private final Element element;
 
@@ -135,21 +140,7 @@ public class BlinkNodeProcessor extends SvgAttributeProcessor {
         @Override
         public void run() {
             try {
-                LOG.log(Level.SEVERE, "Before remove");
-                MimicsEngine.fullPrint(BlinkNodeProcessor.super.element);
-
-                for(int i = 0; i < element.getChildNodes().getLength(); ++i) {
-                    Node child = element.getChildNodes().item(i);
-                    if(child instanceof Element) {
-                        if(((Element) child).getTagName().equals("animate")) {
-                            element.removeChild(child);
-                            return;
-                        }
-                    }
-                }
-                // TODO: remove
-                LOG.log(Level.SEVERE, "After remove");
-                MimicsEngine.fullPrint(BlinkNodeProcessor.super.element);
+                removeAnimateNodeIfNotEqual(element, null);
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Error when running blink remover", e);
             }
