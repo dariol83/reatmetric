@@ -46,8 +46,8 @@
                   <TableColumn fx:id="nameCol" editable="false" prefWidth="130.0" text="Name" />
                   <TableColumn fx:id="engValueCol" editable="false" prefWidth="100.0" text="Eng. Value" />
                   <TableColumn fx:id="sourceValueCol" editable="false" prefWidth="100.0" text="Source Value" />
-                  <TableColumn fx:id="genTimeCol" editable="false" prefWidth="100.0" text="Gen. Time" />
-                  <TableColumn fx:id="recTimeCol" editable="false" prefWidth="100.0" text="Rec. Time" />
+                  <TableColumn fx:id="genTimeCol" editable="false" prefWidth="200.0" text="Gen. Time" />
+                  <TableColumn fx:id="recTimeCol" editable="false" prefWidth="200.0" text="Rec. Time" />
                   <TableColumn fx:id="validityCol" editable="false" text="Validity" />
                   <TableColumn fx:id="alarmStateCol" editable="false" text="Alarm State" />
                   <TableColumn fx:id="parentCol" editable="false" prefWidth="130.0" text="Parent" />

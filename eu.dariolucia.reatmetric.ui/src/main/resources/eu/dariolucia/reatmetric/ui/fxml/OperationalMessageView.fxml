@@ -52,9 +52,9 @@
               <columns>
                 <TableColumn fx:id="idCol" editable="false" prefWidth="75.0" sortable="false" text="ID" />
                   <TableColumn fx:id="severityCol" editable="false" prefWidth="75.0" sortable="false" text="Severity" />
-                  <TableColumn fx:id="genTimeCol" editable="false" prefWidth="150.0" sortable="false" text="Gen. Time" />
-                  <TableColumn fx:id="sourceCol" editable="false" minWidth="8.0" prefWidth="120.0" sortable="false" text="Source" />
-                <TableColumn fx:id="messageCol" editable="false" maxWidth="1.7976931348623157E308" minWidth="43.0" prefWidth="330.0" sortable="false" text="Message" />
+                  <TableColumn fx:id="genTimeCol" editable="false" prefWidth="200.0" sortable="false" text="Gen. Time" />
+                  <TableColumn fx:id="sourceCol" editable="false" minWidth="8.0" prefWidth="160.0" sortable="false" text="Source" />
+                <TableColumn fx:id="messageCol" editable="false" maxWidth="1.7976931348623157E308" minWidth="43.0" prefWidth="800.0" sortable="false" text="Message" />
               </columns>
             </TableView>
          </children>

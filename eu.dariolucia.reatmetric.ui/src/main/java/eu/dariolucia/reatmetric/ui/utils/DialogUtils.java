@@ -47,4 +47,15 @@ public class DialogUtils {
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
     }
+
+    public static boolean alert(String title, String headerText, String contentText) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.getDialogPane().getStylesheets().add(ReatmetricUI.class.getClassLoader()
+                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.isPresent() && result.get() == ButtonType.OK;
+    }
 }

@@ -27,6 +27,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.print.*;
+import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
@@ -61,14 +62,14 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
 
     @FXML
     protected void printButtonSelected(ActionEvent e) {
-        final Control n = doBuildNodeForPrinting();
+        final Node n = doBuildNodeForPrinting();
         if(n != null) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 Printer printer = Printer.getDefaultPrinter();
                 PageLayout pageLayout = printer.createPageLayout(Paper.A4, PageOrientation.PORTRAIT, Printer.MarginType.HARDWARE_MINIMUM);
                 PrinterJob job = PrinterJob.createPrinterJob();
                 
-                double scaleX = pageLayout.getPrintableWidth() / n.getPrefWidth();
+                double scaleX = pageLayout.getPrintableWidth() / n.getBoundsInLocal().getWidth(); // getPrefWidth();
                 Scale scale = new Scale(scaleX, scaleX); // Homogeneus scale, assuming width larger than height ... 
                 n.getTransforms().add(scale);
                 
@@ -138,7 +139,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
 
     protected abstract void doInitialize(URL url, ResourceBundle rb);
 
-    protected abstract Control doBuildNodeForPrinting();
+    protected abstract Node doBuildNodeForPrinting();
 
     protected abstract void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus);
 

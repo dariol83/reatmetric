@@ -16,16 +16,19 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.mimics.SvgMimicsEngine;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Slider;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
@@ -33,7 +36,7 @@ import org.w3c.dom.Document;
 
 import java.io.File;
 import java.net.URL;
-import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -177,10 +180,24 @@ public class MimicsSvgViewController implements Initializable {
         return svgMimicsEngine.getParameters();
     }
 
-    public void refresh(List<ParameterData> updatedItems) {
+    public void refresh(Map<SystemEntityPath, ParameterData> updatedItems) {
         if(svgMimicsEngine != null) {
             svgMimicsEngine.refresh(updatedItems);
         }
     }
 
+    public void dispose() {
+        webView.getEngine().load("<html><body></body></html>");
+        if(svgMimicsEngine != null) {
+            svgMimicsEngine.dispose();
+        }
+    }
+
+    public Node print() {
+        WritableImage image = webView.snapshot(null, null);
+        ImageView v = new ImageView(image);
+        v.setFitWidth(webView.getWidth());
+        v.setFitHeight(webView.getHeight());
+        return v;
+    }
 }

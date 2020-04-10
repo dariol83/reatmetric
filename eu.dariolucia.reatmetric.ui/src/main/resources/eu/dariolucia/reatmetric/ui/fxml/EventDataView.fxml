@@ -53,8 +53,8 @@
                 <TableColumn fx:id="nameCol" editable="false" prefWidth="130.0" sortable="false" text="Name" />
                   <TableColumn fx:id="typeCol" editable="false" prefWidth="75.0" sortable="false" text="Type" />
                 <TableColumn fx:id="routeCol" editable="false" prefWidth="100.0" sortable="false" text="Route" />
-                <TableColumn fx:id="genTimeCol" editable="false" prefWidth="100.0" sortable="false" text="Gen. Time" />
-                <TableColumn fx:id="recTimeCol" editable="false" prefWidth="100.0" sortable="false" text="Rec. Time" />
+                <TableColumn fx:id="genTimeCol" editable="false" prefWidth="200.0" sortable="false" text="Gen. Time" />
+                <TableColumn fx:id="recTimeCol" editable="false" prefWidth="200.0" sortable="false" text="Rec. Time" />
                 <TableColumn fx:id="severityCol" editable="false" prefWidth="100.0" sortable="false" text="Severity" />
                 <TableColumn fx:id="sourceCol" editable="false" prefWidth="100.0" sortable="false" text="Source" />
                 <TableColumn fx:id="qualifierCol" editable="false" prefWidth="100.0" sortable="false" text="Qualifier" />

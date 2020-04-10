@@ -53,8 +53,8 @@
                 <TableColumn fx:id="nameCol" editable="false" prefWidth="130.0" sortable="false" text="Name" />
                 <TableColumn fx:id="currentValueCol" editable="false" prefWidth="75.0" sortable="false" text="Current Eng. Value" />
                 <TableColumn fx:id="currentAlarmStateCol" editable="false" prefWidth="100.0" sortable="false" text="Current Alarm State" />
-                <TableColumn fx:id="genTimeCol" editable="false" prefWidth="100.0" sortable="false" text="Current Gen. Time" />
-                <TableColumn fx:id="recTimeCol" editable="false" prefWidth="100.0" sortable="false" text="Current Rec. Time" />
+                <TableColumn fx:id="genTimeCol" editable="false" prefWidth="200.0" sortable="false" text="Current Gen. Time" />
+                <TableColumn fx:id="recTimeCol" editable="false" prefWidth="200.0" sortable="false" text="Current Rec. Time" />
                 <TableColumn fx:id="lastNomValueCol" editable="false" prefWidth="100.0" sortable="false" text="Last Nom. Value" />
                 <TableColumn fx:id="lastNomValueTimeCol" editable="false" prefWidth="100.0" sortable="false" text="Last Nom. Value Gen. Time" />
                 <TableColumn fx:id="parentCol" editable="false" prefWidth="100.0" sortable="false" text="Parent" />

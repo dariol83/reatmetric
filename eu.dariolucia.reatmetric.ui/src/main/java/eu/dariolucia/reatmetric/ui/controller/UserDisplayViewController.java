@@ -211,13 +211,13 @@ public class UserDisplayViewController extends AbstractDisplayController {
 	@Override
 	protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
 		stopSubscription();
-		this.tab2contents.values().forEach(UserDisplayTabWidgetController::doSystemDisconnected);
+		this.tab2contents.values().forEach(o -> o.doSystemDisconnected(system, oldStatus));
 		this.displayTitledPane.setDisable(true);
 	}
 
 	@Override
 	protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
-		this.tab2contents.values().forEach(UserDisplayTabWidgetController::doSystemConnected);
+		this.tab2contents.values().forEach(o -> o.doSystemConnected(system, oldStatus));
 		ParameterDataFilter globalFilter = buildParameterFilter();
 		EventDataFilter globalEventFilter = buildEventFilter();
 		if(mustSubscribe(globalFilter, globalEventFilter)) {

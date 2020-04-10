@@ -20,20 +20,23 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
+import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
+import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
-import javafx.scene.control.Control;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
@@ -46,7 +49,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -142,7 +144,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     }
 
     protected Consumer<List<ParameterData>> buildIncomingDataDelegatorAction() {
-        return this::updateDataItems;
+        return o -> updateDataItems(o, false, false);
     }
 
     @FXML
@@ -192,6 +194,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         List<ParameterData> oms = getParameterSamplesSortedByGenerationTimeAscending();
         if(oms.isEmpty()) {
             markProgressReady();
+            DialogUtils.alert("No parameter set", "No parameter sample is present", "The mimics does not contain any parameter sample. Try selecting a specific date.");
             return;
         }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
@@ -200,7 +203,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
                 try {
                     List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(null, Collections.singletonList(om.getPath()), null, null, null, null));
                     if (!messages.isEmpty()) {
-                        updateDataItems(messages);
+                        updateDataItems(messages, false, true);
                         break;
                     }
                 } catch (Exception e) {
@@ -231,12 +234,13 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         ParameterData om = findOutLatestParameterSample();
         if(om == null) {
             markProgressReady();
+            DialogUtils.alert("No parameter set", "No parameter sample is present", "The mimics does not contain any parameter sample. Try selecting a specific date.");
             return;
         }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_PAST, new ParameterDataFilter(null, Collections.singletonList(om.getPath()),null,null,null, null));
-                updateDataItems(messages);
+                updateDataItems(messages, false, true);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -250,7 +254,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 List<ParameterData> messages = doRetrieve(selectedTime, new ParameterDataFilter(null, new ArrayList<>(getCurrentPaths()), null, null, null, null));
-                updateDataItems(messages);
+                updateDataItems(messages, true, true);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -298,6 +302,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         // Take the latest generation time from the table
         ParameterData pd = findOutLatestParameterSample();
         if(pd == null || pd.getGenerationTime() == null) {
+            DialogUtils.alert("No parameter set", "No parameter sample is present", "The mimics does not contain any parameter sample. Try selecting a specific date.");
             this.selectTimeBtn.setText("---");
         } else {
             this.selectTimeBtn.setText(formatTime(pd.getGenerationTime()));
@@ -319,8 +324,8 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     }
     
     @Override
-    protected Control doBuildNodeForPrinting() {
-        return null;
+    protected Node doBuildNodeForPrinting() {
+        return mimicsManager.print();
     }
     
     @Override
@@ -362,26 +367,32 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
 
     private List<ParameterData> getParameterSamplesSortedByGenerationTimeAscending() {
         List<ParameterData> data = new ArrayList<>(getCurrentParameterStates());
-        data.sort((a,b) -> {
-            int timeComparison = a.getGenerationTime().compareTo(b.getGenerationTime());
-            if(timeComparison == 0) {
-                if(a.getInternalId() != null && b.getInternalId() != null) {
-                    return (int) (a.getInternalId().asLong() - b.getInternalId().asLong());
-                } else if(a.getInternalId() != null) {
-                    return 1;
-                } else if(b.getInternalId() != null) {
-                    return -1;
+        // Strip out parameters without internal ID (null parameters)
+        data.removeIf(o -> o.getInternalId() == null);
+        if(data.isEmpty()) {
+            return data;
+        } else {
+            data.sort((a, b) -> {
+                int timeComparison = a.getGenerationTime().compareTo(b.getGenerationTime());
+                if (timeComparison == 0) {
+                    if (a.getInternalId() != null && b.getInternalId() != null) {
+                        return (int) (a.getInternalId().asLong() - b.getInternalId().asLong());
+                    } else if (a.getInternalId() != null) {
+                        return 1;
+                    } else if (b.getInternalId() != null) {
+                        return -1;
+                    } else {
+                        return 0;
+                    }
                 } else {
-                    return 0;
+                    return timeComparison;
                 }
-            } else {
-                return timeComparison;
-            }
-        });
+            });
+        }
         return data;
     }
 
-    private Collection<ParameterData> getCurrentParameterStates() {
+    private List<ParameterData> getCurrentParameterStates() {
         synchronized (path2wrapper) {
             return new ArrayList<>(path2wrapper.values());
         }
@@ -389,7 +400,9 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
 
     private ParameterData findOutLatestParameterSample() {
         ParameterData latest = null;
-        for(ParameterData pdw : getCurrentParameterStates()) {
+        List<ParameterData> currentState = getCurrentParameterStates();
+        currentState.removeIf(o -> o == null || o.getInternalId() == null);
+        for(ParameterData pdw : currentState) {
             if(latest == null) {
                 latest = pdw;
             } else if(pdw != null) {
@@ -406,13 +419,29 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
 
     // Typically called from outside the UI thread: in normal situations (log displays) this call is immediately
     // delegated to the UI thread. In this situation though, we perform the checks on the separate thread.
-    private void updateDataItems(List<ParameterData> messages) {
-       List<ParameterData> updatedData = new ArrayList<>(messages.size());
+    private void updateDataItems(List<ParameterData> messages, boolean resetState, boolean fromArchive) {
+       Map<SystemEntityPath, ParameterData> updatedData = new LinkedHashMap<>(messages.size());
        synchronized (path2wrapper) {
+           if(resetState) {
+               // Set path2wrapper to all nulls
+               Set<SystemEntityPath> keys = new TreeSet<>(path2wrapper.keySet());
+               for(SystemEntityPath sp : keys) {
+                   ParameterData nullData = new ParameterData(null, Instant.EPOCH, 0, sp.getLastPathElement(), sp, null, null, null, Validity.UNKNOWN, AlarmState.UNKNOWN, null, null, null);
+                   path2wrapper.put(sp, nullData);
+                   updatedData.put(sp, nullData);
+               }
+               //
+           }
+           // If from archive and the state is not reset, then raise a warning
+           if(messages.isEmpty() && fromArchive && !resetState) {
+               Platform.runLater(() -> DialogUtils.alert("No more parameter samples", "No more parameter samples", "The archive does not contain additional parameter samples"));
+               return;
+           }
+           // Just check what is different and what is not different, and inform the mimics manager
            for (ParameterData pd : messages) {
                ParameterData oldState = path2wrapper.get(pd.getPath());
                if (oldState == null || isStateUpdate(oldState, pd)) {
-                   updatedData.add(pd);
+                   updatedData.put(pd.getPath(), pd);
                }
                path2wrapper.put(pd.getPath(), pd);
            }
@@ -436,12 +465,17 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         // update the subscription and add them to the path2wrapper map
         synchronized (path2wrapper) {
             for (String p : parameters) {
-                this.path2wrapper.put(SystemEntityPath.fromString(p), null);
+                SystemEntityPath path = SystemEntityPath.fromString(p);
+                this.path2wrapper.put(path, new ParameterData(null, Instant.EPOCH, 0, path.getLastPathElement(), path, null, null, null, Validity.UNKNOWN, AlarmState.UNKNOWN, null, null, null));
             }
         }
         // restart the subscription
         if(this.liveTgl.isSelected()) {
             startSubscription();
         }
+    }
+
+    public void dispose() {
+        this.mimicsManager.dispose();
     }
 }

@@ -17,6 +17,7 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
+import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.events.EventData;
@@ -34,18 +35,20 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
-import javafx.print.*;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Control;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.scene.transform.Scale;
 import javafx.stage.Popup;
+import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
@@ -54,14 +57,15 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-import static eu.dariolucia.reatmetric.ui.controller.AbstractDisplayController.formatTime;
-
 /**
  * FXML Controller class
  *
+ * TODO: in case of data arriving in the past, there is the need to set an offset manually or self-detected from data,
+ *  instead of using Instant.now() - 60 seconds.
+ *
  * @author dario
  */
-public class UserDisplayTabWidgetController implements Initializable {
+public class UserDisplayTabWidgetController extends AbstractDisplayController implements Initializable {
 
 	// Live/retrieval controls
 	@FXML
@@ -116,7 +120,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 	private HBox lineBox = null;
 
 	@Override
-	public void initialize(URL url, ResourceBundle rb) {
+	public void doInitialize(URL url, ResourceBundle rb) {
 		if (this.liveTgl != null) {
 			this.goToStartBtn.disableProperty().bind(this.liveTgl.selectedProperty());
 			this.goBackFastBtn.disableProperty().bind(this.liveTgl.selectedProperty());
@@ -135,7 +139,7 @@ public class UserDisplayTabWidgetController implements Initializable {
 					.getResource("eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
 			FXMLLoader loader = new FXMLLoader(datePickerUrl);
 			Parent dateTimePicker = loader.load();
-			this.dateTimePickerController = (DateTimePickerWidgetController) loader.getController();
+			this.dateTimePickerController = loader.getController();
 			this.dateTimePopup.getContent().addAll(dateTimePicker);
 			// Load the controller hide with select
 			this.dateTimePickerController.setActionAfterSelection(() -> {
@@ -447,7 +451,8 @@ public class UserDisplayTabWidgetController implements Initializable {
 		return this.live;
 	}
 
-	public void doSystemDisconnected() {
+	@Override
+	public void doSystemDisconnected(IReatmetricSystem s, boolean oldStatus) {
 		if (this.liveTgl != null) {
 			this.liveTgl.setSelected(false);
 		}
@@ -456,7 +461,8 @@ public class UserDisplayTabWidgetController implements Initializable {
 		clearCharts();
 	}
 
-	public void doSystemConnected() {
+	@Override
+	public void doSystemConnected(IReatmetricSystem s, boolean oldStatus) {
 		// Start subscription if there
 		if (this.liveTgl == null || this.liveTgl.isSelected()) {
 			clearCharts();
@@ -525,40 +531,18 @@ public class UserDisplayTabWidgetController implements Initializable {
 		this.live = false;
 	}
 
-	@FXML
-	protected void printButtonSelected(ActionEvent e) {
-		final Control n = doBuildNodeForPrinting();
-		if (n != null) {
-			ReatmetricUI.threadPool(getClass()).execute(() -> {
-				Printer printer = Printer.getDefaultPrinter();
-				PageLayout pageLayout = printer.createPageLayout(Paper.A4, PageOrientation.PORTRAIT,
-						Printer.MarginType.HARDWARE_MINIMUM);
-				PrinterAttributes attr = printer.getPrinterAttributes();
-				PrinterJob job = PrinterJob.createPrinterJob();
-
-				double scaleX = pageLayout.getPrintableWidth() / n.getPrefWidth();
-				Scale scale = new Scale(scaleX, scaleX); // Homogeneus scale, assuming width larger than height ...
-				n.getTransforms().add(scale);
-
-				if (job != null && job.showPrintDialog(this.innerBox.getScene().getWindow())) {
-					boolean success = job.printPage(pageLayout, n);
-					if (success) {
-						ReatmetricUI.setStatusLabel("Job printed successfully");
-						job.endJob();
-					} else {
-						ReatmetricUI
-								.setStatusLabel("Error while printing job on printer " + job.getPrinter().getName());
-					}
-				}
-			});
-		} else {
-			ReatmetricUI.setStatusLabel("Printing not supported on this display");
-		}
+	@Override
+	protected Window retrieveWindow() {
+		return this.liveTgl.getScene().getWindow();
 	}
 
-	protected Control doBuildNodeForPrinting() {
-		// TODO implement printing support
-		return null;
+	@Override
+	protected Node doBuildNodeForPrinting() {
+		WritableImage image = innerBox.snapshot(null, null);
+		ImageView v = new ImageView(image);
+		v.setFitWidth(innerBox.getWidth());
+		v.setFitHeight(innerBox.getHeight());
+		return v;
 	}
 
 	private AbstractChartManager addLineChart() {

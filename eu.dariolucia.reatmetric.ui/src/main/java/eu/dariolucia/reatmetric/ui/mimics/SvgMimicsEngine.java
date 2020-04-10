@@ -29,9 +29,8 @@ import java.util.stream.Collectors;
 
 public class SvgMimicsEngine {
 
-    private Document svgDom;
-
-    private Map<SystemEntityPath, List<SvgElementProcessor>> path2processors;
+    private volatile Document svgDom;
+    private final Map<SystemEntityPath, List<SvgElementProcessor>> path2processors;
 
     public SvgMimicsEngine(Document svgDom) {
         this.svgDom = svgDom;
@@ -74,9 +73,13 @@ public class SvgMimicsEngine {
         return path2processors.keySet().stream().map(SystemEntityPath::asString).collect(Collectors.toSet());
     }
 
-    public void refresh(List<ParameterData> toProcess) {
+    public void refresh(Map<SystemEntityPath, ParameterData> toProcess) {
+        if(svgDom == null) {
+            // Disposed or not inited
+            return;
+        }
         List<Runnable> toBeApplied = new ArrayList<>();
-        for(ParameterData parameterData : toProcess) {
+        for(ParameterData parameterData : toProcess.values()) {
             List<SvgElementProcessor> processors = path2processors.get(parameterData.getPath());
             if (processors != null) {
                 for (SvgElementProcessor proc : processors) {
@@ -87,5 +90,10 @@ public class SvgMimicsEngine {
         }
         // Now run in UI thread
         Platform.runLater(() -> toBeApplied.forEach(Runnable::run));
+    }
+
+    public void dispose() {
+        svgDom = null;
+        path2processors.clear();
     }
 }

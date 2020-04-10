@@ -102,9 +102,11 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
 	@FXML
 	protected void closeButtonSelected(ActionEvent e) {
 		Tab t = this.tabPane.getSelectionModel().getSelectedItem();
-		if(t != null && DialogUtils.confirm("Close mimics tab", "About to close mimics tab " + t.getText(), "Do you want to close mimics tab " + t.getText() + "? Unsaved chart updates will be lost!")) {
+		if(t != null && DialogUtils.confirm("Close mimics tab", "About to close mimics tab " + t.getText(), "Do you want to close mimics tab " + t.getText() + "?")) {
 			this.tabPane.getTabs().remove(t);
-			this.tab2contents.remove(t).systemDisconnected(system);
+			MimicsDisplayTabWidgetController controller = this.tab2contents.remove(t);
+			controller.systemDisconnected(system);
+			controller.dispose();
 		}
 	}
 	
