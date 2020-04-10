@@ -262,8 +262,7 @@ public class ArchiveInitialiser implements IProcessingModelInitialiser {
             try {
                 initArchive.dispose();
             } catch (ArchiveException e) {
-                // TODO log
-                e.printStackTrace();
+                LOG.log(Level.SEVERE, "Cannot dispose archive initialiser: " + e.getMessage(), e);
             }
         }
     }

@@ -45,8 +45,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * TODO: add mimics support
- *
  * @author dario
  */
 public class MainViewController implements Initializable, IReatmetricServiceListener {

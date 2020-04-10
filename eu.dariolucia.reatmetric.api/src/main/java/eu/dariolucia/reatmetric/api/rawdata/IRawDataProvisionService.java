@@ -28,5 +28,6 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 public interface IRawDataProvisionService extends IDataItemProvisionService<IRawDataSubscriber, RawDataFilter, RawData> {
 
     RawData getRawDataContents(IUniqueId uniqueId) throws ReatmetricException;
-    
+
+    // TODO: add raw data report renderer -> String: need rendering service at driver level
 }
