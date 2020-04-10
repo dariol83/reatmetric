@@ -103,7 +103,7 @@ public class XYBarChartManager extends AbstractChartManager {
 						s.getData().add(data);
 						// data.getNode().setVisible(false);
 						Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
-								(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
+								(pd.getGenerationTime().toString())));
 					} else {
 						parameter2series.remove(pd.getPath());
 						chart.getData().remove(s);

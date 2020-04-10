@@ -23,7 +23,7 @@
 	<children>
 		<ToolBar prefHeight="32.0">
 			<items>
-				<ToggleSwitch fx:id="liveTgl" onMouseClicked="#liveToggleSelected" selected="true" />
+				<ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" selected="true" prefHeight="25.0" prefWidth="91.0" text="Live"/>
 				<Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart" text="|&lt;" />
 				<Button fx:id="goBackOneBtn" disable="true" mnemonicParsing="false" onAction="#goBackOne" text="&lt;" />
 				<Button fx:id="selectTimeBtn" disable="true" mnemonicParsing="false" onAction="#selectTimeButtonSelected" prefHeight="25.0" prefWidth="180.0" text="---" />

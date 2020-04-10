@@ -38,12 +38,14 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.stage.Window;
 import org.controlsfx.control.ToggleSwitch;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -64,7 +66,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
 
     // Live/retrieval controls
     @FXML
-    protected ToggleSwitch liveTgl;
+    protected ToggleButton liveTgl;
     @FXML
     protected Button goToStartBtn;
     @FXML
@@ -161,7 +163,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     }
 
     @FXML
-    protected void liveToggleSelected(MouseEvent e) {
+    protected void liveToggleSelected(ActionEvent e) {
         if (this.liveTgl.isSelected()) {
             startSubscription();
         } else {

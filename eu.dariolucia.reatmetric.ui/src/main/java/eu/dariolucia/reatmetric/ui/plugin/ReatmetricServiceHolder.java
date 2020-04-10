@@ -44,8 +44,10 @@ public class ReatmetricServiceHolder {
         if(oldSystem != null) {
             this.listeners.forEach(o -> o.systemDisconnected(oldSystem));
             try {
+                // Given the amount of concurrency, wait some time before disposing the system... I know, not the best.
+                Thread.sleep(1000);
                 oldSystem.dispose();
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | InterruptedException e) {
                 LOG.log(Level.WARNING, "Exception while disposing system " + oldSystem.getName() + ": " + e.getMessage(), e);
             }
         }

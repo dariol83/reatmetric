@@ -267,6 +267,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
                 break;
             case UNBOUND:
                 updateConnectionStatus(isInitialised() ? TransportConnectionStatus.IDLE : TransportConnectionStatus.NOT_INIT);
+                updateMessage("Service instance disconnected");
                 break;
         }
         if(state.getLastError() != null) {

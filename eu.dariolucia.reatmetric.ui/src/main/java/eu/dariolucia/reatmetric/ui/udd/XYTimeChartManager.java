@@ -100,11 +100,11 @@ public class XYTimeChartManager extends AbstractChartManager {
 				if (s != null && pd.getEngValue() != null) {
 					// if not a number, remove the parameter from the plot
 					if(pd.getEngValue() instanceof Number) {
-						XYChart.Data<Instant, Number> data = new XYChart.Data<>(live ? pd.getReceptionTime() : pd.getGenerationTime(), (Number) pd.getEngValue());
+						XYChart.Data<Instant, Number> data = new XYChart.Data<>(pd.getGenerationTime(), (Number) pd.getEngValue());
 						s.getData().add(data);
 						// data.getNode().setVisible(false);
 						Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
-								(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString())));
+								(pd.getGenerationTime().toString())));
 					} else {
 						parameter2series.remove(pd.getPath());
 						chart.getData().remove(s);
@@ -137,7 +137,7 @@ public class XYTimeChartManager extends AbstractChartManager {
 
 	@Override
 	public void setBoundaries(Instant min, Instant max) {
-		((InstantAxis) this.chart.getXAxis()).setLowerBound(min);
+    	((InstantAxis) this.chart.getXAxis()).setLowerBound(min);
 		((InstantAxis) this.chart.getXAxis()).setUpperBound(max);
 	}
 

@@ -39,7 +39,6 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.*;
 import javafx.scene.control.Button;
-import javafx.scene.control.Control;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.image.ImageView;
@@ -60,8 +59,6 @@ import java.util.stream.Collectors;
 /**
  * FXML Controller class
  *
- * TODO: in case of data arriving in the past, there is the need to set an offset manually or self-detected from data,
- *  instead of using Instant.now() - 60 seconds.
  *
  * @author dario
  */
@@ -84,6 +81,9 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 	protected Button goForwardOneBtn;
 	@FXML
 	protected Button selectTimeBtn;
+
+	@FXML
+	protected ToggleButton liveTimeTgl;
 
 	@FXML
 	protected VBox innerBox;
@@ -109,15 +109,18 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 
 	protected final int timeUnit = 5000;
 
-	private Instant currentMin = null;
-	private Instant currentMax = null;
+	private volatile Instant currentMin = null;
+	private volatile Instant currentMax = null;
+
+	private volatile Instant lastDataMaxGenerationTime; // Lastest generation time of data
 
 	private Timer timer = null;
-
+	private volatile boolean liveTimeTracker = true;
 	private volatile boolean live = false;
 	private UserDisplayViewController controller;
 
 	private HBox lineBox = null;
+
 
 	@Override
 	public void doInitialize(URL url, ResourceBundle rb) {
@@ -217,6 +220,8 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 	}
 
 	protected void setData(Instant minTime, Instant maxTime, List<AbstractDataItem> messages, boolean clear) {
+		// As this data comes from the archive, set the last data max time
+		lastDataMaxGenerationTime = lastDataMaxGenerationTime == null ? maxTime : (lastDataMaxGenerationTime.isBefore(maxTime) ? maxTime : lastDataMaxGenerationTime);
 		Platform.runLater(() -> {
 			if (clear) {
 				clearCharts();
@@ -231,6 +236,11 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 
 	public void updateDataItems(List<? extends AbstractDataItem> items) {
 		if (this.live) {
+			// As this data comes from the live stream, set the last data max time
+			Optional<Instant> maxGenerationTime = items.stream().map(AbstractDataItem::getGenerationTime).max((Comparator.naturalOrder()));
+			if(maxGenerationTime.isPresent()) {
+				lastDataMaxGenerationTime = lastDataMaxGenerationTime == null ? maxGenerationTime.get() : (lastDataMaxGenerationTime.isBefore(maxGenerationTime.get()) ? maxGenerationTime.get() : lastDataMaxGenerationTime);
+			}
 			this.charts.forEach(a -> a.plot((List<AbstractDataItem>)items));
 		}
 	}
@@ -244,6 +254,11 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		} else {
 			stopSubscription();
 		}
+	}
+
+	@FXML
+	protected void liveTimeToggleSelected(ActionEvent e) {
+		this.liveTimeTracker = this.liveTimeTgl.isSelected();
 	}
 
 	private void clearCharts() {
@@ -492,7 +507,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		this.live = true;
 		this.charts.forEach(a -> a.switchToLive(true));
 		if (this.currentMin == null) {
-			this.currentMax = Instant.now().plusMillis(getTimeUnit());
+			this.currentMax = getMaxTimeReference();
 			this.currentMin = this.currentMax.minusMillis(getTimeWindowSize());
 			this.charts.forEach(a -> a.setBoundaries(this.currentMin, this.currentMax));
 		}
@@ -504,13 +519,27 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 			@Override
 			public void run() {
 				Platform.runLater(() -> {
-					currentMax = Instant.now().plusMillis(getTimeUnit());
+					currentMax = getMaxTimeReference();
 					currentMin = currentMax.minusMillis(getTimeWindowSize());
 					charts.forEach(a -> a.setBoundaries(currentMin, currentMax));
 					selectTimeBtn.setText(formatTime(currentMax.minusMillis(getTimeUnit())));
 				});
 			}
 		}, getTimeUnit(), getTimeUnit());
+	}
+
+	private Instant getMaxTimeReference() {
+		if(this.liveTimeTracker) {
+			return Instant.now().plusMillis(getTimeUnit());
+		} else {
+			// last retrieve data generation time
+			Instant lastRetriever = lastDataMaxGenerationTime;
+			if(lastRetriever != null) {
+				return lastRetriever.plusMillis(getTimeUnit());
+			} else {
+				return Instant.now().plusMillis(getTimeUnit());
+			}
+		}
 	}
 
 	public ParameterDataFilter getCurrentParameterFilter() {
@@ -583,7 +612,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 	private void addToPane(XYChart<?, ?> l) {
 		if (this.lineBox == null) {
 			this.lineBox = new HBox();
-			this.lineBox.setPrefHeight(250);
+			this.lineBox.setPrefHeight(300);
 			this.lineBox.setPadding(new Insets(10, 10, 10, 10));
 			this.lineBox.setSpacing(10);
 			this.lineBox.prefWidthProperty().bind(this.innerBox.widthProperty());

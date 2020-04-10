@@ -101,10 +101,10 @@ public class XYScatterChartManager extends AbstractChartManager {
 				EventData pd = (EventData) item;
 				ScatterChart.Series<Instant, Number> s = event2series.get(pd.getPath());
 				if (s != null) {
-					ScatterChart.Data<Instant, Number> data = new ScatterChart.Data<>(live ? pd.getReceptionTime() : pd.getGenerationTime(), event2position.get(pd.getPath()));
+					ScatterChart.Data<Instant, Number> data = new ScatterChart.Data<>(pd.getGenerationTime(), event2position.get(pd.getPath()));
 					s.getData().add(data);
 					// data.getNode().setVisible(false);
-					Tooltip.install(data.getNode(), new Tooltip(live ? pd.getReceptionTime().toString() : pd.getGenerationTime().toString()));
+					Tooltip.install(data.getNode(), new Tooltip(pd.getGenerationTime().toString()));
 				}
 			}
 		}

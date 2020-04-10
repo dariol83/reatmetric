@@ -88,6 +88,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
             t.setDaemon(true);
             return t;
         });
+        this.obt2gtCoefficients = Pair.of(BigDecimal.valueOf(timeCorrelationConfiguration().getInitialCoefficientM()), BigDecimal.valueOf(timeCorrelationConfiguration().getInitialCoefficientQ()));
         subscribeToBrokers();
         if(coreConfiguration.getInitialisation() != null) {
             initialiseTimeCoefficients(coreConfiguration.getInitialisation(), context.getArchive().getArchive(IRawDataArchive.class));

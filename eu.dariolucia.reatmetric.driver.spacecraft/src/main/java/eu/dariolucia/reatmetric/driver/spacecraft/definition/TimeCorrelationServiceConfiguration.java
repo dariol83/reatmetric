@@ -36,6 +36,12 @@ public class TimeCorrelationServiceConfiguration {
     @XmlAttribute(name = "maximum-frame-time-delay")
     private long maximumFrameTimeDelay = 1200000000L; // The maximum delay in microseconds that it is allows to match a frame identified by the generation period with the corresponding time packet
 
+    @XmlAttribute(name = "initial-coefficient-m")
+    private double initialCoefficientM = 1;
+
+    @XmlAttribute(name = "initial-coefficient-q")
+    private double initialCoefficientQ = 1;
+
     @XmlElement(name = "time-format", required = true)
     private CucConfiguration timeFormat; // The time format in the time packet
 
@@ -77,5 +83,21 @@ public class TimeCorrelationServiceConfiguration {
 
     public void setMaximumFrameTimeDelay(long maximumFrameTimeDelay) {
         this.maximumFrameTimeDelay = maximumFrameTimeDelay;
+    }
+
+    public double getInitialCoefficientM() {
+        return initialCoefficientM;
+    }
+
+    public void setInitialCoefficientM(double initialCoefficientM) {
+        this.initialCoefficientM = initialCoefficientM;
+    }
+
+    public double getInitialCoefficientQ() {
+        return initialCoefficientQ;
+    }
+
+    public void setInitialCoefficientQ(double initialCoefficientQ) {
+        this.initialCoefficientQ = initialCoefficientQ;
     }
 }

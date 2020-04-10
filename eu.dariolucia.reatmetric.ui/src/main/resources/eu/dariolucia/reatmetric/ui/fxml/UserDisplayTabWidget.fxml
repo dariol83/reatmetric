@@ -39,6 +39,7 @@
                 </items>
                 </MenuButton>
 				<ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" prefHeight="25.0" prefWidth="91.0" selected="true" text="Live" />
+				<ToggleButton fx:id="liveTimeTgl" mnemonicParsing="false" onAction="#liveTimeToggleSelected" prefHeight="25.0" prefWidth="91.0" selected="true" text="Current Time" />
 				<Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart" text="|&lt;" />
 				<Button fx:id="goBackFastBtn" disable="true" mnemonicParsing="false" onAction="#goBackFast" text="&lt;&lt;" />
 				<Button fx:id="goBackOneBtn" disable="true" mnemonicParsing="false" onAction="#goBackOne" text="&lt;" />
