@@ -5,6 +5,10 @@ functions used in an M&C system.
 
 ## System Overview
 
+### Modules
+
+### Dependencies
+
 ## Core Functionalities
 
 ### Abstraction layer for processing
