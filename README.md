@@ -3,37 +3,37 @@ ReatMetric is a Java-based software infrastructure for the implementation of Mon
 strong focus on the space domain. ReatMetric components provide a simple but efficient implementation of the typical 
 functions used in an M&C system.
 
-##System Overview
+## System Overview
 
-##Core Functionalities
+## Core Functionalities
 
-###Abstraction layer for processing
+### Abstraction layer for processing
 
-####Parameters
+#### Parameters
 
-####Events
+#### Events
 
-####Activities
+#### Activities
 
-###Archiving
+### Archiving
 
-###Raw data dissemination
+### Raw data dissemination
 
-###Operational messages dissemination
+### Operational messages dissemination
 
-###UI Interface 
+### UI Interface 
 
-##Spacecraft M&C Driver
+## Spacecraft M&C Driver
 
-###TM support
+### TM support
 
-###TC support
+### TC support
 
-###Performance
+### Performance
 
-##Getting Started
+## Getting Started
 
-##Implement your driver
+## Implement your driver
 
-##Acknowledgements and Credits
+## Acknowledgements and Credits
 
