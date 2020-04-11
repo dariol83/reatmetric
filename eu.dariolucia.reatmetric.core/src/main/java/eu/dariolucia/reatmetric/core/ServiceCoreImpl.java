@@ -22,6 +22,7 @@ import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionSer
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
@@ -34,6 +35,7 @@ import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.*;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
@@ -59,6 +61,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
     private final List<IDriver> drivers = new ArrayList<>();
     private final List<ITransportConnector> transportConnectors = new ArrayList<>();
     private final List<ITransportConnector> transportConnectorsImmutable = Collections.unmodifiableList(transportConnectors);
+    private final Map<Pair<String, String>, IRawDataRenderer> renderers = new HashMap<>();
     private final ServiceCoreConfiguration configuration;
 
     private volatile SystemStatus systemStatus = SystemStatus.UNKNOWN;
@@ -107,7 +110,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         // Load the raw data broker
         LOG.info("Loading raw data broker");
         IRawDataArchive rawDataArchive = archive != null ? archive.getArchive(IRawDataArchive.class) : null;
-        rawDataBroker = new RawDataBrokerImpl(rawDataArchive);
+        rawDataBroker = new RawDataBrokerImpl(this, rawDataArchive);
         // Load the processing model manager and services
         LOG.info("Loading processing model");
         processingModelManager = new ProcessingModelManager(archive, configuration.getDefinitionsLocation(), configuration.getInitialisation());
@@ -122,6 +125,8 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
                 registerConnectors(driver.getTransportConnectors());
                 // Get and register the activity handlers
                 registerActivityHandlers(dc.getName(), driver.getActivityHandlers());
+                // Get and register the raw data renderer
+                registerRawDataRenderers(driver.getRawDataRenderers());
                 LOG.info("Driver " + dc.getName() + " successfully loaded");
             } else {
                 LOG.severe("Driver " + dc.getName() + " not found in the service registry");
@@ -132,6 +137,17 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         deriveSystemStatus();
         // Done and ready to go
         LOG.info("Reatmetric Core System loaded with status " + systemStatus);
+    }
+
+    private void registerRawDataRenderers(List<IRawDataRenderer> rawDataRenderers) {
+        for(IRawDataRenderer renderer : rawDataRenderers) {
+            // The selection is performed by source and type: a renderer supports 1 source and many types (for that source)
+            String source = renderer.getSource();
+            List<String> types = renderer.getSupportedTypes();
+            for(String type : types) {
+                renderers.put(Pair.of(source, type), renderer);
+            }
+        }
     }
 
     private void deriveSystemStatus() {
@@ -193,6 +209,21 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
             driver.initialise(dc.getName(), dc.getConfiguration(), this, this.configuration, this);
         }
         return driver;
+    }
+
+    public LinkedHashMap<String, String> getRenderedInformation(RawData rawData) {
+        Pair<String, String> key = Pair.of(rawData.getSource(), rawData.getType());
+        IRawDataRenderer renderer = renderers.get(key);
+        if(renderer == null) {
+            return new LinkedHashMap<>();
+        } else {
+            try {
+                return Objects.requireNonNullElseGet(renderer.render(rawData), LinkedHashMap::new);
+            } catch (ReatmetricException e) {
+                LOG.log(Level.SEVERE, e.getMessage(), e);
+                return new LinkedHashMap<>();
+            }
+        }
     }
 
     @Override
@@ -274,4 +305,5 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
     public void driverStatusUpdate(String driverName, SystemStatus status) {
         deriveSystemStatus();
     }
+
 }

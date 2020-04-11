@@ -30,10 +30,7 @@ import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
-import eu.dariolucia.reatmetric.core.api.IDriver;
-import eu.dariolucia.reatmetric.core.api.IDriverListener;
-import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
-import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
+import eu.dariolucia.reatmetric.core.api.*;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
@@ -90,6 +87,11 @@ public class TestDriver implements IDriver, IActivityHandler {
     @Override
     public SystemStatus getDriverStatus() {
         return SystemStatus.NOMINAL;
+    }
+
+    @Override
+    public List<IRawDataRenderer> getRawDataRenderers() {
+        return Collections.emptyList();
     }
 
     private ITransportConnector createTcConnector(String type, String... routes) {

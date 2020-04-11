@@ -108,7 +108,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     private void initialise(IProcessingModelInitialiser initialiser) throws ReatmetricException {
         List<AbstractDataItem> stateList = initialiser.getState(getSystemEntityId(), SystemEntityType.PARAMETER);
         if(!stateList.isEmpty()) {
-            this.state = (ParameterData) stateList.get(0); // TODO: generate a copy-state with a new internal ID? Archive the internal ID?
+            this.state = (ParameterData) stateList.get(0);
             builder.setInitialisation(this.state);
             if (stateList.size() > 1) {
                 AlarmParameterData alarmData = (AlarmParameterData) stateList.get(1);

@@ -30,6 +30,8 @@ public interface IDriver {
 
     SystemStatus getDriverStatus();
 
+    List<IRawDataRenderer> getRawDataRenderers();
+
     List<IActivityHandler> getActivityHandlers();
 
     List<ITransportConnector> getTransportConnectors();

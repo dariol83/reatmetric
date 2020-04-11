@@ -38,10 +38,12 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPacketConfigurati
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
+import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -124,9 +126,8 @@ public class TmPacketProcessor implements IRawDataSubscriber {
 
                 // If the header is already part of the SpacePacket annotation, then good. If not, we have to compute it (we are in playback, maybe)
                 TmPusHeader pusHeader = (TmPusHeader) spacePacket.getAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER);
-                TmPusConfiguration conf = null;
                 if (pusHeader == null && spacePacket.isSecondaryHeaderFlag()) {
-                    conf = configuration.getPusConfigurationFor(spacePacket.getApid());
+                    TmPusConfiguration conf = configuration.getPusConfigurationFor(spacePacket.getApid());
                     if (conf != null) {
                         pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.getObtConfiguration() != null && conf.getObtConfiguration().isExplicitPField(), epoch, conf.getTimeDescriptor());
                         spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
@@ -198,5 +199,47 @@ public class TmPacketProcessor implements IRawDataSubscriber {
 
     public void dispose() {
         this.broker.unsubscribe(this);
+    }
+
+    public LinkedHashMap<String, String> renderTmPacket(RawData rawData) {
+        LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
+        SpacePacket sp = (SpacePacket) rawData.getData();
+        if(sp == null) {
+            sp = new SpacePacket(rawData.getContents(), rawData.getQuality().equals(Quality.GOOD));
+        }
+        TmPusHeader pusHeader = (TmPusHeader) sp.getAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER);
+        if (pusHeader == null && sp.isSecondaryHeaderFlag()) {
+            TmPusConfiguration conf = configuration.getPusConfigurationFor(sp.getApid());
+            if (conf != null) {
+                pusHeader = TmPusHeader.decodeFrom(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.getObtConfiguration() != null && conf.getObtConfiguration().isExplicitPField(), epoch, conf.getTimeDescriptor());
+            }
+        }
+        TmFrameDescriptor frameDescriptor = (TmFrameDescriptor) rawData.getExtension();
+        toReturn.put("TM Space Packet", null);
+        toReturn.put("APID", String.valueOf(sp.getApid()));
+        toReturn.put("SCC", String.valueOf(sp.getPacketSequenceCount()));
+        toReturn.put("Sequence Flag", String.valueOf(sp.getSequenceFlag()));
+        toReturn.put("Secondary Header Flag", String.valueOf(sp.isSecondaryHeaderFlag()));
+        toReturn.put("Idle Packet", String.valueOf(sp.isIdle()));
+        toReturn.put("Length", String.valueOf(sp.getLength()));
+        if(pusHeader != null) {
+            toReturn.put("PUS Header Information", null);
+            toReturn.put("Type", String.valueOf(pusHeader.getServiceType()));
+            toReturn.put("Subtype", String.valueOf(pusHeader.getServiceSubType()));
+            toReturn.put("Destination ID", String.valueOf(pusHeader.getDestinationId()));
+            toReturn.put("Packet Subcounter", String.valueOf(pusHeader.getPacketSubCounter()));
+            toReturn.put("OBT", String.valueOf(pusHeader.getAbsoluteTime()));
+        }
+        if(frameDescriptor != null) {
+            toReturn.put("Parent (first) TM Frame", null);
+            toReturn.put("Virtual Channel ID", String.valueOf(frameDescriptor.getVirtualChannelId()));
+            toReturn.put("Virtual Channel Counter", String.valueOf(frameDescriptor.getVirtualChannelFrameCounter()));
+            toReturn.put("Earth-Reception Time", String.valueOf(frameDescriptor.getEarthReceptionTime()));
+        }
+        return toReturn;
+    }
+
+    public LinkedHashMap<String, String> renderBadPacket(RawData rawData) {
+        return null;
     }
 }

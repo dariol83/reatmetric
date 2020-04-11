@@ -26,12 +26,16 @@ import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.IVirtualChannelReceive
 import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.TmReceiverVirtualChannel;
 import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.demux.VirtualChannelReceiverDemux;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
+import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
+import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
+import eu.dariolucia.ccsds.tmtc.ocf.pdu.Clcw;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
+import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
@@ -40,9 +44,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmDataLinkConfigura
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -216,5 +218,86 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
 
     public void dispose() {
         broker.unsubscribe(this);
+    }
+
+
+    public LinkedHashMap<String, String> renderTmFrame(RawData rawData) {
+        LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
+        TmTransferFrame frame = (TmTransferFrame) rawData.getData();
+        if(frame == null) {
+            frame = new TmTransferFrame(rawData.getContents(), configuration.isFecfPresent());
+        }
+        toReturn.put("Frame Information", null);
+        toReturn.put("Spacecraft ID", String.valueOf(frame.getSpacecraftId()));
+        toReturn.put("Virtual Channel ID", String.valueOf(frame.getVirtualChannelId()));
+        toReturn.put("Master Channel Counter", String.valueOf(frame.getMasterChannelFrameCount()));
+        toReturn.put("Virtual Channel Counter", String.valueOf(frame.getVirtualChannelFrameCount()));
+        toReturn.put("Segment Length Identifier", String.valueOf(frame.getSegmentLengthIdentifier()));
+        toReturn.put("Packet Order Flag", String.valueOf(frame.isPacketOrderFlag()));
+        toReturn.put("Synchronisation Flag", String.valueOf(frame.isSynchronisationFlag()));
+        toReturn.put("Secondary Header Present", String.valueOf(frame.isSecondaryHeaderPresent()));
+        toReturn.put("First Header Pointer", String.valueOf(frame.getFirstHeaderPointer()));
+        toReturn.put("Idle Frame", String.valueOf(frame.isIdleFrame()));
+        if(frame.isOcfPresent()) {
+            Clcw clcw = new Clcw(frame.getOcfCopy());
+            toReturn.put("CLCW", null);
+            toReturn.put("CLCW TC VC ID", String.valueOf(clcw.getVirtualChannelId()));
+            toReturn.put("CLCW Status Field", String.valueOf(clcw.getStatusField()));
+            toReturn.put("CLCW COP in Effect", String.valueOf(clcw.getCopInEffect()));
+            toReturn.put("CLCW Lockout Flag", String.valueOf(clcw.isLockoutFlag()));
+            toReturn.put("CLCW No Bitlock Flag", String.valueOf(clcw.isNoBitlockFlag()));
+            toReturn.put("CLCW No RF Available Flag", String.valueOf(clcw.isNoRfAvailableFlag()));
+            toReturn.put("CLCW Retransmit Flag", String.valueOf(clcw.isRetransmitFlag()));
+            toReturn.put("CLCW Wait Flag", String.valueOf(clcw.isWaitFlag()));
+            toReturn.put("CLCW FARM-B Counter", String.valueOf(clcw.getFarmBCounter()));
+            toReturn.put("CLCW Report Value", String.valueOf(clcw.getReportValue()));
+        }
+        if(frame.isFecfPresent()) {
+            toReturn.put("FECF", null);
+            toReturn.put("Validity FECF", String.valueOf(frame.isValid()));
+        }
+        return toReturn;
+    }
+
+    public LinkedHashMap<String, String> renderBadTm(RawData rawData) {
+        return null;
+    }
+
+    public LinkedHashMap<String, String> renderAosFrame(RawData rawData) {
+        LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
+        AosTransferFrame frame = (AosTransferFrame) rawData.getData();
+        if(frame == null) {
+            frame = new AosTransferFrame(rawData.getContents(), configuration.isAosFrameHeaderErrorControlPresent(), configuration.getAosTransferFrameInsertZoneLength(), AosTransferFrame.UserDataType.M_PDU, configuration.isOcfPresent(), configuration.isFecfPresent());
+        }
+        toReturn.put("Frame Information", null);
+        toReturn.put("Spacecraft ID", String.valueOf(frame.getSpacecraftId()));
+        toReturn.put("Virtual Channel ID", String.valueOf(frame.getVirtualChannelId()));
+        toReturn.put("Virtual Channel Counter", String.valueOf(frame.getVirtualChannelFrameCount()));
+        toReturn.put("Insert Zone Length", String.valueOf(frame.getInsertZoneLength()));
+        if(frame.getInsertZoneLength() > 0) {
+            toReturn.put("Insert Zone Value", StringUtil.toHexDump(frame.getInsertZoneCopy()));
+        }
+        toReturn.put("AOS Type", frame.getUserDataType().name());
+        toReturn.put("First Header Pointer", String.valueOf(frame.getFirstHeaderPointer()));
+        toReturn.put("Idle Frame", String.valueOf(frame.isIdleFrame()));
+        if(frame.isOcfPresent()) {
+            Clcw clcw = new Clcw(frame.getOcfCopy());
+            toReturn.put("CLCW", null);
+            toReturn.put("CLCW TC VC ID", String.valueOf(clcw.getVirtualChannelId()));
+            toReturn.put("CLCW Status Field", String.valueOf(clcw.getStatusField()));
+            toReturn.put("CLCW COP in Effect", String.valueOf(clcw.getCopInEffect()));
+            toReturn.put("CLCW Lockout Flag", String.valueOf(clcw.isLockoutFlag()));
+            toReturn.put("CLCW No Bitlock Flag", String.valueOf(clcw.isNoBitlockFlag()));
+            toReturn.put("CLCW No RF Available Flag", String.valueOf(clcw.isNoRfAvailableFlag()));
+            toReturn.put("CLCW Retransmit Flag", String.valueOf(clcw.isRetransmitFlag()));
+            toReturn.put("CLCW Wait Flag", String.valueOf(clcw.isWaitFlag()));
+            toReturn.put("CLCW FARM-B Counter", String.valueOf(clcw.getFarmBCounter()));
+            toReturn.put("CLCW Report Value", String.valueOf(clcw.getReportValue()));
+        }
+        if(frame.isFecfPresent()) {
+            toReturn.put("FECF", null);
+            toReturn.put("Validity FECF", String.valueOf(frame.isValid()));
+        }
+        return toReturn;
     }
 }

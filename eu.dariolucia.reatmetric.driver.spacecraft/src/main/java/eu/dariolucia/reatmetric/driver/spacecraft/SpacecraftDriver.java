@@ -28,9 +28,12 @@ import eu.dariolucia.ccsds.sle.utl.config.rcf.RcfServiceInstanceConfiguration;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.IDriver;
 import eu.dariolucia.reatmetric.core.api.IDriverListener;
+import eu.dariolucia.reatmetric.core.api.IRawDataRenderer;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
@@ -51,10 +54,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -81,7 +82,7 @@ import java.util.stream.Collectors;
  * </ul>
  *
  */
-public class SpacecraftDriver implements IDriver {
+public class SpacecraftDriver implements IDriver, IRawDataRenderer {
 
     private static final Logger LOG = Logger.getLogger(SpacecraftDriver.class.getName());
 
@@ -109,12 +110,16 @@ public class SpacecraftDriver implements IDriver {
     private OnboardEventService onboardEventService;
     private CommandVerificationService commandVerificationService;
 
+    private final Map<String, Function<RawData, LinkedHashMap<String, String>>> rawDataRenderers = new TreeMap<>();
+    private IRawDataArchive rawDataArchive; // Needed to retrieve raw data without contents, for rendering
+
     @Override
     public void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException {
         this.name = name;
         this.context = context;
         this.coreConfiguration = coreConfiguration;
         this.listener = subscriber;
+        this.rawDataArchive = context.getArchive().getArchive(IRawDataArchive.class);
         try {
             // Load the driver configuration
             loadDriverConfiguration(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE);
@@ -132,12 +137,24 @@ public class SpacecraftDriver implements IDriver {
             loadSleServiceInstances(driverConfigurationDirectory + File.separator + SLE_FOLDER);
             // Load packet replayer
             loadTmPacketReplayer();
+            // Initialise raw data renderers
+            loadRawDataRenderers();
             // Ready to go
             updateStatus(SystemStatus.NOMINAL);
         } catch (Exception e) {
             updateStatus(SystemStatus.ALARM);
             throw new DriverException(e);
         }
+    }
+
+    private void loadRawDataRenderers() {
+        this.rawDataRenderers.put(Constants.T_TM_FRAME, tmDataLinkProcessor::renderTmFrame);
+        this.rawDataRenderers.put(Constants.T_BAD_TM, tmDataLinkProcessor::renderBadTm);
+        this.rawDataRenderers.put(Constants.T_AOS_FRAME, tmDataLinkProcessor::renderAosFrame);
+        this.rawDataRenderers.put(Constants.T_TM_PACKET, tmPacketProcessor::renderTmPacket);
+        this.rawDataRenderers.put(Constants.T_IDLE_PACKET, tmPacketProcessor::renderTmPacket);
+        this.rawDataRenderers.put(Constants.T_BAD_PACKET, tmPacketProcessor::renderBadPacket);
+        this.rawDataRenderers.put(Constants.T_TIME_COEFFICIENTS, timeCorrelationService::renderTimeCoefficients);
     }
 
     private void loadTmPacketReplayer() {
@@ -242,6 +259,11 @@ public class SpacecraftDriver implements IDriver {
     }
 
     @Override
+    public List<IRawDataRenderer> getRawDataRenderers() {
+        return Collections.singletonList(this);
+    }
+
+    @Override
     public List<IActivityHandler> getActivityHandlers() {
         // TODO implement command handler
         return Collections.emptyList();
@@ -274,5 +296,31 @@ public class SpacecraftDriver implements IDriver {
         if(toNotify) {
             this.listener.driverStatusUpdate(this.name, this.status);
         }
+    }
+
+    @Override
+    public String getSource() {
+        return String.valueOf(this.configuration.getId());
+    }
+
+    @Override
+    public List<String> getSupportedTypes() {
+        return new ArrayList<>(rawDataRenderers.keySet());
+    }
+
+    @Override
+    public LinkedHashMap<String, String> render(RawData rawData) throws ReatmetricException {
+        if(!rawData.getSource().equals(getSource())) {
+            throw new ReatmetricException("Raw data with source " + rawData.getSource() + " cannot be processed by driver " + configuration.getName() + ", expecting source " + getSource());
+        }
+        Function<RawData, LinkedHashMap<String, String>> renderingFunction = rawDataRenderers.get(rawData.getType());
+        if(renderingFunction == null) {
+            throw new ReatmetricException("Raw data with type " + rawData.getType() + " cannot be processed by driver " + configuration.getName() + ", expecting types " + getSupportedTypes());
+        }
+        // Ok, now check if raw data has contents. If not, retrieve the one with the contents.
+        if(!rawData.isContentsSet()) {
+            rawData = rawDataArchive.retrieve(rawData.getInternalId());
+        }
+        return renderingFunction.apply(rawData);
     }
 }

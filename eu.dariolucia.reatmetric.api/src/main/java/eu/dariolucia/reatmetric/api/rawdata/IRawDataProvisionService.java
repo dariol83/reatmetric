@@ -21,6 +21,9 @@ import eu.dariolucia.reatmetric.api.common.IDataItemProvisionService;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  *
  * @author dario
@@ -29,5 +32,6 @@ public interface IRawDataProvisionService extends IDataItemProvisionService<IRaw
 
     RawData getRawDataContents(IUniqueId uniqueId) throws ReatmetricException;
 
-    // TODO: add raw data report renderer -> String: need rendering service at driver level
+    LinkedHashMap<String, String> getRenderedInformation(RawData rawData) throws ReatmetricException;
+
 }

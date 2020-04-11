@@ -380,4 +380,15 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
                 "spacecraftId=" + spacecraftId +
                 '}';
     }
+
+    public LinkedHashMap<String, String> renderTimeCoefficients(RawData rawData) {
+        LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
+        String coeffs = new String(rawData.getContents(), StandardCharsets.US_ASCII);
+        String first = coeffs.substring(0, coeffs.indexOf('|'));
+        String second = coeffs.substring(coeffs.indexOf('|') + 1);
+        toReturn.put("Time Coefficients", null);
+        toReturn.put("M", first);
+        toReturn.put("Q", second);
+        return toReturn;
+    }
 }
