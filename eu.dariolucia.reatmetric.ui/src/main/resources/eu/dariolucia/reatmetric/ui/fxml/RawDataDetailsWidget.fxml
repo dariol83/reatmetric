@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Accordion?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.ToolBar?>
-<?import javafx.scene.effect.DropShadow?>
 <?import javafx.scene.layout.VBox?>
 
 <!--
@@ -24,7 +25,7 @@
   ~ limitations under the License.
   -->
 
-<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.RawDataDetailsWidgetController">
+<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.RawDataDetailsWidgetController">
    <children>
       <ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
          <items>
@@ -32,31 +33,51 @@
             <Label prefHeight="17.0" prefWidth="135.0" text=" " />
          </items>
       </ToolBar>
-      <TableView fx:id="rawDataDetailsTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="0.0" minWidth="1.0" VBox.vgrow="ALWAYS">
-        <columns>
-          <TableColumn fx:id="offsetCol" editable="false" maxWidth="60.0" prefWidth="60.0" resizable="false" sortable="false" text="Offset" />
-          <TableColumn fx:id="0Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="0" />
-          <TableColumn fx:id="1Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="1" />
-          <TableColumn fx:id="2Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="2" />
-          <TableColumn fx:id="3Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="3" />
-          <TableColumn fx:id="4Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="4" />
-          <TableColumn fx:id="5Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="5" />
-          <TableColumn fx:id="6Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="6" />
-          <TableColumn fx:id="7Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="7" />
-          <TableColumn fx:id="8Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="8" />
-          <TableColumn fx:id="9Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="9" />
-          <TableColumn fx:id="ACol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="A" />
-          <TableColumn fx:id="BCol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="B" />
-          <TableColumn fx:id="CCol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="C" />
-          <TableColumn fx:id="DCol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="D" />
-          <TableColumn fx:id="ECol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="E" />
-          <TableColumn fx:id="FCol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="F" />
-          <TableColumn fx:id="textCol" editable="false" prefWidth="140.0" resizable="false" sortable="false" text="ASCII" />
-        </columns>
-         <columnResizePolicy>
-            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
-         </columnResizePolicy>
-      </TableView>
+      <Accordion fx:id="accordion" VBox.vgrow="ALWAYS">
+        <panes>
+          <TitledPane fx:id="reportingTitledPane" animated="false" text="Reporting">
+               <content>
+                  <TableView fx:id="propertyDetailsTableView">
+                    <columns>
+                      <TableColumn fx:id="propertyCol" editable="false" prefWidth="300.0" sortable="false" text="Property" />
+                      <TableColumn fx:id="valueCol" editable="false" prefWidth="260.0" sortable="false" text="Value" />
+                      <TableColumn editable="false" prefWidth="20.0" resizable="false" sortable="false" text=" " />
+                    </columns>
+                  </TableView>
+               </content>
+            </TitledPane>
+          <TitledPane fx:id="hexTitledPane" animated="false" expanded="false" text="Hex View">
+               <content>
+                  <TableView fx:id="rawDataDetailsTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="0.0" minWidth="1.0">
+                    <columns>
+                      <TableColumn fx:id="offsetCol" editable="false" maxWidth="60.0" prefWidth="60.0" resizable="false" sortable="false" text="Offset" />
+                      <TableColumn fx:id="0Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="0" />
+                      <TableColumn fx:id="1Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="1" />
+                      <TableColumn fx:id="2Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="2" />
+                      <TableColumn fx:id="3Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="3" />
+                      <TableColumn fx:id="4Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="4" />
+                      <TableColumn fx:id="5Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="5" />
+                      <TableColumn fx:id="6Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="6" />
+                      <TableColumn fx:id="7Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="7" />
+                      <TableColumn fx:id="8Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="8" />
+                      <TableColumn fx:id="9Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="9" />
+                      <TableColumn fx:id="ACol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="A" />
+                      <TableColumn fx:id="BCol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="B" />
+                      <TableColumn fx:id="CCol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="C" />
+                      <TableColumn fx:id="DCol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="D" />
+                      <TableColumn fx:id="ECol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="E" />
+                      <TableColumn fx:id="FCol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="F" />
+                      <TableColumn fx:id="textCol" editable="false" prefWidth="150.0" resizable="false" sortable="false" text="ASCII" />
+                      <TableColumn editable="false" prefWidth="20.0" resizable="false" sortable="false" text=" " />
+                    </columns>
+                     <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                     </columnResizePolicy>
+                  </TableView>
+               </content>
+            </TitledPane>
+        </panes>
+      </Accordion>
    </children>
    <padding>
       <Insets top="0.01" />

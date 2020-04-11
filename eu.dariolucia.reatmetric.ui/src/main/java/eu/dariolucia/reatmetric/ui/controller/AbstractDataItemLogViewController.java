@@ -330,6 +330,10 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     protected void addDataItems(List<T> messages, boolean fromLive, boolean addOnTop) {
+        if(fromLive) {
+            // Revert the list
+            Collections.reverse(messages);
+        }
         Platform.runLater(() -> {
             if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
                 if (addOnTop) {

@@ -17,6 +17,7 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
@@ -40,7 +41,9 @@ import javafx.stage.Popup;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 /**
@@ -68,21 +71,39 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
     // Popup selector for date/time
     private final Popup dataInspectionPopup = new Popup();
     private RawDataDetailsWidgetController dataInspectionController;
-    
+
+    // Report cache
+    private final LRUCache cache = new LRUCache();
+
     @FXML
     private void inspectItemAction(ActionEvent event) {
         final RawData selectedRawData = this.dataItemTableView.getSelectionModel().getSelectedItem();
         if(selectedRawData != null) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
+                    RawData rd = selectedRawData;
+                    // Data
                     byte[] data = null;
-                    RawData rd = ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().getRawDataContents(selectedRawData.getInternalId());
-                    if(rd != null) {
+                    if(rd.isContentsSet()) {
                         data = rd.getContents();
+                    } else {
+                        rd = ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().getRawDataContents(rd.getInternalId());
+                        if (rd != null) {
+                            data = rd.getContents();
+                        }
                     }
                     final byte[] fdata = data;
+                    // Rendered item
+                    LinkedHashMap<String, String> formatData = cache.get(selectedRawData.getInternalId());
+                    if(formatData == null) {
+                        formatData = ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().getRenderedInformation(rd);
+                        cache.put(selectedRawData.getInternalId(), formatData);
+                    }
+                    String name = selectedRawData.getName();
+                    String genTime = InstantCellFactory.DATE_TIME_FORMATTER.format(selectedRawData.getGenerationTime());
+                    final LinkedHashMap<String, String> fformatData = formatData;
                     Platform.runLater(() -> {
-                        this.dataInspectionController.setData(selectedRawData.getName() + " - Gen. Time " + selectedRawData.getGenerationTime(),fdata);
+                        this.dataInspectionController.setData(name + " - Gen. Time " + genTime, fdata, fformatData);
                         // Bounds b = this.dataItemTableView.localToScreen(this.dataItemTableView.getBoundsInLocal());
                         this.dataInspectionPopup.setX(((MenuItem)event.getSource()).getParentPopup().getAnchorX());
                         this.dataInspectionPopup.setY(((MenuItem)event.getSource()).getParentPopup().getAnchorY());
@@ -109,33 +130,31 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
 
         this.genTimeCol.setCellFactory(new InstantCellFactory<>());
         this.recTimeCol.setCellFactory(new InstantCellFactory<>());
-        this.qualityCol.setCellFactory(column -> {
-            return new TableCell<RawData, Quality>() {
-                @Override
-                protected void updateItem(Quality item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (item != null && !empty && !isEmpty()) {
-                        setText(item.name());
-                        switch (item) {
-                            case BAD:
-                                setTextFill(Color.DARKRED);
-                                // setStyle("-fx-font-weight: bold");
-                                break;
-                            case UNKNOWN:
-                                setTextFill(Color.BLACK);
-                                // setStyle("-fx-font-weight: bold");
-                                break;
-                            default:
-                                setTextFill(Color.DARKGREEN);
-                                // setStyle("-fx-font-weight: bold");
-                                break;
-                        }
-                    } else {
-                        setText("");
-                        setGraphic(null);
+        this.qualityCol.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(Quality item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(item.name());
+                    switch (item) {
+                        case BAD:
+                            setTextFill(Color.DARKRED);
+                            // setStyle("-fx-font-weight: bold");
+                            break;
+                        case UNKNOWN:
+                            setTextFill(Color.BLACK);
+                            // setStyle("-fx-font-weight: bold");
+                            break;
+                        default:
+                            setTextFill(Color.DARKGREEN);
+                            // setStyle("-fx-font-weight: bold");
+                            break;
                     }
+                } else {
+                    setText("");
+                    setGraphic(null);
                 }
-            };
+            }
         });
         
         this.dataInspectionPopup.setAutoHide(true);
@@ -145,7 +164,7 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
             URL rawDataDetailsUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/RawDataDetailsWidget.fxml");
             FXMLLoader loader = new FXMLLoader(rawDataDetailsUrl);
             Parent rawDataDetailsWidget = loader.load();
-            this.dataInspectionController = (RawDataDetailsWidgetController) loader.getController();
+            this.dataInspectionController = loader.getController();
             this.dataInspectionPopup.getContent().addAll(rawDataDetailsWidget);
         } catch (IOException e) {
             e.printStackTrace();
@@ -192,4 +211,17 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
         return "RawDataView";
     }
 
+    private static class LRUCache extends LinkedHashMap<IUniqueId, LinkedHashMap<String, String>> {
+
+        private static final int MAX_CACHE_SIZE = 20;
+
+        public LRUCache() {
+            super(16, 0.75f, true);
+        }
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<IUniqueId, LinkedHashMap<String, String>> eldest) {
+            return size() > MAX_CACHE_SIZE;
+        }
+    }
 }

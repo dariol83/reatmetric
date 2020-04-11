@@ -17,19 +17,21 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import java.net.URL;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ResourceBundle;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.*;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+
+import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 /**
  * FXML Controller class
@@ -37,6 +39,17 @@ import javafx.scene.text.Font;
  * @author dario
  */
 public class RawDataDetailsWidgetController implements Initializable {
+
+    @FXML
+    public TitledPane reportingTitledPane;
+    @FXML
+    public TitledPane hexTitledPane;
+    @FXML
+    public Accordion accordion;
+
+    @FXML
+    public TableView<Pair<String, String>> propertyDetailsTableView;
+
 
     @FXML
     private TableView<RawDataEntry> rawDataDetailsTableView;
@@ -49,6 +62,9 @@ public class RawDataDetailsWidgetController implements Initializable {
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        ((TableColumn<Pair<String, String>,String>) propertyDetailsTableView.getColumns().get(0)).setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getFirst()));
+        ((TableColumn<Pair<String, String>,String>) propertyDetailsTableView.getColumns().get(1)).setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getSecond()));
+
         ((TableColumn<RawDataEntry,String>) rawDataDetailsTableView.getColumns().get(0)).setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getOffset()));
         ((TableColumn<RawDataEntry,String>) rawDataDetailsTableView.getColumns().get(1)).setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getDataAt(0)));
         ((TableColumn<RawDataEntry,String>) rawDataDetailsTableView.getColumns().get(2)).setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getDataAt(1)));
@@ -69,43 +85,73 @@ public class RawDataDetailsWidgetController implements Initializable {
         ((TableColumn<RawDataEntry,String>) rawDataDetailsTableView.getColumns().get(17)).setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getAsciiRepresentation()));
         
         for(int i = 0; i < rawDataDetailsTableView.getColumns().size(); ++i) {
-            ((TableColumn<RawDataEntry,String>) rawDataDetailsTableView.getColumns().get(i)).setCellFactory(column -> {
-                return new TableCell<RawDataEntry, String>() {
-                    @Override
-                    protected void updateItem(String item, boolean empty) {
-                        super.updateItem(item, empty);
-                        setFont(Font.font("Monospaced", 11));
-                        setText(item);
-                    }
-                };
+            ((TableColumn<RawDataEntry,String>) rawDataDetailsTableView.getColumns().get(i)).setCellFactory(column -> new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setFont(Font.font("Monospaced", 11));
+                    setText(item);
+                }
             });
         }
+
+        ((TableColumn<Pair<String, String>,String>) propertyDetailsTableView.getColumns().get(1)).setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                TableRow<Pair<String, String>> currentRow = getTableRow();
+                if (item != null && !empty && !isEmpty()) {
+                    setText(item);
+                    currentRow.setStyle("");
+                } else if(item == null) {
+                    setText("");
+                    currentRow.setStyle("-fx-background-color: lightgray; -fx-font-weight: bold;");
+                } else {
+                    setText("");
+                    currentRow.setStyle("");
+                }
+            }
+        });
+
+
     }  
-    
-    public void setData(String description, byte[] data) {
+
+    public void setData(String description, byte[] data, LinkedHashMap<String, String> decodedInfo) {
         if(data == null) {
-            descriptionText.setText(" ");
             rawDataDetailsTableView.getItems().clear();
-            rawDataDetailsTableView.getParent().layout();
             rawDataDetailsTableView.refresh();
-            return;
         }
-        // Determine how many RawDataEntry entries to create
-        int entries = data.length / 16;
-        if(data.length % 16 > 0) {
-            entries++;
+        if(decodedInfo == null || decodedInfo.isEmpty()) {
+            propertyDetailsTableView.getItems().clear();
+            propertyDetailsTableView.refresh();
         }
-        List<RawDataEntry> dataList = new LinkedList<>();
-        for(int i = 0; i < entries; ++i) {
-            dataList.add(new RawDataEntry(data, i));
+        if(description == null) {
+            description = "N/A";
         }
         descriptionText.setText(description);
-        rawDataDetailsTableView.setItems(FXCollections.observableList(dataList));
-        rawDataDetailsTableView.getParent().layout();
-        rawDataDetailsTableView.refresh();
+        if(data != null) {
+            // Determine how many RawDataEntry entries to create
+            int entries = data.length / 16;
+            if (data.length % 16 > 0) {
+                entries++;
+            }
+            List<RawDataEntry> dataList = new LinkedList<>();
+            for (int i = 0; i < entries; ++i) {
+                dataList.add(new RawDataEntry(data, i));
+            }
+            rawDataDetailsTableView.setItems(FXCollections.observableList(dataList));
+            rawDataDetailsTableView.refresh();
+        }
+        if(decodedInfo != null) {
+            List<Pair<String, String>> toAdd = decodedInfo.entrySet().stream().map(o -> Pair.of(o.getKey(), o.getValue())).collect(Collectors.toList());
+            propertyDetailsTableView.setItems(FXCollections.observableList(toAdd));
+            propertyDetailsTableView.refresh();
+        }
+        // Expand the property details
+        accordion.setExpandedPane(reportingTitledPane);
     }
     
-    private class RawDataEntry {
+    private static class RawDataEntry {
         
         private final byte[] data;
         

@@ -212,6 +212,9 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
     }
 
     public LinkedHashMap<String, String> getRenderedInformation(RawData rawData) {
+        if(rawData == null) {
+            return new LinkedHashMap<>();
+        }
         Pair<String, String> key = Pair.of(rawData.getSource(), rawData.getType());
         IRawDataRenderer renderer = renderers.get(key);
         if(renderer == null) {
