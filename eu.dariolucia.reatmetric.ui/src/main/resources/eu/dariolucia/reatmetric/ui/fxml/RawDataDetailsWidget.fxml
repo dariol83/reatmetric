@@ -41,7 +41,6 @@
                     <columns>
                       <TableColumn fx:id="propertyCol" editable="false" prefWidth="300.0" sortable="false" text="Property" />
                       <TableColumn fx:id="valueCol" editable="false" prefWidth="260.0" sortable="false" text="Value" />
-                      <TableColumn editable="false" prefWidth="20.0" resizable="false" sortable="false" text=" " />
                     </columns>
                   </TableView>
                </content>
@@ -67,8 +66,7 @@
                       <TableColumn fx:id="DCol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="D" />
                       <TableColumn fx:id="ECol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="E" />
                       <TableColumn fx:id="FCol" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="F" />
-                      <TableColumn fx:id="textCol" editable="false" prefWidth="150.0" resizable="false" sortable="false" text="ASCII" />
-                      <TableColumn editable="false" prefWidth="20.0" resizable="false" sortable="false" text=" " />
+                      <TableColumn fx:id="textCol" editable="false" prefWidth="160.0" resizable="false" sortable="false" text="ASCII" />
                     </columns>
                      <columnResizePolicy>
                         <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />

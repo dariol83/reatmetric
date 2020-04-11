@@ -21,6 +21,7 @@ import eu.dariolucia.ccsds.encdec.structure.DecodingException;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.encdec.structure.IPacketDecoder;
 import eu.dariolucia.ccsds.encdec.structure.ParameterValue;
+import eu.dariolucia.ccsds.encdec.time.IGenerationTimeProcessor;
 import eu.dariolucia.ccsds.encdec.value.BitString;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
@@ -30,6 +31,8 @@ import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
@@ -41,10 +44,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationS
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -135,8 +135,8 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                 }
 
                 // Expectation is that the definitions refer to the start of the space packet
-                int offset = 0;
                 DecodingResult result = null;
+                int offset = 0;
                 try {
                     result = packetDecoder.decode(rd.getName(), rd.getContents(), offset, rd.getContents().length - offset, timeGenerationComputer);
                     forwardParameterResult(rd, result.getDecodedParameters());
@@ -215,6 +215,13 @@ public class TmPacketProcessor implements IRawDataSubscriber {
             }
         }
         TmFrameDescriptor frameDescriptor = (TmFrameDescriptor) rawData.getExtension();
+        // Packet parameters
+        DecodingResult result = null;
+        try {
+            result = packetDecoder.decode(rawData.getName(), rawData.getContents(), 0, rawData.getContents().length, null);
+        } catch (DecodingException e) {
+            LOG.log(Level.SEVERE, "Cannot decode TM packet " + rawData.getName() + " from route " + rawData.getRoute() + ": " + e.getMessage(), e);
+        }
         toReturn.put("TM Space Packet", null);
         toReturn.put("APID", String.valueOf(sp.getApid()));
         toReturn.put("SCC", String.valueOf(sp.getPacketSequenceCount()));
@@ -235,6 +242,12 @@ public class TmPacketProcessor implements IRawDataSubscriber {
             toReturn.put("Virtual Channel ID", String.valueOf(frameDescriptor.getVirtualChannelId()));
             toReturn.put("Virtual Channel Counter", String.valueOf(frameDescriptor.getVirtualChannelFrameCounter()));
             toReturn.put("Earth-Reception Time", String.valueOf(frameDescriptor.getEarthReceptionTime()));
+        }
+        if(result != null) {
+            toReturn.put("Raw Parameters", null);
+            for(Map.Entry<String, Object> params : result.getDecodedItemsAsMap().entrySet()) {
+                toReturn.put(params.getKey(), ValueUtil.toString(params.getValue()));
+            }
         }
         return toReturn;
     }
