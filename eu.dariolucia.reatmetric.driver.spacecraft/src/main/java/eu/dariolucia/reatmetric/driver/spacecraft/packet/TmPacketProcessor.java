@@ -21,7 +21,6 @@ import eu.dariolucia.ccsds.encdec.structure.DecodingException;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.encdec.structure.IPacketDecoder;
 import eu.dariolucia.ccsds.encdec.structure.ParameterValue;
-import eu.dariolucia.ccsds.encdec.time.IGenerationTimeProcessor;
 import eu.dariolucia.ccsds.encdec.value.BitString;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
@@ -31,7 +30,6 @@ import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
-import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
@@ -193,7 +191,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     }
 
     public Quality checkPacketQuality(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {
-        // TODO: if tmPecPresent in PUS configuration is CRC or ISO, check packet PEC: implement in ccsds.encdec (ISO, CRC)
+        // TODO: if tmPecPresent in PUS configuration is NONE, CRC or ISO, check packet PEC: implement in ccsds.encdec (ISO, CRC)
         return Quality.GOOD;
     }
 
@@ -218,7 +216,9 @@ public class TmPacketProcessor implements IRawDataSubscriber {
         // Packet parameters
         DecodingResult result = null;
         try {
-            result = packetDecoder.decode(rawData.getName(), rawData.getContents(), 0, rawData.getContents().length, null);
+            if(!sp.isIdle()) {
+                result = packetDecoder.decode(rawData.getName(), rawData.getContents(), 0, rawData.getContents().length, null);
+            }
         } catch (DecodingException e) {
             LOG.log(Level.SEVERE, "Cannot decode TM packet " + rawData.getName() + " from route " + rawData.getRoute() + ": " + e.getMessage(), e);
         }
@@ -244,9 +244,12 @@ public class TmPacketProcessor implements IRawDataSubscriber {
             toReturn.put("Earth-Reception Time", String.valueOf(frameDescriptor.getEarthReceptionTime()));
         }
         if(result != null) {
-            toReturn.put("Raw Parameters", null);
-            for(Map.Entry<String, Object> params : result.getDecodedItemsAsMap().entrySet()) {
-                toReturn.put(params.getKey(), ValueUtil.toString(params.getValue()));
+            Map<String, Object> paramMap = result.getDecodedItemsAsMap();
+            if(!paramMap.isEmpty()) {
+                toReturn.put("Raw Parameters", null);
+                for (Map.Entry<String, Object> params : paramMap.entrySet()){
+                    toReturn.put(params.getKey(), ValueUtil.toString(params.getValue()));
+                }
             }
         }
         return toReturn;
