@@ -17,10 +17,10 @@ ReatMetric is a modular framework, decomposed in modules following the Java modu
 
 ### Dependencies
 The ReatMetric modules are based on a very limited set of dependencies:
-- eu.dariolucia.ccsds: providing support for SLE/TM/TC/PUS handling of the _spacecraft_ driver;
-- openJFX and ControlsFX: for the graphical user interface of the _ui_ module;
-- Apache Derby: providing the storage backend of the _persist_ module;
-- JAXB: for the configuration of all modules.
+- [eu.dariolucia.ccsds](https://www.github.com/dariol83/ccsds): providing support for SLE/TM/TC/PUS handling of the _spacecraft_ driver;
+- [openJFX](https://openjfx.io) and [ControlsFX](https://github.com/controlsfx/controlsfx): for the graphical user interface of the _ui_ module;
+- [Apache Derby](http://db.apache.org/derby): providing the storage backend of the _persist_ module;
+- [JAXB](https://javaee.github.io/jaxb-v2): for the configuration of all modules.
 
 ## Core Functionalities
 
@@ -54,7 +54,7 @@ The ReatMetric modules are based on a very limited set of dependencies:
 
 ## Roadmap
 - Spacecraft TC support
-- Scheduler
+- Activity scheduler
 - Automation system
 - Alternative _persist_ implementations (server-based - in addition to file-based - Apache Derby, PostgreSQL)
 
