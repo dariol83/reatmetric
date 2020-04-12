@@ -6,6 +6,7 @@ functions used in an M&C system.
 ## System Overview
 
 ### Modules
+ReatMetric is a modular framework, decomposed in modules following the Java module system mechanism. Each module implements specific functionalities and can be _typically_ be replaced in isolation, if needed. The module definition follows a layered approach:
 
 ### Dependencies
 
