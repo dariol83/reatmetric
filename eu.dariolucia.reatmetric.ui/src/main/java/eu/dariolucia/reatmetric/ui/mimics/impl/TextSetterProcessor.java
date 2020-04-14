@@ -19,7 +19,7 @@ package eu.dariolucia.reatmetric.ui.mimics.impl;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.ui.mimics.SvgAttributeProcessor;
 import org.w3c.dom.Element;
-
+@Deprecated
 public class TextSetterProcessor extends SvgAttributeProcessor {
 
     public TextSetterProcessor(Element element, String name, String value) {

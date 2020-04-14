@@ -40,7 +40,9 @@ must be used: _##NULL##_
 
 An expression exact value depends on the SVG attribute and the allowed values are described in this
 documentation. For instance, the _data-rtmt-visibility-00_ attribute accepts as expression either the 
-string _visible_ or the string _hidden_. 
+string _visible_ or the string _hidden_. However, the ReatMetric framework allows to use $eng, $raw, 
+$validity and $alarm also in expressions: the placeholder is replaced with the correct value if the
+transformation must be applied.
 
 Some examples of condition-expression values are provided hereafter.
 
@@ -51,7 +53,12 @@ Explanation: if the alarm state is WARNING, set the fill color to #RGBA.
 `data-rtmt-visibility-00="$validity EQ INVALID := hidden"`
 
 Explanation: if the validity is INVALID, set the visibility to hidden (SVG element is not displayed).
- 
+
+`data-rtmt-text-00="$validity EQ VALID := $eng"`
+
+Explanation: if the validity is VALID, set the text of the SVG element to the engineering value of the
+parameter.
+
 ### Attributes
 
 #### data-rtmt-binding-id
@@ -91,15 +98,26 @@ stops.
 
 Allowed expression values: #RRGGBBAA. Null value _##NULL##_ removes the attribute.
 
-#### data-rtmt-text-[nn]
+#### data-rtmt-stroke-width-[nn]
 
-This attribute is used to set the text of the SVG element. Its value is defined by a ReatMetric 
-condition-expression. It can be attached only to SVG _<text>_ elements.
+This attribute is used to set the stroke width of the SVG element. Its value is defined by a ReatMetric 
+condition-expression.
 This attribute can be present several times attached to a single SVG element. If so, such attribute list
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops. 
 
-Allowed expression values: any string or _$eng_ or _$raw_ or _$alarm_ or _$validity_.
+Allowed expression values: a real number. Null value _##NULL##_ removes the attribute.
+
+#### data-rtmt-text-[nn]
+
+This attribute is used to set the text of the SVG element. Its value is defined by a ReatMetric 
+condition-expression. It can be attached only to SVG _<text>_ elements. _<text>_ elements shall not contain
+any _<tspan>_ element, as it is not supported.
+This attribute can be present several times attached to a single SVG element. If so, such attribute list
+is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
+stops. 
+
+Allowed expression values: any string. Null value _##NULL##_ is treated as empty string.
 
 #### data-rtmt-transform-[nn]
 
@@ -109,7 +127,8 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops. 
 
-Allowed expression values: string, syntax as per https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform.  Null value _##NULL##_ removes the attribute.
+Allowed expression values: string, syntax as per https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/transform.  
+Null value _##NULL##_ removes the attribute.
 
 #### data-rtmt-blink-[nn]
 

@@ -40,13 +40,18 @@ public class BlinkNodeProcessor extends SvgAttributeProcessor {
     @Override
     public Runnable buildUpdate(ParameterData parameterData) {
         try {
+            String colourText = expression.apply(parameterData);
+            // Build the node operation once
             if(cachedOperation == null) {
-                // Build the operation once
-                String colourText = expression.apply(parameterData);
                 if(colourText.equals(SvgConstants.NO_BLINK)) {
                     cachedOperation = new BlinkNodeRemover(element);
                 } else {
-                    cachedOperation = new BlinkNodeApplier(element, colourText);
+                    cachedOperation = new BlinkNodeApplier(element, deriveStringColour(colourText));
+                }
+            } else {
+                // If it is a blinker, set the new value
+                if(cachedOperation instanceof BlinkNodeApplier) {
+                    ((BlinkNodeApplier) cachedOperation).setColourText(deriveStringColour(colourText));
                 }
             }
             return cachedOperation;
@@ -100,25 +105,36 @@ public class BlinkNodeProcessor extends SvgAttributeProcessor {
     private static class BlinkNodeApplier implements Runnable {
 
         private final Element element;
-        private final String colourText;
+        private volatile String colourText;
+        private volatile boolean colourUpdate;
         private Element toAdd;
 
         public BlinkNodeApplier(Element element, String colourText) {
             this.element = element;
+            this.colourText = colourText;
+            this.colourUpdate = true;
+        }
+
+        public void setColourText(String colourText) {
+            this.colourUpdate = colourText.equals(this.colourText);
             this.colourText = colourText;
         }
 
         @Override
         public void run() {
             try {
+                // No colour update? Do nothing.
+                if(!this.colourUpdate) {
+                    return;
+                }
                 if(toAdd == null) {
                     toAdd = element.getOwnerDocument().createElementNS("http://www.w3.org/2000/svg", "animate");
                     toAdd.setAttribute("attributeType", "XML");
                     toAdd.setAttribute("attributeName", "fill");
                     toAdd.setAttribute("dur", "1.0s");
                     toAdd.setAttribute("repeatCount", "indefinite");
-                    toAdd.setAttribute("values", deriveStringColour(colourText));
                 }
+                toAdd.setAttribute("values", colourText);
                 // First remove the "animate" node if any. If the node to remove is exactly equals to toAdd, don't do anything, you are done
                 if(removeAnimateNodeIfNotEqual(element, toAdd)) {
                     element.appendChild(toAdd);

@@ -28,6 +28,7 @@ public class SvgConstants {
 
     public static final String FILL_PREFIX = "data-rtmt-fill-color";
     public static final String STROKE_PREFIX = "data-rtmt-stroke-color";
+    public static final String STROKE_WIDTH_PREFIX = "data-rtmt-stroke-width";
     public static final String VISIBILITY_PREFIX = "data-rtmt-visibility";
     public static final String TEXT_PREFIX = "data-rtmt-text";
     public static final String TRANSFORM_PREFIX = "data-rtmt-transform";

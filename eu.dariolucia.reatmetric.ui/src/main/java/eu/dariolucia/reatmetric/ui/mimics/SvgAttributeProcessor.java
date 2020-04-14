@@ -46,7 +46,6 @@ abstract public class SvgAttributeProcessor implements Comparable<SvgAttributePr
         parseConditionExpression(attributeValue);
     }
 
-
     private void parseConditionExpression(String conditionExpression) {
         conditionExpression = conditionExpression.trim();
         if(conditionExpression.startsWith(":=")) {
@@ -85,25 +84,13 @@ abstract public class SvgAttributeProcessor implements Comparable<SvgAttributePr
         }
     }
 
-    private void parseExpression(String expression) {
-        switch (expression) {
-            case SvgConstants.REF_VALUE_ENG:
-                this.expression = ENG_VALUE_EXTRACTOR.andThen(ValueUtil::toString);
-                break;
-            case SvgConstants.REF_VALUE_RAW:
-                this.expression = RAW_VALUE_EXTRACTOR.andThen(ValueUtil::toString);
-                break;
-            case SvgConstants.REF_VALUE_VALIDITY:
-                this.expression = VALIDITY_EXTRACTOR.andThen(ValueUtil::toString);
-                break;
-            case SvgConstants.REF_VALUE_ALARM:
-                this.expression = ALARM_EXTRACTOR.andThen(ValueUtil::toString);
-                break;
-            default:
-                // Flat string
-                this.expression = parameterData -> expression;
-                break;
-        }
+    private void parseExpression(String expressionToParse) {
+        // The parsing of the expression is simply: the provided string with replacement for the object-specific tokens
+        this.expression = parameterData -> expressionToParse
+                .replace(SvgConstants.REF_VALUE_ENG, (ENG_VALUE_EXTRACTOR.andThen(ValueUtil::toString)).apply(parameterData))
+                .replace(SvgConstants.REF_VALUE_RAW, (RAW_VALUE_EXTRACTOR.andThen(ValueUtil::toString)).apply(parameterData))
+                .replace(SvgConstants.REF_VALUE_VALIDITY, (VALIDITY_EXTRACTOR.andThen(ValueUtil::toString)).apply(parameterData))
+                .replace(SvgConstants.REF_VALUE_ALARM, (ALARM_EXTRACTOR.andThen(ValueUtil::toString)).apply(parameterData));
     }
 
     @Override

@@ -46,6 +46,9 @@ public class SvgElementProcessor {
                 if(attribute.getName().startsWith(STROKE_PREFIX)) {
                     buildStrokeProcessor(attribute);
                 }
+                if(attribute.getName().startsWith(STROKE_WIDTH_PREFIX)) {
+                    buildStrokeWidthProcessor(attribute);
+                }
                 if(attribute.getName().startsWith(VISIBILITY_PREFIX)) {
                     buildVisibilityProcessor(attribute);
                 }
@@ -78,7 +81,7 @@ public class SvgElementProcessor {
     }
 
     private void buildTextProcessor(Attr attribute) {
-        TextSetterProcessor proc = new TextSetterProcessor(element, attribute.getName(), attribute.getValue());
+        TextNodeProcessor proc = new TextNodeProcessor(element, attribute.getName(), attribute.getValue());
         type2processorList.computeIfAbsent(SvgAttributeType.TEXT, o -> new ArrayList<>()).add(proc);
     }
 
@@ -90,6 +93,11 @@ public class SvgElementProcessor {
     private void buildStrokeProcessor(Attr attribute) {
         StrokeAttributeProcessor proc = new StrokeAttributeProcessor(element, attribute.getName(), attribute.getValue());
         type2processorList.computeIfAbsent(SvgAttributeType.STROKE, o -> new ArrayList<>()).add(proc);
+    }
+
+    private void buildStrokeWidthProcessor(Attr attribute) {
+        StrokeWidthAttributeProcessor proc = new StrokeWidthAttributeProcessor(element, attribute.getName(), attribute.getValue());
+        type2processorList.computeIfAbsent(SvgAttributeType.STROKE_WIDTH, o -> new ArrayList<>()).add(proc);
     }
 
     private void buildFillProcessor(Attr attribute) {

@@ -61,5 +61,4 @@ abstract public class AttributeSetterProcessor extends SvgAttributeProcessor {
             }
         }
     }
-
 }
