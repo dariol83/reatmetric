@@ -110,7 +110,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         }
         // Build the graph model and compute the topological sort
         graphModel = new GraphModel(processingDefinition, this);
-        graphModel.build(initialiser);
+        graphModel.build();
         // Activate the dispatchers
         tmDispatcher.submit(() -> doDispatch(tmDispatcher, tmUpdateTaskQueue));
         activityDispatcher.submit(() -> doDispatch(activityDispatcher, activityUpdateTaskQueue));

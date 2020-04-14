@@ -19,11 +19,10 @@ package eu.dariolucia.reatmetric.processing.impl.graph;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
-import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEntityBinding;
+import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
 import eu.dariolucia.reatmetric.processing.impl.processors.*;
@@ -51,20 +50,20 @@ public class GraphModel {
         this.processingModel = processingModel;
     }
 
-    public void build(IProcessingModelInitialiser initialiser) throws ProcessingModelException {
+    public void build() throws ProcessingModelException {
         // Navigate the model and add all the system entity nodes:
         // - parameters
         // - events
         // - containers
         // - activities
         for(ParameterProcessingDefinition param : definition.getParameterDefinitions()) {
-            addEntities(param, () -> new ParameterProcessor(param, processingModel), initialiser);
+            addEntities(param, () -> new ParameterProcessor(param, processingModel));
         }
         for(EventProcessingDefinition event : definition.getEventDefinitions()) {
-             addEntities(event, () -> new EventProcessor(event, processingModel), initialiser);
+             addEntities(event, () -> new EventProcessor(event, processingModel));
         }
         for(ActivityProcessingDefinition act : definition.getActivityDefinitions()) {
-            addEntities(act, () -> new ActivityProcessor(act, processingModel), initialiser);
+            addEntities(act, () -> new ActivityProcessor(act, processingModel));
         }
 
         // Now add the links for:
@@ -185,10 +184,10 @@ public class GraphModel {
         // in other words: if an entity changes, all predecessors (direct and indirect) must be evaluated.
         EntityVertex source = getVertexOf(owner.getId());
         for(SymbolDefinition sd : expression.getSymbols()) {
-            EntityVertex destination = getVertexOf(sd.getReference().getId());
+            EntityVertex destination = getVertexOf(sd.getReference());
             if(source == null || destination == null) {
                 // Definition error
-                throw new ProcessingModelException("In definition " + owner.getLocation() + ", referenced item " + sd.getReference().getLocation() + " not found");
+                throw new ProcessingModelException("In definition " + owner.getLocation() + ", referenced item " + sd.getReference() + " not found");
             }
             // Auto-add to source and destination
             new DependencyEdge(source, destination);
@@ -199,7 +198,7 @@ public class GraphModel {
         return idMap.get(id);
     }
 
-    private void addEntities(AbstractProcessingDefinition param, Supplier<AbstractSystemEntityProcessor> processorBuilder, IProcessingModelInitialiser initialiser) throws ProcessingModelException {
+    private void addEntities(AbstractProcessingDefinition param, Supplier<AbstractSystemEntityProcessor> processorBuilder) throws ProcessingModelException {
         SystemEntityPath location = SystemEntityPath.fromString(param.getLocation());
         // Add the parameter
         AbstractSystemEntityProcessor definitionProcessor = processorBuilder.get();

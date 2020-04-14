@@ -173,7 +173,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                     // Check if re-evalutation is needed: for each mapping item in the expression, get the newest generation time
                     Instant latestGenerationTime = null;
                     for(SymbolDefinition sd : definition.getExpression().getSymbols()) {
-                        Instant theGenTime = processor.resolve(sd.getReference().getId()).generationTime();
+                        Instant theGenTime = processor.resolve(sd.getReference()).generationTime();
                         if(latestGenerationTime == null || (theGenTime != null && theGenTime.isAfter(latestGenerationTime))) {
                             latestGenerationTime = theGenTime;
                         }

@@ -99,7 +99,7 @@ public class ExpressionDefinition {
         }
         // Update the bindings
         for(SymbolDefinition sd : symbols) {
-            bindings.put(sd.getName(), toBindingProperty(sd.getBinding(), resolver.resolve(sd.getReference().getId())));
+            bindings.put(sd.getName(), toBindingProperty(sd.getBinding(), resolver.resolve(sd.getReference())));
         }
         if(additionalBindings != null) {
             bindings.putAll(additionalBindings);

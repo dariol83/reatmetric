@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SymbolDefinition {
@@ -24,9 +25,9 @@ public class SymbolDefinition {
     @XmlAttribute(name = "name", required = true)
     private String name;
 
-    @XmlIDREF
     @XmlAttribute(name = "reference", required = true)
-    private AbstractProcessingDefinition reference;
+    @XmlJavaTypeAdapter(IntToStringAdapter.class)
+    private Integer reference;
 
     @XmlAttribute(name = "binding")
     private PropertyBinding binding = PropertyBinding.OBJECT;
@@ -34,7 +35,7 @@ public class SymbolDefinition {
     public SymbolDefinition() {
     }
 
-    public SymbolDefinition(String name, AbstractProcessingDefinition reference, PropertyBinding binding) {
+    public SymbolDefinition(String name, Integer reference, PropertyBinding binding) {
         this.name = name;
         this.reference = reference;
         this.binding = binding;
@@ -48,11 +49,11 @@ public class SymbolDefinition {
         this.name = name;
     }
 
-    public AbstractProcessingDefinition getReference() {
+    public int getReference() {
         return reference;
     }
 
-    public void setReference(AbstractProcessingDefinition reference) {
+    public void setReference(int reference) {
         this.reference = reference;
     }
 

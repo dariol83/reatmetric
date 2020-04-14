@@ -332,7 +332,7 @@ class ParameterTest {
 
         // All types
         int[] ids = { 101, 102, 103, 104, 105, 106, 107, 108, 109, 110 };
-        Object[] value = { true, 3, 1022322222222213L, -1234342121232L, 10.1, BitString.parse("001000101010"), new byte[] {0x00, 0x01}, "Hello", Instant.now(), Duration.ofMillis(2131) };
+        Object[] value = { true, 3, 1022322222222213L, -1234342121232L, 10.1, BitString.parse("_001000101010"), new byte[] {0x00, 0x01}, "Hello", Instant.now(), Duration.ofMillis(2131) };
         Map<Integer, Object> valueMap = new HashMap<>();
         List<ParameterSample> items = new ArrayList<>(ids.length);
         for(int i = 0; i < ids.length; ++i) {
