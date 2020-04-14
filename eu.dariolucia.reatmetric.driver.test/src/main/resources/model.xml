@@ -1,0 +1,430 @@
+<!--
+  ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~          http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
+    <parameters>
+		<!-- Power Supply Distributor -->
+		<parameter id="#101" location="STATION.POWERSUPPLY.PS_STATUS" description="Power Supply Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#102" location="STATION.POWERSUPPLY.PS_TENSION" description="Power Supply Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="210"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="270" low="200"/>
+            </checks>
+		</parameter>
+		<parameter id="#103" location="STATION.POWERSUPPLY.PS_CURRENT" description="Power Supply Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
+			<!-- You can have valid measured current only if the output is enabled and the 
+			matrix input 1 is enabled -->
+			<validity>
+				<condition>
+                    <expression>POWERSUPPLY_OUTPUT == "ON" &amp;&amp; MATRIX_INPUT1 == "ON"</expression>
+                    <symbol name="POWERSUPPLY_OUTPUT" reference="#105" binding="ENG_VALUE" />
+					<symbol name="MATRIX_INPUT1" reference="#401" binding="ENG_VALUE" />
+                </condition>
+			</validity>
+			<checks>
+                <limit name="BCLIMIT" type="REAL" severity="WARNING" high="17.5" low="14.0"/>
+				<limit name="BCLIMIT2" type="REAL" severity="ALARM" high="20.0" low="12.0"/>
+            </checks>
+		</parameter>
+		<parameter id="#104" location="STATION.POWERSUPPLY.PS_PROTECTION" description="Power Supply Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+				<point x="2" y="BYPASS" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING" severity="WARNING">
+                    <value>ON</value>
+					<value>BYPASS</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#105" location="STATION.POWERSUPPLY.PS_OUTPUT" description="Power Supply Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		
+		
+		<!-- Diesel Generator 1 -->
+		<parameter id="#201" location="STATION.DIESEL_GEN1.DG1_STATUS" description="Diesel Generator 1 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#202" location="STATION.DIESEL_GEN1.DG1_TENSION" description="Diesel Generator 1 Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="210"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="270" low="200"/>
+            </checks>
+		</parameter>
+		<parameter id="#203" location="STATION.DIESEL_GEN1.DG1_CURRENT" description="Diesel Generator 1 Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
+			<!-- You can have valid measured current only if the output is enabled and the 
+			switch is in position 1 -->
+			<validity>
+				<condition>
+                    <expression>DG1_OUTPUT == "ON" &amp;&amp; SWITCH_POSITION == 1</expression>
+                    <symbol name="DG1_OUTPUT" reference="#205" binding="ENG_VALUE" />
+					<symbol name="SWITCH_POSITION" reference="#501" binding="RAW_VALUE" />
+                </condition>
+			</validity>
+			<checks>
+                <limit name="BCLIMIT" type="REAL" severity="WARNING" high="17.5" low="14.0"/>
+				<limit name="BCLIMIT2" type="REAL" severity="ALARM" high="20.0" low="12.0"/>
+            </checks>
+		</parameter>
+		<parameter id="#204" location="STATION.DIESEL_GEN1.DG1_PROTECTION" description="Diesel Generator 1 Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+				<point x="2" y="BYPASS" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING" severity="WARNING">
+                    <value>ON</value>
+					<value>BYPASS</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#205" location="STATION.DIESEL_GEN1.DG1_OUTPUT" description="Diesel Generator 1 Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		
+		
+		<!-- Diesel Generator 2 -->
+		<parameter id="#301" location="STATION.DIESEL_GEN2.DG2_STATUS" description="Diesel Generator 2 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#302" location="STATION.DIESEL_GEN2.DG2_TENSION" description="Diesel Generator 2 Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="210"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="270" low="200"/>
+            </checks>
+		</parameter>
+		<parameter id="#303" location="STATION.DIESEL_GEN2.DG2_CURRENT" description="Diesel Generator 2 Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
+			<!-- You can have valid measured current only if the output is enabled and the 
+			switch is in position 2 -->
+			<validity>
+				<condition>
+                    <expression>DG1_OUTPUT == "ON" &amp;&amp; SWITCH_POSITION == 2</expression>
+                    <symbol name="DG1_OUTPUT" reference="#205" binding="ENG_VALUE" />
+					<symbol name="SWITCH_POSITION" reference="#501" binding="RAW_VALUE" />
+                </condition>
+			</validity>
+			<checks>
+                <limit name="BCLIMIT" type="REAL" severity="WARNING" high="17.5" low="14.0"/>
+				<limit name="BCLIMIT2" type="REAL" severity="ALARM" high="20.0" low="12.0"/>
+            </checks>
+		</parameter>
+		<parameter id="#304" location="STATION.DIESEL_GEN2.DG2_PROTECTION" description="Diesel Generator 2 Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+				<point x="2" y="BYPASS" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING" severity="WARNING">
+                    <value>ON</value>
+					<value>BYPASS</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#305" location="STATION.DIESEL_GEN2.DG2_OUTPUT" description="Diesel Generator 2 Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		
+		<!-- Power Matrix -->
+		<parameter id="#400" location="STATION.MATRIX.MTX_STATUS" description="Matrix Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ACTIVE" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#401" location="STATION.MATRIX.MTX_INPUT1" description="Matrix Input 1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#402" location="STATION.MATRIX.MTX_INPUT2" description="Matrix Input 2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#403" location="STATION.MATRIX.MTX_OUTPUT" description="Matrix Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#404" location="STATION.MATRIX.MTX_WIRING" description="Matrix Internal Wiring" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="1" y="INPUT1-TO-OUTPUT" />
+                <point x="2" y="INPUT2-TO-OUTPUT" />
+            </calib_enum>
+		</parameter>
+		
+		
+		<!-- Switch -->
+		<parameter id="#501" location="STATION.SWITCH.SW_POSITION" description="Switch Position" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="1" y="POSITION_1" />
+                <point x="2" y="POSITION_2" />
+            </calib_enum>
+		</parameter>
+		
+		
+        <!-- All types-->
+        <parameter id="#101" location="ROOT.ELEMENT1.PARAM1" description="Parameter 1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
+        <parameter id="#102" location="ROOT.ELEMENT1.PARAM2" description="Parameter 2" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+        <parameter id="#103" location="ROOT.ELEMENT1.PARAM3" description="Parameter 3" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        <parameter id="#104" location="ROOT.ELEMENT1.PARAM4" description="Parameter 4" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="" />
+        <parameter id="#105" location="ROOT.ELEMENT1.PARAM5" description="Parameter 5" raw_type="REAL" eng_type="REAL" eng_unit="" />
+        <parameter id="#106" location="ROOT.ELEMENT2.PARAM1" description="Parameter 6" raw_type="BIT_STRING" eng_type="BIT_STRING" eng_unit="" />
+        <parameter id="#107" location="ROOT.ELEMENT2.PARAM2" description="Parameter 7" raw_type="OCTET_STRING" eng_type="OCTET_STRING" eng_unit="" />
+        <parameter id="#108" location="ROOT.ELEMENT2.PARAM3" description="Parameter 8" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
+        <parameter id="#109" location="ROOT.ELEMENT2.PARAM4" description="Parameter 9" raw_type="ABSOLUTE_TIME" eng_type="ABSOLUTE_TIME" eng_unit="" />
+        <parameter id="#110" location="ROOT.ELEMENT2.PARAM5" description="Parameter 10" raw_type="RELATIVE_TIME" eng_type="RELATIVE_TIME" eng_unit="" />
+        <parameter id="#121" location="ROOT.EVT.PARAM1" description="Base parameter 1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="">
+            <checks>
+                <expected name="EXPCHK1" type="UNSIGNED_INTEGER">
+                    <value>10</value>
+                    <value>15</value>
+                    <value>16</value>
+                </expected>
+            </checks>
+            <triggers>
+                <trigger event="#2003" condition="ON_NEW_SAMPLE"/>
+                <trigger event="#2004" condition="ON_VALUE_CHANGE"/>
+                <trigger event="#2005" condition="ON_ALARM_RAISED"/>
+                <trigger event="#2006" condition="ON_BACK_TO_NOMINAL"/>
+            </triggers>
+        </parameter>
+        <parameter id="#122" location="ROOT.EVT.PARAM2" description="Base parameter 2" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        <parameter id="#1001" location="ROOT.BATTERY.BATTERY_STATE" description="Battery state" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="">
+            <validity>
+                <condition><expression>true</expression></condition>
+            </validity>
+            <checks>
+                <expected name="EXPCHK1" type="BOOLEAN">
+                    <value>true</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#1002" location="ROOT.BATTERY.BATTERY_TENSION" description="Battery tension" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="mV">
+            <validity>
+                <condition>
+                    <expression>BATTERY_STATE.value() == true</expression>
+                    <symbol name="BATTERY_STATE" reference="#1001" />
+                </condition>
+            </validity>
+            <calib_poly a0="10" a1="2" />
+            <checks>
+                <limit name="BTENSLIMIT" type="UNSIGNED_INTEGER" severity="WARNING" high="3000" low="1000"/>
+            </checks>
+        </parameter>
+        <parameter id="#1003" location="ROOT.BATTERY.BATTERY_CURRENT" description="Battery current" raw_type="UNSIGNED_INTEGER" eng_type="REAL" eng_unit="A">
+            <validity>
+                <condition>
+                    <expression>BATTERY_STATE.value() == true &amp;&amp; !BATTERY_TENSION.inAlarm()</expression>
+                    <symbol name="BATTERY_STATE" reference="#1001" />
+                    <symbol name="BATTERY_TENSION" reference="#1002" />
+                </condition>
+            </validity>
+            <calib_expression>
+                <definition>
+                    <expression>input + BATTERY_TENSION.value()/300.0</expression>
+                    <symbol name="BATTERY_TENSION" reference="#1002" /><!-- input is added automatically (source value) -->
+                </definition>
+            </calib_expression>
+            <checks>
+                <limit name="BCURRLIMIT" type="REAL" severity="ALARM" high="3.8" low="0.5"/>
+                <delta name="BCURRDELTA" type="REAL" severity="ALARM" numViolations="2" high="0.2" low="-0.2"/>
+            </checks>
+        </parameter>
+        <parameter id="#1004" location="ROOT.BATTERY.BATTERY_STATE_EN" description="Battery state as enum" raw_type="ENUMERATED" eng_type="CHARACTER_STRING">
+            <synthetic>
+                <expression>BATTERY_STATE.value() ? 1 : 0</expression>
+                <symbol name="BATTERY_STATE" reference="#1001" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+    </parameters>
+    <events>
+        <event id="#2001" location="ROOT.EVT.EVT1" description="Event 1" severity="WARN" type="ONBOARD"/>
+        <event id="#2002" location="ROOT.EVT.EVT2" description="Event 2" severity="ALARM" type="ONBOARD" inhibitionPeriod="3000" />
+        <event id="#2003" location="ROOT.EVT.EVT3" description="Event 3" severity="INFO" type="ONGROUND"/>
+        <event id="#2004" location="ROOT.EVT.EVT4" description="Event 4" severity="WARN" type="ONGROUND"/>
+        <event id="#2005" location="ROOT.EVT.EVT5" description="Event 5" severity="ALARM" type="ONGROUND"/>
+        <event id="#2006" location="ROOT.EVT.EVT6" description="Event 6" severity="WARN" type="ANOTHER_TYPE"/>
+        <event id="#2007" location="ROOT.EVT.EVT7" description="Event 7" severity="ALARM" type="ONGROUND">
+            <condition>
+                <expression>PARAM1 == 20</expression>
+                <symbol name="PARAM1" reference="#121" binding="ENG_VALUE" />
+            </condition>
+        </event>
+        <event id="#2008" location="ROOT.EVT.EVT8" description="Event 8" severity="ALARM" type="ONGROUND">
+            <condition>
+                <expression>PARAM2 == 3000</expression>
+                <symbol name="PARAM2" reference="#122" binding="ENG_VALUE" />
+            </condition>
+        </event>
+        <event id="#2009" location="ROOT.EVT.EVT9" description="Event 9" severity="ALARM" type="ONGROUND">
+            <condition>
+                <expression>PARAM2 * 2.5</expression>
+                <symbol name="PARAM2" reference="#122" binding="ENG_VALUE" />
+            </condition>
+        </event>
+        <event id="#2010" location="ROOT.EVT.EVT10" description="Event 10" severity="ALARM" type="ONGROUND">
+            <condition>
+                <expression>WHATEVER.value() == 2</expression>
+                <symbol name="PARAM2" reference="#122" binding="ENG_VALUE" />
+            </condition>
+        </event>
+    </events>
+    <activities>
+        <activity id="#11000" location="ROOT.ELEMENT.ACT1" description="Activity 1" type="TC">
+            <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
+            <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="mV">
+                <default_fixed type="RAW" value="43" />
+            </argument>
+            <argument name="ARG3" raw_type="REAL" eng_type="REAL" eng_unit="mA" fixed="true">
+                <default_fixed type="RAW" value="12.4" />
+            </argument>
+            <argument name="ARG4" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <default_fixed type="ENGINEERING" value="OFF" />
+                <decalib_ienum default="100">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                    <point x="UNKNOWN" y="100" />
+                </decalib_ienum>
+            </argument>
+            <property key="spacecraft-id" value="100" />
+            <property key="schedule-time" value="2007-12-03T10:15:30.00123Z" />
+        </activity>
+        <activity id="#11001" location="ROOT.ELEMENT.ACT2" description="Activity 2" type="TC">
+            <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
+            <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="mV" >
+                <checks>
+                    <limit type="SIGNED_INTEGER" high="10000" low="800" />
+                </checks>
+            </argument>
+            <argument name="ARG3" raw_type="REAL" eng_type="REAL" eng_unit="mA" fixed="true">
+                <default_fixed type="RAW" value="12.4" />
+            </argument>
+            <argument name="ARG4" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <default_ref type="ENGINEERING" parameter="#108" targetValueType="RAW" />
+                <decalib_ienum default="1010">
+                    <point x="OFF" y="10" />
+                    <point x="ON" y="11" />
+                    <point x="UNKNOWN" y="1010" />
+                </decalib_ienum>
+                <checks>
+                    <expected name="EXP1" type="ENUMERATED">
+                        <value>10</value>
+                        <value>11</value>
+                    </expected>
+                </checks>
+            </argument>
+            <property key="spacecraft-id" value="101" />
+        </activity>
+        <activity id="#11002" location="ROOT.ELEMENT.ACT3" description="Activity 3" type="TC" verificationTimeout="5">
+            <argument name="ARG1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+            <verification>
+                <expression>PARAM3.value() == self.argument("ARG1")</expression>
+                <symbol name="PARAM3" reference="#103" />
+            </verification>
+        </activity>
+        <activity id="#11003" location="ROOT.ELEMENT.ACT4" description="Activity 4" type="TC" transmissionTimeout="2" executionTimeout="3">
+            <argument name="ARG1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        </activity>
+    </activities>
+</ns1:processing>
