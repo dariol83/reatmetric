@@ -37,10 +37,10 @@ public class MatcherDefinition {
     @XmlAttribute(name = "operator", required = true)
     private MatcherType operator;
 
-    @XmlAttribute(name = "useRawValue")
+    @XmlAttribute(name = "use_raw_value")
     private boolean useRawValue = false;
 
-    @XmlAttribute(name = "valueType")
+    @XmlAttribute(name = "value_type")
     private ValueTypeEnum valueType;
 
     @XmlAttribute(name = "value")
@@ -50,7 +50,7 @@ public class MatcherDefinition {
     @XmlAttribute(name = "reference")
     private ParameterProcessingDefinition reference;
 
-    @XmlAttribute(name = "useReferenceRawValue")
+    @XmlAttribute(name = "use_reference_raw_value")
     private boolean useReferenceRawValue = false;
 
     public MatcherDefinition() {

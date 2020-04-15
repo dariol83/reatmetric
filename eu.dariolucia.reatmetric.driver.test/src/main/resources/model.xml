@@ -254,124 +254,294 @@
 		</parameter>
 		
 		
-        <!-- All types-->
-        <parameter id="#101" location="ROOT.ELEMENT1.PARAM1" description="Parameter 1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
-        <parameter id="#102" location="ROOT.ELEMENT1.PARAM2" description="Parameter 2" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
-        <parameter id="#103" location="ROOT.ELEMENT1.PARAM3" description="Parameter 3" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
-        <parameter id="#104" location="ROOT.ELEMENT1.PARAM4" description="Parameter 4" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="" />
-        <parameter id="#105" location="ROOT.ELEMENT1.PARAM5" description="Parameter 5" raw_type="REAL" eng_type="REAL" eng_unit="" />
-        <parameter id="#106" location="ROOT.ELEMENT2.PARAM1" description="Parameter 6" raw_type="BIT_STRING" eng_type="BIT_STRING" eng_unit="" />
-        <parameter id="#107" location="ROOT.ELEMENT2.PARAM2" description="Parameter 7" raw_type="OCTET_STRING" eng_type="OCTET_STRING" eng_unit="" />
-        <parameter id="#108" location="ROOT.ELEMENT2.PARAM3" description="Parameter 8" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
-        <parameter id="#109" location="ROOT.ELEMENT2.PARAM4" description="Parameter 9" raw_type="ABSOLUTE_TIME" eng_type="ABSOLUTE_TIME" eng_unit="" />
-        <parameter id="#110" location="ROOT.ELEMENT2.PARAM5" description="Parameter 10" raw_type="RELATIVE_TIME" eng_type="RELATIVE_TIME" eng_unit="" />
-        <parameter id="#121" location="ROOT.EVT.PARAM1" description="Base parameter 1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="">
-            <checks>
-                <expected name="EXPCHK1" type="UNSIGNED_INTEGER">
-                    <value>10</value>
-                    <value>15</value>
-                    <value>16</value>
-                </expected>
-            </checks>
-            <triggers>
-                <trigger event="#2003" condition="ON_NEW_SAMPLE"/>
-                <trigger event="#2004" condition="ON_VALUE_CHANGE"/>
-                <trigger event="#2005" condition="ON_ALARM_RAISED"/>
-                <trigger event="#2006" condition="ON_BACK_TO_NOMINAL"/>
-            </triggers>
-        </parameter>
-        <parameter id="#122" location="ROOT.EVT.PARAM2" description="Base parameter 2" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
-        <parameter id="#1001" location="ROOT.BATTERY.BATTERY_STATE" description="Battery state" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="">
-            <validity>
-                <condition><expression>true</expression></condition>
-            </validity>
-            <checks>
-                <expected name="EXPCHK1" type="BOOLEAN">
-                    <value>true</value>
-                </expected>
-            </checks>
-        </parameter>
-        <parameter id="#1002" location="ROOT.BATTERY.BATTERY_TENSION" description="Battery tension" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="mV">
-            <validity>
-                <condition>
-                    <expression>BATTERY_STATE.value() == true</expression>
-                    <symbol name="BATTERY_STATE" reference="#1001" />
-                </condition>
-            </validity>
-            <calib_poly a0="10" a1="2" />
-            <checks>
-                <limit name="BTENSLIMIT" type="UNSIGNED_INTEGER" severity="WARNING" high="3000" low="1000"/>
-            </checks>
-        </parameter>
-        <parameter id="#1003" location="ROOT.BATTERY.BATTERY_CURRENT" description="Battery current" raw_type="UNSIGNED_INTEGER" eng_type="REAL" eng_unit="A">
-            <validity>
-                <condition>
-                    <expression>BATTERY_STATE.value() == true &amp;&amp; !BATTERY_TENSION.inAlarm()</expression>
-                    <symbol name="BATTERY_STATE" reference="#1001" />
-                    <symbol name="BATTERY_TENSION" reference="#1002" />
-                </condition>
-            </validity>
-            <calib_expression>
-                <definition>
-                    <expression>input + BATTERY_TENSION.value()/300.0</expression>
-                    <symbol name="BATTERY_TENSION" reference="#1002" /><!-- input is added automatically (source value) -->
-                </definition>
-            </calib_expression>
-            <checks>
-                <limit name="BCURRLIMIT" type="REAL" severity="ALARM" high="3.8" low="0.5"/>
-                <delta name="BCURRDELTA" type="REAL" severity="ALARM" numViolations="2" high="0.2" low="-0.2"/>
-            </checks>
-        </parameter>
-        <parameter id="#1004" location="ROOT.BATTERY.BATTERY_STATE_EN" description="Battery state as enum" raw_type="ENUMERATED" eng_type="CHARACTER_STRING">
-            <synthetic>
-                <expression>BATTERY_STATE.value() ? 1 : 0</expression>
-                <symbol name="BATTERY_STATE" reference="#1001" />
-            </synthetic>
-            <calib_enum default="UNKNOWN">
+		<!-- Splitter -->
+		<parameter id="#600" location="STATION.SPLITTER.SPT_STATUS" description="Splitter Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
             </calib_enum>
-            <checks>
+			<checks>
                 <expected name="EXPCHK1" type="CHARACTER_STRING">
                     <value>ON</value>
                 </expected>
             </checks>
-        </parameter>
+		</parameter>
+		<parameter id="#601" location="STATION.SPLITTER.SPT_INPUT" description="Splitter Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#602" location="STATION.SPLITTER.SPT_OUTPUT1" description="Splitter Output 1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#603" location="STATION.SPLITTER.SPT_OUTPUT2" description="Splitter Output 2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#604" location="STATION.SPLITTER.SPT_OUTPUT3" description="Splitter Output 3" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#605" location="STATION.SPLITTER.STP_POWER" description="Splitter Power Consuption" raw_type="real" eng_type="real" eng_unit="W" >
+			<validity>
+				<match parameter="#600" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BCLIMIT" type="REAL" severity="WARNING" high="2570.0" low="1070.0"/>
+				<limit name="BCLIMIT2" type="REAL" severity="ALARM" high="3000.0" low="800.0"/>
+				<delta name="DLIMIT" type="REAL" severity="WARNING" high="70" low="-20.0" absolute="true" />
+            </checks>
+		</parameter>
+		
+		
+		<!-- Ventilation Grid -->
+		<parameter id="#700" location="STATION.VENTILATION.VNT_STATUS" description="Ventilation Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#701" location="STATION.VENTILATION.VNT_INPUT" description="Ventilation Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#702" location="STATION.VENTILATION.VNT_FAN1_SPEED" description="Ventilation Speed Fan 1" raw_type="REAL" eng_type="REAL" eng_unit="RPM">
+			<validity>
+				<match parameter="#700" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="180"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="120"/>
+            </checks>
+		</parameter>
+		<parameter id="#703" location="STATION.VENTILATION.VNT_FAN2_SPEED" description="Ventilation Speed Fan 2" raw_type="REAL" eng_type="REAL" eng_unit="RPM">
+			<validity>
+				<match parameter="#700" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="180"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="120"/>
+            </checks>
+		</parameter>
+		<parameter id="#704" location="STATION.VENTILATION.VNT_FAN3_SPEED" description="Ventilation Speed Fan 3" raw_type="REAL" eng_type="REAL" eng_unit="RPM">
+			<validity>
+				<match parameter="#700" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="180"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="120"/>
+            </checks>
+		</parameter>
+		<parameter id="#705" location="STATION.VENTILATION.VNT_FAN4_SPEED" description="Ventilation Speed Fan 4" raw_type="REAL" eng_type="REAL" eng_unit="RPM">
+			<validity>
+				<match parameter="#700" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="180"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="120"/>
+            </checks>
+		</parameter>
+		
+		
+		<!-- Thermal Units -->
+		<parameter id="#800" location="STATION.THERMAL.THM_STATUS" description="Thermal Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#801" location="STATION.THERMAL.THM_GSTATUS" description="Thermal Global Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="NOMINAL" />
+				<point x="2" y="DEGRADED" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>NOMINAL</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#802" location="STATION.THERMAL.THM_INPUT" description="Thermal Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#803" location="STATION.THERMAL.THM_A_STATUS" description="Thermal Unit A Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ON" />
+				<point x="2" y="ALARM" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#804" location="STATION.THERMAL.THM_A_TEMP" description="Thermal Unit A Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C">
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="47" />
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="65" />
+            </checks>
+		</parameter>
+		<parameter id="#805" location="STATION.THERMAL.THM_A_OVERRIDE" description="Thermal Unit A Override" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ON" />
+				<point x="2" y="ALARM" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+					<value>INACTIVE</value>
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#806" location="STATION.THERMAL.THM_A_PROTECTION" description="Thermal Unit A Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+		</parameter>
+		<parameter id="#807" location="STATION.THERMAL.THM_B_STATUS" description="Thermal Unit B Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ON" />
+				<point x="2" y="ALARM" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#808" location="STATION.THERMAL.THM_B_TEMP" description="Thermal Unit B Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C">
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="47" />
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="65" />
+            </checks>
+		</parameter>
+		<parameter id="#809" location="STATION.THERMAL.THM_B_OVERRIDE" description="Thermal Unit B Override" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ON" />
+				<point x="2" y="ALARM" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+					<value>INACTIVE</value>
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#810" location="STATION.THERMAL.THM_B_PROTECTION" description="Thermal Unit B Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+		</parameter>
+		
+		
+		<!-- Turbine -->
+		<parameter id="#900" location="STATION.TURBINE.TRB_STATUS" description="Turbine Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#901" location="STATION.TURBINE.TRB_INPUT" description="Turbine Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#902" location="STATION.TURBINE.TRB_OUTPUT" description="Turbine Output Power" raw_type="REAL" eng_type="REAL" eng_unit="W">
+			<validity>
+				<match parameter="#900" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="150" low="20"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="10"/>
+            </checks>
+		</parameter>
+		<parameter id="#903" location="STATION.TURBINE.TRB_RPM" description="Turbine Rotation" raw_type="REAL" eng_type="REAL" eng_unit="RPM">
+			<validity>
+				<match parameter="#900" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="180"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="120"/>
+            </checks>
+		</parameter>
     </parameters>
     <events>
-        <event id="#2001" location="ROOT.EVT.EVT1" description="Event 1" severity="WARN" type="ONBOARD"/>
-        <event id="#2002" location="ROOT.EVT.EVT2" description="Event 2" severity="ALARM" type="ONBOARD" inhibitionPeriod="3000" />
-        <event id="#2003" location="ROOT.EVT.EVT3" description="Event 3" severity="INFO" type="ONGROUND"/>
-        <event id="#2004" location="ROOT.EVT.EVT4" description="Event 4" severity="WARN" type="ONGROUND"/>
-        <event id="#2005" location="ROOT.EVT.EVT5" description="Event 5" severity="ALARM" type="ONGROUND"/>
-        <event id="#2006" location="ROOT.EVT.EVT6" description="Event 6" severity="WARN" type="ANOTHER_TYPE"/>
-        <event id="#2007" location="ROOT.EVT.EVT7" description="Event 7" severity="ALARM" type="ONGROUND">
-            <condition>
-                <expression>PARAM1 == 20</expression>
-                <symbol name="PARAM1" reference="#121" binding="ENG_VALUE" />
-            </condition>
-        </event>
-        <event id="#2008" location="ROOT.EVT.EVT8" description="Event 8" severity="ALARM" type="ONGROUND">
-            <condition>
-                <expression>PARAM2 == 3000</expression>
-                <symbol name="PARAM2" reference="#122" binding="ENG_VALUE" />
-            </condition>
-        </event>
-        <event id="#2009" location="ROOT.EVT.EVT9" description="Event 9" severity="ALARM" type="ONGROUND">
-            <condition>
-                <expression>PARAM2 * 2.5</expression>
-                <symbol name="PARAM2" reference="#122" binding="ENG_VALUE" />
-            </condition>
-        </event>
-        <event id="#2010" location="ROOT.EVT.EVT10" description="Event 10" severity="ALARM" type="ONGROUND">
-            <condition>
-                <expression>WHATEVER.value() == 2</expression>
-                <symbol name="PARAM2" reference="#122" binding="ENG_VALUE" />
-            </condition>
-        </event>
+        <event id="#2001" location="STATION.THERMAL.PROTECTION_UNIT_A" description="Thermal Protection on Unit A" severity="WARN" type="THERMAL_EVT"/>
+		<event id="#2002" location="STATION.THERMAL.PROTECTION_UNIT_B" description="Thermal Protection on Unit B" severity="WARN" type="THERMAL_EVT"/>
     </events>
     <activities>
-        <activity id="#11000" location="ROOT.ELEMENT.ACT1" description="Activity 1" type="TC">
+        <activity id="#11000" location="STATION.THERMAL.ACT1" description="Activity 1" type="TC">
             <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
             <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="mV">
                 <default_fixed type="RAW" value="43" />
@@ -390,7 +560,7 @@
             <property key="spacecraft-id" value="100" />
             <property key="schedule-time" value="2007-12-03T10:15:30.00123Z" />
         </activity>
-        <activity id="#11001" location="ROOT.ELEMENT.ACT2" description="Activity 2" type="TC">
+        <activity id="#11001" location="STATION.THERMAL.ACT2" description="Activity 2" type="TC">
             <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
             <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="mV" >
                 <checks>
@@ -401,7 +571,7 @@
                 <default_fixed type="RAW" value="12.4" />
             </argument>
             <argument name="ARG4" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
-                <default_ref type="ENGINEERING" parameter="#108" targetValueType="RAW" />
+                <default_ref type="ENGINEERING" parameter="#101" targetValueType="RAW" />
                 <decalib_ienum default="1010">
                     <point x="OFF" y="10" />
                     <point x="ON" y="11" />
@@ -416,7 +586,7 @@
             </argument>
             <property key="spacecraft-id" value="101" />
         </activity>
-        <activity id="#11002" location="ROOT.ELEMENT.ACT3" description="Activity 3" type="TC" verificationTimeout="5">
+        <activity id="#11002" location="STATION.THERMAL.ACT3" description="Activity 3" type="TC" verificationTimeout="5">
             <argument name="ARG1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
             <verification>
                 <expression>PARAM3.value() == self.argument("ARG1")</expression>

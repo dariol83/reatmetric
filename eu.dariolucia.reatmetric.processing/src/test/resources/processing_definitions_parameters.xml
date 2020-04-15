@@ -67,7 +67,7 @@
             </calib_expression>
             <checks>
                 <limit name="BCURRLIMIT" type="REAL" severity="ALARM" high="3.8" low="0.5"/>
-                <delta name="BCURRDELTA" type="REAL" severity="ALARM" numViolations="2" high="0.2" low="-0.2"/>
+                <delta name="BCURRDELTA" type="REAL" severity="ALARM" num_violations="2" high="0.2" low="-0.2"/>
             </checks>
         </parameter>
         <parameter id="#1004" location="ROOT.BATTERY.BATTERY_STATE_EN" description="Battery state as enum" raw_type="ENUMERATED" eng_type="CHARACTER_STRING">
@@ -136,22 +136,22 @@
         </parameter>
         <parameter id="#1021" location="ROOT.VALTEST.VALMATCH1" description="Parameter with matcher 1" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
             <validity>
-                <match parameter="#1020" operator="EQUAL" valueType="SIGNED_INTEGER" value="20" />
+                <match parameter="#1020" operator="EQUAL" value_type="SIGNED_INTEGER" value="20" />
             </validity>
         </parameter>
         <parameter id="#1022" location="ROOT.VALTEST.VALMATCH2" description="Parameter with matcher 2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
             <validity>
-                <match parameter="#1020" operator="GT" valueType="SIGNED_INTEGER" value="20" />
+                <match parameter="#1020" operator="GT" value_type="SIGNED_INTEGER" value="20" />
             </validity>
         </parameter>
         <parameter id="#1023" location="ROOT.VALTEST.VALMATCH3" description="Parameter with matcher 3" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
             <validity>
-                <match parameter="#1020" operator="LT" valueType="SIGNED_INTEGER" value="20" />
+                <match parameter="#1020" operator="LT" value_type="SIGNED_INTEGER" value="20" />
             </validity>
         </parameter>
         <parameter id="#1024" location="ROOT.VALTEST.VALMATCH4" description="Parameter with matcher 4" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
             <validity>
-                <match parameter="#1020" operator="NOT_EQUAL" valueType="SIGNED_INTEGER" value="30" />
+                <match parameter="#1020" operator="NOT_EQUAL" value_type="SIGNED_INTEGER" value="30" />
             </validity>
         </parameter>
 
@@ -221,7 +221,7 @@
                 <property key="calib.key" value="test" />
             </calib_external>
             <checks>
-                <external function="__nocheck" name="TESTEXTCHK" numViolations="2">
+                <external function="__nocheck" name="TESTEXTCHK" num_violations="2">
                     <property key="check.key" value="the_value" />
                 </external>
             </checks>

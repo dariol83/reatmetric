@@ -214,8 +214,8 @@ class ParameterTest {
         assertEquals(0L, ((ParameterData)outList.get(3)).getSourceValue());
         assertEquals(3.3666, (Double) ((ParameterData)outList.get(3)).getEngValue(), 0.001);
         assertEquals(Validity.VALID, ((ParameterData)outList.get(3)).getValidity());
-        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(3)).getAlarmState());
-        assertEquals(AlarmState.NOMINAL, ((AlarmParameterData)outList.get(5)).getCurrentAlarmState()); // ALARM - Validity INVALID - Validity INVALID - NOMINAL
+        assertEquals(AlarmState.VIOLATED, ((ParameterData)outList.get(3)).getAlarmState());
+        assertEquals(AlarmState.VIOLATED, ((AlarmParameterData)outList.get(5)).getCurrentAlarmState());
 
         testLogger.info("Injection - Disable battery");
         outList.clear();
@@ -234,7 +234,7 @@ class ParameterTest {
         model.enable(SystemEntityPath.fromString("ROOT.BATTERY"));
 
         AwaitUtil.await(5000);
-        assertEquals(8, outList.size());
+        assertEquals(9, outList.size());
         for(AbstractDataItem i : outList) {
             if(i instanceof SystemEntity) {
                 assertEquals(Status.ENABLED, ((SystemEntity) i).getStatus());

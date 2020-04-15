@@ -31,7 +31,7 @@ public class ReferenceDefaultValue extends AbstractDefaultValue {
     @XmlAttribute(name = "parameter", required = true)
     private ParameterProcessingDefinition parameter;
 
-    @XmlAttribute(name = "targetValueType", required = true)
+    @XmlAttribute(name = "target_value_type", required = true)
     private DefaultValueType targetValueType;
 
     public ReferenceDefaultValue() {

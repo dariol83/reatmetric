@@ -27,13 +27,13 @@ import java.time.Instant;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class DeltaCheck extends CheckDefinition {
 
-    @XmlAttribute
+    @XmlAttribute(name="high")
     private double highLimit = Double.POSITIVE_INFINITY;
 
-    @XmlAttribute
+    @XmlAttribute(name="low")
     private double lowLimit = Double.NEGATIVE_INFINITY;
 
-    @XmlAttribute
+    @XmlAttribute(name="absolute")
     private boolean absolute = false; // The absolute delta value must be within limits
 
     public DeltaCheck() {

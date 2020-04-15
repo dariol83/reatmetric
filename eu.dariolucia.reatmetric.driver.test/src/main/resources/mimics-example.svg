@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg id="svg8" width="297mm" height="210mm" version="1.1" viewBox="0 0 297 210" xmlns="http://www.w3.org/2000/svg">
+ <defs id="defs2">
+  <marker id="marker1598" overflow="visible" orient="auto">
+   <path id="path1596" transform="scale(.4) translate(-4.5)" d="m5.77 0-8.65 5v-10l8.65 5z" fill="#ffffff" fill-rule="evenodd" stroke="#000000" stroke-width="1pt"/>
+  </marker>
+  <marker id="DotS" overflow="visible" orient="auto">
+   <path id="path1373" transform="scale(.2) translate(7.4 1)" d="m-2.5-1c0 2.76-2.24 5-5 5s-5-2.24-5-5 2.24-5 5-5 5 2.24 5 5z" fill="#000000" fill-rule="evenodd" stroke="#000000" stroke-width="1pt"/>
+  </marker>
+ </defs>
  <g id="layer1" transform="translate(0,-87)">
   <rect id="rect10" x="9.2604" y="96.286" width="72.76" height="37.996" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".60236" style="paint-order:normal"/>
   <text id="text14" x="19.243406" y="102.96233" fill="#000000" font-family="sans-serif" font-size="10.583px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan12" x="19.243406" y="102.96233" font-family="sans-serif" font-size="4.2333px" font-weight="bold" stroke-width=".26458">Power Supply Distributor</tspan></text>
@@ -163,5 +171,12 @@
   <rect id="turbine-rpm-bar" x="185.21" y="211.01" width="63.5" height="5.2917" fill="#ffffff" stroke="#000000" stroke-linejoin="round" stroke-width=".202" style="paint-order:normal"/>
   <text id="text22-0-8-3" x="166.67401" y="202.75381" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan20-4-1-8" x="166.67401" y="202.75381" stroke-width=".26458">Output</tspan></text>
   <text id="text22-0-8-3-4" x="166.52695" y="214.74065" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan20-4-1-8-6" x="166.52695" y="214.74065" stroke-width=".26458">RPM</tspan></text>
+  <path id="path1279" d="m183.09 132.43v5.5562" fill="none" stroke="#000000" stroke-width=".26458px"/>
+  <g id="wattometer" fill="none" stroke="#000000" stroke-linejoin="round">
+   <path id="path1276" d="m173.7 126.34a10.844 12.171 0 0 1 9.3911-6.0854 10.844 12.171 0 0 1 9.3911 6.0854l-9.3911 6.0854z" stroke-width=".23389" style="paint-order:normal"/>
+   <path id="path1276-9" d="m177.01 128.46a7.0268 7.9375 0 0 1 6.0854-3.9688 7.0268 7.9375 0 0 1 6.0854 3.9688l-6.0854 3.9688z" stroke-width=".15205" style="paint-order:normal"/>
+   <circle id="path1302" cx="183.09" cy="130.84" r=".66146" stroke-width=".202" style="paint-order:normal"/>
+  </g>
+  <path id="watt-indicator" d="m183.09 130.84-7.9375-4.4979" fill="none" marker-end="url(#marker1598)" marker-start="url(#DotS)" stroke="#000000" stroke-linecap="round" stroke-width=".265"/>
  </g>
 </svg>

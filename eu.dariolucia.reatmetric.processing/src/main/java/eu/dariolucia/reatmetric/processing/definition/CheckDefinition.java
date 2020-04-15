@@ -34,10 +34,10 @@ public abstract class CheckDefinition {
     @XmlAttribute
     private CheckSeverity severity = CheckSeverity.ALARM;
 
-    @XmlAttribute
+    @XmlAttribute(name="num_violations")
     private int numViolations = 1;
 
-    @XmlAttribute
+    @XmlAttribute(name="raw_value_checked")
     private boolean rawValueChecked = false; // Apply check on raw/source value (used by parameters only)
 
     @XmlElement(name = "applicability")
