@@ -36,18 +36,40 @@ import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class TestDriver implements IDriver, IActivityHandler {
+/**
+ * This test driver is implemented to show the main functionalities and characteristics that
+ * a ReatMetric driver should have.
+ *
+ * The driver implements the generation of simulated data according to the model defined in the
+ * XML file (part of the module resources).
+ *
+ * Monitoring data is delivered by means of byte arrays with the following format:
+ * <ul>
+ *     <li>1 byte - 4 MSB: equipment ID</li>
+ *     <li>1 byte - 4 LSB: 0: parameters - 1: event - 2: command ack - 3: command start - 4: command completed</li>
+ *     <li>8 bytes: timestamp - milliseconds from Java epoch</li>
+ *     <li>the rest: definition of the equipment specific monitoring format (depends on type and number of parameters)</li>
+ * </ul>
+ *
+ * The raw data is produced by a simulated model, and provided to the connector, which distributes the data inside the
+ * ReatMetric system.
+ */
+public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
 
     private static final Logger LOG = Logger.getLogger(TestDriver.class.getName());
+
+    public static final String STATION_CMD = "STATION CMD";
+    public static final String STATION_ROUTE = "STATION ROUTE";
+    public static final String STATION_SOURCE = "STATION";
+    public static final String STATION_ACK = "STATION ACK";
+    public static final String STATION_TM = "STATION TM";
+    public static final String STATION_EVENT = "STATION EVENT";
 
     private volatile boolean running;
     private volatile IServiceCoreContext context;
@@ -56,14 +78,14 @@ public class TestDriver implements IDriver, IActivityHandler {
     private volatile IDriverListener subscriber;
 
     // For activity execution
-    private final ExecutorService executor = Executors.newFixedThreadPool(4, (t) -> {
+    private final ExecutorService executor = Executors.newFixedThreadPool(1, (t) -> {
         Thread toReturn = new Thread(t, "TestDriver Activity Handler Thread");
         toReturn.setDaemon(true);
         return toReturn;
     });
     private final List<ITransportConnector> connectors = new LinkedList<>();
-    private final List<String> types = Arrays.asList("TC", "Custom");
-    private final List<String> routes = Arrays.asList("RouteA", "RouteB");
+    private final List<String> types = Arrays.asList(STATION_CMD);
+    private final List<String> routes = Arrays.asList(STATION_ROUTE);
 
     public TestDriver() {
         // Nothing to do
@@ -78,10 +100,13 @@ public class TestDriver implements IDriver, IActivityHandler {
         } catch (ReatmetricException e) {
             throw new DriverException(e);
         }
-        this.connectors.add(createTcConnector("TC", "RouteA"));
-        this.connectors.add(createTcConnector("Custom", "RouteA", "RouteB"));
-        this.connectors.add(createTmConnector("TM", context.getRawDataBroker(), "RouteA"));
+        this.connectors.add(createConnector(STATION_CMD, STATION_ROUTE, context.getRawDataBroker()));
         this.running = true;
+    }
+
+    private ITransportConnector createConnector(String cmdType, String route, IRawDataBroker rawDataBroker) {
+        // TODO
+        return null;
     }
 
     @Override
@@ -89,24 +114,32 @@ public class TestDriver implements IDriver, IActivityHandler {
         return SystemStatus.NOMINAL;
     }
 
+    /**
+     * Renderers are used to visualise raw data in human readable format. For a simple driver, the render can be the
+     * driver itself.
+     *
+     * @return the supported raw data renderers
+     */
     @Override
     public List<IRawDataRenderer> getRawDataRenderers() {
-        return Collections.emptyList();
+        return Collections.singletonList(this);
     }
 
-    private ITransportConnector createTcConnector(String type, String... routes) {
-        return new TelecommandTransportConnectorImpl(type, type, routes);
-    }
-
-    private ITransportConnector createTmConnector(String name, IRawDataBroker broker, String... routes) {
-        return new TelemetryTransportConnectorImpl(name, routes, definitions, context.getProcessingModel(), broker);
-    }
-
+    /**
+     * For a simple driver, an activity handler can be the driver itself.
+     *
+     * @return the activity handler
+     */
     @Override
     public List<IActivityHandler> getActivityHandlers() {
         return Collections.singletonList(this);
     }
 
+    /**
+     * This driver defines a single combined connector for TM and commands.
+     *
+     * @return the transport connectors
+     */
     @Override
     public List<ITransportConnector> getTransportConnectors() {
         return Collections.unmodifiableList(this.connectors);
@@ -177,10 +210,8 @@ public class TestDriver implements IDriver, IActivityHandler {
 
     public void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
         try {
-            log(activityInvocation, "Release finalisation");
             storeRawData(activityInvocation.getActivityOccurrenceId(), activityInvocation.getPath(), activityInvocation.getGenerationTime(), activityInvocation.getRoute(), "TC");
             announce(activityInvocation, model, "Final Release", ActivityReportState.OK, ActivityOccurrenceState.RELEASE, ActivityOccurrenceState.TRANSMISSION);
-            log(activityInvocation, "Transmission started");
             for (int i = 0; i < 3; ++i) {
                 announce(activityInvocation, model, "T" + i, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
             }
@@ -189,14 +220,11 @@ public class TestDriver implements IDriver, IActivityHandler {
                 Thread.sleep(transmissionForEachState);
                 announce(activityInvocation, model, "T" + i, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION, i != 3 - 1 ? ActivityOccurrenceState.TRANSMISSION : ActivityOccurrenceState.EXECUTION);
             }
-            log(activityInvocation, "Transmission completed");
         } catch(Exception e) {
-            log(activityInvocation, "Exception raised", e);
             announce(activityInvocation, model, "Error", ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
             return;
         }
         try {
-            log(activityInvocation, "Execution started");
             for (int i = 0; i < 4; ++i) {
                 announce(activityInvocation, model, "E" + i, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
             }
@@ -205,9 +233,7 @@ public class TestDriver implements IDriver, IActivityHandler {
                 Thread.sleep(executionForEachState);
                 announce(activityInvocation, model, "E" + i, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, i != 4 - 1 ? ActivityOccurrenceState.EXECUTION : ActivityOccurrenceState.VERIFICATION, null, null);
             }
-            log(activityInvocation, "Execution completed");
         } catch(Exception e) {
-            log(activityInvocation, "Exception raised", e);
             announce(activityInvocation, model, "Error", ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION);
         }
     }
@@ -216,14 +242,6 @@ public class TestDriver implements IDriver, IActivityHandler {
         IUniqueId internalId = context.getRawDataBroker().nextRawDataId();
         RawData rd = new RawData(internalId, generationTime, path.getLastPathElement(), type, route, "", Quality.GOOD, activityOccurrenceId, new byte[25], Instant.now(), null);
         context.getRawDataBroker().distribute(Collections.singletonList(rd), true);
-    }
-
-    protected void log(IActivityHandler.ActivityInvocation invocation, String message) {
-        log(invocation, message, null);
-    }
-
-    protected void log(IActivityHandler.ActivityInvocation invocation, String message, Exception e) {
-        LOG.log(Level.INFO, String.format("Activity occurrence %d - %s - %s", invocation.getActivityOccurrenceId().asLong(), invocation.getPath(), message), e);
     }
 
     protected void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, String name, ActivityReportState reportState, ActivityOccurrenceState occState, ActivityOccurrenceState nextOccState) {
@@ -238,4 +256,19 @@ public class TestDriver implements IDriver, IActivityHandler {
         model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, Instant.now(), occState, executionTime, reportState, nextOccState, result));
     }
 
+    @Override
+    public String getSource() {
+        return STATION_SOURCE;
+    }
+
+    @Override
+    public List<String> getSupportedTypes() {
+        return Arrays.asList(STATION_CMD, STATION_ACK, STATION_TM, STATION_EVENT);
+    }
+
+    @Override
+    public LinkedHashMap<String, String> render(RawData rawData) throws ReatmetricException {
+        // TODO
+        return null;
+    }
 }
