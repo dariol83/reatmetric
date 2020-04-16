@@ -36,10 +36,12 @@ import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -55,6 +57,15 @@ import java.util.logging.Logger;
  *     <li>1 byte - 4 LSB: 0: parameters - 1: event - 2: command ack - 3: command start - 4: command completed</li>
  *     <li>8 bytes: timestamp - milliseconds from Java epoch</li>
  *     <li>the rest: definition of the equipment specific monitoring format (depends on type and number of parameters)</li>
+ * </ul>
+ *
+ * A command is a byte array with the following format:
+ * <ul>
+ *      <li>1 byte - 4 MSB: equipment ID</li>
+ *      <li>1 byte - 4 LSB: 15 (0xF)</li>
+ *      <li>4 bytes: command ID - integer that identifies the command</li>
+ *      <li>4 bytes: command unique tag - positive integer (counter or tag)</li>
+ *      <li>the rest: definition of the command specific format (depends on type and number of parameters)</li>
  * </ul>
  *
  * The raw data is produced by a simulated model, and provided to the connector, which distributes the data inside the
@@ -83,9 +94,7 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         toReturn.setDaemon(true);
         return toReturn;
     });
-    private final List<ITransportConnector> connectors = new LinkedList<>();
-    private final List<String> types = Arrays.asList(STATION_CMD);
-    private final List<String> routes = Arrays.asList(STATION_ROUTE);
+    private volatile StationTransportConnector connector;
 
     public TestDriver() {
         // Nothing to do
@@ -100,7 +109,7 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         } catch (ReatmetricException e) {
             throw new DriverException(e);
         }
-        this.connectors.add(createConnector(STATION_CMD, STATION_ROUTE, context.getRawDataBroker()));
+        this.connector = new StationTransportConnector("Station Connector", "Test connector to simulate data", context.getRawDataBroker());
         this.running = true;
     }
 
@@ -142,19 +151,16 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
      */
     @Override
     public List<ITransportConnector> getTransportConnectors() {
-        return Collections.unmodifiableList(this.connectors);
+        return Collections.singletonList(this.connector);
     }
 
     @Override
     public void dispose() {
         running = false;
-        for(ITransportConnector ctr : connectors) {
-            try {
-                ctr.abort();
-            } catch (TransportException e) {
-                // Ignore, it is test driver
-                e.printStackTrace();
-            }
+        try {
+            connector.abort();
+        } catch (TransportException e) {
+            e.printStackTrace();
         }
     }
 
@@ -172,18 +178,18 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
 
     @Override
     public List<String> getSupportedRoutes() {
-        return routes;
+        return Collections.singletonList(TestDriver.STATION_ROUTE);
     }
 
     @Override
     public List<String> getSupportedActivityTypes() {
-        return types;
+        return Collections.singletonList(TestDriver.STATION_CMD);
     }
 
     @Override
     public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
         LOG.info("Activity invocation: " + activityInvocation);
-        if(!types.contains(activityInvocation.getType())) {
+        if(!activityInvocation.getType().equals(TestDriver.STATION_CMD)) {
             throw new ActivityHandlingException("Type " + activityInvocation.getType() + " not supported");
         }
         if(activityInvocation.getArguments() == null) {
@@ -196,45 +202,22 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
     }
 
     private boolean connectorReady(String type, String route) {
-        for(ITransportConnector c : this.connectors) {
-            if(c.isInitialised() && c instanceof TelecommandTransportConnectorImpl) {
-                if(((TelecommandTransportConnectorImpl) c).getType().equals(type)
-                && ((TelecommandTransportConnectorImpl) c).getRoutes().contains(route)
-                && ((TelecommandTransportConnectorImpl) c).isReady()) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return connector.isInitialised() && connector.isReady();
     }
 
     public void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
         try {
-            storeRawData(activityInvocation.getActivityOccurrenceId(), activityInvocation.getPath(), activityInvocation.getGenerationTime(), activityInvocation.getRoute(), "TC");
+            // TODO encode
+            storeRawData(activityInvocation.getActivityOccurrenceId(), activityInvocation.getPath(), activityInvocation.getGenerationTime(), activityInvocation.getRoute(), activityInvocation.getType());
             announce(activityInvocation, model, "Final Release", ActivityReportState.OK, ActivityOccurrenceState.RELEASE, ActivityOccurrenceState.TRANSMISSION);
-            for (int i = 0; i < 3; ++i) {
-                announce(activityInvocation, model, "T" + i, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
-            }
-            int transmissionForEachState = 2000 / 3;
-            for (int i = 0; i < 3; ++i) {
-                Thread.sleep(transmissionForEachState);
-                announce(activityInvocation, model, "T" + i, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION, i != 3 - 1 ? ActivityOccurrenceState.TRANSMISSION : ActivityOccurrenceState.EXECUTION);
+            synchronized (this) {
+                // Transmission
+                announce(activityInvocation, model, "Transmission", ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+                // TODO send
+                announce(activityInvocation, model, "Transmission", ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceState.EXECUTION);
             }
         } catch(Exception e) {
-            announce(activityInvocation, model, "Error", ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
-            return;
-        }
-        try {
-            for (int i = 0; i < 4; ++i) {
-                announce(activityInvocation, model, "E" + i, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
-            }
-            int executionForEachState = 3500 / 4;
-            for (int i = 0; i < 4; ++i) {
-                Thread.sleep(executionForEachState);
-                announce(activityInvocation, model, "E" + i, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, i != 4 - 1 ? ActivityOccurrenceState.EXECUTION : ActivityOccurrenceState.VERIFICATION, null, null);
-            }
-        } catch(Exception e) {
-            announce(activityInvocation, model, "Error", ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION);
+            announce(activityInvocation, model, "Transmission", ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
         }
     }
 

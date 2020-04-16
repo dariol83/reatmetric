@@ -16,6 +16,47 @@
 
 package eu.dariolucia.reatmetric.driver.test.simulator;
 
+import java.nio.ByteBuffer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+
 public class StationSimulator {
-    // TODO
+
+    private final ScheduledExecutorService scheduler;
+    private final PowerSupply powerSupply;
+
+    private volatile IStationMonitor monitor;
+
+    public StationSimulator() {
+        scheduler = Executors.newScheduledThreadPool(1);
+        powerSupply = new PowerSupply(scheduler);
+    }
+
+    public void connect(IStationMonitor monitor) {
+        this.powerSupply.connect(monitor);
+    }
+
+    public void disconnect() {
+        this.powerSupply.disconnect();
+    }
+
+    public void poll() {
+        this.powerSupply.poll();
+    }
+
+    public void execute(byte[] data) {
+        scheduler.execute(() -> {
+            ByteBuffer bb = ByteBuffer.wrap(data);
+            byte firstByte = bb.get();
+            int eqId = firstByte >>> 4;
+            forward(data, 4);
+        });
+    }
+
+    private void forward(byte[] data, int equipmentId) {
+        if(equipmentId == powerSupply.getEquipmentId()) {
+            powerSupply.execute(data);
+        }  // else silent fail
+    }
+
 }
