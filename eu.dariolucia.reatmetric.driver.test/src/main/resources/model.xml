@@ -17,7 +17,7 @@
 <ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
     <parameters>
 		<!-- Power Supply Distributor -->
-		<parameter id="#101" location="STATION.POWERSUPPLY.PS_STATUS" description="Power Supply Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+		<parameter id="#100" location="STATION.POWERSUPPLY.PS_STATUS" description="Power Supply Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
@@ -28,19 +28,19 @@
                 </expected>
             </checks>
 		</parameter>
-		<parameter id="#102" location="STATION.POWERSUPPLY.PS_TENSION" description="Power Supply Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
+		<parameter id="#101" location="STATION.POWERSUPPLY.PS_TENSION" description="Power Supply Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
 			<checks>
                 <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="210"/>
 				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="270" low="200"/>
             </checks>
 		</parameter>
-		<parameter id="#103" location="STATION.POWERSUPPLY.PS_CURRENT" description="Power Supply Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
+		<parameter id="#102" location="STATION.POWERSUPPLY.PS_CURRENT" description="Power Supply Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
 			<!-- You can have valid measured current only if the output is enabled and the 
 			matrix input 1 is enabled -->
 			<validity>
 				<condition>
                     <expression>POWERSUPPLY_OUTPUT == "ON" &amp;&amp; MATRIX_INPUT1 == "ON"</expression>
-                    <symbol name="POWERSUPPLY_OUTPUT" reference="#105" binding="ENG_VALUE" />
+                    <symbol name="POWERSUPPLY_OUTPUT" reference="#104" binding="ENG_VALUE" />
 					<symbol name="MATRIX_INPUT1" reference="#401" binding="ENG_VALUE" />
                 </condition>
 			</validity>
@@ -49,7 +49,7 @@
 				<limit name="BCLIMIT2" type="REAL" severity="ALARM" high="20.0" low="12.0"/>
             </checks>
 		</parameter>
-		<parameter id="#104" location="STATION.POWERSUPPLY.PS_PROTECTION" description="Power Supply Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+		<parameter id="#103" location="STATION.POWERSUPPLY.PS_PROTECTION" description="Power Supply Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
@@ -62,7 +62,7 @@
                 </expected>
             </checks>
 		</parameter>
-		<parameter id="#105" location="STATION.POWERSUPPLY.PS_OUTPUT" description="Power Supply Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+		<parameter id="#104" location="STATION.POWERSUPPLY.PS_OUTPUT" description="Power Supply Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
@@ -76,7 +76,7 @@
 		
 		
 		<!-- Diesel Generator 1 -->
-		<parameter id="#201" location="STATION.DIESEL_GEN1.DG1_STATUS" description="Diesel Generator 1 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+		<parameter id="#200" location="STATION.DIESEL_GEN1.DG1_STATUS" description="Diesel Generator 1 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
@@ -87,20 +87,20 @@
                 </expected>
             </checks>
 		</parameter>
-		<parameter id="#202" location="STATION.DIESEL_GEN1.DG1_TENSION" description="Diesel Generator 1 Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
+		<parameter id="#201" location="STATION.DIESEL_GEN1.DG1_TENSION" description="Diesel Generator 1 Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
 			<checks>
                 <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="210"/>
 				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="270" low="200"/>
             </checks>
 		</parameter>
-		<parameter id="#203" location="STATION.DIESEL_GEN1.DG1_CURRENT" description="Diesel Generator 1 Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
+		<parameter id="#202" location="STATION.DIESEL_GEN1.DG1_CURRENT" description="Diesel Generator 1 Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
 			<!-- You can have valid measured current only if the output is enabled and the 
 			switch is in position 1 -->
 			<validity>
 				<condition>
                     <expression>DG1_OUTPUT == "ON" &amp;&amp; SWITCH_POSITION == 1</expression>
-                    <symbol name="DG1_OUTPUT" reference="#205" binding="ENG_VALUE" />
-					<symbol name="SWITCH_POSITION" reference="#501" binding="RAW_VALUE" />
+                    <symbol name="DG1_OUTPUT" reference="#204" binding="ENG_VALUE" />
+					<symbol name="SWITCH_POSITION" reference="#500" binding="RAW_VALUE" />
                 </condition>
 			</validity>
 			<checks>
@@ -108,7 +108,7 @@
 				<limit name="BCLIMIT2" type="REAL" severity="ALARM" high="20.0" low="12.0"/>
             </checks>
 		</parameter>
-		<parameter id="#204" location="STATION.DIESEL_GEN1.DG1_PROTECTION" description="Diesel Generator 1 Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+		<parameter id="#203" location="STATION.DIESEL_GEN1.DG1_PROTECTION" description="Diesel Generator 1 Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
@@ -121,7 +121,7 @@
                 </expected>
             </checks>
 		</parameter>
-		<parameter id="#205" location="STATION.DIESEL_GEN1.DG1_OUTPUT" description="Diesel Generator 1 Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+		<parameter id="#204" location="STATION.DIESEL_GEN1.DG1_OUTPUT" description="Diesel Generator 1 Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
@@ -135,7 +135,7 @@
 		
 		
 		<!-- Diesel Generator 2 -->
-		<parameter id="#301" location="STATION.DIESEL_GEN2.DG2_STATUS" description="Diesel Generator 2 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+		<parameter id="#300" location="STATION.DIESEL_GEN2.DG2_STATUS" description="Diesel Generator 2 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
@@ -146,20 +146,20 @@
                 </expected>
             </checks>
 		</parameter>
-		<parameter id="#302" location="STATION.DIESEL_GEN2.DG2_TENSION" description="Diesel Generator 2 Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
+		<parameter id="#301" location="STATION.DIESEL_GEN2.DG2_TENSION" description="Diesel Generator 2 Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
 			<checks>
                 <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="210"/>
 				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="270" low="200"/>
             </checks>
 		</parameter>
-		<parameter id="#303" location="STATION.DIESEL_GEN2.DG2_CURRENT" description="Diesel Generator 2 Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
+		<parameter id="#302" location="STATION.DIESEL_GEN2.DG2_CURRENT" description="Diesel Generator 2 Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
 			<!-- You can have valid measured current only if the output is enabled and the 
 			switch is in position 2 -->
 			<validity>
 				<condition>
-                    <expression>DG1_OUTPUT == "ON" &amp;&amp; SWITCH_POSITION == 2</expression>
-                    <symbol name="DG1_OUTPUT" reference="#205" binding="ENG_VALUE" />
-					<symbol name="SWITCH_POSITION" reference="#501" binding="RAW_VALUE" />
+                    <expression>DG2_OUTPUT == "ON" &amp;&amp; SWITCH_POSITION == 2</expression>
+                    <symbol name="DG2_OUTPUT" reference="#304" binding="ENG_VALUE" />
+					<symbol name="SWITCH_POSITION" reference="#500" binding="RAW_VALUE" />
                 </condition>
 			</validity>
 			<checks>
@@ -167,7 +167,7 @@
 				<limit name="BCLIMIT2" type="REAL" severity="ALARM" high="20.0" low="12.0"/>
             </checks>
 		</parameter>
-		<parameter id="#304" location="STATION.DIESEL_GEN2.DG2_PROTECTION" description="Diesel Generator 2 Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+		<parameter id="#303" location="STATION.DIESEL_GEN2.DG2_PROTECTION" description="Diesel Generator 2 Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
@@ -180,7 +180,7 @@
                 </expected>
             </checks>
 		</parameter>
-		<parameter id="#305" location="STATION.DIESEL_GEN2.DG2_OUTPUT" description="Diesel Generator 2 Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+		<parameter id="#304" location="STATION.DIESEL_GEN2.DG2_OUTPUT" description="Diesel Generator 2 Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
@@ -239,6 +239,7 @@
 		</parameter>
 		<parameter id="#404" location="STATION.MATRIX.MTX_WIRING" description="Matrix Internal Wiring" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
+                <point x="0" y="NONE" />
                 <point x="1" y="INPUT1-TO-OUTPUT" />
                 <point x="2" y="INPUT2-TO-OUTPUT" />
             </calib_enum>
@@ -246,7 +247,7 @@
 		
 		
 		<!-- Switch -->
-		<parameter id="#501" location="STATION.SWITCH.SW_POSITION" description="Switch Position" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+		<parameter id="#500" location="STATION.SWITCH.SW_POSITION" description="Switch Position" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="1" y="POSITION_1" />
                 <point x="2" y="POSITION_2" />
@@ -310,7 +311,7 @@
                 </expected>
             </checks>
 		</parameter>
-		<parameter id="#605" location="STATION.SPLITTER.STP_POWER" description="Splitter Power Consuption" raw_type="real" eng_type="real" eng_unit="W" >
+		<parameter id="#605" location="STATION.SPLITTER.STP_POWER" description="Splitter Power Consuption" raw_type="REAL" eng_type="REAL" eng_unit="W" >
 			<validity>
 				<match parameter="#600" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
 			</validity>

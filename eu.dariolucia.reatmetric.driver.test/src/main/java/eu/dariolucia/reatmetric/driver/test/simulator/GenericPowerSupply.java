@@ -23,17 +23,19 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class PowerSupply extends StationEquipment {
+public class GenericPowerSupply extends StationEquipment {
 
-    private static final double TARGET_TENSION = 220;
-    private static final double TARGET_CURRENT = 14;
     private volatile boolean status;
     private volatile double tension;
     private volatile double current;
     private volatile int protection;
     private volatile boolean output;
 
-    public PowerSupply(ScheduledExecutorService scheduler) {
+    private final int equipmentId;
+    private final double targetTension;
+    private final double targetCurrent;
+
+    public GenericPowerSupply(ScheduledExecutorService scheduler, int equipmentId, double targetTension, double targetCurrent) {
         super(scheduler);
         // Initial state
         status = true;
@@ -41,6 +43,10 @@ public class PowerSupply extends StationEquipment {
         current = 0.0;
         protection = 1;
         output = true;
+
+        this.targetCurrent = targetCurrent;
+        this.targetTension = targetTension;
+        this.equipmentId = equipmentId;
     }
 
     @Override
@@ -69,15 +75,15 @@ public class PowerSupply extends StationEquipment {
 
     @Override
     public byte getEquipmentId() {
-        return 1;
+        return (byte) equipmentId;
     }
 
     @Override
     protected void computeNewState() {
         if(status) {
-            tension = TARGET_TENSION + 30 * (Math.random() - 0.5);
+            tension = targetTension + 30 * (Math.random() - 0.5);
             if(output) {
-                current = TARGET_CURRENT + 10 * (Math.random() - 0.5);
+                current = targetCurrent + 10 * (Math.random() - 0.5);
             } else {
                 current = 0.0;
             }
