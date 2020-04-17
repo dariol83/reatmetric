@@ -60,6 +60,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
 
     private static final int MATCHING_FRAMES_MAX_SIZE = 16;
 
+    private final String driverName;
     private final int spacecraftId;
     private final long propagationDelay;
     private final IRawDataBroker broker;
@@ -75,7 +76,8 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     // CUC 4,3 has a resolution of 59.6 nsec, CUC 4,4 is at picosecond level
     private volatile Pair<BigDecimal, BigDecimal> obt2gtCoefficients;
 
-    public TimeCorrelationService(SpacecraftConfiguration configuration, ServiceCoreConfiguration coreConfiguration, IServiceCoreContext context, ServiceBroker serviceBroker) throws ReatmetricException {
+    public TimeCorrelationService(String driverName, SpacecraftConfiguration configuration, ServiceCoreConfiguration coreConfiguration, IServiceCoreContext context, ServiceBroker serviceBroker) throws ReatmetricException {
+        this.driverName = driverName;
         this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
         this.spacecraftId = configuration.getId();
         this.propagationDelay = configuration.getPropagationDelay();
@@ -294,7 +296,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
             String mCoeff = obt2gtCoefficients.getFirst().toPlainString();
             String qCoeff = obt2gtCoefficients.getSecond().toPlainString();
             String derivedString = mCoeff + "|" + qCoeff;
-            RawData rd = new RawData(broker.nextRawDataId(), generationTime, Constants.N_TIME_COEFFICIENTS, Constants.T_TIME_COEFFICIENTS, "", String.valueOf(spacecraftId), Quality.GOOD, null, derivedString.getBytes(StandardCharsets.US_ASCII), Instant.now(), null);
+            RawData rd = new RawData(broker.nextRawDataId(), generationTime, Constants.N_TIME_COEFFICIENTS, Constants.T_TIME_COEFFICIENTS, "", String.valueOf(spacecraftId), Quality.GOOD, null, derivedString.getBytes(StandardCharsets.US_ASCII), Instant.now(), driverName, null);
             try {
                 broker.distribute(Collections.singletonList(rd));
             } catch (ReatmetricException e) {

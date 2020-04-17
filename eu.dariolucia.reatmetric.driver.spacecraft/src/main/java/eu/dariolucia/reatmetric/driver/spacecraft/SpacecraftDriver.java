@@ -158,13 +158,13 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer {
     }
 
     private void loadTmPacketReplayer() {
-        this.tmPacketReplayer = new TmPacketReplayManager(configuration, context.getRawDataBroker());
+        this.tmPacketReplayer = new TmPacketReplayManager(name, configuration, context.getRawDataBroker());
         this.tmPacketReplayer.prepare();
     }
 
     private void loadPacketServices() throws ReatmetricException {
         // Time correlation service (PUS 9) -> if start from time, initialise time coefficients
-        this.timeCorrelationService = new TimeCorrelationService(this.configuration, this.coreConfiguration, this.context, this.serviceBroker);
+        this.timeCorrelationService = new TimeCorrelationService(this.name, this.configuration, this.coreConfiguration, this.context, this.serviceBroker);
         // On-board event service (PUS 5)
         this.onboardEventService = new OnboardEventService(this.configuration, this.context, this.serviceBroker);
         // Command verification service (PUS 1)
@@ -190,7 +190,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer {
     }
 
     private void loadTmDataLinkProcessor() {
-        this.tmDataLinkProcessor = new TmDataLinkProcessor(this.configuration,
+        this.tmDataLinkProcessor = new TmDataLinkProcessor(this.name, this.configuration,
                 this.context,
                 new FieldGroupBasedPacketIdentifier(this.encodingDecodingDefinitions, true, Collections.singletonList(Constants.ENCDEC_TM_PACKET_TYPE)),
                 tmPacketProcessor::extractPacketGenerationTime,
@@ -232,14 +232,14 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer {
 
     private void createRcfServiceInstance(PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration sic) {
         LOG.info("Creating SLE RCF endpoint for " + sic.getServiceInstanceIdentifier());
-        RcfServiceInstanceManager m = new RcfServiceInstanceManager(peerConfiguration, sic, configuration, context.getRawDataBroker());
+        RcfServiceInstanceManager m = new RcfServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context.getRawDataBroker());
         m.prepare();
         this.sleManagers.add(m);
     }
 
     private void createRafServiceInstance(PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration sic) {
         LOG.info("Creating SLE RAF endpoint for " + sic.getServiceInstanceIdentifier());
-        RafServiceInstanceManager m = new RafServiceInstanceManager(peerConfiguration, sic, configuration, context.getRawDataBroker());
+        RafServiceInstanceManager m = new RafServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context.getRawDataBroker());
         m.prepare();
         this.sleManagers.add(m);
     }

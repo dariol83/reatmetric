@@ -39,9 +39,9 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     private static final Logger LOG = Logger.getLogger(RawDataArchive.class.getName());
 
-    private static final String STORE_STATEMENT = "INSERT INTO RAW_DATA_TABLE(UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,RelatedItem,Contents,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+    private static final String STORE_STATEMENT = "INSERT INTO RAW_DATA_TABLE(UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM RAW_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
-    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,RelatedItem,Contents,AdditionalData FROM RAW_DATA_TABLE WHERE UniqueId=?";
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData FROM RAW_DATA_TABLE WHERE UniqueId=?";
     private static final String LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM RAW_DATA_TABLE";
 
     public RawDataArchive(Archive controller) throws SQLException {
@@ -57,22 +57,23 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         storeStatement.setString(5, item.getType());
         storeStatement.setString(6, item.getRoute());
         storeStatement.setString(7, item.getSource());
-        storeStatement.setShort(8, (short) item.getQuality().ordinal());
+        storeStatement.setString(8, item.getHandler());
+        storeStatement.setShort(9, (short) item.getQuality().ordinal());
         if(item.getRelatedItem() == null) {
-            storeStatement.setNull(9, Types.BIGINT);
+            storeStatement.setNull(10, Types.BIGINT);
         } else {
-            storeStatement.setLong(9, item.getRelatedItem().asLong());
+            storeStatement.setLong(10, item.getRelatedItem().asLong());
         }
         if(item.isContentsSet()) {
-            storeStatement.setBlob(10, new ByteArrayInputStream(item.getContents()));
+            storeStatement.setBlob(11, new ByteArrayInputStream(item.getContents()));
         } else {
-            storeStatement.setNull(10, Types.BLOB);
+            storeStatement.setNull(11, Types.BLOB);
         }
         Object extension = item.getExtension();
         if(extension == null) {
-            storeStatement.setNull(11, Types.BLOB);
+            storeStatement.setNull(12, Types.BLOB);
         } else {
-            storeStatement.setBlob(11, toInputstream(extension));
+            storeStatement.setBlob(12, toInputstream(extension));
         }
     }
 
@@ -91,7 +92,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     @Override
     protected String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, RawDataFilter filter) {
-        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,RelatedItem,Contents,AdditionalData");
+        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData");
         query.append(" FROM RAW_DATA_TABLE WHERE ");
         // add time info
         addTimeInfo(query, startTime, direction);
@@ -124,7 +125,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     @Override
     protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, RawDataFilter filter) {
-        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Quality,RelatedItem,Contents,AdditionalData");
+        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData");
         query.append(" FROM RAW_DATA_TABLE WHERE ");
         // add time info
         addTimeInfo(query, startTime, internalId, direction);
@@ -164,25 +165,26 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         String type = rs.getString(5);
         String route = rs.getString(6);
         String source = rs.getString(7);
-        Quality quality = Quality.values()[rs.getShort(8)];
-        Long relatedItemUniqueId = rs.getLong(9);
+        String handler = rs.getString(8);
+        Quality quality = Quality.values()[rs.getShort(9)];
+        Long relatedItemUniqueId = rs.getLong(10);
         if(rs.wasNull()) {
             relatedItemUniqueId = null;
         }
         // retrieve Contents if present
         byte[] contents = null;
         if(usedFilter == null || usedFilter.isWithData()) {
-            Blob blob = rs.getBlob(10);
+            Blob blob = rs.getBlob(11);
             if(blob != null && !rs.wasNull()) {
                 contents = toByteArray(blob.getBinaryStream());
             }
         }
-        Blob extensionBlob = rs.getBlob(11);
+        Blob extensionBlob = rs.getBlob(12);
         Object extension = null;
         if(extensionBlob != null && !rs.wasNull()) {
             extension = toObject(extensionBlob);
         }
-        return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, relatedItemUniqueId != null ? new LongUniqueId(relatedItemUniqueId) : null, contents, toInstant(receptionTime), extension);
+        return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, relatedItemUniqueId != null ? new LongUniqueId(relatedItemUniqueId) : null, contents, toInstant(receptionTime), handler, extension);
     }
 
     @Override

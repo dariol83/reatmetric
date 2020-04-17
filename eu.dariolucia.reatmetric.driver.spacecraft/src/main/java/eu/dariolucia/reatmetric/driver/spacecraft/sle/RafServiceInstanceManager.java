@@ -41,8 +41,8 @@ public class RafServiceInstanceManager extends SleServiceInstanceManager<RafServ
 
     private static final Logger LOG = Logger.getLogger(RafServiceInstanceManager.class.getName());
 
-    public RafServiceInstanceManager(PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
-        super(peerConfiguration, siConfiguration, spacecraftConfiguration, broker);
+    public RafServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
+        super(driverName, peerConfiguration, siConfiguration, spacecraftConfiguration, broker);
     }
 
     @Override

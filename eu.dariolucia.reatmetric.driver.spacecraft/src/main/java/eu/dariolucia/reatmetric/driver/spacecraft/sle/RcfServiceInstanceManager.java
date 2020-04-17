@@ -41,8 +41,8 @@ public class RcfServiceInstanceManager extends SleServiceInstanceManager<RcfServ
 
     private static final Logger LOG = Logger.getLogger(RcfServiceInstanceManager.class.getName());
 
-    public RcfServiceInstanceManager(PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
-        super(peerConfiguration, siConfiguration, spacecraftConfiguration, broker);
+    public RcfServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
+        super(driverName, peerConfiguration, siConfiguration, spacecraftConfiguration, broker);
     }
 
     @Override

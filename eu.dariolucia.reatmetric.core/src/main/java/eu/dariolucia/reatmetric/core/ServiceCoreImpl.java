@@ -141,11 +141,11 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
 
     private void registerRawDataRenderers(List<IRawDataRenderer> rawDataRenderers) {
         for(IRawDataRenderer renderer : rawDataRenderers) {
-            // The selection is performed by source and type: a renderer supports 1 source and many types (for that source)
-            String source = renderer.getSource();
+            // The selection is performed by handler and type: a renderer supports 1 handler and many types (for that handler)
+            String handler = renderer.getHandler();
             List<String> types = renderer.getSupportedTypes();
             for(String type : types) {
-                renderers.put(Pair.of(source, type), renderer);
+                renderers.put(Pair.of(handler, type), renderer);
             }
         }
     }
@@ -215,7 +215,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         if(rawData == null) {
             return new LinkedHashMap<>();
         }
-        Pair<String, String> key = Pair.of(rawData.getSource(), rawData.getType());
+        Pair<String, String> key = Pair.of(rawData.getHandler(), rawData.getType());
         IRawDataRenderer renderer = renderers.get(key);
         if(renderer == null) {
             return new LinkedHashMap<>();

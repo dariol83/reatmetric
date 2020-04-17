@@ -63,9 +63,11 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     private final TmDataLinkConfiguration configuration;
     private final BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver;
     private final BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker;
+    private final String driverName;
     private VirtualChannelReceiverDemux demultiplexer;
 
-    public TmDataLinkProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketIdentifier packetIdentifier, BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver, BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker) {
+    public TmDataLinkProcessor(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketIdentifier packetIdentifier, BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver, BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker) {
+        this.driverName = driverName;
         this.spacecraftId = configuration.getId();
         this.packetIdentifier = packetIdentifier;
         this.broker = context.getRawDataBroker();
@@ -176,7 +178,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     }
 
     private void distributeSpacePacket(SpacePacket sp, String packetName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality, TmFrameDescriptor frameDescriptor) {
-        RawData rd = new RawData(broker.nextRawDataId(), generationTime, packetName, type, route, source, quality, null, sp.getPacket(), receptionTime, frameDescriptor);
+        RawData rd = new RawData(broker.nextRawDataId(), generationTime, packetName, type, route, source, quality, null, sp.getPacket(), receptionTime, driverName, frameDescriptor);
         rd.setData(sp);
         try {
             broker.distribute(Collections.singletonList(rd));
@@ -194,7 +196,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         if(rcpTime == null) {
             rcpTime = Instant.now();
         }
-        RawData rd = new RawData(broker.nextRawDataId(), genTime, Constants.N_UNKNOWN_PACKET, Constants.T_BAD_PACKET, route, String.valueOf(firstFrame.getSpacecraftId()), Quality.BAD, null, sp.getPacket(), rcpTime, null);
+        RawData rd = new RawData(broker.nextRawDataId(), genTime, Constants.N_UNKNOWN_PACKET, Constants.T_BAD_PACKET, route, String.valueOf(firstFrame.getSpacecraftId()), Quality.BAD, null, sp.getPacket(), rcpTime, driverName,null);
         rd.setData(sp);
         try {
             broker.distribute(Collections.singletonList(rd));

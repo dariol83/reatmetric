@@ -54,8 +54,9 @@ public class TmPacketReplayManager extends AbstractTransportConnector {
     public static final String START_TIME_KEY = "start.time";
     public static final String END_TIME_KEY = "end.time";
 
-    protected final SpacecraftConfiguration spacecraftConfiguration;
-    protected final IRawDataBroker broker;
+    private final SpacecraftConfiguration spacecraftConfiguration;
+    private final IRawDataBroker broker;
+    private final String driverName;
 
     private volatile Instant lastSamplingTime;
     private volatile long rxBytes; // injected bytes
@@ -64,8 +65,9 @@ public class TmPacketReplayManager extends AbstractTransportConnector {
     private volatile Thread extractionThread;
     private volatile boolean extracting;
 
-    public TmPacketReplayManager(SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
+    public TmPacketReplayManager(String driverName, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
         super(spacecraftConfiguration.getName() + " Replay Connector", "Replay connector based on raw data re-ingestion");
+        this.driverName = driverName;
         this.broker = broker;
         this.spacecraftConfiguration = spacecraftConfiguration;
     }
@@ -201,7 +203,7 @@ public class TmPacketReplayManager extends AbstractTransportConnector {
     }
 
     private RawData mapPacket(RawData pkt) {
-        RawData toReturn = new RawData(broker.nextRawDataId(), pkt.getGenerationTime(), pkt.getName(), pkt.getType(), pkt.getRoute(), pkt.getSource(), pkt.getQuality(), pkt.getRelatedItem(), pkt.getContents(), pkt.getReceptionTime(), pkt.getExtension());
+        RawData toReturn = new RawData(broker.nextRawDataId(), pkt.getGenerationTime(), pkt.getName(), pkt.getType(), pkt.getRoute(), pkt.getSource(), pkt.getQuality(), pkt.getRelatedItem(), pkt.getContents(), pkt.getReceptionTime(), driverName, pkt.getExtension());
         // Create also the packet object
         SpacePacket sp = new SpacePacket(toReturn.getContents(), pkt.getQuality() == Quality.GOOD);
         toReturn.setData(sp);

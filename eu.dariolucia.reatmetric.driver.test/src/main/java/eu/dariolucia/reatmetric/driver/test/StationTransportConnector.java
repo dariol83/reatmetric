@@ -45,10 +45,12 @@ public class StationTransportConnector extends AbstractTransportConnector implem
     private volatile long lastBitrateInstant;
 
     private final IRawDataBroker broker;
+    private final String driverName;
     private volatile boolean connected;
 
-    protected StationTransportConnector(String name, String description, IRawDataBroker broker) {
+    protected StationTransportConnector(String driverName, String name, String description, IRawDataBroker broker) {
         super(name, description);
+        this.driverName = driverName;
         this.broker = broker;
     }
 
@@ -56,6 +58,7 @@ public class StationTransportConnector extends AbstractTransportConnector implem
         if(!connected) {
             throw new IOException("Not connected");
         }
+        simulator.execute(command);
     }
 
     @Override
@@ -103,7 +106,7 @@ public class StationTransportConnector extends AbstractTransportConnector implem
             byte first = dis.readByte();
             int type = first & 0x0F;
             long timestamp = dis.readLong();
-            RawData rd = new RawData(broker.nextRawDataId(), Instant.ofEpochMilli(timestamp), getRawDataName(first), getRawDataType(type), TestDriver.STATION_ROUTE, TestDriver.STATION_SOURCE, Quality.GOOD, null, data, Instant.now(), null);
+            RawData rd = new RawData(broker.nextRawDataId(), Instant.ofEpochMilli(timestamp), getRawDataName(first), getRawDataType(type), TestDriver.STATION_ROUTE, TestDriver.STATION_SOURCE, Quality.GOOD, null, data, Instant.now(), driverName, null);
             broker.distribute(Collections.singletonList(rd));
         } catch (IOException | ReatmetricException e) {
             LOG.log(Level.SEVERE, "Packet notification error: " + e.getMessage(), e);

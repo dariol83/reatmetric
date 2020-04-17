@@ -35,6 +35,7 @@ CREATE TABLE RAW_DATA_TABLE (
    Type VARCHAR(32) NOT NULL,
    Route VARCHAR(32),
    Source VARCHAR(32),
+   Handler VARCHAR(32) NOT NULL,
    Quality SMALLINT NOT NULL,
    RelatedItem BIGINT,
    Contents BLOB,

@@ -65,9 +65,11 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
     private final Semaphore unbindSemaphore = new Semaphore(0);
     private final Semaphore startSemaphore = new Semaphore(0);
     private final Semaphore stopSemaphore = new Semaphore(0);
+    protected final String driverName;
 
-    protected SleServiceInstanceManager(PeerConfiguration peerConfiguration, K siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
+    protected SleServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, K siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
         super(siConfiguration.getServiceInstanceIdentifier(), siConfiguration.getType().name() + " " + siConfiguration.getServiceInstanceIdentifier());
+        this.driverName = driverName;
         this.peerConfiguration = peerConfiguration;
         this.siConfiguration = siConfiguration;
         this.serviceInstanceLastPart = siConfiguration.getServiceInstanceIdentifier().substring(siConfiguration.getServiceInstanceIdentifier().lastIndexOf('=') + 1);
@@ -208,7 +210,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
             TmTransferFrame frame = new TmTransferFrame(frameContents, spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
             if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() == null || spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
                 StringBuilder route = new StringBuilder().append(frame.getSpacecraftId()).append('.').append(frame.getVirtualChannelId()).append('.').append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart);
-                RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_TM_FRAME, route.toString(), String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, receivedTime, null);
+                RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_TM_FRAME, route.toString(), String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, receivedTime, driverName, null);
                 frame.setAnnotationValue(Constants.ANNOTATION_ROUTE, rd.getRoute());
                 frame.setAnnotationValue(Constants.ANNOTATION_SOURCE, rd.getSource());
                 frame.setAnnotationValue(Constants.ANNOTATION_GEN_TIME, rd.getGenerationTime());
@@ -230,7 +232,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
                     spacecraftConfiguration.getTmDataLinkConfigurations().isOcfPresent(), spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
             if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() != null && spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
                 StringBuilder route = new StringBuilder().append(frame.getSpacecraftId()).append('.').append(frame.getVirtualChannelId()).append('.').append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart);
-                RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_AOS_FRAME, route.toString(), String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, receivedTime, null);
+                RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_AOS_FRAME, route.toString(), String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, receivedTime, driverName, null);
                 frame.setAnnotationValue(Constants.ANNOTATION_ROUTE, rd.getRoute());
                 frame.setAnnotationValue(Constants.ANNOTATION_SOURCE, rd.getSource());
                 frame.setAnnotationValue(Constants.ANNOTATION_GEN_TIME, rd.getGenerationTime());
@@ -247,7 +249,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
     private void distributeBadFrame(byte[] frameContents, Quality quality, Instant genTimeInstant, Instant receivedTime, String antennaId) {
         LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Bad frame received");
         StringBuilder route = new StringBuilder().append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart);
-        RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_BAD_TM, route.toString(), "", quality, null, frameContents, receivedTime, null);
+        RawData rd = new RawData(broker.nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_BAD_TM, route.toString(), "", quality, null, frameContents, receivedTime, driverName, null);
         distribute(rd);
     }
 

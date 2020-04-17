@@ -50,7 +50,9 @@ public final class RawData extends AbstractDataItem implements Serializable {
 
     private final byte[] contents;
 
-    public RawData(IUniqueId internalId, Instant generationTime, String name, String type, String route, String source, Quality quality, IUniqueId relatedItem, byte[] contents, Instant receptionTime, Object extension) {
+    private final String handler;
+
+    public RawData(IUniqueId internalId, Instant generationTime, String name, String type, String route, String source, Quality quality, IUniqueId relatedItem, byte[] contents, Instant receptionTime, String handler, Object extension) {
         super(internalId, generationTime, extension);
         this.name = name;
         this.type = type;
@@ -60,6 +62,7 @@ public final class RawData extends AbstractDataItem implements Serializable {
         this.quality = quality;
         this.contents = contents;
         this.relatedItem = relatedItem;
+        this.handler = handler;
     }
 
     public String getName() {
@@ -98,6 +101,14 @@ public final class RawData extends AbstractDataItem implements Serializable {
         return relatedItem;
     }
 
+
+    /**
+     * Identifies the function that handled/created this raw data in the ReatMetric system
+     */
+    public String getHandler() {
+        return handler;
+    }
+
     @Override
     public String toString() {
         return "RawData{" +
@@ -109,6 +120,7 @@ public final class RawData extends AbstractDataItem implements Serializable {
                 ", quality=" + quality +
                 ", relatedItem=" + relatedItem +
                 ", generationTime=" + generationTime +
+                ", handler=" + handler +
                 ", internalId=" + internalId +
                 '}';
     }
