@@ -100,7 +100,7 @@
 				<condition>
                     <expression>DG1_OUTPUT == "ON" &amp;&amp; SWITCH_POSITION == 1</expression>
                     <symbol name="DG1_OUTPUT" reference="#204" binding="ENG_VALUE" />
-					<symbol name="SWITCH_POSITION" reference="#500" binding="RAW_VALUE" />
+					<symbol name="SWITCH_POSITION" reference="#500" binding="SOURCE_VALUE" />
                 </condition>
 			</validity>
 			<checks>
@@ -159,7 +159,7 @@
 				<condition>
                     <expression>DG2_OUTPUT == "ON" &amp;&amp; SWITCH_POSITION == 2</expression>
                     <symbol name="DG2_OUTPUT" reference="#304" binding="ENG_VALUE" />
-					<symbol name="SWITCH_POSITION" reference="#500" binding="RAW_VALUE" />
+					<symbol name="SWITCH_POSITION" reference="#500" binding="SOURCE_VALUE" />
                 </condition>
 			</validity>
 			<checks>
@@ -544,7 +544,7 @@
     </events>
 
     <activities>
-        <activity id="#11000" location="STATION.THERMAL.ACT1" description="Activity 1" type="TC">
+        <activity id="#11000" location="STATION.THERMAL.ACT1" description="Activity 1" type="STATION CMD">
             <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
             <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="mV">
                 <default_fixed type="RAW" value="43" />
@@ -563,7 +563,7 @@
             <property key="spacecraft-id" value="100" />
             <property key="schedule-time" value="2007-12-03T10:15:30.00123Z" />
         </activity>
-        <activity id="#11001" location="STATION.THERMAL.ACT2" description="Activity 2" type="TC">
+        <activity id="#11001" location="STATION.THERMAL.ACT2" description="Activity 2" type="STATION CMD">
             <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
             <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="mV" >
                 <checks>
@@ -589,14 +589,14 @@
             </argument>
             <property key="spacecraft-id" value="101" />
         </activity>
-        <activity id="#11002" location="STATION.THERMAL.ACT3" description="Activity 3" type="TC" verificationTimeout="5">
+        <activity id="#11002" location="STATION.THERMAL.ACT3" description="Activity 3" type="STATION CMD" verificationTimeout="5">
             <argument name="ARG1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
             <verification>
                 <expression>PARAM3.value() == self.argument("ARG1")</expression>
                 <symbol name="PARAM3" reference="#103" />
             </verification>
         </activity>
-        <activity id="#11003" location="ROOT.ELEMENT.ACT4" description="Activity 4" type="TC" transmissionTimeout="2" executionTimeout="3">
+        <activity id="#11003" location="STATION.THERMAL.ACT4" description="Activity 4" type="STATION CMD" transmissionTimeout="2" executionTimeout="3">
             <argument name="ARG1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
     </activities>

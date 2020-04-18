@@ -202,13 +202,17 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
 
     private IDriver loadDriver(DriverConfiguration dc) throws DriverException {
         ServiceLoader<IDriver> serviceLoader = ServiceLoader.load(IDriver.class);
-        Optional<ServiceLoader.Provider<IDriver>> provider = serviceLoader.stream().filter(pr -> pr.type().getName().equals(dc.getType())).findFirst();
+        Optional<ServiceLoader.Provider<IDriver>> provider = serviceLoader.stream().filter(pr -> filterDriver(pr.type(), dc.getType())).findFirst();
         IDriver driver = null;
         if(provider.isPresent()) {
             driver = provider.get().get();
             driver.initialise(dc.getName(), dc.getConfiguration(), this, this.configuration, this);
         }
         return driver;
+    }
+
+    private boolean filterDriver(Class<? extends IDriver> provider, String target) {
+        return provider.getName().equals(target);
     }
 
     public LinkedHashMap<String, String> getRenderedInformation(RawData rawData) {

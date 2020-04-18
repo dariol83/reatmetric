@@ -39,7 +39,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     private static final Logger LOG = Logger.getLogger(RawDataArchive.class.getName());
 
-    private static final String STORE_STATEMENT = "INSERT INTO RAW_DATA_TABLE(UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+    private static final String STORE_STATEMENT = "INSERT INTO RAW_DATA_TABLE(UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM RAW_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
     private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData FROM RAW_DATA_TABLE WHERE UniqueId=?";
     private static final String LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM RAW_DATA_TABLE";

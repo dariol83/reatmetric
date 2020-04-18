@@ -15,11 +15,12 @@
   -->
 
 <ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
-	<name>Core Test</name>
-	<log-property-file>$HOME/.reatmetric/log.properties</log-property-file>
-	<archive-location>$HOME/.reatmetric/archive</archive-location>
-	<definitions-location>$HOME/.reatmetric/processing</definitions-location>
-	<driver name="Test Driver"
-		type="eu.dariolucia.reatmetric.driver.test.TestDriver"
-		configuration="$HOME/.reatmetric/driver_testdriver.xml" />
+	<name>Test System</name>
+	<log-property-file>$HOME\reatmetric\log.properties</log-property-file>
+	<archive-location>$HOME\reatmetric\archive</archive-location>
+	<definitions-location>$HOME\reatmetric\processing</definitions-location>
+	<!-- <init-resume /> -->
+	<driver name="Station Driver"
+			type="eu.dariolucia.reatmetric.driver.test.TestDriver"
+			configuration="$HOME\reatmetric\test" />
 </ns1:core>

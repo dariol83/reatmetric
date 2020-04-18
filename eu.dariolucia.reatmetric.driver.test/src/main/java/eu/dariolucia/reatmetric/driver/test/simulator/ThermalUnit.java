@@ -64,13 +64,13 @@ public class ThermalUnit extends StationEquipment {
         dos.writeByte(input ? (byte) 1 : (byte) 0);
 
         dos.writeByte(aStatus);
-        dos.writeByte(aOverride);
         dos.writeDouble(aTemperature);
+        dos.writeByte(aOverride);
         dos.writeByte(aProtection ? (byte) 1 : (byte) 0);
 
         dos.writeByte(bStatus);
-        dos.writeByte(bOverride);
         dos.writeDouble(bTemperature);
+        dos.writeByte(bOverride);
         dos.writeByte(bProtection ? (byte) 1 : (byte) 0);
     }
 

@@ -18,9 +18,11 @@ package eu.dariolucia.reatmetric.driver.test;
 
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.AbstractTransportConnector;
+import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.driver.test.simulator.IStationMonitor;
@@ -85,14 +87,20 @@ public class StationTransportConnector extends AbstractTransportConnector implem
 
     @Override
     protected void doConnect() {
+        updateConnectionStatus(TransportConnectionStatus.CONNECTING);
         this.simulator.connect(this);
         this.connected = true;
+        updateAlarmState(AlarmState.NOMINAL);
+        updateConnectionStatus(TransportConnectionStatus.OPEN);
     }
 
     @Override
     protected void doDisconnect() {
+        updateConnectionStatus(TransportConnectionStatus.DISCONNECTING);
         this.simulator.disconnect();
         this.connected = false;
+        updateAlarmState(AlarmState.NOT_APPLICABLE);
+        updateConnectionStatus(TransportConnectionStatus.IDLE);
     }
 
     @Override

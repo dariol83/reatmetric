@@ -153,7 +153,7 @@ public class MonitoringDecoder implements IRawDataSubscriber {
         LinkedHashMap<String, Pair<Integer, Object>> toReturn = new LinkedHashMap<>();
         ByteBuffer bb = ByteBuffer.wrap(rawData.getContents());
         // Equipment id * 100
-        int equipmentId = bb.get() >>> 4;
+        int equipmentId = Byte.toUnsignedInt(bb.get()) >>> 4;
         equipmentId *= 100;
         // Timestamp
         bb.getLong();
@@ -181,17 +181,17 @@ public class MonitoringDecoder implements IRawDataSubscriber {
     private void processMonitoringData(RawData rd) {
         ByteBuffer bb = ByteBuffer.wrap(rd.getContents());
         // Read the tag
-        byte eqId = bb.get();
-        eqId = (byte) (eqId >>> 4);
+        int eqId = Byte.toUnsignedInt(bb.get());
+        eqId = eqId >>> 4;
         monitoringMap.get((int) eqId).accept(rd);
     }
 
     public LinkedHashMap<String, String> render(RawData r) {
         ByteBuffer bb = ByteBuffer.wrap(r.getContents());
         // Read the tag
-        byte eqId = bb.get();
-        eqId = (byte) (eqId >>> 4);
-        LinkedHashMap<String, Pair<Integer, Object>> decodedMap = renderingMap.get((int) eqId).apply(r);
+        int eqId = Byte.toUnsignedInt(bb.get());
+        eqId = eqId >>> 4;
+        LinkedHashMap<String, Pair<Integer, Object>> decodedMap = renderingMap.get(eqId).apply(r);
         LinkedHashMap<String, String> renderMap = new LinkedHashMap<>();
         for(Map.Entry<String, Pair<Integer, Object>> entry : decodedMap.entrySet()) {
             renderMap.put(entry.getKey(), Objects.toString(entry.getValue().getSecond()));

@@ -299,7 +299,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer {
     }
 
     @Override
-    public String getSource() {
+    public String getHandler() {
         return String.valueOf(this.configuration.getId());
     }
 
@@ -310,8 +310,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer {
 
     @Override
     public LinkedHashMap<String, String> render(RawData rawData) throws ReatmetricException {
-        if(!rawData.getSource().equals(getSource())) {
-            throw new ReatmetricException("Raw data with source " + rawData.getSource() + " cannot be processed by driver " + configuration.getName() + ", expecting source " + getSource());
+        if(!rawData.getHandler().equals(getHandler())) {
+            throw new ReatmetricException("Raw data with handler " + rawData.getHandler() + " cannot be processed by driver " + configuration.getName() + ", expecting handler " + getHandler());
         }
         Function<RawData, LinkedHashMap<String, String>> renderingFunction = rawDataRenderers.get(rawData.getType());
         if(renderingFunction == null) {

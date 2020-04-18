@@ -141,6 +141,7 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
             throw new DriverException(e);
         }
         this.connector = new StationTransportConnector(name, "Station Connector", "Test connector to simulate data", context.getRawDataBroker());
+        this.connector.prepare(); // Now it is ready
         // Since this object is performing the event raising function, it registers to the broker to receive
         // notification of received events
         this.context.getRawDataBroker().subscribe(this::eventReceived, null, new RawDataFilter(true, null, null, Arrays.asList(STATION_EVENT), null, Collections.singletonList(Quality.GOOD)), null);
@@ -150,6 +151,8 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         this.verifier = new CommandVerifier(context.getProcessingModel(), context.getRawDataBroker());
 
         this.running = true;
+        // Inform that everything is fine
+        subscriber.driverStatusUpdate(this.name, SystemStatus.NOMINAL);
     }
 
     private void eventReceived(List<RawData> rawData) {

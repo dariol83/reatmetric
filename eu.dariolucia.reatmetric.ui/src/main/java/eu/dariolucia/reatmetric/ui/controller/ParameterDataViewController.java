@@ -398,11 +398,15 @@ public class ParameterDataViewController extends AbstractDisplayController imple
     }
 
     private void restoreColumnConfiguration() {
-        TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+        if(this.system != null) {
+            TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+        }
     }
     
     private void persistColumnConfiguration() {
-        TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+        if(this.system != null) {
+            TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+        }
     }
 
     protected void informDataItemsReceived(List<ParameterData> objects) {
