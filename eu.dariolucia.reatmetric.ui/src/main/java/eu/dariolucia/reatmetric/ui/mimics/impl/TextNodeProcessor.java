@@ -100,7 +100,7 @@ public class TextNodeProcessor extends SvgAttributeProcessor {
             if(text == null) {
                 text = "";
             }
-            this.textUpdate = Objects.equals(text, this.text);
+            this.textUpdate = !Objects.equals(text, this.text);
             this.text = text;
         }
 

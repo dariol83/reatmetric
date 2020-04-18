@@ -152,6 +152,7 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
         }
         busy = true;
         try {
+            LOG.log(Level.INFO, "Transport connector " + name + " opening connection");
             doConnect();
         } finally {
             busy = false;
@@ -168,6 +169,7 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
         }
         busy = true;
         try {
+            LOG.log(Level.INFO, "Transport connector " + name + " disconnecting");
             doDisconnect();
         } finally {
             busy = false;

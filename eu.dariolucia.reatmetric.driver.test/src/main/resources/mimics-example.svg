@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="svg8" width="297mm" height="210mm" version="1.1" viewBox="0 0 297 210" xmlns="http://www.w3.org/2000/svg">
+<svg id="svg8" width="297mm" height="140mm" version="1.1" viewBox="0 0 297 140" xmlns="http://www.w3.org/2000/svg">
  <defs id="defs2">
   <marker id="marker1598" overflow="visible" orient="auto">
    <path id="path1596" transform="scale(.4) translate(-4.5)" d="m5.77 0-8.65 5v-10l8.65 5z" fill="#ffffff" fill-rule="evenodd" stroke="#000000" stroke-width="1pt"/>
@@ -11,55 +11,208 @@
  <g id="layer1" transform="translate(0,-87)">
   <rect id="rect10" x="9.2604" y="96.286" width="72.76" height="37.996" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".60236" style="paint-order:normal"/>
   <text id="text14" x="19.243406" y="102.96233" fill="#000000" font-family="sans-serif" font-size="10.583px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan12" x="19.243406" y="102.96233" font-family="sans-serif" font-size="4.2333px" font-weight="bold" stroke-width=".26458">Power Supply Distributor</tspan></text>
-  <circle id="pw-spl-led" cx="14.299" cy="101.49" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"/>
+  <circle id="pw-spl-led" cx="14.299" cy="101.49" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal" 
+	data-rtmt-binding-id="STATION.POWERSUPPLY.PS_STATUS"
+	data-rtmt-fill-color-00="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-01="$eng EQ OFF := #c9c9c9" 
+	data-rtmt-fill-color-02=":= #00FFFF"
+  />
   <text id="text22" x="11.76115" y="110.44108" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan20" x="11.76115" y="110.44108" stroke-width=".26458">Status</tspan></text>
   <text id="text26" x="11.717261" y="116.89436" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan24" x="11.717261" y="116.89436" stroke-width=".26458">Measured Tension</tspan></text>
   <text id="text30" x="11.670014" y="123.60342" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan28" x="11.670014" y="123.60342" stroke-width=".26458">Measured Current</tspan></text>
   <text id="text34" x="11.811755" y="130.35976" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan32" x="11.811755" y="130.35976" stroke-width=".26458">Overtension Protection</tspan></text>
-  <rect id="pw-spl-status-box" x="58.208" y="106.5" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="pw-spl-tension-box" x="58.208" y="113.11" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="pw-spl-current-box" x="58.208" y="119.73" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="pw-spl-protection-box" x="58.208" y="126.34" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <text id="pw-spl-status-text" x="59.53125" y="110.46876" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885" x="59.53125" y="110.46876" stroke-width=".26458">######</tspan></text>
-  <text id="pw-spl-tension-text" x="59.53125" y="117.08334" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan889" x="59.53125" y="117.08334" stroke-width=".26458">######</tspan></text>
-  <text id="pw-spl-current-text" x="59.53125" y="123.69792" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan893" x="59.53125" y="123.69792" stroke-width=".26458">######</tspan></text>
-  <text id="pw-spl-protection-text" x="59.53125" y="130.3125" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan897" x="59.53125" y="130.3125" stroke-width=".26458">######</tspan></text>
+  <rect id="pw-spl-status-box" x="58.208" y="106.5" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.POWERSUPPLY.PS_STATUS"
+	data-rtmt-fill-color-00="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-01="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-03="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-04="$eng EQ OFF := #FFE4B5" 
+	data-rtmt-fill-color-05="$eng EQ UNKNOWN := #FFE4B5" 
+	data-rtmt-fill-color-06=":= #00FF00" 
+  />
+  <rect id="pw-spl-tension-box" x="58.208" y="113.11" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.POWERSUPPLY.PS_TENSION"
+	data-rtmt-fill-color-00="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-01="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-03="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-04=":= #00FF00" 
+  />
+  <rect id="pw-spl-current-box" x="58.208" y="119.73" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal" 
+	data-rtmt-binding-id="STATION.POWERSUPPLY.PS_CURRENT"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-05=":= #00FF00"
+  />
+  <rect id="pw-spl-protection-box" x="58.208" y="126.34" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.POWERSUPPLY.PS_PROTECTION"
+	data-rtmt-fill-color-00="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-01="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-03="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-04=":= #00FF00"
+  />
+  <text id="pw-spl-status-text" x="59.53125" y="110.46876" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885" x="59.53125" y="110.46876" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.POWERSUPPLY.PS_STATUS"
+    data-rtmt-text-00=":= $eng"
+  >######</tspan></text>
+  <text id="pw-spl-tension-text" x="59.53125" y="117.08334" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan889" x="59.53125" y="117.08334" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.POWERSUPPLY.PS_TENSION"
+    data-rtmt-text-00=":= $eng"
+  >######</tspan></text>
+  <text id="pw-spl-current-text" x="59.53125" y="123.69792" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan893" x="59.53125" y="123.69792" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.POWERSUPPLY.PS_CURRENT"
+    data-rtmt-text-00=":= $eng"  
+  >######</tspan></text>
+  <text id="pw-spl-protection-text" x="59.53125" y="130.3125" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan897" x="59.53125" y="130.3125" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.POWERSUPPLY.PS_PROTECTION"
+    data-rtmt-text-00=":= $eng" 
+  >######</tspan></text>
   <rect id="rect10-4" x="9.2604" y="139.94" width="72.76" height="37.996" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".602" style="paint-order:normal"/>
   <text id="text14-3" x="19.3379" y="146.52409" fill="#000000" font-family="sans-serif" font-size="10.583px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan12-7" x="19.3379" y="146.52409" font-family="sans-serif" font-size="4.2333px" font-weight="bold" stroke-width=".26458">Diesel Generator 1</tspan></text>
-  <circle id="diesel-gen1-led" cx="14.393" cy="145.05" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"/>
+  <circle id="diesel-gen1-led" cx="14.393" cy="145.05" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"
+  	data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_STATUS"
+	data-rtmt-fill-color-00="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-01="$eng EQ OFF := #c9c9c9" 
+	data-rtmt-fill-color-02=":= #00FFFF"
+  />
   <text id="text22-0" x="11.76115" y="152.77441" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan20-4" x="11.76115" y="152.77441" stroke-width=".26458">Status</tspan></text>
   <text id="text26-5" x="11.717262" y="159.22769" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan24-5" x="11.717262" y="159.22769" stroke-width=".26458">Measured Tension</tspan></text>
   <text id="text30-7" x="11.670013" y="165.93674" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan28-1" x="11.670013" y="165.93674" stroke-width=".26458">Measured Current</tspan></text>
   <text id="text34-5" x="11.811756" y="172.69308" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan32-0" x="11.811756" y="172.69308" stroke-width=".26458">RPM</tspan></text>
-  <rect id="diesel-gen1-status-box" x="58.208" y="148.83" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="diesel-gen1-tension-box" x="58.208" y="155.45" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="diesel-gen1-current-box" x="58.208" y="162.06" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="diesel-gen1-rpm-box" x="58.208" y="168.68" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <text id="diesel-gen1-status-text" x="59.53125" y="152.80209" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885-1" x="59.53125" y="152.80209" stroke-width=".26458">######</tspan></text>
-  <text id="diesel-gen1-tension-text" x="59.53125" y="159.41667" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan889-4" x="59.53125" y="159.41667" stroke-width=".26458">######</tspan></text>
-  <text id="diesel-gen1-current-text" x="59.53125" y="166.03125" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan893-1" x="59.53125" y="166.03125" stroke-width=".26458">######</tspan></text>
-  <text id="diesel-gen1-rpm-text" x="59.53125" y="172.64583" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan897-3" x="59.53125" y="172.64583" stroke-width=".26458">######</tspan></text>
+  <rect id="diesel-gen1-status-box" x="58.208" y="148.83" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_STATUS"
+	data-rtmt-fill-color-00="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-01="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-03="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-04="$eng EQ OFF := #FFE4B5" 
+	data-rtmt-fill-color-05="$eng EQ UNKNOWN := #FFE4B5" 
+	data-rtmt-fill-color-06=":= #00FF00" 
+  />
+  <rect id="diesel-gen1-tension-box" x="58.208" y="155.45" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_TENSION"
+	data-rtmt-fill-color-00="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-01="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-03="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-04=":= #00FF00" 
+  />
+  <rect id="diesel-gen1-current-box" x="58.208" y="162.06" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_CURRENT"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-05=":= #00FF00" 
+  />
+  <rect id="diesel-gen1-rpm-box" x="58.208" y="168.68" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_PROTECTION"
+	data-rtmt-fill-color-00="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-01="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-03="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-04=":= #00FF00"
+  />
+  <text id="diesel-gen1-status-text" x="59.53125" y="152.80209" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885-1" x="59.53125" y="152.80209" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_STATUS"
+    data-rtmt-text-00=":= $eng"
+  >######</tspan></text>
+  <text id="diesel-gen1-tension-text" x="59.53125" y="159.41667" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan889-4" x="59.53125" y="159.41667" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_TENSION"
+    data-rtmt-text-00=":= $eng"
+  >######</tspan></text>
+  <text id="diesel-gen1-current-text" x="59.53125" y="166.03125" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan893-1" x="59.53125" y="166.03125" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_CURRENT"
+    data-rtmt-text-00=":= $eng"
+  >######</tspan></text>
+  <text id="diesel-gen1-rpm-text" x="59.53125" y="172.64583" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan897-3" x="59.53125" y="172.64583" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_PROTECTION"
+    data-rtmt-text-00=":= $eng"
+  >######</tspan></text>
   <rect id="rect10-4-9" x="9.2604" y="183.23" width="72.76" height="37.996" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".60236" style="paint-order:normal"/>
   <text id="text14-3-2" x="19.337896" y="189.81151" fill="#000000" font-family="sans-serif" font-size="10.583px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan12-7-4" x="19.337896" y="189.81151" font-family="sans-serif" font-size="4.2333px" font-weight="bold" stroke-width=".26458">Diesel Generator 2</tspan></text>
-  <circle id="diesel-gen2-led" cx="14.393" cy="188.34" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"/>
+  <circle id="diesel-gen2-led" cx="14.393" cy="188.34" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_STATUS"
+	data-rtmt-fill-color-00="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-01="$eng EQ OFF := #c9c9c9" 
+	data-rtmt-fill-color-02=":= #00FFFF"
+  />
   <text id="text22-0-4" x="11.761144" y="196.06183" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan20-4-0" x="11.761144" y="196.06183" stroke-width=".26458">Status</tspan></text>
   <text id="text26-5-6" x="11.717256" y="202.51511" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan24-5-9" x="11.717256" y="202.51511" stroke-width=".26458">Measured Tension</tspan></text>
   <text id="text30-7-5" x="11.670007" y="209.22415" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan28-1-7" x="11.670007" y="209.22415" stroke-width=".26458">Measured Current</tspan></text>
   <text id="text34-5-7" x="11.811749" y="215.98051" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan32-0-8" x="11.811749" y="215.98051" stroke-width=".26458">RPM</tspan></text>
-  <rect id="diesel-gen2-status-box" x="58.208" y="192.12" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="diesel-gen2-tension-box" x="58.208" y="198.74" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="diesel-gen2-current-box" x="58.208" y="205.35" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="diesel-gen2-rpm-box" x="58.208" y="211.96" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <text id="diesel-gen2-status-text" x="59.531246" y="196.08951" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885-1-6" x="59.531246" y="196.08951" stroke-width=".26458">######</tspan></text>
-  <text id="diesel-gen2-tension-text" x="59.531246" y="202.70409" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan889-4-1" x="59.531246" y="202.70409" stroke-width=".26458">######</tspan></text>
-  <text id="diesel-gen2-current-text" x="59.531246" y="209.31866" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan893-1-5" x="59.531246" y="209.31866" stroke-width=".26458">######</tspan></text>
-  <text id="diesel-gen2-rpm-text" x="59.531246" y="215.93324" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan897-3-0" x="59.531246" y="215.93324" stroke-width=".26458">######</tspan></text>
+  <rect id="diesel-gen2-status-box" x="58.208" y="192.12" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_STATUS"
+	data-rtmt-fill-color-00="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-01="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-03="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-04="$eng EQ OFF := #FFE4B5" 
+	data-rtmt-fill-color-05="$eng EQ UNKNOWN := #FFE4B5" 
+	data-rtmt-fill-color-06=":= #00FF00" 
+  />
+  <rect id="diesel-gen2-tension-box" x="58.208" y="198.74" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_TENSION"
+	data-rtmt-fill-color-00="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-01="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-03="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-04=":= #00FF00" 
+  />
+  <rect id="diesel-gen2-current-box" x="58.208" y="205.35" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_CURRENT"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-05=":= #00FF00" 
+  />
+  <rect id="diesel-gen2-rpm-box" x="58.208" y="211.96" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_PROTECTION"
+	data-rtmt-fill-color-00="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-01="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-03="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-04=":= #00FF00"
+  />
+  <text id="diesel-gen2-status-text" x="59.531246" y="196.08951" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885-1-6" x="59.531246" y="196.08951" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_STATUS"
+    data-rtmt-text-00=":= $eng"  
+  >######</tspan></text>
+  <text id="diesel-gen2-tension-text" x="59.531246" y="202.70409" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan889-4-1" x="59.531246" y="202.70409" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_TENSION"
+    data-rtmt-text-00=":= $eng"  
+  >######</tspan></text>
+  <text id="diesel-gen2-current-text" x="59.531246" y="209.31866" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan893-1-5" x="59.531246" y="209.31866" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG1_CURRENT"
+    data-rtmt-text-00=":= $eng"  
+  >######</tspan></text>
+  <text id="diesel-gen2-rpm-text" x="59.531246" y="215.93324" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan897-3-0" x="59.531246" y="215.93324" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_PROTECTION"
+    data-rtmt-text-00=":= $eng"  
+  >######</tspan></text>
   <rect id="matrix-box" x="127" y="114.44" width="21.167" height="74.083" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".602" style="paint-order:normal"/>
   <rect id="matrix-input1" x="124.35" y="119.73" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="pw-spl-output" x="82.021" y="119.73" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
+  <rect id="pw-spl-output" x="82.021" y="119.73" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.POWERSUPPLY.PS_OUTPUT"
+	data-rtmt-fill-color-04="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-06=":= #C9C9C9"
+  />
   <path id="pw-spl-to-matrix" d="m84.667 122.38h39.687" fill="none" stroke="#000000" stroke-width=".26458px"/>
-  <g id="switch" stroke="#000000">
-   <ellipse id="path1120" cx="111.16" cy="180.68" rx="5.2751" ry="5.2918" fill="#b3b3b3" stroke-linejoin="round" stroke-width=".18671" style="paint-order:normal"/>
+  <g id="switch" stroke="#000000"
+    data-rtmt-binding-id="STATION.SWITCH.SW_POSITION"
+	data-rtmt-fill-color-00=":= #00FF00"
+	data-rtmt-transform-00="$eng EQ POSITION_1 := rotate(90 111.16 180.68)" 
+	data-rtmt-transform-01="$eng EQ POSITION_2 := rotate(270 111.16 180.68)" 
+  >
+   <ellipse id="path1120" cx="111.16" cy="180.68" rx="5.2751" ry="5.2918" stroke-linejoin="round" stroke-width=".18671" style="paint-order:normal"/>
    <path id="path1124" transform="translate(6.6146 -1.8347e-6)" d="m104.51 175.29c-0.44087 1.3226-0.88184 2.6455-1.7638 3.5276s-2.2046 1.323-3.5278 1.764" fill="none" stroke-width=".26458px"/>
    <path id="path1128" transform="translate(6.6146 -1.8347e-6)" d="m109.8 180.58c-1.3226 0.44086-2.6455 0.88184-3.5276 1.7638-0.8821 0.882-1.323 2.2046-1.764 3.5278" fill="none" stroke-width=".26458px"/>
   </g>
@@ -74,8 +227,16 @@
    <path id="path1146" d="m95.25 177.94v5.2917" stroke-width=".26458px"/>
   </g>
   <path id="path1148" d="m105.83 180.58h-9.2604" fill="none" stroke="#000000" stroke-width=".26458px"/>
-  <rect id="diesel-gen1-output" x="82.021" y="162.06" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="diesel-gen2-output" x="82.021" y="205.72" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
+  <rect id="diesel-gen1-output" x="82.021" y="162.06" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_OUTPUT"
+	data-rtmt-fill-color-04="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-06=":= #C9C9C9"
+  />
+  <rect id="diesel-gen2-output" x="82.021" y="205.72" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_OUTPUT"
+	data-rtmt-fill-color-04="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-06=":= #C9C9C9"
+  />
   <path id="gen-diesel1-to-switch" d="m84.667 164.71h26.458v10.583" fill="none" stroke="#000000" stroke-width=".26458px"/>
   <path id="gen-diesel2-to-switch" d="m84.667 208.36h26.458v-22.49" fill="none" stroke="#000000" stroke-width=".26458px"/>
   <rect id="matrix-input2" x="124.35" y="177.94" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>

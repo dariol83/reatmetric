@@ -116,7 +116,7 @@ public class BlinkNodeProcessor extends SvgAttributeProcessor {
         }
 
         public void setColourText(String colourText) {
-            this.colourUpdate = colourText.equals(this.colourText);
+            this.colourUpdate = !colourText.equals(this.colourText);
             this.colourText = colourText;
         }
 

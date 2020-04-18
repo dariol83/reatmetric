@@ -132,8 +132,8 @@ public class MonitoringDecoder implements IRawDataSubscriber {
     }
 
     public LinkedHashMap<String, Pair<Integer, Object>> thermalParamMap(RawData rawData) {
-        Class<?>[] dataTypes = { Byte.class, Byte.class, Byte.class, Byte.class, Byte.class, Double.class, Byte.class, Byte.class, Byte.class, Double.class, Byte.class };
-        String[] names = { "Status", "Global Status", "Input", "Status A", "Override A", "Temperature A", "Protection A", "Status B", "Override B", "Temperature B", "Protection B"};
+        Class<?>[] dataTypes = { Byte.class, Byte.class, Byte.class, Byte.class, Double.class, Byte.class, Byte.class, Byte.class, Double.class, Byte.class, Byte.class };
+        String[] names = { "Status", "Global Status", "Input", "Status A", "Temperature A", "Override A",  "Protection A", "Status B", "Temperature B", "Override B",  "Protection B"};
         return extract(rawData, names, dataTypes);
     }
 

@@ -67,7 +67,7 @@
           </Menu>
         </menus>
       </MenuBar>
-      <SplitPane dividerPositions="0.70" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" VBox.vgrow="ALWAYS">
+      <SplitPane fx:id="mainSplitPane" dividerPositions="0.70" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" VBox.vgrow="ALWAYS">
          <items>
             <SplitPane dividerPositions="0.20" prefHeight="160.0" prefWidth="200.0">
               <items>

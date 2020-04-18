@@ -90,8 +90,8 @@ public class StationTransportConnector extends AbstractTransportConnector implem
         updateConnectionStatus(TransportConnectionStatus.CONNECTING);
         this.simulator.connect(this);
         this.connected = true;
-        updateAlarmState(AlarmState.NOMINAL);
         updateConnectionStatus(TransportConnectionStatus.OPEN);
+        updateAlarmState(AlarmState.NOMINAL);
     }
 
     @Override
@@ -99,8 +99,8 @@ public class StationTransportConnector extends AbstractTransportConnector implem
         updateConnectionStatus(TransportConnectionStatus.DISCONNECTING);
         this.simulator.disconnect();
         this.connected = false;
-        updateAlarmState(AlarmState.NOT_APPLICABLE);
         updateConnectionStatus(TransportConnectionStatus.IDLE);
+        updateAlarmState(AlarmState.NOT_APPLICABLE);
     }
 
     @Override

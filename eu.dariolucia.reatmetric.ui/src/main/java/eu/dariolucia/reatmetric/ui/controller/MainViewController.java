@@ -56,6 +56,11 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	private final ReatmetricPluginInspector serviceInspector = new ReatmetricPluginInspector();
 
 	@FXML
+	private SplitPane mainSplitPane;
+
+	private double mainSplitPanePositionBeforeCollapsing = 1.0;
+
+	@FXML
 	private RadioMenuItem parameterTgl;
 	@FXML
 	private RadioMenuItem parameterLogTgl;
@@ -246,6 +251,26 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		this.perspectiveMap.put(this.eventTgl, "eventPerspective");
 		this.perspectiveMap.put(this.userDisplaysTgl, "userDisplayPerspective");
 		ReatmetricUI.selectedSystem().addSubscriber(this);
+
+		// Implement shrink-on-collapse behaviour for the message view
+		TitledPane messagePane = (TitledPane) mainSplitPane.getItems().get(1);
+		messagePane.expandedProperty().addListener((observable, oldValue, newValue) -> {
+			if (newValue) {
+				// Expanded: splitpane enabled
+				mainSplitPane.setDividerPositions(mainSplitPanePositionBeforeCollapsing, 1 - mainSplitPanePositionBeforeCollapsing);
+			} else {
+				mainSplitPanePositionBeforeCollapsing = mainSplitPane.getDividers().get(0).getPosition();
+				// Collapsed: splitpane maximized and disabled
+				mainSplitPane.setDividerPositions(1.0, 0.0);
+			}
+			// Block the divider into max position, if messagePane is not expanded
+			mainSplitPane.getDividers().get(0).positionProperty().addListener((observable1, oldvalue, newvalue) -> {
+				if (!messagePane.isExpanded()) {
+					mainSplitPane.getDividers().get(0).setPosition(1.0);
+				}
+			});
+		});
+
 		// Register the status label
 		ReatmetricUI.registerStatusLabel(this.statusLbl);
 	}
