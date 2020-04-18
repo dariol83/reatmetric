@@ -59,8 +59,9 @@ public class GenericPowerSupply extends StationEquipment {
     }
 
     @Override
-    public void doExecute(byte[] command) {
+    public boolean doExecute(byte[] command) {
         // TODO: implement
+        return false;
     }
 
     @Override

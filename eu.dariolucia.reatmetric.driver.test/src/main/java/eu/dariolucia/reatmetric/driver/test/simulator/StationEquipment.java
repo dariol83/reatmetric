@@ -63,21 +63,25 @@ public abstract class StationEquipment {
         Pair<Integer, Boolean> cmd = accept(command);
         notifyCommandAccepted(cmd);
         if(cmd.getSecond()) {
-            scheduler.execute(() -> doExecute(command));
+            scheduler.execute(() ->  {
+                notifyCommandReport(cmd.getFirst(), 0x03, true);
+                boolean result = doExecute(command);
+                notifyCommandReport(cmd.getFirst(), 0x04, true);
+            });
         }
     }
 
-    private void notifyCommandAccepted(Pair<Integer, Boolean> cmd) {
+    private void notifyCommandReport(int commandId, int reportType, boolean result) {
         try {
             ByteArrayOutputStream bs = new ByteArrayOutputStream();
             DataOutputStream dos = new DataOutputStream(bs);
             byte firstByte = getEquipmentId();
             firstByte <<= 4;
-            firstByte |= 0x02;
+            firstByte |= reportType;
             dos.write(firstByte);
             dos.writeLong(System.currentTimeMillis());
-            dos.writeInt(cmd.getFirst());
-            dos.writeByte(cmd.getSecond() ? 1 : 0);
+            dos.writeInt(commandId);
+            dos.writeByte(result ? 1 : 0);
             dos.close();
             notifyPacket(bs.toByteArray());
         } catch (IOException e) {
@@ -85,11 +89,15 @@ public abstract class StationEquipment {
         }
     }
 
+    private void notifyCommandAccepted(Pair<Integer, Boolean> cmd) {
+        notifyCommandReport(cmd.getFirst(), 0x02, cmd.getSecond());
+    }
+
     protected abstract Pair<Integer, Boolean> accept(byte[] command);
 
     protected abstract void doWriteMonitoringState(DataOutputStream dos) throws IOException;
 
-    public abstract void doExecute(byte[]command);
+    public abstract boolean doExecute(byte[]command);
 
     public abstract byte getEquipmentId();
 

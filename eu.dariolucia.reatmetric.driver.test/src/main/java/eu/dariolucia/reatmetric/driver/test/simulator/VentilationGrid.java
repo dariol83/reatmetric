@@ -23,34 +23,34 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class Splitter extends StationEquipment {
+public class VentilationGrid extends StationEquipment {
 
     private volatile boolean status;
     private volatile boolean input;
-    private volatile boolean output1;
-    private volatile boolean output2;
-    private volatile boolean output3;
-    private volatile double power;
+    private volatile double fan1;
+    private volatile double fan2;
+    private volatile double fan3;
+    private volatile double fan4;
 
-    public Splitter(ScheduledExecutorService scheduler) {
+    public VentilationGrid(ScheduledExecutorService scheduler) {
         super(scheduler);
         // Initial state
         status = true;
         input = true;
-        output1 = true;
-        output2 = true;
-        output3 = true;
-        power = 1500;
+        fan1 = 0;
+        fan2 = 0;
+        fan3 = 0;
+        fan4 = 0;
     }
 
     @Override
     protected void doWriteMonitoringState(DataOutputStream dos) throws IOException {
         dos.writeByte(status ? (byte) 1 : (byte) 0);
         dos.writeByte(input ? (byte) 1 : (byte) 0);
-        dos.writeByte(output1 ? (byte) 1 : (byte) 0);
-        dos.writeByte(output2 ? (byte) 1 : (byte) 0);
-        dos.writeByte(output3 ? (byte) 1 : (byte) 0);
-        dos.writeDouble(power);
+        dos.writeDouble(fan1);
+        dos.writeDouble(fan2);
+        dos.writeDouble(fan3);
+        dos.writeDouble(fan4);
     }
 
     @Override
@@ -71,15 +71,21 @@ public class Splitter extends StationEquipment {
 
     @Override
     public byte getEquipmentId() {
-        return 6;
+        return 7;
     }
 
     @Override
     protected void computeNewState() {
-        if(status) {
-            power = 1500 + 30 * (Math.random() - 0.5);
+        if(status && input) {
+            fan1 = 220 + 60 * (Math.random() - 0.5);
+            fan2 = 220 + 60 * (Math.random() - 0.5);
+            fan3 = 220 + 60 * (Math.random() - 0.5);
+            fan4 = 220 + 60 * (Math.random() - 0.5);
         } else {
-            power = 0.0;
+            fan1 = 0;
+            fan2 = 0;
+            fan3 = 0;
+            fan4 = 0;
         }
         poll();
     }

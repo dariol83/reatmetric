@@ -23,34 +23,28 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class Splitter extends StationEquipment {
+public class Turbine extends StationEquipment {
 
     private volatile boolean status;
     private volatile boolean input;
-    private volatile boolean output1;
-    private volatile boolean output2;
-    private volatile boolean output3;
-    private volatile double power;
+    private volatile double output;
+    private volatile double rpm;
 
-    public Splitter(ScheduledExecutorService scheduler) {
+    public Turbine(ScheduledExecutorService scheduler) {
         super(scheduler);
         // Initial state
         status = true;
         input = true;
-        output1 = true;
-        output2 = true;
-        output3 = true;
-        power = 1500;
+        output = 100.0;
+        rpm = 200.0;
     }
 
     @Override
     protected void doWriteMonitoringState(DataOutputStream dos) throws IOException {
         dos.writeByte(status ? (byte) 1 : (byte) 0);
         dos.writeByte(input ? (byte) 1 : (byte) 0);
-        dos.writeByte(output1 ? (byte) 1 : (byte) 0);
-        dos.writeByte(output2 ? (byte) 1 : (byte) 0);
-        dos.writeByte(output3 ? (byte) 1 : (byte) 0);
-        dos.writeDouble(power);
+        dos.writeDouble(output);
+        dos.writeDouble(rpm);
     }
 
     @Override
@@ -71,15 +65,17 @@ public class Splitter extends StationEquipment {
 
     @Override
     public byte getEquipmentId() {
-        return 6;
+        return (byte) 9;
     }
 
     @Override
     protected void computeNewState() {
-        if(status) {
-            power = 1500 + 30 * (Math.random() - 0.5);
+        if(status && input) {
+            output = 100 + 200 * (Math.random() - 0.5);
+            rpm = output * 2;
         } else {
-            power = 0.0;
+            output = 0.0;
+            rpm = 0.0;
         }
         poll();
     }

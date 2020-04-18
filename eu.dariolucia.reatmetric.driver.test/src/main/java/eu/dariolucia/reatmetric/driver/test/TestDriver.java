@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.driver.test;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
@@ -39,12 +40,13 @@ import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
-import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -67,11 +69,11 @@ import java.util.logging.Logger;
  * <ul>
  *      <li>1 byte - 4 MSB: equipment ID</li>
  *      <li>1 byte - 4 LSB: 15 (0xF)</li>
- *      <li>4 bytes: command ID - integer that identifies the command</li>
+ *      <li>4 bytes: command ID - integer that identifies the command - 0xFFFFFFFF identifies a parameter set, other values are control commands</li>
  *      <li>4 bytes: command unique tag - positive integer (counter tag)</li>
- *      <li>4 bytes: first argument or 0xFFFFFFFF</li>
- *      <li>4 bytes: second argument or 0xFFFFFFFF</li>
- *      <li>4 bytes: third argument or 0xFFFFFFFF</li>
+ *      <li>4 bytes: first argument or 0xFFFFFFFF - in case of parameter set, this contains the idx of the parameter</li>
+ *      <li>4 bytes: second argument or 0xFFFFFFFF - in case of parameter set, this contains the value of the parameter (0/1 for booleans of int value or MSB for longs or double)</li>
+ *      <li>4 bytes: third argument or 0xFFFFFFFF - in case of parameter set, this contains the value of the parameter (LSB for longs or doubles) </li>
  * </ul>
  *
  * The raw data is produced by a simulated model, and provided to the connector, which distributes the data inside the
@@ -92,6 +94,10 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
     public static final String ARG_1_ARGKEY = "ARG1";
     public static final String ARG_2_ARGKEY = "ARG2";
     public static final String ARG_3_ARGKEY = "ARG3";
+    public static final String ACCEPTANCE_STAGE = "Acceptance";
+    public static final String EXECUTION_START_STAGE = "Execution Start";
+    public static final String EXECUTION_COMPLETED_STAGE = "Execution Completed";
+    public static final String TRANSMISSION_STAGE = "Transmission";
 
     private volatile String name;
     private volatile boolean running;
@@ -106,13 +112,22 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         toReturn.setDaemon(true);
         return toReturn;
     });
-    private final Map<Integer, ActivityInvocation> commandTag2activityInvocation = new HashMap<>();
-    private final AtomicInteger commandTagSequencer = new AtomicInteger(0);
 
+    // Monitoring decoder
+    private MonitoringDecoder decoder;
+
+    // Command encoder
+    private final CommandEncoder encoder;
+
+    // Command verifier
+    private CommandVerifier verifier;
+
+    // Connector
     private volatile StationTransportConnector connector;
 
     public TestDriver() {
-        // Nothing to do
+        //
+        encoder = new CommandEncoder();
     }
 
     @Override
@@ -126,23 +141,15 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
             throw new DriverException(e);
         }
         this.connector = new StationTransportConnector(name, "Station Connector", "Test connector to simulate data", context.getRawDataBroker());
-        // Since this object is also performing the event raising function, it registers to the broker to receive
+        // Since this object is performing the event raising function, it registers to the broker to receive
         // notification of received events
         this.context.getRawDataBroker().subscribe(this::eventReceived, null, new RawDataFilter(true, null, null, Arrays.asList(STATION_EVENT), null, Collections.singletonList(Quality.GOOD)), null);
-        // Since this object is also performing the command verification function, it registers to the broker to receive
-        // notification of received command acks
-        this.context.getRawDataBroker().subscribe(this::commandAckReceived, null, new RawDataFilter(true, null, null, Arrays.asList(STATION_ACK), null, Collections.singletonList(Quality.GOOD)), null);
+        // Decoder
+        this.decoder = new MonitoringDecoder(context.getProcessingModel(), context.getRawDataBroker());
+        // CommandVerifier
+        this.verifier = new CommandVerifier(context.getProcessingModel(), context.getRawDataBroker());
+
         this.running = true;
-    }
-
-    private void commandAckReceived(List<RawData> rawData) {
-        for(RawData rd : rawData) {
-            processCommandAck(rd);
-        }
-    }
-
-    private synchronized void processCommandAck(RawData rd) {
-        // TODO
     }
 
     private void eventReceived(List<RawData> rawData) {
@@ -193,6 +200,7 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         } catch (TransportException e) {
             e.printStackTrace();
         }
+        // Clean up omitted... it should be done
     }
 
     @Override
@@ -226,79 +234,34 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         if(activityInvocation.getArguments() == null) {
             throw new ActivityHandlingException("Activity invocation has null argument map");
         }
-        if(!connectorReady(activityInvocation.getType(), activityInvocation.getRoute())) {
+        if(!connectorReady()) {
             throw new ActivityHandlingException("Activity invocation: type " + activityInvocation.getType() + " and route " + activityInvocation.getRoute() + " not available now");
         }
         executor.submit(() -> execute(activityInvocation, model));
     }
 
-    private boolean connectorReady(String type, String route) {
+    private boolean connectorReady() {
         return connector.isInitialised() && connector.isReady();
     }
 
     private void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
-        byte[] encodedCommand = null;
+        Pair<Integer, byte[]> encodedCommand = null;
         try {
-            encodedCommand = encode(activityInvocation);
-            storeRawData(activityInvocation.getActivityOccurrenceId(), activityInvocation.getPath(), activityInvocation.getGenerationTime(), activityInvocation.getRoute(), activityInvocation.getType(), activityInvocation.getSource(), encodedCommand);
-            recordCommandVerification(encodedCommand, activityInvocation);
-            announce(activityInvocation, model, "Final Release", ActivityReportState.OK, ActivityOccurrenceState.RELEASE, ActivityOccurrenceState.TRANSMISSION);
+            encodedCommand = encoder.encode(activityInvocation);
+            storeRawData(activityInvocation.getActivityOccurrenceId(), activityInvocation.getPath(), activityInvocation.getGenerationTime(), activityInvocation.getRoute(), activityInvocation.getType(), activityInvocation.getSource(), encodedCommand.getSecond());
             synchronized (this) {
+                // Record verification
+                announce(activityInvocation, model, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+                verifier.recordCommandVerification(encodedCommand.getFirst(), activityInvocation);
                 // Transmission
-                announce(activityInvocation, model, "Transmission", ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
-                connector.send(encodedCommand);
-                announce(activityInvocation, model, "Transmission", ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
+                connector.send(encodedCommand.getSecond());
+                announce(activityInvocation, model, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
             }
         } catch(Exception e) {
             LOG.log(Level.SEVERE, "Transmission of activity " + activityInvocation.getActivityOccurrenceId() + " failed: " + e.getMessage(), e);
-            announce(activityInvocation, model, "Transmission", ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
-            removeCommandVerification(encodedCommand);
+            announce(activityInvocation, model, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
+            verifier.removeCommandVerification(encodedCommand.getFirst());
         }
-    }
-
-    private byte[] encode(ActivityInvocation activityInvocation) {
-        // Read the activityInvocation arguments and encode accordingly
-        int eqId = (Integer) activityInvocation.getArguments().get(EQUIPMENT_ID_ARGKEY);
-        int commandId = (Integer) activityInvocation.getArguments().get(COMMAND_ID_ARGKEY);
-        Number arg1 = (Number) activityInvocation.getArguments().get(ARG_1_ARGKEY);
-        if(arg1 == null) {
-            arg1 = -1;
-        }
-        Number arg2 = (Number) activityInvocation.getArguments().get(ARG_2_ARGKEY);
-        if(arg2 == null) {
-            arg2 = -1;
-        }
-        Number arg3 = (Number) activityInvocation.getArguments().get(ARG_3_ARGKEY);
-        if(arg3 == null) {
-            arg3 = -1;
-        }
-        byte firstByte = (byte) eqId;
-        firstByte <<= 4;
-        firstByte |= 0x0F;
-        ByteBuffer cmdBuffer = ByteBuffer.allocate(21);
-        cmdBuffer.put(firstByte);
-        cmdBuffer.putInt(commandId);
-        cmdBuffer.putInt(commandTagSequencer.incrementAndGet());
-        cmdBuffer.putInt(arg1.intValue());
-        cmdBuffer.putInt(arg2.intValue());
-        cmdBuffer.putInt(arg3.intValue());
-        return cmdBuffer.array();
-    }
-
-    private void removeCommandVerification(byte[] encodedCommand) {
-        int cmdTag = extractCommandTag(encodedCommand);
-        this.commandTag2activityInvocation.remove(cmdTag);
-    }
-
-    private int extractCommandTag(byte[] encodedCommand) {
-        ByteBuffer bb = ByteBuffer.wrap(encodedCommand);
-        bb.get();
-        return bb.getInt();
-    }
-
-    private synchronized void recordCommandVerification(byte[] encodedCommand, ActivityInvocation activityInvocation) {
-        int cmdTag = extractCommandTag(encodedCommand);
-        this.commandTag2activityInvocation.put(cmdTag, activityInvocation);
     }
 
     private void storeRawData(IUniqueId activityOccurrenceId, SystemEntityPath path, Instant generationTime, String route, String type, String source, byte[] encodedCommand) throws ReatmetricException {
@@ -307,17 +270,17 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         context.getRawDataBroker().distribute(Collections.singletonList(rd), true);
     }
 
-    protected void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, String name, ActivityReportState reportState, ActivityOccurrenceState occState, ActivityOccurrenceState nextOccState) {
-        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, Instant.now(), occState, null, reportState, nextOccState, null));
+    protected static void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState) {
+        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, null, reportState, occState, null));
     }
 
-    protected void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, String name, ActivityReportState reportState, ActivityOccurrenceState occState) {
-        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, Instant.now(), occState, null, reportState, occState, null));
+    protected static void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, ActivityOccurrenceState nextOccState, Instant executionTime, Object result) {
+        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, executionTime, reportState, nextOccState, result));
     }
 
-    protected void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, String name, ActivityReportState reportState, ActivityOccurrenceState occState, ActivityOccurrenceState nextOccState, Instant executionTime, Object result) {
-        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, Instant.now(), occState, executionTime, reportState, nextOccState, result));
-    }
+    /* ************************************************************************* *
+     * {@link IRawDataRenderer} implementation
+     * ************************************************************************* */
 
     @Override
     public String getHandler() {
@@ -330,8 +293,7 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
     }
 
     @Override
-    public LinkedHashMap<String, String> render(RawData rawData) throws ReatmetricException {
-        // TODO
-        return new LinkedHashMap<>();
+    public LinkedHashMap<String, String> render(RawData rawData) {
+        return decoder.render(rawData);
     }
 }

@@ -433,8 +433,8 @@
 		</parameter>
 		<parameter id="#804" location="STATION.THERMAL.THM_A_TEMP" description="Thermal Unit A Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C">
 			<checks>
-                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="47" />
-				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="65" />
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="39" />
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="43" />
             </checks>
 		</parameter>
 		<parameter id="#805" location="STATION.THERMAL.THM_A_OVERRIDE" description="Thermal Unit A Override" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
@@ -470,8 +470,8 @@
 		</parameter>
 		<parameter id="#808" location="STATION.THERMAL.THM_B_TEMP" description="Thermal Unit B Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C">
 			<checks>
-                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="47" />
-				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="65" />
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="39" />
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="43" />
             </checks>
 		</parameter>
 		<parameter id="#809" location="STATION.THERMAL.THM_B_OVERRIDE" description="Thermal Unit B Override" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
@@ -537,10 +537,12 @@
             </checks>
 		</parameter>
     </parameters>
+
     <events>
         <event id="#2001" location="STATION.THERMAL.PROTECTION_UNIT_A" description="Thermal Protection on Unit A" severity="WARN" type="THERMAL_EVT"/>
 		<event id="#2002" location="STATION.THERMAL.PROTECTION_UNIT_B" description="Thermal Protection on Unit B" severity="WARN" type="THERMAL_EVT"/>
     </events>
+
     <activities>
         <activity id="#11000" location="STATION.THERMAL.ACT1" description="Activity 1" type="TC">
             <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />

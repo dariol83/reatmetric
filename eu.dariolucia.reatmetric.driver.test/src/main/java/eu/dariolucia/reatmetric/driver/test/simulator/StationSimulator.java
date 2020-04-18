@@ -35,6 +35,9 @@ public class StationSimulator {
         equipments.put(4, new Matrix(scheduler));
         equipments.put(5, new Switch(scheduler));
         equipments.put(6, new Splitter(scheduler));
+        equipments.put(7, new VentilationGrid(scheduler));
+        equipments.put(8, new ThermalUnit(scheduler));
+        equipments.put(9, new Turbine(scheduler));
     }
 
     public void connect(IStationMonitor monitor) {
