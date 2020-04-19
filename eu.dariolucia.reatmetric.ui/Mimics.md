@@ -108,6 +108,26 @@ stops.
 
 Allowed expression values: a real number. Null value _##NULL##_ removes the attribute.
 
+#### data-rtmt-width-[nn]
+
+This attribute is used to set the width of the SVG element. Its value is defined by a ReatMetric 
+condition-expression.
+This attribute can be present several times attached to a single SVG element. If so, such attribute list
+is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
+stops. 
+
+Allowed expression values: a real number. Null value _##NULL##_ removes the attribute.
+
+#### data-rtmt-height-[nn]
+
+This attribute is used to set the height of the SVG element. Its value is defined by a ReatMetric 
+condition-expression.
+This attribute can be present several times attached to a single SVG element. If so, such attribute list
+is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
+stops. 
+
+Allowed expression values: a real number. Null value _##NULL##_ removes the attribute.
+
 #### data-rtmt-text-[nn]
 
 This attribute is used to set the text of the SVG element. Its value is defined by a ReatMetric 
@@ -142,4 +162,15 @@ Allowed expression values: #RRGGBBAA or _none_ to disable blinking.
 
 If set to a colour, the fill attribute value is taken from the specified color and the tone is decreased by half. The 
 _animate_ tag attached to the SVG element is (example): 
+
 `<animate attributeType="XML" attributeName="fill" values="#800;#f00;#800;#800" dur="1.0s" repeatCount="indefinite"/>`
+
+#### data-rtmt-rotate-[nn]
+
+This attribute is used to set whether an SVG object shall rotate. Its value is defined by a ReatMetric 
+condition-expression.
+This attribute can be present several times attached to a single SVG element. If so, such attribute list
+is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
+stops.
+
+Allowed expression values: `<rotation time in milliseconds> <rotation center x> <rotation center y>` or `none` to disable the rotation. 

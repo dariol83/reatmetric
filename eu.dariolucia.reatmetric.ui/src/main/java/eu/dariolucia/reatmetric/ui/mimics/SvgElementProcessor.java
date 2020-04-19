@@ -61,6 +61,15 @@ public class SvgElementProcessor {
                 if(attribute.getName().startsWith(BLINK_PREFIX)) {
                     buildBlinkProcessor(attribute);
                 }
+                if(attribute.getName().startsWith(ROTATE_PREFIX)) {
+                    buildRotateProcessor(attribute);
+                }
+                if(attribute.getName().startsWith(WIDTH_PREFIX)) {
+                    buildWidthProcessor(attribute);
+                }
+                if(attribute.getName().startsWith(HEIGHT_PREFIX)) {
+                    buildHeightProcessor(attribute);
+                }
             }
         }
         // Now sort lists
@@ -70,6 +79,11 @@ public class SvgElementProcessor {
         // Ready
     }
 
+    private void buildRotateProcessor(Attr attribute) {
+        RotateNodeProcessor proc = new RotateNodeProcessor(element, attribute.getName(), attribute.getValue());
+        type2processorList.computeIfAbsent(SvgAttributeType.ROTATE, o -> new ArrayList<>()).add(proc);
+    }
+
     private void buildBlinkProcessor(Attr attribute) {
         BlinkNodeProcessor proc = new BlinkNodeProcessor(element, attribute.getName(), attribute.getValue());
         type2processorList.computeIfAbsent(SvgAttributeType.BLINK, o -> new ArrayList<>()).add(proc);
@@ -77,6 +91,16 @@ public class SvgElementProcessor {
 
     private void buildTransformProcessor(Attr attribute) {
         TransformAttributeProcessor proc = new TransformAttributeProcessor(element, attribute.getName(), attribute.getValue());
+        type2processorList.computeIfAbsent(SvgAttributeType.TRANSFORM, o -> new ArrayList<>()).add(proc);
+    }
+
+    private void buildWidthProcessor(Attr attribute) {
+        WidthAttributeProcessor proc = new WidthAttributeProcessor(element, attribute.getName(), attribute.getValue());
+        type2processorList.computeIfAbsent(SvgAttributeType.TRANSFORM, o -> new ArrayList<>()).add(proc);
+    }
+
+    private void buildHeightProcessor(Attr attribute) {
+        HeightAttributeProcessor proc = new HeightAttributeProcessor(element, attribute.getName(), attribute.getValue());
         type2processorList.computeIfAbsent(SvgAttributeType.TRANSFORM, o -> new ArrayList<>()).add(proc);
     }
 

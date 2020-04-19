@@ -287,22 +287,78 @@
   <path id="matrix-to-splitter" d="m150.81 151.48h25.135" fill="none" stroke="#000000" stroke-width=".26458px"/>
   <rect id="rect10-8" x="203.73" y="96.243" width="72.76" height="39.361" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".61308" style="paint-order:normal"/>
   <text id="text14-6" x="214.39146" y="103.13951" fill="#000000" font-family="sans-serif" font-size="10.583px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan12-0" x="214.39146" y="103.13951" font-family="sans-serif" font-size="4.2333px" font-weight="bold" stroke-width=".26458">Ventilation Grid</tspan></text>
-  <circle id="vent-grid-led" cx="209.07" cy="101.43" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"/>
-  <g id="fan1-icon" fill="none" stroke="#000000" stroke-linejoin="round">
-   <path id="path1278" transform="matrix(.26458 0 0 .26458 0 87)" d="m810 108.7a25 25 0 0 0-25 25 25 25 0 0 0 25 25 25 25 0 0 0 25-25 25 25 0 0 0-25-25zm0 5a20 20 0 0 1 20 20 20 20 0 0 1-20 20 20 20 0 0 1-20-20 20 20 0 0 1 20-20z" stroke-width=".70677" style="paint-order:normal"/>
-   <path id="path1285" d="m216.96 126.34c8.9694-5.9796-14.423-4.4709-4.76 0.30698 9.6632 4.7779-3.3396-14.726-2.6458-3.9688 0.69378 10.758 11.083-10.255 2.1141-4.2757-8.9694 5.9796 14.423 4.4709 4.76-0.30698-9.6632-4.7779 3.3396 14.726 2.6458 3.9688-0.69378-10.758-11.083 10.255-2.1141 4.2757z" stroke-width=".187" style="paint-order:normal"/>
+  <circle id="vent-grid-led" cx="209.07" cy="101.43" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.VENTILATION.VNT_STATUS"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-05="$eng EQ OFF := #00FFFF" 
+	data-rtmt-fill-color-06="$eng EQ UNKNOWN := #C9C9C9" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <g id="fan1-icon" fill="none" stroke="#000000" stroke-linejoin="round"
+    
+  >
+   <path id="path1278" transform="matrix(.26458 0 0 .26458 0 87)" d="m810 108.7a25 25 0 0 0-25 25 25 25 0 0 0 25 25 25 25 0 0 0 25-25 25 25 0 0 0-25-25zm0 5a20 20 0 0 1 20 20 20 20 0 0 1-20 20 20 20 0 0 1-20-20 20 20 0 0 1 20-20z" stroke-width=".70677" style="paint-order:normal"
+   data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN1_SPEED"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+   />
+   <path id="path1285" d="m216.96 126.34c8.9694-5.9796-14.423-4.4709-4.76 0.30698 9.6632 4.7779-3.3396-14.726-2.6458-3.9688 0.69378 10.758 11.083-10.255 2.1141-4.2757-8.9694 5.9796 14.423 4.4709 4.76-0.30698-9.6632-4.7779 3.3396 14.726 2.6458 3.9688-0.69378-10.758-11.083 10.255-2.1141 4.2757z" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN1_SPEED"
+	data-rtmt-rotate-01="$eng GTE 20.0 := 3000 214.26 122.4" 
+	data-rtmt-rotate-02=":= none" 
+   />
   </g>
   <g id="fan2-icon" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".187">
-   <path id="path1278-2" d="m231.51 115.76a6.6146 6.6146 0 0 0-6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146-6.6146 6.6146 6.6146 0 0 0-6.6146-6.6146zm0 1.3229a5.2917 5.2917 0 0 1 5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917-5.2917 5.2917 5.2917 0 0 1 5.2917-5.2917z" style="paint-order:normal"/>
-   <path id="path1285-8" d="m234.16 126.34c8.9694-5.9796-14.423-4.4709-4.76 0.30698 9.6632 4.7779-3.3396-14.726-2.6458-3.9688 0.69378 10.758 11.083-10.255 2.1141-4.2757-8.9694 5.9796 14.423 4.4709 4.76-0.30699-9.6632-4.7779 3.3396 14.726 2.6458 3.9688-0.69379-10.757-11.084 10.255-2.1141 4.2757z" style="paint-order:normal"/>
+   <path id="path1278-2" d="m231.51 115.76a6.6146 6.6146 0 0 0-6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146-6.6146 6.6146 6.6146 0 0 0-6.6146-6.6146zm0 1.3229a5.2917 5.2917 0 0 1 5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917-5.2917 5.2917 5.2917 0 0 1 5.2917-5.2917z" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN2_SPEED"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+   />
+   <path id="path1285-8" d="m234.16 126.34c8.9694-5.9796-14.423-4.4709-4.76 0.30698 9.6632 4.7779-3.3396-14.726-2.6458-3.9688 0.69378 10.758 11.083-10.255 2.1141-4.2757-8.9694 5.9796 14.423 4.4709 4.76-0.30699-9.6632-4.7779 3.3396 14.726 2.6458 3.9688-0.69379-10.757-11.084 10.255-2.1141 4.2757z" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN2_SPEED"
+	data-rtmt-rotate-01="$eng GTE 20.0 := 3000 231.5 122.4" 
+	data-rtmt-rotate-02=":= none" 
+   />
   </g>
   <g id="fan3-icon" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".187">
-   <path id="path1278-4" d="m248.71 115.76a6.6146 6.6146 0 0 0-6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146-6.6146 6.6146 6.6146 0 0 0-6.6146-6.6146zm0 1.3229a5.2917 5.2917 0 0 1 5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917-5.2917 5.2917 5.2917 0 0 1 5.2917-5.2917z" style="paint-order:normal"/>
-   <path id="path1285-4" d="m251.35 126.34c8.9694-5.9796-14.423-4.4709-4.76 0.30698 9.6632 4.7779-3.3396-14.726-2.6458-3.9688 0.69379 10.758 11.084-10.255 2.1141-4.2757-8.9694 5.9796 14.423 4.4709 4.76-0.30699-9.6632-4.7779 3.3396 14.726 2.6458 3.9688-0.69378-10.757-11.083 10.255-2.1141 4.2757z" style="paint-order:normal"/>
+   <path id="path1278-4" d="m248.71 115.76a6.6146 6.6146 0 0 0-6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146-6.6146 6.6146 6.6146 0 0 0-6.6146-6.6146zm0 1.3229a5.2917 5.2917 0 0 1 5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917-5.2917 5.2917 5.2917 0 0 1 5.2917-5.2917z" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN3_SPEED"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+   />
+   <path id="path1285-4" d="m251.35 126.34c8.9694-5.9796-14.423-4.4709-4.76 0.30698 9.6632 4.7779-3.3396-14.726-2.6458-3.9688 0.69379 10.758 11.084-10.255 2.1141-4.2757-8.9694 5.9796 14.423 4.4709 4.76-0.30699-9.6632-4.7779 3.3396 14.726 2.6458 3.9688-0.69378-10.757-11.083 10.255-2.1141 4.2757z" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN3_SPEED"
+	data-rtmt-rotate-01="$eng GTE 20.0 := 3000 248.75 122.4" 
+	data-rtmt-rotate-02=":= none" 
+   />
   </g>
   <g id="fan4-icon" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".187">
-   <path id="path1278-48" d="m265.91 115.76a6.6146 6.6146 0 0 0-6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146-6.6146 6.6146 6.6146 0 0 0-6.6146-6.6146zm0 1.3229a5.2917 5.2917 0 0 1 5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917-5.2917 5.2917 5.2917 0 0 1 5.2917-5.2917z" style="paint-order:normal"/>
-   <path id="path1285-83" d="m268.55 126.34c8.9694-5.9796-14.423-4.4709-4.76 0.30698 9.6632 4.7779-3.3396-14.726-2.6458-3.9688 0.69378 10.758 11.083-10.255 2.1141-4.2757-8.9694 5.9796 14.423 4.4709 4.76-0.30699-9.6632-4.7779 3.3396 14.726 2.6458 3.9688-0.69378-10.757-11.083 10.255-2.1141 4.2757z" style="paint-order:normal"/>
+   <path id="path1278-48" d="m265.91 115.76a6.6146 6.6146 0 0 0-6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146-6.6146 6.6146 6.6146 0 0 0-6.6146-6.6146zm0 1.3229a5.2917 5.2917 0 0 1 5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917-5.2917 5.2917 5.2917 0 0 1 5.2917-5.2917z" style="paint-order:normal"
+   data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN4_SPEED"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+   />
+   <path id="path1285-83" d="m268.55 126.34c8.9694-5.9796-14.423-4.4709-4.76 0.30698 9.6632 4.7779-3.3396-14.726-2.6458-3.9688 0.69378 10.758 11.083-10.255 2.1141-4.2757-8.9694 5.9796 14.423 4.4709 4.76-0.30699-9.6632-4.7779 3.3396 14.726 2.6458 3.9688-0.69378-10.757-11.083 10.255-2.1141 4.2757z" style="paint-order:normal"
+   data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN4_SPEED"
+	data-rtmt-rotate-01="$eng GTE 20.0 := 3000 265.95 122.4" 
+	data-rtmt-rotate-02=":= none" 
+   />
   </g>
   <rect id="splitter-output1" x="187.85" y="138.25" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
     data-rtmt-binding-id="STATION.SPLITTER.SPT_OUTPUT1"
@@ -319,12 +375,28 @@
 	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
 	data-rtmt-fill-color-02=":= #C9C9C9"
   />
-  <rect id="vent-grid-input" x="201.08" y="119.73" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
+  <rect id="vent-grid-input" x="201.08" y="119.73" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.VENTILATION.VNT_INPUT"
+	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-02=":= #C9C9C9"
+  />
   <path id="path1366" d="m190.5 140.9h5.2917v-18.521h5.2917" fill="none" stroke="#000000" stroke-width=".26458px"/>
-  <text id="fan1-text" x="208.64285" y="114.43751" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368" x="208.64285" y="114.43751" stroke-width=".26458">####</tspan></text>
-  <text id="fan2-text" x="225.55728" y="114.34302" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368-9" x="225.55728" y="114.34302" stroke-width=".26458">####</tspan></text>
-  <text id="fan3-text" x="242.8497" y="114.34303" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368-5" x="242.8497" y="114.34303" stroke-width=".26458">####</tspan></text>
-  <text id="fan4-text" x="260.04761" y="114.532" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368-1" x="260.04761" y="114.532" stroke-width=".26458">####</tspan></text>
+  <text id="fan1-text" x="208.64285" y="114.43751" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368" x="208.64285" y="114.43751" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN1_SPEED"
+    data-rtmt-text-00=":= $eng"
+  >####</tspan></text>
+  <text id="fan2-text" x="225.55728" y="114.34302" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368-9" x="225.55728" y="114.34302" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN2_SPEED"
+    data-rtmt-text-00=":= $eng"
+  >####</tspan></text>
+  <text id="fan3-text" x="242.8497" y="114.34303" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368-5" x="242.8497" y="114.34303" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN3_SPEED"
+    data-rtmt-text-00=":= $eng"
+  >####</tspan></text>
+  <text id="fan4-text" x="260.04761" y="114.532" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368-1" x="260.04761" y="114.532" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN4_SPEED"
+    data-rtmt-text-00=":= $eng"
+  >####</tspan></text>
   <path id="input2-output" d="m127 180.58h10.583v-29.104h10.583" fill="none" stroke="#000000" stroke-width=".26458px"
     data-rtmt-binding-id="STATION.MATRIX.MTX_WIRING"
 	data-rtmt-visibility-00="$raw EQ 2 := visible"
@@ -340,52 +412,228 @@
   <text id="text1412-67" x="247.47992" y="132.95834" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1410-7" x="247.47992" y="132.95834" stroke-width=".26458">3</tspan></text>
   <text id="text1412-5" x="264.67783" y="132.76933" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1410-3" x="264.67783" y="132.76933" stroke-width=".26458">4</tspan></text>
   <rect id="rect10-8-9" x="203.73" y="138.58" width="72.76" height="38.038" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".60269" style="paint-order:normal"/>
-  <rect id="thermal-input" x="201.08" y="148.83" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
+  <rect id="thermal-input" x="201.08" y="148.83" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.THERMAL.THM_INPUT"
+	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-02=":= #C9C9C9"
+  />
   <path id="path1478" d="m190.5 151.48 10.583-2e-5" fill="none" stroke="#000000" stroke-width=".26458px"/>
   <text id="text14-6-8" x="214.40121" y="145.42833" fill="#000000" font-family="sans-serif" font-size="10.583px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan12-0-9" x="214.40121" y="145.42833" font-family="sans-serif" font-size="4.2333px" font-weight="bold" stroke-width=".26458">Thermal Units</tspan></text>
-  <circle id="thermal-led" cx="209.08" cy="143.72" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"/>
+  <circle id="thermal-led" cx="209.08" cy="143.72" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.THERMAL.THM_STATUS"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-05="$eng EQ OFF := #00FFFF" 
+	data-rtmt-fill-color-06="$eng EQ UNKNOWN := #C9C9C9" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
   <text id="text22-0-8" x="206.2299" y="151.45149" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan20-4-1" x="206.2299" y="151.45149" stroke-width=".26458">Global Status</tspan></text>
-  <rect id="thermal-status-box" x="252.68" y="147.51" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <text id="thermal-status-text" x="254.00002" y="151.47917" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885-1-9" x="254.00002" y="151.47917" stroke-width=".26458">######</tspan></text>
+  <rect id="thermal-status-box" x="252.68" y="147.51" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.THERMAL.THM_GSTATUS"
+	data-rtmt-fill-color-00="$eng EQ OFF := #FF0000" 
+	data-rtmt-fill-color-01="$eng EQ NOMINAL := #00FF00" 
+	data-rtmt-fill-color-02="$eng EQ DEGRADED := #00FFFF" 
+	data-rtmt-fill-color-03=":= #00FFFF"
+  />
+  <text id="thermal-status-text" x="254.00002" y="151.47917" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885-1-9" x="254.00002" y="151.47917" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.THERMAL.THM_GSTATUS"
+	data-rtmt-text-00=":= $eng" 
+  >######</tspan></text>
   <rect id="rect1528" x="206.38" y="155.45" width="33.073" height="18.521" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".18066" style="paint-order:normal"/>
   <rect id="rect1528-6" x="240.77" y="155.45" width="33.073" height="18.521" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".18066" style="paint-order:normal"/>
   <text id="text1547" x="207.69791" y="159.41667" fill="#000000" font-family="sans-serif" font-size="2.8222px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1545" x="207.69791" y="159.41667" stroke-width=".26458">Unit A Status</tspan></text>
   <text id="text1551" x="207.69791" y="163.38542" fill="#000000" font-family="sans-serif" font-size="2.8222px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1549" x="207.69791" y="163.38542" stroke-width=".26458">Temperature</tspan></text>
   <text id="text1555" x="207.69791" y="167.35417" fill="#000000" font-family="sans-serif" font-size="2.8222px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1553" x="207.69791" y="167.35417" stroke-width=".26458">Override</tspan></text>
   <text id="text1559" x="207.69791" y="171.32292" fill="#000000" font-family="sans-serif" font-size="2.8222px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1557" x="207.69791" y="171.32292" stroke-width=".26458">Protection</tspan></text>
-  <rect id="thermal-a-status-box" x="228.86" y="157.3" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"/>
-  <rect id="thermal-a-temp-box" x="228.86" y="161.27" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"/>
-  <rect id="thermal-a-over-box" x="228.86" y="165.24" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"/>
-  <rect id="thermal-a-prot-box" x="228.86" y="169.21" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"/>
-  <text id="thermal-a-status-text" x="229.12917" y="159.41667" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590" x="229.12917" y="159.41667" stroke-width=".26458">#####</tspan></text>
-  <text id="thermal-a-temp-text" x="229.11499" y="163.41849" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-9" x="229.11499" y="163.41849" stroke-width=".26458">#####</tspan></text>
-  <text id="thermal-a-over-text" x="229.11499" y="167.36835" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-94" x="229.11499" y="167.36835" stroke-width=".26458">#####</tspan></text>
-  <text id="thermal-a-prot-text" x="229.02994" y="171.30402" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-5" x="229.02994" y="171.30402" stroke-width=".26458">#####</tspan></text>
+  <rect id="thermal-a-status-box" x="228.86" y="157.3" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.THERMAL.THM_A_STATUS"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <rect id="thermal-a-temp-box" x="228.86" y="161.27" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"
+      data-rtmt-binding-id="STATION.THERMAL.THM_A_TEMP"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <rect id="thermal-a-over-box" x="228.86" y="165.24" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"
+      data-rtmt-binding-id="STATION.THERMAL.THM_A_OVERRIDE"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <rect id="thermal-a-prot-box" x="228.86" y="169.21" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"
+      data-rtmt-binding-id="STATION.THERMAL.THM_A_PROTECTION"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <text id="thermal-a-status-text" x="229.12917" y="159.41667" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590" x="229.12917" y="159.41667" stroke-width=".26458"
+  data-rtmt-binding-id="STATION.THERMAL.THM_A_STATUS"
+  data-rtmt-text-00=":= $eng"
+  >#####</tspan></text>
+  <text id="thermal-a-temp-text" x="229.11499" y="163.41849" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-9" x="229.11499" y="163.41849" stroke-width=".26458"
+  data-rtmt-binding-id="STATION.THERMAL.THM_A_TEMP"
+  data-rtmt-text-00=":= $eng"
+  >#####</tspan></text>
+  <text id="thermal-a-over-text" x="229.11499" y="167.36835" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-94" x="229.11499" y="167.36835" stroke-width=".26458"
+  data-rtmt-binding-id="STATION.THERMAL.THM_A_OVERRIDE"
+  data-rtmt-text-00=":= $eng"
+  >#####</tspan></text>
+  <text id="thermal-a-prot-text" x="229.02994" y="171.30402" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-5" x="229.02994" y="171.30402" stroke-width=".26458"
+  data-rtmt-binding-id="STATION.THERMAL.THM_A_PROTECTION"
+  data-rtmt-text-00=":= $eng"
+  >#####</tspan></text>
   <text id="text1547-3" x="242.09375" y="159.42613" fill="#000000" font-family="sans-serif" font-size="2.8222px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1545-8" x="242.09375" y="159.42613" stroke-width=".26458">Unit B Status</tspan></text>
   <text id="text1551-5" x="242.09375" y="163.39488" fill="#000000" font-family="sans-serif" font-size="2.8222px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1549-8" x="242.09375" y="163.39488" stroke-width=".26458">Temperature</tspan></text>
   <text id="text1555-6" x="242.09375" y="167.36363" fill="#000000" font-family="sans-serif" font-size="2.8222px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1553-5" x="242.09375" y="167.36363" stroke-width=".26458">Override</tspan></text>
   <text id="text1559-9" x="242.09375" y="171.33238" fill="#000000" font-family="sans-serif" font-size="2.8222px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1557-8" x="242.09375" y="171.33238" stroke-width=".26458">Protection</tspan></text>
-  <rect id="thermal-b-status-box" x="263.26" y="157.31" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"/>
-  <rect id="thermal-b-temp-box" x="263.26" y="161.28" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"/>
-  <rect id="thermal-b-over-box" x="263.26" y="165.25" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"/>
-  <rect id="thermal-b-prot-box" x="263.26" y="169.22" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"/>
-  <text id="thermal-b-status-text" x="263.52502" y="159.42613" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-3" x="263.52502" y="159.42613" stroke-width=".26458">#####</tspan></text>
-  <text id="thermal-b-temp-text" x="263.51083" y="163.42795" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-9-8" x="263.51083" y="163.42795" stroke-width=".26458">#####</tspan></text>
-  <text id="thermal-b-over-text" x="263.51083" y="167.37781" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-94-7" x="263.51083" y="167.37781" stroke-width=".26458">#####</tspan></text>
-  <text id="thermal-b-prot-text" x="263.42578" y="171.31348" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-5-9" x="263.42578" y="171.31348" stroke-width=".26458">#####</tspan></text>
+  <rect id="thermal-b-status-box" x="263.26" y="157.31" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.THERMAL.THM_B_STATUS"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <rect id="thermal-b-temp-box" x="263.26" y="161.28" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.THERMAL.THM_B_TEMP"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <rect id="thermal-b-over-box" x="263.26" y="165.25" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.THERMAL.THM_B_OVERRIDE"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <rect id="thermal-b-prot-box" x="263.26" y="169.22" width="9.2604" height="2.9104" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".16014" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.THERMAL.THM_B_PROTECTION"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <text id="thermal-b-status-text" x="263.52502" y="159.42613" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-3" x="263.52502" y="159.42613" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.THERMAL.THM_B_STATUS"
+  data-rtmt-text-00=":= $eng"
+  >#####</tspan></text>
+  <text id="thermal-b-temp-text" x="263.51083" y="163.42795" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-9-8" x="263.51083" y="163.42795" stroke-width=".26458"
+    data-rtmt-binding-id="STATION.THERMAL.THM_B_TEMP"
+  data-rtmt-text-00=":= $eng"
+  >#####</tspan></text>
+  <text id="thermal-b-over-text" x="263.51083" y="167.37781" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-94-7" x="263.51083" y="167.37781" stroke-width=".26458"
+  data-rtmt-binding-id="STATION.THERMAL.THM_B_OVERRIDE"
+  data-rtmt-text-00=":= $eng"
+  >#####</tspan></text>
+  <text id="thermal-b-prot-text" x="263.42578" y="171.31348" fill="#000000" font-family="sans-serif" font-size="2.1167px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1590-5-9" x="263.42578" y="171.31348" stroke-width=".26458"
+  data-rtmt-binding-id="STATION.THERMAL.THM_B_PROTECTION"
+  data-rtmt-text-00=":= $eng"
+  >#####</tspan></text>
   <rect id="rect10-8-9-2" x="164.04" y="183.23" width="112.45" height="37.965" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".74854" style="paint-order:normal"/>
-  <rect id="turbine-input" transform="rotate(90)" x="180.58" y="-198.44" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
+  <rect id="turbine-input" transform="rotate(90)" x="180.58" y="-198.44" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.TURBINE.TRB_INPUT"
+	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-02=":= #C9C9C9"
+  />
   <path id="path1739" d="m190.5 162.06h5.2917v18.521" fill="none" stroke="#000000" stroke-width=".2475px"/>
   <text id="text14-6-8-1" x="174.95209" y="190.4758" fill="#000000" font-family="sans-serif" font-size="10.583px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan12-0-9-2" x="174.95209" y="190.4758" font-family="sans-serif" font-size="4.2333px" font-weight="bold" stroke-width=".26458">Mechanical Turbine</tspan></text>
-  <circle id="turbine-led" cx="169.63" cy="188.76" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"/>
-  <rect id="turbine-output-box" x="251.35" y="199.1" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <text id="turbine-output-text" x="252.67708" y="203.07289" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885-1-6-0" x="252.67708" y="203.07289" stroke-width=".26458">######</tspan></text>
-  <rect id="rect1783" x="183.89" y="197.78" width="66.146" height="7.9375" fill="#000000" stroke="#000000" stroke-linejoin="round" stroke-width=".202" style="paint-order:normal"/>
-  <rect id="turbine-output-bar" x="185.21" y="199.1" width="63.5" height="5.2917" fill="#ffffff" stroke="#000000" stroke-linejoin="round" stroke-width=".202" style="paint-order:normal"/>
-  <rect id="turbine-rpm-box" x="251.35" y="211.01" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <text id="turbine-rpm-text" x="252.67708" y="214.97917" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885-1-6-0-9" x="252.67708" y="214.97917" stroke-width=".26458">######</tspan></text>
-  <rect id="rect1783-5" x="183.89" y="209.69" width="66.146" height="7.9375" fill="#000000" stroke="#000000" stroke-linejoin="round" stroke-width=".202" style="paint-order:normal"/>
-  <rect id="turbine-rpm-bar" x="185.21" y="211.01" width="63.5" height="5.2917" fill="#ffffff" stroke="#000000" stroke-linejoin="round" stroke-width=".202" style="paint-order:normal"/>
+  <circle id="turbine-led" cx="169.63" cy="188.76" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.TURBINE.TRB_STATUS"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-05="$eng EQ OFF := #00FFFF" 
+	data-rtmt-fill-color-06="$eng EQ UNKNOWN := #C9C9C9" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <rect id="turbine-output-box" x="251.35" y="199.1" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+      data-rtmt-binding-id="STATION.TURBINE.TRB_OUTPUT"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <text id="turbine-output-text" x="252.67708" y="203.07289" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885-1-6-0" x="252.67708" y="203.07289" stroke-width=".26458"
+  data-rtmt-binding-id="STATION.TURBINE.TRB_OUTPUT"
+  data-rtmt-text-00=":= $eng"
+  >######</tspan></text>
+  <rect id="rect1783" x="183.89" y="197.78" width="66.146" height="7.9375" fill="#ffffff" stroke="#000000" stroke-linejoin="round" stroke-width=".502" style="paint-order:normal"/>
+  <rect id="turbine-output-bar" x="185.21" y="199.1" width="63.5" height="5.2917" fill="#ffffff" stroke="#000000" stroke-linejoin="round" stroke-width=".202" style="paint-order:normal"
+      data-rtmt-binding-id="STATION.TURBINE.TRB_OUTPUT"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+	data-rtmt-width-00="$eng GTE 150.0 := 63.5"
+	data-rtmt-width-01="$eng GTE 120.0 := 53"
+	data-rtmt-width-02="$eng GTE 90.0 := 43"
+	data-rtmt-width-03="$eng GTE 60.0 := 33"
+	data-rtmt-width-04="$eng GTE 30.0 := 23"
+	data-rtmt-width-05="$eng GTE 15.0 := 13"
+	data-rtmt-width-06=":= 6"
+  />
+  <rect id="turbine-rpm-box" x="251.35" y="211.01" width="21.167" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.TURBINE.TRB_RPM"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+  />
+  <text id="turbine-rpm-text" x="252.67708" y="214.97917" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan885-1-6-0-9" x="252.67708" y="214.97917" stroke-width=".26458"
+  data-rtmt-binding-id="STATION.TURBINE.TRB_RPM"
+  data-rtmt-text-00=":= $eng"
+  >######</tspan></text>
+  <rect id="rect1783-5" x="183.89" y="209.69" width="66.146" height="7.9375" fill="#ffffff" stroke="#000000" stroke-linejoin="round" stroke-width=".502" style="paint-order:normal"/>
+  <rect id="turbine-rpm-bar" x="185.21" y="211.01" width="63.5" height="5.2917" fill="#ffffff" stroke="#000000" stroke-linejoin="round" stroke-width=".202" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.TURBINE.TRB_RPM"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-07=":= #00FF00"
+	data-rtmt-width-00="$eng GTE 250.0 := 63.5"
+	data-rtmt-width-01="$eng GTE 200.0 := 53"
+	data-rtmt-width-02="$eng GTE 150.0 := 43"
+	data-rtmt-width-03="$eng GTE 100.0 := 33"
+	data-rtmt-width-04="$eng GTE 50.0 := 23"
+	data-rtmt-width-05=":= 10"
+  />
   <text id="text22-0-8-3" x="166.67401" y="202.75381" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan20-4-1-8" x="166.67401" y="202.75381" stroke-width=".26458">Output</tspan></text>
   <text id="text22-0-8-3-4" x="166.52695" y="214.74065" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan20-4-1-8-6" x="166.52695" y="214.74065" stroke-width=".26458">RPM</tspan></text>
   <path id="path1279" d="m183.09 132.43v5.5562" fill="none" stroke="#000000" stroke-width=".26458px"/>

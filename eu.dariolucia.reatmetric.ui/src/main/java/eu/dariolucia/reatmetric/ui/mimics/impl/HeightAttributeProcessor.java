@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.ui.mimics;
+package eu.dariolucia.reatmetric.ui.mimics.impl;
 
-public enum SvgAttributeType {
-    FILL,
-    STROKE,
-    STROKE_WIDTH,
-    VISIBILITY,
-    TEXT,
-    TRANSFORM,
-    BLINK,
-    ROTATE,
-    WIDTH,
-    HEIGHT
+import org.w3c.dom.Element;
+
+public class HeightAttributeProcessor extends AttributeSetterProcessor {
+
+    public HeightAttributeProcessor(Element element, String name, String value) {
+        super(element, name, value);
+    }
+
+    @Override
+    protected String getAttributeToChange() {
+        return "height";
+    }
+
 }

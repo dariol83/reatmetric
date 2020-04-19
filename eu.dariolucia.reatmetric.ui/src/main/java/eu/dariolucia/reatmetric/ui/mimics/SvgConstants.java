@@ -33,6 +33,10 @@ public class SvgConstants {
     public static final String TEXT_PREFIX = "data-rtmt-text";
     public static final String TRANSFORM_PREFIX = "data-rtmt-transform";
     public static final String BLINK_PREFIX = "data-rtmt-blink";
+    public static final String ROTATE_PREFIX = "data-rtmt-rotate";
+    public static final String WIDTH_PREFIX = "data-rtmt-width";
+    public static final String HEIGHT_PREFIX = "data-rtmt-height";
 
     public static final String NO_BLINK = "none";
+    public static final String NO_ROTATE = "none";
 }

@@ -77,7 +77,7 @@ public class Splitter extends StationEquipment {
     @Override
     protected void computeNewState() {
         if(status) {
-            power = 1500 + 30 * (Math.random() - 0.5);
+            power = 1500 + 500 * (Math.random() - 0.5);
         } else {
             power = 0.0;
         }
