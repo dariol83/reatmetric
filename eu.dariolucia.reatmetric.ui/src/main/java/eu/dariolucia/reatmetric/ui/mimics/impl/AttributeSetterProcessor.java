@@ -22,10 +22,16 @@ import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 
+import java.util.Objects;
+
 import static eu.dariolucia.reatmetric.ui.mimics.SvgConstants.*;
 import static eu.dariolucia.reatmetric.ui.mimics.SvgConstants.BLINK_PREFIX;
 
 abstract public class AttributeSetterProcessor extends SvgAttributeProcessor {
+
+    private static final Runnable NO_OP = () -> {};
+
+    protected volatile String lastValueSet = "@@@@@@@@@INITIAL STRING@@@@@@@@@";
 
     public AttributeSetterProcessor(Element element, String name, String value) {
         super(element, name, value);
@@ -34,8 +40,13 @@ abstract public class AttributeSetterProcessor extends SvgAttributeProcessor {
     @Override
     public Runnable buildUpdate(ParameterData parameterData) {
         String valueToApply = expression.apply(parameterData);
-        // If value is null, then the attribute is removed
-        return new AttributeValueApplier(element, getAttributeToChange(), valueToApply);
+        if(Objects.equals(lastValueSet, valueToApply)) {
+            return NO_OP;
+        } else {
+            lastValueSet = valueToApply;
+            // If value is null, then the attribute is removed
+            return new AttributeValueApplier(element, getAttributeToChange(), valueToApply);
+        }
     }
 
     protected abstract String getAttributeToChange();

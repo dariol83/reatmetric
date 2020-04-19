@@ -195,8 +195,8 @@
 		<!-- Power Matrix -->
 		<parameter id="#400" location="STATION.MATRIX.MTX_STATUS" description="Matrix Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
-                <point x="0" y="INACTIVE" />
-                <point x="1" y="ACTIVE" />
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
             </calib_enum>
 			<checks>
                 <expected name="EXPCHK1" type="CHARACTER_STRING">
@@ -311,7 +311,7 @@
                 </expected>
             </checks>
 		</parameter>
-		<parameter id="#605" location="STATION.SPLITTER.STP_POWER" description="Splitter Power Consuption" raw_type="REAL" eng_type="REAL" eng_unit="W" >
+		<parameter id="#605" location="STATION.SPLITTER.SPT_POWER" description="Splitter Power Consuption" raw_type="REAL" eng_type="REAL" eng_unit="W" >
 			<validity>
 				<match parameter="#600" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
 			</validity>

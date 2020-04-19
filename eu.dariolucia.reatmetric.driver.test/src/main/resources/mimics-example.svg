@@ -198,8 +198,22 @@
     data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_PROTECTION"
     data-rtmt-text-00=":= $eng"  
   >######</tspan></text>
-  <rect id="matrix-box" x="127" y="114.44" width="21.167" height="74.083" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".602" style="paint-order:normal"/>
-  <rect id="matrix-input1" x="124.35" y="119.73" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
+  <rect id="matrix-box" x="127" y="114.44" width="21.167" height="74.083" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".602" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.MATRIX.MTX_STATUS"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-05="$eng EQ OFF := #00FFFF" 
+	data-rtmt-fill-color-06="$eng EQ UNKNOWN := #C9C9C9" 
+	data-rtmt-fill-color-07=":= #00FF00" 
+  />
+  <rect id="matrix-input1" x="124.35" y="119.73" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.MATRIX.MTX_INPUT1"
+	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-02=":= #C9C9C9"
+  />
   <rect id="pw-spl-output" x="82.021" y="119.73" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
     data-rtmt-binding-id="STATION.POWERSUPPLY.PS_OUTPUT"
 	data-rtmt-fill-color-04="$eng EQ ON := #00FF00" 
@@ -239,11 +253,33 @@
   />
   <path id="gen-diesel1-to-switch" d="m84.667 164.71h26.458v10.583" fill="none" stroke="#000000" stroke-width=".26458px"/>
   <path id="gen-diesel2-to-switch" d="m84.667 208.36h26.458v-22.49" fill="none" stroke="#000000" stroke-width=".26458px"/>
-  <rect id="matrix-input2" x="124.35" y="177.94" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
+  <rect id="matrix-input2" x="124.35" y="177.94" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.MATRIX.MTX_INPUT2"
+	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-02=":= #C9C9C9"
+  />
   <path id="switch-to-matrix" d="m116.42 180.58h7.9375" fill="none" stroke="#000000" stroke-width=".26458px"/>
-  <rect id="matrix-output" x="148.17" y="148.83" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="splitter-box" x="178.59" y="138.25" width="9.2604" height="26.458" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".602" style="paint-order:normal"/>
-  <rect id="splitter-input" x="175.95" y="148.83" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
+  <rect id="matrix-output" x="148.17" y="148.83" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.MATRIX.MTX_OUTPUT"
+	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-02=":= #C9C9C9"
+  />
+  <rect id="splitter-box" x="178.59" y="138.25" width="9.2604" height="26.458" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".602" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.SPLITTER.SPT_STATUS"
+	data-rtmt-fill-color-00="$validity EQ INVALID := #C9C9C9"
+	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
+	data-rtmt-fill-color-02="$alarm EQ ERROR := #FF0000" 
+	data-rtmt-fill-color-03="$alarm EQ WARNING := #FFD700" 
+	data-rtmt-fill-color-04="$alarm EQ VIOLATED := #FFE4B5" 
+	data-rtmt-fill-color-05="$eng EQ OFF := #00FFFF" 
+	data-rtmt-fill-color-06="$eng EQ UNKNOWN := #C9C9C9" 
+	data-rtmt-fill-color-07=":= #00FF00" 
+  />
+  <rect id="splitter-input" x="175.95" y="148.83" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.SPLITTER.SPT_INPUT"
+	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-02=":= #C9C9C9"
+  />
   <g id="splitter-internal" fill="none" stroke="#000000" stroke-width=".26458px">
    <path id="path1224" d="m187.85 140.9h-5.2917v10.583h-3.9688 9.2604"/>
    <path id="path1226" d="m178.59 151.48h3.9688v10.583h5.2917"/>
@@ -268,17 +304,37 @@
    <path id="path1278-48" d="m265.91 115.76a6.6146 6.6146 0 0 0-6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146 6.6146 6.6146 6.6146 0 0 0 6.6146-6.6146 6.6146 6.6146 0 0 0-6.6146-6.6146zm0 1.3229a5.2917 5.2917 0 0 1 5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917 5.2917 5.2917 5.2917 0 0 1-5.2917-5.2917 5.2917 5.2917 0 0 1 5.2917-5.2917z" style="paint-order:normal"/>
    <path id="path1285-83" d="m268.55 126.34c8.9694-5.9796-14.423-4.4709-4.76 0.30698 9.6632 4.7779-3.3396-14.726-2.6458-3.9688 0.69378 10.758 11.083-10.255 2.1141-4.2757-8.9694 5.9796 14.423 4.4709 4.76-0.30699-9.6632-4.7779 3.3396 14.726 2.6458 3.9688-0.69378-10.757-11.083 10.255-2.1141 4.2757z" style="paint-order:normal"/>
   </g>
-  <rect id="splitter-output1" x="187.85" y="138.25" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="splitter-output2" x="187.85" y="148.83" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
-  <rect id="splitter-output3" x="187.85" y="159.42" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
+  <rect id="splitter-output1" x="187.85" y="138.25" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.SPLITTER.SPT_OUTPUT1"
+	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-02=":= #C9C9C9"
+  />
+  <rect id="splitter-output2" x="187.85" y="148.83" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.SPLITTER.SPT_OUTPUT2"
+	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-02=":= #C9C9C9"
+  />
+  <rect id="splitter-output3" x="187.85" y="159.42" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.SPLITTER.SPT_OUTPUT3"
+	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-02=":= #C9C9C9"
+  />
   <rect id="vent-grid-input" x="201.08" y="119.73" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
   <path id="path1366" d="m190.5 140.9h5.2917v-18.521h5.2917" fill="none" stroke="#000000" stroke-width=".26458px"/>
   <text id="fan1-text" x="208.64285" y="114.43751" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368" x="208.64285" y="114.43751" stroke-width=".26458">####</tspan></text>
   <text id="fan2-text" x="225.55728" y="114.34302" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368-9" x="225.55728" y="114.34302" stroke-width=".26458">####</tspan></text>
   <text id="fan3-text" x="242.8497" y="114.34303" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368-5" x="242.8497" y="114.34303" stroke-width=".26458">####</tspan></text>
   <text id="fan4-text" x="260.04761" y="114.532" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368-1" x="260.04761" y="114.532" stroke-width=".26458">####</tspan></text>
-  <path id="input2-output" d="m127 180.58h10.583v-29.104h10.583" fill="none" stroke="#000000" stroke-width=".26458px"/>
-  <path id="input1-output" d="m127 122.38h10.583v29.104h10.583" fill="none" stroke="#000000" stroke-width=".26458px"/>
+  <path id="input2-output" d="m127 180.58h10.583v-29.104h10.583" fill="none" stroke="#000000" stroke-width=".26458px"
+    data-rtmt-binding-id="STATION.MATRIX.MTX_WIRING"
+	data-rtmt-visibility-00="$raw EQ 2 := visible"
+	data-rtmt-visibility-01=":= hidden"
+  />
+  <path id="input1-output" d="m127 122.38h10.583v29.104h10.583" fill="none" stroke="#000000" stroke-width=".26458px"
+	data-rtmt-binding-id="STATION.MATRIX.MTX_WIRING"
+	data-rtmt-visibility-00="$raw EQ 1 := visible"
+	data-rtmt-visibility-01=":= hidden"
+  />
   <text id="text1412" x="213.17857" y="132.67485" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1410" x="213.17857" y="132.67485" stroke-width=".26458">1</tspan></text>
   <text id="text1412-6" x="230.3765" y="133.05283" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1410-6" x="230.3765" y="133.05283" stroke-width=".26458">2</tspan></text>
   <text id="text1412-67" x="247.47992" y="132.95834" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1410-7" x="247.47992" y="132.95834" stroke-width=".26458">3</tspan></text>
@@ -334,10 +390,20 @@
   <text id="text22-0-8-3-4" x="166.52695" y="214.74065" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan20-4-1-8-6" x="166.52695" y="214.74065" stroke-width=".26458">RPM</tspan></text>
   <path id="path1279" d="m183.09 132.43v5.5562" fill="none" stroke="#000000" stroke-width=".26458px"/>
   <g id="wattometer" fill="none" stroke="#000000" stroke-linejoin="round">
-   <path id="path1276" d="m173.7 126.34a10.844 12.171 0 0 1 9.3911-6.0854 10.844 12.171 0 0 1 9.3911 6.0854l-9.3911 6.0854z" stroke-width=".23389" style="paint-order:normal"/>
-   <path id="path1276-9" d="m177.01 128.46a7.0268 7.9375 0 0 1 6.0854-3.9688 7.0268 7.9375 0 0 1 6.0854 3.9688l-6.0854 3.9688z" stroke-width=".15205" style="paint-order:normal"/>
-   <circle id="path1302" cx="183.09" cy="130.84" r=".66146" stroke-width=".202" style="paint-order:normal"/>
+   <path id="path1276" d="m173.7 126.34a10.844 12.171 0 0 1 9.3911-6.0854 10.844 12.171 0 0 1 9.3911 6.0854l-9.3911 6.0854z" stroke-width=".23389" style="paint-order:normal"
+    data-rtmt-binding-id="STATION.SPLITTER.SPT_S_POWERPERCENT"
+    data-rtmt-fill-color-00="$alarm EQ ALARM := #FF0000"
+    data-rtmt-fill-color-01="$alarm EQ ERROR := #FF0000" 
+    data-rtmt-fill-color-02="$alarm EQ WARNING := #FFD700" 
+    data-rtmt-fill-color-03="$alarm EQ VIOLATED := #FFE4B5" 
+    data-rtmt-fill-color-04=":= #00FF00"
+   />
+   <path id="path1276-9" d="m177.01 128.46a7.0268 7.9375 0 0 1 6.0854-3.9688 7.0268 7.9375 0 0 1 6.0854 3.9688l-6.0854 3.9688z" fill="white" stroke-width=".15205" style="paint-order:normal"/>
+   <circle id="path1302" cx="183.09" cy="130.84" r=".66146" stroke-width=".202" style="paint-order:normal" fill="white" />
   </g>
-  <path id="watt-indicator" d="m183.09 130.84-7.9375-4.4979" fill="none" marker-end="url(#marker1598)" marker-start="url(#DotS)" stroke="#000000" stroke-linecap="round" stroke-width=".265"/>
+  <path id="watt-indicator" d="m183.09 130.84-7.9375-4.4979" fill="none" marker-end="url(#marker1598)" marker-start="url(#DotS)" stroke="#000000" stroke-linecap="round" stroke-width=".265"
+   data-rtmt-binding-id="STATION.SPLITTER.SPT_S_POWERPERCENT"
+   data-rtmt-transform-00=":= rotate($eng 183.09 130.84)"
+  />
  </g>
 </svg>
