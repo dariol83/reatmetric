@@ -20,7 +20,6 @@ package eu.dariolucia.reatmetric.api.activity;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -29,8 +28,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- *
- * @author dario
+ * This class allows to filter/subscribe/retrieve activity occurrences.
  */
 public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<ActivityOccurrenceData> implements Serializable {
 
@@ -51,6 +49,16 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
 
     private final Set<Integer> externalIdList;
 
+    /**
+     * The constructor of the activity occurrence filter.
+     *
+     * @param parentPath the parent path to select. It can be null: if so, all paths are selected.
+     * @param routeList the list of routes to select. It can be null: if so, all routes are selected.
+     * @param typeList the list of types to select. It can be null: if so, all types are selected.
+     * @param stateList the list of activity occurrence states to select. It can be null: if so, all states are selected.
+     * @param sourceList the list of sources to select. It can be null: if so, all sources are selected.
+     * @param externalIdList the list of activity IDs to select. It can be null: if so, all activities are selected.
+     */
     public ActivityOccurrenceDataFilter(SystemEntityPath parentPath, List<String> routeList, List<String> typeList, List<ActivityOccurrenceState> stateList, List<String> sourceList, List<Integer> externalIdList) {
         this.parentPath = parentPath;
         if(routeList != null) {
@@ -80,35 +88,94 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
         }
     }
 
+    /**
+     * The parent path to select: an activity occurrence is selected if its path is a descendant of the parent path
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified parent path
+     */
     public SystemEntityPath getParentPath() {
         return parentPath;
     }
 
+    /**
+     * The set of activity occurrence states to select: an activity occurrence is selected if its state is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified states
+     */
     public Set<ActivityOccurrenceState> getStateList() {
         return stateList;
     }
 
+    /**
+     * The set of routes to select: an activity occurrence is selected if its route is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified routes
+     */
     public Set<String> getRouteList() {
         return routeList;
     }
-    
+
+    /**
+     * The set of types to select: an activity occurrence is selected if its type is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified routes
+     */
     public Set<String> getTypeList() {
         return typeList;
     }
 
+    /**
+     * The set of sources to select: an activity occurrence is selected if its source is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified sources
+     */
     public Set<String> getSourceList() {
         return sourceList;
     }
 
+    /**
+     * The set of activity IDs to select: an activity occurrence is selected if its activity ID is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified activity IDs
+     */
     public Set<Integer> getExternalIdList() {
         return externalIdList;
     }
 
+    /**
+     * If the filter specifies no selection, this method returns true.
+     *
+     * @return true if no filter criterium is specified, otherwise false
+     */
     @Override
     public boolean isClear() {
         return this.parentPath == null && this.stateList == null && this.routeList == null && this.typeList == null && this.sourceList == null && this.externalIdList == null;
     }
 
+    /**
+     * Test if an activity occurrence satisfies this filter.
+     *
+     * @param item the activity occurrence to test
+     * @return true if the activity occurrence is selected by the filter, otherwise false
+     */
     @Override
     public boolean test(ActivityOccurrenceData item) {
         if(parentPath != null && !parentPath.isParentOf(item.getPath())) {
@@ -132,11 +199,22 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
         return true;
     }
 
+    /**
+     * Test if the provided system entity belongs to the path selection specified by this filter.
+     *
+     * @param entity the system entity to check
+     * @return true if no parent path is specified, or if the system entity path is contained in/contains the specified parent path
+     */
     @Override
     public boolean select(SystemEntity entity) {
         return (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
     }
 
+    /**
+     * The Java type that this filter can select, i.e. ({@link ActivityOccurrenceData}.
+     *
+     * @return ActivityOccurrenceData {@link Class} object
+     */
     @Override
     public Class<ActivityOccurrenceData> getDataItemType() {
         return ActivityOccurrenceData.class;
