@@ -21,8 +21,7 @@ import eu.dariolucia.reatmetric.api.common.IDataItemSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 
 /**
- *
- * @author dario
+ * This interface is a specialisation of the {@link IDataItemSubscriber}, for activity occurrences.
  */
 public interface IActivityOccurrenceDataSubscriber extends IDataItemSubscriber<ActivityOccurrenceData> {
     

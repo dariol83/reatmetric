@@ -16,13 +16,41 @@
 
 package eu.dariolucia.reatmetric.api.activity;
 
+/**
+ * The state of a report is an indication of the current status of the related verification stage.
+ */
 public enum ActivityReportState {
-    EXPECTED, // The algorithm expects this stage to have happened, no confirmation of the stage received yet
-    PENDING, // The algorithm is waiting for the confirmation of the stage
-    OK, // The algorithm received confirmation that the stage was OK
-    TIMEOUT, // The timeout linked to the activity phase expired
-    FAIL, // The algorithm received confirmation that the stage was failed, but the activity might still proceed
-    FATAL, // The algorithm received confirmation that the stage was failed, the activity shall be considered completed
-    ERROR, // The verification expression failed its evaluation, the activity is completed
-    UNKNOWN // The algorithm has no clue of what happened to this stage
+    /**
+     * The stage should be concluded, but no confirmation of the stage was received yet
+     */
+    EXPECTED,
+    /**
+     * The stage is reported as currently open and the system is waiting for its confirmation
+     */
+    PENDING,
+    /**
+     * The stage is reported as successfully executed
+     */
+    OK,
+    /**
+     * The timeout linked to the stage expired
+     */
+    TIMEOUT,
+    /**
+     * The stage is reported as failed, but this failure is not fatal for the execution of the activity occurrence
+     */
+    FAIL,
+    /**
+     * The stage is reported as failed, the activity occurrence shall be considered completed
+     */
+    FATAL,
+    /**
+     * This specific state is reported in relation to a verification expression, linked to the {@link ActivityOccurrenceState#VERIFICATION}
+     * when the expression cannot be evaluated
+     */
+    ERROR,
+    /**
+     * The stage state is unknown and no better prediction can be done
+     */
+    UNKNOWN
 }

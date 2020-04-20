@@ -20,8 +20,7 @@ package eu.dariolucia.reatmetric.api.activity;
 import eu.dariolucia.reatmetric.api.common.IDataItemStateProvisionService;
 
 /**
- *
- * @author dario
+ * This interface is a specialisation of the {@link IDataItemStateProvisionService}, for activity occurrences.
  */
 public interface IActivityOccurrenceDataProvisionService extends IDataItemStateProvisionService<IActivityOccurrenceDataSubscriber, ActivityOccurrenceDataFilter, ActivityOccurrenceData> {
    

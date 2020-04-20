@@ -24,6 +24,9 @@ import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * This interface is a specialisation of the {@link IDataItemArchive}, for activity occurrences.
+ */
 public interface IActivityOccurrenceDataArchive extends IDataItemArchive<ActivityOccurrenceData, ActivityOccurrenceDataFilter> {
 
 }
