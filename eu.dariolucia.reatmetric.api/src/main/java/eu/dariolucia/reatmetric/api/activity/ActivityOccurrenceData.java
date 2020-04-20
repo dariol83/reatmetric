@@ -24,7 +24,14 @@ import java.time.Instant;
 import java.util.*;
 
 /**
- * An instance of this class encapsulates the state of an activity occurrence at a given point in time.
+ * An instance of this class encapsulates the state of an activity occurrence at a given point in time. An activity
+ * occurrence is an instance of an 'activity', defined as an abstract operation in the system entity model. Once an
+ * activity is requested, an activity occurrence is instantiated and follows a defined activity lifecycle, going through
+ * the states defined in the {@link ActivityOccurrenceState}.
+ *
+ * Each activity state is split in one or more so called verification stages. For each stage, updates to the stage state
+ * are reported by means of progress reports ({@link ActivityOccurrenceReport}, which define also the transition from
+ * one {@link ActivityOccurrenceState} to the next state.
  *
  * Objects of this class are 'immutable', i.e. fields cannot be set.
  */
