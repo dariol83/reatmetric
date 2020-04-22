@@ -28,6 +28,11 @@ import java.time.Instant;
 public final class ActivityOccurrenceReport extends AbstractDataItem {
 
     /**
+     *
+     */
+    private static final long serialVersionUID = 1L;
+
+    /**
      * The name of the verification stage that indicates the creation of the activity occurrence. Used by the
      * processing model.
      */

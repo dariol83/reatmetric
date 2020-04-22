@@ -18,8 +18,7 @@ package eu.dariolucia.reatmetric.api.alarms;
 import eu.dariolucia.reatmetric.api.common.IDataItemSubscriber;
 
 /**
- *
- * @author dario
+ * This interface is a specialisation of the {@link IDataItemSubscriber}, for parameter alarms.
  */
 public interface IAlarmParameterDataSubscriber extends IDataItemSubscriber<AlarmParameterData> {
     

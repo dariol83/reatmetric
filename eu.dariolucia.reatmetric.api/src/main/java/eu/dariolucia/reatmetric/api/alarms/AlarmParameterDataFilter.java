@@ -25,15 +25,14 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- *
- * @author dario
+ * This class allows to filter/subscribe/retrieve parameter alarms.
  */
 public final class AlarmParameterDataFilter extends AbstractDataItemFilter<AlarmParameterData> implements Serializable {
 
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = -3013429180944834538L;
+	private static final long serialVersionUID = 1L;
 
 	private final SystemEntityPath parentPath;
 
@@ -43,6 +42,14 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
 
     private final Set<Integer> externalIdList;
 
+    /**
+     * The constructor of the alarm parameter filter.
+     *
+     * @param parentPath the parent path to select. It can be null: if so, all paths are selected.
+     * @param pathList the list of paths to exactly select. It can be null: if so, all paths are selected.
+     * @param alarmStateList the list of current alarm states to select. It can be null: if so, all alarm states are selected.
+     * @param externalIdList the list of activity IDs to select. It can be null: if so, all activities are selected.
+     */
     public AlarmParameterDataFilter(SystemEntityPath parentPath, Collection<SystemEntityPath> pathList, Collection<AlarmState> alarmStateList, Collection<Integer> externalIdList) {
         this.parentPath = parentPath;
         if(pathList != null) {
@@ -62,18 +69,50 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
         }
     }
 
+    /**
+     * The parent path to select: an alarm parameter is selected if its path is a descendant of the parent path
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified parent path
+     */
     public SystemEntityPath getParentPath() {
         return parentPath;
     }
 
+    /**
+     * The set of exact paths to select: an alarm parameter is selected if its (parameter) path is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified paths
+     */
     public Set<SystemEntityPath> getParameterPathList() {
         return parameterPathList;
     }
 
+    /**
+     * The set of (current) alarm states to select: an alarm parameter is selected if its (current) alarm state is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified alarm states
+     */
     public Set<AlarmState> getAlarmStateList() {
         return alarmStateList;
     }
 
+    /**
+     * The set of parameter IDs to select: an alarm parameter is selected if its parameter ID is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified parameter IDs
+     */
     public Set<Integer> getExternalIdList() {
         return externalIdList;
     }

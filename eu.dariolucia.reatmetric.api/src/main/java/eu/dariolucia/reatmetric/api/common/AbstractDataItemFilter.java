@@ -23,21 +23,45 @@ import java.io.Serializable;
 import java.util.function.Predicate;
 
 /**
+ * Abstract filter definition for {@link AbstractDataItem} derived filters.
  *
- * @author dario
+ * The filter implements the {@link Predicate} interface to allow its easy usage in stream operations.
  */
 public abstract class AbstractDataItemFilter<T extends AbstractDataItem> implements Serializable, Predicate<T> {
     
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = 8489715714812772842L;
+	private static final long serialVersionUID = 1L;
 
+	/**
+	 * If the filter specifies no selection, this method returns true.
+	 *
+	 * @return true if no filter criterium is specified, otherwise false
+	 */
 	public abstract boolean isClear();
 
+	/**
+	 * Test if the data item satisfies this filter.
+	 *
+	 * @param item the data item to test
+	 * @return true if the data item is selected by the filter, otherwise false
+	 */
 	public abstract boolean test(T item);
 
+	/**
+	 * Test if the provided system entity belongs to the path selection specified by this filter. This method is implemented
+	 * only by filters on data items managed by the processing model as {@link SystemEntity}.
+	 *
+	 * @param entity the system entity to check
+	 * @return true if no parent path is specified, or if the system entity path is contained in/contains the specified parent path
+	 */
 	public abstract boolean select(SystemEntity entity);
 
+	/**
+	 * The Java type that this filter can select, i.e. the exact class derived from {@link AbstractDataItem}.
+	 *
+	 * @return ActivityOccurrenceData {@link Class} object
+	 */
 	public abstract Class<T> getDataItemType();
 }

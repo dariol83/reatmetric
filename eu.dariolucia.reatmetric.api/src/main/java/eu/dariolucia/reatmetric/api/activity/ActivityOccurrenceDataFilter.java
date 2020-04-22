@@ -160,22 +160,11 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
         return externalIdList;
     }
 
-    /**
-     * If the filter specifies no selection, this method returns true.
-     *
-     * @return true if no filter criterium is specified, otherwise false
-     */
     @Override
     public boolean isClear() {
         return this.parentPath == null && this.stateList == null && this.routeList == null && this.typeList == null && this.sourceList == null && this.externalIdList == null;
     }
 
-    /**
-     * Test if an activity occurrence satisfies this filter.
-     *
-     * @param item the activity occurrence to test
-     * @return true if the activity occurrence is selected by the filter, otherwise false
-     */
     @Override
     public boolean test(ActivityOccurrenceData item) {
         if(parentPath != null && !parentPath.isParentOf(item.getPath())) {
@@ -199,22 +188,11 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
         return true;
     }
 
-    /**
-     * Test if the provided system entity belongs to the path selection specified by this filter.
-     *
-     * @param entity the system entity to check
-     * @return true if no parent path is specified, or if the system entity path is contained in/contains the specified parent path
-     */
     @Override
     public boolean select(SystemEntity entity) {
         return (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
     }
 
-    /**
-     * The Java type that this filter can select, i.e. ({@link ActivityOccurrenceData}.
-     *
-     * @return ActivityOccurrenceData {@link Class} object
-     */
     @Override
     public Class<ActivityOccurrenceData> getDataItemType() {
         return ActivityOccurrenceData.class;
