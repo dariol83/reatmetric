@@ -16,8 +16,6 @@
 package eu.dariolucia.reatmetric.api.common;
 
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
-import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.io.Serializable;
 import java.util.function.Predicate;

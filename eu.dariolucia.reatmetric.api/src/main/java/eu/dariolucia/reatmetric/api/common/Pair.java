@@ -19,8 +19,26 @@ package eu.dariolucia.reatmetric.api.common;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * A pair class that contains two related values in a single object.
+ *
+ * Objects of this class are immutable. Values shall be immutable: failing to have immutable objects as values
+ * may result in undefined behaviour.
+ *
+ * @param <T> type of the first value
+ * @param <K> type of the second value
+ */
 public final class Pair<T, K> implements Serializable {
 
+    /**
+     * Factory method.
+     *
+     * @param first the first value, can be null
+     * @param second the second value, can be null
+     * @param <T> the first value type
+     * @param <K> the second value type
+     * @return the Pair object
+     */
     public static <T,K> Pair<T, K> of(T first, K second) {
         return new Pair<>(first, second);
     }
@@ -33,14 +51,30 @@ public final class Pair<T, K> implements Serializable {
         this.second = second;
     }
 
+    /**
+     * Return the first value.
+     *
+     * @return the first value (can be null)
+     */
     public T getFirst() {
         return first;
     }
 
+    /**
+     * Return the second value.
+     *
+     * @return the second value (can be null)
+     */
     public K getSecond() {
         return second;
     }
 
+    /**
+     * A Pair is equal to another one if the first values are equals(...) and the second values are equals(...)
+     *
+     * @param o the Pair object, to check equality against
+     * @return true if the pairs are equals, otherwise false
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

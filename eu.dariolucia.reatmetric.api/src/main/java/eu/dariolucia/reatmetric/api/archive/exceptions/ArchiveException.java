@@ -18,6 +18,9 @@ package eu.dariolucia.reatmetric.api.archive.exceptions;
 
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+/**
+ * Exception class for usage in the archive-related operations.
+ */
 public class ArchiveException extends ReatmetricException {
 
     /**

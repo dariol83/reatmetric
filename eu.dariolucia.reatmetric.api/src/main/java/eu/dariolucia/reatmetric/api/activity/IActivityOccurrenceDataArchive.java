@@ -17,12 +17,6 @@
 package eu.dariolucia.reatmetric.api.activity;
 
 import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
-import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
-import eu.dariolucia.reatmetric.api.events.EventData;
-import eu.dariolucia.reatmetric.api.events.EventDataFilter;
-
-import java.time.Instant;
-import java.util.List;
 
 /**
  * This interface is a specialisation of the {@link IDataItemArchive}, for activity occurrences.

@@ -16,15 +16,14 @@
 package eu.dariolucia.reatmetric.api.common.exceptions;
 
 /**
- *
- * @author dario
+ * Base-class for ReatMetric-defined exceptions.
  */
 public class ReatmetricException extends Exception {
 
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = -3949315104317147362L;
+	private static final long serialVersionUID = 1L;
 
 	public ReatmetricException() {
     }

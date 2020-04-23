@@ -17,8 +17,6 @@
 package eu.dariolucia.reatmetric.api.alarms;
 
 import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
-import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 
 /**
  * This interface is a specialisation of the {@link IDataItemArchive}, for parameter alarms.

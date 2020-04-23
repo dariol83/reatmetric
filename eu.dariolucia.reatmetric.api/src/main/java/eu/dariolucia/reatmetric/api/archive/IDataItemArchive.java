@@ -31,7 +31,7 @@ import java.util.List;
  * @param <T> the {@link AbstractDataItem} that this service stores/retrieves
  * @param <K> the {@link AbstractDataItemFilter} that can be used with this service
  */
-public interface IDataItemArchive<T extends AbstractDataItem, K extends AbstractDataItemFilter> {
+public interface IDataItemArchive<T extends AbstractDataItem, K extends AbstractDataItemFilter<T>> {
 
     /**
      * Retrieve a maximum of numRecords data items, with a generation time greater/lower or equals than the provided startTime (if
