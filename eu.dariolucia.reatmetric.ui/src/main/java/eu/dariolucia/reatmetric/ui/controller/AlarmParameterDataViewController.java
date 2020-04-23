@@ -28,12 +28,8 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
-import eu.dariolucia.reatmetric.ui.utils.ReferenceProperty;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
-import javafx.beans.Observable;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableCell;
@@ -42,12 +38,10 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
-import javafx.util.Callback;
 
 import java.net.URL;
 import java.time.Instant;
 import java.util.List;
-import java.util.Objects;
 import java.util.ResourceBundle;
 
 /**
@@ -94,14 +88,13 @@ public class AlarmParameterDataViewController
 
 		this.genTimeCol.setCellFactory(new InstantCellFactory<>());
 		this.recTimeCol.setCellFactory(new InstantCellFactory<>());
-		this.currentAlarmStateCol.setCellFactory(column -> {
-			return new TableCell<AlarmParameterData, AlarmState>() {
-				@Override
-				protected void updateItem(AlarmState item, boolean empty) {
-					super.updateItem(item, empty);
-					if (item != null && !empty && !isEmpty()) {
-						setText(item.name());
-						switch (item) {
+		this.currentAlarmStateCol.setCellFactory(column -> new TableCell<>() {
+			@Override
+			protected void updateItem(AlarmState item, boolean empty) {
+				super.updateItem(item, empty);
+				if (item != null && !empty && !isEmpty()) {
+					setText(item.name());
+					switch (item) {
 						case ALARM:
 							setTextFill(Color.RED);
 							break;
@@ -122,14 +115,12 @@ public class AlarmParameterDataViewController
 						default:
 							setTextFill(Color.DARKGREEN);
 							break;
-						}
-						// setStyle("-fx-font-weight: bold");
-					} else {
-						setText("");
-						setGraphic(null);
 					}
+				} else {
+					setText("");
+					setGraphic(null);
 				}
-			};
+			}
 		});
 	}
 

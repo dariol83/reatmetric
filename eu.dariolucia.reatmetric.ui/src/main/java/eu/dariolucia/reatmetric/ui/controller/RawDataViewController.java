@@ -139,15 +139,12 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
                     switch (item) {
                         case BAD:
                             setTextFill(Color.DARKRED);
-                            // setStyle("-fx-font-weight: bold");
                             break;
                         case UNKNOWN:
                             setTextFill(Color.BLACK);
-                            // setStyle("-fx-font-weight: bold");
                             break;
                         default:
                             setTextFill(Color.DARKGREEN);
-                            // setStyle("-fx-font-weight: bold");
                             break;
                     }
                 } else {

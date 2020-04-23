@@ -23,6 +23,7 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.layout.BackgroundFill;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
@@ -112,8 +113,6 @@ public class RawDataDetailsWidgetController implements Initializable {
                 }
             }
         });
-
-
     }  
 
     public void setData(String description, byte[] data, LinkedHashMap<String, String> decodedInfo) {

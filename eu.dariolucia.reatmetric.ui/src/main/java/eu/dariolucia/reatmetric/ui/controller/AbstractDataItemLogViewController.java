@@ -352,7 +352,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
                 if (!fromLive) {
                     this.dataItemTableView.scrollTo(0);
                 }
-                this.dataItemTableView.refresh();
+                // this.dataItemTableView.refresh();
                 updateSelectTime();
             }
         });

@@ -84,33 +84,28 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
 
 		this.genTimeCol.setCellFactory(new InstantCellFactory<>());
 		this.recTimeCol.setCellFactory(new InstantCellFactory<>());
-		this.severityCol.setCellFactory(column -> {
-			return new TableCell<EventData, Severity>() {
-				@Override
-				protected void updateItem(Severity item, boolean empty) {
-					super.updateItem(item, empty);
-					if (item != null && !empty && !isEmpty()) {
-						setText(item.name());
-						switch (item) {
+		this.severityCol.setCellFactory(column -> new TableCell<>() {
+			@Override
+			protected void updateItem(Severity item, boolean empty) {
+				super.updateItem(item, empty);
+				if (item != null && !empty && !isEmpty()) {
+					setText(item.name());
+					switch (item) {
 						case ALARM:
 							setTextFill(Color.DARKRED);
-							// setStyle("-fx-font-weight: bold");
 							break;
 						case WARN:
 							setTextFill(Color.CHOCOLATE);
-							// setStyle("-fx-font-weight: bold");
 							break;
 						default:
 							setTextFill(Color.DARKGREEN);
-							// setStyle("-fx-font-weight: bold");
 							break;
-						}
-					} else {
-						setText("");
-						setGraphic(null);
 					}
+				} else {
+					setText("");
+					setGraphic(null);
 				}
-			};
+			}
 		});
 	}
 

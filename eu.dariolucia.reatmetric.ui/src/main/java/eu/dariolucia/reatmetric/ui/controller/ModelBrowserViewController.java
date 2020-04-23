@@ -44,9 +44,7 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 import javafx.stage.Window;
 import org.controlsfx.control.textfield.CustomTextField;
-import org.controlsfx.control.textfield.TextFields;
 
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -230,23 +228,16 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     switch (item) {
                         case ENABLED:
                             setTextFill(Color.LIMEGREEN);
-                            // setStyle("-fx-font-weight: bold");
-                            // setStyle("-fx-font-weight: bold; -fx-background-color: Lime");
                             break;
                         case DISABLED:
                             setTextFill(Color.DARKGRAY);
-                            // setStyle("-fx-font-weight: bold");
-                            // setStyle("-fx-font-weight: bold; -fx-background-color: LightGray");
                             break;
                         case UNKNOWN:
                             setTextFill(Color.DARKORANGE);
-                            // setStyle("-fx-font-weight: bold");
-                            // setStyle("-fx-font-weight: bold; -fx-background-color: DarkKhaki");
                             break;
                         default:
                             setText("");
                             setTextFill(Color.BLACK);
-                            // setStyle("");
                             break;
                     }
                 } else {
@@ -401,7 +392,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             this.mapLock.lock();
             try {
                 objects.forEach(this::addOrUpdateItemToTree);
-                this.modelTree.layout();
+                // this.modelTree.layout();
                 this.modelTree.refresh();
             } finally {
                 this.mapLock.unlock();
