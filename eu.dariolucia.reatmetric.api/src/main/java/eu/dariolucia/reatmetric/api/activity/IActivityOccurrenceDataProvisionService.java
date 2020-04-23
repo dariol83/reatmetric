@@ -18,10 +18,15 @@
 package eu.dariolucia.reatmetric.api.activity;
 
 import eu.dariolucia.reatmetric.api.common.IDataItemStateProvisionService;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 /**
  * This interface is a specialisation of the {@link IDataItemStateProvisionService}, for activity occurrences.
  */
 public interface IActivityOccurrenceDataProvisionService extends IDataItemStateProvisionService<IActivityOccurrenceDataSubscriber, ActivityOccurrenceDataFilter, ActivityOccurrenceData> {
-   
+
+    ActivityDescriptor getDescriptor(SystemEntityPath path) throws ReatmetricException;
+
+    ActivityDescriptor getDescriptor(int externalId) throws ReatmetricException;
 }

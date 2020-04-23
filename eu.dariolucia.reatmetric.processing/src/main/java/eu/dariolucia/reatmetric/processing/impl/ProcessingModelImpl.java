@@ -19,10 +19,7 @@ package eu.dariolucia.reatmetric.processing.impl;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
-import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.*;
@@ -394,6 +391,16 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     @Override
     public SystemEntityPath getPathOf(int externalId) throws ProcessingModelException {
         return graphModel.getPathOf(externalId);
+    }
+
+    @Override
+    public AbstractSystemEntityDescriptor getDescriptorOf(int externalId) throws ProcessingModelException {
+        return graphModel.getDescriptorOf(externalId);
+    }
+
+    @Override
+    public AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ProcessingModelException {
+        return graphModel.getDescriptorOf(path);
     }
 
     /*

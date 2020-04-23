@@ -16,11 +16,11 @@
 
 package eu.dariolucia.reatmetric.processing.impl.processors;
 
+import eu.dariolucia.reatmetric.api.activity.ActivityArgumentDescriptor;
+import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
-import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.api.common.LongUniqueId;
+import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.Status;
@@ -51,6 +51,8 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     private final Map<IUniqueId, ActivityOccurrenceProcessor> id2occurrence = new ConcurrentHashMap<>();
     private final Map<String, ArgumentDefinition> name2argumentDefinition = new TreeMap<>();
 
+    private final ActivityDescriptor descriptor;
+
     public ActivityProcessor(ActivityProcessingDefinition act, ProcessingModelImpl processingModel) {
         super(act, processingModel, SystemEntityType.ACTIVITY);
         for(ArgumentDefinition ad : act.getArguments()) {
@@ -68,6 +70,45 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         // Initialise the entity state
         this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
         this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+        //
+        this.descriptor = buildDescriptor(true);
+    }
+
+    private ActivityDescriptor buildDescriptor(boolean stopOnReferenceDefaultValue) {
+        // Start building the descriptor
+        List<ActivityArgumentDescriptor> argDescriptors = new ArrayList<>(definition.getArguments().size());
+        for(ArgumentDefinition aa : definition.getArguments()) {
+            if(aa.getDefaultValue() instanceof ReferenceDefaultValue && stopOnReferenceDefaultValue) {
+                // Stop here, pre-building object is not possible
+                return null;
+            }
+            Object defaultValue = null;
+            if(aa.getDefaultValue() != null) {
+                try {
+                    defaultValue = computeDefaultValue(aa);
+                } catch (ProcessingModelException e) {
+                    LOG.log(Level.SEVERE, String.format("Cannot retrieve default value for argument %s of activity %d (%s)", aa.getName(), definition.getId(), definition.getLocation()));
+                }
+            }
+            ActivityArgumentDescriptor argDesc = new ActivityArgumentDescriptor(aa.getName(),
+                    "TODO",
+                    aa.getRawType(),
+                    aa.getEngineeringType(),
+                    aa.getUnit(),
+                    aa.isFixed(), aa.getDefaultValue() != null,
+                    null,
+                    defaultValue,
+                    aa.getDecalibration() != null,
+                    aa.getChecks() != null);
+            argDescriptors.add(argDesc);
+        }
+        // Now the properties
+        List<Pair<String, String>> props = new ArrayList<>(definition.getProperties().size());
+        for(KeyValue kv : definition.getProperties()) {
+            props.add(Pair.of(kv.getKey(), kv.getValue()));
+        }
+        // Build the object
+        return new ActivityDescriptor(getPath(), getSystemEntityId(), definition.getDescription(),definition.getDefaultRoute(), definition.getType(), argDescriptors, props);
     }
 
     public List<AbstractDataItem> invoke(ActivityRequest request) throws ProcessingModelException {
@@ -111,43 +152,11 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                 // If the argument was not provided, use the default value
                 if (!name2value.containsKey(ad.getName())) {
                     Object finalValue;
-                    DefaultValueType valueType = ad.getDefaultValue().getType();
                     // Argument not specified in the request: add default
                     if (ad.getDefaultValue() == null) {
                         throw new ProcessingModelException("Argument " + ad.getName() + " not specified in the request, and default value not present");
                     }
-                    // If default value is fixed, then use it
-                    if (ad.getDefaultValue() instanceof FixedDefaultValue) {
-                        String formattedValue = ((FixedDefaultValue) ad.getDefaultValue()).getValue();
-                        if (valueType == DefaultValueType.RAW) {
-                            finalValue = ValueUtil.parse(ad.getRawType(), formattedValue);
-                        } else if (valueType == DefaultValueType.ENGINEERING) {
-                            finalValue = ValueUtil.parse(ad.getEngineeringType(), formattedValue);
-                            try {
-                                finalValue = CalibrationDefinition.performDecalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
-                            } catch (CalibrationException e) {
-                                throw new ProcessingModelException("Cannot decalibrate default (fixed) value of argument " + ad.getName() + ": " + e.getMessage(), e);
-                            }
-                        } else {
-                            throw new ProcessingModelException("Default value of argument " + ad.getName() + " has undefined value type: " + valueType);
-                        }
-                        // If default value comes from another parameter, then retrieve and use it
-                    } else if (ad.getDefaultValue() instanceof ReferenceDefaultValue) {
-                        try {
-                            finalValue = ((ReferenceDefaultValue) ad.getDefaultValue()).readTargetValue(ad.getName(), processor);
-                        } catch (ValueReferenceException e) {
-                            throw new ProcessingModelException(e);
-                        }
-                        if (valueType == DefaultValueType.ENGINEERING) {
-                            try {
-                                finalValue = CalibrationDefinition.performDecalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
-                            } catch (CalibrationException e) {
-                                throw new ProcessingModelException("Cannot decalibrate default (reference) value of argument " + ad.getName() + ": " + e.getMessage(), e);
-                            }
-                        }
-                    } else {
-                        throw new ProcessingModelException("Default value of argument " + ad.getName() + " has unsupported type: " + ad.getDefaultValue().getClass().getName());
-                    }
+                    finalValue = computeDefaultValue(ad);
                     // Check and add the value to the final value map: if null do not add it and raise an exception
                     verifyAndAdd(name2value, ad, finalValue, true);
                 }
@@ -172,6 +181,50 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             }
             return Collections.emptyList();
         }
+    }
+
+    /**
+     * This method returns the default value in RAW format for the provided argument.
+     *
+     * @param ad the argument definition for which the value shall be derived
+     * @return the default value as object in raw format
+     *
+     * @throws ProcessingModelException if the default value cannot be computed
+     */
+    private Object computeDefaultValue(ArgumentDefinition ad) throws ProcessingModelException {
+        Object finalValue;// If default value is fixed, then use it
+        if (ad.getDefaultValue() instanceof FixedDefaultValue) {
+            String formattedValue = ((FixedDefaultValue) ad.getDefaultValue()).getValue();
+            if (ad.getDefaultValue().getType() == DefaultValueType.RAW) {
+                finalValue = ValueUtil.parse(ad.getRawType(), formattedValue);
+            } else if (ad.getDefaultValue().getType() == DefaultValueType.ENGINEERING) {
+                finalValue = ValueUtil.parse(ad.getEngineeringType(), formattedValue);
+                try {
+                    finalValue = CalibrationDefinition.performDecalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
+                } catch (CalibrationException e) {
+                    throw new ProcessingModelException("Cannot decalibrate default (fixed) value of argument " + ad.getName() + ": " + e.getMessage(), e);
+                }
+            } else {
+                throw new ProcessingModelException("Default value of argument " + ad.getName() + " has undefined value type: " + ad.getDefaultValue().getType());
+            }
+            // If default value comes from another parameter, then retrieve and use it
+        } else if (ad.getDefaultValue() instanceof ReferenceDefaultValue) {
+            try {
+                finalValue = ((ReferenceDefaultValue) ad.getDefaultValue()).readTargetValue(ad.getName(), processor);
+            } catch (ValueReferenceException e) {
+                throw new ProcessingModelException(e);
+            }
+            if (ad.getDefaultValue().getType() == DefaultValueType.ENGINEERING) {
+                try {
+                    finalValue = CalibrationDefinition.performDecalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
+                } catch (CalibrationException e) {
+                    throw new ProcessingModelException("Cannot decalibrate default (reference) value of argument " + ad.getName() + ": " + e.getMessage(), e);
+                }
+            }
+        } else {
+            throw new ProcessingModelException("Default value of argument " + ad.getName() + " has unsupported type: " + ad.getDefaultValue().getClass().getName());
+        }
+        return finalValue;
     }
 
     private void checkSameValue(ArgumentDefinition argumentDefinition, ActivityArgument suppliedArgument) throws ProcessingModelException {
@@ -385,6 +438,16 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     public void putCurrentStates(List<AbstractDataItem> items) {
         for(ActivityOccurrenceProcessor proc : id2occurrence.values()) {
             items.add(proc.get());
+        }
+    }
+
+    @Override
+    public AbstractSystemEntityDescriptor getDescriptor() {
+        // Due to potential default value based on reference, it might not be possible to pre-build a descriptor object
+        if(descriptor != null) {
+            return descriptor;
+        } else {
+            return buildDescriptor(false);
         }
     }
 

@@ -161,7 +161,7 @@ public class Archive implements IArchive {
     }
 
     @Override
-    public <U extends IDataItemArchive<J,K>,J extends AbstractDataItem,K extends AbstractDataItemFilter> U getArchive(Class<U> clazz) {
+    public <U extends IDataItemArchive<J,K>,J extends AbstractDataItem,K extends AbstractDataItemFilter<J>> U getArchive(Class<U> clazz) {
         return (U) this.registeredArchives.get(clazz);
     }
 

@@ -17,10 +17,7 @@
 package eu.dariolucia.reatmetric.api.processing;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
-import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
@@ -77,6 +74,10 @@ public interface IProcessingModel {
     int getExternalIdOf(SystemEntityPath path) throws ProcessingModelException;
 
     SystemEntityPath getPathOf(int id) throws ProcessingModelException;
+
+    AbstractSystemEntityDescriptor getDescriptorOf(int id) throws ProcessingModelException;
+
+    AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ProcessingModelException;
 
     void registerActivityHandler(IActivityHandler handler) throws ProcessingModelException;
 

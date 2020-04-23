@@ -18,11 +18,16 @@
 package eu.dariolucia.reatmetric.api.parameters;
 
 import eu.dariolucia.reatmetric.api.common.IDataItemStateProvisionService;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 /**
  *
  * @author dario
  */
 public interface IParameterDataProvisionService extends IDataItemStateProvisionService<IParameterDataSubscriber, ParameterDataFilter, ParameterData> {
-   
+
+    ParameterDescriptor getDescriptor(SystemEntityPath path) throws ReatmetricException;
+
+    ParameterDescriptor getDescriptor(int externalId) throws ReatmetricException;
 }

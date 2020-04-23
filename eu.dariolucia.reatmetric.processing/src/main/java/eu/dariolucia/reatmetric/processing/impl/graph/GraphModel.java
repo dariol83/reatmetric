@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.impl.graph;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
@@ -384,5 +385,23 @@ public class GraphModel {
             }
         }
         return toReturn;
+    }
+
+    public AbstractSystemEntityDescriptor getDescriptorOf(int externalId) throws ProcessingModelException {
+        EntityVertex ev = this.idMap.get(externalId);
+        if(ev != null) {
+            return ev.getProcessor().getDescriptor();
+        } else {
+            throw new ProcessingModelException("ID " + externalId + " unknown");
+        }
+    }
+
+    public AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ProcessingModelException {
+        EntityVertex ev = pathMap.get(path);
+        if(ev != null) {
+            return ev.getProcessor().getDescriptor();
+        } else {
+            throw new ProcessingModelException("Path " + path + " unknown");
+        }
     }
 }

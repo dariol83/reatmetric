@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.impl.processors;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
@@ -90,6 +91,11 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
     @Override
     public void putCurrentStates(List<AbstractDataItem> items) {
         // Nothing to do
+    }
+
+    @Override
+    public AbstractSystemEntityDescriptor getDescriptor() {
+        throw new UnsupportedOperationException("Containers are not supposed to have a descriptor");
     }
 
     @Override

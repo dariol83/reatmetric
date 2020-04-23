@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.impl.processors;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
@@ -119,4 +120,6 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     public abstract void visit(IProcessingModelVisitor visitor);
 
     public abstract void putCurrentStates(List<AbstractDataItem> items);
+
+    public abstract AbstractSystemEntityDescriptor getDescriptor();
 }

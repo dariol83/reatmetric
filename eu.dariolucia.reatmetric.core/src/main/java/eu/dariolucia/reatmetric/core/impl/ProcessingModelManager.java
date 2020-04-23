@@ -22,10 +22,7 @@ import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
-import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.api.common.Pair;
-import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
@@ -252,6 +249,16 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
     @Override
     public void disable(SystemEntityPath path) throws ReatmetricException {
         processingModel.disable(path);
+    }
+
+    @Override
+    public AbstractSystemEntityDescriptor getDescriptorOf(int id) throws ReatmetricException {
+        return processingModel.getDescriptorOf(id);
+    }
+
+    @Override
+    public AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ReatmetricException {
+        return processingModel.getDescriptorOf(path);
     }
 
     @Override

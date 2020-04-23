@@ -18,10 +18,12 @@ package eu.dariolucia.reatmetric.processing.impl.processors;
 
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
@@ -56,6 +58,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     private volatile AlarmParameterData currentAlarmData;
 
+    private final ParameterDescriptor descriptor;
+
     public ParameterProcessor(ParameterProcessingDefinition definition, ProcessingModelImpl processor) {
         super(definition, processor, SystemEntityType.PARAMETER);
         this.builder = new ParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
@@ -76,6 +80,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         // Initialise the entity state
         this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
         this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+        // Build the descriptor
+        this.descriptor = new ParameterDescriptor(getPath(), getSystemEntityId(), definition.getDescription(), definition.getRawType(), definition.getEngineeringType(), definition.getUnit(), definition.getExpression() != null);
     }
 
     private void buildDefaultState() {
@@ -416,6 +422,11 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         if(currAlarmData != null) {
             items.add(currAlarmData);
         }
+    }
+
+    @Override
+    public AbstractSystemEntityDescriptor getDescriptor() {
+        return descriptor;
     }
 
     @Override

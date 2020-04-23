@@ -18,6 +18,8 @@
 package eu.dariolucia.reatmetric.api.events;
 
 import eu.dariolucia.reatmetric.api.common.IDataItemProvisionService;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 /**
  *
@@ -25,4 +27,7 @@ import eu.dariolucia.reatmetric.api.common.IDataItemProvisionService;
  */
 public interface IEventDataProvisionService extends IDataItemProvisionService<IEventDataSubscriber, EventDataFilter, EventData> {
 
+    EventDescriptor getDescriptor(SystemEntityPath path) throws ReatmetricException;
+
+    EventDescriptor getDescriptor(int externalId) throws ReatmetricException;
 }

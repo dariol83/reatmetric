@@ -17,10 +17,12 @@
 package eu.dariolucia.reatmetric.processing.impl.processors;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
+import eu.dariolucia.reatmetric.api.events.EventDescriptor;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
@@ -54,6 +56,8 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
 
     private final EventDataBuilder builder;
 
+    private final EventDescriptor descriptor;
+
     public EventProcessor(EventProcessingDefinition definition, ProcessingModelImpl processor) {
         super(definition, processor, SystemEntityType.EVENT);
         this.builder = new EventDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()), definition.getSeverity(), definition.getType());
@@ -68,6 +72,8 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
         // Initialise the entity state
         this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
         this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+        // Create the descriptor
+        this.descriptor = new EventDescriptor(getPath(), definition.getId(), definition.getDescription(), definition.getSeverity(), definition.getType(), definition.getCondition() != null);
     }
 
     private void initialise(IProcessingModelInitialiser initialiser) throws ReatmetricException {
@@ -206,6 +212,11 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     @Override
     public void putCurrentStates(List<AbstractDataItem> items) {
         items.add(getState());
+    }
+
+    @Override
+    public AbstractSystemEntityDescriptor getDescriptor() {
+        return descriptor;
     }
 
     @Override

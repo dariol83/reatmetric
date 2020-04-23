@@ -30,7 +30,7 @@ public final class SystemEntityPath implements Comparable<SystemEntityPath>, Ser
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = 8858858517842953497L;
+	private static final long serialVersionUID = 1L;
 
 	public static SystemEntityPath fromString(String systemEntity) {
         String[] parts = systemEntity.split("\\.", -1);

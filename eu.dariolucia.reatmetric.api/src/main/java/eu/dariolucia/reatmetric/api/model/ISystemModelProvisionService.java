@@ -17,6 +17,7 @@
 
 package eu.dariolucia.reatmetric.api.model;
 
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 
@@ -47,4 +48,9 @@ public interface ISystemModelProvisionService {
     void enable(SystemEntityPath path) throws ReatmetricException;
 
     void disable(SystemEntityPath path) throws ReatmetricException;
+
+    AbstractSystemEntityDescriptor getDescriptorOf(int id) throws ReatmetricException;
+
+    AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ReatmetricException;
+
 }

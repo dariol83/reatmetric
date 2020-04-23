@@ -17,10 +17,15 @@
 package eu.dariolucia.reatmetric.core.impl.managers;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.*;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.*;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import org.w3c.dom.events.Event;
+
+import java.util.Objects;
 
 public class EventDataAccessManager extends AbstractAccessManager<EventData, EventDataFilter, IEventDataSubscriber> implements IEventDataProvisionService {
 
@@ -44,5 +49,25 @@ public class EventDataAccessManager extends AbstractAccessManager<EventData, Eve
             filter = new EventDataFilter(null, null, null, null, null, null, null);
         }
         return new EventDataAccessSubscriber(subscriber, filter, model);
+    }
+
+    @Override
+    public EventDescriptor getDescriptor(SystemEntityPath path) throws ReatmetricException {
+        AbstractSystemEntityDescriptor descriptor = super.model.getDescriptorOf(path);
+        if(descriptor instanceof EventDescriptor) {
+            return (EventDescriptor) descriptor;
+        } else {
+            throw new ReatmetricException("Descriptor of provided event path " + path + " cannot be retrieved. Found: " + Objects.requireNonNullElse(descriptor, "<not found>"));
+        }
+    }
+
+    @Override
+    public EventDescriptor getDescriptor(int externalId) throws ReatmetricException {
+        AbstractSystemEntityDescriptor descriptor = super.model.getDescriptorOf(externalId);
+        if(descriptor instanceof EventDescriptor) {
+            return (EventDescriptor) descriptor;
+        } else {
+            throw new ReatmetricException("Descriptor of provided event ID " + externalId + " cannot be retrieved. Found: " + Objects.requireNonNullElse(descriptor, "<not found>"));
+        }
     }
 }
