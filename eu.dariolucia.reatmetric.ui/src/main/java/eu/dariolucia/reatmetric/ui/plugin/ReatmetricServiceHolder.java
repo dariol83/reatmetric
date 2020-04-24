@@ -82,4 +82,8 @@ public class ReatmetricServiceHolder {
     public void removeSubscriber(IReatmetricServiceListener l) {
         this.listeners.remove(l);
     }
+
+    public boolean isPresent() {
+        return this.system != null;
+    }
 }
