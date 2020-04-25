@@ -28,6 +28,7 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.udd.*;
 import eu.dariolucia.reatmetric.ui.utils.OrderedProperties;
+import eu.dariolucia.reatmetric.ui.utils.UserDisplayCoordinator;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -40,6 +41,7 @@ import javafx.scene.Parent;
 import javafx.scene.chart.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
@@ -47,6 +49,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import java.io.IOException;
@@ -86,6 +89,9 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 	protected ToggleButton liveTimeTgl;
 
 	@FXML
+	protected VBox parentVBox;
+
+	@FXML
 	protected VBox innerBox;
 
 	// Progress indicator for data retrieval
@@ -117,10 +123,9 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 	private Timer timer = null;
 	private volatile boolean liveTimeTracker = true;
 	private volatile boolean live = false;
-	private UserDisplayViewController controller;
+	private UserDisplayCoordinator controller;
 
 	private HBox lineBox = null;
-
 
 	@Override
 	public void doInitialize(URL url, ResourceBundle rb) {
@@ -155,6 +160,9 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		}
 
 		this.live = true;
+		// Register to the coordinator
+		this.controller = UserDisplayCoordinator.instance();
+		this.controller.register(this);
 	}
 
 	@FXML
@@ -467,6 +475,12 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 	}
 
 	@Override
+	public void dispose() {
+		super.dispose();
+		this.controller.deregister(this);
+	}
+
+	@Override
 	public void doSystemDisconnected(IReatmetricSystem s, boolean oldStatus) {
 		if (this.liveTgl != null) {
 			this.liveTgl.setSelected(false);
@@ -474,6 +488,11 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		this.innerBox.getParent().getParent().setDisable(true);
 		stopSubscription();
 		clearCharts();
+		// If you are detached, close the stage
+		Parent parentNode = parentVBox.getParent();
+		if(!(parentNode instanceof TabPane)) {
+			((Stage) parentVBox.getScene().getWindow()).close();
+		}
 	}
 
 	@Override
@@ -678,10 +697,6 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		this.currentEventFilter = new EventDataFilter(null, new LinkedList<>(selectedEvents),null,null,null, null, null);
 		// Update the subscriptions
 		this.controller.filterUpdated();
-	}
-
-	public void setParentController(UserDisplayViewController userDisplayViewController) {
-		this.controller = userDisplayViewController;
 	}
 
 	public Properties getChartDescription() {
