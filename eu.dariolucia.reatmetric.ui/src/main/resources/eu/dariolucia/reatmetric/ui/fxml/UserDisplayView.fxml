@@ -36,10 +36,9 @@
                   <Button fx:id="saveBtn" mnemonicParsing="false" onAction="#saveButtonSelected" text="Save..." />
                    -->
                   <MenuButton fx:id="loadBtn" mnemonicParsing="false" text="Load..." prefHeight="25.0" prefWidth="100.0" />
-                  <Button mnemonicParsing="false" onAction="#closeButtonSelected" text="Close..." prefHeight="25.0" prefWidth="100.0" />
                </items>
             </ToolBar>
-            <TabPane fx:id="tabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+            <TabPane fx:id="tabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" tabClosingPolicy="ALL_TABS" VBox.vgrow="ALWAYS">
             </TabPane>
          </children>
          <padding>

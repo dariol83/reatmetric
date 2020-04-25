@@ -186,6 +186,16 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		userDisplayWidget.prefWidthProperty().bind(this.tabPane.widthProperty());
 		// userDisplayWidget.prefHeightProperty().bind(t.heightProperty()); // this creates problems with the height
 		t.setContent(userDisplayWidget);
+		t.setClosable(true);
+		t.setOnCloseRequest(event -> {
+			if(DialogUtils.confirm("Close chart tab", "About to close chart tab " + t.getText(), "Do you want to close chart tab " + t.getText() + "? Unsaved chart updates will be lost!")) {
+				this.tabPane.getTabs().remove(t);
+				UserDisplayTabWidgetController controller = this.tab2contents.remove(t);
+				controller.dispose();
+			} else {
+				event.consume();
+			}
+		});
 		this.tabPane.getTabs().add(t);
 		this.tabPane.getParent().layout();
 		this.tabPane.getSelectionModel().select(t);
@@ -194,15 +204,6 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		return t;
 	}
 
-	@FXML
-	protected void closeButtonSelected(ActionEvent e) {
-		Tab t = this.tabPane.getSelectionModel().getSelectedItem();
-		if(t != null && DialogUtils.confirm("Close chart tab", "About to close chart tab " + t.getText(), "Do you want to close chart tab " + t.getText() + "? Unsaved chart updates will be lost!")) {
-			this.tabPane.getTabs().remove(t);
-			this.tab2contents.remove(t);
-		}
-	}
-	
 	@Override
 	protected Control doBuildNodeForPrinting() {
 		return null;

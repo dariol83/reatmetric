@@ -21,7 +21,6 @@ import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -84,6 +83,16 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
 
             mimicsDisplayWidget.prefWidthProperty().bind(this.tabPane.widthProperty());
             t.setContent(mimicsDisplayWidget);
+            t.setClosable(true);
+            t.setOnCloseRequest(event -> {
+				if(DialogUtils.confirm("Close mimics tab", "About to close mimics tab " + t.getText(), "Do you want to close mimics tab " + t.getText() + "?")) {
+					this.tabPane.getTabs().remove(t);
+					MimicsDisplayTabWidgetController controller = this.tab2contents.remove(t);
+					controller.dispose();
+				} else {
+					event.consume();
+				}
+			});
             this.tabPane.getTabs().add(t);
             this.tabPane.getParent().layout();
             this.tabPane.getSelectionModel().select(t);
@@ -99,17 +108,6 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         }
 	}
 
-	@FXML
-	protected void closeButtonSelected(ActionEvent e) {
-		Tab t = this.tabPane.getSelectionModel().getSelectedItem();
-		if(t != null && DialogUtils.confirm("Close mimics tab", "About to close mimics tab " + t.getText(), "Do you want to close mimics tab " + t.getText() + "?")) {
-			this.tabPane.getTabs().remove(t);
-			MimicsDisplayTabWidgetController controller = this.tab2contents.remove(t);
-			controller.systemDisconnected(system);
-			controller.dispose();
-		}
-	}
-	
 	@Override
 	protected Control doBuildNodeForPrinting() {
 		return null;
