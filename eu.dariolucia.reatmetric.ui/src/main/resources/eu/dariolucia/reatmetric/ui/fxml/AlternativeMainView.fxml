@@ -33,9 +33,10 @@
   ~ limitations under the License.
   -->
 
+<?import javafx.scene.image.Image?>
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="900.0" prefWidth="1700.0" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.AlternativeMainViewController">
    <children>
-      <HBox alignment="CENTER_LEFT" prefHeight="96.0" prefWidth="200.0">
+      <HBox alignment="CENTER_LEFT" prefHeight="96.0" prefWidth="200.0" style="-fx-background-color: #191970">
          <children>
             <Button fx:id="sideButton" layoutX="18.0" layoutY="26.0" mnemonicParsing="false" prefHeight="64.0" prefWidth="64.0">
                <HBox.margin>
@@ -62,7 +63,7 @@
       </HBox>
         <SplitPane dividerPositions="0.2" prefHeight="160.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
           <items>
-            <Accordion minWidth="0.0">
+            <Accordion fx:id="sideAccordion" minWidth="0.0">
               <panes>
                 <TitledPane animated="false" minWidth="0.0" text="Views">
                      <content>
@@ -70,16 +71,58 @@
                            <content>
                               <VBox fx:id="buttonBox" prefHeight="200.0" prefWidth="100.0">
                                  <children>
-                                    <Button fx:id="monitoringViewButton" mnemonicParsing="false" prefHeight="64.0" prefWidth="200.0" text="Monitoring" onAction="#viewAction">
-                                        <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ParameterDataView.fxml" />
-                                    </Button>
+                                     <Button mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
+                                         <graphic>
+                                             <ImageView fitHeight="64.0" fitWidth="64.0" pickOnBounds="true" preserveRatio="true">
+                                                 <image>
+                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/logo.png" />
+                                                 </image>
+                                             </ImageView>
+                                         </graphic>
+                                        <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ParameterDataView.fxml"
+                                                    viewName="AND"/>
+                                     </Button>
+                                     <Button mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
+                                         <properties
+                                                 viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ParameterDataLogView.fxml"
+                                                 viewName="Parameters"/>
+                                     </Button>
+                                     <Button mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
+                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/EventDataView.fxml"
+                                                     viewName="Events"/>
+                                     </Button>
+                                     <Button mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
+                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/AlarmParameterDataView.fxml"
+                                                     viewName="Alarms"/>
+                                     </Button>
+                                     <Button mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
+                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/RawDataView.fxml"
+                                                     viewName="Raw Data"/>
+                                     </Button>
+                                     <Button mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
+                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/UserDisplayView.fxml"
+                                                     viewName="Charts"/>
+                                     </Button>
+                                     <Button mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
+                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/MimicsDisplayView.fxml"
+                                                     viewName="Mimics"/>
+                                     </Button>
+                                     <Button mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
+                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/OperationalMessageView.fxml"
+                                                     viewName="Operational Messages"/>
+                                     </Button>
                                  </children>
                               </VBox>
                            </content>
                         </ScrollPane>
-                     </content></TitledPane>
-                <TitledPane animated="false" minWidth="0.0" text="Model" />
-                <TitledPane animated="false" minWidth="0.0" text="Connectors" />
+                     </content>
+                </TitledPane>
+                <TitledPane animated="false" minWidth="0.0" text="Processing Model" >
+                    <fx:include source="ModelBrowserView.fxml" />
+                </TitledPane>
+                <TitledPane animated="false" minWidth="0.0" text="Connectors" >
+                    <fx:include source="ConnectorsBrowserView.fxml" />
+                </TitledPane>
               </panes>
             </Accordion>
             <TabPane fx:id="viewTabPane" prefHeight="200.0" prefWidth="200.0" side="BOTTOM" tabClosingPolicy="ALL_TABS" />
@@ -91,12 +134,12 @@
             <Circle fx:id="nominalCrl" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
             <Circle fx:id="warningCrl" fill="#382700" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
             <Circle fx:id="alarmCrl" fill="#360000" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
-            <Label fx:id="statusLbl" prefHeight="17.0" HBox.hgrow="ALWAYS">
+            <Label fx:id="statusLbl" prefHeight="17.0" prefWidth="700.0" HBox.hgrow="ALWAYS">
                <font>
                   <Font size="11.0" />
                </font>
             </Label>
-            <Pane prefHeight="1.0" prefWidth="24.0" />
+            <Pane prefHeight="1.0" prefWidth="24.0" HBox.hgrow="ALWAYS" />
             <ProgressBar fx:id="globalProgress" prefWidth="100.0" progress="0" visible="false" />
          </items>
       </ToolBar>

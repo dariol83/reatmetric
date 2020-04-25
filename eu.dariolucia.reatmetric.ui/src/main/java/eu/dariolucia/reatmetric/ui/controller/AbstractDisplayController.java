@@ -88,6 +88,11 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
         }
     }
 
+    public void dispose() {
+        systemDisconnected(null);
+        ReatmetricUI.selectedSystem().removeSubscriber(this);
+    }
+
     protected abstract Window retrieveWindow();
 
     @Override
@@ -144,6 +149,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     protected abstract void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus);
 
     protected abstract void doSystemConnected(IReatmetricSystem system, boolean oldStatus);
+
 
 }
 
