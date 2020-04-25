@@ -293,6 +293,9 @@ public class AlternativeMainViewController implements Initializable, IReatmetric
 
         // Expand first
         sideAccordion.setExpandedPane(sideAccordion.getPanes().get(0));
+
+        infoPopOver.setHideOnEscape(true);
+        connectPopOver.setHideOnEscape(true);
     }
 
     @Override
