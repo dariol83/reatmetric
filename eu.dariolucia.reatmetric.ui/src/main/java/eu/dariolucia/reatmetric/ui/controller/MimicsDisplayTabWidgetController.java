@@ -29,6 +29,7 @@ import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
+import eu.dariolucia.reatmetric.ui.utils.MimicsDisplayCoordinator;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -38,14 +39,13 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.ToggleButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
+import javafx.stage.Stage;
 import javafx.stage.Window;
-import org.controlsfx.control.ToggleSwitch;
 
-import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -60,6 +60,8 @@ import java.util.function.Consumer;
  */
 public class MimicsDisplayTabWidgetController extends AbstractDisplayController implements IParameterDataSubscriber {
 
+    @FXML
+    protected VBox parentVBox;
     // Inner contents
     @FXML
     protected VBox innerBox;
@@ -100,6 +102,8 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
 
     // The mimics manager
     private MimicsSvgViewController mimicsManager;
+
+    private Stage independentStage;
 
     @Override
     protected Window retrieveWindow() {
@@ -143,6 +147,8 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        MimicsDisplayCoordinator.instance().register(this);
     }
 
     protected Consumer<List<ParameterData>> buildIncomingDataDelegatorAction() {
@@ -335,6 +341,11 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         this.liveTgl.setSelected(false);
         this.innerBox.setDisable(true);
         stopSubscription();
+        // If you are detached, close the stage
+        if(independentStage != null) {
+            independentStage.setOnCloseRequest(null);
+            independentStage.close();
+        }
     }
 
     @Override
@@ -345,6 +356,10 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         if (this.liveTgl.isSelected()) {
             startSubscription();
         }
+    }
+
+    public void setIndependentStage(Stage independentStage) {
+        this.independentStage = independentStage;
     }
 
     protected void doServiceSubscribe(ParameterDataFilter selectedFilter) throws ReatmetricException {
@@ -477,7 +492,10 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         }
     }
 
+    @Override
     public void dispose() {
+        super.dispose();
         this.mimicsManager.dispose();
+        MimicsDisplayCoordinator.instance().deregister(this);
     }
 }

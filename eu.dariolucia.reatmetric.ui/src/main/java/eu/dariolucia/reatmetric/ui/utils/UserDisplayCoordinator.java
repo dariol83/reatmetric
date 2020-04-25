@@ -64,6 +64,8 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
         this.eventDelegator = new DataProcessingDelegator<>(getClass().getSimpleName(), buildIncomingEventDataDelegatorAction());
         this.parameterSubscriber = parameterDelegator::delegate;
         this.eventSubscriber = eventDelegator::delegate;
+
+        ReatmetricUI.selectedSystem().addSubscriber(this);
     }
 
     private Consumer<List<ParameterData>> buildIncomingParameterDataDelegatorAction() {

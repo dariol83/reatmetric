@@ -18,7 +18,6 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
-import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.PresetStorageManager;
@@ -88,7 +87,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		createNewTab("Display");
 	}
 
-	private Pair<Tab, UserDisplayTabWidgetController> createNewTab(String tabText) throws IOException {
+	private UserDisplayTabWidgetController createNewTab(String tabText) throws IOException {
 		Tab t = new Tab(tabText);
 
 		URL userDisplayWidgetUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/UserDisplayTabWidget.fxml");
@@ -140,7 +139,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
 			t.setOnCloseRequest(null);
 			this.tabPane.getTabs().remove(t);
 			// this.tab2contents.remove(t); // if removed, there will be no forwards of system status change
-			Scene scene = new Scene(userDisplayWidget);
+			Scene scene = new Scene(userDisplayWidget, 800, 600);
 			scene.getStylesheets().add(cssUrl.toExternalForm());
 
 			stage.setScene(scene);
@@ -148,19 +147,20 @@ public class UserDisplayViewController extends AbstractDisplayController {
 
 			Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
 			stage.getIcons().add(icon);
+			ctrl.setIndependentStage(stage);
 			stage.setOnCloseRequest(ev -> {
 				if(DialogUtils.confirm("Close chart", "About to close chart " + stage.getTitle(), "Do you want to close chart " + stage.getTitle() + "? Unsaved chart updates will be lost!")) {
 					ctrl.dispose();
 					stage.close();
 				} else {
-					event.consume();
+					ev.consume();
 				}
 			});
 
 			stage.show();
 		});
 
-		return Pair.of(t, ctrl);
+		return ctrl;
 	}
 
 	@Override
@@ -199,10 +199,10 @@ public class UserDisplayViewController extends AbstractDisplayController {
 	}
 
 	private void addChartTabFromPreset(String tabName, Properties p) throws IOException {
-		final Pair<Tab, UserDisplayTabWidgetController> t = createNewTab(tabName);
+		final UserDisplayTabWidgetController t = createNewTab(tabName);
 		// After adding the tab, you need to initialise it in a new round of the UI thread,
 		// to allow the layouting of the tab and the correct definition of the parent elements,
 		// hence avoiding a null pointer exception
-		Platform.runLater(() -> t.getSecond().loadPreset(p));
+		Platform.runLater(() -> t.loadPreset(p));
 	}
 }

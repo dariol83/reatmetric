@@ -158,7 +158,7 @@ public class AlternativeMainViewController implements Initializable, IReatmetric
 
     @FXML
     public void sideAction(ActionEvent event) {
-        if(mainSplitter.getDividerPositions()[0] <= 0.002) {
+        if(mainSplitter.getDividerPositions()[0] <= 0.01) {
             // mainSplitter.setMaxWidth(Double.MAX_VALUE);
             mainSplitter.setDividerPositions(oldSplitterPosition, 1 - oldSplitterPosition);
         } else {

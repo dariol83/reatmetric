@@ -84,6 +84,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
     @Override
     public void initialise(Consumer<SystemStatus> consumer) throws ReatmetricException {
         LOG.info("Reatmetric Core System initialisation");
+        statusSubscriber = consumer;
         // Prepare the logging facility
         if(configuration.getLogPropertyFile() != null) {
             try {
@@ -133,7 +134,6 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
             }
         }
         // Derive system status
-        statusSubscriber = consumer;
         deriveSystemStatus();
         // Done and ready to go
         LOG.info("Reatmetric Core System loaded with status " + systemStatus);

@@ -39,10 +39,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TabPane;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.HBox;
@@ -126,6 +123,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 	private UserDisplayCoordinator controller;
 
 	private HBox lineBox = null;
+	private Stage independentStage;
 
 	@Override
 	public void doInitialize(URL url, ResourceBundle rb) {
@@ -275,6 +273,10 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 
 	private int getTimeWindowSize() {
 		return this.timeWindowSize;
+	}
+
+	public void setIndependentStage(Stage independentStage) {
+		this.independentStage = independentStage;
 	}
 
 	@FXML
@@ -490,8 +492,9 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		clearCharts();
 		// If you are detached, close the stage
 		Parent parentNode = parentVBox.getParent();
-		if(!(parentNode instanceof TabPane)) {
-			((Stage) parentVBox.getScene().getWindow()).close();
+		if(independentStage != null) {
+			independentStage.setOnCloseRequest(null);
+			independentStage.close();
 		}
 	}
 
