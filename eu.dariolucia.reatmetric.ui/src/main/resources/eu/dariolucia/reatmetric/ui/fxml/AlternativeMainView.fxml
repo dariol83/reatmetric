@@ -89,7 +89,7 @@
                                  <children>
                                      <Button text="Monitoring AND" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
                                          <style>
-                                             -fx-alignment: LEFT;
+                                             -fx-alignment: BASELINE_LEFT;
                                              -fx-font-size: 14pt;
                                              -fx-font-weight: bold;
                                          </style>
@@ -105,7 +105,7 @@
                                      </Button>
                                      <Button text="Parameter View" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
                                          <style>
-                                             -fx-alignment: LEFT;
+                                             -fx-alignment: BASELINE_LEFT;
                                              -fx-font-size: 14pt;
                                              -fx-font-weight: bold;
                                          </style>
@@ -122,7 +122,7 @@
                                      </Button>
                                      <Button text="Event View" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
                                          <style>
-                                             -fx-alignment: LEFT;
+                                             -fx-alignment: BASELINE_LEFT;
                                              -fx-font-size: 14pt;
                                              -fx-font-weight: bold;
                                          </style>
@@ -138,7 +138,7 @@
                                      </Button>
                                      <Button text="Alarm View" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
                                          <style>
-                                             -fx-alignment: LEFT;
+                                             -fx-alignment: BASELINE_LEFT;
                                              -fx-font-size: 14pt;
                                              -fx-font-weight: bold;
                                          </style>
@@ -154,7 +154,7 @@
                                      </Button>
                                      <Button text="Raw Data Inspector" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
                                          <style>
-                                             -fx-alignment: LEFT;
+                                             -fx-alignment: BASELINE_LEFT;
                                              -fx-font-size: 14pt;
                                              -fx-font-weight: bold;
                                          </style>
@@ -170,7 +170,7 @@
                                      </Button>
                                      <Button text="Charts" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
                                          <style>
-                                             -fx-alignment: LEFT;
+                                             -fx-alignment: BASELINE_LEFT;
                                              -fx-font-size: 14pt;
                                              -fx-font-weight: bold;
                                          </style>
@@ -186,7 +186,7 @@
                                      </Button>
                                      <Button text="Mimics" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
                                          <style>
-                                             -fx-alignment: LEFT;
+                                             -fx-alignment: BASELINE_LEFT;
                                              -fx-font-size: 14pt;
                                              -fx-font-weight: bold;
                                          </style>
@@ -202,7 +202,7 @@
                                      </Button>
                                      <Button text="Operational Messages" mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
                                          <style>
-                                             -fx-alignment: LEFT;
+                                             -fx-alignment: BASELINE_LEFT;
                                              -fx-font-size: 14pt;
                                              -fx-font-weight: bold;
                                          </style>

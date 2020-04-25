@@ -35,8 +35,11 @@ import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import java.io.IOException;
@@ -56,6 +59,8 @@ import java.util.stream.Collectors;
 public class UserDisplayViewController extends AbstractDisplayController {
 
 	private static final Logger LOG = Logger.getLogger(UserDisplayViewController.class.getName());
+
+	private URL cssUrl;
 
 	// Pane control
 	@FXML
@@ -79,6 +84,8 @@ public class UserDisplayViewController extends AbstractDisplayController {
 	// Preset manager
 	private final PresetStorageManager presetManager = new PresetStorageManager();
 
+	private final List<Stage> detachedTabs = new LinkedList<>();
+
 	@Override
 	protected Window retrieveWindow() {
 		return displayTitledPane.getScene().getWindow();
@@ -91,6 +98,9 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		this.parameterSubscriber = items -> parameterDelegator.delegate(items);
 		this.eventSubscriber = items -> eventDelegator.delegate(items);
 		this.loadBtn.setOnShowing(this::onShowingPresetMenu);
+
+		this.cssUrl = getClass().getClassLoader()
+				.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
 	}
 	
 	protected Consumer<List<ParameterData>> buildIncomingParameterDataDelegatorAction() {
@@ -179,8 +189,8 @@ public class UserDisplayViewController extends AbstractDisplayController {
 
 		URL userDisplayWidgetUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/UserDisplayTabWidget.fxml");
 		FXMLLoader loader = new FXMLLoader(userDisplayWidgetUrl);
-		VBox userDisplayWidget = loader.load();
-		UserDisplayTabWidgetController ctrl = loader.getController();
+		final VBox userDisplayWidget = loader.load();
+		final UserDisplayTabWidgetController ctrl = loader.getController();
 		ctrl.setParentController(this);
 
 		userDisplayWidget.prefWidthProperty().bind(this.tabPane.widthProperty());
@@ -188,10 +198,11 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		t.setContent(userDisplayWidget);
 		t.setClosable(true);
 		t.setOnCloseRequest(event -> {
+			// TODO: what about detached tabs?
 			if(DialogUtils.confirm("Close chart tab", "About to close chart tab " + t.getText(), "Do you want to close chart tab " + t.getText() + "? Unsaved chart updates will be lost!")) {
 				this.tabPane.getTabs().remove(t);
-				UserDisplayTabWidgetController controller = this.tab2contents.remove(t);
-				controller.dispose();
+				this.tab2contents.remove(t);
+				ctrl.dispose();
 			} else {
 				event.consume();
 			}
@@ -201,6 +212,43 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		this.tabPane.getSelectionModel().select(t);
 		this.tab2contents.put(t, ctrl);
 		ctrl.startSubscription();
+
+		// Tab detaching
+		SeparatorMenuItem sep = new SeparatorMenuItem();
+		t.getContextMenu().getItems().add(sep);
+		MenuItem detachMenuItem = new MenuItem("Detach");
+		t.getContextMenu().getItems().add(detachMenuItem);
+		detachMenuItem.setOnAction(event -> {
+			// Create a detached scene parent
+			Stage stage = new Stage();
+			t.setContent(null);
+			t.setOnCloseRequest(null);
+			this.tabPane.getTabs().remove(t);
+			// this.tab2contents.remove(t); // if removed, there will be no forwards of system status change
+			Scene scene = new Scene(userDisplayWidget);
+			scene.getStylesheets().add(cssUrl.toExternalForm());
+
+			stage.setScene(scene);
+			stage.setTitle(t.getText());
+
+			Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
+			stage.getIcons().add(icon);
+			detachedTabs.add(stage);
+
+			stage.setOnCloseRequest(ev -> {
+				// TODO: what about detached tabs?
+				if(DialogUtils.confirm("Close chart", "About to close chart " + stage.getTitle(), "Do you want to close chart " + stage.getTitle() + "? Unsaved chart updates will be lost!")) {
+					detachedTabs.remove(stage);
+					ctrl.dispose();
+					stage.close();
+				} else {
+					event.consume();
+				}
+			});
+
+			stage.show();
+		});
+
 		return t;
 	}
 
@@ -313,5 +361,14 @@ public class UserDisplayViewController extends AbstractDisplayController {
 			UserDisplayTabWidgetController tabController = this.tab2contents.get(t);
 			tabController.loadPreset(p);
 		});
+	}
+
+	@Override
+	public void dispose() {
+		super.dispose();
+		// Close tabs and detached stages
+		for(Stage s : detachedTabs) {
+			s.close();
+		}
 	}
 }
