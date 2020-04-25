@@ -17,13 +17,11 @@
   -->
 
 <?import javafx.scene.image.ImageView?>
-<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.web.WebView?>
-
-
-<HBox xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.AboutDialogController">
+<?import javafx.scene.layout.VBox?>
+<VBox xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.AboutDialogController">
    <children>
-      <ImageView fx:id="aboutImage" fitHeight="400.0" fitWidth="400.0" pickOnBounds="true" preserveRatio="true" HBox.hgrow="NEVER" />
-      <WebView fx:id="aboutWebView" prefHeight="400.0" prefWidth="400.0" HBox.hgrow="NEVER" />
+      <ImageView fx:id="aboutImage" pickOnBounds="true" preserveRatio="true" VBox.vgrow="NEVER" />
+      <WebView fx:id="aboutWebView" prefHeight="400.0" prefWidth="400.0" VBox.vgrow="NEVER" />
    </children>
-</HBox>
+</VBox>

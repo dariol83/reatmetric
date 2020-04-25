@@ -34,6 +34,8 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Paint;
@@ -57,13 +59,18 @@ public class AlternativeMainViewController implements Initializable, IReatmetric
 
     private static final Logger LOG = Logger.getLogger(AlternativeMainViewController.class.getName());
 
+    private final Image CONNECT_IMAGE = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/48px/plug-f.svg.png"));
+    private final Image DISCONNECT_IMAGE = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/48px/plug.svg.png"));
+
     private static final String VIEW_LOCATION = "viewLocation";
     private static final String VIEW_NAME = "viewName";
 
     private final ReatmetricPluginInspector serviceInspector = new ReatmetricPluginInspector();
 
     @FXML
-    public Accordion sideAccordion;
+    private Accordion sideAccordion;
+    @FXML
+    private SplitPane mainSplitter;
 
     @FXML
     private TabPane viewTabPane;
@@ -93,6 +100,8 @@ public class AlternativeMainViewController implements Initializable, IReatmetric
     @FXML
     private Button infoButton;
 	private final PopOver infoPopOver = new PopOver();
+
+	private double oldSplitterPosition = 0.2;
 
     @FXML
     private void viewAction(Event event) {
@@ -144,6 +153,18 @@ public class AlternativeMainViewController implements Initializable, IReatmetric
             return viewButton.getProperties().get(VIEW_NAME).toString();
         } else {
             return "Unknown";
+        }
+    }
+
+    @FXML
+    public void sideAction(ActionEvent event) {
+        if(mainSplitter.getDividerPositions()[0] <= 0.002) {
+            // mainSplitter.setMaxWidth(Double.MAX_VALUE);
+            mainSplitter.setDividerPositions(oldSplitterPosition, 1 - oldSplitterPosition);
+        } else {
+            oldSplitterPosition = mainSplitter.getDividerPositions()[0];
+            // mainSplitter.setMaxWidth(0);
+            mainSplitter.setDividerPositions(0.0, 1);
         }
     }
 
@@ -227,7 +248,7 @@ public class AlternativeMainViewController implements Initializable, IReatmetric
 					LOG.log(Level.SEVERE, "Error when connecting to system " + selectedSystem + ": " + e.getMessage(), e);
 					Platform.runLater(() -> {
 						this.connectButton.setDisable(false);
-						this.connectButton.setGraphic(null); // TODO: set to connect picture
+						this.connectButton.setGraphic(new ImageView(CONNECT_IMAGE));
 					});
 				}
 			});
@@ -260,6 +281,9 @@ public class AlternativeMainViewController implements Initializable, IReatmetric
                 viewButton.prefWidthProperty().bind(buttonBox.widthProperty());
             }
         }
+
+        // Set initial connection image
+        this.connectButton.setGraphic(new ImageView(CONNECT_IMAGE));
 
         // Add the subscriber
         ReatmetricUI.selectedSystem().addSubscriber(this);
@@ -328,11 +352,12 @@ public class AlternativeMainViewController implements Initializable, IReatmetric
         // Close all tabs
         List.copyOf(viewTabPane.getTabs()).forEach(this::closeTab);
 
-        // Disable the perspective buttons
+        // Disable the view buttons
         buttonBox.getChildren().forEach(o -> o.setDisable(true));
 
+        // Change button picture
         connectButton.setDisable(false);
-        connectButton.setGraphic(null); // TODO: set to connect picture
+        connectButton.setGraphic(new ImageView(CONNECT_IMAGE));
 
         // Disable the system label
         this.systemLbl.setText("---");
@@ -340,11 +365,12 @@ public class AlternativeMainViewController implements Initializable, IReatmetric
     }
 
     private void enableMainViewItems() {
-        // Enable the perspective buttons
+        // Enable the view buttons
         buttonBox.getChildren().forEach(o -> o.setDisable(false));
 
+        // Change button picture
         connectButton.setDisable(false);
-        connectButton.setGraphic(null); // TODO: set to disconnect picture
+        connectButton.setGraphic(new ImageView(DISCONNECT_IMAGE));
 
         // Enable the system label
         this.systemLbl.setDisable(false);

@@ -613,6 +613,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		if (this.lineBox == null) {
 			this.lineBox = new HBox();
 			this.lineBox.setPrefHeight(300);
+			this.lineBox.setMinHeight(300);
 			this.lineBox.setPadding(new Insets(10, 10, 10, 10));
 			this.lineBox.setSpacing(10);
 			this.lineBox.prefWidthProperty().bind(this.innerBox.widthProperty());

@@ -99,9 +99,8 @@ public class XYBarChartManager extends AbstractChartManager {
 				if (s != null && pd.getEngValue() != null) {
 					// if not a number, remove the parameter from the plot
 					if(pd.getEngValue() instanceof Number) {
-						XYChart.Data<String, Number> data = new XYChart.Data<>(pd.getPath().toString(), (Number) pd.getEngValue());
+						XYChart.Data<String, Number> data = new XYChart.Data<>(pd.getPath().getLastPathElement(), (Number) pd.getEngValue());
 						s.getData().add(data);
-						// data.getNode().setVisible(false);
 						Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
 								(pd.getGenerationTime().toString())));
 					} else {

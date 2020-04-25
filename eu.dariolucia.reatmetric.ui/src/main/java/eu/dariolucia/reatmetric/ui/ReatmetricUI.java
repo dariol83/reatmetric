@@ -112,7 +112,7 @@ public class ReatmetricUI extends Application {
         stage.setScene(scene);
         stage.setTitle(APPLICATION_NAME);
 
-        Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logo_icon.png"));
+        Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
         stage.getIcons().add(icon);
 
         stage.setOnCloseRequest(event -> {
