@@ -4,9 +4,9 @@ strong focus on the space domain. ReatMetric components provide a simple but eff
 functions used in an M&C system.
 
 ![AND](docs/images/reatmetric-and-01.PNG "AND example")
-![Alarms](docs/images/reatmetric-alarms-01.PNG "AND example")
-![Charts](docs/images/reatmetric-charts-01.PNG "AND example")
-![Mimics](docs/images/reatmetric-mimics-01.PNG "AND example")
+![Alarms](docs/images/reatmetric-alarms-01.PNG "Alarm display example")
+![Charts](docs/images/reatmetric-charts-01.PNG "Chart example")
+![Mimics](docs/images/reatmetric-mimics-01.PNG "Mimics example")
 
 ## System Overview
 
