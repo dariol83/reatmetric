@@ -25,7 +25,8 @@ The ReatMetric modules are based on a very limited set of dependencies:
 - [eu.dariolucia.ccsds](https://www.github.com/dariol83/ccsds): providing support for SLE/TM/TC/PUS handling of the _spacecraft_ driver;
 - [openJFX](https://openjfx.io) and [ControlsFX](https://github.com/controlsfx/controlsfx): for the graphical user interface of the _ui_ module;
 - [Apache Derby](http://db.apache.org/derby): providing the storage backend of the _persist_ module;
-- [JAXB](https://javaee.github.io/jaxb-v2): for the configuration of all modules.
+- [JAXB](https://javaee.github.io/jaxb-v2): for the configuration of all modules;
+- [GraalVM](https://www.graalvm.org): for the scripting language support in the _processing_ module.
 
 ## Core Functionalities
 
