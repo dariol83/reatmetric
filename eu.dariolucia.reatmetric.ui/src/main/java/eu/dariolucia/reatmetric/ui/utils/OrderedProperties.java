@@ -53,6 +53,13 @@ public class OrderedProperties extends Properties {
 		theSet.addAll(super.keySet());
 		return theSet;
 	}
+
+	@Override
+	public synchronized Set<Map.Entry<Object, Object>> entrySet() {
+		Set<Map.Entry<Object, Object>> theSet = new TreeSet<Map.Entry<Object, Object>>(((o1, o2) -> insertionComparator.compare(o1.getKey(), o2.getKey())));
+		theSet.addAll(super.entrySet());
+		return theSet;
+	}
 	
 	@Override
 	public synchronized Object put(Object key, Object value) {

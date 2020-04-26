@@ -100,7 +100,7 @@
                                                  </image>
                                              </ImageView>
                                          </graphic>
-                                        <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ParameterDataView.fxml"
+                                        <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ParameterDisplayView.fxml"
                                                     viewName="Monitoring AND"/>
                                      </Button>
                                      <Button text="Parameter View" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">

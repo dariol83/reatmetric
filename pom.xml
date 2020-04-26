@@ -59,7 +59,7 @@
         <java.version>11</java.version>
         <!-- External libraries versions -->
         <junit.version>5.5.0-M1</junit.version>
-        <openjfx.version>11.0.2</openjfx.version>
+        <openjfx.version>14.0.1</openjfx.version>
         <jaxb.version>2.3.2</jaxb.version>
         <derby.version>10.15.1.3</derby.version>
         <jdbc.version>19.3.0.0</jdbc.version>

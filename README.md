@@ -53,10 +53,12 @@ The ReatMetric modules are based on a very limited set of dependencies:
 ## Implement your driver
 
 ## Roadmap
+- Activity support in UI
 - Spacecraft TC support
 - Activity scheduler
 - Automation system
 - Alternative _persist_ implementations (server-based - in addition to file-based - Apache Derby, PostgreSQL)
+- Remoting and Web interface
 
 ## Acknowledgements and Credits
 

@@ -120,7 +120,6 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 	private Timer timer = null;
 	private volatile boolean liveTimeTracker = true;
 	private volatile boolean live = false;
-	private UserDisplayCoordinator controller;
 
 	private HBox lineBox = null;
 	private Stage independentStage;
@@ -159,8 +158,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 
 		this.live = true;
 		// Register to the coordinator
-		this.controller = UserDisplayCoordinator.instance();
-		this.controller.register(this);
+		UserDisplayCoordinator.instance().register(this);
 	}
 
 	@FXML
@@ -479,7 +477,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 	@Override
 	public void dispose() {
 		super.dispose();
-		this.controller.deregister(this);
+		UserDisplayCoordinator.instance().deregister(this);
 	}
 
 	@Override
@@ -491,7 +489,6 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		stopSubscription();
 		clearCharts();
 		// If you are detached, close the stage
-		Parent parentNode = parentVBox.getParent();
 		if(independentStage != null) {
 			independentStage.setOnCloseRequest(null);
 			independentStage.close();
@@ -699,7 +696,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		this.currentParameterFilter = new ParameterDataFilter(null, new LinkedList<>(selectedParameters),null,null,null, null);
 		this.currentEventFilter = new EventDataFilter(null, new LinkedList<>(selectedEvents),null,null,null, null, null);
 		// Update the subscriptions
-		this.controller.filterUpdated();
+		UserDisplayCoordinator.instance().filterUpdated();
 	}
 
 	public Properties getChartDescription() {

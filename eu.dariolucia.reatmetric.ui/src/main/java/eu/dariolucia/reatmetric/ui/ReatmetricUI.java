@@ -103,7 +103,6 @@ public class ReatmetricUI extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        // Parent root = FXMLLoader.load(ReatmetricUI.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/MainView.fxml"));
         Parent root = FXMLLoader.load(ReatmetricUI.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/AlternativeMainView.fxml"));
         
         Scene scene = new Scene(root);
@@ -130,8 +129,14 @@ public class ReatmetricUI extends Application {
 
     public static void shutdown() {
         if (DialogUtils.confirm("Exit " + APPLICATION_NAME, "Exit " + APPLICATION_NAME, "Do you want to close " + APPLICATION_NAME + "?")) {
-            ReatmetricUI.shutdownThreadPool();
             ReatmetricUI.selectedSystem().setSystem(null);
+            // Wait for completion
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            ReatmetricUI.shutdownThreadPool();
             Platform.exit();
             System.exit(0);
         }
