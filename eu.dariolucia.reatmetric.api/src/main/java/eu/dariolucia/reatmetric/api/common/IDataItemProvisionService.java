@@ -23,20 +23,66 @@ import java.time.Instant;
 import java.util.List;
 
 /**
+ * This interface is the parent interface of all {@link AbstractDataItem} related provision interfaces, i.e. interfaces that
+ * can be used to subscribe for or retrieve {@link AbstractDataItem} objects.
  *
- * @author dario
+ * A provision interface can deal with a single {@link AbstractDataItem} type and can return only objects of the declared K instance.
+ *
+ * By contract all methods of this interface shall be thread-safe, i.e. objects implementing this interface (or derivations)
+ * must allow concurrent (at most serialized) access by external callers.
+ *
  * @param <T> subscriber type
  * @param <R> filter type
  * @param <K> item type
  */
-public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R extends AbstractDataItemFilter, K extends UniqueItem> {
-    
+public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R extends AbstractDataItemFilter<K>, K extends AbstractDataItem> {
+
+    /**
+     * Subscribe to the provision service, to receive live updates matching the provider filter. If the filter is null,
+     * all updates will be provided to the subscriber.
+     *
+     * @param subscriber the callback interface, cannot be null
+     * @param filter the filter object, can be null
+     */
     void subscribe(T subscriber, R filter);
-    
+
+    /**
+     * Unsubscribe the callback interface from the provision service.
+     *
+     * @param subscriber the callback interface to unsubscribe, cannot be null
+     */
     void unsubscribe(T subscriber);
-    
+
+    /**
+     * Retrieve [numRecords] {@link AbstractDataItem} objects, starting from generation time [startTime] in the direction
+     * indicated by [direction]. The returned objects shall match the provided filter and shall be consecutive in the time
+     * direction, without gaps nor duplicates.
+     *
+     * The number of returned items can actually be less than [numRecords].
+     *
+     * @param startTime the generation reference time, cannot be null
+     * @param numRecords the number of records to retrieve, cannot be negative
+     * @param direction the time direction
+     * @param filter the filter, can be null
+     * @return the retrieved objects
+     * @throws ReatmetricException if a problem arises with the retrieval operation
+     */
     List<K> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException;
-    
+
+    /**
+     * Retrieve [numRecords] {@link AbstractDataItem} objects, starting from the specified object [startItem] in the direction
+     * indicated by [direction]. The returned objects shall match the provided filter and shall be consecutive in the time
+     * direction, without gaps nor duplicates. The [startItem] object shall not be returned.
+     *
+     * The number of returned items can actually be less than [numRecords].
+     *
+     * @param startItem the {@link AbstractDataItem} object taken as reference
+     * @param numRecords the number of records to retrieve, cannot be negative
+     * @param direction the time direction
+     * @param filter the filter, can be null
+     * @return the retrieved objects
+     * @throws ReatmetricException if a problem arises with the retrieval operation
+     */
     List<K> retrieve(K startItem, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException;
 
 }

@@ -41,14 +41,29 @@ public abstract class AbstractSystemEntityDescriptor implements Serializable {
         this.type = type;
     }
 
+    /**
+     * Return the {@link SystemEntityPath}, the system entity descriptor refers to.
+     *
+     * @return the path of the system entity
+     */
     public SystemEntityPath getPath() {
         return path;
     }
 
+    /**
+     * Return the ID of the system entity, the system entity descriptor refers to.
+     *
+     * @return the ID
+     */
     public int getExternalId() {
         return externalId;
     }
 
+    /**
+     * Return the {@link SystemEntityType} of the system entity.
+     *
+     * @return the type
+     */
     public SystemEntityType getType() {
         return type;
     }
