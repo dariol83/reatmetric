@@ -16,9 +16,7 @@
 
 package eu.dariolucia.reatmetric.processing.impl;
 
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
-import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
@@ -231,6 +229,9 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public IUniqueId startActivity(ActivityRequest request) throws ProcessingModelException {
+        if(request == null) {
+            throw new IllegalArgumentException("Null request");
+        }
         // Build the activity start operation
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new StartActivityOperation(request));
         // Schedule task
@@ -239,6 +240,12 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public IUniqueId createActivity(ActivityRequest request, ActivityProgress progress) throws ProcessingModelException {
+        if(request == null) {
+            throw new IllegalArgumentException("Null request");
+        }
+        if(progress == null) {
+            throw new IllegalArgumentException("Null initial state");
+        }
         // Build the activity create operation
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new CreateActivityOperation(request, progress));
         // Schedule task
@@ -247,6 +254,9 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void reportActivityProgress(ActivityProgress progress) {
+        if(progress == null) {
+            throw new IllegalArgumentException("Null progress");
+        }
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new ReportActivityProgressOperation(progress));
         // Schedule task
@@ -336,6 +346,27 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         for(String route : handler.getSupportedRoutes()) {
             this.activityHandlers.remove(route);
         }
+    }
+
+    @Override
+    public List<ActivityRouteState> getRouteAvailability() throws ProcessingModelException {
+        List<ActivityRouteState> states = new LinkedList<>();
+        for(IActivityHandler h : this.activityHandlers.values()) {
+            List<String> routes = h.getSupportedRoutes();
+            for(String route : routes) {
+                boolean available;
+                try {
+                    available = h.getRouteAvailability(route);
+                    states.add(new ActivityRouteState(route, available ? ActivityRouteAvailability.AVAILABLE : ActivityRouteAvailability.UNAVAILABLE));
+                } catch (ActivityHandlingException e) {
+                    if(LOG.isLoggable(Level.FINE)) {
+                        LOG.log(Level.FINE, String.format("Retrieving status of route %s on handler %s raised an error: %s", route, h.toString(), e.getMessage()), e);
+                    }
+                    states.add(new ActivityRouteState(route, ActivityRouteAvailability.UNKNOWN));
+                }
+            }
+        }
+        return states;
     }
 
     @Override

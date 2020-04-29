@@ -31,6 +31,7 @@ import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
+import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.core.api.IDriver;
 import eu.dariolucia.reatmetric.core.api.IDriverListener;
@@ -241,6 +242,15 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
             throw new ActivityHandlingException("Activity invocation: type " + activityInvocation.getType() + " and route " + activityInvocation.getRoute() + " not available now");
         }
         executor.submit(() -> execute(activityInvocation, model));
+    }
+
+    @Override
+    public boolean getRouteAvailability(String route) throws ActivityHandlingException {
+        if(route.equals(STATION_ROUTE)) {
+            return connector.getConnectionStatus() == TransportConnectionStatus.OPEN;
+        } else {
+            throw new ActivityHandlingException("Route " + route + " not supported");
+        }
     }
 
     private boolean connectorReady() {

@@ -96,6 +96,11 @@ public class ActivityHandlerStub implements IActivityHandler {
         executor.submit(() -> lifecycle.execute(activityInvocation, model));
     }
 
+    @Override
+    public boolean getRouteAvailability(String route) throws ActivityHandlingException {
+        return !unavailableRoutes.contains(route);
+    }
+
     public void setLifecycle(LifecycleStrategy lifecycle) {
         this.lifecycle = lifecycle;
     }

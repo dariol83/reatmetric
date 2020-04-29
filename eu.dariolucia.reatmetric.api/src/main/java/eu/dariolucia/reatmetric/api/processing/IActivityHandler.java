@@ -36,6 +36,8 @@ public interface IActivityHandler {
 
     void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException;
 
+    boolean getRouteAvailability(String route) throws ActivityHandlingException;
+
     class ActivityInvocation {
         private final IUniqueId activityOccurrenceId;
         private final Instant generationTime;

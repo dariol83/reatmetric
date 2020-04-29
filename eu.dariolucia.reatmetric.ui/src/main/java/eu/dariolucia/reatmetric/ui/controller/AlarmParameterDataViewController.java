@@ -183,19 +183,6 @@ public class AlarmParameterDataViewController
         }
     }
 
-    //  private void updateApplicationAlarmStatus() {
-    //		AlarmState currentState = AlarmState.NOMINAL;
-    //		for(AlarmParameterData apd : this.dataItemTableView.getItems()) {
-    //			if(apd.getCurrentAlarmState() == AlarmState.WARNING && (currentState != AlarmState.ALARM && currentState != AlarmState.ERROR)) {
-    //				currentState = apd.getCurrentAlarmState();
-    //			}
-    //			if(apd.getCurrentAlarmState() == AlarmState.ALARM || apd.getCurrentAlarmState() == AlarmState.ERROR) {
-    //				currentState = apd.getCurrentAlarmState();
-    //			}
-    //		}
-    //		MonitoringCentreUI.setStatusIndicator(currentState);
-    //	}
-
 	@Override
 	public void dataItemsReceived(List<AlarmParameterData> messages) {
 		informDataItemsReceived(messages);

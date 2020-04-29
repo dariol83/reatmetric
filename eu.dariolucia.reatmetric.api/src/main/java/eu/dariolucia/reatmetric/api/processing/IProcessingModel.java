@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.api.processing;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
+import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
@@ -82,4 +83,6 @@ public interface IProcessingModel {
     void registerActivityHandler(IActivityHandler handler) throws ProcessingModelException;
 
     void deregisterActivityHandler(IActivityHandler handler) throws ProcessingModelException;
+
+    List<ActivityRouteState> getRouteAvailability() throws ProcessingModelException;
 }

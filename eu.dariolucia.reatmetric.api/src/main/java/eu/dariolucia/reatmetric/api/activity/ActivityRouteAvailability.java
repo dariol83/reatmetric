@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-
-package eu.dariolucia.reatmetric.api.common;
-
-import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-
-import java.time.Instant;
-import java.util.List;
+package eu.dariolucia.reatmetric.api.activity;
 
 /**
- *
- * @author dario
- * @param <T> subscriber type
- * @param <R> filter type
- * @param <K> item type
+ * This enumeration indicates the status of an activity route.
  */
-public interface IDataItemStateProvisionService<T extends IDataItemSubscriber<K>, R extends AbstractDataItemFilter<K>, K extends AbstractDataItem> extends IDataItemProvisionService<T, R, K> {
-    
-    List<K> retrieve(Instant time, R filter) throws ReatmetricException;
-    
+public enum ActivityRouteAvailability {
+    /**
+     * The route is available: activities can be dispatched.
+     */
+    AVAILABLE,
+    /**
+     * The route is not available: activities cannot be dispatched.
+     */
+    UNAVAILABLE,
+    /**
+     * The state of the route is unknown: activities could be dispatched, but failures might occur.
+     */
+    UNKNOWN
 }

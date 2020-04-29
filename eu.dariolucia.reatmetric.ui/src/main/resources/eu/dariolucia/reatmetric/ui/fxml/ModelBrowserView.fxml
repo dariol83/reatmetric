@@ -39,12 +39,15 @@
                 <TreeTableColumn fx:id="statusCol" editable="false" prefWidth="70.0" resizable="false" sortable="false" text="Status" />
               </columns>
               <contextMenu>
-                    <ContextMenu>
+                    <ContextMenu fx:id="contextMenu" onShowing="#menuAboutToShow">
                         <items>
+                            <MenuItem fx:id="executeActivityMenuItem" mnemonicParsing="false" onAction="#executeActivityAction" text="Execute..." />
+                            <SeparatorMenuItem fx:id="executeActivitySeparator" />
+                            <MenuItem fx:id="collapseAllMenuItem" mnemonicParsing="false" onAction="#collapseItemAction" text="Collapse all" />
+                            <MenuItem fx:id="expandAllMenuItem" mnemonicParsing="false" onAction="#expandItemAction" text="Expand all" />
+                            <SeparatorMenuItem fx:id="expandCollapseSeparator" />
                             <MenuItem mnemonicParsing="false" onAction="#enableItemAction" text="Enable" />
                             <MenuItem mnemonicParsing="false" onAction="#disableItemAction" text="Disable" />
-                            <MenuItem mnemonicParsing="false" onAction="#expandItemAction" text="Expand all" />
-                            <MenuItem mnemonicParsing="false" onAction="#collapseItemAction" text="Collapse all" />
                         </items>
                     </ContextMenu>
               </contextMenu>

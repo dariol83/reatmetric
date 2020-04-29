@@ -18,10 +18,17 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
+import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.*;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.ActivityDialogUtil;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
+import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -35,6 +42,7 @@ import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -43,8 +51,11 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 import javafx.stage.Window;
+import javafx.stage.WindowEvent;
+import org.controlsfx.control.PopOver;
 import org.controlsfx.control.textfield.CustomTextField;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -70,7 +81,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
 
     // Pane control
     @FXML
-    protected TitledPane displayTitledPane;
+    private TitledPane displayTitledPane;
     
     @FXML
     private CustomTextField filterText;
@@ -80,6 +91,10 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private TreeTableColumn<SystemEntity, String> nameCol;
     @FXML    
     private TreeTableColumn<SystemEntity, Status> statusCol;
+    @FXML
+    private ContextMenu contextMenu;
+
+
 
     private final Lock mapLock = new ReentrantLock();
     private final Map<SystemEntityPath, FilterableTreeItem<SystemEntity>> path2item = new TreeMap<>();
@@ -87,7 +102,19 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     
     // Temporary message queue
     private DataProcessingDelegator<SystemEntity> delegator;
-    
+    private PopOver activityPopOver;
+
+    @FXML
+    private MenuItem expandAllMenuItem;
+    @FXML
+    private MenuItem collapseAllMenuItem;
+    @FXML
+    private SeparatorMenuItem expandCollapseSeparator;
+    @FXML
+    private SeparatorMenuItem executeActivitySeparator;
+    @FXML
+    private MenuItem executeActivityMenuItem;
+
     @FXML
     public void filterClearButtonPressed(Event e) {
         this.filterText.clear();
@@ -255,6 +282,11 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 this.mapLock.unlock();
             }
         });
+
+        activityPopOver = new PopOver();
+        activityPopOver.setHideOnEscape(true);
+        activityPopOver.setAutoHide(false);
+        activityPopOver.setDetachable(true);
     }
 
     private void updatePredicate(String newValue) {
@@ -398,6 +430,67 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 this.mapLock.unlock();
             }
         });
+    }
+
+    @FXML
+    public void menuAboutToShow(WindowEvent windowEvent) {
+        TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
+        if(selected == null || selected.getValue() == null) {
+            return;
+        }
+        // Expand/collapse behaviour
+        boolean showExpandCollapse = !selected.isLeaf();
+        collapseAllMenuItem.setVisible(showExpandCollapse);
+        expandAllMenuItem.setVisible(showExpandCollapse);
+        expandCollapseSeparator.setVisible(showExpandCollapse);
+
+        // Execute activity
+        boolean showActivity = selected.getValue().getType() == SystemEntityType.ACTIVITY;
+        executeActivitySeparator.setVisible(showActivity);
+        executeActivityMenuItem.setVisible(showActivity);
+    }
+
+    @FXML
+    private void executeActivityAction(ActionEvent actionEvent) {
+        TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
+        if(selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.ACTIVITY) {
+            return;
+        }
+        try {
+            // Get the descriptor
+            AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getValue().getExternalId());
+            if (descriptor instanceof ActivityDescriptor) {
+                // Get the route list
+                List<ActivityRouteState> routeList = ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability();
+                Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, routeList);
+                // Create the popup
+                activityPopOver.setTitle("Execute activity " + descriptor.getPath().asString());
+                activityPopOver.setContentNode(activityDialogPair.getFirst());
+                activityDialogPair.getSecond().registerHandlers(this::runActivity, this::closeActivityPopOver);
+                activityPopOver.show(modelTree);
+            }
+        } catch (IOException | ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
+        }
+    }
+
+    private void closeActivityPopOver(ActivityInvocationDialogController activityInvocationDialogController) {
+        activityPopOver.hide();
+    }
+
+    private void runActivity(ActivityInvocationDialogController activityInvocationDialogController) {
+        ActivityRequest request = activityInvocationDialogController.buildRequest();
+        boolean confirm = DialogUtils.confirm("Request execution of activity", activityInvocationDialogController.getPath(), "Do you want to dispatch the execution request to the processing model?");
+        if(confirm) {
+            activityPopOver.hide();
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                try {
+                    ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().startActivity(request);
+                } catch (ReatmetricException e) {
+                    LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
+                }
+            });
+        }
     }
 
     /*

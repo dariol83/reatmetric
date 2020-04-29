@@ -276,6 +276,11 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
         processingModel.purgeActivities(activityOccurrenceIds);
     }
 
+    @Override
+    public List<ActivityRouteState> getRouteAvailability() throws ReatmetricException {
+        return processingModel.getRouteAvailability();
+    }
+
     public IProcessingModel getProcessingModel() {
         return processingModel;
     }
