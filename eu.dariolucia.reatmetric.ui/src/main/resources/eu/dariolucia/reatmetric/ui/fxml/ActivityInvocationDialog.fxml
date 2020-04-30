@@ -55,14 +55,9 @@
         <panes>
           <TitledPane animated="false" text="Arguments">
                <content>
-                  <TableView fx:id="argumentsTableView" editable="true" prefHeight="200.0" prefWidth="200.0">
-                    <columns>
-                      <TableColumn fx:id="nameColumn" editable="false" prefWidth="150.0" sortable="false" text="Name" />
-                        <TableColumn fx:id="rawValueColumn" prefWidth="100.0" sortable="false" text="Raw Value" />
-                      <TableColumn fx:id="engValueColumn" prefWidth="100.0" sortable="false" text="Eng. Value" />
-                        <TableColumn fx:id="unitColumn" editable="false" prefWidth="50.0" sortable="false" text="Unit" />
-                    </columns>
-                  </TableView>
+                  <VBox fx:id="argumentVBox" prefHeight="200.0" prefWidth="450.0">
+
+                  </VBox>
                </content>
           </TitledPane>
           <TitledPane animated="false" text="Properties">

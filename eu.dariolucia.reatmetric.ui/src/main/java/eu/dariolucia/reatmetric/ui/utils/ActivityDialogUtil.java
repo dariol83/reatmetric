@@ -20,10 +20,19 @@ import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
 import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Control;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import org.controlsfx.control.ToggleSwitch;
+import org.controlsfx.validation.Severity;
+import org.controlsfx.validation.ValidationSupport;
+import org.controlsfx.validation.Validator;
 
 import java.io.IOException;
 import java.net.URL;
@@ -49,5 +58,58 @@ public class ActivityDialogUtil {
         Pair<Node, ActivityInvocationDialogController> asBuilt = createActivityInvocationDialog();
         asBuilt.getSecond().initialiseActivityDialog(descriptor, request, routeList);
         return asBuilt;
+    }
+
+
+    public static Control buildValueControl(ValidationSupport validationSupport, ValueTypeEnum value, Object inputRawValue, boolean inputIsEngineering, Object defaultRawValue, boolean isFixed) {
+        ValueTypeBasedValidator typeValidator = new ValueTypeBasedValidator(value);
+        Control toReturn;
+        if (value == ValueTypeEnum.ENUMERATED
+                || value == ValueTypeEnum.SIGNED_INTEGER
+                || value == ValueTypeEnum.UNSIGNED_INTEGER
+                || value == ValueTypeEnum.REAL
+                || value == ValueTypeEnum.CHARACTER_STRING
+                || value == ValueTypeEnum.ABSOLUTE_TIME
+                || value == ValueTypeEnum.RELATIVE_TIME
+                || value == ValueTypeEnum.OCTET_STRING
+                || value == ValueTypeEnum.BIT_STRING) {
+            TextField t = new TextField();
+            t.setPrefHeight(24);
+            // Set verification on change
+            if(!isFixed && validationSupport != null) {
+                validationSupport.registerValidator(t, Validator.createPredicateValidator(typeValidator, typeValidator.getErrorMessage(), Severity.ERROR));
+            }
+            // Set current value if any
+            if(inputRawValue != null && !inputIsEngineering) {
+                t.setText(ValueUtil.toString(value, inputRawValue));
+            } else if(defaultRawValue != null) {
+                t.setText(ValueUtil.toString(value, defaultRawValue));
+            } else {
+                t.setText("");
+            }
+            t.setPromptText("");
+            // Set the outer object
+            toReturn = t;
+        } else if (value == ValueTypeEnum.BOOLEAN) {
+            ToggleSwitch t = new ToggleSwitch();
+            t.setPrefHeight(24);
+            // Set current value if any
+            if(inputRawValue != null && !inputIsEngineering) {
+                t.setSelected((Boolean) inputRawValue);
+            } else if(defaultRawValue != null) {
+                t.setSelected((Boolean) defaultRawValue);
+            }
+            // Set the outer object
+            toReturn = t;
+        } else {
+            // Not supported type, use generic text field
+            TextField t = new TextField();
+            t.setPrefHeight(24);
+            t.setPromptText("");
+            t.setText("");
+            // Set the outer object
+            toReturn = t;
+        }
+        return toReturn;
     }
 }

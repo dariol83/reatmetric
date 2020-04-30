@@ -20,10 +20,10 @@ import eu.dariolucia.reatmetric.api.activity.ActivityArgumentDescriptor;
 import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
 import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
-import eu.dariolucia.reatmetric.api.value.ValueUtil;
-import javafx.beans.property.ReadOnlyStringProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -31,16 +31,15 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
-import javafx.util.StringConverter;
+import javafx.scene.layout.VBox;
 
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class ActivityInvocationDialogController implements Initializable {
+
 
     @FXML
     protected Accordion accordion;
@@ -50,97 +49,84 @@ public class ActivityInvocationDialogController implements Initializable {
     protected Label descriptionLabel;
     @FXML
     protected ChoiceBox<ActivityRouteState> routeChoiceBox;
+
     @FXML
-    protected TableView<ArgumentBean> argumentsTableView;
-    @FXML
-    protected TableColumn<ArgumentBean, String> nameColumn;
-    @FXML
-    protected TableColumn<ArgumentBean, String> rawValueColumn;
-    @FXML
-    protected TableColumn<ArgumentBean, String> engValueColumn;
-    @FXML
-    protected TableColumn<ArgumentBean, String> unitColumn;
+    protected VBox argumentVBox;
+
     @FXML
     protected TableView<PropertyBean> propertiesTableView;
     @FXML
-    protected TableColumn keyColumn;
+    protected TableColumn<PropertyBean, String> keyColumn;
     @FXML
-    protected TableColumn valueColumn;
+    protected TableColumn<PropertyBean, String> valueColumn;
     @FXML
     protected Button okButton;
     @FXML
     protected Button cancelButton;
 
     private ActivityDescriptor descriptor;
+    private List<ActivityInvocationArgumentLine> arguments = new LinkedList<>();
     private Consumer<ActivityInvocationDialogController> okHandler;
     private Consumer<ActivityInvocationDialogController> cancelHandler;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         accordion.setExpandedPane(accordion.getPanes().get(0));
+    }
 
-        argumentsTableView.setEditable(true);
-        argumentsTableView.getSelectionModel().cellSelectionEnabledProperty().set(true);
+    private void initialiseArgumentTable(ActivityRequest currentRequest) {
+        for(ActivityArgumentDescriptor d : descriptor.getArgumentDescriptors()) {
+            ActivityInvocationArgumentLine line = new ActivityInvocationArgumentLine(d, getInputFor(currentRequest, d));
+            argumentVBox.getChildren().add(line.getNode());
+            arguments.add(line);
+        }
+    }
 
-        nameColumn.setEditable(false);
-        unitColumn.setEditable(false);
-        rawValueColumn.setEditable(true);
-        engValueColumn.setEditable(true);
-
-        rawValueColumn.setCellValueFactory(o -> o.getValue().rawValueStringProperty());
-        engValueColumn.setCellValueFactory(o -> o.getValue().engValueStringProperty());
-        nameColumn.setCellValueFactory(o -> o.getValue().nameProperty());
-        unitColumn.setCellValueFactory(o -> o.getValue().unitProperty());
-
-        rawValueColumn.setCellFactory(TextFieldTableCell.forTableColumn());
-        engValueColumn.setCellFactory(TextFieldTableCell.forTableColumn());
-
-        engValueColumn.setOnEditStart(event -> {
-            if(event.getRowValue().descriptor.isFixed()) {
-                // Cancel editing
-                argumentsTableView.edit(-1, null);
+    private ActivityArgument getInputFor(ActivityRequest currentRequest, ActivityArgumentDescriptor d) {
+        if(currentRequest == null) {
+            return null;
+        }
+        for(ActivityArgument a : currentRequest.getArguments()) {
+            if(a.getName().equals(d.getName())) {
+                return a;
             }
-        });
-        rawValueColumn.setOnEditStart(event -> {
-            if(event.getRowValue().descriptor.isFixed()) {
-                // Cancel editing
-                argumentsTableView.edit(-1, null);
-            }
-        });
-        engValueColumn.setOnEditCommit(event -> {
-            if(event.getRowValue().descriptor.isFixed()) {
-                return;
-            }
+        }
+        return null;
+    }
+
+    private void initialisePropertyTable() {
+        propertiesTableView.setEditable(true);
+        propertiesTableView.getSelectionModel().cellSelectionEnabledProperty().set(true);
+        keyColumn.setEditable(true);
+        valueColumn.setEditable(true);
+        keyColumn.setCellValueFactory(o -> o.getValue().keyProperty());
+        valueColumn.setCellValueFactory(o -> o.getValue().valueProperty());
+        keyColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        valueColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+
+        keyColumn.setOnEditCommit(event -> {
             final String value = event.getNewValue() != null ? event.getNewValue()
                     : event.getOldValue();
-            // TODO: validation
-            Object engVal = ValueUtil.parse(event.getRowValue().descriptor.getEngineeringDataType(), value);
             event.getTableView().getItems()
                     .get(event.getTablePosition().getRow())
-                    .engValueProperty().set(engVal);
+                    .keyProperty().set(value);
         });
-        rawValueColumn.setOnEditCommit(event -> {
-            if(event.getRowValue().descriptor.isFixed()) {
-                return;
-            }
+        valueColumn.setOnEditCommit(event -> {
             final String value = event.getNewValue() != null ? event.getNewValue()
                     : event.getOldValue();
-            // TODO: validation
-            Object rawVal = ValueUtil.parse(event.getRowValue().descriptor.getRawDataType(), value);
             event.getTableView().getItems()
                     .get(event.getTablePosition().getRow())
-                    .rawValueProperty().set(rawVal);
+                    .valueProperty().set(value);
         });
-
-        argumentsTableView.setOnKeyPressed(event -> {
+        propertiesTableView.setOnKeyPressed(event -> {
             if (event.getCode().isLetterKey() || event.getCode().isDigitKey()) {
-                argumentsTableView.edit(argumentsTableView.getFocusModel().getFocusedCell().getRow(), (TableColumn<ArgumentBean, Object>) argumentsTableView.getFocusModel().getFocusedCell().getTableColumn());
+                propertiesTableView.edit(propertiesTableView.getFocusModel().getFocusedCell().getRow(), (TableColumn<PropertyBean, Object>) propertiesTableView.getFocusModel().getFocusedCell().getTableColumn());
             } else if (event.getCode() == KeyCode.RIGHT
                     || event.getCode() == KeyCode.TAB) {
-                argumentsTableView.getSelectionModel().selectNext();
+                propertiesTableView.getSelectionModel().selectNext();
                 event.consume();
             } else if (event.getCode() == KeyCode.LEFT) {
-                argumentsTableView.getSelectionModel().selectPrevious();
+                propertiesTableView.getSelectionModel().selectPrevious();
                 event.consume();
             }
         });
@@ -169,21 +155,26 @@ public class ActivityInvocationDialogController implements Initializable {
                 routeChoiceBox.getSelectionModel().select(position);
             }
         }
-        // Set the arguments
-        for(ActivityArgumentDescriptor aad : descriptor.getArgumentDescriptors()) {
-            ArgumentBean ab = new ArgumentBean(aad);
-            argumentsTableView.getItems().add(ab);
-            if(currentRequest != null) {
-                updateArgument(ab, aad, currentRequest);
+
+        initialiseArgumentTable(currentRequest);
+
+        if(arguments.size() == 1) {
+            okButton.disableProperty().bind(arguments.get(0).validProperty().not());
+        } else if(arguments.size() > 1) {
+            BooleanBinding allValid = arguments.get(0).validProperty().and(arguments.get(1).validProperty());
+            for(i = 2; i < arguments.size(); ++i) {
+                allValid = allValid.and(arguments.get(i).validProperty());
             }
+            okButton.disableProperty().bind(allValid.not());
         }
+
+        initialisePropertyTable();
+
         // Set the properties
         for(Pair<String, String> property : descriptor.getProperties()) {
             PropertyBean pb = new PropertyBean(property);
             propertiesTableView.getItems().add(pb);
-            if(currentRequest != null) {
-                updateProperty(pb, property, currentRequest);
-            }
+            updateProperty(pb, currentRequest);
         }
     }
 
@@ -192,12 +183,16 @@ public class ActivityInvocationDialogController implements Initializable {
         this.cancelHandler = cancelClicked;
     }
 
-    private void updateProperty(PropertyBean pb, Pair<String, String> property, ActivityRequest currentRequest) {
-        // TODO
-    }
-
-    private void updateArgument(ArgumentBean ab, ActivityArgumentDescriptor aad, ActivityRequest currentRequest) {
-        // TODO
+    private void updateProperty(PropertyBean pb, ActivityRequest currentRequest) {
+        if(currentRequest == null) {
+            return;
+        }
+        for(Map.Entry<String, String> prop : currentRequest.getProperties().entrySet()) {
+            if(prop.getKey().equals(pb.keyProperty().get())) {
+                pb.valueProperty().set(prop.getValue());
+                return;
+            }
+        }
     }
 
     public void okButtonClicked(ActionEvent actionEvent) {
@@ -217,72 +212,29 @@ public class ActivityInvocationDialogController implements Initializable {
     }
 
     public ActivityRequest buildRequest() {
-        // TODO
-        return null;
-    }
-
-    private static class ArgumentBean {
-
-        private final ActivityArgumentDescriptor descriptor;
-        private final ReadOnlyStringProperty name;
-        private final ReadOnlyStringProperty unit;
-        private final SimpleObjectProperty<Object> rawValue;
-        private final SimpleObjectProperty<Object> engValue;
-        private final SimpleStringProperty rawValueString;
-        private final SimpleStringProperty engValueString;
-
-        public ArgumentBean(ActivityArgumentDescriptor aad) {
-            descriptor = aad;
-            name = new SimpleStringProperty(aad.getName());
-            unit = new SimpleStringProperty(aad.getUnit());
-            rawValue = new SimpleObjectProperty<>();
-            engValue = new SimpleObjectProperty<>();
-            rawValueString = new SimpleStringProperty();
-            engValueString = new SimpleStringProperty();
-            rawValue.addListener(o -> rawValueString.set(ValueUtil.toString(descriptor.getRawDataType(), rawValue.get())));
-            engValue.addListener(o -> engValueString.set(ValueUtil.toString(descriptor.getEngineeringDataType(), engValue.get())));
-            if(aad.isDefaultValuePresent()) {
-                if(aad.getRawDefaultValue() != null) {
-                    rawValue.set(aad.getRawDefaultValue());
-                } else if(aad.getEngineeringDefaultValue() != null) {
-                    engValue.set(aad.getEngineeringDefaultValue());
-                }
-            }
+        Map<String, String> propertyMap = new LinkedHashMap<>();
+        for(PropertyBean pb : propertiesTableView.getItems()) {
+            propertyMap.put(pb.keyProperty().get(), pb.valueProperty().get());
         }
-
-        public ActivityArgumentDescriptor getDescriptor() {
-            return descriptor;
-        }
-
-        public ReadOnlyStringProperty nameProperty() {
-            return name;
-        }
-
-        public ReadOnlyStringProperty unitProperty() {
-            return unit;
-        }
-
-        public SimpleObjectProperty<Object> rawValueProperty() {
-            return rawValue;
-        }
-
-        public SimpleObjectProperty<Object> engValueProperty() {
-            return engValue;
-        }
-
-        public SimpleStringProperty rawValueStringProperty() {
-            return rawValueString;
-        }
-
-        public SimpleStringProperty engValueStringProperty() {
-            return engValueString;
-        }
+        return new ActivityRequest(descriptor.getExternalId(), arguments.stream().map(ActivityInvocationArgumentLine::buildArgument).collect(Collectors.toList()), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), "TODO Source");
     }
 
     private static class PropertyBean {
 
-        public PropertyBean(Pair<String, String> property) {
+        private final SimpleStringProperty key;
+        private final SimpleStringProperty value;
 
+        public PropertyBean(Pair<String, String> property) {
+            key = new SimpleStringProperty(property.getFirst());
+            value = new SimpleStringProperty(property.getSecond());
+        }
+
+        public SimpleStringProperty keyProperty() {
+            return key;
+        }
+
+        public SimpleStringProperty valueProperty() {
+            return value;
         }
     }
 }
