@@ -61,8 +61,14 @@ public class ActivityDialogUtil {
     }
 
 
-    public static Control buildValueControl(ValidationSupport validationSupport, ValueTypeEnum value, Object inputRawValue, boolean inputIsEngineering, Object defaultRawValue, boolean isFixed) {
-        ValueTypeBasedValidator typeValidator = new ValueTypeBasedValidator(value);
+    public static Control buildValueControl(ValidationSupport validationSupport, ValueTypeEnum value, Object inputValue, boolean inputIsEngineering, Object defaultValue, boolean isFixed) {
+        boolean mandatory = true;
+        if(isFixed) {
+            mandatory = false;
+        } else if(defaultValue == null) {
+            mandatory = true;
+        }
+        ValueTypeBasedValidator typeValidator = new ValueTypeBasedValidator(value, mandatory);
         Control toReturn;
         if (value == ValueTypeEnum.ENUMERATED
                 || value == ValueTypeEnum.SIGNED_INTEGER
@@ -77,13 +83,14 @@ public class ActivityDialogUtil {
             t.setPrefHeight(24);
             // Set verification on change
             if(!isFixed && validationSupport != null) {
+                typeValidator.activeProperty().bind(t.disableProperty().not());
                 validationSupport.registerValidator(t, Validator.createPredicateValidator(typeValidator, typeValidator.getErrorMessage(), Severity.ERROR));
             }
             // Set current value if any
-            if(inputRawValue != null && !inputIsEngineering) {
-                t.setText(ValueUtil.toString(value, inputRawValue));
-            } else if(defaultRawValue != null) {
-                t.setText(ValueUtil.toString(value, defaultRawValue));
+            if(inputValue != null && !inputIsEngineering) {
+                t.setText(ValueUtil.toString(value, inputValue));
+            } else if(defaultValue != null) {
+                t.setText(ValueUtil.toString(value, defaultValue));
             } else {
                 t.setText("");
             }
@@ -94,10 +101,10 @@ public class ActivityDialogUtil {
             ToggleSwitch t = new ToggleSwitch();
             t.setPrefHeight(24);
             // Set current value if any
-            if(inputRawValue != null && !inputIsEngineering) {
-                t.setSelected((Boolean) inputRawValue);
-            } else if(defaultRawValue != null) {
-                t.setSelected((Boolean) defaultRawValue);
+            if(inputValue != null && !inputIsEngineering) {
+                t.setSelected((Boolean) inputValue);
+            } else if(defaultValue != null) {
+                t.setSelected((Boolean) defaultValue);
             }
             // Set the outer object
             toReturn = t;

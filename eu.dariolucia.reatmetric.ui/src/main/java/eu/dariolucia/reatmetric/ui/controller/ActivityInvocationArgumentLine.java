@@ -21,17 +21,12 @@ import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.utils.ActivityDialogUtil;
-import eu.dariolucia.reatmetric.ui.utils.ValueTypeBasedValidator;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import org.controlsfx.control.ToggleSwitch;
-import org.controlsfx.control.textfield.TextFields;
-import org.controlsfx.validation.Severity;
 import org.controlsfx.validation.ValidationSupport;
-import org.controlsfx.validation.Validator;
 
 import java.util.Objects;
 
@@ -42,6 +37,7 @@ public class ActivityInvocationArgumentLine {
 
     private HBox node;
 
+    // TODO: move validationSupport inside the constructor
     private final ValidationSupport validationSupport = new ValidationSupport();
     private final SimpleBooleanProperty valid = new SimpleBooleanProperty(false);
     private Control rawValueControl;
@@ -98,6 +94,10 @@ public class ActivityInvocationArgumentLine {
         rawEngSelection.disableProperty().bind(fixedProperty);
 
         node.getChildren().addAll(nameLbl, rawValueControl, engValueControl, unitLbl, rawEngSelection);
+        validationSupport.initInitialDecoration();
+
+        // TODO add recomputation of the validation status if rawEngSelection changes
+        rawEngSelection.selectedProperty().addListener((observableValue, aBoolean, t1) -> validationSupport.initInitialDecoration());
     }
 
     public HBox getNode() {

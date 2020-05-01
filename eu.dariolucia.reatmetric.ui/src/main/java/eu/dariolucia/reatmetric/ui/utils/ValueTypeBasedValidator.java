@@ -18,25 +18,45 @@ package eu.dariolucia.reatmetric.ui.utils;
 
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import javafx.beans.property.SimpleBooleanProperty;
 
 import java.util.function.Predicate;
 
 public class ValueTypeBasedValidator implements Predicate<String> {
 
     private final ValueTypeEnum type;
+    private final SimpleBooleanProperty active;
+    private final boolean mandatory;
 
-    public ValueTypeBasedValidator(ValueTypeEnum type) {
+    public ValueTypeBasedValidator(ValueTypeEnum type, boolean mandatory) {
+        this.active = new SimpleBooleanProperty(true);
         this.type = type;
+        this.mandatory = mandatory;
     }
 
     @Override
     public boolean test(String o) {
-        try {
-            ValueUtil.parse(type, o);
+        if(active.get()) {
+            if(mandatory && (o == null)) {
+                return false;
+            }
+            if(mandatory && o.isBlank() &&
+                    (type == ValueTypeEnum.ENUMERATED || type == ValueTypeEnum.UNSIGNED_INTEGER || type == ValueTypeEnum.SIGNED_INTEGER || type == ValueTypeEnum.REAL || type == ValueTypeEnum.ABSOLUTE_TIME || type == ValueTypeEnum.RELATIVE_TIME)) {
+                return false;
+            }
+            try {
+                ValueUtil.parse(type, o);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        } else {
             return true;
-        } catch (Exception e) {
-            return false;
         }
+    }
+
+    public SimpleBooleanProperty activeProperty() {
+        return active;
     }
 
     public String getErrorMessage() {
@@ -53,7 +73,7 @@ public class ValueTypeBasedValidator implements Predicate<String> {
             case OCTET_STRING:
                 return "Byte sequence in hexadecimal format required";
             case BIT_STRING:
-                return "Sequence of 0s and 1s required";
+                return "Sequence of 0s and 1s required, prefixed with _ (underscore)";
             case ABSOLUTE_TIME:
                 return "Absolute time in the format yyyy-mm-ddThh:mm:ss.SSSZ required";
             case RELATIVE_TIME:
