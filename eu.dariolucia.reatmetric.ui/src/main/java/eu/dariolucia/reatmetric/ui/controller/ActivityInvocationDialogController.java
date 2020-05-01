@@ -221,7 +221,7 @@ public class ActivityInvocationDialogController implements Initializable {
 
     @FXML
     public void addPropertyClicked(ActionEvent actionEvent) {
-        propertiesTableView.getItems().add(new PropertyBean(Pair.of("","")));
+        propertiesTableView.getItems().add(new PropertyBean(Pair.of("property-key","property-value")));
     }
 
     @FXML

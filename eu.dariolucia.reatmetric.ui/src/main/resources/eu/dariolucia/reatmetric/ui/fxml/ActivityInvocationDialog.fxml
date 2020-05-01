@@ -31,7 +31,9 @@
   -->
 
 
-<VBox prefWidth="500.0" spacing="8.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController">
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<VBox prefWidth="550.0" spacing="8.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController">
    <children>
       <HBox VBox.vgrow="NEVER">
          <children>
@@ -55,24 +57,39 @@
         <panes>
           <TitledPane animated="false" text="Arguments">
                <content>
-                  <VBox fx:id="argumentVBox" prefHeight="200.0" prefWidth="450.0">
-
+                  <VBox fx:id="argumentVBox" prefHeight="200.0" prefWidth="500.0">
                   </VBox>
                </content>
           </TitledPane>
           <TitledPane animated="false" text="Properties">
                <content>
-                   <HBox>
+                   <HBox spacing="8">
                   <TableView fx:id="propertiesTableView" editable="true" prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS" >
                     <columns>
                       <TableColumn fx:id="keyColumn" prefWidth="180.0" sortable="false" text="Key" />
                       <TableColumn fx:id="valueColumn" prefWidth="180.0" sortable="false" text="Value" />
                     </columns>
                   </TableView>
-                       <VBox>
+                       <VBox spacing="8">
                            <children>
-                               <Button mnemonicParsing="false" prefWidth="24.0" prefHeight="24.0" text="+" onAction="#addPropertyClicked" />
-                               <Button mnemonicParsing="false" prefWidth="24.0" prefHeight="24.0" text="-" onAction="#removePropertyClicked"/>
+                               <Button mnemonicParsing="false" prefWidth="18.0" prefHeight="18.0" onAction="#addPropertyClicked">
+                                   <graphic>
+                                       <ImageView pickOnBounds="true" preserveRatio="true">
+                                           <image>
+                                               <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/plus-circle.svg.png" />
+                                           </image>
+                                       </ImageView>
+                                   </graphic>
+                               </Button>
+                               <Button mnemonicParsing="false" prefWidth="18.0" prefHeight="18.0" onAction="#removePropertyClicked">
+                                   <graphic>
+                                       <ImageView pickOnBounds="true" preserveRatio="true">
+                                           <image>
+                                               <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/minus-circle.svg.png" />
+                                           </image>
+                                       </ImageView>
+                                   </graphic>
+                               </Button>
                            </children>
                        </VBox>
                    </HBox>
