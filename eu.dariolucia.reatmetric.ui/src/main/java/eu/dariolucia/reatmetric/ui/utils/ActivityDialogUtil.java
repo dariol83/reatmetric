@@ -27,6 +27,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.Control;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.ToggleSwitch;
 import org.controlsfx.validation.Severity;
@@ -78,6 +79,7 @@ public class ActivityDialogUtil {
                 || value == ValueTypeEnum.BIT_STRING) {
             TextField t = new TextField();
             t.setPrefHeight(24);
+            t.setTooltip(new Tooltip(typeValidator.getErrorMessage()));
             // Set verification on change
             if(!isFixed && validationSupport != null) {
                 typeValidator.activeProperty().bind(t.disableProperty().not());
@@ -93,24 +95,26 @@ public class ActivityDialogUtil {
             }
             t.setPromptText("");
             // Workaround for validation triggering on disabled
-            t.disableProperty().addListener((a,b,c) -> {
-                if(t.isDisabled()) {
-                    t.setUserData(t.getText());
-                    // Force trigger
-                    t.setText("_");
-                    t.setText("");
-                } else {
-                    if(t.getUserData() != null) {
-                        // Force trigger
-                        t.setText("_");
-                        t.setText(t.getUserData().toString());
-                    } else {
+            if(!isFixed) {
+                t.disableProperty().addListener((a,b,c) -> {
+                    if(t.isDisabled()) {
+                        t.setUserData(t.getText());
                         // Force trigger
                         t.setText("_");
                         t.setText("");
+                    } else {
+                        if(t.getUserData() != null) {
+                            // Force trigger
+                            t.setText("_");
+                            t.setText(t.getUserData().toString());
+                        } else {
+                            // Force trigger
+                            t.setText("_");
+                            t.setText("");
+                        }
                     }
-                }
-            });
+                });
+            }
             // Set the outer object
             toReturn = t;
         } else if (value == ValueTypeEnum.BOOLEAN) {

@@ -33,6 +33,7 @@
 
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
+<?import javafx.scene.control.ComboBox?>
 <VBox prefWidth="550.0" spacing="8.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController">
    <children>
       <HBox VBox.vgrow="NEVER">
@@ -45,12 +46,22 @@
             </Label>
          </children>
       </HBox>
+       <HBox VBox.vgrow="NEVER">
+           <children>
+               <Label prefWidth="120.0" text="Type" />
+               <Label fx:id="typeLabel" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS">
+                   <font>
+                       <Font name="System Bold" size="12.0" />
+                   </font>
+               </Label>
+           </children>
+       </HBox>
       <Label fx:id="descriptionLabel" wrapText="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
       <Separator prefWidth="200.0" />
       <HBox VBox.vgrow="NEVER">
          <children>
             <Label prefWidth="120.0" text="Selected Route" />
-            <ChoiceBox fx:id="routeChoiceBox" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+            <ComboBox fx:id="routeChoiceBox" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
          </children>
       </HBox>
       <Accordion fx:id="accordion" VBox.vgrow="ALWAYS">

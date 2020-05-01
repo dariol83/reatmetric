@@ -281,6 +281,11 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
         return processingModel.getRouteAvailability();
     }
 
+    @Override
+    public List<ActivityRouteState> getRouteAvailability(String type) throws ReatmetricException {
+        return processingModel.getRouteAvailability(type);
+    }
+
     public IProcessingModel getProcessingModel() {
         return processingModel;
     }

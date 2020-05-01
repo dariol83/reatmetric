@@ -65,11 +65,9 @@ public class ActivityInvocationArgumentLine {
         // Raw value
         rawValueControl = ActivityDialogUtil.buildValueControl(validationSupport, descriptor.getRawDataType(), input != null ? input.getRawValue() : null, input != null && input.isEngineering(), descriptor.getRawDefaultValue(), descriptor.isFixed());
         rawValueControl.setPrefWidth(100);
-        rawValueControl.setTooltip(new Tooltip("Raw value"));
         // Eng. value
         engValueControl = ActivityDialogUtil.buildValueControl(validationSupport, descriptor.getEngineeringDataType(), input != null ? input.getEngValue() : null, input != null && input.isEngineering(), descriptor.getEngineeringDefaultValue(), descriptor.isFixed());
         engValueControl.setPrefWidth(100);
-        engValueControl.setTooltip(new Tooltip("Engineering value"));
         // Raw/Eng value selection
         rawEngSelection = new CheckBox();
         rawEngSelection.setText("Use Eng.");
@@ -108,8 +106,12 @@ public class ActivityInvocationArgumentLine {
         return valid;
     }
 
+    public boolean isFixed() {
+        return descriptor.isFixed();
+    }
+
     public ActivityArgument buildArgument() {
-        return new ActivityArgument(descriptor.getName(), buildObject(descriptor.getRawDataType(), rawValueControl), buildObject(descriptor.getEngineeringDataType(), engValueControl), rawEngSelection.isSelected());
+        return new ActivityArgument(descriptor.getName(), !rawEngSelection.isSelected() ? buildObject(descriptor.getRawDataType(), rawValueControl) : null, rawEngSelection.isSelected() ? buildObject(descriptor.getEngineeringDataType(), engValueControl) : null, rawEngSelection.isSelected());
     }
 
     private Object buildObject(ValueTypeEnum type, Control control) {

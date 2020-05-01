@@ -461,7 +461,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getValue().getExternalId());
             if (descriptor instanceof ActivityDescriptor) {
                 // Get the route list
-                List<ActivityRouteState> routeList = ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability();
+                List<ActivityRouteState> routeList = ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ActivityDescriptor) descriptor).getActivityType());
                 Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, routeList);
                 // Create the popup
                 activityPopOver.setTitle("Execute activity " + descriptor.getPath().asString());

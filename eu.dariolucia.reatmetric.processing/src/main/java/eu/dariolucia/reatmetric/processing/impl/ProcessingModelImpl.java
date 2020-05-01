@@ -349,9 +349,17 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     @Override
-    public List<ActivityRouteState> getRouteAvailability() throws ProcessingModelException {
+    public List<ActivityRouteState> getRouteAvailability() {
+        return getRouteAvailability(null);
+    }
+
+    @Override
+    public List<ActivityRouteState> getRouteAvailability(String type) {
         List<ActivityRouteState> states = new LinkedList<>();
         for(IActivityHandler h : this.activityHandlers.values()) {
+            if(type != null && !h.getSupportedActivityTypes().contains(type)) {
+                continue;
+            }
             List<String> routes = h.getSupportedRoutes();
             for(String route : routes) {
                 boolean available;

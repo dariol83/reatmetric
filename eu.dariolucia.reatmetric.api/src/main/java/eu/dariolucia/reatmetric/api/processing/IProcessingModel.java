@@ -85,4 +85,6 @@ public interface IProcessingModel {
     void deregisterActivityHandler(IActivityHandler handler) throws ProcessingModelException;
 
     List<ActivityRouteState> getRouteAvailability() throws ProcessingModelException;
+
+    List<ActivityRouteState> getRouteAvailability(String type) throws ProcessingModelException;
 }

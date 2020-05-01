@@ -22,7 +22,6 @@ import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
-import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
@@ -32,6 +31,9 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Paint;
+import javafx.scene.shape.Circle;
+import javafx.util.Callback;
 
 import java.net.URL;
 import java.util.*;
@@ -41,14 +43,17 @@ import java.util.stream.Collectors;
 public class ActivityInvocationDialogController implements Initializable {
 
 
+
     @FXML
     protected Accordion accordion;
     @FXML
     protected Label activityLabel;
     @FXML
+    protected Label typeLabel;
+    @FXML
     protected Label descriptionLabel;
     @FXML
-    protected ChoiceBox<ActivityRouteState> routeChoiceBox;
+    protected ComboBox<ActivityRouteState> routeChoiceBox;
 
     @FXML
     protected VBox argumentVBox;
@@ -72,6 +77,36 @@ public class ActivityInvocationDialogController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         accordion.setExpandedPane(accordion.getPanes().get(0));
+        routeChoiceBox.setCellFactory(new Callback<>() {
+            @Override
+            public ListCell<ActivityRouteState> call(ListView<ActivityRouteState> p) {
+                return new ListCell<>() {
+                    @Override
+                    protected void updateItem(ActivityRouteState item, boolean empty) {
+                        super.updateItem(item, empty);
+                        setText(item == null ? "" : item.getRoute());
+                        if (item == null || empty) {
+                            setGraphic(null);
+                        } else {
+                            Circle c = new Circle();
+                            c.setRadius(8);
+                            switch (item.getAvailability()) {
+                                case AVAILABLE:
+                                    c.setFill(Paint.valueOf("#00FF00"));
+                                break;
+                                case UNAVAILABLE:
+                                    c.setFill(Paint.valueOf("#FF0000"));
+                                break;
+                                case UNKNOWN:
+                                    c.setFill(Paint.valueOf("#a9a9a9"));
+                                break;
+                            }
+                            setGraphic(c);
+                        }
+                    }
+                };
+            }
+        });
     }
 
     private void initialiseArgumentTable(ActivityRequest currentRequest) {
@@ -135,6 +170,7 @@ public class ActivityInvocationDialogController implements Initializable {
     public void initialiseActivityDialog(ActivityDescriptor descriptor, ActivityRequest currentRequest, List<ActivityRouteState> routesWithAvailability) {
         this.descriptor = descriptor;
         activityLabel.setText(descriptor.getPath().asString());
+        typeLabel.setText(descriptor.getActivityType());
         descriptionLabel.setText(descriptor.getDescription());
         // Set the routes
         Map<String, Integer> route2position = new HashMap<>();
@@ -216,7 +252,7 @@ public class ActivityInvocationDialogController implements Initializable {
         for(PropertyBean pb : propertiesTableView.getItems()) {
             propertyMap.put(pb.keyProperty().get(), pb.valueProperty().get());
         }
-        return new ActivityRequest(descriptor.getExternalId(), arguments.stream().map(ActivityInvocationArgumentLine::buildArgument).collect(Collectors.toList()), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), "TODO Source");
+        return new ActivityRequest(descriptor.getExternalId(), arguments.stream().filter(o -> !o.isFixed()).map(ActivityInvocationArgumentLine::buildArgument).collect(Collectors.toList()), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), "TODO Source");
     }
 
     @FXML

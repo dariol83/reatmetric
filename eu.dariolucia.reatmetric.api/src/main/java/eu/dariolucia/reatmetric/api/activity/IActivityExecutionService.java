@@ -63,11 +63,18 @@ public interface IActivityExecutionService {
     void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) throws ReatmetricException;
 
     /**
-     * Retrieve the list of defined activity routes in the system and return them together with the current availability state.
+     * Retrieve the list of all defined activity routes in the system and return them together with the current availability state.
      *
      * @return the availability state
      */
     List<ActivityRouteState> getRouteAvailability() throws ReatmetricException;
+
+    /**
+     * Retrieve the list of defined activity routes in the system for the provided type and return them together with the current availability state.
+     *
+     * @return the availability state
+     */
+    List<ActivityRouteState> getRouteAvailability(String type) throws ReatmetricException;
 
     // TODO add a way to set parameter value
     // IUniqueId setParameter(SetParameterRequest request) throws ReatmetricException
