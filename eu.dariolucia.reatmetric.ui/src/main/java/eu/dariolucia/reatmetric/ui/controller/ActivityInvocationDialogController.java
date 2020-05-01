@@ -219,6 +219,18 @@ public class ActivityInvocationDialogController implements Initializable {
         return new ActivityRequest(descriptor.getExternalId(), arguments.stream().map(ActivityInvocationArgumentLine::buildArgument).collect(Collectors.toList()), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), "TODO Source");
     }
 
+    @FXML
+    public void addPropertyClicked(ActionEvent actionEvent) {
+        propertiesTableView.getItems().add(new PropertyBean(Pair.of("","")));
+    }
+
+    @FXML
+    public void removePropertyClicked(ActionEvent actionEvent) {
+        if(propertiesTableView.getSelectionModel().getSelectedItem() != null) {
+            propertiesTableView.getItems().remove(propertiesTableView.getSelectionModel().getSelectedItem());
+        }
+    }
+
     private static class PropertyBean {
 
         private final SimpleStringProperty key;

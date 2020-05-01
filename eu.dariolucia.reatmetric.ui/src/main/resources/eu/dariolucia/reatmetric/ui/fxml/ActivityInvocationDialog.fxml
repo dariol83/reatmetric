@@ -35,7 +35,7 @@
    <children>
       <HBox VBox.vgrow="NEVER">
          <children>
-            <Label prefWidth="100.0" text="Activity" />
+            <Label prefWidth="120.0" text="Activity" />
             <Label fx:id="activityLabel" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS">
                <font>
                   <Font name="System Bold" size="12.0" />
@@ -47,7 +47,7 @@
       <Separator prefWidth="200.0" />
       <HBox VBox.vgrow="NEVER">
          <children>
-            <Label prefWidth="100.0" text="Selected Route" />
+            <Label prefWidth="120.0" text="Selected Route" />
             <ChoiceBox fx:id="routeChoiceBox" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
          </children>
       </HBox>
@@ -62,12 +62,20 @@
           </TitledPane>
           <TitledPane animated="false" text="Properties">
                <content>
-                  <TableView fx:id="propertiesTableView" editable="true" prefHeight="200.0" prefWidth="200.0">
+                   <HBox>
+                  <TableView fx:id="propertiesTableView" editable="true" prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS" >
                     <columns>
                       <TableColumn fx:id="keyColumn" prefWidth="180.0" sortable="false" text="Key" />
                       <TableColumn fx:id="valueColumn" prefWidth="180.0" sortable="false" text="Value" />
                     </columns>
                   </TableView>
+                       <VBox>
+                           <children>
+                               <Button mnemonicParsing="false" prefWidth="24.0" prefHeight="24.0" text="+" onAction="#addPropertyClicked" />
+                               <Button mnemonicParsing="false" prefWidth="24.0" prefHeight="24.0" text="-" onAction="#removePropertyClicked"/>
+                           </children>
+                       </VBox>
+                   </HBox>
                </content>
           </TitledPane>
         </panes>
