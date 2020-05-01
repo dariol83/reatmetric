@@ -25,7 +25,6 @@ import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.Control;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
@@ -65,8 +64,6 @@ public class ActivityDialogUtil {
         boolean mandatory = true;
         if(isFixed) {
             mandatory = false;
-        } else if(defaultValue == null) {
-            mandatory = true;
         }
         ValueTypeBasedValidator typeValidator = new ValueTypeBasedValidator(value, mandatory);
         Control toReturn;
@@ -95,6 +92,25 @@ public class ActivityDialogUtil {
                 t.setText("");
             }
             t.setPromptText("");
+            // Workaround for validation triggering on disabled
+            t.disableProperty().addListener((a,b,c) -> {
+                if(t.isDisabled()) {
+                    t.setUserData(t.getText());
+                    // Force trigger
+                    t.setText("_");
+                    t.setText("");
+                } else {
+                    if(t.getUserData() != null) {
+                        // Force trigger
+                        t.setText("_");
+                        t.setText(t.getUserData().toString());
+                    } else {
+                        // Force trigger
+                        t.setText("_");
+                        t.setText("");
+                    }
+                }
+            });
             // Set the outer object
             toReturn = t;
         } else if (value == ValueTypeEnum.BOOLEAN) {
