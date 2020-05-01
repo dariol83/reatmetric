@@ -37,6 +37,7 @@ import java.util.function.Function;
 
 public class TransportConnectorInitDialog extends Dialog<Boolean> {
 
+	// TODO: make this a PopOver, provide hooking node
 	public static Optional<Boolean> openWizard(ITransportConnector connector) {
 		return new TransportConnectorInitDialog(connector).showAndWait();
 	}

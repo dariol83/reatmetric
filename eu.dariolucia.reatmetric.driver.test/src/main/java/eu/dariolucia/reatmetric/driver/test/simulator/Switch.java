@@ -40,8 +40,16 @@ public class Switch extends StationEquipment {
 
     @Override
     public boolean doExecute(byte[] command) {
-        // TODO: implement
-        return false;
+        ByteBuffer bb = ByteBuffer.wrap(command);
+        byte firstByte = bb.get();
+        int commandId = bb.getInt();
+        int commandTag = bb.getInt();
+        if(commandId == 0) { // Change switch position
+            position = bb.getInt();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -50,8 +58,7 @@ public class Switch extends StationEquipment {
         byte firstByte = bb.get();
         int commandId = bb.getInt();
         int commandTag = bb.getInt();
-        // TODO: implement command Id checking
-        return Pair.of(commandTag, true);
+        return Pair.of(commandTag, commandId == 0); // Switch position
     }
 
     @Override

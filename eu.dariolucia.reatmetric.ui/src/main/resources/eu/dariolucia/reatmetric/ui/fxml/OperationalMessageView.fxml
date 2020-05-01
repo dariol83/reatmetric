@@ -27,6 +27,8 @@
   ~ limitations under the License.
   -->
 
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <TitledPane fx:id="displayTitledPane" collapsible="false" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minWidth="650.0" prefWidth="717.0" text="Operational Messages" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.OperationalMessageViewController">
    <content>
       <VBox prefHeight="200.0" prefWidth="100.0">
@@ -45,7 +47,15 @@
                   <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
                   <Label maxWidth="1.7976931348623157E308" minWidth="5.0" text=" " />
                   <Button fx:id="filterBtn" mnemonicParsing="false" onAction="#filterButtonSelected" text="Filter..." />
-                  <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected" text="Print..." />
+                   <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/printer.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                   </Button>
                </items>
             </ToolBar>
             <TableView fx:id="dataItemTableView" fixedCellSize="20.0" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">

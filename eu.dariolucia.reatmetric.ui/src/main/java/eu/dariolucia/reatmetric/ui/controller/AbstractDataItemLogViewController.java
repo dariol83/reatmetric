@@ -154,7 +154,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             URL filterWidgetUrl = doGetFilterWidget();
             FXMLLoader loader = new FXMLLoader(filterWidgetUrl);
             Parent filterSelector = loader.load();
-            this.dataItemFilterController = (IFilterController<V>) loader.getController();
+            this.dataItemFilterController = loader.getController();
             this.filterPopup.getContent().addAll(filterSelector);
             // Load the controller hide with select
             this.dataItemFilterController.setActionAfterSelection(() -> {
@@ -313,6 +313,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         // Start subscription if there
         if (this.liveTgl == null || this.liveTgl.isSelected()) {
         	clearTable();
+            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter());
             startSubscription();
         }
     }

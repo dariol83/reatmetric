@@ -18,24 +18,23 @@
 package eu.dariolucia.reatmetric.ui.utils;
 
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import javafx.collections.FXCollections;
 import javafx.scene.control.Control;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author dario
  */
 public class TableViewUtil {
-    
+
+    private static final Logger LOG = Logger.getLogger(TableViewUtil.class.getName());
+
     public static boolean restoreColumnConfiguration(String csystem, String cuser, String id, TableView<?> table) {
         try {
             if(csystem != null && cuser != null) {
@@ -56,20 +55,17 @@ public class TableViewUtil {
                         }
                     }
                     // Re-order
-                    Collections.sort(table.getColumns(), new Comparator<TableColumn>() {
-                        @Override
-                        public int compare(TableColumn o1, TableColumn o2) {
-                            Object[] first = infoMap.get(o1);
-                            Object[] second = infoMap.get(o2);
-                            if(first.length == 0 && second.length == 0) {
-                                return o1.getText().compareTo(o2.getText());
-                            } else if(first.length == 0 && second.length != 0) {
-                                return -1;
-                            } else if(first.length != 0 && second.length == 0) {
-                                return 1;
-                            } else {
-                                return ((Integer)first[1]) - ((Integer)second[1]);
-                            }
+                    Collections.sort(table.getColumns(), (Comparator<TableColumn>) (o1, o2) -> {
+                        Object[] first = infoMap.get(o1);
+                        Object[] second = infoMap.get(o2);
+                        if(first.length == 0 && second.length == 0) {
+                            return o1.getText().compareTo(o2.getText());
+                        } else if(first.length == 0 && second.length != 0) {
+                            return -1;
+                        } else if(first.length != 0 && second.length == 0) {
+                            return 1;
+                        } else {
+                            return ((Integer)first[1]) - ((Integer)second[1]);
                         }
                     });
                     // Resize
@@ -83,7 +79,9 @@ public class TableViewUtil {
                 return true;
             }
         } catch (Exception e) {
-            e.printStackTrace(); // TODO log
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Cannot restore table settings for " + csystem + ", " + cuser + ", " + id + ": " + e.getMessage(), e);
+            }
         }
         return false;
     }
@@ -99,7 +97,9 @@ public class TableViewUtil {
                 return true;
             }
         } catch (Exception e) {
-            e.printStackTrace(); // TODO log
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Cannot persist table settings for " + csystem + ", " + cuser + ", " + id + ": " + e.getMessage(), e);
+            }
         }
         return false;
     }

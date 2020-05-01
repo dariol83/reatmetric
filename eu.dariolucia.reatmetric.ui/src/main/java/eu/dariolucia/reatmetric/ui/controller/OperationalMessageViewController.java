@@ -65,35 +65,28 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
         this.messageCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getMessage()));
 
         this.genTimeCol.setCellFactory(new InstantCellFactory<>());
-        this.severityCol.setCellFactory(column -> {
-            return new TableCell<OperationalMessage, Severity>() {
-                @Override
-                protected void updateItem(Severity item, boolean empty) {
-                    super.updateItem(item, empty);
-                    if (item != null && !empty && !isEmpty()) {
-                        setText(item.name());
-                        switch (item) {
-                            case ALARM:
-                                setTextFill(Color.DARKRED);
-                                // setStyle("-fx-font-weight: bold");
-                                // setStyle("-fx-font-weight: bold; -fx-background-color: DarkRed; -fx-border-width: 0 1 1 0; -fx-border-color: Black");
-                                break;
-                            case WARN:
-                                setTextFill(Color.DARKORANGE);
-                                // setStyle("-fx-font-weight: bold");
-                                // setStyle("-fx-font-weight: bold; -fx-background-color: Chocolate; -fx-border-width: 0 1 1 0; -fx-border-color: Black");
-                                break;
-                            default:
-                                setTextFill(Color.BLACK);
-                                // setStyle("");
-                                break;
-                        }
-                    } else {
-                        setText("");
-                        setGraphic(null);
+        this.severityCol.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(Severity item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(item.name());
+                    switch (item) {
+                        case ALARM:
+                            setTextFill(Color.DARKRED);
+                            break;
+                        case WARN:
+                            setTextFill(Color.DARKORANGE);
+                            break;
+                        default:
+                            setTextFill(Color.BLACK);
+                            break;
                     }
+                } else {
+                    setText("");
+                    setGraphic(null);
                 }
-            };
+            }
         });
     }
 

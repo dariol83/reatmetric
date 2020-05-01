@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityArgumentDescriptor;
 import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
+import eu.dariolucia.reatmetric.api.activity.ActivityRouteAvailability;
 import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
@@ -190,7 +191,17 @@ public class ActivityInvocationDialogController implements Initializable {
             if(position != null) {
                 routeChoiceBox.getSelectionModel().select(position);
             }
+        } else {
+            // Check if you can select the first available route
+            for(ActivityRouteState ars : routesWithAvailability) {
+                if(ars.getAvailability() == ActivityRouteAvailability.AVAILABLE) {
+                    Integer position = route2position.getOrDefault(ars.getRoute(), 0);
+                    routeChoiceBox.getSelectionModel().select(position);
+                }
+            }
         }
+
+        // TODO: add validator to force selection of route
 
         initialiseArgumentTable(currentRequest);
 

@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.api.activity;
 
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
+// TODO: add expected value list for engineering values, in case a textual decalibration is defined
 public class ActivityArgumentDescriptor {
 
     private final String name;

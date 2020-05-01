@@ -224,7 +224,7 @@
     data-rtmt-binding-id="STATION.SWITCH.SW_POSITION"
 	data-rtmt-fill-color-00=":= #00FF00"
 	data-rtmt-transform-00="$eng EQ POSITION_1 := rotate(90 111.16 180.68)" 
-	data-rtmt-transform-01="$eng EQ POSITION_2 := rotate(270 111.16 180.68)" 
+	data-rtmt-transform-01="$eng EQ POSITION_2 := rotate(180 111.16 180.68)"
   >
    <ellipse id="path1120" cx="111.16" cy="180.68" rx="5.2751" ry="5.2918" stroke-linejoin="round" stroke-width=".18671" style="paint-order:normal"/>
    <path id="path1124" transform="translate(6.6146 -1.8347e-6)" d="m104.51 175.29c-0.44087 1.3226-0.88184 2.6455-1.7638 3.5276s-2.2046 1.323-3.5278 1.764" fill="none" stroke-width=".26458px"/>

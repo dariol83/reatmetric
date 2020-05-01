@@ -482,7 +482,9 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         ActivityRequest request = activityInvocationDialogController.buildRequest();
         boolean confirm = DialogUtils.confirm("Request execution of activity", activityInvocationDialogController.getPath(), "Do you want to dispatch the execution request to the processing model?");
         if(confirm) {
+            // Hide the popup
             activityPopOver.hide();
+            // TODO: store activity request in activity invocation cache, to be used to initialise the same activity invocation in the future
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().startActivity(request);

@@ -26,6 +26,8 @@
   ~ limitations under the License.
   -->
 
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <VBox fx:id="parentVBox" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.UserDisplayTabWidgetController">
 	<children>
 		<ToolBar prefHeight="32.0">
@@ -50,7 +52,15 @@
 				<Label text=" " />
                 <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
                 <Label text=" " />
-                <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected" text="Print..." />
+				<Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
+					<graphic>
+						<ImageView pickOnBounds="true" preserveRatio="true">
+							<image>
+								<Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/printer.svg.png" />
+							</image>
+						</ImageView>
+					</graphic>
+				</Button>
 			</items>
 		</ToolBar>
       <ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" pannable="true" VBox.vgrow="ALWAYS">

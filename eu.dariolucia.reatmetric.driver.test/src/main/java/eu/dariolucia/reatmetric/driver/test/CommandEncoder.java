@@ -28,8 +28,8 @@ public class CommandEncoder {
 
     public Pair<Integer, byte[]> encode(IActivityHandler.ActivityInvocation activityInvocation) {
         // Read the activityInvocation arguments and encode accordingly
-        int eqId = (Integer) activityInvocation.getArguments().get(TestDriver.EQUIPMENT_ID_ARGKEY);
-        int commandId = (Integer) activityInvocation.getArguments().get(TestDriver.COMMAND_ID_ARGKEY);
+        int eqId = ((Number) activityInvocation.getArguments().get(TestDriver.EQUIPMENT_ID_ARGKEY)).intValue();
+        int commandId = ((Number) activityInvocation.getArguments().get(TestDriver.COMMAND_ID_ARGKEY)).intValue();
         Number arg1 = (Number) activityInvocation.getArguments().get(TestDriver.ARG_1_ARGKEY);
         if(arg1 == null) {
             arg1 = -1;

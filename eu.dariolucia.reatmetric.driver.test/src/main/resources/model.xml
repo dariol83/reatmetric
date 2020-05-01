@@ -544,6 +544,20 @@
     </events>
 
     <activities>
+        <activity id="#550" location="STATION.SWITCH.SW_CMD_POSITION" description="Command the switch to the desired position" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="5" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="POSITION_1" y="1" />
+                    <point x="POSITION_2" y="2" />
+                </decalib_ienum>
+            </argument>
+        </activity>
         <activity id="#11000" location="STATION.THERMAL.ACT1" description="Activity 1" type="STATION CMD">
             <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
             <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="mV">

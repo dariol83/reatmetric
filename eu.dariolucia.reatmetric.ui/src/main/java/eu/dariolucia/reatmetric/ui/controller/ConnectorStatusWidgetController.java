@@ -218,6 +218,10 @@ public class ConnectorStatusWidgetController implements Initializable {
                 || lastStatus.getStatus() == TransportConnectionStatus.ABORTED) {
             ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
                 try {
+                    if(!connector.isInitialised()) {
+                        // If you are here, it means there are really no properties, so initialise first
+                        connector.initialise(connector.getCurrentProperties());
+                    }
                     connector.connect();
                 } catch (TransportException e) {
                     LOG.log(Level.WARNING, "Cannot open connection from " + connector.getName() + ": " + e.getMessage(), e);
