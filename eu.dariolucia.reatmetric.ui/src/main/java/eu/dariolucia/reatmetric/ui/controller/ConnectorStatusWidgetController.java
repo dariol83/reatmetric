@@ -186,32 +186,17 @@ public class ConnectorStatusWidgetController implements Initializable {
     public void initButtonClicked(MouseEvent mouseEvent) {
         // Init now
         if(!connector.getSupportedProperties().isEmpty()) {
-            TransportConnectorInitDialog.openWizard(connector);
+            // Only init
+            TransportConnectorInitDialog.openWizard(connector, initImg, false);
         } else {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle(connector.getName() + " Initialisation Properties");
-            alert.setHeaderText("No properties present");
-            alert.setContentText("Transport connector " + connector.getName() + " does not have any configuration runtime property");
-            alert.showAndWait();
+            TransportConnectorInitDialog.openWizardNoElements(connector, initImg);
         }
     }
 
     public void startStopButtonClicked(MouseEvent mouseEvent) {
         if(!connector.isInitialised() && !connector.getSupportedProperties().isEmpty()) {
-            // Init now
-            Optional<Boolean> initialise = TransportConnectorInitDialog.openWizard(connector);
-            if(initialise.isPresent() && initialise.get()) {
-                // Then start
-                ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
-                    try {
-                        connector.connect();
-                    } catch (TransportException e) {
-                        LOG.log(Level.WARNING, "Cannot open connection from " + connector.getName() + ": " + e.getMessage(), e);
-                    }
-                });
-            } else {
-                startStopSwitch.setSelected(false);
-            }
+            // Init and connect now
+            TransportConnectorInitDialog.openWizard(connector, startStopSwitch, true);
         } else if(lastStatus == null || lastStatus.getStatus() == TransportConnectionStatus.NOT_INIT
                 || lastStatus.getStatus() == TransportConnectionStatus.IDLE
                 || lastStatus.getStatus() == TransportConnectionStatus.ERROR
