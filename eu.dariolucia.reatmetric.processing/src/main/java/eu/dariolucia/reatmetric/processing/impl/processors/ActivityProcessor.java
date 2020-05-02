@@ -91,7 +91,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                 }
             }
             ActivityArgumentDescriptor argDesc = new ActivityArgumentDescriptor(aa.getName(),
-                    "TODO",
+                    aa.getDescription(),
                     aa.getRawType(),
                     aa.getEngineeringType(),
                     aa.getUnit(),

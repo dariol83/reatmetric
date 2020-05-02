@@ -28,6 +28,9 @@ public class ArgumentDefinition {
     @XmlAttribute(name = "name", required = true)
     private String name;
 
+    @XmlAttribute(name = "description")
+    private String description = "";
+
     @XmlAttribute(name = "raw_type", required = true)
     private ValueTypeEnum rawType;
 
@@ -95,6 +98,14 @@ public class ArgumentDefinition {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public ValueTypeEnum getRawType() {
