@@ -64,6 +64,9 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     })
     private List<CheckDefinition> checks = new LinkedList<>();
 
+    @XmlElement(name="setter")
+    private ParameterSetterDefinition setter;
+
     @XmlElementWrapper(name = "triggers")
     @XmlElement(name="trigger")
     private List<ParameterTriggerDefinition> triggers = new LinkedList<>();
@@ -138,5 +141,13 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
 
     public void setDefaultValue(FixedDefaultValue defaultValue) {
         this.defaultValue = defaultValue;
+    }
+
+    public ParameterSetterDefinition getSetter() {
+        return setter;
+    }
+
+    public void setSetter(ParameterSetterDefinition setter) {
+        this.setter = setter;
     }
 }
