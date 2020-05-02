@@ -22,13 +22,13 @@ import javafx.beans.property.SimpleBooleanProperty;
 
 import java.util.function.Predicate;
 
-public class ValueTypeBasedValidator implements Predicate<String> {
+public class ValueTypeBasedStringValidator implements Predicate<String> {
 
     private final ValueTypeEnum type;
     private final SimpleBooleanProperty active;
     private final boolean mandatory;
 
-    public ValueTypeBasedValidator(ValueTypeEnum type, boolean mandatory) {
+    public ValueTypeBasedStringValidator(ValueTypeEnum type, boolean mandatory) {
         this.active = new SimpleBooleanProperty(true);
         this.type = type;
         this.mandatory = mandatory;

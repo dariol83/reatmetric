@@ -32,6 +32,7 @@ import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelExcepti
 import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
@@ -99,7 +100,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                     null,
                     defaultValue,
                     aa.getDecalibration() != null,
-                    aa.getChecks() != null);
+                    aa.getChecks() == null,
+                    buildExpectedValuesRaw(aa),
+                    buildExpectedValuesEng(aa));
             argDescriptors.add(argDesc);
         }
         // Now the properties
@@ -109,6 +112,72 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         }
         // Build the object
         return new ActivityDescriptor(getPath(), getSystemEntityId(), definition.getDescription(),definition.getDefaultRoute(), definition.getType(), argDescriptors, props);
+    }
+
+    private List<Object> buildExpectedValuesRaw(ArgumentDefinition ad) {
+        if(ad.getDecalibration() != null) {
+            if(ad.getDecalibration() instanceof InvertedEnumCalibration) {
+                InvertedEnumCalibration iec = (InvertedEnumCalibration) ad.getDecalibration();
+                List<Object> rawValues = new LinkedList<>();
+                for(InvertedEnumCalibrationPoint p : iec.getPoints()) {
+                    Object valueToAdd = p.getValue();
+                    if(ad.getRawType() == ValueTypeEnum.ENUMERATED) {
+                        valueToAdd = ((Long) valueToAdd).intValue();
+                    }
+                    rawValues.add(valueToAdd);
+                }
+                if(iec.getDefaultValue() != null) {
+                    Object valueToAdd = iec.getDefaultValue();
+                    if(ad.getRawType() == ValueTypeEnum.ENUMERATED) {
+                        valueToAdd = (iec.getDefaultValue()).intValue();
+                    }
+                    if(!rawValues.contains(valueToAdd)) {
+                        rawValues.add(valueToAdd);
+                    }
+                }
+                return rawValues;
+            }
+            if(ad.getDecalibration() instanceof EnumCalibration) {
+                EnumCalibration iec = (EnumCalibration) ad.getDecalibration();
+                List<Object> rawValues = new LinkedList<>();
+                for(EnumCalibrationPoint p : iec.getPoints()) {
+                    rawValues.add(p.getValue());
+                }
+                if(iec.getDefaultValue() != null) {
+                    if(!rawValues.contains(iec.getDefaultValue())) {
+                        rawValues.add(iec.getDefaultValue());
+                    }
+                }
+                return rawValues;
+            }
+        }
+        return null;
+    }
+
+    private List<Object> buildExpectedValuesEng(ArgumentDefinition ad) {
+        if(ad.getDecalibration() != null) {
+            if(ad.getDecalibration() instanceof InvertedEnumCalibration) {
+                InvertedEnumCalibration iec = (InvertedEnumCalibration) ad.getDecalibration();
+                List<Object> engValues = new LinkedList<>();
+                for(InvertedEnumCalibrationPoint p : iec.getPoints()) {
+                    engValues.add(p.getInput());
+                }
+                return engValues;
+            }
+            if(ad.getDecalibration() instanceof EnumCalibration) {
+                EnumCalibration iec = (EnumCalibration) ad.getDecalibration();
+                List<Object> engValues = new LinkedList<>();
+                for(EnumCalibrationPoint p : iec.getPoints()) {
+                    Object valueToAdd =  p.getInput();
+                    if(ad.getEngineeringType() == ValueTypeEnum.ENUMERATED) {
+                        valueToAdd = ((Long)  p.getInput()).intValue();
+                    }
+                    engValues.add(valueToAdd);
+                }
+                return engValues;
+            }
+        }
+        return null;
     }
 
     public List<AbstractDataItem> invoke(ActivityRequest request) throws ProcessingModelException {

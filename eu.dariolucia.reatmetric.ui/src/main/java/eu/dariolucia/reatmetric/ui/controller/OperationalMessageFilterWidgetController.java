@@ -110,7 +110,7 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
             this.severityCheckbox.setSelected(this.selectedFilter.getSeverityList() != null);
             this.sourceCheckbox.setSelected(this.selectedFilter.getSourceList() != null);
             this.messageCheckbox.setSelected(this.selectedFilter.getMessageTextContains() != null);
-            // TODO complete 
+            // TODO complete with ID support
             this.sourceText.setText(IFilterController.toStringList(this.selectedFilter.getSourceList()));
             this.messageText.setText(this.selectedFilter.getMessageTextContains() != null ? this.selectedFilter.getMessageTextContains() : "");
             this.severityList.getSelectionModel().clearSelection();

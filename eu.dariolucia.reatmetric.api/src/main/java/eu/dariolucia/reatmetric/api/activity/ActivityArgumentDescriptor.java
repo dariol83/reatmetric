@@ -18,7 +18,13 @@ package eu.dariolucia.reatmetric.api.activity;
 
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
-// TODO: add expected value list for engineering values, in case a textual decalibration is defined
+import java.util.List;
+
+/**
+ * The descriptor of an activity argument.
+ *
+ * Objects of this class are immutable.
+ */
 public class ActivityArgumentDescriptor {
 
     private final String name;
@@ -32,8 +38,10 @@ public class ActivityArgumentDescriptor {
     private final Object rawDefaultValue;
     private final boolean decalibrationSet;
     private final boolean checkSet;
+    private final List<Object> expectedRawValues;
+    private final List<Object> expectedEngineeringValues;
 
-    public ActivityArgumentDescriptor(String name, String description, ValueTypeEnum rawDataType, ValueTypeEnum engineeringDataType, String unit, boolean fixed, boolean defaultValuePresent, Object engineeringDefaultValue, Object rawDefaultValue, boolean decalibrationSet, boolean checkSet) {
+    public ActivityArgumentDescriptor(String name, String description, ValueTypeEnum rawDataType, ValueTypeEnum engineeringDataType, String unit, boolean fixed, boolean defaultValuePresent, Object engineeringDefaultValue, Object rawDefaultValue, boolean decalibrationSet, boolean checkSet, List<Object> expectedRawValues, List<Object> expectedEngineeringValues) {
         this.name = name;
         this.description = description;
         this.rawDataType = rawDataType;
@@ -45,6 +53,16 @@ public class ActivityArgumentDescriptor {
         this.rawDefaultValue = rawDefaultValue;
         this.decalibrationSet = decalibrationSet;
         this.checkSet = checkSet;
+        if(expectedRawValues != null) {
+            this.expectedRawValues = List.copyOf(expectedRawValues);
+        } else {
+            this.expectedRawValues = null;
+        }
+        if(expectedEngineeringValues != null) {
+            this.expectedEngineeringValues = List.copyOf(expectedEngineeringValues);
+        } else {
+            this.expectedEngineeringValues = null;
+        }
     }
 
     public String getName() {
@@ -89,5 +107,13 @@ public class ActivityArgumentDescriptor {
 
     public boolean isCheckSet() {
         return checkSet;
+    }
+
+    public List<Object> getExpectedRawValues() {
+        return expectedRawValues;
+    }
+
+    public List<Object> getExpectedEngineeringValues() {
+        return expectedEngineeringValues;
     }
 }

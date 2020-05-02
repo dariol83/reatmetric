@@ -37,7 +37,6 @@ public class ActivityInvocationArgumentLine {
 
     private HBox node;
 
-    // TODO: move validationSupport inside the constructor
     private final ValidationSupport validationSupport = new ValidationSupport();
     private final SimpleBooleanProperty valid = new SimpleBooleanProperty(false);
     private Control rawValueControl;
@@ -63,11 +62,21 @@ public class ActivityInvocationArgumentLine {
         Label unitLbl = new Label(Objects.toString(descriptor.getUnit(), ""));
         unitLbl.setPrefWidth(70);
         // Raw value
-        rawValueControl = ActivityDialogUtil.buildValueControl(validationSupport, descriptor.getRawDataType(), input != null ? input.getRawValue() : null, input != null && input.isEngineering(), descriptor.getRawDefaultValue(), descriptor.isFixed());
-        rawValueControl.setPrefWidth(100);
+        rawValueControl = ActivityDialogUtil.buildValueControl(validationSupport,
+                descriptor.getRawDataType(),
+                input != null ? input.getRawValue() : null,
+                descriptor.getRawDefaultValue(),
+                descriptor.isFixed(),
+                descriptor.getExpectedRawValues());
+        rawValueControl.setPrefWidth(150);
         // Eng. value
-        engValueControl = ActivityDialogUtil.buildValueControl(validationSupport, descriptor.getEngineeringDataType(), input != null ? input.getEngValue() : null, input != null && input.isEngineering(), descriptor.getEngineeringDefaultValue(), descriptor.isFixed());
-        engValueControl.setPrefWidth(100);
+        engValueControl = ActivityDialogUtil.buildValueControl(validationSupport,
+                descriptor.getEngineeringDataType(),
+                input != null ? input.getEngValue() : null,
+                descriptor.getEngineeringDefaultValue(),
+                descriptor.isFixed(),
+                descriptor.getExpectedEngineeringValues());
+        engValueControl.setPrefWidth(150);
         // Raw/Eng value selection
         rawEngSelection = new CheckBox();
         rawEngSelection.setText("Use Eng.");
@@ -93,9 +102,6 @@ public class ActivityInvocationArgumentLine {
 
         node.getChildren().addAll(nameLbl, rawValueControl, engValueControl, unitLbl, rawEngSelection);
         validationSupport.initInitialDecoration();
-
-        // TODO add recomputation of the validation status if rawEngSelection changes
-        rawEngSelection.selectedProperty().addListener((observableValue, aBoolean, t1) -> validationSupport.initInitialDecoration());
     }
 
     public HBox getNode() {
@@ -119,6 +125,8 @@ public class ActivityInvocationArgumentLine {
             return ValueUtil.parse(type, ((TextField) control).getText());
         } else if(control instanceof ToggleSwitch) {
             return ((ToggleSwitch) control).isSelected();
+        } else if(control instanceof ComboBox) {
+            return ((ComboBox<?>) control).getSelectionModel().getSelectedItem();
         } else {
             return null;
         }

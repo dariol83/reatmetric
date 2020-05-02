@@ -23,6 +23,11 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.util.List;
 
+/**
+ * The descriptor of an activity system entity.
+ *
+ * Objects of this class are immutable.
+ */
 public class ActivityDescriptor extends AbstractSystemEntityDescriptor {
 
     private final String description;
@@ -31,6 +36,17 @@ public class ActivityDescriptor extends AbstractSystemEntityDescriptor {
     private final List<ActivityArgumentDescriptor> argumentDescriptors;
     private final List<Pair<String, String>> properties;
 
+    /**
+     * Contructor of the class.
+     *
+     * @param path the activity path
+     * @param externalId the activity ID
+     * @param description the activity description
+     * @param defaultRoute the default route of the activity
+     * @param activityType the activity type
+     * @param argumentDescriptors the list of argument descriptors
+     * @param properties the list of properties
+     */
     public ActivityDescriptor(SystemEntityPath path, int externalId, String description, String defaultRoute, String activityType, List<ActivityArgumentDescriptor> argumentDescriptors, List<Pair<String, String>> properties) {
         super(path, externalId, SystemEntityType.ACTIVITY);
         this.description = description;

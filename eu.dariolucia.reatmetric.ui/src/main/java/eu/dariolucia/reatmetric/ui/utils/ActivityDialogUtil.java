@@ -25,10 +25,9 @@ import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
-import javafx.scene.control.Control;
-import javafx.scene.control.TextField;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.util.Callback;
 import org.controlsfx.control.ToggleSwitch;
 import org.controlsfx.validation.Severity;
 import org.controlsfx.validation.ValidationSupport;
@@ -48,35 +47,83 @@ public class ActivityDialogUtil {
         return Pair.of(root, controller);
     }
 
-    public static Pair<Node, ActivityInvocationDialogController> createActivityInvocationDialog(ActivityDescriptor descriptor, List<ActivityRouteState> routeList) throws IOException {
-        Pair<Node, ActivityInvocationDialogController> asBuilt = createActivityInvocationDialog();
-        asBuilt.getSecond().initialiseActivityDialog(descriptor, null, routeList);
-        return asBuilt;
-    }
-
     public static Pair<Node, ActivityInvocationDialogController> createActivityInvocationDialog(ActivityDescriptor descriptor, ActivityRequest request, List<ActivityRouteState> routeList) throws IOException {
         Pair<Node, ActivityInvocationDialogController> asBuilt = createActivityInvocationDialog();
         asBuilt.getSecond().initialiseActivityDialog(descriptor, request, routeList);
         return asBuilt;
     }
 
-
-    public static Control buildValueControl(ValidationSupport validationSupport, ValueTypeEnum value, Object inputValue, boolean inputIsEngineering, Object defaultValue, boolean isFixed) {
+    public static Control buildValueControl(ValidationSupport validationSupport, ValueTypeEnum type, Object inputValue, Object defaultValue, boolean isFixed, List<Object> acceptableValues) {
         boolean mandatory = true;
         if(isFixed) {
             mandatory = false;
         }
-        ValueTypeBasedValidator typeValidator = new ValueTypeBasedValidator(value, mandatory);
+
         Control toReturn;
-        if (value == ValueTypeEnum.ENUMERATED
-                || value == ValueTypeEnum.SIGNED_INTEGER
-                || value == ValueTypeEnum.UNSIGNED_INTEGER
-                || value == ValueTypeEnum.REAL
-                || value == ValueTypeEnum.CHARACTER_STRING
-                || value == ValueTypeEnum.ABSOLUTE_TIME
-                || value == ValueTypeEnum.RELATIVE_TIME
-                || value == ValueTypeEnum.OCTET_STRING
-                || value == ValueTypeEnum.BIT_STRING) {
+        if(acceptableValues != null) {
+            ValueSetValidator typeValidator = new ValueSetValidator(mandatory);
+            // Combo box
+            ComboBox<Object> t = new ComboBox<>();
+            t.setPrefHeight(24);
+            t.setCellFactory(new Callback<>() {
+                @Override
+                public ListCell<Object> call(ListView<Object> p) {
+                    return new ListCell<>() {
+                        @Override
+                        protected void updateItem(Object item, boolean empty) {
+                            super.updateItem(item, empty);
+                            setText(item == null ? "" : ValueUtil.toString(type, item));
+                        }
+                    };
+                }
+            });
+            // Add items
+            t.getItems().addAll(acceptableValues);
+            // Set verification on change
+            if(!isFixed && validationSupport != null) {
+                typeValidator.activeProperty().bind(t.disableProperty().not());
+                validationSupport.registerValidator(t, Validator.createPredicateValidator(typeValidator, typeValidator.getErrorMessage(), Severity.ERROR));
+            }
+            // Set current value if any
+            if(inputValue != null) {
+                t.getSelectionModel().select(inputValue);
+            } else if(defaultValue != null) {
+                t.getSelectionModel().select(defaultValue);
+            } else {
+                // Select the first
+                t.getSelectionModel().select(0);
+            }
+            // Workaround for validation triggering on disabled
+            if(!isFixed) {
+                t.disableProperty().addListener((a,b,c) -> {
+                    if(t.isDisabled()) {
+                        t.setUserData(t.getSelectionModel().getSelectedItem());
+                        // Force trigger
+                        t.getSelectionModel().select(0);
+                        t.getSelectionModel().clearSelection();
+                    } else {
+                        if(t.getUserData() != null) {
+                            // Force trigger
+                            t.getSelectionModel().select(t.getUserData());
+                        } else {
+                            // Force trigger
+                            t.getSelectionModel().select(0);
+                            t.getSelectionModel().clearSelection();
+                        }
+                    }
+                });
+            }
+            toReturn = t;
+        } else if (type == ValueTypeEnum.ENUMERATED
+                || type == ValueTypeEnum.SIGNED_INTEGER
+                || type == ValueTypeEnum.UNSIGNED_INTEGER
+                || type == ValueTypeEnum.REAL
+                || type == ValueTypeEnum.CHARACTER_STRING
+                || type == ValueTypeEnum.ABSOLUTE_TIME
+                || type == ValueTypeEnum.RELATIVE_TIME
+                || type == ValueTypeEnum.OCTET_STRING
+                || type == ValueTypeEnum.BIT_STRING) {
+            ValueTypeBasedStringValidator typeValidator = new ValueTypeBasedStringValidator(type, mandatory);
             TextField t = new TextField();
             t.setPrefHeight(24);
             t.setTooltip(new Tooltip(typeValidator.getErrorMessage()));
@@ -86,10 +133,10 @@ public class ActivityDialogUtil {
                 validationSupport.registerValidator(t, Validator.createPredicateValidator(typeValidator, typeValidator.getErrorMessage(), Severity.ERROR));
             }
             // Set current value if any
-            if(inputValue != null && !inputIsEngineering) {
-                t.setText(ValueUtil.toString(value, inputValue));
+            if(inputValue != null) {
+                t.setText(ValueUtil.toString(type, inputValue));
             } else if(defaultValue != null) {
-                t.setText(ValueUtil.toString(value, defaultValue));
+                t.setText(ValueUtil.toString(type, defaultValue));
             } else {
                 t.setText("");
             }
@@ -117,11 +164,11 @@ public class ActivityDialogUtil {
             }
             // Set the outer object
             toReturn = t;
-        } else if (value == ValueTypeEnum.BOOLEAN) {
+        } else if (type == ValueTypeEnum.BOOLEAN) {
             ToggleSwitch t = new ToggleSwitch();
             t.setPrefHeight(24);
             // Set current value if any
-            if(inputValue != null && !inputIsEngineering) {
+            if(inputValue != null) {
                 t.setSelected((Boolean) inputValue);
             } else if(defaultValue != null) {
                 t.setSelected((Boolean) defaultValue);

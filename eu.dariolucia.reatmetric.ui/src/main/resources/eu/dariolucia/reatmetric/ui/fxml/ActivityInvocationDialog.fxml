@@ -34,7 +34,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.control.ComboBox?>
-<VBox prefWidth="550.0" spacing="8.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController">
+<VBox prefWidth="650.0" spacing="8.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController">
    <children>
       <HBox VBox.vgrow="NEVER">
          <children>
@@ -68,7 +68,7 @@
         <panes>
           <TitledPane animated="false" text="Arguments">
                <content>
-                  <VBox fx:id="argumentVBox" prefHeight="200.0" prefWidth="500.0">
+                  <VBox fx:id="argumentVBox" prefHeight="200.0" prefWidth="600.0">
                   </VBox>
                </content>
           </TitledPane>
