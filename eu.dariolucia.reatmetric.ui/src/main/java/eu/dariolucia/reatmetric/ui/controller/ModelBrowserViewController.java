@@ -91,19 +91,28 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private TreeTableColumn<SystemEntity, String> nameCol;
     @FXML    
     private TreeTableColumn<SystemEntity, Status> statusCol;
-    @FXML
-    private ContextMenu contextMenu;
 
-
-
+    // ****************************************************************************
+    // Tree-required objects
+    // ****************************************************************************
     private final Lock mapLock = new ReentrantLock();
     private final Map<SystemEntityPath, FilterableTreeItem<SystemEntity>> path2item = new TreeMap<>();
     private SystemEntity root = null;
     
     // Temporary message queue
     private DataProcessingDelegator<SystemEntity> delegator;
-    private PopOver activityPopOver;
 
+    private PopOver activityPopOver;
+    // ****************************************************************************
+    // Activity-execution related
+    // ****************************************************************************
+    private final Map<String, ActivityRequest> activityRequestMap = new HashMap<>();
+
+    // ****************************************************************************
+    // Menu items
+    // ****************************************************************************
+    @FXML
+    private ContextMenu contextMenu;
     @FXML
     private MenuItem expandAllMenuItem;
     @FXML
@@ -390,7 +399,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         FilterableTreeItem<SystemEntity> item = this.path2item.get(toAdd.getPath());
         if(item == null) {
             // Create the item
-            item = new FilterableTreeItem<>(toAdd); //, new ImageView(getImageFromType(toAdd.getType())));
+            item = new FilterableTreeItem<>(toAdd);
             // Add it to the map
             this.path2item.put(toAdd.getPath(), item);
             // Add it to the parent tree item
@@ -462,7 +471,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             if (descriptor instanceof ActivityDescriptor) {
                 // Get the route list
                 List<ActivityRouteState> routeList = ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ActivityDescriptor) descriptor).getActivityType());
-                Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, routeList);
+                Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, activityRequestMap.get(descriptor.getPath().asString()), routeList);
                 // Create the popup
                 activityPopOver.setTitle("Execute activity " + descriptor.getPath().asString());
                 activityPopOver.setContentNode(activityDialogPair.getFirst());
@@ -484,7 +493,8 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         if(confirm) {
             // Hide the popup
             activityPopOver.hide();
-            // TODO: store activity request in activity invocation cache, to be used to initialise the same activity invocation in the future
+            // Store activity request in activity invocation cache, to be used to initialise the same activity invocation in the future
+            activityRequestMap.put(activityInvocationDialogController.getPath(), request);
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().startActivity(request);

@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import javafx.beans.binding.BooleanBinding;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -43,8 +44,6 @@ import java.util.stream.Collectors;
 
 public class ActivityInvocationDialogController implements Initializable {
 
-
-
     @FXML
     protected Accordion accordion;
     @FXML
@@ -55,6 +54,8 @@ public class ActivityInvocationDialogController implements Initializable {
     protected Label descriptionLabel;
     @FXML
     protected ComboBox<ActivityRouteState> routeChoiceBox;
+
+    private final SimpleBooleanProperty routeChoiceBoxValid = new SimpleBooleanProperty(false);
 
     @FXML
     protected VBox argumentVBox;
@@ -107,6 +108,10 @@ public class ActivityInvocationDialogController implements Initializable {
                     }
                 };
             }
+        });
+        routeChoiceBox.getSelectionModel().selectedItemProperty().addListener(o -> {
+            routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
+                    routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE);
         });
     }
 
@@ -201,15 +206,13 @@ public class ActivityInvocationDialogController implements Initializable {
             }
         }
 
-        // TODO: add validator to force selection of route
-
         initialiseArgumentTable(currentRequest);
 
-        if(arguments.size() == 1) {
-            okButton.disableProperty().bind(arguments.get(0).validProperty().not());
-        } else if(arguments.size() > 1) {
-            BooleanBinding allValid = arguments.get(0).validProperty().and(arguments.get(1).validProperty());
-            for(i = 2; i < arguments.size(); ++i) {
+        if(arguments.size() == 0) {
+            okButton.disableProperty().bind(routeChoiceBoxValid.not());
+        } else {
+            BooleanBinding allValid = routeChoiceBoxValid.and(arguments.get(0).validProperty());
+            for(i = 1; i < arguments.size(); ++i) {
                 allValid = allValid.and(arguments.get(i).validProperty());
             }
             okButton.disableProperty().bind(allValid.not());
@@ -219,10 +222,19 @@ public class ActivityInvocationDialogController implements Initializable {
 
         // Set the properties
         for(Pair<String, String> property : descriptor.getProperties()) {
+            if(currentRequest != null && !currentRequest.getProperties().containsKey(property.getFirst())) {
+                // This property was removed
+                continue;
+            }
             PropertyBean pb = new PropertyBean(property);
             propertiesTableView.getItems().add(pb);
-            updateProperty(pb, currentRequest);
+            if(currentRequest != null && currentRequest.getProperties().containsKey(property.getFirst())) {
+                // This property was updated (potentially)
+                pb.valueProperty().set(currentRequest.getProperties().get(property.getFirst()));
+            }
         }
+        // Add properties that were added before
+        addMissingPropertiesFrom(currentRequest);
     }
 
     public void registerHandlers(Consumer<ActivityInvocationDialogController> okClicked, Consumer<ActivityInvocationDialogController> cancelClicked) {
@@ -230,14 +242,15 @@ public class ActivityInvocationDialogController implements Initializable {
         this.cancelHandler = cancelClicked;
     }
 
-    private void updateProperty(PropertyBean pb, ActivityRequest currentRequest) {
+    private void addMissingPropertiesFrom(ActivityRequest currentRequest) {
         if(currentRequest == null) {
             return;
         }
+        Set<String> propertyKeySet = propertiesTableView.getItems().stream().map(o -> o.valueProperty().get()).collect(Collectors.toUnmodifiableSet());
         for(Map.Entry<String, String> prop : currentRequest.getProperties().entrySet()) {
-            if(prop.getKey().equals(pb.keyProperty().get())) {
-                pb.valueProperty().set(prop.getValue());
-                return;
+            if(!propertyKeySet.contains(prop.getKey())) {
+                PropertyBean pb = new PropertyBean(Pair.of(prop.getKey(), prop.getValue()));
+                propertiesTableView.getItems().add(pb);
             }
         }
     }

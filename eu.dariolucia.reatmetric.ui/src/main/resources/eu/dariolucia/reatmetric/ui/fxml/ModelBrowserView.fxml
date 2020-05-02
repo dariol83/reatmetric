@@ -20,6 +20,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
 <?import org.controlsfx.control.textfield.CustomTextField?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <TitledPane fx:id="displayTitledPane" text="Hierarchical System Model" collapsible="false" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ModelBrowserViewController">
    <content>
       <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
@@ -41,13 +43,53 @@
               <contextMenu>
                     <ContextMenu fx:id="contextMenu" onShowing="#menuAboutToShow">
                         <items>
-                            <MenuItem fx:id="executeActivityMenuItem" mnemonicParsing="false" onAction="#executeActivityAction" text="Execute..." />
+                            <MenuItem fx:id="executeActivityMenuItem" mnemonicParsing="false" onAction="#executeActivityAction" text="Execute...">
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/play.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
                             <SeparatorMenuItem fx:id="executeActivitySeparator" />
-                            <MenuItem fx:id="collapseAllMenuItem" mnemonicParsing="false" onAction="#collapseItemAction" text="Collapse all" />
-                            <MenuItem fx:id="expandAllMenuItem" mnemonicParsing="false" onAction="#expandItemAction" text="Expand all" />
+                            <MenuItem fx:id="collapseAllMenuItem" mnemonicParsing="false" onAction="#collapseItemAction" text="Collapse all">
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/minus-rectangle.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
+                            <MenuItem fx:id="expandAllMenuItem" mnemonicParsing="false" onAction="#expandItemAction" text="Expand all" >
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/plus-rectangle.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
                             <SeparatorMenuItem fx:id="expandCollapseSeparator" />
-                            <MenuItem mnemonicParsing="false" onAction="#enableItemAction" text="Enable" />
-                            <MenuItem mnemonicParsing="false" onAction="#disableItemAction" text="Disable" />
+                            <MenuItem mnemonicParsing="false" onAction="#enableItemAction" text="Enable" >
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/star.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
+                            <MenuItem mnemonicParsing="false" onAction="#disableItemAction" text="Disable" >
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/star-f.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
                         </items>
                     </ContextMenu>
               </contextMenu>
