@@ -471,13 +471,18 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             if(aid.isRawValue()) {
                 argumentMap.put(aid.getName(), new ActivityArgument(aid.getName(), ValueUtil.parse(ad.getRawType(), aid.getValue()), null, false));
             } else {
-                argumentMap.put(aid.getName(), new ActivityArgument(aid.getName(), null, ValueUtil.parse(ad.getEngineeringType(), aid.getValue()), false));
+                argumentMap.put(aid.getName(), new ActivityArgument(aid.getName(), null, ValueUtil.parse(ad.getEngineeringType(), aid.getValue()), true));
             }
         }
         // Provide the arguments on the defined order
         for(ArgumentDefinition ad : setter.getActivity().getArguments()) {
-
+            if(ad.getName().equals(setter.getSetArgument())) {
+                toReturn.add(new ActivityArgument(ad.getName(), request.isEngineeringUsed() ? null : request.getValue(), request.isEngineeringUsed() ? request.getValue() : null, request.isEngineeringUsed()));
+            } else {
+                toReturn.add(argumentMap.get(ad.getName()));
+            }
         }
+        return toReturn;
     }
 
     @Override
