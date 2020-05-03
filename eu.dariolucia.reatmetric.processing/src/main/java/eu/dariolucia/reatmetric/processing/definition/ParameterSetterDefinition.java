@@ -27,11 +27,22 @@ public class ParameterSetterDefinition {
     @XmlIDREF
     private ActivityProcessingDefinition activity;
 
-    @XmlElement(name = "argument")
+    @XmlAttribute(name="set_argument", required = true)
+    private String setArgument;
+
+    @XmlElement(name = "fixed_argument")
     private List<ArgumentInvocationDefinition> arguments = new LinkedList<>();
 
     @XmlElement(name = "property")
     private List<KeyValue> properties = new LinkedList<>();
+
+    public String getSetArgument() {
+        return setArgument;
+    }
+
+    public void setSetArgument(String setArgument) {
+        this.setArgument = setArgument;
+    }
 
     public ActivityProcessingDefinition getActivity() {
         return activity;

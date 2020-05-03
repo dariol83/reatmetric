@@ -21,6 +21,8 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
+import java.util.List;
+
 public class ParameterDescriptor extends AbstractSystemEntityDescriptor {
 
     private final String description;
@@ -28,14 +30,30 @@ public class ParameterDescriptor extends AbstractSystemEntityDescriptor {
     private final ValueTypeEnum engineeringDataType;
     private final String unit;
     private final boolean synthetic;
+    private final boolean settable;
+    private final String setterType;
+    private final List<Object> expectedRawValues;
+    private final List<Object> expectedEngineeringValues;
 
-    public ParameterDescriptor(SystemEntityPath path, int externalId, String description, ValueTypeEnum rawDataType, ValueTypeEnum engineeringDataType, String unit, boolean synthetic) {
+    public ParameterDescriptor(SystemEntityPath path, int externalId, String description, ValueTypeEnum rawDataType, ValueTypeEnum engineeringDataType, String unit, boolean synthetic, boolean settable, String setterType, List<Object> expectedRawValues, List<Object> expectedEngineeringValues) {
         super(path, externalId, SystemEntityType.PARAMETER);
         this.description = description;
         this.rawDataType = rawDataType;
         this.engineeringDataType = engineeringDataType;
         this.unit = unit;
         this.synthetic = synthetic;
+        this.settable = settable;
+        if(expectedRawValues != null) {
+            this.expectedRawValues = List.copyOf(expectedRawValues);
+        } else {
+            this.expectedRawValues = null;
+        }
+        if(expectedEngineeringValues != null) {
+            this.expectedEngineeringValues = List.copyOf(expectedEngineeringValues);
+        } else {
+            this.expectedEngineeringValues = null;
+        }
+        this.setterType = setterType;
     }
 
     public String getDescription() {
@@ -58,4 +76,19 @@ public class ParameterDescriptor extends AbstractSystemEntityDescriptor {
         return synthetic;
     }
 
+    public boolean isSettable() {
+        return settable;
+    }
+
+    public List<Object> getExpectedRawValues() {
+        return expectedRawValues;
+    }
+
+    public List<Object> getExpectedEngineeringValues() {
+        return expectedEngineeringValues;
+    }
+
+    public String getSetterType() {
+        return setterType;
+    }
 }

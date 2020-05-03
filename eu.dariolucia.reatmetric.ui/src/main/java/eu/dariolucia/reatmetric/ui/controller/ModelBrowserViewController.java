@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.*;
+import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.ActivityDialogUtil;
@@ -123,6 +124,10 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private SeparatorMenuItem executeActivitySeparator;
     @FXML
     private MenuItem executeActivityMenuItem;
+    @FXML
+    private MenuItem setParameterMenuItem;
+    @FXML
+    private SeparatorMenuItem setParameterSeparator;
 
     @FXML
     public void filterClearButtonPressed(Event e) {
@@ -457,6 +462,11 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         boolean showActivity = selected.getValue().getType() == SystemEntityType.ACTIVITY;
         executeActivitySeparator.setVisible(showActivity);
         executeActivityMenuItem.setVisible(showActivity);
+
+        // Set parameter: show also if not settable
+        boolean showSetParameter = selected.getValue().getType() == SystemEntityType.PARAMETER;
+        setParameterMenuItem.setVisible(showSetParameter);
+        setParameterSeparator.setVisible(showSetParameter);
     }
 
     @FXML
@@ -502,6 +512,30 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
                 }
             });
+        }
+    }
+
+    @FXML
+    public void setParameterAction(ActionEvent actionEvent) {
+        TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
+        if(selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.PARAMETER) {
+            return;
+        }
+        try {
+            // Get the descriptor
+            AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getValue().getExternalId());
+            if (descriptor instanceof ParameterDescriptor) {
+                // Get the route list (from the setter type -> activity type)
+                List<ActivityRouteState> routeList = ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ParameterDescriptor) descriptor).getSetterType());
+                Pair<Node, ParameterSetDialogController> parameterSetPair = ParameterSetUtil.createParameterSetDialog((ParameterDescriptor) descriptor, parameterSetMap.get(descriptor.getPath().asString()), routeList);
+                // Create the popup
+                activityPopOver.setTitle("Set parameter " + descriptor.getPath().asString());
+                activityPopOver.setContentNode(parameterSetPair.getFirst());
+                parameterSetPair.getSecond().registerHandlers(this::setParameter, this::closeActivityPopOver);
+                activityPopOver.show(modelTree);
+            }
+        } catch (IOException | ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
         }
     }
 

@@ -27,7 +27,11 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.api.value.ValueException;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
@@ -81,8 +85,42 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
         this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
         // Build the descriptor
-        this.descriptor = new ParameterDescriptor(getPath(), getSystemEntityId(), definition.getDescription(), definition.getRawType(), definition.getEngineeringType(), definition.getUnit(), definition.getExpression() != null);
+        this.descriptor = new ParameterDescriptor(getPath(), getSystemEntityId(), definition.getDescription(), definition.getRawType(), definition.getEngineeringType(), definition.getUnit(), definition.getExpression() != null, definition.getSetter() != null, definition.getSetter() != null ? definition.getSetter().getActivity().getType(): null,buildExpectedValuesRaw(definition.getCalibrations()), buildExpectedValuesEng(definition.getCalibrations()));
     }
+
+    private List<Object> buildExpectedValuesRaw(List<CalibrationDefinition> cals) {
+        for(CalibrationDefinition cal : cals ) {
+            if(cal instanceof EnumCalibration) {
+                EnumCalibration calibration = (EnumCalibration) cal;
+                List<Object> rawValues = new LinkedList<>();
+                for(EnumCalibrationPoint p : calibration.getPoints()) {
+                    Object valueToAdd = p.getInput();
+                    if(definition.getRawType() == ValueTypeEnum.ENUMERATED) {
+                        valueToAdd = ((Long) valueToAdd).intValue();
+                    }
+                    rawValues.add(valueToAdd);
+                }
+                return rawValues;
+            }
+        }
+        return null;
+    }
+
+    private List<Object> buildExpectedValuesEng(List<CalibrationDefinition> cals) {
+        for(CalibrationDefinition cal : cals ) {
+            if(cal instanceof EnumCalibration) {
+                EnumCalibration calibration = (EnumCalibration) cal;
+                List<Object> engValues = new LinkedList<>();
+                for(EnumCalibrationPoint p : calibration.getPoints()) {
+                    Object valueToAdd = p.getValue();
+                    engValues.add(valueToAdd);
+                }
+                return engValues;
+            }
+        }
+        return null;
+    }
+
 
     private void buildDefaultState() {
         Object sourceValue = null;
@@ -398,6 +436,47 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 LOG.log(Level.SEVERE, "Error when computing validity of parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
                 return Validity.ERROR;
             }
+        }
+    }
+
+    public ActivityRequest generateSetRequest(SetParameterRequest request) throws ProcessingModelException {
+        ParameterSetterDefinition setter = definition.getSetter();
+        if(setter == null) {
+            throw new ProcessingModelException("Parameter " + getPath().asString() + " does not have a setter operation, set request cannot be processed");
+        }
+        Map<String, String> propertyMap = new LinkedHashMap<>();
+        for(KeyValue kv : setter.getProperties()) {
+            propertyMap.put(kv.getKey(), kv.getValue());
+        }
+        for(KeyValue kv : setter.getActivity().getProperties()) {
+            if(!propertyMap.containsKey(kv.getKey())) {
+                propertyMap.put(kv.getKey(), kv.getValue());
+            }
+        }
+        ActivityRequest ar = new ActivityRequest(setter.getActivity().getId(), buildSetArgumentList(request, setter), propertyMap, request.getRoute(), request.getSource());
+        return null;
+    }
+
+    private List<ActivityArgument> buildSetArgumentList(SetParameterRequest request, ParameterSetterDefinition setter) {
+        List<ActivityArgument> toReturn = new ArrayList<>();
+        // Define a map for the activity defined arguments
+        Map<String, ArgumentDefinition> definedArgumentMap = new LinkedHashMap<>();
+        for(ArgumentDefinition ad : setter.getActivity().getArguments()) {
+            definedArgumentMap.put(ad.getName(), ad);
+        }
+        Map<String, ActivityArgument> argumentMap = new LinkedHashMap<>();
+        // Hardcoded arguments
+        for(ArgumentInvocationDefinition aid : setter.getArguments()) {
+            ArgumentDefinition ad = definedArgumentMap.get(aid.getName());
+            if(aid.isRawValue()) {
+                argumentMap.put(aid.getName(), new ActivityArgument(aid.getName(), ValueUtil.parse(ad.getRawType(), aid.getValue()), null, false));
+            } else {
+                argumentMap.put(aid.getName(), new ActivityArgument(aid.getName(), null, ValueUtil.parse(ad.getEngineeringType(), aid.getValue()), false));
+            }
+        }
+        // Provide the arguments on the defined order
+        for(ArgumentDefinition ad : setter.getActivity().getArguments()) {
+
         }
     }
 

@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 
 import java.util.List;
 
@@ -76,8 +77,14 @@ public interface IActivityExecutionService {
      */
     List<ActivityRouteState> getRouteAvailability(String type) throws ReatmetricException;
 
-    // TODO add a way to set parameter value
-    // IUniqueId setParameter(SetParameterRequest request) throws ReatmetricException
-
+    /**
+     * Request the setting of the specified parameter to the specified value. The request is ultimately mapped to an activity,
+     * as per processing definition.
+     *
+     * @param request the {@link SetParameterRequest}
+     * @return the {@link IUniqueId} of the activity occurrence linked to the set operation
+     * @throws ReatmetricException in case of problems during the creation of the activity occurrence
+     */
+    IUniqueId setParameter(SetParameterRequest request) throws ReatmetricException;
 
 }

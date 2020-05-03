@@ -22,10 +22,7 @@ import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
-import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
-import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.api.processing.input.*;
 
 import java.util.List;
 
@@ -45,8 +42,7 @@ public interface IProcessingModel {
 
     List<ActivityOccurrenceData> getActiveActivityOccurrences();
 
-    // TODO add a way to set parameter value
-    // IUniqueId setParameterValue(SetParameterRequest request) throws ProcessingModelException;
+    IUniqueId setParameterValue(SetParameterRequest request) throws ProcessingModelException;
     // The model looks for the parameter processor, and depending on whether the parameter is settable or not,
     // the activity related to the setting is found (part of the parameter definition), and it is invoked with the
     // correct arguments. The following properties shall be allowed to be set: parameter external id as unsigned int,

@@ -43,6 +43,16 @@
               <contextMenu>
                     <ContextMenu fx:id="contextMenu" onShowing="#menuAboutToShow">
                         <items>
+                            <MenuItem fx:id="setParameterMenuItem" mnemonicParsing="false" onAction="#setParameterAction" text="Set Value...">
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/chevron-circle-up-right.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
+                            <SeparatorMenuItem fx:id="setParameterSeparator" />
                             <MenuItem fx:id="executeActivityMenuItem" mnemonicParsing="false" onAction="#executeActivityAction" text="Execute...">
                                 <graphic>
                                     <ImageView pickOnBounds="true" preserveRatio="true">

@@ -23,10 +23,7 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.*;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
-import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
-import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.api.processing.input.*;
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEntityBinding;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
@@ -34,6 +31,7 @@ import eu.dariolucia.reatmetric.processing.impl.graph.GraphModel;
 import eu.dariolucia.reatmetric.processing.impl.operations.*;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 import eu.dariolucia.reatmetric.processing.impl.processors.ActivityProcessor;
+import eu.dariolucia.reatmetric.processing.impl.processors.ParameterProcessor;
 import eu.dariolucia.reatmetric.processing.impl.processors.visitors.DataCollectorVisitor;
 import eu.dariolucia.reatmetric.processing.util.ThreadUtil;
 
@@ -279,6 +277,24 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                     .flatMap(Collection::stream) // Flatten the list
                     .collect(Collectors.toList()); // Collect everything in a single list
         }
+    }
+
+    @Override
+    public IUniqueId setParameterValue(SetParameterRequest request) throws ProcessingModelException {
+        if(request == null) {
+            throw new IllegalArgumentException("Null request");
+        }
+        // Locate the parameter process and ask it to build the activity request
+        AbstractSystemEntityProcessor processor = getProcessor(request.getId());
+        if(processor == null) {
+            throw new ProcessingModelException("Set request for parameter " + request.getId() + ": parameter does not exist");
+        }
+        if(!(processor instanceof ParameterProcessor)) {
+            throw new ProcessingModelException("Set request for parameter " + request.getId() + " returned a different type of system entity: " + processor.getEntityState().getType());
+        }
+        // Start the request
+        ActivityRequest activityRequest = ((ParameterProcessor)processor).generateSetRequest(request);
+        return startActivity(activityRequest);
     }
 
     @Override

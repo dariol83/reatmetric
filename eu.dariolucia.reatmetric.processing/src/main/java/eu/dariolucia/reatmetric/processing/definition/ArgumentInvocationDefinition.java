@@ -32,9 +32,6 @@ public class ArgumentInvocationDefinition {
     @XmlAttribute(name = "raw_value")
     private boolean rawValue = false;
 
-    @XmlAttribute(name = "ask_value")
-    private boolean askValue = false;
-
     public String getName() {
         return name;
     }
@@ -57,13 +54,5 @@ public class ArgumentInvocationDefinition {
 
     public void setRawValue(boolean rawValue) {
         this.rawValue = rawValue;
-    }
-
-    public boolean isAskValue() {
-        return askValue;
-    }
-
-    public void setAskValue(boolean askValue) {
-        this.askValue = askValue;
     }
 }
