@@ -16,42 +16,18 @@
 
 package eu.dariolucia.reatmetric.ui.utils;
 
-import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
-import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
-import eu.dariolucia.reatmetric.api.common.Pair;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
-import eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 import org.controlsfx.control.ToggleSwitch;
 import org.controlsfx.validation.Severity;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 
-import java.io.IOException;
-import java.net.URL;
 import java.util.List;
 
-public class ActivityDialogUtil {
-
-    public static Pair<Node, ActivityInvocationDialogController> createActivityInvocationDialog() throws IOException {
-        URL datePickerUrl = ActivityDialogUtil.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/ActivityInvocationDialog.fxml");
-        FXMLLoader loader = new FXMLLoader(datePickerUrl);
-        VBox root = loader.load();
-        ActivityInvocationDialogController controller = loader.getController();
-        return Pair.of(root, controller);
-    }
-
-    public static Pair<Node, ActivityInvocationDialogController> createActivityInvocationDialog(ActivityDescriptor descriptor, ActivityRequest request, List<ActivityRouteState> routeList) throws IOException {
-        Pair<Node, ActivityInvocationDialogController> asBuilt = createActivityInvocationDialog();
-        asBuilt.getSecond().initialiseActivityDialog(descriptor, request, routeList);
-        return asBuilt;
-    }
+public class ValueControlUtil {
 
     public static Control buildValueControl(ValidationSupport validationSupport, ValueTypeEnum type, Object inputValue, Object defaultValue, boolean isFixed, List<Object> acceptableValues) {
         boolean mandatory = true;

@@ -85,10 +85,13 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
         this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
         // Build the descriptor
-        this.descriptor = new ParameterDescriptor(getPath(), getSystemEntityId(), definition.getDescription(), definition.getRawType(), definition.getEngineeringType(), definition.getUnit(), definition.getExpression() != null, definition.getSetter() != null, definition.getSetter() != null ? definition.getSetter().getActivity().getType(): null,buildExpectedValuesRaw(definition.getCalibrations()), buildExpectedValuesEng(definition.getCalibrations()));
+        this.descriptor = new ParameterDescriptor(getPath(), getSystemEntityId(), definition.getDescription(), definition.getRawType(), definition.getEngineeringType(), definition.getUnit(), definition.getExpression() != null, definition.getSetter() != null, definition.getSetter() != null ? definition.getSetter().getActivity().getDefaultRoute(): null, definition.getSetter() != null ? definition.getSetter().getActivity().getType(): null,buildExpectedValuesRaw(definition.getCalibrations()), buildExpectedValuesEng(definition.getCalibrations()));
     }
 
     private List<Object> buildExpectedValuesRaw(List<CalibrationDefinition> cals) {
+        if(cals == null) {
+            return null;
+        }
         for(CalibrationDefinition cal : cals ) {
             if(cal instanceof EnumCalibration) {
                 EnumCalibration calibration = (EnumCalibration) cal;
@@ -107,6 +110,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     private List<Object> buildExpectedValuesEng(List<CalibrationDefinition> cals) {
+        if(cals == null) {
+            return null;
+        }
         for(CalibrationDefinition cal : cals ) {
             if(cal instanceof EnumCalibration) {
                 EnumCalibration calibration = (EnumCalibration) cal;
@@ -453,8 +459,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 propertyMap.put(kv.getKey(), kv.getValue());
             }
         }
-        ActivityRequest ar = new ActivityRequest(setter.getActivity().getId(), buildSetArgumentList(request, setter), propertyMap, request.getRoute(), request.getSource());
-        return null;
+        return new ActivityRequest(setter.getActivity().getId(), buildSetArgumentList(request, setter), propertyMap, request.getRoute(), request.getSource());
     }
 
     private List<ActivityArgument> buildSetArgumentList(SetParameterRequest request, ParameterSetterDefinition setter) {
@@ -479,7 +484,10 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             if(ad.getName().equals(setter.getSetArgument())) {
                 toReturn.add(new ActivityArgument(ad.getName(), request.isEngineeringUsed() ? null : request.getValue(), request.isEngineeringUsed() ? request.getValue() : null, request.isEngineeringUsed()));
             } else {
-                toReturn.add(argumentMap.get(ad.getName()));
+                ActivityArgument alreadyBuilt = argumentMap.get(ad.getName());
+                if(alreadyBuilt != null) {
+                    toReturn.add(alreadyBuilt);
+                }
             }
         }
         return toReturn;

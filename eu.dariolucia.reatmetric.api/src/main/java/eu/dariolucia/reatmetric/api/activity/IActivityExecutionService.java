@@ -81,10 +81,10 @@ public interface IActivityExecutionService {
      * Request the setting of the specified parameter to the specified value. The request is ultimately mapped to an activity,
      * as per processing definition.
      *
-     * @param request the {@link SetParameterRequest}
+     * @param request the parameter set request
      * @return the {@link IUniqueId} of the activity occurrence linked to the set operation
      * @throws ReatmetricException in case of problems during the creation of the activity occurrence
      */
-    IUniqueId setParameter(SetParameterRequest request) throws ReatmetricException;
+    IUniqueId setParameterValue(SetParameterRequest request) throws ReatmetricException;
 
 }

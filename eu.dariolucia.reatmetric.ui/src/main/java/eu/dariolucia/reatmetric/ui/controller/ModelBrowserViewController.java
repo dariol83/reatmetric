@@ -26,11 +26,9 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.ActivityDialogUtil;
-import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
-import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
-import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
+import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
@@ -43,6 +41,7 @@ import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -50,6 +49,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
@@ -103,11 +103,16 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     // Temporary message queue
     private DataProcessingDelegator<SystemEntity> delegator;
 
-    private PopOver activityPopOver;
+    private PopOver popOver;
     // ****************************************************************************
     // Activity-execution related
     // ****************************************************************************
     private final Map<String, ActivityRequest> activityRequestMap = new HashMap<>();
+
+    // ****************************************************************************
+    // Parameter-set related
+    // ****************************************************************************
+    private final Map<String, SetParameterRequest> setParameterRequestMap = new HashMap<>();
 
     // ****************************************************************************
     // Menu items
@@ -297,10 +302,10 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             }
         });
 
-        activityPopOver = new PopOver();
-        activityPopOver.setHideOnEscape(true);
-        activityPopOver.setAutoHide(false);
-        activityPopOver.setDetachable(true);
+        popOver = new PopOver();
+        popOver.setHideOnEscape(true);
+        popOver.setAutoHide(false);
+        popOver.setDetachable(true);
     }
 
     private void updatePredicate(String newValue) {
@@ -481,12 +486,12 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             if (descriptor instanceof ActivityDescriptor) {
                 // Get the route list
                 List<ActivityRouteState> routeList = ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ActivityDescriptor) descriptor).getActivityType());
-                Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, activityRequestMap.get(descriptor.getPath().asString()), routeList);
+                Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityInvocationDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, activityRequestMap.get(descriptor.getPath().asString()), routeList);
                 // Create the popup
-                activityPopOver.setTitle("Execute activity " + descriptor.getPath().asString());
-                activityPopOver.setContentNode(activityDialogPair.getFirst());
+                popOver.setTitle("Execute activity " + descriptor.getPath().asString());
+                popOver.setContentNode(activityDialogPair.getFirst());
                 activityDialogPair.getSecond().registerHandlers(this::runActivity, this::closeActivityPopOver);
-                activityPopOver.show(modelTree);
+                popOver.show(modelTree);
             }
         } catch (IOException | ReatmetricException e) {
             LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
@@ -494,7 +499,11 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     }
 
     private void closeActivityPopOver(ActivityInvocationDialogController activityInvocationDialogController) {
-        activityPopOver.hide();
+        popOver.hide();
+    }
+
+    private void closeParameterPopOver(ParameterSetDialogController parameterSetDialogController) {
+        popOver.hide();
     }
 
     private void runActivity(ActivityInvocationDialogController activityInvocationDialogController) {
@@ -502,7 +511,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         boolean confirm = DialogUtils.confirm("Request execution of activity", activityInvocationDialogController.getPath(), "Do you want to dispatch the execution request to the processing model?");
         if(confirm) {
             // Hide the popup
-            activityPopOver.hide();
+            popOver.hide();
             // Store activity request in activity invocation cache, to be used to initialise the same activity invocation in the future
             activityRequestMap.put(activityInvocationDialogController.getPath(), request);
             ReatmetricUI.threadPool(getClass()).execute(() -> {
@@ -525,17 +534,52 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             // Get the descriptor
             AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getValue().getExternalId());
             if (descriptor instanceof ParameterDescriptor) {
-                // Get the route list (from the setter type -> activity type)
-                List<ActivityRouteState> routeList = ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ParameterDescriptor) descriptor).getSetterType());
-                Pair<Node, ParameterSetDialogController> parameterSetPair = ParameterSetUtil.createParameterSetDialog((ParameterDescriptor) descriptor, parameterSetMap.get(descriptor.getPath().asString()), routeList);
-                // Create the popup
-                activityPopOver.setTitle("Set parameter " + descriptor.getPath().asString());
-                activityPopOver.setContentNode(parameterSetPair.getFirst());
-                parameterSetPair.getSecond().registerHandlers(this::setParameter, this::closeActivityPopOver);
-                activityPopOver.show(modelTree);
+                if(!((ParameterDescriptor) descriptor).isSettable()) {
+                    popOver.setAutoHide(true);
+                    popOver.setDetachable(false);
+                    popOver.setHideOnEscape(true);
+                    VBox box = new VBox();
+                    box.setPadding(new Insets(8));
+                    Label l = new Label("Selected parameter " + descriptor.getPath().getLastPathElement() + " cannot be set");
+                    l.setPrefWidth(300);
+                    l.setWrapText(true);
+                    l.setPrefHeight(50);
+                    box.getChildren().add(l);
+                    popOver.setContentNode(box);
+                } else {
+                    popOver.setAutoHide(false);
+                    popOver.setDetachable(true);
+                    popOver.setHideOnEscape(true);
+                    // Get the route list (from the setter type -> activity type)
+                    List<ActivityRouteState> routeList = ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ParameterDescriptor) descriptor).getSetterType());
+                    Pair<Node, ParameterSetDialogController> parameterSetPair = ParameterSetDialogUtil.createParameterSetDialog((ParameterDescriptor) descriptor, setParameterRequestMap.get(descriptor.getPath().asString()), routeList);
+                    // Create the popup
+                    popOver.setTitle("Set parameter " + descriptor.getPath().asString());
+                    popOver.setContentNode(parameterSetPair.getFirst());
+                    parameterSetPair.getSecond().registerHandlers(this::setParameter, this::closeParameterPopOver);
+                }
+                popOver.show(modelTree);
             }
         } catch (IOException | ReatmetricException e) {
             LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
+        }
+    }
+
+    private void setParameter(ParameterSetDialogController parameterSetDialogController) {
+        SetParameterRequest request = parameterSetDialogController.buildRequest();
+        boolean confirm = DialogUtils.confirm("Request parameter set", parameterSetDialogController.getPath(), "Do you want to dispatch the set request to the processing model?");
+        if(confirm) {
+            // Hide the popup
+            popOver.hide();
+            // Store set request in set invocation cache, to be used to initialise the same set invocation in the future
+            setParameterRequestMap.put(parameterSetDialogController.getPath(), request);
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                try {
+                    ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().setParameterValue(request);
+                } catch (ReatmetricException e) {
+                    LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
+                }
+            });
         }
     }
 

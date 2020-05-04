@@ -23,8 +23,8 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ParameterSetterDefinition {
 
-    @XmlAttribute(name="activity", required = true)
     @XmlIDREF
+    @XmlAttribute(name="activity", required = true)
     private ActivityProcessingDefinition activity;
 
     @XmlAttribute(name="set_argument", required = true)

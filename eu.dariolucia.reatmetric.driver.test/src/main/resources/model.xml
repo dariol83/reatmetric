@@ -245,15 +245,14 @@
             </calib_enum>
 		</parameter>
 		
-		
 		<!-- Switch -->
 		<parameter id="#500" location="STATION.SWITCH.SW_POSITION" description="Switch Position" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="1" y="POSITION_1" />
                 <point x="2" y="POSITION_2" />
             </calib_enum>
+            <setter activity="#550" set_argument="ARG1" />
 		</parameter>
-		
 		
 		<!-- Splitter -->
 		<parameter id="#600" location="STATION.SPLITTER.SPT_STATUS" description="Splitter Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >

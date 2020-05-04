@@ -186,7 +186,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             // Check if the route exists
             processor.checkHandlerAvailability(request.getRoute(), definition.getType());
             // Build the map of activity arguments with the corresponding raw values
-            Map<String, Object> name2value = new TreeMap<>();
+            Map<String, Object> name2value = new TreeMap<>(); // TODO: linkedhashmap, same order of defined arguments in definition
             for (ActivityArgument arg : request.getArguments()) {
                 ArgumentDefinition argDef = name2argumentDefinition.get(arg.getName());
                 // Argument is defined?

@@ -40,6 +40,7 @@ import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.core.configuration.AbstractInitialisationConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
 import eu.dariolucia.reatmetric.core.impl.managers.ActivityOccurrenceDataAccessManager;
@@ -284,6 +285,11 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
     @Override
     public List<ActivityRouteState> getRouteAvailability(String type) throws ReatmetricException {
         return processingModel.getRouteAvailability(type);
+    }
+
+    @Override
+    public IUniqueId setParameterValue(SetParameterRequest request) throws ReatmetricException {
+        return processingModel.setParameterValue(request);
     }
 
     public IProcessingModel getProcessingModel() {
