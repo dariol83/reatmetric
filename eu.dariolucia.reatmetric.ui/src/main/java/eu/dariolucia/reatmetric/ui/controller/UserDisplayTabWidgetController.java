@@ -39,7 +39,9 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.*;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.HBox;
@@ -618,7 +620,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		l.getXAxis().setTickLabelsVisible(true);
 
 		// Add to list
-		AbstractChartManager udd = new XYBarChartManager((o, arg) -> updateFilter(), l);
+		AbstractChartManager udd = new XYBarChartManager(o -> updateFilter(), l);
 		// l.setPrefHeight(200);
 		addToPane(l);
 		// l.prefWidthProperty().bind(this.innerBox.widthProperty());
@@ -656,7 +658,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		((InstantAxis) l.getXAxis()).setUpperBound(Instant.now().plusMillis(getTimeUnit()));
 
 		// Add to list
-		XYTimeChartManager udd = new XYTimeChartManager((o, arg) -> updateFilter(), l);
+		XYTimeChartManager udd = new XYTimeChartManager(o -> updateFilter(), l);
 
 		addToPane(l);
 
@@ -677,7 +679,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 		((NumberAxis) l.getYAxis()).setTickLabelsVisible(false);
 
 		// Add to list
-		XYScatterChartManager udd = new XYScatterChartManager((o, arg) -> updateFilter(), l);
+		XYScatterChartManager udd = new XYScatterChartManager(o -> updateFilter(), l);
 
 		addToPane(l);
 

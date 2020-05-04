@@ -100,6 +100,7 @@ public enum ValueTypeEnum {
         return assignedClass;
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T parse(String s) {
         if (this == EXTENSION) {
             throw new IllegalStateException("Extension values cannot be parsed by this class");
@@ -107,6 +108,7 @@ public enum ValueTypeEnum {
         return (T) toObject.apply(s);
     }
 
+    @SuppressWarnings("unchecked")
     public String toString(Object object) {
         if (this == EXTENSION) {
             throw new IllegalStateException("Extension values cannot be formatted as string by this class");

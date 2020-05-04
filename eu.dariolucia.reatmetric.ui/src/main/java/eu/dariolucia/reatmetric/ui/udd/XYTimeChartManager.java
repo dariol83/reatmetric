@@ -35,7 +35,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Observer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class XYTimeChartManager extends AbstractChartManager {
@@ -43,7 +43,7 @@ public class XYTimeChartManager extends AbstractChartManager {
 	private final XYChart<Instant, Number> chart;
 	private final Map<SystemEntityPath, XYChart.Series<Instant, Number>> parameter2series = new LinkedHashMap<>();
 	
-    public XYTimeChartManager(Observer informer, XYChart<Instant, Number> n) {
+    public XYTimeChartManager(Consumer<AbstractChartManager> informer, XYChart<Instant, Number> n) {
     	super(informer);
 		this.chart = n;
 		this.chart.setOnDragOver(this::onDragOver);

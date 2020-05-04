@@ -17,14 +17,18 @@
 
 package eu.dariolucia.reatmetric.ui.udd;
 
-import java.time.Instant;
-import java.util.*;
-
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 
-public abstract class AbstractChartManager extends Observable {
+import java.time.Instant;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.Consumer;
+
+public abstract class AbstractChartManager {
+
+	private final Consumer<AbstractChartManager> changeListener;
 
 	private final Set<SystemEntityPath> parameters = new TreeSet<>();
 
@@ -32,8 +36,8 @@ public abstract class AbstractChartManager extends Observable {
 
 	protected volatile boolean live = true;
 
-	public AbstractChartManager(Observer informer) {
-		addObserver(informer);
+	public AbstractChartManager(Consumer<AbstractChartManager> informer) {
+		changeListener = informer;
 	}
 
 	public Set<SystemEntityPath> getPlottedParameters() {
@@ -46,14 +50,18 @@ public abstract class AbstractChartManager extends Observable {
 
 	protected void addPlottedParameter(SystemEntityPath path) {
 		this.parameters.add(path);
-		setChanged();
 		notifyObservers();
 	}
 
 	protected void addPlottedEvent(SystemEntityPath path) {
 		this.events.add(path);
-		setChanged();
 		notifyObservers();
+	}
+
+	protected void notifyObservers() {
+		if(changeListener != null) {
+			changeListener.accept(this);
+		}
 	}
 
 	public void switchToLive(boolean b) {

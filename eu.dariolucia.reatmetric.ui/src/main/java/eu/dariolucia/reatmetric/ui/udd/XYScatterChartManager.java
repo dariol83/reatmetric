@@ -33,6 +33,7 @@ import javafx.scene.input.TransferMode;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class XYScatterChartManager extends AbstractChartManager {
@@ -43,7 +44,7 @@ public class XYScatterChartManager extends AbstractChartManager {
 
 	private final AtomicInteger eventCounter = new AtomicInteger(0);
 
-    public XYScatterChartManager(Observer informer, ScatterChart<Instant, Number> n) {
+    public XYScatterChartManager(Consumer<AbstractChartManager> informer, ScatterChart<Instant, Number> n) {
     	super(informer);
 		this.chart = n;
 		this.chart.setOnDragOver(this::onDragOver);

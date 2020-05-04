@@ -34,7 +34,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Observer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class XYBarChartManager extends AbstractChartManager {
@@ -42,7 +42,7 @@ public class XYBarChartManager extends AbstractChartManager {
 	private final BarChart<String, Number> chart;
 	private final Map<SystemEntityPath, XYChart.Series<String, Number>> parameter2series = new LinkedHashMap<>();
 	
-    public XYBarChartManager(Observer informer, BarChart<String, Number> n) {
+    public XYBarChartManager(Consumer<AbstractChartManager> informer, BarChart<String, Number> n) {
     	super(informer);
 		this.chart = n;
 		this.chart.setOnDragOver(this::onDragOver);
