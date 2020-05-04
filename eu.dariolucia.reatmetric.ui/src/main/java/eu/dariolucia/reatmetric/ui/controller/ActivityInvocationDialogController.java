@@ -25,6 +25,7 @@ import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.ValueControlUtil;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -283,7 +284,7 @@ public class ActivityInvocationDialogController implements Initializable {
         for(PropertyBean pb : propertiesTableView.getItems()) {
             propertyMap.put(pb.keyProperty().get(), pb.valueProperty().get());
         }
-        return new ActivityRequest(descriptor.getExternalId(), arguments.stream().filter(o -> !o.isFixed()).map(ActivityInvocationArgumentLine::buildArgument).collect(Collectors.toList()), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), "TODO Source");
+        return new ActivityRequest(descriptor.getExternalId(), arguments.stream().filter(o -> !o.isFixed()).map(ActivityInvocationArgumentLine::buildArgument).collect(Collectors.toList()), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
     }
 
     @FXML
@@ -404,7 +405,6 @@ public class ActivityInvocationDialogController implements Initializable {
         }
 
         public ActivityArgument buildArgument() {
-            // TODO: define a way to define the source (use field in ReatmetricUI and allow system property setting - if null, user name)
             return new ActivityArgument(descriptor.getName(), !rawEngSelection.isSelected() ? buildObject(descriptor.getRawDataType(), rawValueControl) : null, rawEngSelection.isSelected() ? buildObject(descriptor.getEngineeringDataType(), engValueControl) : null, rawEngSelection.isSelected());
         }
 

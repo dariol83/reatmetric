@@ -45,9 +45,11 @@ public class ReatmetricUI extends Application {
     public static final String APPLICATION_NAME = "ReatMetric UI";
     
     public static final String APPLICATION_VERSION = "0.1.0";
-    
+
+    private static final String REATMETRIC_USERNAME_KEY = "reatmetric.username";
+
     private static final ReatmetricServiceHolder SELECTED_SYSTEM = new ReatmetricServiceHolder();
-    
+
     public static ReatmetricServiceHolder selectedSystem() {
         return SELECTED_SYSTEM;
     }
@@ -99,6 +101,14 @@ public class ReatmetricUI extends Application {
                 STATUS_LABEL.setText(s);
             }
         });
+    }
+
+    public static String username() {
+        String definedUserName = System.getProperty(REATMETRIC_USERNAME_KEY);
+        if(definedUserName == null) {
+            definedUserName = System.getProperty("user.name");
+        }
+        return definedUserName;
     }
 
     @Override

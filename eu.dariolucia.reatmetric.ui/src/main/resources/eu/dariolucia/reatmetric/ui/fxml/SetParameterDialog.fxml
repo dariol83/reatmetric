@@ -30,13 +30,10 @@
   ~ limitations under the License.
   -->
 
-
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.image.Image?>
 <?import javafx.scene.control.ComboBox?>
-<VBox prefWidth="650.0" spacing="8.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ParameterSetDialogController">
+<VBox prefWidth="650.0" spacing="8.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.SetParameterDialogController">
    <children>
-      <HBox VBox.vgrow="NEVER">
+      <HBox VBox.vgrow="NEVER" spacing="8.0">
          <children>
             <Label prefWidth="120.0" text="Parameter" />
             <Label fx:id="parameterLabel" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS">
@@ -48,14 +45,15 @@
       </HBox>
       <Label fx:id="descriptionLabel" wrapText="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
       <Separator prefWidth="200.0" />
-      <HBox VBox.vgrow="NEVER">
+      <VBox fx:id="valueVBox" prefWidth="600.0">
+      </VBox>
+      <Separator prefWidth="200.0" />
+      <HBox VBox.vgrow="NEVER" spacing="8.0">
          <children>
             <Label prefWidth="120.0" text="Selected Route" />
             <ComboBox fx:id="routeChoiceBox" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
          </children>
       </HBox>
-      <VBox fx:id="valueVBox" prefHeight="200.0" prefWidth="600.0">
-      </VBox>
       <Separator prefWidth="200.0" />
       <HBox spacing="8.0">
          <children>

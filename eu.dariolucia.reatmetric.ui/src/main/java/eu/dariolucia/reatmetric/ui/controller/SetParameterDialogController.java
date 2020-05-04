@@ -22,6 +22,7 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.ValueControlUtil;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -42,7 +43,7 @@ import java.net.URL;
 import java.util.*;
 import java.util.function.Consumer;
 
-public class ParameterSetDialogController implements Initializable {
+public class SetParameterDialogController implements Initializable {
 
 
     @FXML
@@ -64,8 +65,8 @@ public class ParameterSetDialogController implements Initializable {
 
     private ParameterDescriptor descriptor;
     private final ValidationSupport validationSupport = new ValidationSupport();
-    private Consumer<ParameterSetDialogController> okHandler;
-    private Consumer<ParameterSetDialogController> cancelHandler;
+    private Consumer<SetParameterDialogController> okHandler;
+    private Consumer<SetParameterDialogController> cancelHandler;
 
     private Control rawValueControl;
     private Control engValueControl;
@@ -150,7 +151,9 @@ public class ParameterSetDialogController implements Initializable {
     private void initialiseValueTable(SetParameterRequest currentRequest) {
         HBox node = new HBox();
         node.setSpacing(8);
-        node.setPadding(new Insets(8));
+        // Name
+        Label nameLbl = new Label("New value");
+        nameLbl.setPrefWidth(120.0);
         // Unit
         Label unitLbl = new Label(Objects.toString(descriptor.getUnit(), ""));
         unitLbl.setPrefWidth(70);
@@ -187,7 +190,7 @@ public class ParameterSetDialogController implements Initializable {
 
         rawEngSelection.disableProperty().bind(fixedProperty);
 
-        node.getChildren().addAll(rawValueControl, engValueControl, unitLbl, rawEngSelection);
+        node.getChildren().addAll(nameLbl, rawValueControl, engValueControl, unitLbl, rawEngSelection);
         validationSupport.initInitialDecoration();
 
         valueVBox.getChildren().add(node);
@@ -207,7 +210,7 @@ public class ParameterSetDialogController implements Initializable {
         }
     }
 
-    public void registerHandlers(Consumer<ParameterSetDialogController> okClicked, Consumer<ParameterSetDialogController> cancelClicked) {
+    public void registerHandlers(Consumer<SetParameterDialogController> okClicked, Consumer<SetParameterDialogController> cancelClicked) {
         this.okHandler = okClicked;
         this.cancelHandler = cancelClicked;
     }
@@ -229,7 +232,6 @@ public class ParameterSetDialogController implements Initializable {
     }
 
     public SetParameterRequest buildRequest() {
-        // TODO: define a way to define the source (use field in ReatmetricUI and allow system property setting - if null, user name)
-        return new SetParameterRequest(descriptor.getExternalId(), rawEngSelection.isSelected(), buildValueObject(), routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), "TODO Source");
+        return new SetParameterRequest(descriptor.getExternalId(), rawEngSelection.isSelected(), buildValueObject(), routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
     }
 }

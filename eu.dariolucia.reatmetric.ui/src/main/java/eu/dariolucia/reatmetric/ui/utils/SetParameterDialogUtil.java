@@ -20,7 +20,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
-import eu.dariolucia.reatmetric.ui.controller.ParameterSetDialogController;
+import eu.dariolucia.reatmetric.ui.controller.SetParameterDialogController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
@@ -29,18 +29,18 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
-public class ParameterSetDialogUtil {
+public class SetParameterDialogUtil {
 
-    public static Pair<Node, ParameterSetDialogController> createParameterSetDialog() throws IOException {
-        URL datePickerUrl = ParameterSetDialogUtil.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/ParameterSetDialog.fxml");
+    public static Pair<Node, SetParameterDialogController> createParameterSetDialog() throws IOException {
+        URL datePickerUrl = SetParameterDialogUtil.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/SetParameterDialog.fxml");
         FXMLLoader loader = new FXMLLoader(datePickerUrl);
         VBox root = loader.load();
-        ParameterSetDialogController controller = loader.getController();
+        SetParameterDialogController controller = loader.getController();
         return Pair.of(root, controller);
     }
 
-    public static Pair<Node, ParameterSetDialogController> createParameterSetDialog(ParameterDescriptor descriptor, SetParameterRequest request, List<ActivityRouteState> routeList) throws IOException {
-        Pair<Node, ParameterSetDialogController> asBuilt = createParameterSetDialog();
+    public static Pair<Node, SetParameterDialogController> createParameterSetDialog(ParameterDescriptor descriptor, SetParameterRequest request, List<ActivityRouteState> routeList) throws IOException {
+        Pair<Node, SetParameterDialogController> asBuilt = createParameterSetDialog();
         asBuilt.getSecond().initialiseParameterDialog(descriptor, request, routeList);
         return asBuilt;
     }

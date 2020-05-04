@@ -502,7 +502,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         popOver.hide();
     }
 
-    private void closeParameterPopOver(ParameterSetDialogController parameterSetDialogController) {
+    private void closeParameterPopOver(SetParameterDialogController setParameterDialogController) {
         popOver.hide();
     }
 
@@ -552,7 +552,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     popOver.setHideOnEscape(true);
                     // Get the route list (from the setter type -> activity type)
                     List<ActivityRouteState> routeList = ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ParameterDescriptor) descriptor).getSetterType());
-                    Pair<Node, ParameterSetDialogController> parameterSetPair = ParameterSetDialogUtil.createParameterSetDialog((ParameterDescriptor) descriptor, setParameterRequestMap.get(descriptor.getPath().asString()), routeList);
+                    Pair<Node, SetParameterDialogController> parameterSetPair = SetParameterDialogUtil.createParameterSetDialog((ParameterDescriptor) descriptor, setParameterRequestMap.get(descriptor.getPath().asString()), routeList);
                     // Create the popup
                     popOver.setTitle("Set parameter " + descriptor.getPath().asString());
                     popOver.setContentNode(parameterSetPair.getFirst());
@@ -565,14 +565,14 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
     }
 
-    private void setParameter(ParameterSetDialogController parameterSetDialogController) {
-        SetParameterRequest request = parameterSetDialogController.buildRequest();
-        boolean confirm = DialogUtils.confirm("Request parameter set", parameterSetDialogController.getPath(), "Do you want to dispatch the set request to the processing model?");
+    private void setParameter(SetParameterDialogController setParameterDialogController) {
+        SetParameterRequest request = setParameterDialogController.buildRequest();
+        boolean confirm = DialogUtils.confirm("Request parameter set", setParameterDialogController.getPath(), "Do you want to dispatch the set request to the processing model?");
         if(confirm) {
             // Hide the popup
             popOver.hide();
             // Store set request in set invocation cache, to be used to initialise the same set invocation in the future
-            setParameterRequestMap.put(parameterSetDialogController.getPath(), request);
+            setParameterRequestMap.put(setParameterDialogController.getPath(), request);
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().setParameterValue(request);
