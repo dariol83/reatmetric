@@ -186,7 +186,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             // Check if the route exists
             processor.checkHandlerAvailability(request.getRoute(), definition.getType());
             // Build the map of activity arguments with the corresponding raw values
-            Map<String, Object> name2value = new TreeMap<>(); // TODO: linkedhashmap, same order of defined arguments in definition
+            Map<String, Object> name2value = new TreeMap<>();
             for (ActivityArgument arg : request.getArguments()) {
                 ArgumentDefinition argDef = name2argumentDefinition.get(arg.getName());
                 // Argument is defined?
@@ -230,13 +230,18 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                     verifyAndAdd(name2value, ad, finalValue, true);
                 }
             }
-            // At this stage, the map name2value is complete and everything is setup according to definition
+            // At this stage, the map name2value is complete and everything is setup according to definition, but we create a LinkedHashMap that follows the definition order
+            Map<String, Object> finalName2value = new LinkedHashMap<>();
+            for (ArgumentDefinition ad : definition.getArguments()) {
+                finalName2value.put(ad.getName(), name2value.get(ad.getName()));
+            }
+            // Done
             Map<String, String> properties = new TreeMap<>();
             for (KeyValue kv : definition.getProperties()) {
                 properties.put(kv.getKey(), kv.getValue());
             }
             properties.putAll(request.getProperties());
-            ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), Instant.now(), name2value, properties, new LinkedList<>(), request.getRoute(), request.getSource());
+            ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), Instant.now(), finalName2value, properties, new LinkedList<>(), request.getRoute(), request.getSource());
             id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
             // inform the processor that the activity occurrence has been created, use equality to 1 to avoid calling the registration for every activity
             if (id2occurrence.size() == 1) {
