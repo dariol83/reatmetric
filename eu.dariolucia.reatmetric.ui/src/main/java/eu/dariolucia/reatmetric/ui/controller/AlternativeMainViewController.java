@@ -274,6 +274,9 @@ public class AlternativeMainViewController implements Initializable, IReatmetric
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        // Set tabpane image
+        viewTabPane.setStyle("-fx-background-image: url(\"/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-128px.png\"); -fx-background-repeat: no-repeat; -fx-background-position: center;");
+
         // Hook width property of view button to vbox width
         for (Node n : buttonBox.getChildren()) {
             if (n instanceof Button) {

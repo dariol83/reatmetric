@@ -129,7 +129,8 @@
   >######</tspan></text>
   <text id="diesel-gen1-current-text" x="59.53125" y="166.03125" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan893-1" x="59.53125" y="166.03125" stroke-width=".26458"
     data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_CURRENT"
-    data-rtmt-text-00=":= $eng"
+    data-rtmt-text-00="$eng EQ ##NULL## := ---"
+    data-rtmt-text-10=":= $eng"
   >######</tspan></text>
   <text id="diesel-gen1-rpm-text" x="59.53125" y="172.64583" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan897-3" x="59.53125" y="172.64583" stroke-width=".26458"
     data-rtmt-binding-id="STATION.DIESEL_GEN1.DG1_PROTECTION"
@@ -191,8 +192,9 @@
     data-rtmt-text-00=":= $eng"  
   >######</tspan></text>
   <text id="diesel-gen2-current-text" x="59.531246" y="209.31866" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan893-1-5" x="59.531246" y="209.31866" stroke-width=".26458"
-    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG1_CURRENT"
-    data-rtmt-text-00=":= $eng"  
+    data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_CURRENT"
+    data-rtmt-text-00="$eng EQ ##NULL## := ---"
+    data-rtmt-text-10=":= $eng"
   >######</tspan></text>
   <text id="diesel-gen2-rpm-text" x="59.531246" y="215.93324" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan897-3-0" x="59.531246" y="215.93324" stroke-width=".26458"
     data-rtmt-binding-id="STATION.DIESEL_GEN2.DG2_PROTECTION"
