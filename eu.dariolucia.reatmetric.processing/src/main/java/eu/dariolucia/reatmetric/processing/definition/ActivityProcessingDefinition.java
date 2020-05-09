@@ -16,10 +16,7 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.*;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -58,8 +55,11 @@ public class ActivityProcessingDefinition extends AbstractProcessingDefinition {
     @XmlAttribute(name = "verification_timeout")
     private int verificationTimeout = 0; // in seconds, 0 means disabled
 
-    @XmlElement(name = "argument")
-    private List<ArgumentDefinition> arguments = new LinkedList<>();
+    @XmlElements({
+            @XmlElement(name="argument",type= PlainArgumentDefinition.class),
+            @XmlElement(name="array",type= ArrayArgumentDefinition.class)
+    })
+    private List<AbstractArgumentDefinition> arguments = new LinkedList<>();
 
     @XmlElement(name = "property")
     private List<KeyValue> properties = new LinkedList<>();
@@ -107,11 +107,11 @@ public class ActivityProcessingDefinition extends AbstractProcessingDefinition {
         this.verificationTimeout = verificationTimeout;
     }
 
-    public List<ArgumentDefinition> getArguments() {
+    public List<AbstractArgumentDefinition> getArguments() {
         return arguments;
     }
 
-    public void setArguments(List<ArgumentDefinition> arguments) {
+    public void setArguments(List<AbstractArgumentDefinition> arguments) {
         this.arguments = arguments;
     }
 

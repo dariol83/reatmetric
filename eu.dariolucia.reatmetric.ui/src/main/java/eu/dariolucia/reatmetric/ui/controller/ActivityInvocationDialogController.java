@@ -16,12 +16,10 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.activity.ActivityArgumentDescriptor;
-import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
-import eu.dariolucia.reatmetric.api.activity.ActivityRouteAvailability;
-import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
+import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.Pair;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
+import eu.dariolucia.reatmetric.api.processing.input.AbstractActivityArgument;
+import eu.dariolucia.reatmetric.api.processing.input.PlainActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
@@ -124,20 +122,24 @@ public class ActivityInvocationDialogController implements Initializable {
     }
 
     private void initialiseArgumentTable(ActivityRequest currentRequest) {
-        for(ActivityArgumentDescriptor d : descriptor.getArgumentDescriptors()) {
-            ActivityInvocationArgumentLine line = new ActivityInvocationArgumentLine(d, getInputFor(currentRequest, d));
-            argumentVBox.getChildren().add(line.getNode());
-            arguments.add(line);
+        for(AbstractActivityArgumentDescriptor d : descriptor.getArgumentDescriptors()) {
+            if(d instanceof ActivityPlainArgumentDescriptor) { // TODO: support for array arguments missing, maybe use a tree table?
+                ActivityInvocationArgumentLine line = new ActivityInvocationArgumentLine((ActivityPlainArgumentDescriptor) d, getInputFor(currentRequest, (ActivityPlainArgumentDescriptor) d));
+                argumentVBox.getChildren().add(line.getNode());
+                arguments.add(line);
+            }
         }
     }
 
-    private ActivityArgument getInputFor(ActivityRequest currentRequest, ActivityArgumentDescriptor d) {
+    private PlainActivityArgument getInputFor(ActivityRequest currentRequest, ActivityPlainArgumentDescriptor d) {
         if(currentRequest == null) {
             return null;
         }
-        for(ActivityArgument a : currentRequest.getArguments()) {
-            if(a.getName().equals(d.getName())) {
-                return a;
+        for(AbstractActivityArgument a : currentRequest.getArguments()) {
+            if(a instanceof PlainActivityArgument) {
+                if (a.getName().equals(d.getName())) {
+                    return (PlainActivityArgument) a;
+                }
             }
         }
         return null;
@@ -320,8 +322,8 @@ public class ActivityInvocationDialogController implements Initializable {
 
     private static class ActivityInvocationArgumentLine {
 
-        private final ActivityArgumentDescriptor descriptor;
-        private final ActivityArgument input;
+        private final ActivityPlainArgumentDescriptor descriptor;
+        private final PlainActivityArgument input;
 
         private HBox node;
 
@@ -331,7 +333,7 @@ public class ActivityInvocationDialogController implements Initializable {
         private Control engValueControl;
         private CheckBox rawEngSelection;
 
-        public ActivityInvocationArgumentLine(ActivityArgumentDescriptor descriptor, ActivityArgument input) {
+        public ActivityInvocationArgumentLine(ActivityPlainArgumentDescriptor descriptor, PlainActivityArgument input) {
             this.descriptor = descriptor;
             this.input = input;
             this.valid.bind(this.validationSupport.invalidProperty().not());
@@ -404,8 +406,8 @@ public class ActivityInvocationDialogController implements Initializable {
             return descriptor.isFixed();
         }
 
-        public ActivityArgument buildArgument() {
-            return new ActivityArgument(descriptor.getName(), !rawEngSelection.isSelected() ? buildObject(descriptor.getRawDataType(), rawValueControl) : null, rawEngSelection.isSelected() ? buildObject(descriptor.getEngineeringDataType(), engValueControl) : null, rawEngSelection.isSelected());
+        public PlainActivityArgument buildArgument() {
+            return new PlainActivityArgument(descriptor.getName(), !rawEngSelection.isSelected() ? buildObject(descriptor.getRawDataType(), rawValueControl) : null, rawEngSelection.isSelected() ? buildObject(descriptor.getEngineeringDataType(), engValueControl) : null, rawEngSelection.isSelected());
         }
 
         private Object buildObject(ValueTypeEnum type, Control control) {

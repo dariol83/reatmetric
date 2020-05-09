@@ -21,14 +21,12 @@ import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import java.util.List;
 
 /**
- * The descriptor of an activity argument.
+ * The descriptor of a activity argument (simple).
  *
  * Objects of this class are immutable.
  */
-public class ActivityArgumentDescriptor {
+public class ActivityPlainArgumentDescriptor extends AbstractActivityArgumentDescriptor {
 
-    private final String name;
-    private final String description;
     private final ValueTypeEnum rawDataType;
     private final ValueTypeEnum engineeringDataType;
     private final String unit;
@@ -41,9 +39,8 @@ public class ActivityArgumentDescriptor {
     private final List<Object> expectedRawValues;
     private final List<Object> expectedEngineeringValues;
 
-    public ActivityArgumentDescriptor(String name, String description, ValueTypeEnum rawDataType, ValueTypeEnum engineeringDataType, String unit, boolean fixed, boolean defaultValuePresent, Object engineeringDefaultValue, Object rawDefaultValue, boolean decalibrationSet, boolean checkSet, List<Object> expectedRawValues, List<Object> expectedEngineeringValues) {
-        this.name = name;
-        this.description = description;
+    public ActivityPlainArgumentDescriptor(String name, String description, ValueTypeEnum rawDataType, ValueTypeEnum engineeringDataType, String unit, boolean fixed, boolean defaultValuePresent, Object engineeringDefaultValue, Object rawDefaultValue, boolean decalibrationSet, boolean checkSet, List<Object> expectedRawValues, List<Object> expectedEngineeringValues) {
+        super(name, description);
         this.rawDataType = rawDataType;
         this.engineeringDataType = engineeringDataType;
         this.unit = unit;
@@ -63,14 +60,6 @@ public class ActivityArgumentDescriptor {
         } else {
             this.expectedEngineeringValues = null;
         }
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     public ValueTypeEnum getRawDataType() {

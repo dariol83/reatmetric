@@ -31,7 +31,7 @@ import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.stubs.ActivityHandlerStub;
 import eu.dariolucia.reatmetric.processing.impl.stubs.NominalLifecycleStrategy;
 import eu.dariolucia.reatmetric.processing.impl.stubs.SchedulingLifecycleStrategy;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
+import eu.dariolucia.reatmetric.api.processing.input.PlainActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
@@ -80,8 +80,8 @@ class ActivityTest {
             testLogger.info("Invocation 1");
 
             ActivityRequest ar1 = ActivityRequest.newRequest(1000)
-                    .withArgument(ActivityArgument.ofSource("ARG1", true))
-                    .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", true))
+                    .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
                     .withProperty("custom", "hello world")
                     .withRoute("A")
                     .withSource("XXX")
@@ -115,9 +115,9 @@ class ActivityTest {
             testLogger.info("Invocation 2");
 
             ActivityRequest ar1 = ActivityRequest.newRequest(1000)
-                    .withArgument(ActivityArgument.ofSource("ARG1", true))
-                    .withArgument(ActivityArgument.ofSource("ARG3", 4.5))
-                    .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", true))
+                    .withArgument(PlainActivityArgument.ofSource("ARG3", 4.5))
+                    .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
                     .withRoute("A")
                     .withSource("XXX")
                     .build();
@@ -136,9 +136,9 @@ class ActivityTest {
             testLogger.info("Invocation 3");
 
             ActivityRequest ar1 = ActivityRequest.newRequest(1000)
-                    .withArgument(ActivityArgument.ofSource("ARG1", false))
-                    .withArgument(ActivityArgument.ofSource("ARG3", 12.4))
-                    .withArgument(ActivityArgument.ofEngineering("ARG4", "OFF"))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", false))
+                    .withArgument(PlainActivityArgument.ofSource("ARG3", 12.4))
+                    .withArgument(PlainActivityArgument.ofEngineering("ARG4", "OFF"))
                     .withRoute("A")
                     .withSource("XXX")
                     .build();
@@ -191,9 +191,9 @@ class ActivityTest {
             testLogger.info("Invocation 1");
 
             ActivityRequest ar1 = ActivityRequest.newRequest(1001)
-                    .withArgument(ActivityArgument.ofSource("ARG1", true))
-                    .withArgument(ActivityArgument.ofEngineering("ARG2", 1000L))
-                    .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", true))
+                    .withArgument(PlainActivityArgument.ofEngineering("ARG2", 1000L))
+                    .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
                     .withProperty("custom", "hello world")
                     .withRoute("A")
                     .withSource("XXX")
@@ -226,9 +226,9 @@ class ActivityTest {
             testLogger.info("Invocation 2");
 
             ActivityRequest ar1 = ActivityRequest.newRequest(1001)
-                    .withArgument(ActivityArgument.ofSource("ARG1", true))
-                    .withArgument(ActivityArgument.ofEngineering("ARG2", 70000L))
-                    .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", true))
+                    .withArgument(PlainActivityArgument.ofEngineering("ARG2", 70000L))
+                    .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
                     .withRoute("A")
                     .withSource("XXX")
                     .build();
@@ -255,8 +255,8 @@ class ActivityTest {
             outList.clear();
             // Invoke activity
             ActivityRequest ar1 = ActivityRequest.newRequest(1001)
-                    .withArgument(ActivityArgument.ofSource("ARG1", false))
-                    .withArgument(ActivityArgument.ofSource("ARG2", 3000L))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", false))
+                    .withArgument(PlainActivityArgument.ofSource("ARG2", 3000L))
                     .withRoute("A")
                     .withSource("XXX")
                     .build();
@@ -296,8 +296,8 @@ class ActivityTest {
             outList.clear();
 
             ActivityRequest ar1 = ActivityRequest.newRequest(1001)
-                    .withArgument(ActivityArgument.ofSource("ARG1", true))
-                    .withArgument(ActivityArgument.ofEngineering("ARG2", 4000L))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", true))
+                    .withArgument(PlainActivityArgument.ofEngineering("ARG2", 4000L))
                     .withRoute("A")
                     .withSource("XXX")
                     .build();
@@ -340,9 +340,9 @@ class ActivityTest {
             testLogger.info("Invocation 1");
 
             ActivityRequest ar1 = ActivityRequest.newRequest(1001)
-                    .withArgument(ActivityArgument.ofSource("ARG1", true))
-                    .withArgument(ActivityArgument.ofEngineering("ARG2", 1000L))
-                    .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", true))
+                    .withArgument(PlainActivityArgument.ofEngineering("ARG2", 1000L))
+                    .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
                     .withProperty("custom", "hello world")
                     .withRoute("A")
                     .withSource("XXX")
@@ -400,7 +400,7 @@ class ActivityTest {
             outList.clear();
             // Invoke
             ActivityRequest ar1 = ActivityRequest.newRequest(1002)
-                    .withArgument(ActivityArgument.ofSource("ARG1", 120L))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", 120L))
                     .withRoute("A")
                     .withSource("XXX")
                     .build();
@@ -433,7 +433,7 @@ class ActivityTest {
             testLogger.info("Invocation 2");
             // Invoke
             ActivityRequest ar1 = ActivityRequest.newRequest(1002)
-                    .withArgument(ActivityArgument.ofSource("ARG1", 121L))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", 121L))
                     .withRoute("A")
                     .withSource("XXX")
                     .build();
@@ -504,7 +504,7 @@ class ActivityTest {
             testLogger.info("Invocation 1");
             // Invoke
             ActivityRequest ar1 = ActivityRequest.newRequest(1003)
-                    .withArgument(ActivityArgument.ofSource("ARG1", 120L))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", 120L))
                     .withRoute("A")
                     .withSource("XXX")
                     .build();
@@ -568,8 +568,8 @@ class ActivityTest {
             h1.markRouteAsUnavailable("A");
 
             ActivityRequest ar1 = ActivityRequest.newRequest(1000)
-                    .withArgument(ActivityArgument.ofSource("ARG1", true))
-                    .withArgument(ActivityArgument.ofEngineering("ARG4", "ON"))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", true))
+                    .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
                     .withRoute("A")
                     .withSource("XXX")
                     .build();
@@ -617,10 +617,10 @@ class ActivityTest {
             testLogger.info("Invocation 1");
 
             ActivityRequest ar1 = ActivityRequest.newRequest(1000)
-                    .withArgument(ActivityArgument.ofSource("ARG1", true))
-                    .withArgument(ActivityArgument.ofSource("ARG2", 104L))
-                    .withArgument(ActivityArgument.ofSource("ARG3", 7.9))
-                    .withArgument(ActivityArgument.ofSource("ARG4", 0))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", true))
+                    .withArgument(PlainActivityArgument.ofSource("ARG2", 104L))
+                    .withArgument(PlainActivityArgument.ofSource("ARG3", 7.9))
+                    .withArgument(PlainActivityArgument.ofSource("ARG4", 0))
                     .withRoute("C")
                     .withSource("XXX")
                     .build();
@@ -703,7 +703,7 @@ class ActivityTest {
             testLogger.info("Invocation 1");
             // Invoke
             ActivityRequest ar1 = ActivityRequest.newRequest(1003)
-                    .withArgument(ActivityArgument.ofSource("ARG1", 120L))
+                    .withArgument(PlainActivityArgument.ofSource("ARG1", 120L))
                     .withProperty(SchedulingLifecycleStrategy.SCHEDULED_EXECUTION_TIME_KEY, Instant.now().plusSeconds(10).toString())
                     .withRoute("A")
                     .withSource("XXX")

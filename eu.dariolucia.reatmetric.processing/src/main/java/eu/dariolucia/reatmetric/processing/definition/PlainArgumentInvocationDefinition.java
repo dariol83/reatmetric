@@ -21,24 +21,13 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ArgumentInvocationDefinition {
-
-    @XmlAttribute(name = "name", required = true)
-    private String name;
+public class PlainArgumentInvocationDefinition extends AbstractArgumentInvocationDefinition {
 
     @XmlAttribute(name = "value")
     private String value;
 
     @XmlAttribute(name = "raw_value")
     private boolean rawValue = false;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 
     public String getValue() {
         return value;

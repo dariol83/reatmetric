@@ -30,8 +30,11 @@ public class ParameterSetterDefinition {
     @XmlAttribute(name="set_argument", required = true)
     private String setArgument;
 
-    @XmlElement(name = "fixed_argument")
-    private List<ArgumentInvocationDefinition> arguments = new LinkedList<>();
+    @XmlElements({
+            @XmlElement(name="fixed_argument",type= PlainArgumentInvocationDefinition.class),
+            @XmlElement(name="fixed_array",type= ArrayArgumentInvocationDefinition.class)
+    })
+    private List<AbstractArgumentInvocationDefinition> arguments = new LinkedList<>();
 
     @XmlElement(name = "property")
     private List<KeyValue> properties = new LinkedList<>();
@@ -52,11 +55,11 @@ public class ParameterSetterDefinition {
         this.activity = activity;
     }
 
-    public List<ArgumentInvocationDefinition> getArguments() {
+    public List<AbstractArgumentInvocationDefinition> getArguments() {
         return arguments;
     }
 
-    public void setArguments(List<ArgumentInvocationDefinition> arguments) {
+    public void setArguments(List<AbstractArgumentInvocationDefinition> arguments) {
         this.arguments = arguments;
     }
 

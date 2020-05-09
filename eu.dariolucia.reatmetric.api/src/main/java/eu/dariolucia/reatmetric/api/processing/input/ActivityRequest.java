@@ -31,7 +31,7 @@ public final class ActivityRequest extends AbstractInputDataItem {
     /**
      * The list of arguments.
      */
-    private final List<ActivityArgument> arguments;
+    private final List<AbstractActivityArgument> arguments;
     /**
      * The map of properties.
      */
@@ -45,7 +45,7 @@ public final class ActivityRequest extends AbstractInputDataItem {
      */
     private final String source;
 
-    public ActivityRequest(int id, List<ActivityArgument> arguments, Map<String, String> properties, String route, String source) {
+    public ActivityRequest(int id, List<AbstractActivityArgument> arguments, Map<String, String> properties, String route, String source) {
         this.id = id;
         this.arguments = List.copyOf(arguments);
         this.properties = Collections.unmodifiableMap(new TreeMap<>(properties));
@@ -57,7 +57,7 @@ public final class ActivityRequest extends AbstractInputDataItem {
         return id;
     }
 
-    public List<ActivityArgument> getArguments() {
+    public List<AbstractActivityArgument> getArguments() {
         return arguments;
     }
 
@@ -103,7 +103,7 @@ public final class ActivityRequest extends AbstractInputDataItem {
 
     public static class Builder {
         private final int id;
-        private List<ActivityArgument> arguments = new LinkedList<>();
+        private List<AbstractActivityArgument> arguments = new LinkedList<>();
         private Map<String, String> properties = new TreeMap<>();
         private String route;
         private String source;
@@ -112,7 +112,7 @@ public final class ActivityRequest extends AbstractInputDataItem {
             this.id = id;
         }
 
-        public Builder withArgument(ActivityArgument argument) {
+        public Builder withArgument(AbstractActivityArgument argument) {
             this.arguments.add(argument);
             return this;
         }
@@ -122,7 +122,7 @@ public final class ActivityRequest extends AbstractInputDataItem {
             return this;
         }
 
-        public Builder withArguments(List<ActivityArgument> arguments) {
+        public Builder withArguments(List<AbstractActivityArgument> arguments) {
             this.arguments.addAll(arguments);
             return this;
         }

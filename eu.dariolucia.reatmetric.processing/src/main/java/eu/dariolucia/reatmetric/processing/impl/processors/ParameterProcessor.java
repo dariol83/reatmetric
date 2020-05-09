@@ -27,19 +27,16 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
-import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.input.*;
+import eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding;
 import eu.dariolucia.reatmetric.api.value.ValueException;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
-import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.definition.*;
-import eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.AlarmParameterDataBuilder;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.ParameterDataBuilder;
-import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 
 import javax.script.ScriptException;
 import java.time.Instant;
@@ -210,7 +207,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                     LOG.log(Level.FINE, String.format("Sample of parameter %d (%s) discarded, generation time %s is before current time %s", definition.getId(), definition.getLocation(), newValue.getGenerationTime(), state.getGenerationTime()));
                 }
                 // Before existing, compute the system entity state if needed
-                computeSystemEntityState(stateChanged, generatedStates);
+                computeSystemEntityState(false, generatedStates);
                 return generatedStates;
             }
             Instant receptionTime;
@@ -245,7 +242,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                     } else {
                         // Effectively, as there is no change in the depending elements, the processing can end here
                         // Before existing, compute the system entity state if needed
-                        computeSystemEntityState(stateChanged, generatedStates);
+                        computeSystemEntityState(false, generatedStates);
                         return generatedStates;
                     }
                 }
@@ -462,35 +459,75 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         return new ActivityRequest(setter.getActivity().getId(), buildSetArgumentList(request, setter), propertyMap, request.getRoute(), request.getSource());
     }
 
-    private List<ActivityArgument> buildSetArgumentList(SetParameterRequest request, ParameterSetterDefinition setter) {
-        List<ActivityArgument> toReturn = new ArrayList<>();
+    private List<AbstractActivityArgument> buildSetArgumentList(SetParameterRequest request, ParameterSetterDefinition setter) throws ProcessingModelException {
+        List<AbstractActivityArgument> toReturn = new ArrayList<>();
         // Define a map for the activity defined arguments
-        Map<String, ArgumentDefinition> definedArgumentMap = new LinkedHashMap<>();
-        for(ArgumentDefinition ad : setter.getActivity().getArguments()) {
+        Map<String, AbstractArgumentDefinition> definedArgumentMap = new LinkedHashMap<>();
+        for(AbstractArgumentDefinition ad : setter.getActivity().getArguments()) {
             definedArgumentMap.put(ad.getName(), ad);
         }
-        Map<String, ActivityArgument> argumentMap = new LinkedHashMap<>();
+        Map<String, AbstractActivityArgument> argumentMap = new LinkedHashMap<>();
         // Hardcoded arguments
-        for(ArgumentInvocationDefinition aid : setter.getArguments()) {
-            ArgumentDefinition ad = definedArgumentMap.get(aid.getName());
-            if(aid.isRawValue()) {
-                argumentMap.put(aid.getName(), new ActivityArgument(aid.getName(), ValueUtil.parse(ad.getRawType(), aid.getValue()), null, false));
+        for(AbstractArgumentInvocationDefinition aaid : setter.getArguments()) {
+            AbstractArgumentDefinition aad = definedArgumentMap.get(aaid.getName());
+            if(aad instanceof PlainArgumentDefinition) {
+                PlainActivityArgument toAdd = createSimpleArgumentInvocation((PlainArgumentInvocationDefinition) aaid, (PlainArgumentDefinition) aad);
+                argumentMap.put(aaid.getName(), toAdd);
+            } else if(aad instanceof ArrayArgumentDefinition) {
+                ArrayActivityArgument toAdd = createGroupArgumentInvocation((ArrayArgumentInvocationDefinition) aaid, (ArrayArgumentDefinition) aad);
+                argumentMap.put(aaid.getName(), toAdd);
             } else {
-                argumentMap.put(aid.getName(), new ActivityArgument(aid.getName(), null, ValueUtil.parse(ad.getEngineeringType(), aid.getValue()), true));
+                throw new ProcessingModelException("Definition for argument " + aad.getName() + " is not supported");
             }
         }
         // Provide the arguments on the defined order
-        for(ArgumentDefinition ad : setter.getActivity().getArguments()) {
+        for(AbstractArgumentDefinition ad : setter.getActivity().getArguments()) {
             if(ad.getName().equals(setter.getSetArgument())) {
-                toReturn.add(new ActivityArgument(ad.getName(), request.isEngineeringUsed() ? null : request.getValue(), request.isEngineeringUsed() ? request.getValue() : null, request.isEngineeringUsed()));
+                toReturn.add(new PlainActivityArgument(ad.getName(), request.isEngineeringUsed() ? null : request.getValue(), request.isEngineeringUsed() ? request.getValue() : null, request.isEngineeringUsed()));
             } else {
-                ActivityArgument alreadyBuilt = argumentMap.get(ad.getName());
+                AbstractActivityArgument alreadyBuilt = argumentMap.get(ad.getName());
                 if(alreadyBuilt != null) {
                     toReturn.add(alreadyBuilt);
                 }
             }
         }
         return toReturn;
+    }
+
+    private ArrayActivityArgument createGroupArgumentInvocation(ArrayArgumentInvocationDefinition agid, ArrayArgumentDefinition agd) throws ProcessingModelException {
+        List<ArrayActivityArgumentRecord> records = new LinkedList<>();
+        for(ArrayArgumentRecordInvocationDefinition ageid : agid.getRecords()) {
+            List<AbstractActivityArgument> argsForGroupRecord = new LinkedList<>();
+            for(AbstractArgumentInvocationDefinition aaid : ageid.getElements()) {
+                if (aaid instanceof PlainArgumentInvocationDefinition) {
+                    PlainActivityArgument toAdd = createSimpleArgumentInvocation((PlainArgumentInvocationDefinition) aaid, (PlainArgumentDefinition) getArgumentDefinitionOf(aaid.getName(), agd));
+                    argsForGroupRecord.add(toAdd);
+                } else if (aaid instanceof ArrayArgumentInvocationDefinition) {
+                    ArrayActivityArgument toAdd = createGroupArgumentInvocation((ArrayArgumentInvocationDefinition) aaid, (ArrayArgumentDefinition) getArgumentDefinitionOf(aaid.getName(), agd));
+                    argsForGroupRecord.add(toAdd);
+                }
+            }
+            ArrayActivityArgumentRecord elem = new ArrayActivityArgumentRecord(argsForGroupRecord);
+            records.add(elem);
+        }
+        return new ArrayActivityArgument(agd.getName(), records);
+    }
+
+    private AbstractArgumentDefinition getArgumentDefinitionOf(String name, ArrayArgumentDefinition agd) throws ProcessingModelException {
+        for(AbstractArgumentDefinition aad : agd.getElements()) {
+            if(aad.getName().equals(name)) {
+                return aad;
+            }
+        }
+        throw new ProcessingModelException("Cannot find argument " + name + " in elements of argument group " + agd.getName());
+    }
+
+    private PlainActivityArgument createSimpleArgumentInvocation(PlainArgumentInvocationDefinition aid, PlainArgumentDefinition ad) {
+        if (aid.isRawValue()) {
+            return new PlainActivityArgument(aid.getName(), ValueUtil.parse(ad.getRawType(), aid.getValue()), null, false);
+        } else {
+            return new PlainActivityArgument(aid.getName(), null, ValueUtil.parse(ad.getEngineeringType(), aid.getValue()), true);
+        }
     }
 
     @Override

@@ -33,7 +33,7 @@ public class ActivityDescriptor extends AbstractSystemEntityDescriptor {
     private final String description;
     private final String defaultRoute;
     private final String activityType;
-    private final List<ActivityArgumentDescriptor> argumentDescriptors;
+    private final List<AbstractActivityArgumentDescriptor> argumentDescriptors;
     private final List<Pair<String, String>> properties;
 
     /**
@@ -47,7 +47,7 @@ public class ActivityDescriptor extends AbstractSystemEntityDescriptor {
      * @param argumentDescriptors the list of argument descriptors
      * @param properties the list of properties
      */
-    public ActivityDescriptor(SystemEntityPath path, int externalId, String description, String defaultRoute, String activityType, List<ActivityArgumentDescriptor> argumentDescriptors, List<Pair<String, String>> properties) {
+    public ActivityDescriptor(SystemEntityPath path, int externalId, String description, String defaultRoute, String activityType, List<AbstractActivityArgumentDescriptor> argumentDescriptors, List<Pair<String, String>> properties) {
         super(path, externalId, SystemEntityType.ACTIVITY);
         this.description = description;
         this.defaultRoute = defaultRoute;
@@ -68,7 +68,7 @@ public class ActivityDescriptor extends AbstractSystemEntityDescriptor {
         return activityType;
     }
 
-    public List<ActivityArgumentDescriptor> getArgumentDescriptors() {
+    public List<AbstractActivityArgumentDescriptor> getArgumentDescriptors() {
         return argumentDescriptors;
     }
 

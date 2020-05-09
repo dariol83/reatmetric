@@ -128,14 +128,32 @@ public class GraphModel {
                 addEdges(act, act.getVerification());
             }
             // This is needed to block the injection of referenced parameters while a new activity occurrence is about to be released
-            for(ArgumentDefinition ad : act.getArguments()) {
-                if(ad.getDefaultValue() != null && ad.getDefaultValue() instanceof ReferenceDefaultValue) {
-                   new DependencyEdge(getVertexOf(act.getId()), getVertexOf(((ReferenceDefaultValue) ad.getDefaultValue()).getParameter().getId()));
+            for(AbstractArgumentDefinition aad : act.getArguments()) {
+                if(aad instanceof PlainArgumentDefinition) {
+                    addArgumentDependency((PlainArgumentDefinition) aad, act);
+                } else if(aad instanceof ArrayArgumentDefinition) {
+                    addArgumentGroupDependency((ArrayArgumentDefinition) aad, act);
                 }
             }
         }
         // Topological sort now and assignment of the orderingIds
         computeTopologicalOrdering();
+    }
+
+    private void addArgumentGroupDependency(ArrayArgumentDefinition agd, ActivityProcessingDefinition act) {
+        for(AbstractArgumentDefinition aad : agd.getElements()) {
+            if(aad instanceof PlainArgumentDefinition) {
+                addArgumentDependency((PlainArgumentDefinition) aad, act);
+            } else if(aad instanceof ArrayArgumentDefinition) {
+                addArgumentGroupDependency((ArrayArgumentDefinition) aad, act);
+            }
+        }
+    }
+
+    private void addArgumentDependency(PlainArgumentDefinition ad, ActivityProcessingDefinition act) {
+        if (ad.getDefaultValue() != null && ad.getDefaultValue() instanceof ReferenceDefaultValue) {
+            new DependencyEdge(getVertexOf(act.getId()), getVertexOf(((ReferenceDefaultValue) ad.getDefaultValue()).getParameter().getId()));
+        }
     }
 
     private void computeTopologicalOrdering() throws ProcessingModelException {

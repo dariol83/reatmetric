@@ -16,10 +16,7 @@
 
 package eu.dariolucia.reatmetric.processing.impl.processors;
 
-import eu.dariolucia.reatmetric.api.activity.ActivityArgumentDescriptor;
-import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
+import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -29,9 +26,8 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityArgument;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.processing.input.*;
+import eu.dariolucia.reatmetric.api.value.Array;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.definition.*;
@@ -50,13 +46,13 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     private final static Logger LOG = Logger.getLogger(ActivityProcessor.class.getName());
 
     private final Map<IUniqueId, ActivityOccurrenceProcessor> id2occurrence = new ConcurrentHashMap<>();
-    private final Map<String, ArgumentDefinition> name2argumentDefinition = new TreeMap<>();
+    private final Map<String, AbstractArgumentDefinition> name2argumentDefinition = new TreeMap<>();
 
     private final ActivityDescriptor descriptor;
 
     public ActivityProcessor(ActivityProcessingDefinition act, ProcessingModelImpl processingModel) {
         super(act, processingModel, SystemEntityType.ACTIVITY);
-        for(ArgumentDefinition ad : act.getArguments()) {
+        for(AbstractArgumentDefinition ad : act.getArguments()) {
             // XXX: argument name duplication to be checked
             name2argumentDefinition.put(ad.getName(), ad);
         }
@@ -77,33 +73,23 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
 
     private ActivityDescriptor buildDescriptor(boolean stopOnReferenceDefaultValue) {
         // Start building the descriptor
-        List<ActivityArgumentDescriptor> argDescriptors = new ArrayList<>(definition.getArguments().size());
-        for(ArgumentDefinition aa : definition.getArguments()) {
-            if(aa.getDefaultValue() instanceof ReferenceDefaultValue && stopOnReferenceDefaultValue) {
-                // Stop here, pre-building object is not possible
-                return null;
-            }
-            Object defaultValue = null;
-            if(aa.getDefaultValue() != null) {
-                try {
-                    defaultValue = computeDefaultValue(aa);
-                } catch (ProcessingModelException e) {
-                    LOG.log(Level.SEVERE, String.format("Cannot retrieve default value for argument %s of activity %d (%s)", aa.getName(), definition.getId(), definition.getLocation()));
+        List<AbstractActivityArgumentDescriptor> argDescriptors = new ArrayList<>(definition.getArguments().size());
+        for(AbstractArgumentDefinition aad : definition.getArguments()) {
+            if(aad instanceof PlainArgumentDefinition) {
+                PlainArgumentDefinition aa = (PlainArgumentDefinition) aad;
+                ActivityPlainArgumentDescriptor argDesc = createPlainArgumentDescriptor(stopOnReferenceDefaultValue, aa);
+                if (argDesc == null) {
+                    return null;
                 }
+                argDescriptors.add(argDesc);
+            } else if(aad instanceof ArrayArgumentDefinition) {
+                ArrayArgumentDefinition agd = (ArrayArgumentDefinition) aad;
+                ActivityArrayArgumentDescriptor gargDesc = createArrayArgumentDescriptor(stopOnReferenceDefaultValue, agd);
+                if (gargDesc == null) {
+                    return null;
+                }
+                argDescriptors.add(gargDesc);
             }
-            ActivityArgumentDescriptor argDesc = new ActivityArgumentDescriptor(aa.getName(),
-                    aa.getDescription(),
-                    aa.getRawType(),
-                    aa.getEngineeringType(),
-                    aa.getUnit(),
-                    aa.isFixed(), aa.getDefaultValue() != null,
-                    null,
-                    defaultValue,
-                    aa.getDecalibration() != null,
-                    aa.getChecks() == null,
-                    buildExpectedValuesRaw(aa),
-                    buildExpectedValuesEng(aa));
-            argDescriptors.add(argDesc);
         }
         // Now the properties
         List<Pair<String, String>> props = new ArrayList<>(definition.getProperties().size());
@@ -114,7 +100,56 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         return new ActivityDescriptor(getPath(), getSystemEntityId(), definition.getDescription(),definition.getDefaultRoute(), definition.getType(), argDescriptors, props);
     }
 
-    private List<Object> buildExpectedValuesRaw(ArgumentDefinition ad) {
+    private ActivityArrayArgumentDescriptor createArrayArgumentDescriptor(boolean stopOnReferenceDefaultValue, ArrayArgumentDefinition agd) {
+        List<AbstractActivityArgumentDescriptor> elements = new LinkedList<>();
+        for(AbstractArgumentDefinition aad : agd.getElements()) {
+            if(aad instanceof PlainArgumentDefinition) {
+                PlainArgumentDefinition aa = (PlainArgumentDefinition) aad;
+                ActivityPlainArgumentDescriptor argDesc = createPlainArgumentDescriptor(stopOnReferenceDefaultValue, aa);
+                if (argDesc == null) {
+                    return null;
+                }
+                elements.add(argDesc);
+            } else if(aad instanceof ArrayArgumentDefinition) {
+                ArrayArgumentDefinition innerAgd = (ArrayArgumentDefinition) aad;
+                ActivityArrayArgumentDescriptor gargDesc = createArrayArgumentDescriptor(stopOnReferenceDefaultValue, innerAgd);
+                if (gargDesc == null) {
+                    return null;
+                }
+                elements.add(gargDesc);
+            }
+        }
+        return new ActivityArrayArgumentDescriptor(agd.getName(), agd.getDescription(), agd.getArgumentExpander(), elements);
+    }
+
+    private ActivityPlainArgumentDescriptor createPlainArgumentDescriptor(boolean stopOnReferenceDefaultValue, PlainArgumentDefinition aa) {
+        if (aa.getDefaultValue() instanceof ReferenceDefaultValue && stopOnReferenceDefaultValue) {
+            // Stop here, pre-building object is not possible
+            return null;
+        }
+        Object defaultValue = null;
+        if (aa.getDefaultValue() != null) {
+            try {
+                defaultValue = computeDefaultValue(aa);
+            } catch (ProcessingModelException e) {
+                LOG.log(Level.SEVERE, String.format("Cannot retrieve default value for argument %s of activity %d (%s)", aa.getName(), definition.getId(), definition.getLocation()));
+            }
+        }
+        return new ActivityPlainArgumentDescriptor(aa.getName(),
+                aa.getDescription(),
+                aa.getRawType(),
+                aa.getEngineeringType(),
+                aa.getUnit(),
+                aa.isFixed(), aa.getDefaultValue() != null,
+                null,
+                defaultValue,
+                aa.getDecalibration() != null,
+                aa.getChecks() == null,
+                buildExpectedValuesRaw(aa),
+                buildExpectedValuesEng(aa));
+    }
+
+    private List<Object> buildExpectedValuesRaw(PlainArgumentDefinition ad) {
         if(ad.getDecalibration() != null) {
             if(ad.getDecalibration() instanceof InvertedEnumCalibration) {
                 InvertedEnumCalibration iec = (InvertedEnumCalibration) ad.getDecalibration();
@@ -154,7 +189,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         return null;
     }
 
-    private List<Object> buildExpectedValuesEng(ArgumentDefinition ad) {
+    private List<Object> buildExpectedValuesEng(PlainArgumentDefinition ad) {
         if(ad.getDecalibration() != null) {
             if(ad.getDecalibration() instanceof InvertedEnumCalibration) {
                 InvertedEnumCalibration iec = (InvertedEnumCalibration) ad.getDecalibration();
@@ -187,52 +222,50 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             processor.checkHandlerAvailability(request.getRoute(), definition.getType());
             // Build the map of activity arguments with the corresponding raw values
             Map<String, Object> name2value = new TreeMap<>();
-            for (ActivityArgument arg : request.getArguments()) {
-                ArgumentDefinition argDef = name2argumentDefinition.get(arg.getName());
+            for (AbstractActivityArgument aarg : request.getArguments()) {
+                AbstractArgumentDefinition aargDef = name2argumentDefinition.get(aarg.getName());
                 // Argument is defined?
-                if (argDef == null) {
-                    throw new ProcessingModelException("Argument " + arg.getName() + " not present in the activity definition");
+                if (aargDef == null) {
+                    throw new ProcessingModelException("Argument " + aarg.getName() + " not present in the activity definition");
                 }
-                // Type is correct?
-                if (arg.getEngValue() != null && !ValueUtil.typeMatch(argDef.getEngineeringType(), arg.getEngValue())) {
-                    throw new ProcessingModelException("Argument " + arg.getName() + " set with engineering value not matching the argument engineering value definition type " + argDef.getEngineeringType() + ", expected " + argDef.getEngineeringType().getAssignedClass().getSimpleName());
+                if(aarg instanceof PlainActivityArgument) {
+                    PlainActivityArgument arg = (PlainActivityArgument) aarg;
+                    PlainArgumentDefinition argDef = (PlainArgumentDefinition) aargDef;
+                    Object finalValue = createSimpleArgument(arg, argDef);
+                    // Check and add the value to the final value map: if null do not add it but do not raise an exception
+                    verifyAndAdd(name2value, argDef, finalValue, false);
+                } else if(aarg instanceof ArrayActivityArgument) {
+                    ArrayActivityArgument garg = (ArrayActivityArgument) aarg;
+                    ArrayArgumentDefinition gargDef = (ArrayArgumentDefinition) aargDef;
+                    // Encode an object value of type Array
+                    Array arrayValue = createGroup(garg, gargDef);
+                    // Check and add the value to the final value map: if null do not add it but do not raise an exception
+                    verifyAndAdd(name2value, gargDef, arrayValue, false);
+                } else {
+                    throw new ProcessingModelException("Argument " + aarg.getName() + " has definition type not supported: " + aarg.getClass().getName());
                 }
-                if (arg.getRawValue() != null && !ValueUtil.typeMatch(argDef.getRawType(), arg.getRawValue())) {
-                    throw new ProcessingModelException("Argument " + arg.getName() + " set with raw value not matching the argument raw value definition type " + argDef.getRawType() + ", expected " + argDef.getRawType().getAssignedClass().getSimpleName());
-                }
-                // Argument is fixed? Then check if there is corresponding value.
-                if (argDef.isFixed()) {
-                    checkSameValue(argDef, arg);
-                }
-                // If it is engineering value and there is a decalibration function, decalibrate
-                Object finalValue = arg.getRawValue() != null ? arg.getRawValue() : arg.getEngValue();
-                if (arg.getRawValue() == null) {
-                    try {
-                        finalValue = CalibrationDefinition.performDecalibration(argDef.getDecalibration(), finalValue, argDef.getRawType(), processor);
-                    } catch (CalibrationException e) {
-                        throw new ProcessingModelException("Cannot decalibrate argument " + arg.getName() + ": " + e.getMessage(), e);
-                    }
-                }
-                // Check and add the value to the final value map: if null do not add it but do not raise an exception
-                verifyAndAdd(name2value, argDef, finalValue, false);
             }
             // Verify that all arguments are specified and, if some are not, use the default values if specified. If not, throw exception
-            for (ArgumentDefinition ad : definition.getArguments()) {
+            for (AbstractArgumentDefinition ad : definition.getArguments()) {
                 // If the argument was not provided, use the default value
                 if (!name2value.containsKey(ad.getName())) {
                     Object finalValue;
-                    // Argument not specified in the request: add default
-                    if (ad.getDefaultValue() == null) {
-                        throw new ProcessingModelException("Argument " + ad.getName() + " not specified in the request, and default value not present");
+                    if(ad instanceof PlainArgumentDefinition) {
+                        // Argument not specified in the request: add default
+                        if (((PlainArgumentDefinition) ad).getDefaultValue() == null) {
+                            throw new ProcessingModelException("Argument " + ad.getName() + " not specified in the request, and default value not present");
+                        }
+                        finalValue = computeDefaultValue((PlainArgumentDefinition) ad);
+                        // Check and add the value to the final value map: if null do not add it and raise an exception
+                        verifyAndAdd(name2value, ad, finalValue, true);
+                    } else {
+                        throw new ProcessingModelException("Argument " + ad.getName() + " not specified and without default value");
                     }
-                    finalValue = computeDefaultValue(ad);
-                    // Check and add the value to the final value map: if null do not add it and raise an exception
-                    verifyAndAdd(name2value, ad, finalValue, true);
                 }
             }
             // At this stage, the map name2value is complete and everything is setup according to definition, but we create a LinkedHashMap that follows the definition order
             Map<String, Object> finalName2value = new LinkedHashMap<>();
-            for (ArgumentDefinition ad : definition.getArguments()) {
+            for (AbstractArgumentDefinition ad : definition.getArguments()) {
                 finalName2value.put(ad.getName(), name2value.get(ad.getName()));
             }
             // Done
@@ -257,6 +290,99 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         }
     }
 
+    private Array createGroup(ArrayActivityArgument garg, ArrayArgumentDefinition gargDef) throws ProcessingModelException {
+        List<Array.Record> records = new LinkedList<>();
+        for(ArrayActivityArgumentRecord rec : garg.getRecords()) {
+            List<Pair<String, Object>> elements = new LinkedList<>();
+            for(AbstractActivityArgument aaa : rec.getElements()) {
+                AbstractArgumentDefinition aargDef = retrieveGroupElementDefinition(aaa.getName(), gargDef);
+                // Argument is defined?
+                if (aargDef == null) {
+                    throw new ProcessingModelException("Argument " + aaa.getName() + " not present in group definition " + gargDef.getName());
+                }
+                if(aaa instanceof PlainActivityArgument) {
+                    PlainActivityArgument arg = (PlainActivityArgument) aaa;
+                    PlainArgumentDefinition argDef = (PlainArgumentDefinition) aargDef;
+                    Object finalValue = createSimpleArgument(arg, argDef);
+                    elements.add(Pair.of(arg.getName(), finalValue));
+                } else if(aaa instanceof ArrayActivityArgument) {
+                    ArrayActivityArgument gaaa = (ArrayActivityArgument) aaa;
+                    ArrayArgumentDefinition gaaaDef = (ArrayArgumentDefinition) aargDef;
+                    // Encode an object value of type Array
+                    Array arrayValue = createGroup(gaaa, gaaaDef);
+                    elements.add(Pair.of(gaaa.getName(), arrayValue));
+                } else {
+                    throw new ProcessingModelException("Argument " + aaa.getName() + " has definition type not supported: " + aaa.getClass().getName());
+                }
+            }
+            records.add(new Array.Record(elements));
+        }
+        return new Array(records);
+    }
+
+    /**
+     * Create a {@link Array} value using only the raw values of the supplied {@link ArrayActivityArgument}.
+     *
+     * @param garg the activity group argument
+     * @return the group
+     * @throws ProcessingModelException in case of problems during the creation of the group
+     */
+    private Array createGroup(ArrayActivityArgument garg) throws ProcessingModelException {
+        List<Array.Record> records = new LinkedList<>();
+        for(ArrayActivityArgumentRecord rec : garg.getRecords()) {
+            List<Pair<String, Object>> elements = new LinkedList<>();
+            for(AbstractActivityArgument aaa : rec.getElements()) {
+                if(aaa instanceof PlainActivityArgument) {
+                    PlainActivityArgument arg = (PlainActivityArgument) aaa;
+                    Object finalValue = arg.getRawValue();
+                    elements.add(Pair.of(arg.getName(), finalValue));
+                } else if(aaa instanceof ArrayActivityArgument) {
+                    ArrayActivityArgument gaaa = (ArrayActivityArgument) aaa;
+                    // Encode an object value of type Array
+                    Array arrayValue = createGroup(gaaa);
+                    elements.add(Pair.of(gaaa.getName(), arrayValue));
+                } else {
+                    throw new ProcessingModelException("Argument " + aaa.getName() + " has definition type not supported: " + aaa.getClass().getName());
+                }
+            }
+            records.add(new Array.Record(elements));
+        }
+        return new Array(records);
+    }
+
+    private AbstractArgumentDefinition retrieveGroupElementDefinition(String name, ArrayArgumentDefinition gargDef) {
+        for(AbstractArgumentDefinition arg : gargDef.getElements()) {
+            if(name.equals(arg.getName())) {
+                return arg;
+            }
+        }
+        return null;
+    }
+
+    private Object createSimpleArgument(PlainActivityArgument arg, PlainArgumentDefinition argDef) throws ProcessingModelException {
+        // Type is correct?
+        if (arg.getEngValue() != null && !ValueUtil.typeMatch(argDef.getEngineeringType(), arg.getEngValue())) {
+            throw new ProcessingModelException("Argument " + arg.getName() + " set with engineering value not matching the argument engineering value definition type " + argDef.getEngineeringType() + ", expected " + argDef.getEngineeringType().getAssignedClass().getSimpleName());
+        }
+        if (arg.getRawValue() != null && !ValueUtil.typeMatch(argDef.getRawType(), arg.getRawValue())) {
+            throw new ProcessingModelException("Argument " + arg.getName() + " set with raw value not matching the argument raw value definition type " + argDef.getRawType() + ", expected " + argDef.getRawType().getAssignedClass().getSimpleName());
+        }
+        // Argument is fixed? Then check if there is corresponding value.
+        if (argDef.isFixed()) {
+            checkSameValue(argDef, arg);
+        }
+        // If it is engineering value and there is a decalibration function, decalibrate
+        Object finalValue = arg.getRawValue() != null ? arg.getRawValue() : arg.getEngValue();
+        if (arg.getRawValue() == null) {
+            try {
+                finalValue = CalibrationDefinition.performDecalibration(argDef.getDecalibration(), finalValue, argDef.getRawType(), processor);
+            } catch (CalibrationException e) {
+                throw new ProcessingModelException("Cannot decalibrate argument " + arg.getName() + ": " + e.getMessage(), e);
+            }
+        }
+        return finalValue;
+    }
+
     /**
      * This method returns the default value in RAW format for the provided argument.
      *
@@ -265,7 +391,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
      *
      * @throws ProcessingModelException if the default value cannot be computed
      */
-    private Object computeDefaultValue(ArgumentDefinition ad) throws ProcessingModelException {
+    private Object computeDefaultValue(PlainArgumentDefinition ad) throws ProcessingModelException {
         Object finalValue;// If default value is fixed, then use it
         if (ad.getDefaultValue() instanceof FixedDefaultValue) {
             String formattedValue = ((FixedDefaultValue) ad.getDefaultValue()).getValue();
@@ -301,28 +427,28 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         return finalValue;
     }
 
-    private void checkSameValue(ArgumentDefinition argumentDefinition, ActivityArgument suppliedArgument) throws ProcessingModelException {
-        DefaultValueType definedType = argumentDefinition.getDefaultValue().getType();
+    private void checkSameValue(PlainArgumentDefinition plainArgumentDefinition, PlainActivityArgument suppliedArgument) throws ProcessingModelException {
+        DefaultValueType definedType = plainArgumentDefinition.getDefaultValue().getType();
         DefaultValueType suppliedType = suppliedArgument.isEngineering() ? DefaultValueType.ENGINEERING : DefaultValueType.RAW;
         if(definedType != suppliedType) {
             throw new ProcessingModelException("Supplied argument " + suppliedArgument.getName() + " violates fixed argument type: defined " + definedType + ", but provided " + suppliedType);
         }
         Object suppliedValue = suppliedArgument.isEngineering() ? suppliedArgument.getEngValue() : suppliedArgument.getRawValue();
-        if(argumentDefinition.getDefaultValue() instanceof FixedDefaultValue) {
-            String definedValueStr = ((FixedDefaultValue) argumentDefinition.getDefaultValue()).getValue();
-            Object definedValue = ValueUtil.parse(definedType == DefaultValueType.ENGINEERING ? argumentDefinition.getEngineeringType() : argumentDefinition.getRawType(), definedValueStr);
+        if(plainArgumentDefinition.getDefaultValue() instanceof FixedDefaultValue) {
+            String definedValueStr = ((FixedDefaultValue) plainArgumentDefinition.getDefaultValue()).getValue();
+            Object definedValue = ValueUtil.parse(definedType == DefaultValueType.ENGINEERING ? plainArgumentDefinition.getEngineeringType() : plainArgumentDefinition.getRawType(), definedValueStr);
             if(!Objects.equals(definedValue, suppliedValue)) {
                 throw new ProcessingModelException("Supplied argument " + suppliedArgument.getName() + " violates fixed argument value: defined (fixed) " + definedValue + ", but provided " + suppliedValue);
             }
-        } else if(argumentDefinition.getDefaultValue() instanceof ReferenceDefaultValue) {
+        } else if(plainArgumentDefinition.getDefaultValue() instanceof ReferenceDefaultValue) {
             Object referencedValue;
             try {
-                referencedValue = ((ReferenceDefaultValue) argumentDefinition.getDefaultValue()).readTargetValue(argumentDefinition.getName(), processor);
+                referencedValue = ((ReferenceDefaultValue) plainArgumentDefinition.getDefaultValue()).readTargetValue(plainArgumentDefinition.getName(), processor);
             } catch (ValueReferenceException e) {
                 throw new ProcessingModelException(e);
             }
             if(!Objects.equals(referencedValue, suppliedValue)) {
-                throw new ProcessingModelException("Supplied argument " + suppliedArgument.getName() + " violates fixed argument value: defined (reference to " + ((ReferenceDefaultValue) argumentDefinition.getDefaultValue()).getParameter().getLocation() + ") " + referencedValue + ", but provided " + suppliedValue);
+                throw new ProcessingModelException("Supplied argument " + suppliedArgument.getName() + " violates fixed argument value: defined (reference to " + ((ReferenceDefaultValue) plainArgumentDefinition.getDefaultValue()).getParameter().getLocation() + ") " + referencedValue + ", but provided " + suppliedValue);
             }
         } else {
             throw new ProcessingModelException("Supplied argument " + suppliedArgument.getName() + " is fixed but the argument definition does not define a valid default value");
@@ -349,14 +475,51 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         return result;
     }
 
-    private void verifyAndAdd(Map<String, Object> argumentMap, ArgumentDefinition argDef, Object finalValue, boolean throwExceptionOfFinalNull) throws ProcessingModelException {
+    private void verifyAndAdd(Map<String, Object> argumentMap, AbstractArgumentDefinition aargDef, Object finalValue, boolean throwExceptionOfFinalNull) throws ProcessingModelException {
         // Apply checks
-        for(CheckDefinition cd : argDef.getChecks()) {
+        if(aargDef instanceof PlainArgumentDefinition) {
+            PlainArgumentDefinition argDef = (PlainArgumentDefinition) aargDef;
+            checkSimpleArgument(finalValue, argDef);
+        } else if (aargDef instanceof ArrayArgumentDefinition) {
+            ArrayArgumentDefinition agDef = (ArrayArgumentDefinition) aargDef;
+            Array value = (Array) finalValue;
+            checkGroupArgument(value, agDef);
+        }
+        // Final nullity check
+        if(finalValue == null) {
+            if(throwExceptionOfFinalNull) {
+                throw new ProcessingModelException("Value of argument " + aargDef.getName() + " is null and cannot be processed at this stage");
+            }
+        } else {
+            argumentMap.put(aargDef.getName(), finalValue);
+        }
+    }
+
+    private void checkGroupArgument(Array value, ArrayArgumentDefinition agDef) throws ProcessingModelException {
+        for(Array.Record record : value.getRecords()) {
+            for(Pair<String, Object> element : record.getElements()) {
+                AbstractArgumentDefinition aargDef = retrieveGroupElementDefinition(element.getFirst(), agDef);
+                if(aargDef instanceof PlainArgumentDefinition) {
+                    PlainArgumentDefinition argDef = (PlainArgumentDefinition) aargDef;
+                    checkSimpleArgument(element.getSecond(), argDef);
+                } else if (aargDef instanceof ArrayArgumentDefinition) {
+                    ArrayArgumentDefinition iagDef = (ArrayArgumentDefinition) aargDef;
+                    Array arrayValue = (Array) element.getSecond();
+                    checkGroupArgument(arrayValue, iagDef);
+                }
+            }
+        }
+    }
+
+
+    private void checkSimpleArgument(Object finalValue, PlainArgumentDefinition argDef) throws ProcessingModelException {
+        // TODO: check if you want checks in OR, AND, or something else (e.g. flag at check level). Now it is AND.
+        for (CheckDefinition cd : argDef.getChecks()) {
             // applicability condition: if not applicable, ignore the check
-            if(cd.getApplicability() != null) {
+            if (cd.getApplicability() != null) {
                 try {
                     boolean applicable = cd.getApplicability().execute(processor);
-                    if(!applicable) {
+                    if (!applicable) {
                         // Next check
                         continue;
                     }
@@ -366,29 +529,26 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             }
             try {
                 AlarmState as = cd.check(finalValue, null, 0, processor);
-                if(as != AlarmState.NOMINAL) {
+                if (as != AlarmState.NOMINAL) {
                     throw new ProcessingModelException("Value " + finalValue + " of argument " + argDef.getName() + " failed execution of check " + cd.getName() + ": " + as);
                 }
             } catch (CheckException e) {
                 throw new ProcessingModelException("Value " + finalValue + " of argument " + argDef.getName() + " failed execution of check " + cd.getName() + ": " + e.getMessage(), e);
             }
         }
-        // Final nullity check
-        if(finalValue == null) {
-            if(throwExceptionOfFinalNull) {
-                throw new ProcessingModelException("Value of argument " + argDef.getName() + " is null and cannot be processed at this stage");
-            }
-        } else {
-            argumentMap.put(argDef.getName(), finalValue);
-        }
     }
 
-    public List<AbstractDataItem> create(ActivityRequest request, ActivityProgress progress) {
+    public List<AbstractDataItem> create(ActivityRequest request, ActivityProgress progress) throws ProcessingModelException {
         if(entityStatus == Status.ENABLED) {
             // Build the map of activity arguments with the corresponding raw values
             Map<String, Object> name2value = new TreeMap<>();
-            for (ActivityArgument arg : request.getArguments()) {
-                name2value.put(arg.getName(), arg.getRawValue()); // XXX: raw value only
+            for (AbstractActivityArgument arg : request.getArguments()) {
+                if(arg instanceof PlainActivityArgument) {
+                    name2value.put(arg.getName(), ((PlainActivityArgument) arg).getRawValue()); // TODO: raw value only, decision to be revised
+                } else if(arg instanceof ArrayActivityArgument) {
+                    // Build the Array object
+                    name2value.put(arg.getName(), createGroup((ArrayActivityArgument) arg)); // TODO: raw value only, decision to be revised
+                }
             }
             //
             ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), progress.getGenerationTime(), name2value, request.getProperties(), new LinkedList<>(), request.getRoute(), request.getSource());

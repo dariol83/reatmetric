@@ -66,9 +66,13 @@ public enum ValueTypeEnum {
      */
     RELATIVE_TIME(10, Duration.class, Duration::toString, Duration::parse),
     /**
+     * Array
+     */
+    ARRAY(11, Array.class, Array::toString, Array::parse),
+    /**
      * Extension
      */
-    EXTENSION(11, Object.class, null, null);
+    EXTENSION(12, Object.class, null, null);
 
     private int code;
     private Class<?> assignedClass;
@@ -133,7 +137,7 @@ public enum ValueTypeEnum {
      * @throws IllegalArgumentException if no literal corresponds to the provided code
      */
     public static ValueTypeEnum fromCode(int code) {
-        if (code <= 0 || code >= 12) {
+        if (code <= 0 || code >= values().length + 1) {
             throw new IllegalArgumentException("Value type code " + code + " not supported");
         }
         return ValueTypeEnum.values()[code - 1];

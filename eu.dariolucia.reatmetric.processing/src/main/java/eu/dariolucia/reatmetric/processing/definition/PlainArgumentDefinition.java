@@ -23,13 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ArgumentDefinition {
-
-    @XmlAttribute(name = "name", required = true)
-    private String name;
-
-    @XmlAttribute(name = "description")
-    private String description = "";
+public class PlainArgumentDefinition extends AbstractArgumentDefinition {
 
     @XmlAttribute(name = "raw_type", required = true)
     private ValueTypeEnum rawType;
@@ -78,11 +72,11 @@ public class ArgumentDefinition {
     })
     private List<CheckDefinition> checks = new LinkedList<>();
 
-    public ArgumentDefinition() {
+    public PlainArgumentDefinition() {
     }
 
-    public ArgumentDefinition(String name, ValueTypeEnum rawType, ValueTypeEnum engineeringType, String unit, boolean fixed, AbstractDefaultValue defaultValue, CalibrationDefinition decalibration, List<CheckDefinition> checks) {
-        this.name = name;
+    public PlainArgumentDefinition(String name, ValueTypeEnum rawType, ValueTypeEnum engineeringType, String unit, boolean fixed, AbstractDefaultValue defaultValue, CalibrationDefinition decalibration, List<CheckDefinition> checks) {
+        super(name, "");
         this.rawType = rawType;
         this.engineeringType = engineeringType;
         this.unit = unit;
@@ -90,22 +84,6 @@ public class ArgumentDefinition {
         this.defaultValue = defaultValue;
         this.decalibration = decalibration;
         this.checks = checks;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public ValueTypeEnum getRawType() {

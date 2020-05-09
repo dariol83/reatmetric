@@ -16,21 +16,19 @@
 
 package eu.dariolucia.reatmetric.api.processing.input;
 
-public final class ActivityArgument {
+public final class PlainActivityArgument extends AbstractActivityArgument {
 
-    public static ActivityArgument ofSource(String name, Object sourceValue) {
+    public static PlainActivityArgument ofSource(String name, Object sourceValue) {
         return of(name, sourceValue, null, false);
     }
 
-    public static ActivityArgument ofEngineering(String name, Object engValue) {
+    public static PlainActivityArgument ofEngineering(String name, Object engValue) {
         return of(name, null, engValue, true);
     }
 
-    public static ActivityArgument of(String name, Object sourceValue, Object engValue, boolean engineering) {
-        return new ActivityArgument(name, sourceValue, engValue, engineering);
+    public static PlainActivityArgument of(String name, Object sourceValue, Object engValue, boolean engineering) {
+        return new PlainActivityArgument(name, sourceValue, engValue, engineering);
     }
-
-    private final String name;
 
     private final Object rawValue;
 
@@ -38,15 +36,11 @@ public final class ActivityArgument {
 
     private final boolean engineering;
 
-    public ActivityArgument(String name, Object rawValue, Object engValue, boolean engineering) {
-        this.name = name;
+    public PlainActivityArgument(String name, Object rawValue, Object engValue, boolean engineering) {
+        super(name);
         this.rawValue = rawValue;
         this.engValue = engValue;
         this.engineering = engineering;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public Object getRawValue() {

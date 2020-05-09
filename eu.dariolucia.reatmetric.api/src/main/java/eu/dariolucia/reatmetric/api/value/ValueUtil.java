@@ -17,7 +17,6 @@
 package eu.dariolucia.reatmetric.api.value;
 
 import eu.dariolucia.reatmetric.api.common.Pair;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -63,6 +62,14 @@ public class ValueUtil {
         // String is empty -> can be an empty BIT_STRING, an empty OCTET_STRING, an empty CHARACTER_STRING. The latter is probable.
         if(s.isEmpty()) {
             return Pair.of(s, ValueTypeEnum.CHARACTER_STRING);
+        }
+        // String starts with '[ ' and ends with ' ]'  -> try GROUP, if you fail it is a CHARACTER_STRING
+        if(s.startsWith("[ ") && s.endsWith(" ]")) {
+            try {
+                return Pair.of(parse(ValueTypeEnum.ARRAY, s), ValueTypeEnum.ARRAY);
+            } catch (Exception e) {
+                return Pair.of(s, ValueTypeEnum.CHARACTER_STRING);
+            }
         }
         // String starts with 0x -> try OCTET_STRING, if you fail it is a CHARACTER_STRING
         if(s.startsWith("0x")) {
@@ -195,6 +202,18 @@ public class ValueUtil {
                 ByteBuffer bb = ByteBuffer.wrap(dump, 1, dump.length - 1);
                 return Duration.ofSeconds(bb.getLong(), bb.getInt());
             }
+            case ARRAY: {
+                try {
+                    // TODO: implement something better
+                    ByteArrayInputStream bos = new ByteArrayInputStream(dump, 1, dump.length - 1);
+                    ObjectInputStream oos = new ObjectInputStream(bos);
+                    Object vv = oos.readObject();
+                    oos.close();
+                    return vv;
+                } catch (IOException | ClassNotFoundException e) {
+                    throw new IllegalStateException("Cannot deserialize value of type GROUP", e);
+                }
+            }
             case EXTENSION: {
                 ByteBuffer bb = ByteBuffer.wrap(dump, 1, dump.length - 1);
                 int typeId = bb.getShort();
@@ -245,7 +264,7 @@ public class ValueUtil {
      * </ul>
      * @param type the type
      * @param valueObject the value
-     * @return the serialized {@link Value}
+     * @return the serialized Value
      */
     public static byte[] serialize(ValueTypeEnum type, Object valueObject) {
         if(valueObject == null) {
@@ -314,6 +333,19 @@ public class ValueUtil {
                 bb.putLong(val.getSeconds());
                 bb.putInt(val.getNano());
                 return bb.array();
+            }
+            case ARRAY: {
+                try {
+                    // TODO: implement something better
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    ObjectOutputStream oos = new ObjectOutputStream(bos);
+                    oos.writeObject(valueObject);
+                    oos.flush();
+                    oos.close();
+                    return bos.toByteArray();
+                } catch (IOException e) {
+                    throw new IllegalStateException("Cannot serialize value of type " + valueObject.getClass().getName(), e);
+                }
             }
             case EXTENSION: {
                 byte[] serialized;
