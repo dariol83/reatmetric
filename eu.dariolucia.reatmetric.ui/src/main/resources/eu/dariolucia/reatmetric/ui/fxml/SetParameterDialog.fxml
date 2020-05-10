@@ -54,14 +54,6 @@
             <ComboBox fx:id="routeChoiceBox" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
          </children>
       </HBox>
-      <Separator prefWidth="200.0" />
-      <HBox spacing="8.0">
-         <children>
-            <Region HBox.hgrow="ALWAYS" />
-            <Button fx:id="okButton" mnemonicParsing="false" prefWidth="75.0" text="OK" onAction="#okButtonClicked" />
-            <Button fx:id="cancelButton" mnemonicParsing="false" prefWidth="75.0" text="Cancel" onAction="#cancelButtonClicked"/>
-         </children>
-      </HBox>
    </children>
    <padding>
       <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />

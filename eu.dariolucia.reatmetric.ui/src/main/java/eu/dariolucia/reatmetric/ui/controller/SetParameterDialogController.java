@@ -24,12 +24,9 @@ import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.ValueControlUtil;
-import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -37,11 +34,9 @@ import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.util.Callback;
 import org.controlsfx.control.ToggleSwitch;
-import org.controlsfx.validation.ValidationSupport;
 
 import java.net.URL;
 import java.util.*;
-import java.util.function.Consumer;
 
 public class SetParameterDialogController implements Initializable {
 
@@ -58,15 +53,7 @@ public class SetParameterDialogController implements Initializable {
     @FXML
     protected VBox valueVBox;
 
-    @FXML
-    protected Button okButton;
-    @FXML
-    protected Button cancelButton;
-
     private ParameterDescriptor descriptor;
-    private final ValidationSupport validationSupport = new ValidationSupport();
-    private Consumer<SetParameterDialogController> okHandler;
-    private Consumer<SetParameterDialogController> cancelHandler;
 
     private Control rawValueControl;
     private Control engValueControl;
@@ -143,9 +130,10 @@ public class SetParameterDialogController implements Initializable {
         }
 
         initialiseValueTable(currentRequest);
+    }
 
-        BooleanBinding allValid = routeChoiceBoxValid.and(validationSupport.invalidProperty().not());
-        okButton.disableProperty().bind(allValid.not());
+    public void bindOkButton(Button okButton) {
+        okButton.disableProperty().bind(routeChoiceBoxValid.not());
     }
 
     private void initialiseValueTable(SetParameterRequest currentRequest) {
@@ -158,7 +146,7 @@ public class SetParameterDialogController implements Initializable {
         Label unitLbl = new Label(Objects.toString(descriptor.getUnit(), ""));
         unitLbl.setPrefWidth(70);
         // Raw value
-        rawValueControl = ValueControlUtil.buildValueControl(validationSupport,
+        rawValueControl = ValueControlUtil.buildValueControl(null,
                 descriptor.getRawDataType(),
                 currentRequest != null && !currentRequest.isEngineeringUsed() ? currentRequest.getValue() : null,
                 null,
@@ -166,7 +154,7 @@ public class SetParameterDialogController implements Initializable {
                 descriptor.getExpectedRawValues());
         rawValueControl.setPrefWidth(150);
         // Eng. value
-        engValueControl = ValueControlUtil.buildValueControl(validationSupport,
+        engValueControl = ValueControlUtil.buildValueControl(null,
                 descriptor.getEngineeringDataType(),
                 currentRequest != null && currentRequest.isEngineeringUsed() ? currentRequest.getValue() : null,
                 null,
@@ -191,7 +179,6 @@ public class SetParameterDialogController implements Initializable {
         rawEngSelection.disableProperty().bind(fixedProperty);
 
         node.getChildren().addAll(nameLbl, rawValueControl, engValueControl, unitLbl, rawEngSelection);
-        validationSupport.initInitialDecoration();
 
         valueVBox.getChildren().add(node);
     }
@@ -207,23 +194,6 @@ public class SetParameterDialogController implements Initializable {
             return ((ComboBox<?>) control).getSelectionModel().getSelectedItem();
         } else {
             return null;
-        }
-    }
-
-    public void registerHandlers(Consumer<SetParameterDialogController> okClicked, Consumer<SetParameterDialogController> cancelClicked) {
-        this.okHandler = okClicked;
-        this.cancelHandler = cancelClicked;
-    }
-
-    public void okButtonClicked(ActionEvent actionEvent) {
-        if(okHandler != null) {
-            okHandler.accept(this);
-        }
-    }
-
-    public void cancelButtonClicked(ActionEvent actionEvent) {
-        if(cancelHandler != null) {
-            cancelHandler.accept(this);
         }
     }
 

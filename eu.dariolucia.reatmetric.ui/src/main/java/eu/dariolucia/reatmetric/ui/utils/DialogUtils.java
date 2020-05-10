@@ -18,10 +18,14 @@ package eu.dariolucia.reatmetric.ui.utils;
 
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import javafx.application.Platform;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.TextInputDialog;
+import javafx.stage.Modality;
 
+import javax.swing.*;
 import java.util.Optional;
 
 public class DialogUtils {
