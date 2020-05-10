@@ -21,7 +21,6 @@ import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController;
-import eu.dariolucia.reatmetric.ui.controller.AlternativeActivityInvocationDialogController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
@@ -29,19 +28,20 @@ import javafx.scene.layout.VBox;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.function.Supplier;
 
 public class ActivityInvocationDialogUtil {
 
-    public static Pair<Node, AlternativeActivityInvocationDialogController> createActivityInvocationDialog() throws IOException {
+    public static Pair<Node, ActivityInvocationDialogController> createActivityInvocationDialog() throws IOException {
         URL datePickerUrl = ActivityInvocationDialogUtil.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/ActivityInvocationDialog.fxml");
         FXMLLoader loader = new FXMLLoader(datePickerUrl);
         VBox root = loader.load();
-        AlternativeActivityInvocationDialogController controller = loader.getController();
+        ActivityInvocationDialogController controller = loader.getController();
         return Pair.of(root, controller);
     }
 
-    public static Pair<Node, AlternativeActivityInvocationDialogController> createActivityInvocationDialog(ActivityDescriptor descriptor, ActivityRequest request, List<ActivityRouteState> routeList) throws IOException {
-        Pair<Node, AlternativeActivityInvocationDialogController> asBuilt = createActivityInvocationDialog();
+    public static Pair<Node, ActivityInvocationDialogController> createActivityInvocationDialog(ActivityDescriptor descriptor, ActivityRequest request, Supplier<List<ActivityRouteState>> routeList) throws IOException {
+        Pair<Node, ActivityInvocationDialogController> asBuilt = createActivityInvocationDialog();
         asBuilt.getSecond().initialiseActivityDialog(descriptor, request, routeList);
         return asBuilt;
     }

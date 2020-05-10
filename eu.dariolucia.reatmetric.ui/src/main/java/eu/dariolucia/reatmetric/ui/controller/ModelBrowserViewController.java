@@ -60,6 +60,7 @@ import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -477,8 +478,15 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getValue().getExternalId());
             if (descriptor instanceof ActivityDescriptor) {
                 // Get the route list
-                List<ActivityRouteState> routeList = ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ActivityDescriptor) descriptor).getActivityType());
-                Pair<Node, AlternativeActivityInvocationDialogController> activityDialogPair = ActivityInvocationDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, activityRequestMap.get(descriptor.getPath().asString()), routeList);
+                Supplier<List<ActivityRouteState>> routeList = () -> {
+                    try {
+                        return ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ActivityDescriptor) descriptor).getActivityType());
+                    } catch (ReatmetricException e) {
+                        LOG.log(Level.WARNING, "Cannot retrieve the list of routes for activity type " + ((ActivityDescriptor) descriptor).getActivityType() + ": " + e.getMessage(), e);
+                        return Collections.emptyList();
+                    }
+                };
+                Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityInvocationDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, activityRequestMap.get(descriptor.getPath().asString()), routeList);
                 // Create the popup
                 Dialog<ButtonType> d = new Dialog<>();
                 d.setTitle("Execute activity " + descriptor.getPath().getLastPathElement());
@@ -498,7 +506,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
     }
 
-    private void runActivity(AlternativeActivityInvocationDialogController activityInvocationDialogController) {
+    private void runActivity(ActivityInvocationDialogController activityInvocationDialogController) {
         ActivityRequest request = activityInvocationDialogController.buildRequest();
         boolean confirm = DialogUtils.confirm("Request execution of activity", activityInvocationDialogController.getPath(), "Do you want to dispatch the execution request to the processing model?");
         if(confirm) {
@@ -528,7 +536,14 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     DialogUtils.alert("Set parameter " + descriptor.getPath().getLastPathElement(), null, "Selected parameter " + descriptor.getPath().getLastPathElement() + " cannot be set");
                 } else {
                     // Get the route list (from the setter type -> activity type)
-                    List<ActivityRouteState> routeList = ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ParameterDescriptor) descriptor).getSetterType());
+                    Supplier<List<ActivityRouteState>> routeList = () -> {
+                        try {
+                            return ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ParameterDescriptor) descriptor).getSetterType());
+                        } catch (ReatmetricException e) {
+                            LOG.log(Level.WARNING, "Cannot retrieve the list of routes for activity type " + ((ParameterDescriptor) descriptor).getSetterType() + ": " + e.getMessage(), e);
+                            return Collections.emptyList();
+                        }
+                    };
                     Pair<Node, SetParameterDialogController> parameterSetPair = SetParameterDialogUtil.createParameterSetDialog((ParameterDescriptor) descriptor, setParameterRequestMap.get(descriptor.getPath().asString()), routeList);
                     // Create the popup
                     Dialog<ButtonType> d = new Dialog<>();

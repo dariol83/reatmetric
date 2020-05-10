@@ -31,6 +31,8 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Modality;
 import org.controlsfx.control.ToggleSwitch;
 
@@ -41,14 +43,14 @@ public class ActivityArgumentTableManager {
     private TreeTableView<ArgumentBean> table;
 
     private TreeTableColumn<ArgumentBean, String> nameCol;
-    private TreeTableColumn<ArgumentBean, Number> groupCounterCol;
     private TreeTableColumn<ArgumentBean, Object> rawValueCol;
     private TreeTableColumn<ArgumentBean, Object> engValueCol;
     private TreeTableColumn<ArgumentBean, String> unitCol;
-    private TreeTableColumn<ArgumentBean, Boolean> rawEngValueCol;
 
     // The top level arguments: nested arguments from array records do no appear here
     private Map<String, TreeItem<ArgumentBean>> name2item = new LinkedHashMap<>();
+
+    private final SimpleBooleanProperty argumentTableValid = new SimpleBooleanProperty(false);
 
     public ActivityArgumentTableManager(ActivityDescriptor descriptor, ActivityRequest request) {
         // Create table and columns
@@ -57,10 +59,6 @@ public class ActivityArgumentTableManager {
         nameCol.setPrefWidth(130);
         nameCol.setReorderable(false);
         nameCol.setSortable(false);
-        groupCounterCol = new TreeTableColumn<>("Grp.");
-        groupCounterCol.setPrefWidth(50);
-        groupCounterCol.setReorderable(false);
-        groupCounterCol.setSortable(false);
         rawValueCol = new TreeTableColumn<>("Raw Value");
         rawValueCol.setPrefWidth(130);
         rawValueCol.setReorderable(false);
@@ -73,11 +71,7 @@ public class ActivityArgumentTableManager {
         unitCol.setPrefWidth(50);
         unitCol.setReorderable(false);
         unitCol.setSortable(false);
-        rawEngValueCol = new TreeTableColumn<>("Use Eng.");
-        rawEngValueCol.setPrefWidth(60);
-        rawEngValueCol.setReorderable(false);
-        rawEngValueCol.setSortable(false);
-        table.getColumns().addAll(nameCol, groupCounterCol, rawValueCol, engValueCol, unitCol, rawEngValueCol);
+        table.getColumns().addAll(nameCol, rawValueCol, engValueCol, unitCol);
 
         // Configure table to be not editable
         table.setEditable(false);
@@ -89,19 +83,33 @@ public class ActivityArgumentTableManager {
 
         // Configure the columns for which we want the editing feature
         nameCol.setEditable(false);
-        groupCounterCol.setEditable(false);
         rawValueCol.setEditable(false);
         engValueCol.setEditable(false);
         unitCol.setEditable(false);
-        rawEngValueCol.setEditable(false);
 
         // Configure how the values of each cell shall be retrieved
         nameCol.setCellValueFactory((a) -> a.getValue().getValue().nameProperty());
-        groupCounterCol.setCellValueFactory((a) -> a.getValue().getValue().groupCounterProperty());
         rawValueCol.setCellValueFactory(a -> a.getValue().getValue().rawValueProperty());
         engValueCol.setCellValueFactory(a -> a.getValue().getValue().engValueProperty());
-        rawEngValueCol.setCellValueFactory(a -> a.getValue().getValue().useEngProperty());
         unitCol.setCellValueFactory((a) -> a.getValue().getValue().unitProperty());
+
+        this.nameCol.setCellFactory(column -> new TreeTableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(item);
+                TreeTableRow<ArgumentBean> currentRow = getTreeTableRow();
+                if(currentRow != null && currentRow.getTreeItem() != null) {
+                    if (currentRow.getTreeItem().getValue().isFixed()) {
+                        currentRow.setStyle("-fx-background-color: lightgray");
+                    } else if (!currentRow.getTreeItem().getValue().readyProperty().get()) {
+                        currentRow.setStyle("-fx-background-color: orangered");
+                    } else {
+                        currentRow.setStyle("");
+                    }
+                }
+            }
+        });
 
         rawValueCol.setCellFactory(column -> new TreeTableCell<>() {
             @Override
@@ -156,7 +164,8 @@ public class ActivityArgumentTableManager {
                 String expander = arrayArg.getExpansionArgument();
                 // The expander is at the same level of this tree item
                 TreeItem<ArgumentBean> expanderItem = lookForExpander(treeItem, expander);
-                expanderItem.getValue().rawValueProperty().addListener((obj, oldV, newV) -> updateElementList(expanderItem, treeItem, arrayArg));
+                expanderItem.getValue().rawValueProperty().addListener((obj, oldV, newV) -> updateElementList(expanderItem, treeItem, arrayArg, false));
+                expanderItem.getValue().engValueProperty().addListener((obj, oldV, newV) -> updateElementList(expanderItem, treeItem, arrayArg, true));
             }
         }
 
@@ -174,6 +183,7 @@ public class ActivityArgumentTableManager {
         }
 
         table.refresh();
+        Platform.runLater(this::recheckArguments);
     }
 
     private void initialiseRecords(TreeItem<ArgumentBean> item, List<ArrayActivityArgumentRecord> records) {
@@ -209,9 +219,17 @@ public class ActivityArgumentTableManager {
         throw new IllegalStateException("Cannot retrieve element name " + name + " from record " + record.getValue().getName() + " of " + record.getParent().getValue().getName());
     }
 
-    private void updateElementList(TreeItem<ArgumentBean> expanderTreeItem, TreeItem<ArgumentBean> arrayTreeItem, ActivityArrayArgumentDescriptor arrayArg) {
+    private void updateElementList(TreeItem<ArgumentBean> expanderTreeItem, TreeItem<ArgumentBean> arrayTreeItem, ActivityArrayArgumentDescriptor arrayArg, boolean isEngUpdated) {
         // When this method is called, we need to look at the expanderTreeItem value (raw or eng, depending on the selection) and check
         // what we have to do with the children of arrayTreeItem, i.e. how many records we need to create or remove
+
+        // The following double block ensured that there is no Null Pointer exception computed in the middle of an update, due to the way the ArgumentBean updates the value
+        if(isEngUpdated && !expanderTreeItem.getValue().isUseEng()) {
+            return;
+        }
+        if(!isEngUpdated && expanderTreeItem.getValue().isUseEng()) {
+            return;
+        }
         int currentValue = expanderTreeItem.getValue().isUseEng() ? ((Number)expanderTreeItem.getValue().getEngValue()).intValue() : ((Number)expanderTreeItem.getValue().getRawValue()).intValue();
         if(currentValue != arrayTreeItem.getChildren().size()) {
             if(currentValue < arrayTreeItem.getChildren().size()) {
@@ -226,6 +244,8 @@ public class ActivityArgumentTableManager {
                 }
             }
         }
+        table.refresh();
+        Platform.runLater(this::recheckArguments);
     }
 
     private TreeItem<ArgumentBean> createNewRecord(int position, ActivityArrayArgumentDescriptor descriptor) {
@@ -240,7 +260,8 @@ public class ActivityArgumentTableManager {
                 String expander = arrayArg.getExpansionArgument();
                 // The expander is at the same level of this tree item
                 TreeItem<ArgumentBean> expanderItem = lookForExpander(treeItem, expander);
-                expanderItem.getValue().rawValueProperty().addListener((obj, oldV, newV) -> updateElementList(expanderItem, treeItem, arrayArg));
+                expanderItem.getValue().rawValueProperty().addListener((obj, oldV, newV) -> updateElementList(expanderItem, treeItem, arrayArg, false));
+                expanderItem.getValue().engValueProperty().addListener((obj, oldV, newV) -> updateElementList(expanderItem, treeItem, arrayArg, true));
             }
         }
         return toCreate;
@@ -295,6 +316,20 @@ public class ActivityArgumentTableManager {
         }
     }
 
+    private void recheckArguments() {
+        try {
+            buildArgumentList();
+            argumentTableValid.set(true);
+        } catch (Exception e) {
+            // If you cannot build the arguments, then there is something wrong
+            argumentTableValid.set(false);
+        }
+    }
+
+    public SimpleBooleanProperty argumentTableValidProperty() {
+        return argumentTableValid;
+    }
+
     public List<AbstractActivityArgument> buildArgumentList() {
         List<AbstractActivityArgument> args = new LinkedList<>();
         for(TreeItem<ArgumentBean> item : table.getRoot().getChildren()) {
@@ -336,14 +371,15 @@ public class ActivityArgumentTableManager {
     }
 
     private PlainActivityArgument buildPlainArgument(ArgumentBean ab) {
+        if(ab.getRawValue() == null && ab.getEngValue() == null) {
+            throw new IllegalStateException("Argument " + ab.getName() + " does not have a value set");
+        }
         return new PlainActivityArgument(ab.getName(), ab.getRawValue(), ab.getEngValue(), ab.isUseEng());
     }
 
     private class ArgumentBean {
         private final AbstractActivityArgumentDescriptor descriptor;
 
-        // TODO: implement valid state, so that every time this state changes, the manager can navigate the tree and
-        //  derive the final validity state of the argument set
         private final SimpleStringProperty name;
         private final SimpleIntegerProperty groupCounter;
         private final SimpleObjectProperty<Object> rawValue;
@@ -351,6 +387,7 @@ public class ActivityArgumentTableManager {
         private final SimpleStringProperty unit;
         private final SimpleBooleanProperty useEng;
         private final SimpleBooleanProperty fixed;
+        private final SimpleBooleanProperty ready;
 
         public ArgumentBean(String labelName) {
             name = new SimpleStringProperty(labelName);
@@ -360,6 +397,7 @@ public class ActivityArgumentTableManager {
             unit = new SimpleStringProperty();
             useEng = new SimpleBooleanProperty();
             fixed = new SimpleBooleanProperty(true);
+            ready = new SimpleBooleanProperty(false);
             this.descriptor = null;
         }
 
@@ -389,6 +427,12 @@ public class ActivityArgumentTableManager {
             } else {
                 fixed.set(true);
             }
+            ready = new SimpleBooleanProperty(descriptor instanceof ActivityArrayArgumentDescriptor ||
+                    (descriptor instanceof ActivityPlainArgumentDescriptor && ((isUseEng() && engValueProperty().get() != null) || (!isUseEng() && rawValueProperty().get() != null))));
+        }
+
+        public SimpleBooleanProperty readyProperty() {
+            return ready;
         }
 
         public AbstractActivityArgumentDescriptor getDescriptor() {
@@ -440,10 +484,13 @@ public class ActivityArgumentTableManager {
         }
 
         public void updateValues(boolean engineering, Object rawValue, Object engValue) {
+            useEngProperty().set(engineering);
             rawValueProperty().set(rawValue);
             engValueProperty().set(engValue);
-            useEngProperty().set(engineering);
             table.refresh();
+            ready.set(descriptor instanceof ActivityArrayArgumentDescriptor ||
+                    (descriptor instanceof ActivityPlainArgumentDescriptor && ((isUseEng() && engValueProperty().get() != null) || (!isUseEng() && rawValueProperty().get() != null))));
+            Platform.runLater(ActivityArgumentTableManager.this::recheckArguments);
         }
 
         @Override
@@ -459,13 +506,14 @@ public class ActivityArgumentTableManager {
         private final ActivityPlainArgumentDescriptor descriptor;
         private final ArgumentBean input;
 
-        private HBox node;
+        private VBox container;
 
         private final ReatmetricValidationSupport validationSupport = new ReatmetricValidationSupport();
         private final SimpleBooleanProperty valid = new SimpleBooleanProperty(false);
         private Control rawValueControl;
         private Control engValueControl;
-        private CheckBox rawEngSelection;
+        private RadioButton rawSelection;
+        private RadioButton engSelection;
 
         public ActivityInvocationArgumentLine(ActivityPlainArgumentDescriptor descriptor, ArgumentBean input) {
             this.descriptor = descriptor;
@@ -475,17 +523,30 @@ public class ActivityArgumentTableManager {
         }
 
         private void initialiseNode() {
-            node = new HBox();
-            node.setSpacing(8);
-            node.setPadding(new Insets(8));
-            // Name
-            Label nameLbl = new Label(descriptor.getName());
-            nameLbl.setPrefWidth(100);
-            nameLbl.setTooltip(new Tooltip(descriptor.getDescription()));
-            // Unit
-            Label unitLbl = new Label(Objects.toString(descriptor.getUnit(), ""));
-            unitLbl.setPrefWidth(70);
+            container = new VBox();
+            container.setSpacing(8);
+            container.setPadding(new Insets(8));
+
+            if(descriptor.getDescription() != null && !descriptor.getDescription().isBlank()) {
+                Label descLabel = new Label(descriptor.getDescription());
+                descLabel.setWrapText(true);
+                container.getChildren().add(descLabel);
+            }
+
+            HBox line1 = new HBox();
+            line1.setSpacing(8);
+
+            HBox line2 = new HBox();
+            line2.setSpacing(8);
+
+            ToggleGroup rawEngToggleGroup = new ToggleGroup();
+
             // Raw value
+            rawSelection = new RadioButton("Raw Value");
+            rawSelection.setPrefWidth(120);
+            rawSelection.setToggleGroup(rawEngToggleGroup);
+            rawSelection.setTextAlignment(TextAlignment.LEFT);
+            line1.getChildren().add(rawSelection);
             rawValueControl = ValueControlUtil.buildValueControl(validationSupport,
                     descriptor.getRawDataType(),
                     input != null ? input.getRawValue() : null,
@@ -493,7 +554,18 @@ public class ActivityArgumentTableManager {
                     descriptor.isFixed(),
                     descriptor.getExpectedRawValues());
             rawValueControl.setPrefWidth(150);
+            line1.getChildren().add(rawValueControl);
+            Label emptyLabel = new Label("");
+            emptyLabel.setPrefWidth(70);
+            line1.getChildren().add(emptyLabel);
+            container.getChildren().add(line1);
+
             // Eng. value
+            engSelection = new RadioButton("Eng. Value");
+            engSelection.setPrefWidth(120);
+            engSelection.setToggleGroup(rawEngToggleGroup);
+            engSelection.setTextAlignment(TextAlignment.LEFT);
+            line2.getChildren().add(engSelection);
             engValueControl = ValueControlUtil.buildValueControl(validationSupport,
                     descriptor.getEngineeringDataType(),
                     input != null ? input.getEngValue() : null,
@@ -501,41 +573,37 @@ public class ActivityArgumentTableManager {
                     descriptor.isFixed(),
                     descriptor.getExpectedEngineeringValues());
             engValueControl.setPrefWidth(150);
-            // Raw/Eng value selection
-            rawEngSelection = new CheckBox();
-            rawEngSelection.setText("Use Eng.");
-            rawEngSelection.setPrefWidth(90);
+            line2.getChildren().add(engValueControl);
+            // Unit
+            Label unitLbl = new Label(Objects.toString(descriptor.getUnit(), ""));
+            unitLbl.setPrefWidth(70);
+            line2.getChildren().add(unitLbl);
+            container.getChildren().add(line2);
 
-            SimpleBooleanProperty fixedProperty = new SimpleBooleanProperty(descriptor.isFixed());
-            rawValueControl.disableProperty().bind(rawEngSelection.selectedProperty().or(fixedProperty));
-            engValueControl.disableProperty().bind(rawEngSelection.selectedProperty().not().or(fixedProperty));
+            // Raw/Eng value selection
+            rawValueControl.disableProperty().bind(rawSelection.selectedProperty().not());
+            engValueControl.disableProperty().bind(engSelection.selectedProperty().not());
 
             if(input != null) {
-                rawEngSelection.setSelected(input.isUseEng());
+                rawSelection.setSelected(!input.isUseEng());
+                engSelection.setSelected(input.isUseEng());
             } else if(descriptor.isDefaultValuePresent()) {
-                if(descriptor.getEngineeringDefaultValue() != null) {
-                    rawEngSelection.setSelected(true);
-                } else {
-                    rawEngSelection.setSelected(false);
-                }
+                rawSelection.setSelected(descriptor.getRawDefaultValue() != null);
+                engSelection.setSelected(descriptor.getEngineeringDefaultValue() != null);
             } else {
-                rawEngSelection.setSelected(true);
+                rawSelection.setSelected(false);
+                engSelection.setSelected(true);
             }
-
-            rawEngSelection.disableProperty().bind(fixedProperty);
-
-            node.getChildren().addAll(nameLbl, rawValueControl, engValueControl, unitLbl, rawEngSelection);
-            // validationSupport.initInitialDecoration();
         }
 
-        public HBox getNode() {
-            return node;
+        public VBox getNode() {
+            return container;
         }
 
         public void updateArgumentBean() {
-            input.useEngProperty().set(rawEngSelection.isSelected());
-            input.rawValueProperty().set(!rawEngSelection.isSelected() ? buildObject(descriptor.getRawDataType(), rawValueControl) : null);
-            input.engValueProperty().set(rawEngSelection.isSelected() ? buildObject(descriptor.getEngineeringDataType(), engValueControl) : null);
+            input.updateValues(engSelection.isSelected(),
+                    rawSelection.isSelected() ? buildObject(descriptor.getRawDataType(), rawValueControl) : null,
+                    engSelection.isSelected() ? buildObject(descriptor.getEngineeringDataType(), engValueControl) : null);
         }
 
         private Object buildObject(ValueTypeEnum type, Control control) {

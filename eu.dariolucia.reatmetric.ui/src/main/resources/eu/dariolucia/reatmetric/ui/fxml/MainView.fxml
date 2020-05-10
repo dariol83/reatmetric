@@ -33,7 +33,7 @@
   ~ limitations under the License.
   -->
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="900.0" prefWidth="1700.0" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.AlternativeMainViewController">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="900.0" prefWidth="1700.0" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.MainViewController">
    <children>
       <HBox alignment="CENTER_LEFT" prefHeight="96.0" prefWidth="200.0" style="-fx-background-color: #191970">
          <children>

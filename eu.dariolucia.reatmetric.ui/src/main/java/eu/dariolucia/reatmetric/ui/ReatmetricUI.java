@@ -113,7 +113,7 @@ public class ReatmetricUI extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        Parent root = FXMLLoader.load(ReatmetricUI.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/AlternativeMainView.fxml"));
+        Parent root = FXMLLoader.load(ReatmetricUI.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/MainView.fxml"));
         
         Scene scene = new Scene(root);
         // scene.getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/css/MainView.css").toExternalForm());

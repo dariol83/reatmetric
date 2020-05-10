@@ -16,15 +16,19 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
+import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
 import eu.dariolucia.reatmetric.api.activity.ActivityRouteAvailability;
 import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.ValueControlUtil;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -37,6 +41,7 @@ import org.controlsfx.control.ToggleSwitch;
 
 import java.net.URL;
 import java.util.*;
+import java.util.function.Supplier;
 
 public class SetParameterDialogController implements Initializable {
 
@@ -47,6 +52,10 @@ public class SetParameterDialogController implements Initializable {
     protected Label descriptionLabel;
     @FXML
     protected ComboBox<ActivityRouteState> routeChoiceBox;
+    @FXML
+    protected ToggleSwitch forceToggleSwitch;
+    @FXML
+    protected Button refreshButton;
 
     private final SimpleBooleanProperty routeChoiceBoxValid = new SimpleBooleanProperty(false);
 
@@ -58,6 +67,8 @@ public class SetParameterDialogController implements Initializable {
     private Control rawValueControl;
     private Control engValueControl;
     private CheckBox rawEngSelection;
+
+    private Supplier<List<ActivityRouteState>> routeSupplier;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -93,15 +104,39 @@ public class SetParameterDialogController implements Initializable {
         });
         routeChoiceBox.getSelectionModel().selectedItemProperty().addListener(o -> {
             routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
-                    routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE);
+                    (forceToggleSwitch.isSelected() || routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE));
+        });
+        forceToggleSwitch.selectedProperty().addListener((obj, oldV, newV) -> {
+            routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
+                    (forceToggleSwitch.isSelected() || routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE));
         });
     }
 
-    public void initialiseParameterDialog(ParameterDescriptor descriptor, SetParameterRequest currentRequest, List<ActivityRouteState> routesWithAvailability) {
+    public void initialiseParameterDialog(ParameterDescriptor descriptor, SetParameterRequest currentRequest, Supplier<List<ActivityRouteState>> routesWithAvailabilitySupplier) {
         this.descriptor = descriptor;
+        this.routeSupplier = routesWithAvailabilitySupplier;
         parameterLabel.setText(descriptor.getPath().asString());
         descriptionLabel.setText(descriptor.getDescription());
         // Set the routes
+        refreshRoutes(descriptor, currentRequest);
+
+        initialiseValueTable(currentRequest);
+    }
+
+    private void refreshRoutes(ParameterDescriptor descriptor, SetParameterRequest currentRequest) {
+        ReatmetricUI.threadPool(getClass()).execute(() -> {
+            final List<ActivityRouteState> routesWithAvailability = this.routeSupplier.get();
+            Platform.runLater(() -> {
+                initialiseRouteCombo(descriptor, currentRequest, routesWithAvailability);
+            });
+        });
+    }
+
+    private void initialiseRouteCombo(ParameterDescriptor descriptor, SetParameterRequest currentRequest, List<ActivityRouteState> routesWithAvailability) {
+        // If you have a route already selected, remember it
+        ActivityRouteState selected = routeChoiceBox.getSelectionModel().getSelectedItem();
+
+        routeChoiceBox.getItems().remove(0, routeChoiceBox.getItems().size());
         Map<String, Integer> route2position = new HashMap<>();
         int i = 0;
         for(ActivityRouteState route : routesWithAvailability) {
@@ -114,11 +149,13 @@ public class SetParameterDialogController implements Initializable {
             if(position != null) {
                 routeChoiceBox.getSelectionModel().select(position);
             }
-        } else if(descriptor.getSetterDefaultRoute() != null) {
+        } else if(descriptor != null && descriptor.getSetterDefaultRoute() != null) {
             Integer position = route2position.getOrDefault(descriptor.getSetterDefaultRoute(), 0);
-            if(position != null) {
+            if (position != null) {
                 routeChoiceBox.getSelectionModel().select(position);
             }
+        } else if(selected != null) {
+            routeChoiceBox.getSelectionModel().select(selected);
         } else {
             // Check if you can select the first available route
             for(ActivityRouteState ars : routesWithAvailability) {
@@ -128,8 +165,6 @@ public class SetParameterDialogController implements Initializable {
                 }
             }
         }
-
-        initialiseValueTable(currentRequest);
     }
 
     public void bindOkButton(Button okButton) {
@@ -203,5 +238,10 @@ public class SetParameterDialogController implements Initializable {
 
     public SetParameterRequest buildRequest() {
         return new SetParameterRequest(descriptor.getExternalId(), rawEngSelection.isSelected(), buildValueObject(), routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
+    }
+
+    @FXML
+    public void refreshRouteClicked(ActionEvent actionEvent) {
+        refreshRoutes(null, null);
     }
 }

@@ -28,6 +28,7 @@ import javafx.scene.layout.VBox;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.function.Supplier;
 
 public class SetParameterDialogUtil {
 
@@ -39,7 +40,7 @@ public class SetParameterDialogUtil {
         return Pair.of(root, controller);
     }
 
-    public static Pair<Node, SetParameterDialogController> createParameterSetDialog(ParameterDescriptor descriptor, SetParameterRequest request, List<ActivityRouteState> routeList) throws IOException {
+    public static Pair<Node, SetParameterDialogController> createParameterSetDialog(ParameterDescriptor descriptor, SetParameterRequest request, Supplier<List<ActivityRouteState>> routeList) throws IOException {
         Pair<Node, SetParameterDialogController> asBuilt = createParameterSetDialog();
         asBuilt.getSecond().initialiseParameterDialog(descriptor, request, routeList);
         return asBuilt;

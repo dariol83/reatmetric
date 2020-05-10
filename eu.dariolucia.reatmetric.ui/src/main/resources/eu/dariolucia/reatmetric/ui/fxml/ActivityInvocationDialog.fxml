@@ -34,7 +34,8 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.control.ComboBox?>
-<VBox prefWidth="650.0" spacing="8.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.AlternativeActivityInvocationDialogController">
+<?import org.controlsfx.control.ToggleSwitch?>
+<VBox prefWidth="650.0" spacing="8.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController">
    <children>
       <HBox VBox.vgrow="NEVER" spacing="8.0">
          <children>
@@ -103,10 +104,20 @@
         </panes>
       </Accordion>
       <Separator prefWidth="200.0" />
-       <HBox VBox.vgrow="NEVER">
+       <HBox VBox.vgrow="NEVER" spacing="8">
            <children>
                <Label prefWidth="120.0" text="Selected Route" />
                <ComboBox fx:id="routeChoiceBox" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
+               <Button fx:id="refreshButton" mnemonicParsing="false" prefWidth="18.0" prefHeight="18.0" onAction="#refreshRouteClicked">
+                   <graphic>
+                       <ImageView pickOnBounds="true" preserveRatio="true">
+                           <image>
+                               <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/refresh.svg.png" />
+                           </image>
+                       </ImageView>
+                   </graphic>
+               </Button>
+               <ToggleSwitch fx:id="forceToggleSwitch" text="Force" />
            </children>
        </HBox>
    </children>

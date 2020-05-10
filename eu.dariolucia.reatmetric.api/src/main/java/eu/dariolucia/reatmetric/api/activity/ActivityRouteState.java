@@ -16,6 +16,8 @@
 
 package eu.dariolucia.reatmetric.api.activity;
 
+import java.util.Objects;
+
 /**
  * This object is used to deliver the availability state of an activity route.
  *
@@ -53,6 +55,19 @@ public class ActivityRouteState {
      */
     public ActivityRouteAvailability getAvailability() {
         return availability;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ActivityRouteState that = (ActivityRouteState) o;
+        return getRoute().equals(that.getRoute());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getRoute());
     }
 
     @Override

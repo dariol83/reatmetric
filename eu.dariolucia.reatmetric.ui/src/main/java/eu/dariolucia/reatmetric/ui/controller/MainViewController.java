@@ -55,9 +55,9 @@ import java.util.logging.Logger;
 /**
  * @author dario
  */
-public class AlternativeMainViewController implements Initializable, IReatmetricServiceListener {
+public class MainViewController implements Initializable, IReatmetricServiceListener {
 
-    private static final Logger LOG = Logger.getLogger(AlternativeMainViewController.class.getName());
+    private static final Logger LOG = Logger.getLogger(MainViewController.class.getName());
 
     private final Image CONNECT_IMAGE = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/48px/plug-f.svg.png"));
     private final Image DISCONNECT_IMAGE = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/48px/plug.svg.png"));

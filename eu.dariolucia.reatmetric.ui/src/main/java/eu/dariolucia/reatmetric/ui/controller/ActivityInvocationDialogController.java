@@ -16,27 +16,23 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.activity.*;
+import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
+import eu.dariolucia.reatmetric.api.activity.ActivityRouteAvailability;
+import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
-import eu.dariolucia.reatmetric.api.processing.input.AbstractActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
-import eu.dariolucia.reatmetric.api.processing.input.PlainActivityArgument;
-import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
-import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.ReatmetricValidationSupport;
-import eu.dariolucia.reatmetric.ui.utils.ValueControlUtil;
-import javafx.beans.binding.BooleanBinding;
+import eu.dariolucia.reatmetric.ui.utils.ActivityArgumentTableManager;
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
@@ -45,7 +41,7 @@ import org.controlsfx.control.ToggleSwitch;
 
 import java.net.URL;
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class ActivityInvocationDialogController implements Initializable {
@@ -60,11 +56,17 @@ public class ActivityInvocationDialogController implements Initializable {
     protected Label descriptionLabel;
     @FXML
     protected ComboBox<ActivityRouteState> routeChoiceBox;
+    @FXML
+    protected ToggleSwitch forceToggleSwitch;
+    @FXML
+    protected Button refreshButton;
 
     private final SimpleBooleanProperty routeChoiceBoxValid = new SimpleBooleanProperty(false);
 
     @FXML
     protected VBox argumentVBox;
+
+    private ActivityArgumentTableManager argumentTableManager;
 
     @FXML
     protected TableView<PropertyBean> propertiesTableView;
@@ -72,15 +74,9 @@ public class ActivityInvocationDialogController implements Initializable {
     protected TableColumn<PropertyBean, String> keyColumn;
     @FXML
     protected TableColumn<PropertyBean, String> valueColumn;
-    @FXML
-    protected Button okButton;
-    @FXML
-    protected Button cancelButton;
 
     private ActivityDescriptor descriptor;
-    private List<ActivityInvocationArgumentLine> arguments = new LinkedList<>();
-    private Consumer<ActivityInvocationDialogController> okHandler;
-    private Consumer<ActivityInvocationDialogController> cancelHandler;
+    private Supplier<List<ActivityRouteState>> routeSupplier;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -117,32 +113,19 @@ public class ActivityInvocationDialogController implements Initializable {
         });
         routeChoiceBox.getSelectionModel().selectedItemProperty().addListener(o -> {
             routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
-                    routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE);
+                    (forceToggleSwitch.isSelected() || routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE));
+        });
+        forceToggleSwitch.selectedProperty().addListener((obj, oldV, newV) -> {
+            routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
+                    (forceToggleSwitch.isSelected() || routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE));
         });
     }
 
     private void initialiseArgumentTable(ActivityRequest currentRequest) {
-        for(AbstractActivityArgumentDescriptor d : descriptor.getArgumentDescriptors()) {
-            if(d instanceof ActivityPlainArgumentDescriptor) { // TODO: support for array arguments missing, maybe use a tree table?
-                ActivityInvocationArgumentLine line = new ActivityInvocationArgumentLine((ActivityPlainArgumentDescriptor) d, getInputFor(currentRequest, (ActivityPlainArgumentDescriptor) d));
-                argumentVBox.getChildren().add(line.getNode());
-                arguments.add(line);
-            }
-        }
-    }
-
-    private PlainActivityArgument getInputFor(ActivityRequest currentRequest, ActivityPlainArgumentDescriptor d) {
-        if(currentRequest == null) {
-            return null;
-        }
-        for(AbstractActivityArgument a : currentRequest.getArguments()) {
-            if(a instanceof PlainActivityArgument) {
-                if (a.getName().equals(d.getName())) {
-                    return (PlainActivityArgument) a;
-                }
-            }
-        }
-        return null;
+        argumentTableManager = new ActivityArgumentTableManager(descriptor, currentRequest);
+        TreeTableView<?> table = argumentTableManager.getTable();
+        table.setPrefHeight(400);
+        argumentVBox.getChildren().add(table);
     }
 
     private void initialisePropertyTable() {
@@ -183,50 +166,17 @@ public class ActivityInvocationDialogController implements Initializable {
         });
     }
 
-    public void initialiseActivityDialog(ActivityDescriptor descriptor, ActivityRequest currentRequest, List<ActivityRouteState> routesWithAvailability) {
+    public void initialiseActivityDialog(ActivityDescriptor descriptor, ActivityRequest currentRequest, Supplier<List<ActivityRouteState>> routesWithAvailabilitySupplier) {
         this.descriptor = descriptor;
+        this.routeSupplier = routesWithAvailabilitySupplier;
+
         activityLabel.setText(descriptor.getPath().asString());
         typeLabel.setText(descriptor.getActivityType());
         descriptionLabel.setText(descriptor.getDescription());
         // Set the routes
-        Map<String, Integer> route2position = new HashMap<>();
-        int i = 0;
-        for(ActivityRouteState route : routesWithAvailability) {
-            routeChoiceBox.getItems().add(route);
-            route2position.put(route.getRoute(), i++);
-        }
-        // Set the selected route or default
-        if(currentRequest != null) {
-            Integer position = route2position.getOrDefault(currentRequest.getRoute(), 0);
-            if(position != null) {
-                routeChoiceBox.getSelectionModel().select(position);
-            }
-        } else if(descriptor.getDefaultRoute() != null) {
-            Integer position = route2position.getOrDefault(descriptor.getDefaultRoute(), 0);
-            if(position != null) {
-                routeChoiceBox.getSelectionModel().select(position);
-            }
-        } else {
-            // Check if you can select the first available route
-            for(ActivityRouteState ars : routesWithAvailability) {
-                if(ars.getAvailability() == ActivityRouteAvailability.AVAILABLE) {
-                    Integer position = route2position.getOrDefault(ars.getRoute(), 0);
-                    routeChoiceBox.getSelectionModel().select(position);
-                }
-            }
-        }
+        refreshRoutes(descriptor, currentRequest);
 
         initialiseArgumentTable(currentRequest);
-
-        if(arguments.size() == 0) {
-            okButton.disableProperty().bind(routeChoiceBoxValid.not());
-        } else {
-            BooleanBinding allValid = routeChoiceBoxValid.and(arguments.get(0).validProperty());
-            for(i = 1; i < arguments.size(); ++i) {
-                allValid = allValid.and(arguments.get(i).validProperty());
-            }
-            okButton.disableProperty().bind(allValid.not());
-        }
 
         initialisePropertyTable();
 
@@ -247,9 +197,52 @@ public class ActivityInvocationDialogController implements Initializable {
         addMissingPropertiesFrom(currentRequest);
     }
 
-    public void registerHandlers(Consumer<ActivityInvocationDialogController> okClicked, Consumer<ActivityInvocationDialogController> cancelClicked) {
-        this.okHandler = okClicked;
-        this.cancelHandler = cancelClicked;
+    private void refreshRoutes(ActivityDescriptor descriptor, ActivityRequest currentRequest) {
+        ReatmetricUI.threadPool(getClass()).execute(() -> {
+            final List<ActivityRouteState> routesWithAvailability = this.routeSupplier.get();
+            Platform.runLater(() -> {
+                initialiseRouteCombo(descriptor, currentRequest, routesWithAvailability);
+            });
+        });
+    }
+
+    private void initialiseRouteCombo(ActivityDescriptor descriptor, ActivityRequest currentRequest, List<ActivityRouteState> routesWithAvailability) {
+        // If you have a route already selected, remember it
+        ActivityRouteState selected = routeChoiceBox.getSelectionModel().getSelectedItem();
+
+        routeChoiceBox.getItems().remove(0, routeChoiceBox.getItems().size());
+        Map<String, Integer> route2position = new HashMap<>();
+        int i = 0;
+        for(ActivityRouteState route : routesWithAvailability) {
+            routeChoiceBox.getItems().add(route);
+            route2position.put(route.getRoute(), i++);
+        }
+        // Set the selected route or default
+        if(currentRequest != null) {
+            Integer position = route2position.getOrDefault(currentRequest.getRoute(), 0);
+            if(position != null) {
+                routeChoiceBox.getSelectionModel().select(position);
+            }
+        } else if(descriptor != null && descriptor.getDefaultRoute() != null) {
+            Integer position = route2position.getOrDefault(descriptor.getDefaultRoute(), 0);
+            if (position != null) {
+                routeChoiceBox.getSelectionModel().select(position);
+            }
+        } else if(selected != null) {
+            routeChoiceBox.getSelectionModel().select(selected);
+        } else {
+            // Check if you can select the first available route
+            for(ActivityRouteState ars : routesWithAvailability) {
+                if(ars.getAvailability() == ActivityRouteAvailability.AVAILABLE) {
+                    Integer position = route2position.getOrDefault(ars.getRoute(), 0);
+                    routeChoiceBox.getSelectionModel().select(position);
+                }
+            }
+        }
+    }
+
+    public void bindOkButton(Button okButton) {
+        okButton.disableProperty().bind(Bindings.or(routeChoiceBoxValid.not(), argumentTableManager.argumentTableValidProperty().not()));
     }
 
     private void addMissingPropertiesFrom(ActivityRequest currentRequest) {
@@ -265,18 +258,6 @@ public class ActivityInvocationDialogController implements Initializable {
         }
     }
 
-    public void okButtonClicked(ActionEvent actionEvent) {
-        if(okHandler != null) {
-            okHandler.accept(this);
-        }
-    }
-
-    public void cancelButtonClicked(ActionEvent actionEvent) {
-        if(cancelHandler != null) {
-            cancelHandler.accept(this);
-        }
-    }
-
     public String getPath() {
         return this.descriptor.getPath().asString();
     }
@@ -286,7 +267,7 @@ public class ActivityInvocationDialogController implements Initializable {
         for(PropertyBean pb : propertiesTableView.getItems()) {
             propertyMap.put(pb.keyProperty().get(), pb.valueProperty().get());
         }
-        return new ActivityRequest(descriptor.getExternalId(), arguments.stream().filter(o -> !o.isFixed()).map(ActivityInvocationArgumentLine::buildArgument).collect(Collectors.toList()), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
+        return new ActivityRequest(descriptor.getExternalId(), argumentTableManager.buildArgumentList(), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
     }
 
     @FXML
@@ -299,6 +280,11 @@ public class ActivityInvocationDialogController implements Initializable {
         if(propertiesTableView.getSelectionModel().getSelectedItem() != null) {
             propertiesTableView.getItems().remove(propertiesTableView.getSelectionModel().getSelectedItem());
         }
+    }
+
+    @FXML
+    public void refreshRouteClicked(ActionEvent actionEvent) {
+        refreshRoutes(null, null);
     }
 
     private static class PropertyBean {
@@ -317,108 +303,6 @@ public class ActivityInvocationDialogController implements Initializable {
 
         public SimpleStringProperty valueProperty() {
             return value;
-        }
-    }
-
-    private static class ActivityInvocationArgumentLine {
-
-        private final ActivityPlainArgumentDescriptor descriptor;
-        private final PlainActivityArgument input;
-
-        private HBox node;
-
-        private final ReatmetricValidationSupport validationSupport = new ReatmetricValidationSupport();
-        private final SimpleBooleanProperty valid = new SimpleBooleanProperty(false);
-        private Control rawValueControl;
-        private Control engValueControl;
-        private CheckBox rawEngSelection;
-
-        public ActivityInvocationArgumentLine(ActivityPlainArgumentDescriptor descriptor, PlainActivityArgument input) {
-            this.descriptor = descriptor;
-            this.input = input;
-            this.valid.bind(this.validationSupport.validProperty());
-            initialiseNode();
-        }
-
-        private void initialiseNode() {
-            node = new HBox();
-            node.setSpacing(8);
-            node.setPadding(new Insets(8));
-            // Name
-            Label nameLbl = new Label(descriptor.getName());
-            nameLbl.setPrefWidth(100);
-            nameLbl.setTooltip(new Tooltip(descriptor.getDescription()));
-            // Unit
-            Label unitLbl = new Label(Objects.toString(descriptor.getUnit(), ""));
-            unitLbl.setPrefWidth(70);
-            // Raw value
-            rawValueControl = ValueControlUtil.buildValueControl(validationSupport,
-                    descriptor.getRawDataType(),
-                    input != null ? input.getRawValue() : null,
-                    descriptor.getRawDefaultValue(),
-                    descriptor.isFixed(),
-                    descriptor.getExpectedRawValues());
-            rawValueControl.setPrefWidth(150);
-            // Eng. value
-            engValueControl = ValueControlUtil.buildValueControl(validationSupport,
-                    descriptor.getEngineeringDataType(),
-                    input != null ? input.getEngValue() : null,
-                    descriptor.getEngineeringDefaultValue(),
-                    descriptor.isFixed(),
-                    descriptor.getExpectedEngineeringValues());
-            engValueControl.setPrefWidth(150);
-            // Raw/Eng value selection
-            rawEngSelection = new CheckBox();
-            rawEngSelection.setText("Use Eng.");
-            rawEngSelection.setPrefWidth(90);
-
-            SimpleBooleanProperty fixedProperty = new SimpleBooleanProperty(descriptor.isFixed());
-            rawValueControl.disableProperty().bind(rawEngSelection.selectedProperty().or(fixedProperty));
-            engValueControl.disableProperty().bind(rawEngSelection.selectedProperty().not().or(fixedProperty));
-
-            if(input != null) {
-                rawEngSelection.setSelected(input.isEngineering());
-            } else if(descriptor.isDefaultValuePresent()) {
-                if(descriptor.getEngineeringDefaultValue() != null) {
-                    rawEngSelection.setSelected(true);
-                } else {
-                    rawEngSelection.setSelected(false);
-                }
-            } else {
-                rawEngSelection.setSelected(true);
-            }
-
-            rawEngSelection.disableProperty().bind(fixedProperty);
-
-            node.getChildren().addAll(nameLbl, rawValueControl, engValueControl, unitLbl, rawEngSelection);
-        }
-
-        public HBox getNode() {
-            return node;
-        }
-
-        public SimpleBooleanProperty validProperty() {
-            return valid;
-        }
-
-        public boolean isFixed() {
-            return descriptor.isFixed();
-        }
-
-        public PlainActivityArgument buildArgument() {
-            return new PlainActivityArgument(descriptor.getName(), !rawEngSelection.isSelected() ? buildObject(descriptor.getRawDataType(), rawValueControl) : null, rawEngSelection.isSelected() ? buildObject(descriptor.getEngineeringDataType(), engValueControl) : null, rawEngSelection.isSelected());
-        }
-
-        private Object buildObject(ValueTypeEnum type, Control control) {
-            if(control instanceof TextField) {
-                return ValueUtil.parse(type, ((TextField) control).getText());
-            } else if(control instanceof ToggleSwitch) {
-                return ((ToggleSwitch) control).isSelected();
-            } else if(control instanceof ComboBox) {
-                return ((ComboBox<?>) control).getSelectionModel().getSelectedItem();
-            } else {
-                return null;
-            }
         }
     }
 }
