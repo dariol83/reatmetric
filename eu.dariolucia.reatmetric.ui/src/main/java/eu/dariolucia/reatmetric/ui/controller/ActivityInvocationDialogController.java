@@ -19,11 +19,12 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.AbstractActivityArgument;
-import eu.dariolucia.reatmetric.api.processing.input.PlainActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.processing.input.PlainActivityArgument;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.ReatmetricValidationSupport;
 import eu.dariolucia.reatmetric.ui.utils.ValueControlUtil;
 import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -41,7 +42,6 @@ import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.util.Callback;
 import org.controlsfx.control.ToggleSwitch;
-import org.controlsfx.validation.ValidationSupport;
 
 import java.net.URL;
 import java.util.*;
@@ -327,7 +327,7 @@ public class ActivityInvocationDialogController implements Initializable {
 
         private HBox node;
 
-        private final ValidationSupport validationSupport = new ValidationSupport();
+        private final ReatmetricValidationSupport validationSupport = new ReatmetricValidationSupport();
         private final SimpleBooleanProperty valid = new SimpleBooleanProperty(false);
         private Control rawValueControl;
         private Control engValueControl;
@@ -336,7 +336,7 @@ public class ActivityInvocationDialogController implements Initializable {
         public ActivityInvocationArgumentLine(ActivityPlainArgumentDescriptor descriptor, PlainActivityArgument input) {
             this.descriptor = descriptor;
             this.input = input;
-            this.valid.bind(this.validationSupport.invalidProperty().not());
+            this.valid.bind(this.validationSupport.validProperty());
             initialiseNode();
         }
 
@@ -391,7 +391,6 @@ public class ActivityInvocationDialogController implements Initializable {
             rawEngSelection.disableProperty().bind(fixedProperty);
 
             node.getChildren().addAll(nameLbl, rawValueControl, engValueControl, unitLbl, rawEngSelection);
-            validationSupport.initInitialDecoration();
         }
 
         public HBox getNode() {

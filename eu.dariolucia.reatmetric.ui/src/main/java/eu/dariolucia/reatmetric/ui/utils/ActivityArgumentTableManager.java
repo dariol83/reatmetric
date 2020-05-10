@@ -461,8 +461,8 @@ public class ActivityArgumentTableManager {
 
         private HBox node;
 
-        // TODO: implement validation and bind it to OK button on the dialog window
-        private final SimpleBooleanProperty valid = new SimpleBooleanProperty(true);
+        private final ReatmetricValidationSupport validationSupport = new ReatmetricValidationSupport();
+        private final SimpleBooleanProperty valid = new SimpleBooleanProperty(false);
         private Control rawValueControl;
         private Control engValueControl;
         private CheckBox rawEngSelection;
@@ -470,7 +470,7 @@ public class ActivityArgumentTableManager {
         public ActivityInvocationArgumentLine(ActivityPlainArgumentDescriptor descriptor, ArgumentBean input) {
             this.descriptor = descriptor;
             this.input = input;
-            // this.valid.bind(this.validationSupport.invalidProperty().not());
+            this.valid.bind(this.validationSupport.validProperty());
             initialiseNode();
         }
 
@@ -486,7 +486,7 @@ public class ActivityArgumentTableManager {
             Label unitLbl = new Label(Objects.toString(descriptor.getUnit(), ""));
             unitLbl.setPrefWidth(70);
             // Raw value
-            rawValueControl = ValueControlUtil.buildValueControl(null,
+            rawValueControl = ValueControlUtil.buildValueControl(validationSupport,
                     descriptor.getRawDataType(),
                     input != null ? input.getRawValue() : null,
                     descriptor.getRawDefaultValue(),
@@ -494,7 +494,7 @@ public class ActivityArgumentTableManager {
                     descriptor.getExpectedRawValues());
             rawValueControl.setPrefWidth(150);
             // Eng. value
-            engValueControl = ValueControlUtil.buildValueControl(null,
+            engValueControl = ValueControlUtil.buildValueControl(validationSupport,
                     descriptor.getEngineeringDataType(),
                     input != null ? input.getEngValue() : null,
                     descriptor.getEngineeringDefaultValue(),

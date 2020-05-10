@@ -17,34 +17,24 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
-import eu.dariolucia.reatmetric.api.activity.ActivityPlainArgumentDescriptor;
 import eu.dariolucia.reatmetric.api.activity.ActivityRouteAvailability;
 import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
-import eu.dariolucia.reatmetric.api.processing.input.PlainActivityArgument;
-import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
-import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.ActivityArgumentTableManager;
-import eu.dariolucia.reatmetric.ui.utils.ValueControlUtil;
-import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.util.Callback;
-import org.controlsfx.control.ToggleSwitch;
-import org.controlsfx.validation.ValidationSupport;
 
 import java.net.URL;
 import java.util.*;
@@ -274,109 +264,6 @@ public class AlternativeActivityInvocationDialogController implements Initializa
 
         public SimpleStringProperty valueProperty() {
             return value;
-        }
-    }
-
-    private static class ActivityInvocationArgumentLine {
-
-        private final ActivityPlainArgumentDescriptor descriptor;
-        private final PlainActivityArgument input;
-
-        private HBox node;
-
-        private final ValidationSupport validationSupport = new ValidationSupport();
-        private final SimpleBooleanProperty valid = new SimpleBooleanProperty(false);
-        private Control rawValueControl;
-        private Control engValueControl;
-        private CheckBox rawEngSelection;
-
-        public ActivityInvocationArgumentLine(ActivityPlainArgumentDescriptor descriptor, PlainActivityArgument input) {
-            this.descriptor = descriptor;
-            this.input = input;
-            this.valid.bind(this.validationSupport.invalidProperty().not());
-            initialiseNode();
-        }
-
-        private void initialiseNode() {
-            node = new HBox();
-            node.setSpacing(8);
-            node.setPadding(new Insets(8));
-            // Name
-            Label nameLbl = new Label(descriptor.getName());
-            nameLbl.setPrefWidth(100);
-            nameLbl.setTooltip(new Tooltip(descriptor.getDescription()));
-            // Unit
-            Label unitLbl = new Label(Objects.toString(descriptor.getUnit(), ""));
-            unitLbl.setPrefWidth(70);
-            // Raw value
-            rawValueControl = ValueControlUtil.buildValueControl(validationSupport,
-                    descriptor.getRawDataType(),
-                    input != null ? input.getRawValue() : null,
-                    descriptor.getRawDefaultValue(),
-                    descriptor.isFixed(),
-                    descriptor.getExpectedRawValues());
-            rawValueControl.setPrefWidth(150);
-            // Eng. value
-            engValueControl = ValueControlUtil.buildValueControl(validationSupport,
-                    descriptor.getEngineeringDataType(),
-                    input != null ? input.getEngValue() : null,
-                    descriptor.getEngineeringDefaultValue(),
-                    descriptor.isFixed(),
-                    descriptor.getExpectedEngineeringValues());
-            engValueControl.setPrefWidth(150);
-            // Raw/Eng value selection
-            rawEngSelection = new CheckBox();
-            rawEngSelection.setText("Use Eng.");
-            rawEngSelection.setPrefWidth(90);
-
-            SimpleBooleanProperty fixedProperty = new SimpleBooleanProperty(descriptor.isFixed());
-            rawValueControl.disableProperty().bind(rawEngSelection.selectedProperty().or(fixedProperty));
-            engValueControl.disableProperty().bind(rawEngSelection.selectedProperty().not().or(fixedProperty));
-
-            if(input != null) {
-                rawEngSelection.setSelected(input.isEngineering());
-            } else if(descriptor.isDefaultValuePresent()) {
-                if(descriptor.getEngineeringDefaultValue() != null) {
-                    rawEngSelection.setSelected(true);
-                } else {
-                    rawEngSelection.setSelected(false);
-                }
-            } else {
-                rawEngSelection.setSelected(true);
-            }
-
-            rawEngSelection.disableProperty().bind(fixedProperty);
-
-            node.getChildren().addAll(nameLbl, rawValueControl, engValueControl, unitLbl, rawEngSelection);
-            validationSupport.initInitialDecoration();
-        }
-
-        public HBox getNode() {
-            return node;
-        }
-
-        public SimpleBooleanProperty validProperty() {
-            return valid;
-        }
-
-        public boolean isFixed() {
-            return descriptor.isFixed();
-        }
-
-        public PlainActivityArgument buildArgument() {
-            return new PlainActivityArgument(descriptor.getName(), !rawEngSelection.isSelected() ? buildObject(descriptor.getRawDataType(), rawValueControl) : null, rawEngSelection.isSelected() ? buildObject(descriptor.getEngineeringDataType(), engValueControl) : null, rawEngSelection.isSelected());
-        }
-
-        private Object buildObject(ValueTypeEnum type, Control control) {
-            if(control instanceof TextField) {
-                return ValueUtil.parse(type, ((TextField) control).getText());
-            } else if(control instanceof ToggleSwitch) {
-                return ((ToggleSwitch) control).isSelected();
-            } else if(control instanceof ComboBox) {
-                return ((ComboBox<?>) control).getSelectionModel().getSelectedItem();
-            } else {
-                return null;
-            }
         }
     }
 }

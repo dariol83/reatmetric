@@ -612,5 +612,53 @@
         <activity id="#11003" location="STATION.THERMAL.ACT4" description="Activity 4" type="STATION CMD" transmissionTimeout="2" executionTimeout="3">
             <argument name="ARG1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
+        <activity id="#11004" location="STATION.THERMAL.ACT5" description="Activity 2" type="STATION CMD">
+            <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
+            <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" />
+            <array name="ARR1" argument_expander="ARG2">
+                <argument name="ARG2_E1" raw_type="REAL" eng_type="REAL" eng_unit="mA" fixed="true">
+                    <default_fixed type="RAW" value="99.9" />
+                </argument>
+                <argument name="ARG2_E2" raw_type="REAL" eng_type="REAL" eng_unit="mA">
+                    <default_fixed type="RAW" value="1.4" />
+                </argument>
+                <argument name="ARG2_E3" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER">
+                </argument>
+                <array name="ARR2" argument_expander="ARG2_E3">
+                    <argument name="ARR2_E1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                        <default_ref type="ENGINEERING" parameter="#101" targetValueType="RAW" />
+                        <decalib_ienum default="1010">
+                            <point x="OFF" y="10" />
+                            <point x="ON" y="11" />
+                            <point x="UNKNOWN" y="1010" />
+                        </decalib_ienum>
+                        <checks>
+                            <expected name="EXP1" type="ENUMERATED">
+                                <value>10</value>
+                                <value>11</value>
+                            </expected>
+                        </checks>
+                    </argument>
+                </array>
+            </array>
+            <argument name="ARG3" raw_type="REAL" eng_type="REAL" eng_unit="mA" fixed="true">
+                <default_fixed type="RAW" value="12.4" />
+            </argument>
+            <argument name="ARG4" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <default_ref type="ENGINEERING" parameter="#101" targetValueType="RAW" />
+                <decalib_ienum default="1010">
+                    <point x="OFF" y="10" />
+                    <point x="ON" y="11" />
+                    <point x="UNKNOWN" y="1010" />
+                </decalib_ienum>
+                <checks>
+                    <expected name="EXP1" type="ENUMERATED">
+                        <value>10</value>
+                        <value>11</value>
+                    </expected>
+                </checks>
+            </argument>
+            <property key="spacecraft-id" value="101" />
+        </activity>
     </activities>
 </ns1:processing>

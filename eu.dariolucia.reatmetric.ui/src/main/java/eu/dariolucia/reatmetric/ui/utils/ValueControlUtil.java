@@ -29,7 +29,7 @@ import java.util.List;
 
 public class ValueControlUtil {
 
-    public static Control buildValueControl(ValidationSupport validationSupport, ValueTypeEnum type, Object inputValue, Object defaultValue, boolean isFixed, List<Object> acceptableValues) {
+    public static Control buildValueControl(ReatmetricValidationSupport validationSupport, ValueTypeEnum type, Object inputValue, Object defaultValue, boolean isFixed, List<Object> acceptableValues) {
         boolean mandatory = true;
         if(isFixed) {
             mandatory = false;
@@ -58,7 +58,7 @@ public class ValueControlUtil {
             // Set verification on change
             if(!isFixed && validationSupport != null) {
                 typeValidator.activeProperty().bind(t.disableProperty().not());
-                validationSupport.registerValidator(t, Validator.createPredicateValidator(typeValidator, typeValidator.getErrorMessage(), Severity.ERROR));
+                validationSupport.registerValidator(t, typeValidator, typeValidator.getErrorMessage());
             }
             // Set current value if any
             if(inputValue != null) {
@@ -106,7 +106,7 @@ public class ValueControlUtil {
             // Set verification on change
             if(!isFixed && validationSupport != null) {
                 typeValidator.activeProperty().bind(t.disableProperty().not());
-                validationSupport.registerValidator(t, Validator.createPredicateValidator(typeValidator, typeValidator.getErrorMessage(), Severity.ERROR));
+                validationSupport.registerValidator(t, typeValidator, typeValidator.getErrorMessage());
             }
             // Set current value if any
             if(inputValue != null) {
