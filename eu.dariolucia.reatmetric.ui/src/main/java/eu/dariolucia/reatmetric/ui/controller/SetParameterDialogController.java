@@ -172,6 +172,7 @@ public class SetParameterDialogController implements Initializable {
     }
 
     private void initialiseValueTable(SetParameterRequest currentRequest) {
+        // TODO: use same layout for activity argument, with radio buttons
         HBox node = new HBox();
         node.setSpacing(8);
         // Name
