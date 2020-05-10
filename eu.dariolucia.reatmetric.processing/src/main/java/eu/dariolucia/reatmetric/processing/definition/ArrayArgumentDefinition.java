@@ -28,7 +28,7 @@ public class ArrayArgumentDefinition extends AbstractArgumentDefinition {
 
     @XmlElements({
             @XmlElement(name="argument",type= PlainArgumentDefinition.class),
-            @XmlElement(name="group",type= ArrayArgumentDefinition.class)
+            @XmlElement(name="array",type= ArrayArgumentDefinition.class)
     })
     private List<AbstractArgumentDefinition> elements = new LinkedList<>();
 
