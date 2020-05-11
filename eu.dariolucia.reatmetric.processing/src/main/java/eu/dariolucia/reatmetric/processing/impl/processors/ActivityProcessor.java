@@ -380,6 +380,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                 throw new ProcessingModelException("Cannot decalibrate argument " + arg.getName() + ": " + e.getMessage(), e);
             }
         }
+        // Check this argument now
+        checkSimpleArgument(finalValue, arg.getEngValue(), argDef);
+        // If all fine, go
         return finalValue;
     }
 
@@ -476,15 +479,6 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     private void verifyAndAdd(Map<String, Object> argumentMap, AbstractArgumentDefinition aargDef, Object finalValue, boolean throwExceptionOfFinalNull) throws ProcessingModelException {
-        // Apply checks
-        if(aargDef instanceof PlainArgumentDefinition) {
-            PlainArgumentDefinition argDef = (PlainArgumentDefinition) aargDef;
-            checkSimpleArgument(finalValue, argDef);
-        } else if (aargDef instanceof ArrayArgumentDefinition) {
-            ArrayArgumentDefinition agDef = (ArrayArgumentDefinition) aargDef;
-            Array value = (Array) finalValue;
-            checkGroupArgument(value, agDef);
-        }
         // Final nullity check
         if(finalValue == null) {
             if(throwExceptionOfFinalNull) {
@@ -495,24 +489,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         }
     }
 
-    private void checkGroupArgument(Array value, ArrayArgumentDefinition agDef) throws ProcessingModelException {
-        for(Array.Record record : value.getRecords()) {
-            for(Pair<String, Object> element : record.getElements()) {
-                AbstractArgumentDefinition aargDef = retrieveGroupElementDefinition(element.getFirst(), agDef);
-                if(aargDef instanceof PlainArgumentDefinition) {
-                    PlainArgumentDefinition argDef = (PlainArgumentDefinition) aargDef;
-                    checkSimpleArgument(element.getSecond(), argDef);
-                } else if (aargDef instanceof ArrayArgumentDefinition) {
-                    ArrayArgumentDefinition iagDef = (ArrayArgumentDefinition) aargDef;
-                    Array arrayValue = (Array) element.getSecond();
-                    checkGroupArgument(arrayValue, iagDef);
-                }
-            }
-        }
-    }
-
-
-    private void checkSimpleArgument(Object finalValue, PlainArgumentDefinition argDef) throws ProcessingModelException {
+    private void checkSimpleArgument(Object rawValue, Object engValue, PlainArgumentDefinition argDef) throws ProcessingModelException {
         // TODO: check if you want checks in OR, AND, or something else (e.g. flag at check level). Now it is AND.
         for (CheckDefinition cd : argDef.getChecks()) {
             // applicability condition: if not applicable, ignore the check
@@ -527,13 +504,18 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                     throw new ProcessingModelException("Error when evaluating applicability for check " + cd.getName() + " on activity " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
                 }
             }
+            // if the check is on the eng. value, but this is null, then the check is skipped
+            if(!cd.isRawValueChecked() && engValue == null) {
+                continue;
+            }
+            Object valueToCheck = cd.isRawValueChecked() ? rawValue : engValue;
             try {
-                AlarmState as = cd.check(finalValue, null, 0, processor);
+                AlarmState as = cd.check(valueToCheck, null, 0, processor);
                 if (as != AlarmState.NOMINAL) {
-                    throw new ProcessingModelException("Value " + finalValue + " of argument " + argDef.getName() + " failed execution of check " + cd.getName() + ": " + as);
+                    throw new ProcessingModelException("Value " + valueToCheck + " of argument " + argDef.getName() + " failed execution of check " + cd.getName() + ": " + as);
                 }
             } catch (CheckException e) {
-                throw new ProcessingModelException("Value " + finalValue + " of argument " + argDef.getName() + " failed execution of check " + cd.getName() + ": " + e.getMessage(), e);
+                throw new ProcessingModelException("Value " + valueToCheck + " of argument " + argDef.getName() + " failed execution of check " + cd.getName() + ": " + e.getMessage(), e);
             }
         }
     }

@@ -38,7 +38,7 @@ public abstract class CheckDefinition {
     private int numViolations = 1;
 
     @XmlAttribute(name="raw_value_checked")
-    private boolean rawValueChecked = false; // Apply check on raw/source value (used by parameters only)
+    private boolean rawValueChecked = false; // Apply check on raw/source value: for activity arguments, the check on engineering values is applied only if the value is supplied in engineering format
 
     @XmlElement(name = "applicability")
     private ValidityCondition applicability = null;
