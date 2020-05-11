@@ -400,13 +400,15 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             String formattedValue = ((FixedDefaultValue) ad.getDefaultValue()).getValue();
             if (ad.getDefaultValue().getType() == DefaultValueType.RAW) {
                 finalValue = ValueUtil.parse(ad.getRawType(), formattedValue);
+                checkSimpleArgument(finalValue, null, ad);
             } else if (ad.getDefaultValue().getType() == DefaultValueType.ENGINEERING) {
-                finalValue = ValueUtil.parse(ad.getEngineeringType(), formattedValue);
+                Object engValue = ValueUtil.parse(ad.getEngineeringType(), formattedValue);
                 try {
-                    finalValue = CalibrationDefinition.performDecalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
+                    finalValue = CalibrationDefinition.performDecalibration(ad.getDecalibration(), engValue, ad.getRawType(), processor);
                 } catch (CalibrationException e) {
                     throw new ProcessingModelException("Cannot decalibrate default (fixed) value of argument " + ad.getName() + ": " + e.getMessage(), e);
                 }
+                checkSimpleArgument(finalValue, engValue, ad);
             } else {
                 throw new ProcessingModelException("Default value of argument " + ad.getName() + " has undefined value type: " + ad.getDefaultValue().getType());
             }
@@ -418,11 +420,15 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                 throw new ProcessingModelException(e);
             }
             if (ad.getDefaultValue().getType() == DefaultValueType.ENGINEERING) {
+                Object engValue = finalValue;
                 try {
-                    finalValue = CalibrationDefinition.performDecalibration(ad.getDecalibration(), finalValue, ad.getRawType(), processor);
+                    finalValue = CalibrationDefinition.performDecalibration(ad.getDecalibration(), engValue, ad.getRawType(), processor);
                 } catch (CalibrationException e) {
                     throw new ProcessingModelException("Cannot decalibrate default (reference) value of argument " + ad.getName() + ": " + e.getMessage(), e);
                 }
+                checkSimpleArgument(finalValue, engValue, ad);
+            } else {
+                checkSimpleArgument(finalValue, null, ad);
             }
         } else {
             throw new ProcessingModelException("Default value of argument " + ad.getName() + " has unsupported type: " + ad.getDefaultValue().getClass().getName());
