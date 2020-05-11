@@ -48,7 +48,7 @@
       </HBox>
       <Label fx:id="descriptionLabel" wrapText="true" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS" />
       <Separator prefWidth="200.0" />
-      <VBox fx:id="valueVBox" prefWidth="600.0">
+      <VBox fx:id="valueVBox" prefWidth="600.0" spacing="8.0">
       </VBox>
       <Separator prefWidth="200.0" />
       <HBox VBox.vgrow="NEVER" spacing="8.0">

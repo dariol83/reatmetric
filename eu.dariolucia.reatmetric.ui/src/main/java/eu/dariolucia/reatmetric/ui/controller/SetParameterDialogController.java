@@ -16,17 +16,17 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
 import eu.dariolucia.reatmetric.api.activity.ActivityRouteAvailability;
 import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.ReatmetricValidationSupport;
 import eu.dariolucia.reatmetric.ui.utils.ValueControlUtil;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -36,6 +36,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
+import javafx.scene.text.TextAlignment;
 import javafx.util.Callback;
 import org.controlsfx.control.ToggleSwitch;
 
@@ -66,9 +67,13 @@ public class SetParameterDialogController implements Initializable {
 
     private Control rawValueControl;
     private Control engValueControl;
-    private CheckBox rawEngSelection;
 
     private Supplier<List<ActivityRouteState>> routeSupplier;
+
+    private RadioButton rawSelection;
+    private RadioButton engSelection;
+
+    private final ReatmetricValidationSupport validationSupport = new ReatmetricValidationSupport();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -168,11 +173,77 @@ public class SetParameterDialogController implements Initializable {
     }
 
     public void bindOkButton(Button okButton) {
-        okButton.disableProperty().bind(routeChoiceBoxValid.not());
+        okButton.disableProperty().bind(Bindings.or(routeChoiceBoxValid.not(), validationSupport.validProperty().not()));
     }
 
-    private void initialiseValueTable(SetParameterRequest currentRequest) {
-        // TODO: use same layout for activity argument, with radio buttons
+    private void initialiseValueTable(SetParameterRequest input) {
+        HBox line1 = new HBox();
+        line1.setSpacing(8);
+
+        HBox line2 = new HBox();
+        line2.setSpacing(8);
+
+        ToggleGroup rawEngToggleGroup = new ToggleGroup();
+
+        // Raw value
+        rawSelection = new RadioButton("Raw Value");
+        rawSelection.setPrefWidth(120);
+        rawSelection.setToggleGroup(rawEngToggleGroup);
+        rawSelection.setTextAlignment(TextAlignment.LEFT);
+        line1.getChildren().add(rawSelection);
+        rawValueControl = ValueControlUtil.buildValueControl(validationSupport,
+                descriptor.getRawDataType(),
+                input != null && !input.isEngineeringUsed() ? input.getValue() : null,
+                null,
+                false,
+                descriptor.getExpectedRawValues());
+        rawValueControl.setPrefWidth(150);
+        line1.getChildren().add(rawValueControl);
+        Label emptyLabel = new Label("");
+        emptyLabel.setPrefWidth(70);
+        line1.getChildren().add(emptyLabel);
+        valueVBox.getChildren().add(line1);
+
+        // Eng. value
+        engSelection = new RadioButton("Eng. Value");
+        engSelection.setPrefWidth(120);
+        engSelection.setToggleGroup(rawEngToggleGroup);
+        engSelection.setTextAlignment(TextAlignment.LEFT);
+        line2.getChildren().add(engSelection);
+        engValueControl = ValueControlUtil.buildValueControl(validationSupport,
+                descriptor.getEngineeringDataType(),
+                input != null && input.isEngineeringUsed() ? input.getValue() : null,
+                null,
+                false,
+                descriptor.getExpectedEngineeringValues());
+        engValueControl.setPrefWidth(150);
+        line2.getChildren().add(engValueControl);
+        // Unit
+        Label unitLbl = new Label(Objects.toString(descriptor.getUnit(), ""));
+        unitLbl.setPrefWidth(70);
+        line2.getChildren().add(unitLbl);
+        valueVBox.getChildren().add(line2);
+
+        // Raw/Eng value selection
+        rawValueControl.disableProperty().bind(rawSelection.selectedProperty().not());
+        engValueControl.disableProperty().bind(engSelection.selectedProperty().not());
+
+        if(input != null) {
+            rawSelection.setSelected(!input.isEngineeringUsed());
+            engSelection.setSelected(input.isEngineeringUsed());
+        } else {
+            rawSelection.setSelected(false);
+            engSelection.setSelected(true);
+        }
+
+
+
+
+
+
+
+
+        /*
         HBox node = new HBox();
         node.setSpacing(8);
         // Name
@@ -217,11 +288,12 @@ public class SetParameterDialogController implements Initializable {
         node.getChildren().addAll(nameLbl, rawValueControl, engValueControl, unitLbl, rawEngSelection);
 
         valueVBox.getChildren().add(node);
+         */
     }
 
     private Object buildValueObject() {
-        Control control = rawEngSelection.isSelected() ? engValueControl : rawValueControl;
-        ValueTypeEnum type = rawEngSelection.isSelected() ? descriptor.getEngineeringDataType() : descriptor.getRawDataType();
+        Control control = engSelection.isSelected() ? engValueControl : rawValueControl;
+        ValueTypeEnum type = engSelection.isSelected() ? descriptor.getEngineeringDataType() : descriptor.getRawDataType();
         if(control instanceof TextField) {
             return ValueUtil.parse(type, ((TextField) control).getText());
         } else if(control instanceof ToggleSwitch) {
@@ -238,7 +310,7 @@ public class SetParameterDialogController implements Initializable {
     }
 
     public SetParameterRequest buildRequest() {
-        return new SetParameterRequest(descriptor.getExternalId(), rawEngSelection.isSelected(), buildValueObject(), routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
+        return new SetParameterRequest(descriptor.getExternalId(), engSelection.isSelected(), buildValueObject(), routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
     }
 
     @FXML
