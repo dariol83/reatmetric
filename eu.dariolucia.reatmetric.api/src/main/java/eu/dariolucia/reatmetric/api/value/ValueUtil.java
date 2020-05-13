@@ -211,7 +211,7 @@ public class ValueUtil {
                     oos.close();
                     return vv;
                 } catch (IOException | ClassNotFoundException e) {
-                    throw new IllegalStateException("Cannot deserialize value of type GROUP", e);
+                    throw new IllegalStateException("Cannot deserialize value of type ARRAY", e);
                 }
             }
             case EXTENSION: {

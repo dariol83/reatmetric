@@ -23,6 +23,7 @@ import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketDecoder;
 import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.ServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.UtlConfigurationFile;
+import eu.dariolucia.ccsds.sle.utl.config.cltu.CltuServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.rcf.RcfServiceInstanceConfiguration;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
@@ -45,6 +46,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
+import eu.dariolucia.reatmetric.driver.spacecraft.sle.CltuServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.SleServiceInstanceManager;
@@ -74,8 +76,7 @@ import java.util.stream.Collectors;
  *     transmission.</li>
  *     <li>TM Packet Layer: the driver supports processing of CCSDS Space Packet with optional ECSS PUS header. Space packets are
  *     decoded in parameters and injected into the processing model. Support for PUS services is limited to Service 9 and
- *     Service 5,
- *     TM only.</li>
+ *     Service 5, TM only.</li>
  *     <li>TC Packet Layer: the driver supports the encoding of Space Packets with optional ECSS PUS header, starting from
  *     requests coming from the processing model. Space packets are encoded in TC packets with optional segment header.
  *     Support for PUS services is limited to Service 1 and Service 11, both with limitations</li>
@@ -223,11 +224,20 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer {
                     createRafServiceInstance(confFile.getPeerConfiguration(), (RafServiceInstanceConfiguration) sic);
                 } else if(sic instanceof RcfServiceInstanceConfiguration) {
                     createRcfServiceInstance(confFile.getPeerConfiguration(), (RcfServiceInstanceConfiguration) sic);
+                } else if(sic instanceof CltuServiceInstanceConfiguration) {
+                    createCltuServiceInstance(confFile.getPeerConfiguration(), (CltuServiceInstanceConfiguration) sic);
                 } else {
                     LOG.warning("Driver " + this.name + " cannot load service instance configuration for " + sic.getServiceInstanceIdentifier() + " in file " + sleConfFile + ": SLE service type not supported");
                 }
             }
         }
+    }
+
+    private void createCltuServiceInstance(PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration sic) {
+        LOG.info("Creating SLE CLTU endpoint for " + sic.getServiceInstanceIdentifier());
+        CltuServiceInstanceManager m = new CltuServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context.getRawDataBroker());
+        m.prepare();
+        this.sleManagers.add(m);
     }
 
     private void createRcfServiceInstance(PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration sic) {
