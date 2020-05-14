@@ -61,6 +61,9 @@ public class SpacecraftConfiguration {
     @XmlElement(name = "tm-packet", required = true)
     private TmPacketConfiguration tmPacketConfiguration = new TmPacketConfiguration();
 
+    @XmlElement(name = "tc-packet", required = true)
+    private TcPacketConfiguration tcPacketConfiguration = new TcPacketConfiguration();
+
     @XmlElement(name = "services")
     private PacketServiceConfiguration packetServiceConfiguration = new PacketServiceConfiguration();
 
@@ -126,5 +129,13 @@ public class SpacecraftConfiguration {
 
     public void setPacketServiceConfiguration(PacketServiceConfiguration packetServiceConfiguration) {
         this.packetServiceConfiguration = packetServiceConfiguration;
+    }
+
+    public TcPacketConfiguration getTcPacketConfiguration() {
+        return tcPacketConfiguration;
+    }
+
+    public void setTcPacketConfiguration(TcPacketConfiguration tcPacketConfiguration) {
+        this.tcPacketConfiguration = tcPacketConfiguration;
     }
 }

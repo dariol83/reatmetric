@@ -29,9 +29,12 @@ import eu.dariolucia.ccsds.sle.utl.config.rcf.RcfServiceInstanceConfiguration;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
+import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.core.api.IDriver;
 import eu.dariolucia.reatmetric.core.api.IDriverListener;
 import eu.dariolucia.reatmetric.core.api.IRawDataRenderer;
@@ -50,6 +53,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.sle.CltuServiceInstanceManager
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.SleServiceInstanceManager;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.ActivityHandler;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmDataLinkProcessor;
 
 import java.io.File;
@@ -83,7 +87,7 @@ import java.util.stream.Collectors;
  * </ul>
  *
  */
-public class SpacecraftDriver implements IDriver, IRawDataRenderer {
+public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHandler {
 
     private static final Logger LOG = Logger.getLogger(SpacecraftDriver.class.getName());
 
@@ -105,6 +109,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer {
     private TmPacketReplayManager tmPacketReplayer;
     private TmDataLinkProcessor tmDataLinkProcessor;
     private TmPacketProcessor tmPacketProcessor;
+
+    private ActivityHandler activityHandler;
 
     private ServiceBroker serviceBroker;
     private TimeCorrelationService timeCorrelationService;
@@ -136,6 +142,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer {
             loadTmDataLinkProcessor();
             // Load the SLE service instances
             loadSleServiceInstances(driverConfigurationDirectory + File.separator + SLE_FOLDER);
+            // Load activity handler
+            loadActivityHandler();
             // Load packet replayer
             loadTmPacketReplayer();
             // Initialise raw data renderers
@@ -146,6 +154,10 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer {
             updateStatus(SystemStatus.ALARM);
             throw new DriverException(e);
         }
+    }
+
+    private void loadActivityHandler() {
+        this.activityHandler = new ActivityHandler(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions);
     }
 
     private void loadRawDataRenderers() {
@@ -275,8 +287,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer {
 
     @Override
     public List<IActivityHandler> getActivityHandlers() {
-        // TODO implement command handler
-        return Collections.emptyList();
+        return Collections.singletonList(this);
     }
 
     @Override
@@ -332,5 +343,47 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer {
             rawData = rawDataArchive.retrieve(rawData.getInternalId());
         }
         return renderingFunction.apply(rawData);
+    }
+
+    @Override
+    public void registerModel(IProcessingModel model) {
+        // Not needed
+    }
+
+    @Override
+    public void deregisterModel(IProcessingModel model) {
+        // Not needed
+    }
+
+    @Override
+    public List<String> getSupportedRoutes() {
+        return this.sleManagers.stream()
+                .filter(o -> o instanceof CltuServiceInstanceManager)
+                .map(SleServiceInstanceManager::getServiceInstanceIdentifier)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<String> getSupportedActivityTypes() {
+        return activityHandler.getSupportedActivityTypes();
+    }
+
+    @Override
+    public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        activityHandler.executeActivity(activityInvocation);
+    }
+
+    @Override
+    public boolean getRouteAvailability(String route) {
+        Optional<SleServiceInstanceManager<?, ?>> first = this.sleManagers.stream()
+                .filter(o -> o instanceof CltuServiceInstanceManager)
+                .filter(o -> o.getServiceInstanceIdentifier().equals(route))
+                .findFirst();
+        if(first.isPresent()) {
+            return first.get().getConnectionStatus().equals(TransportConnectionStatus.OPEN);
+            // TODO: uplink status and production status might be considered
+        } else {
+            return false;
+        }
     }
 }

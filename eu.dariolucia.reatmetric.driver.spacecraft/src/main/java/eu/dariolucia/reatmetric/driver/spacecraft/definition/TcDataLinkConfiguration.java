@@ -24,7 +24,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 public class TcDataLinkConfiguration {
 
     @XmlAttribute(name = "tc-vc")
-    private int commandVc = 0;
+    private int tcVc = 0;
 
     @XmlAttribute(name = "randomize")
     private boolean randomize = true;
@@ -38,12 +38,12 @@ public class TcDataLinkConfiguration {
     public TcDataLinkConfiguration() {
     }
 
-    public int getCommandVc() {
-        return commandVc;
+    public int getTcVc() {
+        return tcVc;
     }
 
-    public void setCommandVc(int commandVc) {
-        this.commandVc = commandVc;
+    public void setTcVc(int tcVc) {
+        this.tcVc = tcVc;
     }
 
     public boolean isRandomize() {

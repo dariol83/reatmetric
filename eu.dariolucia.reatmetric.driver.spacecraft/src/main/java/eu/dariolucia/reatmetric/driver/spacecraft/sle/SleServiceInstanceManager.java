@@ -81,6 +81,10 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         this.serviceInstance.register(this);
     }
 
+    public String getServiceInstanceIdentifier() {
+        return serviceInstance.getServiceInstanceIdentifier();
+    }
+
     @Override
     protected void addToInitialisationMap(Map<String, Object> initialisationMap, Map<String, Pair<String, ValueTypeEnum>> initialisationDescriptionMap) {
         initialisationMap.put(SLE_VERSION_KEY, (long) siConfiguration.getServiceVersionNumber()); // long because the data type is UNSIGNED_INTEGER
