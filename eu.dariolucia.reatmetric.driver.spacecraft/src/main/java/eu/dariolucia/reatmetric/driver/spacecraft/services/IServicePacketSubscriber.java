@@ -16,16 +16,20 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.services;
 
+import eu.dariolucia.ccsds.encdec.pus.TcPusHeader;
 import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 
 public interface IServicePacketSubscriber {
 
     void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded);
 
-    // TODO onTcPacketSent
+    void onTcPacketEncoded(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker);
 
-    // TODO onTcPacketFinalResult
+    void onTcPacketReleased(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker);
+
+    void onTcPacketFinalResult(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker);
 }

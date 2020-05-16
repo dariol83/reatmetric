@@ -16,11 +16,13 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.services;
 
+import eu.dariolucia.ccsds.encdec.pus.TcPusHeader;
 import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -72,5 +74,19 @@ public class ServiceBroker {
     public void dispose() {
         itemDistributor.shutdownNow();
         subscribers.clear();
+    }
+
+    public void informTcPacketEncoded(RawData rd, SpacePacket sp, TcPusHeader header, TcTracker trackerBean) {
+        itemDistributor.execute(() -> {
+            for(Pair<IServicePacketSubscriber, IServicePacketFilter> s : subscribers) {
+                try {
+                    if(s.getSecond().filter(rd, sp, header != null ? Integer.valueOf(header.getServiceType()) : null,  header != null ? Integer.valueOf(header.getServiceSubType()) : null, null, header != null ? header.getSourceId() : null)) {
+                        s.getFirst().onTcPacketEncoded(rd, sp, header, trackerBean);
+                    }
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Cannot notify packet service subscriber " + subscribers + ": " + e.getMessage(), e);
+                }
+            }
+        });
     }
 }

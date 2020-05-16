@@ -41,6 +41,7 @@ public class Constants {
     public static final String ANNOTATION_TM_PUS_HEADER = "##TM_PUS_HEADER";
     public static final String ANNOTATION_UNIQUE_ID = "##UNIQUE_ID";
     public static final String ANNOTATION_VCID = "##VCID";
+    public static final String ANNOTATION_TC_TRACKER = "##TC_TRACKER";
 
     // encdec definition: TM/TC packet type
     public static final String ENCDEC_TM_PACKET_TYPE = "TM";
@@ -49,4 +50,10 @@ public class Constants {
     // Processing model: event types
     public static final String EVT_T_ONBOARD_EVENT = "ONBOARD EVENT";
     public static final String EVT_T_TC_VERIFICATION_EVENT = "TC VERIFICATION";
+
+    // Activity invocation properties
+    public static final String ACTIVITY_PROPERTY_OVERRIDE_ACK = "pus-ack-override";
+    public static final String ACTIVITY_PROPERTY_OVERRIDE_SOURCE_ID = "pus-source-override";
+    public static final String ACTIVITY_PROPERTY_OVERRIDE_MAP_ID = "map-id-override";
+
 }
