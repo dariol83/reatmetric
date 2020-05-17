@@ -16,5 +16,30 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 
+import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+
 public class TcTracker {
+
+    private final IActivityHandler.ActivityInvocation invocation;
+    private final SpacePacket packet;
+    private final TcPacketInfo info;
+
+    public TcTracker(IActivityHandler.ActivityInvocation invocation, SpacePacket packet, TcPacketInfo info) {
+        this.invocation = invocation;
+        this.packet = packet;
+        this.info = info;
+    }
+
+    public IActivityHandler.ActivityInvocation getInvocation() {
+        return invocation;
+    }
+
+    public SpacePacket getPacket() {
+        return packet;
+    }
+
+    public TcPacketInfo getInfo() {
+        return info;
+    }
 }

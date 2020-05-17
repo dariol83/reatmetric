@@ -28,6 +28,27 @@ public class TcPacketConfiguration {
     @XmlAttribute(name="activity-tc-packet-type")
     private String activityTcPacketType = Constants.ENCDEC_TC_PACKET_TYPE;
 
+    @XmlAttribute(name="pus-source-id-length")
+    private int sourceIdLength = 0;
+
+    @XmlAttribute(name="pus-spare-length")
+    private int spareLength = 0;
+
+    public int getSpareLength() {
+        return spareLength;
+    }
+
+    public void setSpareLength(int spareLength) {
+        this.spareLength = spareLength;
+    }
+
+    public int getSourceIdLength() {
+        return sourceIdLength;
+    }
+
+    public void setSourceIdLength(int sourceIdLength) {
+        this.sourceIdLength = sourceIdLength;
+    }
 
     public String getActivityTcPacketType() {
         return activityTcPacketType;

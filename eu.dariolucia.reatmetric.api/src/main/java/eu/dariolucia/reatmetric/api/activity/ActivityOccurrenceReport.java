@@ -44,7 +44,7 @@ public final class ActivityOccurrenceReport extends AbstractDataItem {
     public static final String FORWARDING_REPORT_NAME = "Forwarding to Activity Handler";
     /**
      * The name of the verification stage that indicates the release of the activity occurrence from the ReatMetric
-     * system. It should be used by th activity handler implementing the activity transmission.
+     * system. It should be used by the activity handler implementing the activity transmission.
      */
     public static final String RELEASE_REPORT_NAME = "Release";
     /**

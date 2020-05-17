@@ -54,6 +54,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.SleServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.ActivityHandler;
+import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TcDataLinkProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmDataLinkProcessor;
 
 import java.io.File;
@@ -111,6 +112,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private TmPacketProcessor tmPacketProcessor;
 
     private ActivityHandler activityHandler;
+    private TcDataLinkProcessor tcDataLinkProcessor;
 
     private ServiceBroker serviceBroker;
     private TimeCorrelationService timeCorrelationService;
@@ -142,6 +144,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             loadTmDataLinkProcessor();
             // Load the SLE service instances
             loadSleServiceInstances(driverConfigurationDirectory + File.separator + SLE_FOLDER);
+            // Load the TC Data Link processor
+            loadTcDataLinkProcessor();
             // Load activity handler
             loadActivityHandler();
             // Load packet replayer
@@ -156,8 +160,12 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         }
     }
 
+    private void loadTcDataLinkProcessor() {
+        // TODO
+    }
+
     private void loadActivityHandler() {
-        this.activityHandler = new ActivityHandler(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions);
+        this.activityHandler = new ActivityHandler(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions, this.tcDataLinkProcessor);
     }
 
     private void loadRawDataRenderers() {
@@ -308,6 +316,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.onboardEventService.dispose();
         this.commandVerificationService.dispose();
         this.serviceBroker.dispose();
+        this.activityHandler.dispose();
         updateStatus(SystemStatus.UNKNOWN);
     }
 

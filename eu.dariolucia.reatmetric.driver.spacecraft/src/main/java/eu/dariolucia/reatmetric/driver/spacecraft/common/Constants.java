@@ -55,5 +55,5 @@ public class Constants {
     public static final String ACTIVITY_PROPERTY_OVERRIDE_ACK = "pus-ack-override";
     public static final String ACTIVITY_PROPERTY_OVERRIDE_SOURCE_ID = "pus-source-override";
     public static final String ACTIVITY_PROPERTY_OVERRIDE_MAP_ID = "map-id-override";
-
+    public static final String ACTIVITY_PROPERTY_SCHEDULED_TIME = "tc-scheduled-time";
 }
