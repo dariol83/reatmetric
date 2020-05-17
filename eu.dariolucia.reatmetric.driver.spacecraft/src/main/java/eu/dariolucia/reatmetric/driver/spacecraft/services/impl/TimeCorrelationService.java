@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.driver.spacecraft.services.impl;
 
 import eu.dariolucia.ccsds.encdec.bit.BitEncoderDecoder;
+import eu.dariolucia.ccsds.encdec.pus.TcPusHeader;
 import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.encdec.value.TimeUtil;
@@ -35,6 +36,7 @@ import eu.dariolucia.reatmetric.core.configuration.AbstractInitialisationConfigu
 import eu.dariolucia.reatmetric.core.configuration.ResumeInitialisationConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TimeCorrelationServiceConfiguration;
@@ -249,6 +251,21 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
                 LOG.log(Level.WARNING, "Cannot find corresponding TM frame for time packet");
             }
         }
+    }
+
+    @Override
+    public void onTcPacketEncoded(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker) {
+
+    }
+
+    @Override
+    public void onTcPacketReleased(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker) {
+
+    }
+
+    @Override
+    public void onTcPacketFinalResult(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker) {
+
     }
 
     private void addTimeCouple(Instant onboardTime, Instant utcTime) {

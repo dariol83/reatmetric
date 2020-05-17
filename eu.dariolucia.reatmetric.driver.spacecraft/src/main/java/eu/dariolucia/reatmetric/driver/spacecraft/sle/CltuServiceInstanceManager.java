@@ -21,38 +21,36 @@ import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.outgoin
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.outgoing.pdus.CltuStatusReportInvocation;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.outgoing.pdus.CltuTransferDataReturn;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.common.pdus.SleScheduleStatusReportReturn;
-import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.outgoing.pdus.*;
-import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.structures.AntennaId;
 import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.cltu.CltuServiceInstanceConfiguration;
-import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
-import eu.dariolucia.ccsds.sle.utl.si.LockStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ProductionStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ServiceInstanceBindingStateEnum;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuDiagnosticsStrings;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuServiceInstance;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuUplinkStatusEnum;
-import eu.dariolucia.ccsds.sle.utl.si.raf.RafDiagnosticsStrings;
-import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstance;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.api.rawdata.Quality;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
 
-import java.time.Instant;
-import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuServiceInstance, CltuServiceInstanceConfiguration> {
 
     private static final Logger LOG = Logger.getLogger(CltuServiceInstanceManager.class.getName());
+    private static final String FIRST_CLTU_ID_KEY = "cltu.first.id";
 
     private volatile CltuUplinkStatusEnum uplinkStatus = CltuUplinkStatusEnum.UPLINK_STATUS_NOT_AVAILABLE;
 
     private volatile int lastReportedFreeBuffer;
     private volatile int estimatedFreeBuffer;
+
+    private final Map<Long, TcTracker> cltuId2tracker = new ConcurrentHashMap<>();
 
     public CltuServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
         super(driverName, peerConfiguration, siConfiguration, spacecraftConfiguration, broker);
@@ -63,7 +61,12 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         return new CltuServiceInstance(peerConfiguration, siConfiguration);
     }
 
-    // TODO initialisation map with required properties (e.g. cltuId)
+    @Override
+    protected void addToInitialisationMap(Map<String, Object> initialisationMap, Map<String, Pair<String, ValueTypeEnum>> initialisationDescriptionMap) {
+        super.addToInitialisationMap(initialisationMap, initialisationDescriptionMap);
+        initialisationMap.put(FIRST_CLTU_ID_KEY, (long) 0); // long because the data type is UNSIGNED_INTEGER
+        initialisationDescriptionMap.put(FIRST_CLTU_ID_KEY, Pair.of("First CLTU ID", ValueTypeEnum.UNSIGNED_INTEGER));
+    }
 
     @Override
     protected boolean isStartReturn(Object operation) {
@@ -146,12 +149,15 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
 
     @Override
     protected void sendStart() {
-        // TODO: from the initialisation properties
-        serviceInstance.start(0);
+        serviceInstance.start((Long) getInitialisationMap().get(FIRST_CLTU_ID_KEY));
     }
 
     @Override
     protected void sendStop() {
         serviceInstance.stop();
+    }
+
+    public void sendCltu(byte[] encodedCltu, TcTracker tracker) {
+        // TODO
     }
 }

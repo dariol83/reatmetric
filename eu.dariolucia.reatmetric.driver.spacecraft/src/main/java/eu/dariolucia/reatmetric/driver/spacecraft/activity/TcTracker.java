@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 
+// TODO: make it an active object with service broker
 public class TcTracker {
 
     private final IActivityHandler.ActivityInvocation invocation;
