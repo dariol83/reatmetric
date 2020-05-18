@@ -28,7 +28,7 @@ import eu.dariolucia.ccsds.sle.utl.si.rcf.RcfDiagnosticsStrings;
 import eu.dariolucia.ccsds.sle.utl.si.rcf.RcfServiceInstance;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
-import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
+import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
 
@@ -41,8 +41,8 @@ public class RcfServiceInstanceManager extends SleServiceInstanceManager<RcfServ
 
     private static final Logger LOG = Logger.getLogger(RcfServiceInstanceManager.class.getName());
 
-    public RcfServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
-        super(driverName, peerConfiguration, siConfiguration, spacecraftConfiguration, broker);
+    public RcfServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IServiceCoreContext context) {
+        super(driverName, peerConfiguration, siConfiguration, spacecraftConfiguration, context);
     }
 
     @Override

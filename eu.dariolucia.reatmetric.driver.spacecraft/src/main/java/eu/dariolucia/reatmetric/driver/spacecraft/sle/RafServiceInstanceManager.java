@@ -28,7 +28,7 @@ import eu.dariolucia.ccsds.sle.utl.si.raf.RafDiagnosticsStrings;
 import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstance;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
-import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
+import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
 
@@ -41,8 +41,8 @@ public class RafServiceInstanceManager extends SleServiceInstanceManager<RafServ
 
     private static final Logger LOG = Logger.getLogger(RafServiceInstanceManager.class.getName());
 
-    public RafServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
-        super(driverName, peerConfiguration, siConfiguration, spacecraftConfiguration, broker);
+    public RafServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IServiceCoreContext context) {
+        super(driverName, peerConfiguration, siConfiguration, spacecraftConfiguration, context);
     }
 
     @Override

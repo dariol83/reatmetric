@@ -255,21 +255,21 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     private void createCltuServiceInstance(PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration sic) {
         LOG.info("Creating SLE CLTU endpoint for " + sic.getServiceInstanceIdentifier());
-        CltuServiceInstanceManager m = new CltuServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context.getRawDataBroker());
+        CltuServiceInstanceManager m = new CltuServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context);
         m.prepare();
         this.sleManagers.add(m);
     }
 
     private void createRcfServiceInstance(PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration sic) {
         LOG.info("Creating SLE RCF endpoint for " + sic.getServiceInstanceIdentifier());
-        RcfServiceInstanceManager m = new RcfServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context.getRawDataBroker());
+        RcfServiceInstanceManager m = new RcfServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context);
         m.prepare();
         this.sleManagers.add(m);
     }
 
     private void createRafServiceInstance(PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration sic) {
         LOG.info("Creating SLE RAF endpoint for " + sic.getServiceInstanceIdentifier());
-        RafServiceInstanceManager m = new RafServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context.getRawDataBroker());
+        RafServiceInstanceManager m = new RafServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context);
         m.prepare();
         this.sleManagers.add(m);
     }

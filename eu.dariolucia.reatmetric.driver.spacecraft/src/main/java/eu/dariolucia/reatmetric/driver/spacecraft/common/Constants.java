@@ -56,4 +56,14 @@ public class Constants {
     public static final String ACTIVITY_PROPERTY_OVERRIDE_SOURCE_ID = "pus-source-override";
     public static final String ACTIVITY_PROPERTY_OVERRIDE_MAP_ID = "map-id-override";
     public static final String ACTIVITY_PROPERTY_SCHEDULED_TIME = "tc-scheduled-time";
+
+    // Activity stages
+    public static final String STAGE_GROUND_STATION_RECEPTION = "Ground Station Reception";
+    public static final String STAGE_GROUND_STATION_UPLINK = "Ground Station Uplink";
+    public static final String STAGE_ONBOARD_RECEPTION = "On-board Reception";
+    public static final String STAGE_SPACECRAFT_SCHEDULED = "Scheduled";
+    public static final String STAGE_SPACECRAFT_ACCEPTED = "On-board Acceptance";
+    public static final String STAGE_SPACECRAFT_STARTED = "On-board Start";
+    public static final String STAGE_SPACECRAFT_PROGRESS = "On-board Progress";
+    public static final String STAGE_SPACECRAFT_COMPLETE = "On-board Completion";
 }

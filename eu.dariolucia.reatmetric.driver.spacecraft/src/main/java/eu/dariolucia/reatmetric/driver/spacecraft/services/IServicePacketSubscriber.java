@@ -30,6 +30,7 @@ public interface IServicePacketSubscriber {
     void onTcPacketEncoded(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker);
 
     void onTcPacketReleased(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker);
+    // TODO add onTcPacketUplinked, onTcPacketOnBoard, onTcPacketStarted, onTcPacketFailed, actually, use a single method and an enum to describe the state
 
     void onTcPacketFinalResult(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker);
 }
