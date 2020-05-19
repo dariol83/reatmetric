@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -32,7 +33,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class ServiceBroker {
+public class ServiceBroker implements IServiceBroker {
 
     private static final Logger LOG = Logger.getLogger(ServiceBroker.class.getName());
 
@@ -43,15 +44,18 @@ public class ServiceBroker {
     });
     private final List<Pair<IServicePacketSubscriber, IServicePacketFilter>> subscribers = new CopyOnWriteArrayList<>();
 
+    @Override
     public void register(IServicePacketSubscriber subscriber, IServicePacketFilter predicateFilter) {
         this.subscribers.add(Pair.of(subscriber, predicateFilter));
     }
 
+    @Override
     public void deregister(IServicePacketSubscriber subscriber) {
         List<Pair<IServicePacketSubscriber, IServicePacketFilter>> itemsToRemove = subscribers.stream().filter(o -> o.getFirst() == subscriber).collect(Collectors.toList());
         subscribers.removeAll(itemsToRemove);
     }
 
+    @Override
     public void distributeTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
         final Integer pusType = tmPusHeader != null ? (int) tmPusHeader.getServiceType() : null;
         final Integer pusSubType = tmPusHeader != null ? (int) tmPusHeader.getServiceSubType() : null;
@@ -76,12 +80,13 @@ public class ServiceBroker {
         subscribers.clear();
     }
 
-    public void informTcPacketEncoded(RawData rd, SpacePacket sp, TcPusHeader header, TcTracker trackerBean) {
+    @Override
+    public void informTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker trackerBean) {
         itemDistributor.execute(() -> {
             for(Pair<IServicePacketSubscriber, IServicePacketFilter> s : subscribers) {
                 try {
-                    if(s.getSecond().filter(rd, sp, header != null ? Integer.valueOf(header.getServiceType()) : null,  header != null ? Integer.valueOf(header.getServiceSubType()) : null, null, header != null ? header.getSourceId() : null)) {
-                        s.getFirst().onTcPacketEncoded(rd, sp, header, trackerBean);
+                    if(s.getSecond().filter(trackerBean.getRawData(), trackerBean.getPacket(), trackerBean.getInfo().getPusHeader() != null ? Integer.valueOf(trackerBean.getInfo().getPusHeader().getServiceType()) : null,  trackerBean.getInfo().getPusHeader() != null ? Integer.valueOf(trackerBean.getInfo().getPusHeader().getServiceSubType()) : null, null, trackerBean.getInfo().getPusHeader() != null ? trackerBean.getInfo().getPusHeader().getSourceId() : null)) {
+                        s.getFirst().onTcPacket(phase, phaseTime, trackerBean);
                     }
                 } catch (Exception e) {
                     LOG.log(Level.SEVERE, "Cannot notify packet service subscriber " + subscribers + ": " + e.getMessage(), e);

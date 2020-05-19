@@ -40,7 +40,8 @@ import eu.dariolucia.reatmetric.api.value.Array;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TcDataLinkProcessor;
 
 import java.time.Instant;
@@ -57,16 +58,16 @@ import java.util.logging.Logger;
 import static eu.dariolucia.reatmetric.driver.spacecraft.common.Constants.ACTIVITY_PROPERTY_OVERRIDE_MAP_ID;
 import static eu.dariolucia.reatmetric.driver.spacecraft.common.Constants.ACTIVITY_PROPERTY_OVERRIDE_SOURCE_ID;
 
-public class ActivityHandler {
+public class TcPacketHandler {
 
-    private static final Logger LOG = Logger.getLogger(ActivityHandler.class.getName());
+    private static final Logger LOG = Logger.getLogger(TcPacketHandler.class.getName());
 
     private static final int MAX_TC_PACKET_SIZE = 65536;
 
     private final String driverName;
     private final SpacecraftConfiguration configuration;
     private final IServiceCoreContext context;
-    private final ServiceBroker serviceBroker;
+    private final IServiceBroker serviceBroker;
     private final IPacketEncoder packetEncoder;
     private final Map<Long, PacketDefinition> externalId2packet;
     private final Map<Integer, AtomicInteger> apid2counter = new HashMap<>();
@@ -77,7 +78,7 @@ public class ActivityHandler {
         return t;
     });
 
-    public ActivityHandler(String driverName, Instant epoch, SpacecraftConfiguration configuration, IServiceCoreContext context, ServiceBroker serviceBroker, Definition encodingDecodingDefinitions, TcDataLinkProcessor tcDataLinkProcessor) {
+    public TcPacketHandler(String driverName, Instant epoch, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, Definition encodingDecodingDefinitions, TcDataLinkProcessor tcDataLinkProcessor) {
         this.driverName = driverName;
         this.configuration = configuration;
         this.context = context;
@@ -160,13 +161,14 @@ public class ActivityHandler {
             TcPacketInfo packetInfo = new TcPacketInfo(packetInfoStr, ackOverride, sourceId, mapId);
             // Construct the space packet using the information in the encoding definition and the configuration (override by activity properties)
             SpacePacket sp = buildPacket(packetInfo, packetUserDataField);
-            // Build the activity tracker and add it to the Space Packet
-            TcTracker tcTracker = buildTcTracker(activityInvocation, sp, packetInfo);
-            sp.setAnnotationValue(Constants.ANNOTATION_TC_TRACKER, tcTracker);
+            Instant encodingTime = Instant.now();
             // Store the TC packet in the raw data archive
-            RawData rd = distributeAsRawData(activityInvocation, sp, defToEncode);
+            RawData rd = distributeAsRawData(activityInvocation, sp, defToEncode, encodingTime);
+            // Build the activity tracker and add it to the Space Packet
+            TcTracker tcTracker = buildTcTracker(activityInvocation, sp, packetInfo, rd);
+            sp.setAnnotationValue(Constants.ANNOTATION_TC_TRACKER, tcTracker);
             // Notify packet built to service broker: if the packet is time tagged, then the processing will continue in the PUS 11 service implementation
-            serviceBroker.informTcPacketEncoded(rd, sp, packetInfo.getPusHeader(), tcTracker);
+            serviceBroker.informTcPacket(TcPacketPhase.ENCODED, encodingTime, tcTracker);
             // Release packet to lower layer (TC layer), unless the activity is scheduled on-board (PUS 11, activity property)
             String scheduledTime = activityInvocation.getProperties().get(Constants.ACTIVITY_PROPERTY_SCHEDULED_TIME);
             if (scheduledTime != null && !scheduledTime.isBlank()) {
@@ -182,10 +184,10 @@ public class ActivityHandler {
         processingModel.reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, status, ActivityOccurrenceState.RELEASE, null));
     }
 
-    private RawData distributeAsRawData(IActivityHandler.ActivityInvocation activityInvocation, SpacePacket sp, PacketDefinition defToEncode) {
+    private RawData distributeAsRawData(IActivityHandler.ActivityInvocation activityInvocation, SpacePacket sp, PacketDefinition defToEncode, Instant buildTime) {
         RawData rd = new RawData(context.getRawDataBroker().nextRawDataId(), activityInvocation.getGenerationTime(), defToEncode.getId(), defToEncode.getType(),
                 activityInvocation.getRoute(), activityInvocation.getSource(), Quality.GOOD, activityInvocation.getActivityOccurrenceId(), sp.getPacket(),
-                Instant.now(), driverName, null);
+                buildTime, driverName, null);
         rd.setData(sp);
         try {
             context.getRawDataBroker().distribute(Collections.singletonList(rd));
@@ -218,8 +220,8 @@ public class ActivityHandler {
         return spb.build();
     }
 
-    private TcTracker buildTcTracker(IActivityHandler.ActivityInvocation activityInvocation, SpacePacket sp, TcPacketInfo packetInfo) {
-        return new TcTracker(activityInvocation, sp, packetInfo);
+    private TcTracker buildTcTracker(IActivityHandler.ActivityInvocation activityInvocation, SpacePacket sp, TcPacketInfo packetInfo, RawData rd) {
+        return new TcTracker(activityInvocation, sp, packetInfo, rd);
     }
 
     private void convertArrayRecords(PacketDefinition defToEncode, String key, Array value, Map<String, Object> convertedArgumentMap) {

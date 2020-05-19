@@ -40,8 +40,9 @@ import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TimeCorrelationServiceConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketSubscriber;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
 import java.math.BigDecimal;
@@ -67,7 +68,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     private final long propagationDelay;
     private final IRawDataBroker broker;
     private final SpacecraftConfiguration configuration;
-    private final ServiceBroker serviceBroker;
+    private final IServiceBroker IServiceBroker;
     private final ExecutorService timeCoefficientsDistributor;
     private final Instant epoch;
     private volatile int generationPeriod;
@@ -78,14 +79,14 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     // CUC 4,3 has a resolution of 59.6 nsec, CUC 4,4 is at picosecond level
     private volatile Pair<BigDecimal, BigDecimal> obt2gtCoefficients;
 
-    public TimeCorrelationService(String driverName, SpacecraftConfiguration configuration, ServiceCoreConfiguration coreConfiguration, IServiceCoreContext context, ServiceBroker serviceBroker) throws ReatmetricException {
+    public TimeCorrelationService(String driverName, SpacecraftConfiguration configuration, ServiceCoreConfiguration coreConfiguration, IServiceCoreContext context, IServiceBroker IServiceBroker) throws ReatmetricException {
         this.driverName = driverName;
         this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
         this.spacecraftId = configuration.getId();
         this.propagationDelay = configuration.getPropagationDelay();
         this.broker = context.getRawDataBroker();
         this.configuration = configuration;
-        this.serviceBroker = serviceBroker;
+        this.IServiceBroker = IServiceBroker;
         this.generationPeriod =  timeCorrelationConfiguration().getGenerationPeriod();
         this.timeCoefficientsDistributor = Executors.newSingleThreadExecutor((r) -> {
             Thread t = new Thread(r, "Spacecraft " + configuration.getName() + " - Time Correlation Service Coefficients Distributor");
@@ -165,7 +166,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
             return atf != null && atf.getVirtualChannelId() == 0;
         });
         // Subscribe to service broker to intercept time packets (APID 0)
-        serviceBroker.register(this, this::packetFilter);
+        IServiceBroker.register(this, this::packetFilter);
     }
 
     private boolean packetFilter(RawData rawData, SpacePacket spacePacket, Integer type, Integer subtype, Integer destination, Integer source) {
@@ -254,18 +255,8 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     }
 
     @Override
-    public void onTcPacketEncoded(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker) {
-
-    }
-
-    @Override
-    public void onTcPacketReleased(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker) {
-
-    }
-
-    @Override
-    public void onTcPacketFinalResult(RawData packetRawData, SpacePacket spacePacket, TcPusHeader tcPusHeader, TcTracker tcTracker) {
-
+    public void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker) {
+        // TODO: used only for the update of the generation rate
     }
 
     private void addTimeCouple(Instant onboardTime, Instant utcTime) {
@@ -388,7 +379,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     }
 
     public void dispose() {
-        serviceBroker.deregister(this);
+        IServiceBroker.deregister(this);
         broker.unsubscribe(this);
         timeCoefficientsDistributor.shutdown();
     }

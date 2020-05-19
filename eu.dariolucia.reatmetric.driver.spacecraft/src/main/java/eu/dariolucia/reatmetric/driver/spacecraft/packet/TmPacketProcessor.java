@@ -37,7 +37,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPacketConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
@@ -58,10 +58,10 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     private final IRawDataBroker broker;
     private final TmPacketConfiguration configuration;
     private final TimeCorrelationService timeCorrelationService;
-    private final ServiceBroker serviceBroker;
+    private final IServiceBroker IServiceBroker;
     private final boolean[] processedVCs;
 
-    public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, TimeCorrelationService timeCorrelationService, ServiceBroker serviceBroker) {
+    public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, TimeCorrelationService timeCorrelationService, IServiceBroker IServiceBroker) {
         this.spacecraft = String.valueOf(configuration.getId());
         this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
         this.processingModel = context.getProcessingModel();
@@ -69,7 +69,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
         this.broker = context.getRawDataBroker();
         this.configuration = configuration.getTmPacketConfiguration();
         this.timeCorrelationService = timeCorrelationService;
-        this.serviceBroker = serviceBroker;
+        this.IServiceBroker = IServiceBroker;
         this.processedVCs = new boolean[64];
         for(int i = 0; i < this.processedVCs.length; ++i) {
             if(this.configuration.getProcessVcs() != null && this.configuration.getProcessVcs().contains(i)) {
@@ -150,7 +150,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     }
 
     private void notifyExtensionServices(RawData rd, SpacePacket spacePacket, TmPusHeader pusHeader, DecodingResult result) {
-        this.serviceBroker.distributeTmPacket(rd, spacePacket, pusHeader, result);
+        this.IServiceBroker.distributeTmPacket(rd, spacePacket, pusHeader, result);
     }
 
     private void forwardParameterResult(RawData packet, List<ParameterValue> decodedParameters) {

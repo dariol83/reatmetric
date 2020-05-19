@@ -18,18 +18,24 @@ package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
 
-// TODO: make it an active object with service broker
 public class TcTracker {
 
     private final IActivityHandler.ActivityInvocation invocation;
     private final SpacePacket packet;
     private final TcPacketInfo info;
+    private final RawData rawData;
 
-    public TcTracker(IActivityHandler.ActivityInvocation invocation, SpacePacket packet, TcPacketInfo info) {
+    public TcTracker(IActivityHandler.ActivityInvocation invocation, SpacePacket packet, TcPacketInfo info, RawData rd) {
         this.invocation = invocation;
         this.packet = packet;
         this.info = info;
+        this.rawData = rd;
+    }
+
+    public RawData getRawData() {
+        return rawData;
     }
 
     public IActivityHandler.ActivityInvocation getInvocation() {

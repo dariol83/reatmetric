@@ -53,7 +53,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.sle.CltuServiceInstanceManager
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.SleServiceInstanceManager;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.ActivityHandler;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketHandler;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TcDataLinkProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmDataLinkProcessor;
 
@@ -111,7 +111,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private TmDataLinkProcessor tmDataLinkProcessor;
     private TmPacketProcessor tmPacketProcessor;
 
-    private ActivityHandler activityHandler;
+    private TcPacketHandler tcPacketHandler;
     private TcDataLinkProcessor tcDataLinkProcessor;
 
     private ServiceBroker serviceBroker;
@@ -165,7 +165,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     private void loadActivityHandler() {
-        this.activityHandler = new ActivityHandler(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions, this.tcDataLinkProcessor);
+        this.tcPacketHandler = new TcPacketHandler(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions, this.tcDataLinkProcessor);
     }
 
     private void loadRawDataRenderers() {
@@ -255,7 +255,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     private void createCltuServiceInstance(PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration sic) {
         LOG.info("Creating SLE CLTU endpoint for " + sic.getServiceInstanceIdentifier());
-        CltuServiceInstanceManager m = new CltuServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context);
+        CltuServiceInstanceManager m = new CltuServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context, serviceBroker);
         m.prepare();
         this.sleManagers.add(m);
     }
@@ -316,7 +316,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.onboardEventService.dispose();
         this.commandVerificationService.dispose();
         this.serviceBroker.dispose();
-        this.activityHandler.dispose();
+        this.tcPacketHandler.dispose();
         updateStatus(SystemStatus.UNKNOWN);
     }
 
@@ -374,12 +374,12 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     @Override
     public List<String> getSupportedActivityTypes() {
-        return activityHandler.getSupportedActivityTypes();
+        return tcPacketHandler.getSupportedActivityTypes();
     }
 
     @Override
     public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
-        activityHandler.executeActivity(activityInvocation);
+        tcPacketHandler.executeActivity(activityInvocation);
     }
 
     @Override

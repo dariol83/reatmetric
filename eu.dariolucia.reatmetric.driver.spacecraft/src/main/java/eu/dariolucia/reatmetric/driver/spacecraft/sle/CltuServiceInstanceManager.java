@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.sle;
 
+import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.incoming.pdus.CltuTransferDataInvocation;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.outgoing.pdus.CltuAsyncNotifyInvocation;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.outgoing.pdus.CltuStartReturn;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.outgoing.pdus.CltuStatusReportInvocation;
@@ -23,6 +24,7 @@ import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.outgoin
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.common.pdus.SleScheduleStatusReportReturn;
 import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.cltu.CltuServiceInstanceConfiguration;
+import eu.dariolucia.ccsds.sle.utl.pdu.PduFactoryUtil;
 import eu.dariolucia.ccsds.sle.utl.si.ProductionStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ServiceInstance;
 import eu.dariolucia.ccsds.sle.utl.si.ServiceInstanceBindingStateEnum;
@@ -40,9 +42,13 @@ import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
@@ -60,9 +66,11 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
 
     private final Map<Long, TcTracker> cltuId2tracker = new ConcurrentHashMap<>();
     private final AtomicLong cltuCounter = new AtomicLong(0);
+    private final IServiceBroker serviceBroker;
 
-    public CltuServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IServiceCoreContext context) {
+    public CltuServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IServiceCoreContext context, IServiceBroker serviceBroker) {
         super(driverName, peerConfiguration, siConfiguration, spacecraftConfiguration, context);
+        this.serviceBroker = serviceBroker;
     }
 
     @Override
@@ -130,6 +138,7 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         } else {
             reportActivityState(tracker, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.FAIL, ActivityOccurrenceState.TRANSMISSION);
             this.cltuId2tracker.remove(cltuId);
+            // TODO: ask a get parameter for the next CLTU ID
         }
     }
 
@@ -142,12 +151,55 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
             ProductionStatusEnum prodStatus = ProductionStatusEnum.fromCode(operation.getProductionStatus().intValue());
             updateProductionStatus(prodStatus);
             updateMessage("Production status: " + prodStatus.name());
+        } else if (operation.getCltuNotification().getCltuRadiated() != null && operation.getCltuLastProcessed().getCltuProcessed() != null) {
+            // The CLTU identified by the value of the cltu-last-processed parameter successfully completed radiation
+            long cltuId = operation.getCltuLastProcessed().getCltuProcessed().getCltuIdentification().longValue();
+            Instant radiationTime = null;
+            if (operation.getCltuLastProcessed().getCltuProcessed().getStartRadiationTime() != null) {
+                radiationTime = PduFactoryUtil.toInstant(operation.getCltuLastProcessed().getCltuProcessed().getStartRadiationTime());
+            }
+            if (radiationTime == null) {
+                radiationTime = Instant.now();
+            }
+            cltuRadiated(cltuId, radiationTime);
+        } else if(operation.getCltuNotification().getSlduExpired() != null && operation.getCltuLastProcessed().getCltuProcessed() != null) {
+            // Radiation of the CLTU identified by the value of the cltu-lastprocessed parameter did not begin by the time specified in the
+            // latestradiation-time parameter of the associated CLTU-TRANSFER-DATA invocation. No further CLTUs shall be radiated; buffered CLTUs shall be discarded;
+            // and further CLTU-TRANSFER-DATA invocations shall be blocked, i.e., rejected with an ‘unable to process’ diagnostic.
+            long cltuId = operation.getCltuLastProcessed().getCltuProcessed().getCltuIdentification().longValue();
+            cltuNotRadiated(cltuId);
+            Set<Long> discardedCltus = new HashSet<>(this.cltuId2tracker.keySet());
+            for(Long discardedId : discardedCltus) {
+                cltuNotRadiated(discardedId);
+            }
+            // TODO: ask a get parameter for the next CLTU ID
+        } else if(operation.getCltuNotification().getProductionInterrupted() != null) {
+            // No further CLTUs shall be radiated; buffered CLTUs shall be discarded; and, in state 3 (‘active’), further CLTU-TRANSFER-DATA
+            // invocations shall be blocked, i.e., rejected with an ‘unable to process’ diagnostic
             // TODO other cases
             // TODO report radiation
         } else if(operation.getCltuNotification().getBufferEmpty() != null) {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": CLTU buffer empty");
         } else {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Unknown CLTU ASYNC NOTIFY received");
+        }
+    }
+
+    private void cltuRadiated(long cltuId, Instant radiationTime) {
+        TcTracker tracker = this.cltuId2tracker.remove(cltuId);
+        if(tracker != null) {
+            serviceBroker.informTcPacket(TcPacketPhase.UPLINKED, radiationTime, tracker);
+        } else {
+            // TODO log
+        }
+    }
+
+    private void cltuNotRadiated(long cltuId) {
+        TcTracker tracker = this.cltuId2tracker.remove(cltuId);
+        if(tracker != null) {
+            serviceBroker.informTcPacket(TcPacketPhase.FAILED, Instant.now(), tracker);
+        } else {
+            // TODO log
         }
     }
 
@@ -184,24 +236,25 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
     public void sendCltu(byte[] encodedCltu, TcTracker tracker) {
         if(this.serviceInstance.getCurrentBindingState() != ServiceInstanceBindingStateEnum.ACTIVE) {
             LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": transmission of activity " + tracker.getInvocation().getActivityId() + ", " + tracker.getInvocation().getActivityOccurrenceId() + " failed: service instance not active");
-            reportActivityState(tracker, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FAIL, ActivityOccurrenceState.RELEASE);
             reportTcFailed(tracker);
+            reportActivityState(tracker, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FAIL, ActivityOccurrenceState.RELEASE);
             return;
         }
         long thisCounter = this.cltuCounter.getAndIncrement();
         this.cltuId2tracker.put(thisCounter, tracker);
-        reportActivityState(tracker, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
         reportTcReleased(tracker);
+        reportActivityState(tracker, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
+
         reportActivityState(tracker, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
         this.serviceInstance.transferData(thisCounter, null, null, 20000000, true, encodedCltu);
     }
 
     private void reportTcReleased(TcTracker tracker) {
-        // TODO service broker
+        serviceBroker.informTcPacket(TcPacketPhase.RELEASED, Instant.now(), tracker);
     }
 
     private void reportTcFailed(TcTracker tracker) {
-        // TODO service broker
+        serviceBroker.informTcPacket(TcPacketPhase.FAILED, Instant.now(), tracker);
     }
 
     private void reportActivityState(TcTracker tracker, ActivityOccurrenceState state, String name, ActivityReportState status, ActivityOccurrenceState nextState) {
@@ -211,6 +264,14 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
     @Override
     public void onPduSentError(ServiceInstance si, Object operation, String name, byte[] encodedOperation, String error, Exception exception) {
         super.onPduSentError(si, operation, name, encodedOperation, error, exception);
-        // TODO: handle error on CLTU transfer data transmission
+        // handle error on CLTU transfer data transmission
+        if(operation instanceof CltuTransferDataInvocation) {
+            long cltuId = ((CltuTransferDataInvocation) operation).getCltuIdentification().longValue();
+            TcTracker tracker = cltuId2tracker.remove(cltuId);
+            if(tracker != null) {
+                reportTcFailed(tracker);
+                reportActivityState(tracker, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.FAIL, ActivityOccurrenceState.TRANSMISSION);
+            }
+        }
     }
 }
