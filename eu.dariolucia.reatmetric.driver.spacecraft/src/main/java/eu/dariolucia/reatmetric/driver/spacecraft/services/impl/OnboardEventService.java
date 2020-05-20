@@ -16,7 +16,6 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.services.impl;
 
-import eu.dariolucia.ccsds.encdec.pus.TcPusHeader;
 import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;

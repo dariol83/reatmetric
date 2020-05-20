@@ -168,14 +168,15 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
             // and further CLTU-TRANSFER-DATA invocations shall be blocked, i.e., rejected with an ‘unable to process’ diagnostic.
             long cltuId = operation.getCltuLastProcessed().getCltuProcessed().getCltuIdentification().longValue();
             cltuNotRadiated(cltuId);
-            Set<Long> discardedCltus = new HashSet<>(this.cltuId2tracker.keySet());
-            for(Long discardedId : discardedCltus) {
-                cltuNotRadiated(discardedId);
-            }
+            purgeOutstandingCltus();
             // TODO: ask a get parameter for the next CLTU ID
         } else if(operation.getCltuNotification().getProductionInterrupted() != null) {
             // No further CLTUs shall be radiated; buffered CLTUs shall be discarded; and, in state 3 (‘active’), further CLTU-TRANSFER-DATA
             // invocations shall be blocked, i.e., rejected with an ‘unable to process’ diagnostic
+            purgeOutstandingCltus();
+        } else if(operation.getCltuNotification().getProductionHalted() != null) {
+            // TODO
+        } else if(operation.getCltuNotification().getProductionOperational() != null) {
             // TODO other cases
             // TODO report radiation
         } else if(operation.getCltuNotification().getBufferEmpty() != null) {
@@ -185,12 +186,19 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         }
     }
 
+    private void purgeOutstandingCltus() {
+        Set<Long> discardedCltus = new HashSet<>(this.cltuId2tracker.keySet());
+        for(Long discardedId : discardedCltus) {
+            cltuNotRadiated(discardedId);
+        }
+    }
+
     private void cltuRadiated(long cltuId, Instant radiationTime) {
         TcTracker tracker = this.cltuId2tracker.remove(cltuId);
         if(tracker != null) {
             serviceBroker.informTcPacket(TcPacketPhase.UPLINKED, radiationTime, tracker);
         } else {
-            // TODO log
+            LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": received notification of radiation for CLTU " + cltuId + " not present in the system");
         }
     }
 
@@ -199,7 +207,7 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         if(tracker != null) {
             serviceBroker.informTcPacket(TcPacketPhase.FAILED, Instant.now(), tracker);
         } else {
-            // TODO log
+            LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": received radiation problem for CLTU " + cltuId + " not present in the system");
         }
     }
 
