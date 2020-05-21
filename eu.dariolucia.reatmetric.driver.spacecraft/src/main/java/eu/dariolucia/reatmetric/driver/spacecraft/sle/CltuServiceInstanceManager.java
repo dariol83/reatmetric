@@ -29,19 +29,12 @@ import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuDiagnosticsStrings;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuParameterEnum;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuServiceInstance;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuUplinkStatusEnum;
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
-import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
-import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -54,15 +47,11 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * A CLTU can contain more than one packet, and also a CLTU can contain a part of a packet. This is the reason why this class
- * handles a list of {@link TcTracker} objects per CLTU invocation.
- * <p>
- * This class has also a subscription mechanism, which allows subscribers to know the status of a CLTU (ACCEPTED, REJECTED, UPLINKED, FAILED, DISCARDED).
+ * This class has a subscription mechanism, which allows subscribers to know the status of a CLTU (ACCEPTED, REJECTED, UPLINKED, FAILED, DISCARDED).
  */
 public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuServiceInstance, CltuServiceInstanceConfiguration> {
 
@@ -76,22 +65,20 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
 
     private final Map<Long, CltuTracker> cltuId2tracker = new ConcurrentHashMap<>();
     private final AtomicLong cltuCounter = new AtomicLong(0);
-    private final IServiceBroker serviceBroker;
 
     private final Semaphore cltuIdRefreshSemaphore = new Semaphore(0);
 
-    private final List<BiConsumer<Long, CltuProcessingStatus>> subscribers = new CopyOnWriteArrayList<>();
+    private final List<ICltuStatusSubscriber> subscribers = new CopyOnWriteArrayList<>();
 
-    public CltuServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IServiceCoreContext context, IServiceBroker serviceBroker) {
+    public CltuServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IServiceCoreContext context) {
         super(driverName, peerConfiguration, siConfiguration, spacecraftConfiguration, context);
-        this.serviceBroker = serviceBroker;
     }
 
-    public void register(BiConsumer<Long, CltuProcessingStatus> listener) {
+    public void register(ICltuStatusSubscriber listener) {
         this.subscribers.add(listener);
     }
 
-    public void deregister(BiConsumer<Long, CltuProcessingStatus> listener) {
+    public void deregister(ICltuStatusSubscriber listener) {
         this.subscribers.remove(listener);
     }
 
@@ -198,13 +185,10 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
             return;
         }
         if (operation.getResult().getPositiveResult() != null) {
-            subscribers.forEach(o -> o.accept(tracker.getExternalId(), CltuProcessingStatus.ACCEPTED));
-            reportActivityState(tracker.getTcTracker(), ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
-            reportActivityState(tracker.getTcTracker(), ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_UPLINK, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+            informSubscribers(tracker.getExternalId(), CltuProcessingStatus.ACCEPTED);
         } else {
             LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": negative CLTU TRANSFER DATA return: " + CltuDiagnosticsStrings.getTransferDataDiagnostic(operation.getResult().getNegativeResult()));
-            subscribers.forEach(o -> o.accept(tracker.getExternalId(), CltuProcessingStatus.REJECTED));
-            reportActivityState(tracker.getTcTracker(), ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.FAIL, ActivityOccurrenceState.TRANSMISSION);
+            informSubscribers(tracker.getExternalId(), CltuProcessingStatus.REJECTED);
             this.cltuId2tracker.remove(cltuId);
             increaseEstimatedFreeBuffer(tracker.getCltu().length);
             refreshExpectedCltuId();
@@ -287,9 +271,8 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         LOG.log(Level.INFO, serviceInstance.getServiceInstanceIdentifier() + ": CLTU " + cltuId + " radiated");
         CltuTracker tracker = this.cltuId2tracker.remove(cltuId);
         if (tracker != null) {
-            subscribers.forEach(o -> o.accept(tracker.getExternalId(), CltuProcessingStatus.UPLINKED));
+            informSubscribers(tracker.getExternalId(), CltuProcessingStatus.UPLINKED, radiationTime);
             increaseEstimatedFreeBuffer(tracker.getCltu().length);
-            informServiceBroker(TcPacketPhase.UPLINKED, radiationTime, tracker.getTcTracker());
         } else {
             LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": received notification of radiation for CLTU " + cltuId + " not present in the system");
         }
@@ -320,9 +303,8 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         LOG.log(Level.INFO, serviceInstance.getServiceInstanceIdentifier() + ": CLTU " + cltuId + " not radiated");
         CltuTracker tracker = this.cltuId2tracker.remove(cltuId);
         if (tracker != null) {
-            subscribers.forEach(o -> o.accept(tracker.getExternalId(), CltuProcessingStatus.FAILED));
+            informSubscribers(tracker.getExternalId(), CltuProcessingStatus.FAILED);
             increaseEstimatedFreeBuffer(tracker.getCltu().length);
-            informServiceBroker(TcPacketPhase.FAILED, Instant.now(), tracker.getTcTracker());
         } else {
             LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": received radiation problem for CLTU " + cltuId + " not present in the system");
         }
@@ -335,12 +317,6 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         } else {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Production status " + prodStatus);
             updateAlarmState(AlarmState.ALARM);
-        }
-    }
-
-    private void informServiceBroker(TcPacketPhase phase, Instant time, List<TcTracker> trackers) {
-        for (TcTracker tracker : trackers) {
-            serviceBroker.informTcPacket(phase, time, tracker);
         }
     }
 
@@ -366,41 +342,22 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         serviceInstance.stop();
     }
 
-    public void sendCltu(byte[] encodedCltu, long externalId, List<TcTracker> trackers) {
+    public void sendCltu(byte[] encodedCltu, long externalId) {
         if (this.serviceInstance.getCurrentBindingState() != ServiceInstanceBindingStateEnum.ACTIVE) {
             LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": transmission of CLTU with external ID " + externalId + " failed: service instance state is " + this.serviceInstance.getCurrentBindingState());
-            reportTcFailed(trackers);
-            reportActivityState(trackers, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FAIL, ActivityOccurrenceState.RELEASE);
+            informSubscribers(externalId, CltuProcessingStatus.RELEASED_FAILED);
             return;
         }
         boolean goAhead = decreaseEstimatedFreeBuffer(encodedCltu.length);
         if (!goAhead) {
             LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": transmission of CLTU with external ID " + externalId + " failed: remote CLTU buffer availability failed");
-            reportTcFailed(trackers);
-            reportActivityState(trackers, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FAIL, ActivityOccurrenceState.RELEASE);
+            informSubscribers(externalId, CltuProcessingStatus.RELEASED_FAILED);
             return;
         }
         long thisCounter = this.cltuCounter.getAndIncrement();
-        this.cltuId2tracker.put(thisCounter, new CltuTracker(externalId, trackers, encodedCltu));
-        reportTcReleased(trackers);
-        reportActivityState(trackers, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
-        reportActivityState(trackers, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+        this.cltuId2tracker.put(thisCounter, new CltuTracker(externalId, encodedCltu));
+        informSubscribers(externalId, CltuProcessingStatus.RELEASED);
         this.serviceInstance.transferData(thisCounter, null, null, 20000000, true, encodedCltu);
-    }
-
-    private void reportTcReleased(List<TcTracker> trackers) {
-        informServiceBroker(TcPacketPhase.FAILED, Instant.now(), trackers);
-    }
-
-    private void reportTcFailed(List<TcTracker> trackers) {
-        informServiceBroker(TcPacketPhase.FAILED, Instant.now(), trackers);
-    }
-
-    private void reportActivityState(List<TcTracker> trackers, ActivityOccurrenceState state, String name, ActivityReportState status, ActivityOccurrenceState nextState) {
-        Instant t = Instant.now();
-        for (TcTracker tracker : trackers) {
-            context.getProcessingModel().reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), name, t, state, null, status, nextState, null));
-        }
     }
 
     @Override
@@ -412,19 +369,28 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
             CltuTracker tracker = cltuId2tracker.remove(cltuId);
             if (tracker != null) {
                 increaseEstimatedFreeBuffer(tracker.getCltu().length);
-                reportTcFailed(tracker.getTcTracker());
-                reportActivityState(tracker.getTcTracker(), ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.FAIL, ActivityOccurrenceState.TRANSMISSION);
+                informSubscribers(tracker.getExternalId(), CltuProcessingStatus.RELEASED_FAILED);
             }
         }
     }
 
+    private void informSubscribers(long externalId, CltuProcessingStatus status) {
+        informSubscribers(externalId, status, Instant.now());
+    }
+
+    private void informSubscribers(long externalId, CltuProcessingStatus status, Instant time) {
+        subscribers.forEach(o -> o.informStatusUpdate(externalId, status, time));
+    }
+
+    public interface ICltuStatusSubscriber {
+        void informStatusUpdate(long id, CltuProcessingStatus status, Instant time);
+    }
+
     private static class CltuTracker {
         private final long externalId;
-        private final List<TcTracker> tcTracker;
         private final byte[] cltu;
 
-        public CltuTracker(long externalId, List<TcTracker> tcTracker, byte[] cltu) {
-            this.tcTracker = List.copyOf(tcTracker);
+        public CltuTracker(long externalId, byte[] cltu) {
             this.cltu = cltu;
             this.externalId = externalId;
         }
@@ -433,16 +399,12 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
             return externalId;
         }
 
-        public List<TcTracker> getTcTracker() {
-            return tcTracker;
-        }
-
         public byte[] getCltu() {
             return cltu;
         }
     }
 
     public enum CltuProcessingStatus {
-        ACCEPTED, REJECTED, UPLINKED, FAILED
+        RELEASED, RELEASED_FAILED, ACCEPTED, REJECTED, UPLINKED, FAILED
     }
 }

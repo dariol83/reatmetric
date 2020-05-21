@@ -255,7 +255,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     private void createCltuServiceInstance(PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration sic) {
         LOG.info("Creating SLE CLTU endpoint for " + sic.getServiceInstanceIdentifier());
-        CltuServiceInstanceManager m = new CltuServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context, serviceBroker);
+        CltuServiceInstanceManager m = new CltuServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context);
         m.prepare();
         this.sleManagers.add(m);
     }
