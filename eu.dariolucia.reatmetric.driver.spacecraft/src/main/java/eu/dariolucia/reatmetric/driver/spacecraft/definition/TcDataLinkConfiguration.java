@@ -29,11 +29,17 @@ public class TcDataLinkConfiguration {
     @XmlAttribute(name = "randomize")
     private boolean randomize = true;
 
+    @XmlAttribute(name = "ad-mode-default")
+    private boolean adModeDefault = false;
+
     @XmlAttribute(name = "segmentation")
     private boolean segmentation = false;
 
     @XmlAttribute(name = "map-id")
     private int mapId = 0;
+
+    @XmlAttribute(name = "fecf")
+    private boolean fecf = true;
 
     public TcDataLinkConfiguration() {
     }
@@ -68,5 +74,21 @@ public class TcDataLinkConfiguration {
 
     public void setMapId(int mapId) {
         this.mapId = mapId;
+    }
+
+    public boolean isAdModeDefault() {
+        return adModeDefault;
+    }
+
+    public void setAdModeDefault(boolean adModeDefault) {
+        this.adModeDefault = adModeDefault;
+    }
+
+    public boolean isFecf() {
+        return false;
+    }
+
+    public void setFecf(boolean fecf) {
+        this.fecf = fecf;
     }
 }
