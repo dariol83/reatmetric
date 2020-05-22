@@ -101,14 +101,14 @@ public class TcPacketHandler {
     public void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
         //
         if(context.getProcessingModel() == null) {
-            throw new ActivityHandlingException("Invocation for activity occurrence " + activityInvocation.getActivityOccurrenceId() + " of external ID " + activityInvocation.getActivityId()
+            throw new ActivityHandlingException("Invocation for activity occurrence " + activityInvocation.getActivityOccurrenceId() + " of " + activityInvocation.getPath()
                     + " cannot be processed: processing model not available");
         }
         // Get the encoding definition
         PacketDefinition defToEncode = externalId2packet.get((long) activityInvocation.getActivityId());
         if(defToEncode == null) {
-            throw new ActivityHandlingException("Invocation for activity occurrence " + activityInvocation.getActivityOccurrenceId() + " of external ID " + activityInvocation.getActivityId()
-            + " cannot be processed: TC packet definition not found");
+            throw new ActivityHandlingException("Invocation for activity occurrence " + activityInvocation.getActivityOccurrenceId() + " of " + activityInvocation.getPath()
+            + " cannot be processed: TC packet definition not found for external ID " + activityInvocation.getActivityId());
         }
         tcExecutor.execute(() -> encodeAndDispatchTc(activityInvocation, defToEncode));
     }
@@ -192,7 +192,7 @@ public class TcPacketHandler {
         try {
             context.getRawDataBroker().distribute(Collections.singletonList(rd));
         } catch (ReatmetricException e) {
-            LOG.log(Level.SEVERE, "Error when distributing encoded TC packet " + defToEncode.getId() + " for activity ID " + activityInvocation.getActivityId() + " to raw data broker: " + e.getMessage(), e);
+            LOG.log(Level.SEVERE, "Error when distributing encoded TC packet " + defToEncode.getId() + " for activity " + activityInvocation.getPath() + " to raw data broker: " + e.getMessage(), e);
         }
         return rd;
     }

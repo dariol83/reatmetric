@@ -293,7 +293,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         this.displayTitledPane.setDisable(true);
 
         if(oldState) {
-            persistColumnConfiguration();
+            persistColumnConfiguration(system);
         }
         // Clear the table                
         clearTable();
@@ -322,8 +322,8 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
     }
     
-    private void persistColumnConfiguration() {
-        TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+    private void persistColumnConfiguration(IReatmetricSystem system) {
+        TableViewUtil.persistColumnConfiguration(system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
     }
 
     protected void informDataItemsReceived(List<T> objects) {

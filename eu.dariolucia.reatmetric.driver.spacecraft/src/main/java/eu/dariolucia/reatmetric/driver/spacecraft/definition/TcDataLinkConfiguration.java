@@ -19,37 +19,33 @@ package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import java.util.LinkedList;
+import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class TcDataLinkConfiguration {
 
-    @XmlAttribute(name = "tc-vc")
-    private int tcVc = 0;
-
     @XmlAttribute(name = "randomize")
     private boolean randomize = true;
-
-    @XmlAttribute(name = "ad-mode-default")
-    private boolean adModeDefault = false;
-
-    @XmlAttribute(name = "segmentation")
-    private boolean segmentation = false;
-
-    @XmlAttribute(name = "map-id")
-    private int mapId = 0;
 
     @XmlAttribute(name = "fecf")
     private boolean fecf = true;
 
-    public TcDataLinkConfiguration() {
-    }
+    @XmlAttribute(name = "ad-mode-default")
+    private boolean adModeDefault = false;
 
-    public int getTcVc() {
-        return tcVc;
-    }
+    @XmlElement(name = "tc-vc-descriptor")
+    private List<TcVcConfiguration> tcVcDescriptors = new LinkedList<>();
 
-    public void setTcVc(int tcVc) {
-        this.tcVc = tcVc;
+    public int getDefaultTcVc() {
+        for(TcVcConfiguration tcVc : tcVcDescriptors) {
+            if(tcVc.isDefaultTcVc()) {
+                return tcVc.getTcVc();
+            }
+        }
+        // Return the first one
+        return tcVcDescriptors.get(0).getTcVc();
     }
 
     public boolean isRandomize() {
@@ -58,22 +54,6 @@ public class TcDataLinkConfiguration {
 
     public void setRandomize(boolean randomize) {
         this.randomize = randomize;
-    }
-
-    public boolean isSegmentation() {
-        return segmentation;
-    }
-
-    public void setSegmentation(boolean segmentation) {
-        this.segmentation = segmentation;
-    }
-
-    public int getMapId() {
-        return mapId;
-    }
-
-    public void setMapId(int mapId) {
-        this.mapId = mapId;
     }
 
     public boolean isAdModeDefault() {
@@ -90,5 +70,13 @@ public class TcDataLinkConfiguration {
 
     public void setFecf(boolean fecf) {
         this.fecf = fecf;
+    }
+
+    public List<TcVcConfiguration> getTcVcDescriptors() {
+        return tcVcDescriptors;
+    }
+
+    public void setTcVcDescriptors(List<TcVcConfiguration> tcVcDescriptors) {
+        this.tcVcDescriptors = tcVcDescriptors;
     }
 }

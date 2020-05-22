@@ -57,8 +57,9 @@ public class Constants {
     public static final String ACTIVITY_PROPERTY_OVERRIDE_MAP_ID = "map-id-override";
     public static final String ACTIVITY_PROPERTY_SCHEDULED_TIME = "tc-scheduled-time";
     public static final String ACTIVITY_PROPERTY_OVERRIDE_TCVC_ID = "tc-vc-id-override";
-    public static final String ACTIVITY_PROPERTY_OVERRIDE_TC_SEGMENT = "use-tc-segment-override";
     public static final String ACTIVITY_PROPERTY_OVERRIDE_USE_AD_FRAME = "use-ad-mode-override";
+    public static final String ACTIVITY_PROPERTY_TC_GROUP_NAME = "group-tc-name";
+    public static final String ACTIVITY_PROPERTY_TC_GROUP_TRANSMIT = "group-tc-transmit";
 
     // Activity stages
     public static final String STAGE_GROUND_STATION_RECEPTION = "Ground Station Reception";

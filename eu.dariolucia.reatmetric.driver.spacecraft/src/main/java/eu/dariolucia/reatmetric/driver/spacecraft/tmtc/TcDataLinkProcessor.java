@@ -38,6 +38,7 @@ import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcVcConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.CltuServiceInstanceManager;
@@ -48,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelSenderOutput<TcTransferFrame>, CltuServiceInstanceManager.ICltuStatusSubscriber {
 
@@ -59,7 +61,8 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     private final IServiceBroker serviceBroker;
     private final AtomicLong cltuSequencer = new AtomicLong();
 
-    private final TcSenderVirtualChannel[] tcChannels;
+    private final Pair<TcVcConfiguration, TcSenderVirtualChannel>[] tcChannels;
+    private final int defaultTcVcId;
     private final ChannelEncoder<TcTransferFrame> encoder;
 
     private final List<TcTracker> pendingTcPackets = new LinkedList<>();
@@ -83,12 +86,15 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         }
         this.encoder.addEncodingFunction(new CltuEncoder<>()).configure();
         // Allocate the TC channels
-        this.tcChannels = new TcSenderVirtualChannel[8];
+        this.tcChannels = new Pair[8];
         for(int i = 0; i < tcChannels.length; ++i) {
-            // TODO segmentation should be changed per invocation in ccsds.tmtc
-            tcChannels[i] = new TcSenderVirtualChannel(configuration.getId(), i, VirtualChannelAccessMode.PACKET, configuration.getTcDataLinkConfiguration().isFecf(), configuration.getTcDataLinkConfiguration().isSegmentation());
-            tcChannels[i].register(this);
+            TcVcConfiguration tcConf = getTcVcConfiguration(i, configuration.getTcDataLinkConfiguration().getTcVcDescriptors());
+            if(tcConf != null) {
+                tcChannels[i] = Pair.of(tcConf, new TcSenderVirtualChannel(configuration.getId(), i, VirtualChannelAccessMode.PACKET, configuration.getTcDataLinkConfiguration().isFecf(), tcConf.isSegmentation()));
+                tcChannels[i].getSecond().register(this);
+            }
         }
+        this.defaultTcVcId = configuration.getTcDataLinkConfiguration().getDefaultTcVc();
         // Register for frames to the raw data broker
         this.context.getRawDataBroker().subscribe(this, null,
                 new RawDataFilter(true, null, null,
@@ -101,6 +107,15 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             this.cltuSenders.put(m.getServiceInstanceIdentifier(), m);
             m.register(this);
         }
+    }
+
+    private TcVcConfiguration getTcVcConfiguration(int tcVcId, List<TcVcConfiguration> tcVcDescriptors) {
+        for(TcVcConfiguration vcc : tcVcDescriptors) {
+            if(tcVcId == vcc.getTcVc()) {
+                return vcc;
+            }
+        }
+        return null;
     }
 
     public void setAdMode(boolean useAdMode) {
@@ -126,34 +141,60 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     }
 
     public void sendTcPacket(SpacePacket sp, TcTracker tcTracker) {
-        // overridden TC VC ID
-        int tcVcId = configuration.getTcDataLinkConfiguration().getTcVc();
+        // Overridden TC VC ID
+        int tcVcId = defaultTcVcId;
         if(tcTracker.getInvocation().getProperties().containsKey(Constants.ACTIVITY_PROPERTY_OVERRIDE_TCVC_ID)) {
             tcVcId = Integer.parseInt(tcTracker.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_OVERRIDE_TCVC_ID));
         }
 
-        // TODO: overridden segmentation - missing support in ccsds.tmtc
-        boolean useSegmentation = configuration.getTcDataLinkConfiguration().isSegmentation();
-        if(tcTracker.getInvocation().getProperties().containsKey(Constants.ACTIVITY_PROPERTY_OVERRIDE_TC_SEGMENT)) {
-            useSegmentation = Boolean.parseBoolean(tcTracker.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_OVERRIDE_TC_SEGMENT));
+        // Look for TC VC ID
+        Pair<TcVcConfiguration, TcSenderVirtualChannel> vcToUse = tcChannels[tcVcId];
+        if(vcToUse == null) {
+            LOG.log(Level.SEVERE, "Transmission of space packet from activity " + tcTracker.getInvocation().getPath() + " on TC VC " + tcVcId + " not possible: TC VC " + tcVcId + " not configured");
+            Instant t = Instant.now();
+            informServiceBroker(TcPacketPhase.FAILED, t, Collections.singletonList(tcTracker));
+            reportActivityState(Collections.singletonList(tcTracker), t, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE);
+            return;
         }
-        int map = tcTracker.getInfo().isMapUsed() ? tcTracker.getInfo().getMap() : -1; // This means segmentation is needed, overridden map already taken into account
 
-        // overriden mode (AD or BD)
+        // Map ID: only used if segmentation is used
+        int map = tcTracker.getInfo().isMapUsed() ? tcTracker.getInfo().getMap() : vcToUse.getFirst().getMapId(); // This means segmentation is needed, overridden map already taken into account
+
+        // Overriden mode (AD or BD)
         boolean useAd = this.useAdMode;
         if(tcTracker.getInvocation().getProperties().containsKey(Constants.ACTIVITY_PROPERTY_OVERRIDE_USE_AD_FRAME)) {
             useAd = Boolean.parseBoolean(tcTracker.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_OVERRIDE_USE_AD_FRAME));
         }
 
-        // TODO: this approach assumes 1 frame for 1 tc packet, but you have to support more tc packets in a single frame (use group properties -> multiple different TcTrackers) as well as more
-        //  frames for a single large tc packet.
-        pendingTcPackets.clear();
-        lastGeneratedFrames.clear();
-
-        pendingTcPackets.add(tcTracker);
-        tcChannels[tcVcId].dispatch(useAd, map, sp);
+        // Check if this command is part of a group command: a group command is a sequence of TCs that is encoded and sent in a single TC frame
+        String groupName = tcTracker.getInvocation().getProperties().getOrDefault(Constants.ACTIVITY_PROPERTY_TC_GROUP_NAME, null);
+        if(groupName != null) {
+            // Retrieve the group if it exists, or create a new one
+            List<TcTracker> groupList = this.pendingGroupTcs.computeIfAbsent(groupName, o -> new LinkedList<>());
+            // Add the TC
+            groupList.add(tcTracker);
+            // If this is the last TC in the group, send the group
+            String transmit = tcTracker.getInvocation().getProperties().getOrDefault(Constants.ACTIVITY_PROPERTY_TC_GROUP_TRANSMIT, Boolean.FALSE.toString());
+            if(transmit.equals(Boolean.TRUE.toString())) {
+                this.pendingGroupTcs.remove(groupName);
+                lastGeneratedFrames.clear();
+                pendingTcPackets.clear();
+                pendingTcPackets.addAll(groupList);
+                vcToUse.getSecond().dispatch(useAd, map, groupList.stream().map(TcTracker::getPacket).collect(Collectors.toList()));
+                // Now lastGeneratedFrames will contain the TC frames ready to be sent
+            } else {
+                // You are done for now
+                return;
+            }
+        } else {
+            // No group, send it right away
+            lastGeneratedFrames.clear();
+            pendingTcPackets.clear();
+            pendingTcPackets.add(tcTracker);
+            vcToUse.getSecond().dispatch(useAd, map, sp);
+            // Now lastGeneratedFrames will contain the TC frames ready to be sent
+        }
         // Now you have the generated frames, prepare for tracking them, encode them and send them
-
         // Retrieve the route and hence the service instance to use
         String route = tcTracker.getInvocation().getRoute();
         CltuServiceInstanceManager serviceInstance = this.cltuSenders.get(route);
@@ -180,8 +221,8 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             m.deregister(this);
         }
         this.context.getRawDataBroker().unsubscribe(this);
-        for (TcSenderVirtualChannel tcChannel : tcChannels) {
-            tcChannel.deregister(this);
+        for (Pair<TcVcConfiguration, TcSenderVirtualChannel> tcChannel : tcChannels) {
+            tcChannel.getSecond().deregister(this);
         }
     }
 
