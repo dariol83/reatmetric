@@ -319,11 +319,15 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
     
     private void restoreColumnConfiguration() {
-        TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+        if(system != null) {
+            TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+        }
     }
     
     private void persistColumnConfiguration(IReatmetricSystem system) {
-        TableViewUtil.persistColumnConfiguration(system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+        if(system != null) {
+            TableViewUtil.persistColumnConfiguration(system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+        }
     }
 
     protected void informDataItemsReceived(List<T> objects) {
