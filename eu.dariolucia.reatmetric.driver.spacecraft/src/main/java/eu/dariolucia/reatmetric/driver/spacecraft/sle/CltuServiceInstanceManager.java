@@ -31,9 +31,9 @@ import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuServiceInstance;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuUplinkStatusEnum;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
 import java.time.Instant;
@@ -64,6 +64,8 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
     private final AtomicInteger estimatedFreeBuffer = new AtomicInteger();
 
     private final Map<Long, CltuTracker> cltuId2tracker = new ConcurrentHashMap<>();
+    private final Map<Long, CltuTransferDataInvocation> invokeId2InvocationCorrelationMap = new ConcurrentHashMap<>();
+
     private final AtomicLong cltuCounter = new AtomicLong(0);
 
     private final Semaphore cltuIdRefreshSemaphore = new Semaphore(0);
@@ -166,7 +168,7 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         }
         this.uplinkStatus = CltuUplinkStatusEnum.values()[operation.getUplinkStatus().intValue()];
         ProductionStatusEnum prodStatus = ProductionStatusEnum.fromCode(operation.getCltuProductionStatus().intValue());
-        updateProductionStatus(prodStatus);
+        updateProductionStatus(prodStatus, uplinkStatus);
     }
 
     private void process(SleScheduleStatusReportReturn operation) {
@@ -178,16 +180,22 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
     }
 
     private void process(CltuTransferDataReturn operation) {
-        long cltuId = operation.getCltuIdentification().longValue();
+        CltuTransferDataInvocation invocation = this.invokeId2InvocationCorrelationMap.remove(operation.getInvokeId().longValue());
+        if (invocation == null) {
+            LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": CLTU return with invokeId " + operation.getInvokeId().longValue() + " not sent by this system");
+            return;
+        }
+        long cltuId = invocation.getCltuIdentification().longValue();
         CltuTracker tracker = this.cltuId2tracker.get(cltuId);
         if (tracker == null) {
-            LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": CLTU ID " + cltuId + " not send by this system");
+            LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": CLTU ID " + cltuId + " not sent by this system");
             return;
         }
         if (operation.getResult().getPositiveResult() != null) {
+            LOG.log(Level.INFO, "CLTU ID " + tracker.getExternalId() + " accepted");
             informSubscribers(tracker.getExternalId(), CltuProcessingStatus.ACCEPTED);
         } else {
-            LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": negative CLTU TRANSFER DATA return: " + CltuDiagnosticsStrings.getTransferDataDiagnostic(operation.getResult().getNegativeResult()));
+            LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": negative CLTU TRANSFER DATA return for CLTU ID " + tracker.getExternalId() + ": " + CltuDiagnosticsStrings.getTransferDataDiagnostic(operation.getResult().getNegativeResult()));
             informSubscribers(tracker.getExternalId(), CltuProcessingStatus.REJECTED);
             this.cltuId2tracker.remove(cltuId);
             increaseEstimatedFreeBuffer(tracker.getCltu().length);
@@ -208,15 +216,7 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
     }
 
     private void process(CltuAsyncNotifyInvocation operation) {
-        if (operation.getUplinkStatus() != null) {
-            LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": uplink status changed: " + CltuUplinkStatusEnum.values()[operation.getUplinkStatus().intValue()]);
-            this.uplinkStatus = CltuUplinkStatusEnum.values()[operation.getUplinkStatus().intValue()];
-            updateMessage("Uplink status: " + this.uplinkStatus);
-        } else if (operation.getProductionStatus() != null) {
-            ProductionStatusEnum prodStatus = ProductionStatusEnum.fromCode(operation.getProductionStatus().intValue());
-            updateProductionStatus(prodStatus);
-            updateMessage("Production status: " + prodStatus.name());
-        } else if (operation.getCltuNotification().getCltuRadiated() != null && operation.getCltuLastProcessed().getCltuProcessed() != null) {
+        if (operation.getCltuNotification().getCltuRadiated() != null && operation.getCltuLastProcessed().getCltuProcessed() != null) {
             // The CLTU identified by the value of the cltu-last-processed parameter successfully completed radiation
             long cltuId = operation.getCltuLastProcessed().getCltuProcessed().getCltuIdentification().longValue();
             Instant radiationTime = null;
@@ -258,6 +258,9 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         } else {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Unknown CLTU ASYNC NOTIFY received");
         }
+        this.uplinkStatus = CltuUplinkStatusEnum.values()[operation.getUplinkStatus().intValue()];
+        ProductionStatusEnum prodStatus = ProductionStatusEnum.fromCode(operation.getProductionStatus().intValue());
+        updateProductionStatus(prodStatus, uplinkStatus);
     }
 
     private void purgeOutstandingCltus() {
@@ -310,12 +313,12 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         }
     }
 
-    private void updateProductionStatus(ProductionStatusEnum prodStatus) {
-        if (prodStatus == ProductionStatusEnum.RUNNING) {
-            LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": Production status " + prodStatus);
+    private void updateProductionStatus(ProductionStatusEnum prodStatus, CltuUplinkStatusEnum status) {
+        if (prodStatus == ProductionStatusEnum.RUNNING && status == CltuUplinkStatusEnum.NOMINAL) {
+            LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": Production status " + prodStatus + ", uplink status " + status);
             updateAlarmState(AlarmState.NOMINAL);
         } else {
-            LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Production status " + prodStatus);
+            LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Production status " + prodStatus + ", uplink status " + status);
             updateAlarmState(AlarmState.ALARM);
         }
     }
@@ -357,6 +360,7 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         long thisCounter = this.cltuCounter.getAndIncrement();
         this.cltuId2tracker.put(thisCounter, new CltuTracker(externalId, encodedCltu));
         informSubscribers(externalId, CltuProcessingStatus.RELEASED);
+        LOG.log(Level.INFO, "Sending CLTU with ID " + externalId + ": " + StringUtil.toHexDump(encodedCltu));
         this.serviceInstance.transferData(thisCounter, null, null, 20000000, true, encodedCltu);
     }
 
@@ -371,6 +375,14 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
                 increaseEstimatedFreeBuffer(tracker.getCltu().length);
                 informSubscribers(tracker.getExternalId(), CltuProcessingStatus.RELEASED_FAILED);
             }
+        }
+    }
+
+    @Override
+    public void onPduSent(ServiceInstance si, Object operation, String name, byte[] encodedOperation) {
+        super.onPduSent(si, operation, name, encodedOperation);
+        if(operation instanceof CltuTransferDataInvocation) {
+            this.invokeId2InvocationCorrelationMap.put(((CltuTransferDataInvocation) operation).getInvokeId().longValue(), (CltuTransferDataInvocation) operation);
         }
     }
 

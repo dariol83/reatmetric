@@ -149,7 +149,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         storeStatement.setString(4, item.getName());
         storeStatement.setString(5, item.getPath().asString());
         storeStatement.setString(6, item.getType());
-        storeStatement.setString(7, item.getRoute());
+        storeStatement.setString(7, item.getRoute() != null && item.getRoute().length() > 48 ? item.getRoute().substring(0, 48): item.getRoute());
         storeStatement.setString(8, item.getSource());
         storeStatement.setBlob(9, toInputstream(item.getArguments()));
         storeStatement.setBlob(10, toInputstream(item.getProperties()));

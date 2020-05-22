@@ -161,7 +161,11 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     private void loadTcDataLinkProcessor() {
-        // TODO
+        this.tcDataLinkProcessor = new TcDataLinkProcessor(configuration, context, serviceBroker, getCltuConnectors());
+    }
+
+    private List<CltuServiceInstanceManager> getCltuConnectors() {
+        return this.sleManagers.stream().filter(o -> o instanceof CltuServiceInstanceManager).map(o -> (CltuServiceInstanceManager) o).collect(Collectors.toList());
     }
 
     private void loadActivityHandler() {
@@ -317,6 +321,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.commandVerificationService.dispose();
         this.serviceBroker.dispose();
         this.tcPacketHandler.dispose();
+        this.tcDataLinkProcessor.dispose();
         updateStatus(SystemStatus.UNKNOWN);
     }
 

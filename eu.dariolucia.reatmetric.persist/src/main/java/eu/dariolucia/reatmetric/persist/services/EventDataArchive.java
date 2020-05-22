@@ -60,7 +60,7 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
         storeStatement.setString(6, item.getQualifier());
         storeStatement.setTimestamp(7, toTimestamp(item.getReceptionTime()));
         storeStatement.setString(8, item.getType());
-        storeStatement.setString(9, item.getRoute());
+        storeStatement.setString(9, item.getRoute() != null && item.getRoute().length() > 48 ? item.getRoute().substring(0, 48): item.getRoute());
         storeStatement.setString(10, item.getSource());
         storeStatement.setShort(11, (short) item.getSeverity().ordinal());
         if(item.getRawDataContainerId() == null) {

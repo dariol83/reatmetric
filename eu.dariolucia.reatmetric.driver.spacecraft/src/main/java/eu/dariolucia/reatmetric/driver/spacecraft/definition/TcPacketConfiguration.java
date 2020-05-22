@@ -28,11 +28,17 @@ public class TcPacketConfiguration {
     @XmlAttribute(name="activity-tc-packet-type")
     private String activityTcPacketType = Constants.ENCDEC_TC_PACKET_TYPE;
 
+    @XmlAttribute(name = "pus-source-id-default-value")
+    private Integer sourceIdDefaultValue = null;
+
     @XmlAttribute(name="pus-source-id-length")
     private int sourceIdLength = 0;
 
     @XmlAttribute(name="pus-spare-length")
     private int spareLength = 0;
+
+    @XmlAttribute(name = "tm-pec-present")
+    private PacketErrorControlType tmPecPresent = PacketErrorControlType.CRC;
 
     public int getSpareLength() {
         return spareLength;
@@ -56,5 +62,21 @@ public class TcPacketConfiguration {
 
     public void setActivityTcPacketType(String activityTcPacketType) {
         this.activityTcPacketType = activityTcPacketType;
+    }
+
+    public Integer getSourceIdDefaultValue() {
+        return sourceIdDefaultValue;
+    }
+
+    public void setSourceIdDefaultValue(Integer sourceIdDefaultValue) {
+        this.sourceIdDefaultValue = sourceIdDefaultValue;
+    }
+
+    public PacketErrorControlType getTmPecPresent() {
+        return tmPecPresent;
+    }
+
+    public void setTmPecPresent(PacketErrorControlType tmPecPresent) {
+        this.tmPecPresent = tmPecPresent;
     }
 }

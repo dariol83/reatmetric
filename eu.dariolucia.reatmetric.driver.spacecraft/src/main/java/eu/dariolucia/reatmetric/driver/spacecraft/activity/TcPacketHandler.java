@@ -114,6 +114,7 @@ public class TcPacketHandler {
     }
 
     private void encodeAndDispatchTc(IActivityHandler.ActivityInvocation activityInvocation, PacketDefinition defToEncode) {
+        LOG.log(Level.INFO, "Invocation of activity " + activityInvocation.getPath() + " (" + activityInvocation.getActivityOccurrenceId() + ") in progress");
         reportReleaseProgress(context.getProcessingModel(), activityInvocation, ActivityReportState.PENDING);
         try {
             // Build the map and encode the activity as space packet contents
@@ -158,7 +159,7 @@ public class TcPacketHandler {
                 }
             }
             // Finally build the packet info for the header
-            TcPacketInfo packetInfo = new TcPacketInfo(packetInfoStr, ackOverride, sourceId, mapId);
+            TcPacketInfo packetInfo = new TcPacketInfo(packetInfoStr, ackOverride, sourceId, mapId, configuration.getTcPacketConfiguration().getSourceIdDefaultValue());
             // Construct the space packet using the information in the encoding definition and the configuration (override by activity properties)
             SpacePacket sp = buildPacket(packetInfo, packetUserDataField);
             Instant encodingTime = Instant.now();
@@ -171,11 +172,14 @@ public class TcPacketHandler {
             serviceBroker.informTcPacket(TcPacketPhase.ENCODED, encodingTime, tcTracker);
             // Release packet to lower layer (TC layer), unless the activity is scheduled on-board (PUS 11, activity property)
             String scheduledTime = activityInvocation.getProperties().get(Constants.ACTIVITY_PROPERTY_SCHEDULED_TIME);
-            if (scheduledTime != null && !scheduledTime.isBlank()) {
+            if (scheduledTime == null || scheduledTime.isBlank()) {
                 tcDataLinkProcessor.sendTcPacket(sp, tcTracker);
             }
         } catch(ActivityHandlingException e) {
             LOG.log(Level.SEVERE, "Cannot encode and send TC packet " + defToEncode.getId() + ": " + e.getMessage(), e);
+            reportReleaseProgress(context.getProcessingModel(), activityInvocation, ActivityReportState.FATAL);
+        } catch(Exception e) {
+            LOG.log(Level.SEVERE, "Unexpected error when processing TC packet " + defToEncode.getId() + ": " + e.getMessage(), e);
             reportReleaseProgress(context.getProcessingModel(), activityInvocation, ActivityReportState.FATAL);
         }
     }
@@ -198,6 +202,7 @@ public class TcPacketHandler {
     }
 
     private SpacePacket buildPacket(TcPacketInfo packetInfo, byte[] packetUserDataField) {
+        // FIXME: the packet shall also have a PECF as per ECSS.
         SpacePacketBuilder spb = SpacePacketBuilder.create()
                 .setApid(packetInfo.getApid())
                 .setTelecommandPacket()

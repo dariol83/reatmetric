@@ -36,7 +36,7 @@ public class TcPacketInfo {
     private final int map;
     private final boolean mapUsed;
 
-    public TcPacketInfo(String str, String overriddenAckFields, Integer overridenSourceId, Integer overridenMapId) {
+    public TcPacketInfo(String str, String overriddenAckFields, Integer overridenSourceId, Integer overridenMapId, Integer sourceIdDefaultValue) {
         String[] tokens = str.split("\\.", -1);
         Map<String, String> keyValueMap = new HashMap<>();
         for(String ton : tokens) {
@@ -75,6 +75,8 @@ public class TcPacketInfo {
                 sourceId = overridenSourceId;
             } else if(pSourceIdStr != null) {
                 sourceId = Integer.parseInt(pSourceIdStr);
+            } else {
+                sourceId = sourceIdDefaultValue;
             }
             this.pusHeader = new TcPusHeader((byte) 1, ackField, (short) type, (short) subtype, sourceId, null);
         } else {
@@ -94,13 +96,6 @@ public class TcPacketInfo {
         }
     }
 
-    public TcPacketInfo(int apid, TcPusHeader pusHeader, int map, boolean mapUsed) {
-        this.apid = apid;
-        this.pusHeader = pusHeader;
-        this.map = map;
-        this.mapUsed = mapUsed;
-    }
-
     public TcPusHeader getPusHeader() {
         return pusHeader;
     }
@@ -116,4 +111,5 @@ public class TcPacketInfo {
     public int getApid() {
         return apid;
     }
+
 }

@@ -72,7 +72,7 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
         if(item.getRoute() == null) {
             storeStatement.setNull(9, Types.VARCHAR);
         } else {
-            storeStatement.setString(9, item.getRoute());
+            storeStatement.setString(9, item.getRoute().length() > 48 ? item.getRoute().substring(0, 48) : item.getRoute());
         }
         storeStatement.setShort(10, (short) item.getValidity().ordinal());
         storeStatement.setShort(11, (short) item.getAlarmState().ordinal());

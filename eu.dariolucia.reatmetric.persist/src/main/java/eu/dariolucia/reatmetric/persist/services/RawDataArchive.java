@@ -55,7 +55,7 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         storeStatement.setString(3, item.getName());
         storeStatement.setTimestamp(4, toTimestamp(item.getReceptionTime()));
         storeStatement.setString(5, item.getType());
-        storeStatement.setString(6, item.getRoute());
+        storeStatement.setString(6, item.getRoute() != null && item.getRoute().length() > 48 ? item.getRoute().substring(0, 48): item.getRoute());
         storeStatement.setString(7, item.getSource());
         storeStatement.setString(8, item.getHandler());
         storeStatement.setShort(9, (short) item.getQuality().ordinal());
