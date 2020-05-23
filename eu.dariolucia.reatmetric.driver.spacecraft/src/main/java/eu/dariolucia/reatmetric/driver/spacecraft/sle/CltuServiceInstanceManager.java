@@ -41,7 +41,10 @@ import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.ForwardDataUnitProcessingStatus;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.IForwardDataUnitStatusSubscriber;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
@@ -59,7 +62,7 @@ import java.util.logging.Logger;
 /**
  * This class has a subscription mechanism, which allows subscribers to know the status of a CLTU (ACCEPTED, REJECTED, UPLINKED, FAILED, DISCARDED).
  */
-public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuServiceInstance, CltuServiceInstanceConfiguration> implements IActivityExecutor {
+public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuServiceInstance, CltuServiceInstanceConfiguration> implements IActivityExecutor, ICltuConnector {
 
     private static final Logger LOG = Logger.getLogger(CltuServiceInstanceManager.class.getName());
     private static final String FIRST_CLTU_ID_KEY = "cltu.first.id";
@@ -79,17 +82,24 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
     private final AtomicLong eventInvocationIdCounter = new AtomicLong(0);
     private final Semaphore eventIdRefreshSemaphore = new Semaphore(0);
 
-    private final List<ICltuStatusSubscriber> subscribers = new CopyOnWriteArrayList<>();
+    private final List<IForwardDataUnitStatusSubscriber> subscribers = new CopyOnWriteArrayList<>();
 
     public CltuServiceInstanceManager(String driverName, PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration siConfiguration, SpacecraftConfiguration spacecraftConfiguration, IServiceCoreContext context) {
         super(driverName, peerConfiguration, siConfiguration, spacecraftConfiguration, context);
     }
 
-    public void register(ICltuStatusSubscriber listener) {
+    @Override
+    public void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, String connectorInformation) {
+        // Not needed
+    }
+
+    @Override
+    public void register(IForwardDataUnitStatusSubscriber listener) {
         this.subscribers.add(listener);
     }
 
-    public void deregister(ICltuStatusSubscriber listener) {
+    @Override
+    public void deregister(IForwardDataUnitStatusSubscriber listener) {
         this.subscribers.remove(listener);
     }
 
@@ -252,10 +262,10 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         }
         if (operation.getResult().getPositiveResult() != null) {
             LOG.log(Level.INFO, serviceInstance.getServiceInstanceIdentifier() + ": CLTU ID " + tracker.getExternalId() + " accepted");
-            informSubscribers(tracker.getExternalId(), CltuProcessingStatus.ACCEPTED);
+            informSubscribers(tracker.getExternalId(), ForwardDataUnitProcessingStatus.ACCEPTED);
         } else {
             LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": negative CLTU TRANSFER DATA return for CLTU ID " + tracker.getExternalId() + ": " + CltuDiagnosticsStrings.getTransferDataDiagnostic(operation.getResult().getNegativeResult()));
-            informSubscribers(tracker.getExternalId(), CltuProcessingStatus.REJECTED);
+            informSubscribers(tracker.getExternalId(), ForwardDataUnitProcessingStatus.REJECTED);
             this.cltuId2tracker.remove(cltuId);
             increaseEstimatedFreeBuffer(tracker.getCltu().length);
             refreshExpectedCltuId();
@@ -349,7 +359,7 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         LOG.log(Level.INFO, serviceInstance.getServiceInstanceIdentifier() + ": CLTU " + cltuId + " radiated");
         CltuTracker tracker = this.cltuId2tracker.remove(cltuId);
         if (tracker != null) {
-            informSubscribers(tracker.getExternalId(), CltuProcessingStatus.UPLINKED, radiationTime);
+            informSubscribers(tracker.getExternalId(), ForwardDataUnitProcessingStatus.UPLINKED, radiationTime);
             increaseEstimatedFreeBuffer(tracker.getCltu().length);
         } else {
             LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": received notification of radiation for CLTU " + cltuId + " not present in the system");
@@ -381,7 +391,7 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         LOG.log(Level.INFO, serviceInstance.getServiceInstanceIdentifier() + ": CLTU " + cltuId + " not radiated");
         CltuTracker tracker = this.cltuId2tracker.remove(cltuId);
         if (tracker != null) {
-            informSubscribers(tracker.getExternalId(), CltuProcessingStatus.FAILED);
+            informSubscribers(tracker.getExternalId(), ForwardDataUnitProcessingStatus.UPLINK_FAILED);
             increaseEstimatedFreeBuffer(tracker.getCltu().length);
         } else {
             LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": received radiation problem for CLTU " + cltuId + " not present in the system");
@@ -423,21 +433,22 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         serviceInstance.stop();
     }
 
+    @Override
     public void sendCltu(byte[] encodedCltu, long externalId) {
         if (this.serviceInstance.getCurrentBindingState() != ServiceInstanceBindingStateEnum.ACTIVE) {
             LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": transmission of CLTU with external ID " + externalId + " failed: service instance state is " + this.serviceInstance.getCurrentBindingState());
-            informSubscribers(externalId, CltuProcessingStatus.RELEASED_FAILED);
+            informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASE_FAILED);
             return;
         }
         boolean goAhead = decreaseEstimatedFreeBuffer(encodedCltu.length);
         if (!goAhead) {
             LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": transmission of CLTU with external ID " + externalId + " failed: remote CLTU buffer availability failed");
-            informSubscribers(externalId, CltuProcessingStatus.RELEASED_FAILED);
+            informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASE_FAILED);
             return;
         }
         long thisCounter = this.cltuCounter.getAndIncrement();
         this.cltuId2tracker.put(thisCounter, new CltuTracker(externalId, encodedCltu));
-        informSubscribers(externalId, CltuProcessingStatus.RELEASED);
+        informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASED);
         LOG.log(Level.INFO, "Sending CLTU with ID " + externalId + ": " + StringUtil.toHexDump(encodedCltu));
         this.serviceInstance.transferData(thisCounter, null, null, 20000000, true, encodedCltu);
     }
@@ -490,7 +501,7 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
             CltuTracker tracker = cltuId2tracker.remove(cltuId);
             if (tracker != null) {
                 increaseEstimatedFreeBuffer(tracker.getCltu().length);
-                informSubscribers(tracker.getExternalId(), CltuProcessingStatus.RELEASED_FAILED);
+                informSubscribers(tracker.getExternalId(), ForwardDataUnitProcessingStatus.RELEASE_FAILED);
             }
         }
         // handle error on throw event transmission
@@ -514,16 +525,12 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         }
     }
 
-    private void informSubscribers(long externalId, CltuProcessingStatus status) {
+    private void informSubscribers(long externalId, ForwardDataUnitProcessingStatus status) {
         informSubscribers(externalId, status, Instant.now());
     }
 
-    private void informSubscribers(long externalId, CltuProcessingStatus status, Instant time) {
+    private void informSubscribers(long externalId, ForwardDataUnitProcessingStatus status, Instant time) {
         subscribers.forEach(o -> o.informStatusUpdate(externalId, status, time));
-    }
-
-    public interface ICltuStatusSubscriber {
-        void informStatusUpdate(long id, CltuProcessingStatus status, Instant time);
     }
 
     private static class CltuTracker {
@@ -542,9 +549,5 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         public byte[] getCltu() {
             return cltu;
         }
-    }
-
-    public enum CltuProcessingStatus {
-        RELEASED, RELEASED_FAILED, ACCEPTED, REJECTED, UPLINKED, FAILED
     }
 }

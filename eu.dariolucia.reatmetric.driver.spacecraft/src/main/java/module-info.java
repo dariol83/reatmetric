@@ -32,6 +32,11 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
     requires eu.dariolucia.ccsds.sle.utl;
 
     exports eu.dariolucia.reatmetric.driver.spacecraft;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.services;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.activity;
     exports eu.dariolucia.reatmetric.driver.spacecraft.common;
     exports eu.dariolucia.reatmetric.driver.spacecraft.definition;
 

@@ -14,19 +14,8 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.services;
+package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 
-import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
-import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
-import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
-import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
-
-import java.time.Instant;
-
-public interface IServicePacketSubscriber {
-
-    void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded);
-
-    void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker);
+public enum ForwardDataUnitProcessingStatus {
+    RELEASED, RELEASE_FAILED, ACCEPTED, REJECTED, UPLINKED, UPLINK_FAILED
 }

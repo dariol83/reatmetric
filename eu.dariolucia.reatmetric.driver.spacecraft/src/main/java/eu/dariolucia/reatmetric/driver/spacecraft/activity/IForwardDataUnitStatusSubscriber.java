@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.services;
-
-import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
-import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
-import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
-import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 
 import java.time.Instant;
 
-public interface IServicePacketSubscriber {
+public interface IForwardDataUnitStatusSubscriber {
 
-    void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded);
+    void informStatusUpdate(long externalId, ForwardDataUnitProcessingStatus status, Instant time);
 
-    void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker);
 }

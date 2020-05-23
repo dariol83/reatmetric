@@ -42,8 +42,10 @@ import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.packet.TcPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TmPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.replay.TmPacketReplayManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
@@ -54,7 +56,6 @@ import eu.dariolucia.reatmetric.driver.spacecraft.sle.CltuServiceInstanceManager
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.SleServiceInstanceManager;
-import eu.dariolucia.reatmetric.driver.spacecraft.packet.TcPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TcDataLinkProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmDataLinkProcessor;
 
@@ -89,7 +90,7 @@ import java.util.stream.Collectors;
  * </ul>
  *
  */
-// TODO: introduce the concept of ISpaceDataConnector, which can receive CLTU or TC Frame or SpacePackets and handles the release stage
+// TODO: introduce the concept of external connectors, which can receive CLTU or TC Frame or SpacePackets and handles the release stage
 //  to allow support for external plugins for different protocols. For TM, foresee an initialise operation to provide the system context and configuration.
 public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHandler {
 
@@ -170,7 +171,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         registerActivityExecutor(tcDataLinkProcessor);
     }
 
-    private List<CltuServiceInstanceManager> getCltuConnectors() {
+    private List<ICltuConnector> getCltuConnectors() {
         return this.sleManagers.stream().filter(o -> o instanceof CltuServiceInstanceManager).map(o -> (CltuServiceInstanceManager) o).collect(Collectors.toList());
     }
 
@@ -274,6 +275,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private void createCltuServiceInstance(PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration sic) {
         LOG.info("Creating SLE CLTU endpoint for " + sic.getServiceInstanceIdentifier());
         CltuServiceInstanceManager m = new CltuServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context);
+        m.configure(this.name, configuration, context, null);
         m.prepare();
         this.sleManagers.add(m);
         // Register as activity executor

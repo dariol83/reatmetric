@@ -40,6 +40,8 @@ import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.value.Array;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfo;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
@@ -74,6 +76,7 @@ public class TcPacketProcessor implements IActivityExecutor {
     private final Map<Long, PacketDefinition> externalId2packet;
     private final Map<Integer, AtomicInteger> apid2counter = new HashMap<>();
     private final TcDataLinkProcessor tcDataLinkProcessor;
+    // TODO: add external list of ITcPacketConnector
     private final ExecutorService tcExecutor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "Activity Handler Thread");
         t.setDaemon(true);

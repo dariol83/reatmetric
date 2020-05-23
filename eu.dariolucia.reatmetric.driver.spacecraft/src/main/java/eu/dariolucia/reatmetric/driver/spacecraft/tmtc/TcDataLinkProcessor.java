@@ -38,14 +38,16 @@ import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.ForwardDataUnitProcessingStatus;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
-import eu.dariolucia.reatmetric.driver.spacecraft.packet.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.IForwardDataUnitStatusSubscriber;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcVcConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
-import eu.dariolucia.reatmetric.driver.spacecraft.sle.CltuServiceInstanceManager;
 
 import java.time.Instant;
 import java.util.*;
@@ -55,11 +57,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelSenderOutput<TcTransferFrame>, CltuServiceInstanceManager.ICltuStatusSubscriber, IActivityExecutor {
+public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelSenderOutput<TcTransferFrame>, IForwardDataUnitStatusSubscriber, IActivityExecutor {
 
     private static final Logger LOG = Logger.getLogger(TcDataLinkProcessor.class.getName());
 
-    private final Map<String, CltuServiceInstanceManager> cltuSenders;
+    private final Map<String, ICltuConnector> cltuSenders;
     private final SpacecraftConfiguration configuration;
     private final IServiceCoreContext context;
     private final IServiceBroker serviceBroker;
@@ -76,9 +78,11 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
     private final Map<String, List<TcTracker>> pendingGroupTcs = new HashMap<>();
 
+    // TODO: add external Map <route, ITcFrameConnector>
+
     private volatile boolean useAdMode;
 
-    public TcDataLinkProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, List<CltuServiceInstanceManager> cltuSenders) {
+    public TcDataLinkProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, List<ICltuConnector> cltuSenders) {
         this.configuration = configuration;
         this.context = context;
         this.serviceBroker = serviceBroker;
@@ -107,8 +111,10 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                         Collections.singletonList(Quality.GOOD)), null);
         // Register to the cltu senders
         this.cltuSenders = new TreeMap<>();
-        for(CltuServiceInstanceManager m : cltuSenders) {
-            this.cltuSenders.put(m.getServiceInstanceIdentifier(), m);
+        for(ICltuConnector m : cltuSenders) {
+            for(String route : m.getSupportedRoutes()) {
+                this.cltuSenders.put(route, m);
+            }
             m.register(this);
         }
     }
@@ -127,7 +133,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     }
 
     @Override
-    public void informStatusUpdate(long id, CltuServiceInstanceManager.CltuProcessingStatus status, Instant time) {
+    public void informStatusUpdate(long id, ForwardDataUnitProcessingStatus status, Instant time) {
         RequestTracker tracker = this.cltuId2requestTracker.get(id);
         if(tracker != null) {
             tracker.trackCltuStatus(id, status, time);
@@ -204,9 +210,11 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             // Now you have the generated frames, prepare for tracking them, encode them and send them
             // Retrieve the route and hence the service instance to use
             String route = tcTracker.getInvocation().getRoute();
-            CltuServiceInstanceManager serviceInstance = this.cltuSenders.get(route);
+            ICltuConnector connectorInstance = this.cltuSenders.get(route);
             // Create the request tracker
             RequestTracker tracker = new RequestTracker(useAd);
+            // TODO: check the route from the last TcTracker: if it ends up to a CLTU connector, go for encoding
+            //  If it ends up to a Tc Frame connector, send the frames without encoding.
             // Encode the TC frames and remember them
             List<Pair<Long, byte[]>> toSend = new LinkedList<>();
             for (TcTransferFrame frame : lastGeneratedFrames) {
@@ -219,7 +227,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             tracker.initialise(pendingTcPackets, toSend);
             // Send the CLTUs
             for (Pair<Long, byte[]> p : toSend) {
-                serviceInstance.sendCltu(p.getSecond(), p.getFirst());
+                connectorInstance.sendCltu(p.getSecond(), p.getFirst());
             }
         } catch (Exception e) {
             throw new ActivityHandlingException("TC frame construction/processing error: " + e.getMessage(), e);
@@ -227,7 +235,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     }
 
     public void dispose() {
-        for(CltuServiceInstanceManager m : cltuSenders.values()) {
+        for(ICltuConnector m : new HashSet<>(cltuSenders.values())) {
             m.deregister(this);
         }
         this.context.getRawDataBroker().unsubscribe(this);
@@ -265,12 +273,12 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
     @Override
     public List<String> getSupportedRoutes() {
-        return this.cltuSenders.values().stream().map(CltuServiceInstanceManager::getServiceInstanceIdentifier).collect(Collectors.toList());
+        return new ArrayList<>(this.cltuSenders.keySet());
     }
 
     private class RequestTracker {
         private final List<TcTracker> tcTrackers = new LinkedList<>();
-        private final Map<Long, byte[]> cltus = new HashMap<>();
+        private final Set<Long> dataUnits = new HashSet<>();
         private final boolean useAd;
         private volatile boolean lifecycleCompleted;
 
@@ -285,46 +293,46 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         public void initialise(List<TcTracker> tcTrackers, List<Pair<Long, byte[]>> cltus) {
             this.tcTrackers.addAll(tcTrackers);
             for(Pair<Long, byte[]> cltu : cltus) {
-                this.cltus.put(cltu.getFirst(), cltu.getSecond());
+                this.dataUnits.add(cltu.getFirst());
             }
         }
 
-        public void trackCltuStatus(Long id, CltuServiceInstanceManager.CltuProcessingStatus status, Instant time) {
+        public void trackCltuStatus(Long id, ForwardDataUnitProcessingStatus status, Instant time) {
             //
             switch (status) {
-                case RELEASED: { // The CLTU was sent to the ground station
+                case RELEASED: { // The CLTU/Frame was sent to the ground station
                     released.add(id);
-                    if(released.size() == cltus.size()) { // All released
+                    if(released.size() == dataUnits.size()) { // All released
                         informServiceBroker(TcPacketPhase.RELEASED, time, tcTrackers);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                     }
                 }
                 break;
-                case RELEASED_FAILED: { // Release problem
+                case RELEASE_FAILED: { // Release problem
                     informServiceBroker(TcPacketPhase.FAILED, time, tcTrackers);
                     reportActivityState(tcTrackers, time, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE);
                     lifecycleCompleted = true;
                 }
                 break;
-                case ACCEPTED: { // The CLTU was accepted by the ground station
+                case ACCEPTED: { // The CLTU/Frame was accepted by the ground station
                     accepted.add(id);
-                    if(accepted.size() == cltus.size()) { // All CLTUs accepted, so command is all at the ground station
+                    if(accepted.size() == dataUnits.size()) { // All CLTUs/Frames accepted, so command is all at the ground station
                         // Nothing to be done here with the service broker
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_UPLINK, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                     }
                 }
                 break;
-                case REJECTED: { // The CLTU was rejected by the ground station or discarded -> all related TC requests to be marked as failed in ground station reception
+                case REJECTED: { // The CLTU/Frame was rejected by the ground station or discarded -> all related TC requests to be marked as failed in ground station reception
                     informServiceBroker(TcPacketPhase.FAILED, time, tcTrackers);
                     reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
                     lifecycleCompleted = true;
                 }
                 break;
-                case UPLINKED: { // The CLTU was uplinked by the ground station
+                case UPLINKED: { // The CLTU/Frame was uplinked by the ground station
                     uplinked.add(id);
-                    if(uplinked.size() == cltus.size()) { // All CLTUs uplinked, so command is all on its way
+                    if(uplinked.size() == dataUnits.size()) { // All CLTUs/Frames uplinked, so command is all on its way
                         informServiceBroker(TcPacketPhase.UPLINKED, time, tcTrackers);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_UPLINK, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
                         // TODO: If not AD, then either SCHEDULED or EXECUTION
@@ -334,7 +342,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     }
                 }
                 break;
-                case FAILED: { // The CLTU failed uplink -> all related TC requests to be marked as failed in ground station uplink
+                case UPLINK_FAILED: { // The CLTU/Frame failed uplink -> all related TC requests to be marked as failed in ground station uplink
                     informServiceBroker(TcPacketPhase.FAILED, time, tcTrackers);
                     reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_UPLINK, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
                     lifecycleCompleted = true;
