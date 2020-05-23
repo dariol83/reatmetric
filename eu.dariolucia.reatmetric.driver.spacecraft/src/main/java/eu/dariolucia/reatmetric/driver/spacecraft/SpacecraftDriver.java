@@ -89,6 +89,8 @@ import java.util.stream.Collectors;
  * </ul>
  *
  */
+// TODO: introduce the concept of ISpaceDataConnector, which can receive CLTU or TC Frame or SpacePackets and handles the release stage
+//  to allow support for external plugins for different protocols. For TM, foresee an initialise operation to provide the system context and configuration.
 public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHandler {
 
     private static final Logger LOG = Logger.getLogger(SpacecraftDriver.class.getName());
