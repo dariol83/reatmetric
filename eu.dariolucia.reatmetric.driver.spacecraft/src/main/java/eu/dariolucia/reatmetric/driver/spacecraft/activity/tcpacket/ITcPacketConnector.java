@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket;
 
+import eu.dariolucia.ccsds.encdec.identifier.IPacketIdentifier;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
@@ -29,14 +30,14 @@ public interface ITcPacketConnector extends ITransportConnector {
 
     /**
      * Configure the connector after its creation.
-     *
-     * @param driverName the name of the driver using the connector instance
+     *  @param driverName the name of the driver using the connector instance
      * @param configuration the configuration of the driver
      * @param context the service context
      * @param serviceBroker the service broker
+     * @param packetIdentifier
      * @param connectorInformation the configuration string provided in the connector configuration
      */
-    void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, String connectorInformation);
+    void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, IPacketIdentifier packetIdentifier, String connectorInformation);
 
     void sendTcPacket(SpacePacket sp, TcTracker tcTracker);
 

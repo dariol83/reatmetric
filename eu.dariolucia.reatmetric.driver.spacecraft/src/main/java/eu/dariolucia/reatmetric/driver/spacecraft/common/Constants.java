@@ -42,6 +42,7 @@ public class Constants {
     public static final String ANNOTATION_UNIQUE_ID = "##UNIQUE_ID";
     public static final String ANNOTATION_VCID = "##VCID";
     public static final String ANNOTATION_TC_TRACKER = "##TC_TRACKER";
+    public static final Object ANNOTATION_TC_PUS_HEADER = "##TC_PUS_HEADER";
 
     // encdec definition: TM/TC packet type
     public static final String ENCDEC_TM_PACKET_TYPE = "TM";
@@ -79,5 +80,6 @@ public class Constants {
 
     // COP-1
     public static final String TC_COP1_ACTIVITY_TYPE = "COP-1";
+
 
 }

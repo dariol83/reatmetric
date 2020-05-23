@@ -16,11 +16,11 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.packet;
 
-import eu.dariolucia.ccsds.encdec.definition.*;
+import eu.dariolucia.ccsds.encdec.definition.Definition;
+import eu.dariolucia.ccsds.encdec.definition.PacketDefinition;
 import eu.dariolucia.ccsds.encdec.pus.PusChecksumUtil;
-import eu.dariolucia.ccsds.encdec.structure.EncodingException;
-import eu.dariolucia.ccsds.encdec.structure.IPacketEncoder;
-import eu.dariolucia.ccsds.encdec.structure.PacketDefinitionIndexer;
+import eu.dariolucia.ccsds.encdec.pus.TcPusHeader;
+import eu.dariolucia.ccsds.encdec.structure.*;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketEncoder;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.DefaultValueFallbackResolver;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.PathLocationBasedResolver;
@@ -38,21 +38,21 @@ import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.value.Array;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfo;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcPacketConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TcDataLinkProcessor;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,28 +73,40 @@ public class TcPacketProcessor implements IActivityExecutor {
     private final IServiceCoreContext context;
     private final IServiceBroker serviceBroker;
     private final IPacketEncoder packetEncoder;
+    private final IPacketDecoder packetDecoder;
     private final Map<Long, PacketDefinition> externalId2packet;
     private final Map<Integer, AtomicInteger> apid2counter = new HashMap<>();
     private final TcDataLinkProcessor tcDataLinkProcessor;
-    // TODO: add external list of ITcPacketConnector
+    private final Map<String, ITcPacketConnector> tcPacketConnectors;
     private final ExecutorService tcExecutor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "Activity Handler Thread");
         t.setDaemon(true);
         return t;
     });
 
-    public TcPacketProcessor(String driverName, Instant epoch, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, Definition encodingDecodingDefinitions, TcDataLinkProcessor tcDataLinkProcessor) {
+    public TcPacketProcessor(String driverName, Instant epoch, SpacecraftConfiguration configuration, IServiceCoreContext context,
+                             IServiceBroker serviceBroker, Definition encodingDecodingDefinitions, TcDataLinkProcessor tcDataLinkProcessor,
+                             IPacketDecoder packetDecoder, List<ITcPacketConnector> tcPacketConnectors) {
         this.driverName = driverName;
         this.configuration = configuration;
         this.context = context;
         this.serviceBroker = serviceBroker;
         this.packetEncoder = new DefaultPacketEncoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), MAX_TC_PACKET_SIZE, epoch);
+        this.packetDecoder = packetDecoder;
         this.tcDataLinkProcessor = tcDataLinkProcessor;
+
         // Create a map based on the external ID
         this.externalId2packet = new HashMap<>();
         for(PacketDefinition pd : encodingDecodingDefinitions.getPacketDefinitions()) {
             if(pd.getExternalId() != PacketDefinition.EXTERNAL_ID_NOT_SET && pd.getType().equals(configuration.getTcPacketConfiguration().getActivityTcPacketType())) {
                 externalId2packet.put(pd.getExternalId(), pd);
+            }
+        }
+        // Create the TC Packet connector map
+        this.tcPacketConnectors = new TreeMap<>();
+        for(ITcPacketConnector m : tcPacketConnectors) {
+            for(String route : m.getSupportedRoutes()) {
+                this.tcPacketConnectors.put(route, m);
             }
         }
     }
@@ -185,7 +197,14 @@ public class TcPacketProcessor implements IActivityExecutor {
             // Release packet to lower layer (TC layer), unless the activity is scheduled on-board (PUS 11, activity property)
             String scheduledTime = activityInvocation.getProperties().get(Constants.ACTIVITY_PROPERTY_SCHEDULED_TIME);
             if (scheduledTime == null || scheduledTime.isBlank()) {
-                tcDataLinkProcessor.sendTcPacket(sp, tcTracker);
+                // If there is an external connector for the route, go for it
+                ITcPacketConnector externalConnector = this.tcPacketConnectors.get(activityInvocation.getRoute());
+                if(externalConnector != null) {
+                    externalConnector.sendTcPacket(sp, tcTracker);
+                } else {
+                    // Fall back to the TC Data Link processor
+                    tcDataLinkProcessor.sendTcPacket(sp, tcTracker);
+                }
             }
         } catch(ActivityHandlingException e) {
             LOG.log(Level.SEVERE, "Cannot encode and send TC packet " + defToEncode.getId() + ": " + e.getMessage(), e);
@@ -255,6 +274,7 @@ public class TcPacketProcessor implements IActivityExecutor {
             }
             break;
         }
+        sp.setAnnotationValue(Constants.ANNOTATION_TC_PUS_HEADER, packetInfo.getPusHeader());
         return sp;
     }
 
@@ -292,5 +312,53 @@ public class TcPacketProcessor implements IActivityExecutor {
 
     public void dispose() {
         this.tcExecutor.shutdownNow();
+    }
+
+    public LinkedHashMap<String, String> renderTcPacket(RawData rawData) {
+        LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
+        SpacePacket sp = (SpacePacket) rawData.getData();
+        if(sp == null) {
+            sp = new SpacePacket(rawData.getContents(), rawData.getQuality().equals(Quality.GOOD));
+        }
+        TcPusHeader pusHeader = (TcPusHeader) sp.getAnnotationValue(Constants.ANNOTATION_TC_PUS_HEADER);
+        if (pusHeader == null && sp.isSecondaryHeaderFlag()) {
+            TcPacketConfiguration conf = configuration.getTcPacketConfiguration();
+            if (conf != null) {
+                pusHeader = TcPusHeader.decodeFrom(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.getSourceIdLength());
+            }
+        }
+        // Packet parameters
+        DecodingResult result = null;
+        try {
+            if(!sp.isIdle()) {
+                result = packetDecoder.decode(rawData.getName(), sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + (pusHeader != null ? pusHeader.getEncodedLength() : 0), rawData.getContents().length - SpacePacket.SP_PRIMARY_HEADER_LENGTH - (pusHeader != null ? pusHeader.getEncodedLength() : 0), null);
+            }
+        } catch (DecodingException e) {
+            LOG.log(Level.SEVERE, "Cannot decode TM packet " + rawData.getName() + " from route " + rawData.getRoute() + ": " + e.getMessage(), e);
+        }
+        toReturn.put("TC Space Packet", null);
+        toReturn.put("APID", String.valueOf(sp.getApid()));
+        toReturn.put("SCC", String.valueOf(sp.getPacketSequenceCount()));
+        toReturn.put("Sequence Flag", String.valueOf(sp.getSequenceFlag()));
+        toReturn.put("Secondary Header Flag", String.valueOf(sp.isSecondaryHeaderFlag()));
+        toReturn.put("Idle Packet", String.valueOf(sp.isIdle()));
+        toReturn.put("Length", String.valueOf(sp.getLength()));
+        if(pusHeader != null) {
+            toReturn.put("PUS Header Information", null);
+            toReturn.put("Type", String.valueOf(pusHeader.getServiceType()));
+            toReturn.put("Subtype", String.valueOf(pusHeader.getServiceSubType()));
+            toReturn.put("Source ID", String.valueOf(pusHeader.getSourceId()));
+            toReturn.put("Ack Field", String.valueOf(pusHeader.getAckField().toString()));
+        }
+        if(result != null) {
+            Map<String, Object> paramMap = result.getDecodedItemsAsMap();
+            if(!paramMap.isEmpty()) {
+                toReturn.put("Raw Parameters", null);
+                for (Map.Entry<String, Object> params : paramMap.entrySet()){
+                    toReturn.put(params.getKey(), ValueUtil.toString(params.getValue()));
+                }
+            }
+        }
+        return toReturn;
     }
 }

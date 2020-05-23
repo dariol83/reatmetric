@@ -33,8 +33,8 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
 
     private static final Logger LOG = Logger.getLogger(AbstractTransportConnector.class.getName());
 
-    private final String name;
-    private final String description;
+    private volatile String name;
+    private volatile String description;
 
     private final Timer bitrateTimer;
 
@@ -53,8 +53,11 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
     private volatile boolean busy = false;
 
     protected AbstractTransportConnector(String name, String description) {
-        this.name = name;
-        this.description = description;
+        this();
+        setCharacteristics(name, description);
+    }
+
+    protected AbstractTransportConnector() {
         this.bitrateTimer = new Timer(name + " Bitrate Timer", true);
         this.bitrateTimer.schedule(new TimerTask() {
             @Override
@@ -73,6 +76,11 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
         }, 2000, 2000);
     }
 
+    protected void setCharacteristics(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
+
     /**
      * Return a pair TX rate, RX rate in bits per second.
      *
@@ -85,6 +93,9 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
         if(prepared) {
             LOG.log(Level.WARNING, "Transport connector " + getName() + " already prepared");
             return;
+        }
+        if(name == null || description == null) {
+            throw new IllegalStateException("Name and description cannot be null");
         }
         addToInitialisationMap(initialisationMap, initialisationDescriptionMap);
         prepared = true;

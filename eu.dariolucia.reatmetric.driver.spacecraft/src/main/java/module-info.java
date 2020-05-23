@@ -21,6 +21,10 @@ import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptorValueExt
 
 open module eu.dariolucia.reatmetric.driver.spacecraft {
     uses eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
+    uses eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
+    uses eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe.ITcFrameConnector;
+    uses eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector;
+
     requires java.logging;
     requires java.xml.bind;
 

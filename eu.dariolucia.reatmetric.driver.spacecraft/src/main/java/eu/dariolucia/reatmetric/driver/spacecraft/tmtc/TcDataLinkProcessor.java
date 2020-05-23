@@ -43,6 +43,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.IForwardDataUnitStatusSubscriber;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe.ITcFrameConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcVcConfiguration;
@@ -61,7 +62,6 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
     private static final Logger LOG = Logger.getLogger(TcDataLinkProcessor.class.getName());
 
-    private final Map<String, ICltuConnector> cltuSenders;
     private final SpacecraftConfiguration configuration;
     private final IServiceCoreContext context;
     private final IServiceBroker serviceBroker;
@@ -78,11 +78,12 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
     private final Map<String, List<TcTracker>> pendingGroupTcs = new HashMap<>();
 
-    // TODO: add external Map <route, ITcFrameConnector>
+    private final Map<String, ICltuConnector> cltuSenders;
+    private final Map<String, ITcFrameConnector> tcFrameSenders;
 
     private volatile boolean useAdMode;
 
-    public TcDataLinkProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, List<ICltuConnector> cltuSenders) {
+    public TcDataLinkProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, List<ICltuConnector> cltuSenders, List<ITcFrameConnector> frameSenders) {
         this.configuration = configuration;
         this.context = context;
         this.serviceBroker = serviceBroker;
@@ -114,6 +115,14 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         for(ICltuConnector m : cltuSenders) {
             for(String route : m.getSupportedRoutes()) {
                 this.cltuSenders.put(route, m);
+            }
+            m.register(this);
+        }
+        // Register to the tc frame senders
+        this.tcFrameSenders = new TreeMap<>();
+        for(ITcFrameConnector m : frameSenders) {
+            for(String route : m.getSupportedRoutes()) {
+                this.tcFrameSenders.put(route, m);
             }
             m.register(this);
         }
@@ -210,24 +219,47 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             // Now you have the generated frames, prepare for tracking them, encode them and send them
             // Retrieve the route and hence the service instance to use
             String route = tcTracker.getInvocation().getRoute();
+            // Check the route from the last TcTracker: if it ends up to a CLTU connector, go for encoding.
+            // If it ends up to a Tc Frame connector, send the frames without encoding.
             ICltuConnector connectorInstance = this.cltuSenders.get(route);
-            // Create the request tracker
-            RequestTracker tracker = new RequestTracker(useAd);
-            // TODO: check the route from the last TcTracker: if it ends up to a CLTU connector, go for encoding
-            //  If it ends up to a Tc Frame connector, send the frames without encoding.
-            // Encode the TC frames and remember them
-            List<Pair<Long, byte[]>> toSend = new LinkedList<>();
-            for (TcTransferFrame frame : lastGeneratedFrames) {
-                byte[] encodedCltu = encoder.apply(frame);
-                long frameInTransmissionId = this.cltuSequencer.incrementAndGet();
-                cltuId2requestTracker.put(frameInTransmissionId, tracker);
-                toSend.add(Pair.of(frameInTransmissionId, encodedCltu));
-            }
-            // Initialise the tracker
-            tracker.initialise(pendingTcPackets, toSend);
-            // Send the CLTUs
-            for (Pair<Long, byte[]> p : toSend) {
-                connectorInstance.sendCltu(p.getSecond(), p.getFirst());
+            if(connectorInstance != null) {
+                // Create the request tracker
+                RequestTracker tracker = new RequestTracker(useAd);
+                // Encode the TC frames and remember them
+                List<Pair<Long, byte[]>> toSend = new LinkedList<>();
+                for (TcTransferFrame frame : lastGeneratedFrames) {
+                    byte[] encodedCltu = encoder.apply(frame);
+                    long frameInTransmissionId = this.cltuSequencer.incrementAndGet();
+                    cltuId2requestTracker.put(frameInTransmissionId, tracker);
+                    toSend.add(Pair.of(frameInTransmissionId, encodedCltu));
+                }
+                // Initialise the tracker
+                tracker.initialise(pendingTcPackets, toSend.stream().map(Pair::getFirst).collect(Collectors.toList()));
+                // Send the CLTUs
+                for (Pair<Long, byte[]> p : toSend) {
+                    connectorInstance.sendCltu(p.getSecond(), p.getFirst());
+                }
+            } else {
+                ITcFrameConnector frameConnector = this.tcFrameSenders.get(route);
+                if(frameConnector != null) {
+                    // Create the request tracker
+                    RequestTracker tracker = new RequestTracker(useAd);
+                    // Encode the TC frames and remember them
+                    List<Pair<Long, TcTransferFrame>> toSend = new LinkedList<>();
+                    for (TcTransferFrame frame : lastGeneratedFrames) {
+                        long frameInTransmissionId = this.cltuSequencer.incrementAndGet();
+                        cltuId2requestTracker.put(frameInTransmissionId, tracker);
+                        toSend.add(Pair.of(frameInTransmissionId, frame));
+                    }
+                    // Initialise the tracker
+                    tracker.initialise(pendingTcPackets, toSend.stream().map(Pair::getFirst).collect(Collectors.toList()));
+                    // Send the TC frames
+                    for (Pair<Long, TcTransferFrame> p : toSend) {
+                        frameConnector.sendTcFrame(p.getSecond(), p.getFirst());
+                    }
+                } else {
+                    throw new IllegalStateException("Route " + route + " cannot be found among configured CLTU and TC frame connectors");
+                }
             }
         } catch (Exception e) {
             throw new ActivityHandlingException("TC frame construction/processing error: " + e.getMessage(), e);
@@ -273,7 +305,9 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
     @Override
     public List<String> getSupportedRoutes() {
-        return new ArrayList<>(this.cltuSenders.keySet());
+        List<String> routes = new ArrayList<>(this.cltuSenders.keySet());
+        routes.addAll(this.tcFrameSenders.keySet());
+        return routes;
     }
 
     private class RequestTracker {
@@ -290,11 +324,9 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
            this.useAd = useAd;
         }
 
-        public void initialise(List<TcTracker> tcTrackers, List<Pair<Long, byte[]>> cltus) {
+        public void initialise(List<TcTracker> tcTrackers, List<Long> dataUnits) {
             this.tcTrackers.addAll(tcTrackers);
-            for(Pair<Long, byte[]> cltu : cltus) {
-                this.dataUnits.add(cltu.getFirst());
-            }
+            this.dataUnits.addAll(dataUnits);
         }
 
         public void trackCltuStatus(Long id, ForwardDataUnitProcessingStatus status, Instant time) {

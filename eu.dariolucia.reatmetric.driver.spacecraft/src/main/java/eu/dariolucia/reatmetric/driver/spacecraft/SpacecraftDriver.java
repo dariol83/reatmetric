@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.driver.spacecraft;
 
 import eu.dariolucia.ccsds.encdec.definition.Definition;
+import eu.dariolucia.ccsds.encdec.identifier.IPacketIdentifier;
 import eu.dariolucia.ccsds.encdec.identifier.impl.FieldGroupBasedPacketIdentifier;
 import eu.dariolucia.ccsds.encdec.structure.PacketDefinitionIndexer;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketDecoder;
@@ -43,7 +44,11 @@ import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe.ITcFrameConnector;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.DataUnitType;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.ExternalConnectorConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TcPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TmPacketProcessor;
@@ -65,6 +70,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -90,8 +96,6 @@ import java.util.stream.Collectors;
  * </ul>
  *
  */
-// TODO: introduce the concept of external connectors, which can receive CLTU or TC Frame or SpacePackets and handles the release stage
-//  to allow support for external plugins for different protocols. For TM, foresee an initialise operation to provide the system context and configuration.
 public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHandler {
 
     private static final Logger LOG = Logger.getLogger(SpacecraftDriver.class.getName());
@@ -106,7 +110,9 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private ServiceCoreConfiguration coreConfiguration;
     private IServiceCoreContext context;
     private IDriverListener listener;
+
     private Definition encodingDecodingDefinitions;
+    private IPacketIdentifier packetIdentifier;
 
     private volatile SystemStatus status = SystemStatus.UNKNOWN;
 
@@ -127,6 +133,13 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private IRawDataArchive rawDataArchive; // Needed to retrieve raw data without contents, for rendering
 
     private final Map<String, List<IActivityExecutor>> activityType2executors = new TreeMap<>();
+
+    private final List<ICltuConnector> cltuConnectors = new LinkedList<>();
+    private final List<ITcFrameConnector> tcFrameConnectors = new LinkedList<>();
+    private final List<ITcPacketConnector> tcPacketConnectors = new LinkedList<>();
+    // The next field is constructed upon getTransportConnectors invocation
+    private List<ITransportConnector> allConnectors;
+    private DefaultPacketDecoder packetDecoder;
 
     @Override
     public void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException {
@@ -150,6 +163,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             loadTmDataLinkProcessor();
             // Load the SLE service instances
             loadSleServiceInstances(driverConfigurationDirectory + File.separator + SLE_FOLDER);
+            // Load the external connectors
+            loadExternalConnectors();
             // Load the TC Data Link processor
             loadTcDataLinkProcessor();
             // Load the TC Packet processor
@@ -166,18 +181,72 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         }
     }
 
+    private void loadExternalConnectors() {
+        for(ExternalConnectorConfiguration ecc : configuration.getExternalConnectorConfigurations()) {
+            loadExternalConnector(ecc);
+        }
+    }
+
+    private void loadExternalConnector(ExternalConnectorConfiguration dc) {
+        if(dc.getDataUnitType() == DataUnitType.CLTU) {
+            ServiceLoader<ICltuConnector> serviceLoader = ServiceLoader.load(ICltuConnector.class);
+            Optional<ServiceLoader.Provider<ICltuConnector>> provider = serviceLoader.stream().filter(pr -> pr.type().getName().equals(dc.getType())).findFirst();
+            if (provider.isPresent()) {
+                ICltuConnector connector = provider.get().get();
+                connector.configure(this.name, this.configuration, this.context, dc.getConfiguration());
+                connector.prepare();
+                cltuConnectors.add(connector);
+            } else {
+                LOG.log(Level.WARNING, "External CLTU connector for class " + dc.getType() + " and configuration " + dc.getConfiguration() + " not found");
+            }
+        } else if(dc.getDataUnitType() == DataUnitType.TC_FRAME) {
+            ServiceLoader<ITcFrameConnector> serviceLoader = ServiceLoader.load(ITcFrameConnector.class);
+            Optional<ServiceLoader.Provider<ITcFrameConnector>> provider = serviceLoader.stream().filter(pr -> pr.type().getName().equals(dc.getType())).findFirst();
+            if (provider.isPresent()) {
+                ITcFrameConnector connector = provider.get().get();
+                connector.configure(this.name, this.configuration, this.context, dc.getConfiguration());
+                connector.prepare();
+                tcFrameConnectors.add(connector);
+            } else {
+                LOG.log(Level.WARNING, "External TC frame connector for class " + dc.getType() + " and configuration " + dc.getConfiguration() + " not found");
+            }
+        } else if(dc.getDataUnitType() == DataUnitType.TC_PACKET) {
+            ServiceLoader<ITcPacketConnector> serviceLoader = ServiceLoader.load(ITcPacketConnector.class);
+            Optional<ServiceLoader.Provider<ITcPacketConnector>> provider = serviceLoader.stream().filter(pr -> pr.type().getName().equals(dc.getType())).findFirst();
+            if (provider.isPresent()) {
+                ITcPacketConnector connector = provider.get().get();
+                connector.configure(this.name, this.configuration, this.context, this.serviceBroker, this.packetIdentifier, dc.getConfiguration());
+                connector.prepare();
+                tcPacketConnectors.add(connector);
+            } else {
+                LOG.log(Level.WARNING, "External TC packet connector for class " + dc.getType() + " and configuration " + dc.getConfiguration() + " not found");
+            }
+        }
+    }
+
     private void loadTcDataLinkProcessor() {
-        tcDataLinkProcessor = new TcDataLinkProcessor(configuration, context, serviceBroker, getCltuConnectors());
+        tcDataLinkProcessor = new TcDataLinkProcessor(configuration, context, serviceBroker, getCltuConnectors(), getTcFrameConnectors());
         registerActivityExecutor(tcDataLinkProcessor);
     }
 
+    private List<ITcFrameConnector> getTcFrameConnectors() {
+        return this.tcFrameConnectors;
+    }
+
     private List<ICltuConnector> getCltuConnectors() {
-        return this.sleManagers.stream().filter(o -> o instanceof CltuServiceInstanceManager).map(o -> (CltuServiceInstanceManager) o).collect(Collectors.toList());
+        List<ICltuConnector> connectors = new LinkedList<>();
+        connectors.addAll(this.sleManagers.stream().filter(o -> o instanceof CltuServiceInstanceManager).map(o -> (CltuServiceInstanceManager) o).collect(Collectors.toList()));
+        connectors.addAll(this.cltuConnectors);
+        return connectors;
     }
 
     private void loadTcPacketProcessor() {
-        tcPacketProcessor = new TcPacketProcessor(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions, this.tcDataLinkProcessor);
+        tcPacketProcessor = new TcPacketProcessor(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions, this.tcDataLinkProcessor, this.packetDecoder, getTcPacketConnectors());
         registerActivityExecutor(tcPacketProcessor);
+    }
+
+    private List<ITcPacketConnector> getTcPacketConnectors() {
+        return this.tcPacketConnectors;
     }
 
     private void registerActivityExecutor(IActivityExecutor executor) {
@@ -194,7 +263,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.rawDataRenderers.put(Constants.T_IDLE_PACKET, tmPacketProcessor::renderTmPacket);
         this.rawDataRenderers.put(Constants.T_BAD_PACKET, tmPacketProcessor::renderBadPacket);
         this.rawDataRenderers.put(Constants.T_TIME_COEFFICIENTS, timeCorrelationService::renderTimeCoefficients);
-        // TODO: add TC packets
+        this.rawDataRenderers.put(Constants.T_TC_PACKET, tcPacketProcessor::renderTcPacket);
     }
 
     private void loadTmPacketReplayer() {
@@ -218,7 +287,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private void loadTmPacketProcessor() {
         this.tmPacketProcessor = new TmPacketProcessor(this.configuration,
                 this.context,
-                new DefaultPacketDecoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), epoch),
+                this.packetDecoder,
                 this.timeCorrelationService,
                 this.serviceBroker);
         this.tmPacketProcessor.initialise();
@@ -227,12 +296,14 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private void loadEncodingDecodingDefinitions(String filePath) throws IOException {
         LOG.info("Loading TM/TC packet configuration at " + filePath);
         this.encodingDecodingDefinitions = Definition.load(new FileInputStream(filePath));
+        this.packetIdentifier = new FieldGroupBasedPacketIdentifier(this.encodingDecodingDefinitions, true, Collections.singletonList(Constants.ENCDEC_TM_PACKET_TYPE));
+        this.packetDecoder = new DefaultPacketDecoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), epoch);
     }
 
     private void loadTmDataLinkProcessor() {
         this.tmDataLinkProcessor = new TmDataLinkProcessor(this.name, this.configuration,
                 this.context,
-                new FieldGroupBasedPacketIdentifier(this.encodingDecodingDefinitions, true, Collections.singletonList(Constants.ENCDEC_TM_PACKET_TYPE)),
+                this.packetIdentifier,
                 tmPacketProcessor::extractPacketGenerationTime,
                 tmPacketProcessor::checkPacketQuality
                 );
@@ -321,10 +392,15 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     @Override
-    public List<ITransportConnector> getTransportConnectors() {
-        List<ITransportConnector> toReturn = this.sleManagers.stream().map(o -> (ITransportConnector) o).collect(Collectors.toCollection(LinkedList::new));
-        toReturn.add(this.tmPacketReplayer);
-        return toReturn;
+    public synchronized List<ITransportConnector> getTransportConnectors() {
+        if(allConnectors == null) {
+            allConnectors = this.sleManagers.stream().map(o -> (ITransportConnector) o).collect(Collectors.toCollection(LinkedList::new));
+            allConnectors.add(this.tmPacketReplayer);
+            allConnectors.addAll(this.cltuConnectors);
+            allConnectors.addAll(this.tcFrameConnectors);
+            allConnectors.addAll(this.tcPacketConnectors);
+        }
+        return Collections.unmodifiableList(allConnectors);
     }
 
     @Override
@@ -428,7 +504,22 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         if(first.isPresent()) {
             return first.get().getConnectionStatus().equals(TransportConnectionStatus.OPEN);
         } else {
-            return false;
+            for(ICltuConnector conn : cltuConnectors) {
+                if(conn.getSupportedRoutes().contains(route)) {
+                    return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
+                }
+            }
+            for(ITcFrameConnector conn : tcFrameConnectors) {
+                if(conn.getSupportedRoutes().contains(route)) {
+                    return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
+                }
+            }
+            for(ITcPacketConnector conn : tcPacketConnectors) {
+                if(conn.getSupportedRoutes().contains(route)) {
+                    return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
+                }
+            }
         }
+        return false;
     }
 }

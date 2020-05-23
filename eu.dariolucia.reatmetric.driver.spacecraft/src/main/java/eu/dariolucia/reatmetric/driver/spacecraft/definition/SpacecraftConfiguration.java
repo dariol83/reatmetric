@@ -22,8 +22,9 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Instant;
 import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
 
 @XmlRootElement(name = "spacecraft", namespace = "http://dariolucia.eu/reatmetric/driver/spacecraft")
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -66,6 +67,10 @@ public class SpacecraftConfiguration {
 
     @XmlElement(name = "services")
     private PacketServiceConfiguration packetServiceConfiguration = new PacketServiceConfiguration();
+
+    @XmlElementWrapper(name="external-connectors")
+    @XmlElement(name = "external-connector")
+    private List<ExternalConnectorConfiguration> externalConnectorConfigurations = new LinkedList<>();
 
     public String getName() {
         return name;
@@ -137,5 +142,13 @@ public class SpacecraftConfiguration {
 
     public void setTcPacketConfiguration(TcPacketConfiguration tcPacketConfiguration) {
         this.tcPacketConfiguration = tcPacketConfiguration;
+    }
+
+    public List<ExternalConnectorConfiguration> getExternalConnectorConfigurations() {
+        return externalConnectorConfigurations;
+    }
+
+    public void setExternalConnectorConfigurations(List<ExternalConnectorConfiguration> externalConnectorConfigurations) {
+        this.externalConnectorConfigurations = externalConnectorConfigurations;
     }
 }
