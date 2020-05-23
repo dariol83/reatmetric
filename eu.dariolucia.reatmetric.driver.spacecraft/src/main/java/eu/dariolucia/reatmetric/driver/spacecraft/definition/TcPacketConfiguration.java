@@ -37,8 +37,8 @@ public class TcPacketConfiguration {
     @XmlAttribute(name="pus-spare-length")
     private int spareLength = 0;
 
-    @XmlAttribute(name = "tm-pec-present")
-    private PacketErrorControlType tmPecPresent = PacketErrorControlType.CRC;
+    @XmlAttribute(name = "tc-pec-present")
+    private PacketErrorControlType tcPecPresent = PacketErrorControlType.CRC;
 
     public int getSpareLength() {
         return spareLength;
@@ -72,11 +72,11 @@ public class TcPacketConfiguration {
         this.sourceIdDefaultValue = sourceIdDefaultValue;
     }
 
-    public PacketErrorControlType getTmPecPresent() {
-        return tmPecPresent;
+    public PacketErrorControlType getTcPecPresent() {
+        return tcPecPresent;
     }
 
-    public void setTmPecPresent(PacketErrorControlType tmPecPresent) {
-        this.tmPecPresent = tmPecPresent;
+    public void setTcPecPresent(PacketErrorControlType tcPecPresent) {
+        this.tcPecPresent = tcPecPresent;
     }
 }

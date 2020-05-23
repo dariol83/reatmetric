@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 
 import eu.dariolucia.ccsds.encdec.pus.AckField;
 import eu.dariolucia.ccsds.encdec.pus.TcPusHeader;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.PacketErrorControlType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,8 +36,10 @@ public class TcPacketInfo {
     private final TcPusHeader pusHeader;
     private final int map;
     private final boolean mapUsed;
+    private final PacketErrorControlType checksumType;
 
-    public TcPacketInfo(String str, String overriddenAckFields, Integer overridenSourceId, Integer overridenMapId, Integer sourceIdDefaultValue) {
+    public TcPacketInfo(String str, String overriddenAckFields, Integer overridenSourceId, Integer overridenMapId, Integer sourceIdDefaultValue, PacketErrorControlType checksumType) {
+        this.checksumType = checksumType;
         String[] tokens = str.split("\\.", -1);
         Map<String, String> keyValueMap = new HashMap<>();
         for(String ton : tokens) {
@@ -112,4 +115,7 @@ public class TcPacketInfo {
         return apid;
     }
 
+    public PacketErrorControlType getChecksumType() {
+        return checksumType;
+    }
 }

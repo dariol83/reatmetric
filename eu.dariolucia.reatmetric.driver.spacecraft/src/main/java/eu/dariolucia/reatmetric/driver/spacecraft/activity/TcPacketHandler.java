@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 
 import eu.dariolucia.ccsds.encdec.definition.*;
+import eu.dariolucia.ccsds.encdec.pus.PusChecksumUtil;
 import eu.dariolucia.ccsds.encdec.structure.EncodingException;
 import eu.dariolucia.ccsds.encdec.structure.IPacketEncoder;
 import eu.dariolucia.ccsds.encdec.structure.PacketDefinitionIndexer;
@@ -159,7 +160,7 @@ public class TcPacketHandler {
                 }
             }
             // Finally build the packet info for the header
-            TcPacketInfo packetInfo = new TcPacketInfo(packetInfoStr, ackOverride, sourceId, mapId, configuration.getTcPacketConfiguration().getSourceIdDefaultValue());
+            TcPacketInfo packetInfo = new TcPacketInfo(packetInfoStr, ackOverride, sourceId, mapId, configuration.getTcPacketConfiguration().getSourceIdDefaultValue(), configuration.getTcPacketConfiguration().getTcPecPresent());
             // Construct the space packet using the information in the encoding definition and the configuration (override by activity properties)
             SpacePacket sp = buildPacket(packetInfo, packetUserDataField);
             Instant encodingTime = Instant.now();
@@ -202,7 +203,7 @@ public class TcPacketHandler {
     }
 
     private SpacePacket buildPacket(TcPacketInfo packetInfo, byte[] packetUserDataField) {
-        // FIXME: the packet shall also have a PECF as per ECSS.
+        // The packet shall also have a PECF as per ECSS.
         SpacePacketBuilder spb = SpacePacketBuilder.create()
                 .setApid(packetInfo.getApid())
                 .setTelecommandPacket()
@@ -222,7 +223,28 @@ public class TcPacketHandler {
             spb.addData(packetInfo.getPusHeader().encode(configuration.getTcPacketConfiguration().getSourceIdLength(), configuration.getTcPacketConfiguration().getSpareLength()));
         }
         spb.addData(packetUserDataField);
-        return spb.build();
+        switch (packetInfo.getChecksumType()) {
+            case CRC:
+            case ISO:
+                spb.addData(new byte[2]);
+                break;
+        }
+        SpacePacket sp = spb.build();
+        switch (packetInfo.getChecksumType()) {
+            case CRC: {
+                short crc = PusChecksumUtil.crcChecksum(sp.getPacket(), 0, sp.getLength());
+                sp.getPacket()[sp.getLength() - 2] = (byte) ((crc >> 8) & 0x00FF);
+                sp.getPacket()[sp.getLength() - 1] = (byte) (crc & 0x00FF);
+            }
+            break;
+            case ISO: {
+                short iso = PusChecksumUtil.isoChecksum(sp.getPacket(), 0, sp.getLength());
+                sp.getPacket()[sp.getLength() - 2] = (byte) ((iso >> 8) & 0x00FF);
+                sp.getPacket()[sp.getLength() - 1] = (byte) (iso & 0x00FF);
+            }
+            break;
+        }
+        return sp;
     }
 
     private TcTracker buildTcTracker(IActivityHandler.ActivityInvocation activityInvocation, SpacePacket sp, TcPacketInfo packetInfo, RawData rd) {

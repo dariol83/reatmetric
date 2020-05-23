@@ -180,6 +180,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.rawDataRenderers.put(Constants.T_IDLE_PACKET, tmPacketProcessor::renderTmPacket);
         this.rawDataRenderers.put(Constants.T_BAD_PACKET, tmPacketProcessor::renderBadPacket);
         this.rawDataRenderers.put(Constants.T_TIME_COEFFICIENTS, timeCorrelationService::renderTimeCoefficients);
+        // TODO: add TC packets
     }
 
     private void loadTmPacketReplayer() {
@@ -395,7 +396,6 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
                 .findFirst();
         if(first.isPresent()) {
             return first.get().getConnectionStatus().equals(TransportConnectionStatus.OPEN);
-            // TODO: uplink status and production status might be considered
         } else {
             return false;
         }

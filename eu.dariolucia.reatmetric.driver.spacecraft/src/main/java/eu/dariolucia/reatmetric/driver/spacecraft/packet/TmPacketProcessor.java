@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.packet;
 
+import eu.dariolucia.ccsds.encdec.pus.PusChecksumUtil;
 import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingException;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
@@ -191,8 +192,31 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     }
 
     public Quality checkPacketQuality(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {
-        // TODO: if tmPecPresent in PUS configuration is NONE, CRC or ISO, check packet PEC: implement in ccsds.encdec (ISO, CRC)
-        return Quality.GOOD;
+        // if tmPecPresent in PUS configuration is CRC or ISO, check packet PEC
+        short apid = spacePacket.getApid();
+        TmPusConfiguration confForApid = configuration.getPusConfigurationFor(apid);
+        if(confForApid == null) {
+            return Quality.GOOD;
+        } else {
+            switch (confForApid.getTmPecPresent()) {
+                case CRC: {
+                    if(PusChecksumUtil.crcChecksum(spacePacket.getPacket(), 0, spacePacket.getLength()) == 0) {
+                        return Quality.GOOD;
+                    } else {
+                        return Quality.BAD;
+                    }
+                }
+                case ISO: {
+                    if(PusChecksumUtil.verifyIsoChecksum(spacePacket.getPacket(), 0, spacePacket.getLength())) {
+                        return Quality.GOOD;
+                    } else {
+                        return Quality.BAD;
+                    }
+                }
+                default:
+                    return Quality.GOOD;
+            }
+        }
     }
 
     public void dispose() {
