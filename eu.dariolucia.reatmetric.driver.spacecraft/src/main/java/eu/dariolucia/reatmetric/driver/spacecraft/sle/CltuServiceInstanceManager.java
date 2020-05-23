@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.sle;
 
+import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.incoming.pdus.CltuThrowEventInvocation;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.incoming.pdus.CltuTransferDataInvocation;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.outgoing.pdus.*;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.common.pdus.SleScheduleStatusReportReturn;
@@ -29,18 +30,23 @@ import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuDiagnosticsStrings;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuParameterEnum;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuServiceInstance;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuUplinkStatusEnum;
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
+import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
@@ -53,7 +59,7 @@ import java.util.logging.Logger;
 /**
  * This class has a subscription mechanism, which allows subscribers to know the status of a CLTU (ACCEPTED, REJECTED, UPLINKED, FAILED, DISCARDED).
  */
-public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuServiceInstance, CltuServiceInstanceConfiguration> {
+public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuServiceInstance, CltuServiceInstanceConfiguration> implements IActivityExecutor {
 
     private static final Logger LOG = Logger.getLogger(CltuServiceInstanceManager.class.getName());
     private static final String FIRST_CLTU_ID_KEY = "cltu.first.id";
@@ -63,12 +69,15 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
     private volatile int bufferCapacity = -1;
     private final AtomicInteger estimatedFreeBuffer = new AtomicInteger();
 
-    private final Map<Long, CltuTracker> cltuId2tracker = new ConcurrentHashMap<>();
-    private final Map<Long, CltuTransferDataInvocation> invokeId2InvocationCorrelationMap = new ConcurrentHashMap<>();
-
-    private final AtomicLong cltuCounter = new AtomicLong(0);
-
+    private final Map<Long, CltuTracker> cltuId2tracker = new ConcurrentHashMap<>(); // CLTU invocation ID to CLTU tracker
+    private final Map<Long, CltuTransferDataInvocation> invokeId2InvocationCorrelationMap = new ConcurrentHashMap<>(); // invokeID to dispatched operation
+    private final AtomicLong cltuCounter = new AtomicLong(0); // CLTU invocation ID
     private final Semaphore cltuIdRefreshSemaphore = new Semaphore(0);
+
+    private final Map<Long, IActivityHandler.ActivityInvocation> eventId2tracker = new ConcurrentHashMap<>();
+    private final Map<Long, CltuThrowEventInvocation> invokeId2ThrowEventInvocationCorrelationMap = new ConcurrentHashMap<>();
+    private final AtomicLong eventInvocationIdCounter = new AtomicLong(0);
+    private final Semaphore eventIdRefreshSemaphore = new Semaphore(0);
 
     private final List<ICltuStatusSubscriber> subscribers = new CopyOnWriteArrayList<>();
 
@@ -107,6 +116,8 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
             process((CltuAsyncNotifyInvocation) operation);
         } else if (operation instanceof CltuTransferDataReturn) {
             process((CltuTransferDataReturn) operation);
+        } else if (operation instanceof CltuThrowEventReturn) {
+            process((CltuThrowEventReturn) operation);
         } else if (operation instanceof SleScheduleStatusReportReturn) {
             process((SleScheduleStatusReportReturn) operation);
         } else if (operation instanceof CltuStatusReportInvocation) {
@@ -128,6 +139,10 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
                 this.cltuCounter.set(operation.getResult().getPositiveResult().getParCltuIdentification().getParameterValue().longValue());
                 this.cltuIdRefreshSemaphore.release();
             }
+            if (operation.getResult().getPositiveResult().getParEventInvocationIdentification() != null) {
+                this.eventInvocationIdCounter.set(operation.getResult().getPositiveResult().getParEventInvocationIdentification().getParameterValue().longValue());
+                this.eventIdRefreshSemaphore.release();
+            }
         } else {
             LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": get parameter returned negative result: " + CltuDiagnosticsStrings.getGetParameterDiagnostic(operation.getResult().getNegativeResult()));
         }
@@ -139,6 +154,10 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
                 this.cltuCounter.set(operation.getResult().getPositiveResult().getParCltuIdentification().getParameterValue().longValue());
                 this.cltuIdRefreshSemaphore.release();
             }
+            if (operation.getResult().getPositiveResult().getParEventInvocationIdentification() != null) {
+                this.eventInvocationIdCounter.set(operation.getResult().getPositiveResult().getParEventInvocationIdentification().getParameterValue().longValue());
+                this.eventIdRefreshSemaphore.release();
+            }
         } else {
             LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": get parameter returned negative result: " + CltuDiagnosticsStrings.getGetParameterDiagnostic(operation.getResult().getNegativeResult()));
         }
@@ -149,6 +168,10 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
             if (operation.getResult().getPositiveResult().getParCltuIdentification() != null) {
                 this.cltuCounter.set(operation.getResult().getPositiveResult().getParCltuIdentification().getParameterValue().longValue());
                 this.cltuIdRefreshSemaphore.release();
+            }
+            if (operation.getResult().getPositiveResult().getParEventInvocationIdentification() != null) {
+                this.eventInvocationIdCounter.set(operation.getResult().getPositiveResult().getParEventInvocationIdentification().getParameterValue().longValue());
+                this.eventIdRefreshSemaphore.release();
             }
         } else {
             LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": get parameter returned negative result: " + CltuDiagnosticsStrings.getGetParameterDiagnostic(operation.getResult().getNegativeResult()));
@@ -179,6 +202,42 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         }
     }
 
+    private void process(CltuThrowEventReturn operation) {
+        CltuThrowEventInvocation invocation = this.invokeId2ThrowEventInvocationCorrelationMap.remove(operation.getInvokeId().longValue());
+        if (invocation == null) {
+            LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": THROW-EVENT return with invokeId " + operation.getInvokeId().longValue() + " not sent by this system");
+            return;
+        }
+        long eventId = invocation.getEventInvocationIdentification().longValue();
+        IActivityHandler.ActivityInvocation tracker = this.eventId2tracker.get(eventId);
+        if (tracker == null) {
+            LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": THROW-EVENT ID " + eventId + " not sent by this system");
+            return;
+        }
+        if (operation.getResult().getPositiveResult() != null) {
+            LOG.log(Level.INFO, serviceInstance.getServiceInstanceIdentifier() + ": THROW-EVENT ID " + eventId + " accepted");
+            reportThrowEventState(tracker, Instant.now(), ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION);
+            reportThrowEventState(tracker, Instant.now(), ActivityOccurrenceState.EXECUTION, Constants.STAGE_GROUND_STATION_EXECUTION, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
+        } else {
+            LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": negative THROW-EVENT return for THROW-EVENT ID " + eventId + ": " + CltuDiagnosticsStrings.getThrowEventDiagnostic(operation.getResult().getNegativeResult()));
+            reportThrowEventState(tracker, Instant.now(), ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
+            this.eventId2tracker.remove(eventId);
+            refreshExpectedEventId();
+        }
+    }
+
+    private void refreshExpectedEventId() {
+        this.serviceInstance.getParameter(CltuParameterEnum.EXPECTED_EVENT_INVOCATION_IDENTIFICATION);
+        try {
+            boolean acquired = this.eventIdRefreshSemaphore.tryAcquire(10, TimeUnit.SECONDS);
+            if (!acquired) {
+                LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": acquisition of expected THROW-EVENT ID failed due to timeout");
+            }
+        } catch (InterruptedException e) {
+            LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": acquisition of expected THROW-EVENT ID failed due to interruption", e);
+        }
+    }
+
     private void process(CltuTransferDataReturn operation) {
         CltuTransferDataInvocation invocation = this.invokeId2InvocationCorrelationMap.remove(operation.getInvokeId().longValue());
         if (invocation == null) {
@@ -192,7 +251,7 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
             return;
         }
         if (operation.getResult().getPositiveResult() != null) {
-            LOG.log(Level.INFO, "CLTU ID " + tracker.getExternalId() + " accepted");
+            LOG.log(Level.INFO, serviceInstance.getServiceInstanceIdentifier() + ": CLTU ID " + tracker.getExternalId() + " accepted");
             informSubscribers(tracker.getExternalId(), CltuProcessingStatus.ACCEPTED);
         } else {
             LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": negative CLTU TRANSFER DATA return for CLTU ID " + tracker.getExternalId() + ": " + CltuDiagnosticsStrings.getTransferDataDiagnostic(operation.getResult().getNegativeResult()));
@@ -248,11 +307,17 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         } else if (operation.getCltuNotification().getProductionOperational() != null) {
             LOG.log(Level.INFO, serviceInstance.getServiceInstanceIdentifier() + ": production status is operational");
         } else if (operation.getCltuNotification().getActionListCompleted() != null) {
-            // TODO introduce THROW-EVENT activity type
+            // The THROW-EVENT identified by the value of the action-list-completed parameter successfully completed
+            long eventId = operation.getCltuNotification().getActionListCompleted().longValue();
+            throwEventCompleted(eventId, true);
         } else if (operation.getCltuNotification().getActionListNotCompleted() != null) {
-            // TODO introduce THROW-EVENT activity type
+            // The THROW-EVENT identified by the value of the action-list-not-completed parameter failed execution
+            long eventId = operation.getCltuNotification().getActionListNotCompleted().longValue();
+            throwEventCompleted(eventId, false);
         } else if (operation.getCltuNotification().getEventConditionEvFalse() != null) {
-            // TODO introduce THROW-EVENT activity type
+            // The THROW-EVENT identified by the value of the event condition parameter failed execution due to failed conditions
+            long eventId = operation.getCltuNotification().getEventConditionEvFalse().longValue();
+            throwEventCompleted(eventId, false);
         } else if (operation.getCltuNotification().getBufferEmpty() != null) {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": CLTU buffer empty");
         } else {
@@ -261,6 +326,16 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         this.uplinkStatus = CltuUplinkStatusEnum.values()[operation.getUplinkStatus().intValue()];
         ProductionStatusEnum prodStatus = ProductionStatusEnum.fromCode(operation.getProductionStatus().intValue());
         updateProductionStatus(prodStatus, uplinkStatus);
+    }
+
+    private void throwEventCompleted(long eventId, boolean success) {
+        LOG.log(success ? Level.INFO : Level.SEVERE, serviceInstance.getServiceInstanceIdentifier() + ": THROW-EVENT " + eventId + " " + (success ? "completed" : "failed"));
+        IActivityHandler.ActivityInvocation tracker = this.eventId2tracker.remove(eventId);
+        if (tracker != null) {
+            reportThrowEventState(tracker, Instant.now(), ActivityOccurrenceState.EXECUTION, Constants.STAGE_GROUND_STATION_EXECUTION, success ? ActivityReportState.OK : ActivityReportState.FATAL, success ? ActivityOccurrenceState.VERIFICATION : ActivityOccurrenceState.EXECUTION);
+        } else {
+            LOG.log(Level.WARNING, serviceInstance.getServiceInstanceIdentifier() + ": received notification of completion for THROW-EVENT " + eventId + " not present in the system");
+        }
     }
 
     private void purgeOutstandingCltus() {
@@ -328,6 +403,9 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         if (serviceInstance.getCurrentBindingState() == ServiceInstanceBindingStateEnum.ACTIVE || serviceInstance.getCurrentBindingState() == ServiceInstanceBindingStateEnum.READY) {
             // Reset the buffer capacity
             this.bufferCapacity = 0;
+            // Reset event id
+            this.eventInvocationIdCounter.set(0);
+            // Activate reporting
             if (siConfiguration.getReportingCycle() != 0) {
                 serviceInstance.scheduleStatusReport(false, siConfiguration.getReportingCycle());
             }
@@ -365,6 +443,45 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
     }
 
     @Override
+    public void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        try {
+            sendThrowEvent(activityInvocation);
+        } catch (Exception e) {
+            throw new ActivityHandlingException("Cannot process THROW-EVENT: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<String> getSupportedActivityTypes() {
+        return Collections.singletonList(Constants.SLE_CLTU_THROW_EVENT_ACTIVITY_TYPE);
+    }
+
+    @Override
+    public List<String> getSupportedRoutes() {
+        return Collections.singletonList(getServiceInstanceIdentifier());
+    }
+
+    public void sendThrowEvent(IActivityHandler.ActivityInvocation activityInvocation) {
+        int eventIdentifier = ((Number) activityInvocation.getArguments().get(Constants.SLE_CLTU_THROW_EVENT_IDENTIFIER_ARG_NAME)).intValue();
+        byte[] eventQualifier = (byte[]) activityInvocation.getArguments().get(Constants.SLE_CLTU_THROW_EVENT_QUALIFIER_ARG_NAME);
+        if (this.serviceInstance.getCurrentBindingState() != ServiceInstanceBindingStateEnum.ACTIVE &&  this.serviceInstance.getCurrentBindingState() != ServiceInstanceBindingStateEnum.READY) {
+            LOG.severe(serviceInstance.getServiceInstanceIdentifier() + ": transmission of THROW-EVENT " + eventIdentifier + "[" + StringUtil.toHexDump(eventQualifier) + "] failed: service instance state is " + this.serviceInstance.getCurrentBindingState());
+            reportThrowEventState(activityInvocation, Instant.now(), ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE);
+            return;
+        }
+        long thisCounter = this.eventInvocationIdCounter.getAndIncrement();
+        this.eventId2tracker.put(thisCounter, activityInvocation);
+        LOG.log(Level.INFO, "Sending THROW-EVENT " + eventIdentifier + "[" + StringUtil.toHexDump(eventQualifier) + "] with ID " + thisCounter);
+        reportThrowEventState(activityInvocation, Instant.now(), ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
+        reportThrowEventState(activityInvocation, Instant.now(), ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+        this.serviceInstance.throwEvent(thisCounter, eventIdentifier, eventQualifier);
+    }
+
+    private void reportThrowEventState(IActivityHandler.ActivityInvocation a, Instant t, ActivityOccurrenceState state, String name, ActivityReportState status, ActivityOccurrenceState nextState) {
+        context.getProcessingModel().reportActivityProgress(ActivityProgress.of(a.getActivityId(), a.getActivityOccurrenceId(), name, t, state, null, status, nextState, null));
+    }
+
+    @Override
     public void onPduSentError(ServiceInstance si, Object operation, String name, byte[] encodedOperation, String error, Exception exception) {
         super.onPduSentError(si, operation, name, encodedOperation, error, exception);
         // handle error on CLTU transfer data transmission
@@ -376,6 +493,14 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
                 informSubscribers(tracker.getExternalId(), CltuProcessingStatus.RELEASED_FAILED);
             }
         }
+        // handle error on throw event transmission
+        if (operation instanceof CltuThrowEventInvocation) {
+            long eventId = ((CltuThrowEventInvocation) operation).getEventInvocationIdentification().longValue();
+            IActivityHandler.ActivityInvocation tracker = eventId2tracker.remove(eventId);
+            if (tracker != null) {
+                reportThrowEventState(tracker, Instant.now(), ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
+            }
+        }
     }
 
     @Override
@@ -383,6 +508,9 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         super.onPduSent(si, operation, name, encodedOperation);
         if(operation instanceof CltuTransferDataInvocation) {
             this.invokeId2InvocationCorrelationMap.put(((CltuTransferDataInvocation) operation).getInvokeId().longValue(), (CltuTransferDataInvocation) operation);
+        }
+        if(operation instanceof CltuThrowEventInvocation) {
+            this.invokeId2ThrowEventInvocationCorrelationMap.put(((CltuThrowEventInvocation) operation).getInvokeId().longValue(), (CltuThrowEventInvocation) operation);
         }
     }
 

@@ -64,11 +64,20 @@ public class Constants {
     // Activity stages
     public static final String STAGE_GROUND_STATION_RECEPTION = "Ground Station Reception";
     public static final String STAGE_GROUND_STATION_UPLINK = "Ground Station Uplink";
+    public static final String STAGE_GROUND_STATION_EXECUTION = "Ground Station Execution"; // for THROW-EVENT activities
     public static final String STAGE_ONBOARD_RECEPTION = "On-board Reception";
     public static final String STAGE_SPACECRAFT_SCHEDULED = "Scheduled";
     public static final String STAGE_SPACECRAFT_ACCEPTED = "On-board Acceptance";
     public static final String STAGE_SPACECRAFT_STARTED = "On-board Start";
     public static final String STAGE_SPACECRAFT_PROGRESS = "On-board Progress";
     public static final String STAGE_SPACECRAFT_COMPLETE = "On-board Completion";
+
+    // CLTU Throw Event
+    public static final String SLE_CLTU_THROW_EVENT_ACTIVITY_TYPE = "THROW-EVENT";
+    public static final String SLE_CLTU_THROW_EVENT_IDENTIFIER_ARG_NAME = "EVENT-IDENTIFIER";
+    public static final String SLE_CLTU_THROW_EVENT_QUALIFIER_ARG_NAME = "EVENT-QUALIFIER";
+
+    // COP-1
+    public static final String TC_COP1_ACTIVITY_TYPE = "COP-1";
 
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.activity;
+package eu.dariolucia.reatmetric.driver.spacecraft.packet;
 
 import eu.dariolucia.ccsds.encdec.definition.*;
 import eu.dariolucia.ccsds.encdec.pus.PusChecksumUtil;
@@ -39,6 +39,7 @@ import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.value.Array;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
@@ -59,9 +60,9 @@ import java.util.logging.Logger;
 import static eu.dariolucia.reatmetric.driver.spacecraft.common.Constants.ACTIVITY_PROPERTY_OVERRIDE_MAP_ID;
 import static eu.dariolucia.reatmetric.driver.spacecraft.common.Constants.ACTIVITY_PROPERTY_OVERRIDE_SOURCE_ID;
 
-public class TcPacketHandler {
+public class TcPacketProcessor implements IActivityExecutor {
 
-    private static final Logger LOG = Logger.getLogger(TcPacketHandler.class.getName());
+    private static final Logger LOG = Logger.getLogger(TcPacketProcessor.class.getName());
 
     private static final int MAX_TC_PACKET_SIZE = 65536;
 
@@ -79,7 +80,7 @@ public class TcPacketHandler {
         return t;
     });
 
-    public TcPacketHandler(String driverName, Instant epoch, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, Definition encodingDecodingDefinitions, TcDataLinkProcessor tcDataLinkProcessor) {
+    public TcPacketProcessor(String driverName, Instant epoch, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, Definition encodingDecodingDefinitions, TcDataLinkProcessor tcDataLinkProcessor) {
         this.driverName = driverName;
         this.configuration = configuration;
         this.context = context;
@@ -95,10 +96,17 @@ public class TcPacketHandler {
         }
     }
 
+    @Override
     public List<String> getSupportedActivityTypes() {
         return Collections.singletonList(configuration.getTcPacketConfiguration().getActivityTcPacketType());
     }
 
+    @Override
+    public List<String> getSupportedRoutes() {
+        return tcDataLinkProcessor.getSupportedRoutes();
+    }
+
+    @Override
     public void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
         //
         if(context.getProcessingModel() == null) {

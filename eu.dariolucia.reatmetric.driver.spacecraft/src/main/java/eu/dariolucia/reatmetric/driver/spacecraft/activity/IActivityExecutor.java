@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.services;
+package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 
-import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
-import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
-import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
-import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.driver.spacecraft.packet.TcTracker;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 
-import java.time.Instant;
+import java.util.List;
 
-public interface IServicePacketSubscriber {
+public interface IActivityExecutor {
 
-    void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded);
+    void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException;
 
-    void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker);
+    List<String> getSupportedActivityTypes();
+
+    List<String> getSupportedRoutes();
+
 }

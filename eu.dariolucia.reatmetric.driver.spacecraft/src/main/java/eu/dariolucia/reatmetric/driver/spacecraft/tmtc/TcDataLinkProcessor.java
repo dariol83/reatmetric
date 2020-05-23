@@ -29,6 +29,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
@@ -37,7 +38,8 @@ import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
+import eu.dariolucia.reatmetric.driver.spacecraft.packet.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcVcConfiguration;
@@ -53,7 +55,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelSenderOutput<TcTransferFrame>, CltuServiceInstanceManager.ICltuStatusSubscriber {
+public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelSenderOutput<TcTransferFrame>, CltuServiceInstanceManager.ICltuStatusSubscriber, IActivityExecutor {
 
     private static final Logger LOG = Logger.getLogger(TcDataLinkProcessor.class.getName());
 
@@ -249,6 +251,21 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         for (TcTracker tracker : trackers) {
             context.getProcessingModel().reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), name, t, state, null, status, nextState, null));
         }
+    }
+
+    @Override
+    public void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        // TODO: COP-1 directives
+    }
+
+    @Override
+    public List<String> getSupportedActivityTypes() {
+        return Collections.singletonList(Constants.TC_COP1_ACTIVITY_TYPE);
+    }
+
+    @Override
+    public List<String> getSupportedRoutes() {
+        return this.cltuSenders.values().stream().map(CltuServiceInstanceManager::getServiceInstanceIdentifier).collect(Collectors.toList());
     }
 
     private class RequestTracker {

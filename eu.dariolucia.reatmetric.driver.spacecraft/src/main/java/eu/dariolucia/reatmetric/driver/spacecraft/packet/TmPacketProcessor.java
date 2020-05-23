@@ -59,10 +59,10 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     private final IRawDataBroker broker;
     private final TmPacketConfiguration configuration;
     private final TimeCorrelationService timeCorrelationService;
-    private final IServiceBroker IServiceBroker;
+    private final IServiceBroker serviceBroker;
     private final boolean[] processedVCs;
 
-    public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, TimeCorrelationService timeCorrelationService, IServiceBroker IServiceBroker) {
+    public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, TimeCorrelationService timeCorrelationService, IServiceBroker serviceBroker) {
         this.spacecraft = String.valueOf(configuration.getId());
         this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
         this.processingModel = context.getProcessingModel();
@@ -70,7 +70,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
         this.broker = context.getRawDataBroker();
         this.configuration = configuration.getTmPacketConfiguration();
         this.timeCorrelationService = timeCorrelationService;
-        this.IServiceBroker = IServiceBroker;
+        this.serviceBroker = serviceBroker;
         this.processedVCs = new boolean[64];
         for(int i = 0; i < this.processedVCs.length; ++i) {
             if(this.configuration.getProcessVcs() != null && this.configuration.getProcessVcs().contains(i)) {
@@ -151,7 +151,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     }
 
     private void notifyExtensionServices(RawData rd, SpacePacket spacePacket, TmPusHeader pusHeader, DecodingResult result) {
-        this.IServiceBroker.distributeTmPacket(rd, spacePacket, pusHeader, result);
+        this.serviceBroker.distributeTmPacket(rd, spacePacket, pusHeader, result);
     }
 
     private void forwardParameterResult(RawData packet, List<ParameterValue> decodedParameters) {

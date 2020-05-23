@@ -41,6 +41,7 @@ import eu.dariolucia.reatmetric.core.api.IRawDataRenderer;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TmPacketProcessor;
@@ -53,7 +54,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.sle.CltuServiceInstanceManager
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.SleServiceInstanceManager;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketHandler;
+import eu.dariolucia.reatmetric.driver.spacecraft.packet.TcPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TcDataLinkProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmDataLinkProcessor;
 
@@ -111,7 +112,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private TmDataLinkProcessor tmDataLinkProcessor;
     private TmPacketProcessor tmPacketProcessor;
 
-    private TcPacketHandler tcPacketHandler;
+    private TcPacketProcessor tcPacketProcessor;
     private TcDataLinkProcessor tcDataLinkProcessor;
 
     private ServiceBroker serviceBroker;
@@ -121,6 +122,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     private final Map<String, Function<RawData, LinkedHashMap<String, String>>> rawDataRenderers = new TreeMap<>();
     private IRawDataArchive rawDataArchive; // Needed to retrieve raw data without contents, for rendering
+
+    private final Map<String, List<IActivityExecutor>> activityType2executors = new TreeMap<>();
 
     @Override
     public void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException {
@@ -146,8 +149,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             loadSleServiceInstances(driverConfigurationDirectory + File.separator + SLE_FOLDER);
             // Load the TC Data Link processor
             loadTcDataLinkProcessor();
-            // Load activity handler
-            loadActivityHandler();
+            // Load the TC Packet processor
+            loadTcPacketProcessor();
             // Load packet replayer
             loadTmPacketReplayer();
             // Initialise raw data renderers
@@ -161,15 +164,23 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     private void loadTcDataLinkProcessor() {
-        this.tcDataLinkProcessor = new TcDataLinkProcessor(configuration, context, serviceBroker, getCltuConnectors());
+        tcDataLinkProcessor = new TcDataLinkProcessor(configuration, context, serviceBroker, getCltuConnectors());
+        registerActivityExecutor(tcDataLinkProcessor);
     }
 
     private List<CltuServiceInstanceManager> getCltuConnectors() {
         return this.sleManagers.stream().filter(o -> o instanceof CltuServiceInstanceManager).map(o -> (CltuServiceInstanceManager) o).collect(Collectors.toList());
     }
 
-    private void loadActivityHandler() {
-        this.tcPacketHandler = new TcPacketHandler(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions, this.tcDataLinkProcessor);
+    private void loadTcPacketProcessor() {
+        tcPacketProcessor = new TcPacketProcessor(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions, this.tcDataLinkProcessor);
+        registerActivityExecutor(tcPacketProcessor);
+    }
+
+    private void registerActivityExecutor(IActivityExecutor executor) {
+        for(String type : executor.getSupportedActivityTypes()) {
+            activityType2executors.computeIfAbsent(type, o -> new LinkedList<>()).add(executor);
+        }
     }
 
     private void loadRawDataRenderers() {
@@ -263,6 +274,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         CltuServiceInstanceManager m = new CltuServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context);
         m.prepare();
         this.sleManagers.add(m);
+        // Register as activity executor
+        registerActivityExecutor(m);
     }
 
     private void createRcfServiceInstance(PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration sic) {
@@ -321,7 +334,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.onboardEventService.dispose();
         this.commandVerificationService.dispose();
         this.serviceBroker.dispose();
-        this.tcPacketHandler.dispose();
+        this.tcPacketProcessor.dispose();
         this.tcDataLinkProcessor.dispose();
         updateStatus(SystemStatus.UNKNOWN);
     }
@@ -372,20 +385,34 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     @Override
     public List<String> getSupportedRoutes() {
-        return this.sleManagers.stream()
-                .filter(o -> o instanceof CltuServiceInstanceManager)
-                .map(SleServiceInstanceManager::getServiceInstanceIdentifier)
-                .collect(Collectors.toList());
+        Set<String> routes = new HashSet<>();
+        for(Map.Entry<String, List<IActivityExecutor>> entry : activityType2executors.entrySet()) {
+            for(IActivityExecutor ex : entry.getValue()) {
+                routes.addAll(ex.getSupportedRoutes());
+            }
+        }
+        return new ArrayList<>(routes);
     }
 
     @Override
     public List<String> getSupportedActivityTypes() {
-        return tcPacketHandler.getSupportedActivityTypes();
+        return new ArrayList<>(activityType2executors.keySet());
     }
 
     @Override
     public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
-        tcPacketHandler.executeActivity(activityInvocation);
+        String type = activityInvocation.getType();
+        List<IActivityExecutor> executors = activityType2executors.get(type);
+        if(executors == null || executors.isEmpty()) {
+            throw new ActivityHandlingException("Cannot find any executor to handle activity " + activityInvocation.getPath() + " type " + type);
+        }
+        for(IActivityExecutor ex : executors) {
+            if(ex.getSupportedRoutes().contains(activityInvocation.getRoute())) {
+                ex.executeActivity(activityInvocation);
+                return;
+            }
+        }
+        throw new ActivityHandlingException("Cannot find any executor to handle activity " + activityInvocation.getPath() + " type " + type + " for route " + activityInvocation.getRoute());
     }
 
     @Override
