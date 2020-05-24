@@ -96,6 +96,11 @@ public class SpacecraftConfiguration {
         this.epoch = epoch;
     }
 
+    /**
+     * Return the propagation delay (one way light time) in microseconds.
+     *
+     * @return the propagation delay in microseconds
+     */
     public long getPropagationDelay() {
         return propagationDelay;
     }

@@ -71,7 +71,7 @@ public class Constants {
     public static final String STAGE_SPACECRAFT_ACCEPTED = "On-board Acceptance";
     public static final String STAGE_SPACECRAFT_STARTED = "On-board Start";
     public static final String STAGE_SPACECRAFT_PROGRESS = "On-board Progress";
-    public static final String STAGE_SPACECRAFT_COMPLETE = "On-board Completion";
+    public static final String STAGE_SPACECRAFT_COMPLETED = "On-board Completion";
 
     // CLTU Throw Event
     public static final String SLE_CLTU_THROW_EVENT_ACTIVITY_TYPE = "THROW-EVENT";
