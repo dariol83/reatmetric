@@ -49,6 +49,10 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
     @FXML
     private TextField sourceText;
     @FXML
+    private CheckBox idCheckbox;
+    @FXML
+    private TextField idText;
+    @FXML
     private CheckBox messageCheckbox;
     @FXML
     private TextField messageText;
@@ -68,6 +72,7 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
     public void initialize(URL url, ResourceBundle rb) {
         this.severityList.disableProperty().bind(this.severityCheckbox.selectedProperty().not());
         this.sourceText.disableProperty().bind(this.sourceCheckbox.selectedProperty().not());
+        this.idText.disableProperty().bind(this.idCheckbox.selectedProperty().not());
         this.messageText.disableProperty().bind(this.messageCheckbox.selectedProperty().not());
         
         this.severityList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
@@ -102,6 +107,7 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
         if(this.selectedFilter == null) {
             this.severityCheckbox.setSelected(false);
             this.sourceCheckbox.setSelected(false);
+            this.idCheckbox.setSelected(false);
             this.messageCheckbox.setSelected(false);
             this.sourceText.setText("");
             this.messageText.setText("");
@@ -109,9 +115,11 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
         } else {
             this.severityCheckbox.setSelected(this.selectedFilter.getSeverityList() != null);
             this.sourceCheckbox.setSelected(this.selectedFilter.getSourceList() != null);
+            this.idCheckbox.setSelected(this.selectedFilter.getIdList() != null);
             this.messageCheckbox.setSelected(this.selectedFilter.getMessageTextContains() != null);
-            // TODO complete with ID support
+
             this.sourceText.setText(IFilterController.toStringList(this.selectedFilter.getSourceList()));
+            this.idText.setText(IFilterController.toStringList(this.selectedFilter.getIdList()));
             this.messageText.setText(this.selectedFilter.getMessageTextContains() != null ? this.selectedFilter.getMessageTextContains() : "");
             this.severityList.getSelectionModel().clearSelection();
             if(this.selectedFilter.getSeverityList() != null) {    
@@ -123,15 +131,25 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
     private OperationalMessageFilter deriveFromWidgets() {
         List<Severity> sevList = deriveSelectedSeverity();
         List<String> sourceList = deriveSelectedSource();
-        List<String> idList = null; // TODO: implement support in UI field
-        String messageRegExp = deriveRegExpMessage();
-        return new OperationalMessageFilter(messageRegExp, idList, sourceList, sevList);
+        List<String> idList = deriveSelectedId();
+        String messageContents = deriveMessageContents();
+        return new OperationalMessageFilter(messageContents, idList, sourceList, sevList);
     }
 
     private List<String> deriveSelectedSource() {
         if(this.sourceCheckbox.isSelected()) {
             List<String> toReturn = new LinkedList<>();
-            toReturn.addAll(Arrays.asList(this.sourceText.getText().split(",")));
+            toReturn.addAll(Arrays.asList(this.sourceText.getText().split(",", -1)));
+            return toReturn;
+        } else {
+            return null;
+        }
+    }
+
+    private List<String> deriveSelectedId() {
+        if(this.idCheckbox.isSelected()) {
+            List<String> toReturn = new LinkedList<>();
+            toReturn.addAll(Arrays.asList(this.idText.getText().split(",", -1)));
             return toReturn;
         } else {
             return null;
@@ -148,7 +166,7 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
         }
     }
 
-    private String deriveRegExpMessage() {
+    private String deriveMessageContents() {
         if(this.messageCheckbox.isSelected()) {
             return this.messageText.getText();
         } else {
