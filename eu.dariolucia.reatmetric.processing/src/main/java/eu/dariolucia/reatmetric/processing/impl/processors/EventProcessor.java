@@ -37,6 +37,7 @@ import javax.script.ScriptException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -51,7 +52,8 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     private boolean conditionTriggerState = false;
 
     private boolean internallyTriggered = false;
-    private String internalSource = null;
+    private List<String> internalSource = new LinkedList<>(); // nulls allowed
+
     private Instant lastReportedEventTime = null;
 
     private final EventDataBuilder builder;
@@ -97,7 +99,7 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
         Object report = null;
         IUniqueId containerId = null;
         String route = null;
-        String source = null;
+        List<String> sourceList = null;
         String qualifier = null;
         List<AbstractDataItem> generatedStates = new ArrayList<>(2);
         // If the object is enabled, then you have to process it as usual
@@ -107,6 +109,7 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
             generationTime = newValue != null ? newValue.getGenerationTime() : generationTime;
             if(definition.getCondition() != null) {
                 // If there is an expression, then evaluate the expression and check for a transition false -> true
+                sourceList = Collections.singletonList(getPath().asString());
                 boolean triggered;
                 try {
                     triggered = (Boolean) definition.getCondition().execute(processor, null);
@@ -125,17 +128,17 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                 report = newValue.getReport();
                 containerId = newValue.getContainer();
                 qualifier = newValue.getQualifier();
-                source = newValue.getSource();
+                sourceList = Collections.singletonList(newValue.getSource());
                 route = newValue.getRoute();
                 mustBeRaised = true;
             } else {
                 // No condition, no input data: simple re-evaluation, check if there is an external trigger: if no trigger, then no event
                 if(internallyTriggered) {
                     mustBeRaised = true;
-                    source = internalSource;
+                    sourceList = new ArrayList<>(internalSource);
                     // Reset the flag
                     internallyTriggered = false;
-                    internalSource = null;
+                    internalSource.clear();
                 }
             }
             // Check inhibition time - If an event is detected/reported during the inhibition period, the raising is discarded
@@ -153,16 +156,18 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
             }
             // Check if you have to raise the event
             if(mustBeRaised) {
-                // Set necessary objects
-                this.builder.setEventState(qualifier, source, route, report, containerId);
-                // Set the generation time
-                this.builder.setGenerationTime(generationTime);
-                // Build final state, set it and return it
-                // Set the reception time
-                this.builder.setReceptionTime(newValue != null ? newValue.getReceptionTime() : Instant.now());
-                // Replace the state
-                this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
-                generatedStates.add(this.state);
+                for(String source : sourceList) {
+                    // Set necessary objects
+                    this.builder.setEventState(qualifier, source, route, report, containerId);
+                    // Set the generation time
+                    this.builder.setGenerationTime(generationTime);
+                    // Build final state, set it and return it
+                    // Set the reception time
+                    this.builder.setReceptionTime(newValue != null ? newValue.getReceptionTime() : Instant.now());
+                    // Replace the state
+                    this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
+                    generatedStates.add(this.state);
+                }
                 // Remember the generation time (needed to check if inhibition is needed)
                 this.lastReportedEventTime = generationTime;
             }
@@ -195,7 +200,7 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
         // If the event is enabled, then you can mark it as raised
         if(entityStatus == Status.ENABLED) {
             this.internallyTriggered = true;
-            this.internalSource = source;
+            this.internalSource.add(source);
         }
     }
 

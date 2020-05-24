@@ -324,7 +324,7 @@ class EventTest {
                     assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
-                    assertNull(((EventData) outList.get(i)).getSource());
+                    assertEquals("ROOT.EVT.EVT7", ((EventData) outList.get(i)).getSource());
                 } else {
                     fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
                 }
@@ -458,7 +458,7 @@ class EventTest {
                     assertNull(((EventData) outList.get(i)).getQualifier());
                     assertEquals("ONGROUND", ((EventData) outList.get(i)).getType());
                     assertEquals(Severity.ALARM, ((EventData) outList.get(i)).getSeverity());
-                    assertNull(((EventData) outList.get(i)).getSource());
+                    assertEquals("ROOT.EVT.EVT7", ((EventData) outList.get(i)).getSource());
                 } else {
                     fail("Event Data ID not expected: " + ((EventData) outList.get(i)).getExternalId());
                 }
