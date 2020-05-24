@@ -37,6 +37,7 @@ import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.PacketErrorControlType;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TimeCorrelationServiceConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
@@ -67,7 +68,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     private final long propagationDelay;
     private final IRawDataBroker broker;
     private final SpacecraftConfiguration configuration;
-    private final IServiceBroker IServiceBroker;
+    private final IServiceBroker serviceBroker;
     private final ExecutorService timeCoefficientsDistributor;
     private final Instant epoch;
     private volatile int generationPeriod;
@@ -78,14 +79,14 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     // CUC 4,3 has a resolution of 59.6 nsec, CUC 4,4 is at picosecond level
     private volatile Pair<BigDecimal, BigDecimal> obt2gtCoefficients;
 
-    public TimeCorrelationService(String driverName, SpacecraftConfiguration configuration, ServiceCoreConfiguration coreConfiguration, IServiceCoreContext context, IServiceBroker IServiceBroker) throws ReatmetricException {
+    public TimeCorrelationService(String driverName, SpacecraftConfiguration configuration, ServiceCoreConfiguration coreConfiguration, IServiceCoreContext context, IServiceBroker serviceBroker) throws ReatmetricException {
         this.driverName = driverName;
         this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
         this.spacecraftId = configuration.getId();
         this.propagationDelay = configuration.getPropagationDelay();
         this.broker = context.getRawDataBroker();
         this.configuration = configuration;
-        this.IServiceBroker = IServiceBroker;
+        this.serviceBroker = serviceBroker;
         this.generationPeriod =  timeCorrelationConfiguration().getGenerationPeriod();
         this.timeCoefficientsDistributor = Executors.newSingleThreadExecutor((r) -> {
             Thread t = new Thread(r, "Spacecraft " + configuration.getName() + " - Time Correlation Service Coefficients Distributor");
@@ -165,11 +166,11 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
             return atf != null && atf.getVirtualChannelId() == 0;
         });
         // Subscribe to service broker to intercept time packets (APID 0)
-        IServiceBroker.register(this, this::packetFilter);
+        serviceBroker.register(this, this::packetFilter);
     }
 
     private boolean packetFilter(RawData rawData, SpacePacket spacePacket, Integer type, Integer subtype, Integer destination, Integer source) {
-        return spacePacket.getApid() == 0;
+        return spacePacket.getApid() == 0 || (type != null && type == 9);
     }
 
     /**
@@ -236,26 +237,34 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
 
     @Override
     public void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
-        // This is a time packet, so apply C.4 Spacecraft time correlation procedures, ECSS-E-70-41A
-        // 1. Locate the correct frame: get the TmFrameDescriptor associated to the packet (extension), the ERT and retrieve the previous frame that respects the generation period
-        RawData frame = locateFrame((TmFrameDescriptor) packetRawData.getExtension(), this.generationPeriod);
-        // 2. If the frame is located, then compute the time couple: (Earth reception time - propagation delay - onboard delay, on board time)
-        if(frame != null) {
-            Instant utcTime = frame.getReceptionTime().minusNanos(this.propagationDelay * 1000).minusNanos(timeCorrelationConfiguration().getOnBoardDelay() * 1000);
-            Instant onboardTime = extractOnboardTime(spacePacket);
-            // 3. Add the time couple: this method triggers a best-fit correlation taking into account the available time couples
-            addTimeCouple(onboardTime, utcTime);
-        } else {
-            if(LOG.isLoggable(Level.WARNING))
-            {
-                LOG.log(Level.WARNING, "Cannot find corresponding TM frame for time packet");
+        if(spacePacket.isTelemetryPacket() && spacePacket.getApid() == 0) {
+            // This is a time packet, so apply C.4 Spacecraft time correlation procedures, ECSS-E-70-41A
+            // 1. Locate the correct frame: get the TmFrameDescriptor associated to the packet (extension), the ERT and retrieve the previous frame that respects the generation period
+            RawData frame = locateFrame((TmFrameDescriptor) packetRawData.getExtension(), this.generationPeriod);
+            // 2. If the frame is located, then compute the time couple: (Earth reception time - propagation delay - onboard delay, on board time)
+            if (frame != null) {
+                Instant utcTime = frame.getReceptionTime().minusNanos(this.propagationDelay * 1000).minusNanos(timeCorrelationConfiguration().getOnBoardDelay() * 1000);
+                Instant onboardTime = extractOnboardTime(spacePacket);
+                // 3. Add the time couple: this method triggers a best-fit correlation taking into account the available time couples
+                addTimeCouple(onboardTime, utcTime);
+            } else {
+                if (LOG.isLoggable(Level.WARNING)) {
+                    LOG.log(Level.WARNING, "Cannot find corresponding TM frame for time packet");
+                }
             }
         }
+        // Ignore the rest
     }
 
     @Override
     public void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker) {
-        // TODO: used only for the update of the generation rate
+        if(tcTracker.getInfo() != null && tcTracker.getInfo().getPusHeader() != null && tcTracker.getInfo().getPusHeader().getServiceType() == 9 && tcTracker.getInfo().getPusHeader().getServiceSubType() == 1) {
+            if(phase == TcPacketPhase.COMPLETED) {
+                // The TC is over, change the generation period accordingly
+                byte newGenerationPeriod = tcTracker.getPacket().getPacket()[tcTracker.getPacket().getLength() - 1 - (tcTracker.getInfo().getChecksumType() == PacketErrorControlType.NONE ? 0 : 2)];
+                this.generationPeriod = 1 << newGenerationPeriod;
+            }
+        }
     }
 
     private void addTimeCouple(Instant onboardTime, Instant utcTime) {
@@ -378,7 +387,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     }
 
     public void dispose() {
-        IServiceBroker.deregister(this);
+        serviceBroker.deregister(this);
         broker.unsubscribe(this);
         timeCoefficientsDistributor.shutdown();
     }

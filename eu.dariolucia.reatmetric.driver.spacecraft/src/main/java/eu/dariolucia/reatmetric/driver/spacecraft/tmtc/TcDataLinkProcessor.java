@@ -367,7 +367,11 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     if(uplinked.size() == dataUnits.size()) { // All CLTUs/Frames uplinked, so command is all on its way
                         informServiceBroker(TcPacketPhase.UPLINKED, time, tcTrackers);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_UPLINK, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
-                        // TODO: If not AD, then either SCHEDULED or EXECUTION
+                        if(useAd) {
+                            reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+                        } else {
+                            // Other stages are not in the scope of this class
+                        }
                     }
                     if(!useAd) {
                         lifecycleCompleted = true;
