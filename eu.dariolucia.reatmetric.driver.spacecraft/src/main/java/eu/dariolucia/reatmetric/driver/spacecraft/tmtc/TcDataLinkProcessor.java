@@ -276,7 +276,9 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         }
         this.context.getRawDataBroker().unsubscribe(this);
         for (Pair<TcVcConfiguration, TcSenderVirtualChannel> tcChannel : tcChannels) {
-            tcChannel.getSecond().deregister(this);
+            if(tcChannel != null) {
+                tcChannel.getSecond().deregister(this);
+            }
         }
     }
 

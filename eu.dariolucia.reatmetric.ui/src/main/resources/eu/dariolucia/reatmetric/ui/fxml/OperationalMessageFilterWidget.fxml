@@ -6,7 +6,6 @@
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Tooltip?>
-<?import javafx.scene.effect.DropShadow?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -32,6 +31,12 @@
       <ListView fx:id="severityList" prefHeight="80.0" VBox.vgrow="NEVER" />
       <CheckBox fx:id="sourceCheckbox" mnemonicParsing="false" text="Source" />
       <TextField fx:id="sourceText">
+         <tooltip>
+            <Tooltip text="Comma-separated values" />
+         </tooltip>
+      </TextField>
+      <CheckBox fx:id="idCheckbox" mnemonicParsing="false" text="Message ID" />
+      <TextField fx:id="idText">
          <tooltip>
             <Tooltip text="Comma-separated values" />
          </tooltip>
