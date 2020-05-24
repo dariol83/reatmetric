@@ -196,7 +196,6 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
         if(LOG.isLoggable(Level.FINEST)) {
             LOG.log(Level.FINEST, String.format("Raising event %s from internal source %s, entity status is %s", path(), source, entityStatus));
         }
-        // TODO: convert this into a list of triggering sources (incl. null) so that more than one occurrence of this event can be triggered in a single evaluation
         // If the event is enabled, then you can mark it as raised
         if(entityStatus == Status.ENABLED) {
             this.internallyTriggered = true;
