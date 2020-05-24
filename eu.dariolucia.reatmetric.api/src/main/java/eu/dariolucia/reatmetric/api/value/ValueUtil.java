@@ -204,13 +204,8 @@ public class ValueUtil {
             }
             case ARRAY: {
                 try {
-                    // TODO: implement something better
-                    ByteArrayInputStream bos = new ByteArrayInputStream(dump, 1, dump.length - 1);
-                    ObjectInputStream oos = new ObjectInputStream(bos);
-                    Object vv = oos.readObject();
-                    oos.close();
-                    return vv;
-                } catch (IOException | ClassNotFoundException e) {
+                    return deserializeArray(dump, 1, dump.length - 1);
+                } catch (IOException e) {
                     throw new IllegalStateException("Cannot deserialize value of type ARRAY", e);
                 }
             }
@@ -243,6 +238,9 @@ public class ValueUtil {
     }
 
     public static byte[] serialize(Object valueObject) {
+        if(valueObject == null) {
+            return new byte[]{(byte) (ValueTypeEnum.EXTENSION.getCode() | 0x80)}; // Not really important
+        }
         for(ValueTypeEnum vte : ValueTypeEnum.values()) {
             if(vte.getAssignedClass().equals(valueObject.getClass())) {
                 return serialize(vte, valueObject);
@@ -336,10 +334,10 @@ public class ValueUtil {
             }
             case ARRAY: {
                 try {
-                    // TODO: implement something better
                     ByteArrayOutputStream bos = new ByteArrayOutputStream();
                     ObjectOutputStream oos = new ObjectOutputStream(bos);
-                    oos.writeObject(valueObject);
+                    oos.write(type.getCode());
+                    serializeArray(oos, (Array) valueObject);
                     oos.flush();
                     oos.close();
                     return bos.toByteArray();
@@ -375,6 +373,65 @@ public class ValueUtil {
                 throw new IllegalAccessError("Enumeration type " + type + " not recognized, this is a software bug");
         }
     }
+
+    private static void serializeArray(ObjectOutputStream oos, Array valueObject) throws IOException {
+        // Add number of records
+        oos.writeShort((short)valueObject.getRecords().size());
+        // Process the records
+        for(Array.Record record : valueObject.getRecords()) {
+            serializeArrayRecord(oos, record);
+        }
+    }
+
+    private static void serializeArrayRecord(ObjectOutputStream oos, Array.Record record) throws IOException {
+        // Write number of record elements
+        oos.writeShort((short) record.getElements().size());
+        //
+        for(Pair<String, Object> elem : record.getElements()) {
+            // Serialize the string directly with length (4 bytes) plus string
+            byte[] strBytes = elem.getFirst().getBytes(StandardCharsets.ISO_8859_1);
+            oos.writeInt(strBytes.length);
+            oos.write(strBytes);
+            // Serialize the object: derive its type from the class, and use the serialize method
+            byte[] value = serialize(elem.getSecond());
+            oos.writeInt(value.length);
+            oos.write(value);
+        }
+    }
+
+    private static Array deserializeArray(byte[] dump, int offset, int length) throws IOException {
+        ByteArrayInputStream bin = new ByteArrayInputStream(dump, offset, length);
+        ObjectInputStream oin = new ObjectInputStream(bin);
+        // Read number of records
+        short numRecords = oin.readShort();
+        List<Array.Record> records = new ArrayList<>(Math.min(1, numRecords));
+        for(int i = 0; i < numRecords; ++i) {
+            // Read one record
+            Array.Record record = deserializeArrayRecord(oin);
+            records.add(record);
+        }
+        return new Array(records);
+    }
+
+    private static Array.Record deserializeArrayRecord(ObjectInputStream oin) throws IOException {
+        // Read number of record elements
+        short numElems = oin.readShort();
+        List<Pair<String, Object>> elems = new ArrayList<>(Math.min(1, numElems));
+        //
+        for(int i = 0; i < numElems; ++i) {
+            // Deserialize the string directly with length (4 bytes) plus string
+            int strLen = oin.readInt();
+            byte[] strBytes = oin.readNBytes(strLen);
+            String strName = StandardCharsets.ISO_8859_1.decode(ByteBuffer.wrap(strBytes)).toString();
+            // Deserialize the object: derive its type from the class, and use the serialize method
+            int objLen = oin.readInt();
+            byte[] objBytes = oin.readNBytes(objLen);
+            Object objValue = deserialize(objBytes);
+            elems.add(Pair.of(strName, objValue));
+        }
+        return new Array.Record(elems);
+    }
+
 
     private static final Map<Class<?>, IValueExtensionHandler> CLASS2HANDLER = new HashMap<>();
     private static final Map<Integer, IValueExtensionHandler> TYPE2HANDLER = new HashMap<>();
