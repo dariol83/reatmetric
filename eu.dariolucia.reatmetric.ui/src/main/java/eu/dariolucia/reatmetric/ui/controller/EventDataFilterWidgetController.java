@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
@@ -51,6 +52,10 @@ public class EventDataFilterWidgetController implements Initializable, IFilterCo
     @FXML
     private TextField sourceText;
     @FXML
+    private CheckBox eventPathCheckbox;
+    @FXML
+    private TextField eventPathText;
+    @FXML
     private CheckBox routeCheckbox;
     @FXML
     private TextField routeText;
@@ -78,6 +83,7 @@ public class EventDataFilterWidgetController implements Initializable, IFilterCo
     public void initialize(URL url, ResourceBundle rb) {
         this.severityList.disableProperty().bind(this.severityCheckbox.selectedProperty().not());
         this.sourceText.disableProperty().bind(this.sourceCheckbox.selectedProperty().not());
+        this.eventPathText.disableProperty().bind(this.eventPathCheckbox.selectedProperty().not());
         this.pathText.disableProperty().bind(this.pathCheckbox.selectedProperty().not());
         this.typeText.disableProperty().bind(this.typeCheckbox.selectedProperty().not());
         this.routeText.disableProperty().bind(this.routeCheckbox.selectedProperty().not());
@@ -114,6 +120,7 @@ public class EventDataFilterWidgetController implements Initializable, IFilterCo
         if(this.selectedFilter == null) {
             this.severityCheckbox.setSelected(false);
             this.sourceCheckbox.setSelected(false);
+            this.eventPathCheckbox.setSelected(false);
             this.pathCheckbox.setSelected(false);
             this.routeCheckbox.setSelected(false);
             this.typeCheckbox.setSelected(false);
@@ -121,15 +128,18 @@ public class EventDataFilterWidgetController implements Initializable, IFilterCo
             this.pathText.setText("");
             this.routeText.setText("");
             this.typeText.setText("");
+            this.eventPathText.setText("");
             this.severityList.getSelectionModel().clearSelection();
         } else {
             this.severityCheckbox.setSelected(this.selectedFilter.getSeverityList() != null);
             this.sourceCheckbox.setSelected(this.selectedFilter.getSourceList() != null);
+            this.eventPathCheckbox.setSelected(this.selectedFilter.getEventPathList() != null);
             this.pathCheckbox.setSelected(this.selectedFilter.getParentPath() != null);
             this.routeCheckbox.setSelected(this.selectedFilter.getRouteList() != null);
             this.typeCheckbox.setSelected(this.selectedFilter.getTypeList() != null);
              
             this.sourceText.setText(IFilterController.toStringList(this.selectedFilter.getSourceList()));
+            this.eventPathText.setText(IFilterController.toStringList(this.selectedFilter.getEventPathList()));
             this.routeText.setText(IFilterController.toStringList(this.selectedFilter.getRouteList()));
             this.typeText.setText(IFilterController.toStringList(this.selectedFilter.getTypeList()));
             this.pathText.setText(this.selectedFilter.getParentPath() != null ? this.selectedFilter.getParentPath().asString() : "");
@@ -143,18 +153,24 @@ public class EventDataFilterWidgetController implements Initializable, IFilterCo
     private EventDataFilter deriveFromWidgets() {
         List<Severity> qList = deriveSelectedSeverity();
         List<String> sourceList = deriveSelectedSource();
+        List<SystemEntityPath> eventPathList = deriveSelectedEventPath();
         List<String> typeList = deriveSelectedType();
         List<String> routeList = deriveSelectedRoute();
         SystemEntityPath parentPath = deriveParentPath();
-        // TODO: add capability to filter on event path
-        return new EventDataFilter(parentPath, null, routeList, typeList, sourceList, qList, null);
+        return new EventDataFilter(parentPath, eventPathList, routeList, typeList, sourceList, qList, null);
     }
 
     private List<String> deriveSelectedSource() {
         if(this.sourceCheckbox.isSelected()) {
-            List<String> toReturn = new LinkedList<>();
-            toReturn.addAll(Arrays.asList(this.sourceText.getText().split(",")));
-            return toReturn;
+            return new LinkedList<>(Arrays.asList(this.sourceText.getText().split(",")));
+        } else {
+            return null;
+        }
+    }
+
+    private List<SystemEntityPath> deriveSelectedEventPath() {
+        if(this.eventPathCheckbox.isSelected()) {
+            return Arrays.stream(this.eventPathText.getText().split(",")).map(SystemEntityPath::fromString).collect(Collectors.toCollection(LinkedList::new));
         } else {
             return null;
         }
@@ -162,9 +178,7 @@ public class EventDataFilterWidgetController implements Initializable, IFilterCo
     
     private List<String> deriveSelectedType() {
         if(this.typeCheckbox.isSelected()) {
-            List<String> toReturn = new LinkedList<>();
-            toReturn.addAll(Arrays.asList(this.typeText.getText().split(",")));
-            return toReturn;
+            return new LinkedList<>(Arrays.asList(this.typeText.getText().split(",")));
         } else {
             return null;
         }
@@ -172,9 +186,7 @@ public class EventDataFilterWidgetController implements Initializable, IFilterCo
         
     private List<String> deriveSelectedRoute() {
         if(this.routeCheckbox.isSelected()) {
-            List<String> toReturn = new LinkedList<>();
-            toReturn.addAll(Arrays.asList(this.routeText.getText().split(",")));
-            return toReturn;
+            return new LinkedList<>(Arrays.asList(this.routeText.getText().split(",")));
         } else {
             return null;
         }
@@ -182,9 +194,7 @@ public class EventDataFilterWidgetController implements Initializable, IFilterCo
     
     private List<Severity> deriveSelectedSeverity() {
         if(this.severityCheckbox.isSelected()) {
-            List<Severity> toReturn = new LinkedList<>();
-            toReturn.addAll(this.severityList.getSelectionModel().getSelectedItems());
-            return toReturn;
+            return new LinkedList<>(this.severityList.getSelectionModel().getSelectedItems());
         } else {
             return null;
         }

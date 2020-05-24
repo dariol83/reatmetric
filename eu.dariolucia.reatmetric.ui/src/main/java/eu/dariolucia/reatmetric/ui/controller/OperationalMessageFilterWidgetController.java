@@ -110,6 +110,7 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
             this.idCheckbox.setSelected(false);
             this.messageCheckbox.setSelected(false);
             this.sourceText.setText("");
+            this.idText.setText("");
             this.messageText.setText("");
             this.severityList.getSelectionModel().clearSelection();
         } else {

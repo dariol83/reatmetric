@@ -6,7 +6,6 @@
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Tooltip?>
-<?import javafx.scene.effect.DropShadow?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -48,7 +47,12 @@
             <Tooltip text="Comma-separated values" />
          </tooltip>
       </TextField>
-
+      <CheckBox fx:id="eventPathCheckbox" mnemonicParsing="false" text="Event Path" />
+      <TextField fx:id="eventPathText">
+         <tooltip>
+            <Tooltip text="Comma-separated values" />
+         </tooltip>
+      </TextField>
       <CheckBox fx:id="typeCheckbox" mnemonicParsing="false" text="Type" />
       <TextField fx:id="typeText">
          <tooltip>

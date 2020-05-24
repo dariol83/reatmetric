@@ -43,6 +43,12 @@
             <Tooltip text="Comma-separated values" />
          </tooltip>
       </TextField>
+      <CheckBox fx:id="parameterPathCheckbox" mnemonicParsing="false" text="Parameter Path" />
+      <TextField fx:id="parameterPathText">
+         <tooltip>
+            <Tooltip text="Comma-separated values" />
+         </tooltip>
+      </TextField>
       <HBox prefWidth="200.0">
          <children>
             <Button fx:id="selectBtn" mnemonicParsing="false" onAction="#selectButtonPressed" text="Select" />

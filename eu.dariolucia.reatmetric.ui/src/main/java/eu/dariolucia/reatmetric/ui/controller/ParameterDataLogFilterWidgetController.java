@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 /**
  * FXML Controller class
@@ -55,7 +56,10 @@ public class ParameterDataLogFilterWidgetController implements Initializable, IF
     private CheckBox pathCheckbox;
     @FXML
     private TextField pathText;
-
+    @FXML
+    private CheckBox parameterPathCheckbox;
+    @FXML
+    private TextField parameterPathText;
     @FXML
     private Button selectBtn;
     
@@ -73,6 +77,7 @@ public class ParameterDataLogFilterWidgetController implements Initializable, IF
         this.alarmList.disableProperty().bind(this.alarmCheckbox.selectedProperty().not());
         this.pathText.disableProperty().bind(this.pathCheckbox.selectedProperty().not());
         this.routeText.disableProperty().bind(this.routeCheckbox.selectedProperty().not());
+        this.parameterPathText.disableProperty().bind(this.parameterPathCheckbox.selectedProperty().not());
         
         this.validityList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         this.validityList.getItems().addAll(Arrays.asList(Validity.values()));
@@ -113,6 +118,7 @@ public class ParameterDataLogFilterWidgetController implements Initializable, IF
             this.routeCheckbox.setSelected(false);
             this.pathText.setText("");
             this.routeText.setText("");
+            this.parameterPathText.setText("");
             this.validityList.getSelectionModel().clearSelection();
             this.alarmList.getSelectionModel().clearSelection();
         } else {
@@ -120,8 +126,10 @@ public class ParameterDataLogFilterWidgetController implements Initializable, IF
             this.alarmCheckbox.setSelected(this.selectedFilter.getAlarmStateList() != null);
             this.pathCheckbox.setSelected(this.selectedFilter.getParentPath() != null);
             this.routeCheckbox.setSelected(this.selectedFilter.getRouteList() != null);
+            this.parameterPathCheckbox.setSelected(this.selectedFilter.getParameterPathList() != null);
 
             this.routeText.setText(IFilterController.toStringList(this.selectedFilter.getRouteList()));
+            this.parameterPathText.setText(IFilterController.toStringList(this.selectedFilter.getParameterPathList()));
             this.pathText.setText(this.selectedFilter.getParentPath() != null ? this.selectedFilter.getParentPath().asString() : "");
             this.validityList.getSelectionModel().clearSelection();
             this.alarmList.getSelectionModel().clearSelection();
@@ -137,10 +145,19 @@ public class ParameterDataLogFilterWidgetController implements Initializable, IF
     private ParameterDataFilter deriveFromWidgets() {
         List<Validity> qList = deriveSelectedValidity();
         List<AlarmState> aList = deriveSelectedAlarm();
+        List<SystemEntityPath> parameterPathList = deriveSelectedParameterPath();
         List<String> routeList = deriveSelectedRoute();
         SystemEntityPath parentPath = deriveParentPath();
-        // TODO: add capability to filter on parameter path
-        return new ParameterDataFilter(parentPath, null, routeList, qList, aList, null);
+        return new ParameterDataFilter(parentPath, parameterPathList, routeList, qList, aList, null);
+    }
+
+
+    private List<SystemEntityPath> deriveSelectedParameterPath() {
+        if(this.parameterPathCheckbox.isSelected()) {
+            return Arrays.stream(this.parameterPathText.getText().split(",")).map(SystemEntityPath::fromString).collect(Collectors.toCollection(LinkedList::new));
+        } else {
+            return null;
+        }
     }
 
     private List<String> deriveSelectedRoute() {
