@@ -31,6 +31,8 @@ import java.time.Instant;
  *     <li>A parameter is updated while remaining in an alarm state</li>
  *     <li>A parameter transitions from an alarm state into a nominal state</li>
  * </ul>
+ *
+ * Objects of this class are immutable.
  */
 public final class AlarmParameterData extends AbstractDataItem implements Serializable {
 

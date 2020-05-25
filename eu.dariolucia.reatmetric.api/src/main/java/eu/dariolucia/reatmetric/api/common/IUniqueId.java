@@ -19,6 +19,9 @@ package eu.dariolucia.reatmetric.api.common;
 
 import java.io.Serializable;
 
+/**
+ * This interface is used to represent a unique identifier (typically type-specific).
+ */
 public interface IUniqueId extends Serializable {
 
     boolean equals(Object o);
@@ -27,6 +30,11 @@ public interface IUniqueId extends Serializable {
 
     String toString();
 
+    /**
+     * Return a long representation of the identifier.
+     *
+     * @return the long representation of the identifier
+     */
     default long asLong() {
         return hashCode();
     }

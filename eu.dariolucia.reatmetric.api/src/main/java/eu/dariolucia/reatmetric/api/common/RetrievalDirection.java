@@ -18,10 +18,16 @@
 package eu.dariolucia.reatmetric.api.common;
 
 /**
- *
- * @author dario
+ * This enumeration specifies the two possible retrieval directions in a retrieval request: from the time/data item reference to the future,
+ * or to the past.
  */
 public enum RetrievalDirection {
+    /**
+     * Retrieve data item from the reference to the future: data items are returned in ascending generation time order
+     */
     TO_FUTURE,
+    /**
+     * Retrieve data item from the reference to the past: data items are returned in descending generation time order
+     */
     TO_PAST
 }

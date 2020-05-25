@@ -16,9 +16,24 @@
 
 package eu.dariolucia.reatmetric.api.common;
 
+/**
+ * This enumeration is used to report the status of internal software components (such as drivers) to the ReatMetric framework.
+ */
 public enum SystemStatus {
+    /**
+     * The status of the system cannot be derived
+     */
     UNKNOWN,
+    /**
+     * The status of the system is nominal and works as expected
+     */
     NOMINAL,
+    /**
+     * The status of the system presents some issues that might endanger one or more of its functionality
+     */
     WARNING,
+    /**
+     * The status of the system presents issues that prevent the system to work properly
+     */
     ALARM
 }

@@ -18,6 +18,11 @@ package eu.dariolucia.reatmetric.api.common;
 
 import java.util.Objects;
 
+/**
+ * The standard implementation of the {@link IUniqueId} interface in the ReatMetric system.
+ *
+ * This class is immutable.
+ */
 public class LongUniqueId implements IUniqueId {
 
     private final long id;

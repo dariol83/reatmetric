@@ -23,14 +23,23 @@ import java.time.Instant;
 import java.util.List;
 
 /**
+ * This interface specifies a method to retrieve the state of the specified set of data items (as filter), at the specified time.
+ * This interface is only available for data items that support such semantic.
  *
- * @author dario
  * @param <T> subscriber type
  * @param <R> filter type
  * @param <K> item type
  */
 public interface IDataItemStateProvisionService<T extends IDataItemSubscriber<K>, R extends AbstractDataItemFilter<K>, K extends AbstractDataItem> extends IDataItemProvisionService<T, R, K> {
-    
+
+    /**
+     * Retrieve the state at the specified time, of the data items matching the specified filter.
+     *
+     * @param time the time reference to use
+     * @param filter the filter
+     * @return the list of data items matching the filter, with their state at the specified time
+     * @throws ReatmetricException if a problem arises with the retrieval operation
+     */
     List<K> retrieve(Instant time, R filter) throws ReatmetricException;
     
 }

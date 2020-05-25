@@ -20,11 +20,15 @@ package eu.dariolucia.reatmetric.api.common;
 import java.util.List;
 
 /**
- *
- * @author dario
+ * This interface is the parent interface of the data item type-specific subscription interfaces.
  */
 public interface IDataItemSubscriber<T extends UniqueItem> {
-    
-    void dataItemsReceived(List<T> messages);
+
+    /**
+     * Inform the subscriber the given list of data items is available according to the specified filter at subscription time.
+     *
+     * @param dataItems the new available data items
+     */
+    void dataItemsReceived(List<T> dataItems);
     
 }

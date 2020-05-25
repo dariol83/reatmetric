@@ -33,7 +33,7 @@ import java.util.*;
  * are reported by means of progress reports ({@link ActivityOccurrenceReport}, which define also the transition from
  * one {@link ActivityOccurrenceState} to the next state.
  *
- * Objects of this class are 'immutable', i.e. fields cannot be set.
+ * Objects of this class are immutable.
  */
 public final class ActivityOccurrenceData extends AbstractDataItem {
 

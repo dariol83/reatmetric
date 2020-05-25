@@ -20,8 +20,11 @@ package eu.dariolucia.reatmetric.api.common;
 import java.io.Serializable;
 
 /**
+ * A unique item is an object that can be identified by a {@link IUniqueId}.
  *
- * @author dario
+ * This class is immutable with the exception of the data property, which shall be considered a transient volatile field,
+ * provided as a convenience placeholder to store volatile user data. The hashCode and equals methods do not take this
+ * property into account.
  */
 public abstract class UniqueItem implements Serializable {
     

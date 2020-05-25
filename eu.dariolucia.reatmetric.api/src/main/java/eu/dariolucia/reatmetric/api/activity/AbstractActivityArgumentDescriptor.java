@@ -26,15 +26,31 @@ public class AbstractActivityArgumentDescriptor {
     private final String name;
     private final String description;
 
+    /**
+     * Constructor of the activity argument descriptor.
+     *
+     * @param name the name of the argument
+     * @param description the description of the argument
+     */
     public AbstractActivityArgumentDescriptor(String name, String description) {
         this.name = name;
         this.description = description;
     }
 
+    /**
+     * Return the name of the argument.
+     *
+     * @return the name of the argument
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Return the description of the argument.
+     *
+     * @return the description of the argument
+     */
     public String getDescription() {
         return description;
     }

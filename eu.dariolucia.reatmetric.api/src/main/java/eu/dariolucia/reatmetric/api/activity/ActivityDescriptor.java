@@ -56,22 +56,47 @@ public class ActivityDescriptor extends AbstractSystemEntityDescriptor {
         this.properties = List.copyOf(properties);
     }
 
+    /**
+     * Return the activity description.
+     *
+     * @return the activity description
+     */
     public String getDescription() {
         return description;
     }
 
+    /**
+     * Return the default route defined for the activity.
+     *
+     * @return the default route
+     */
     public String getDefaultRoute() {
         return defaultRoute;
     }
 
+    /**
+     * Return the activity type.
+     *
+     * @return the activity type
+     */
     public String getActivityType() {
         return activityType;
     }
 
+    /**
+     * Return the list of argument descriptors.
+     *
+     * @return the list of argument descriptors
+     */
     public List<AbstractActivityArgumentDescriptor> getArgumentDescriptors() {
         return argumentDescriptors;
     }
 
+    /**
+     * Return the list of properties as defined for the activity.
+     *
+     * @return the list of properties
+     */
     public List<Pair<String, String>> getProperties() {
         return properties;
     }

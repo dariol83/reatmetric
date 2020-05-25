@@ -24,6 +24,8 @@ import java.time.Instant;
 /**
  * An activity report is an indication of progress for an activity verification stage, provided by the processing
  * model or by the entity transferring or executing a specific activity occurrence.
+ *
+ * Objects of this class are immutable.
  */
 public final class ActivityOccurrenceReport extends AbstractDataItem {
 
