@@ -64,7 +64,7 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
         this.sourceCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getSource()));
         this.messageCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getMessage()));
 
-        this.genTimeCol.setCellFactory(new InstantCellFactory<>());
+        this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
         this.severityCol.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(Severity item, boolean empty) {

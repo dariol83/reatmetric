@@ -74,8 +74,8 @@ public class ParameterDataLogViewController extends AbstractDataItemLogViewContr
 		this.alarmStateCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getAlarmState()));
 		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));
 
-		this.genTimeCol.setCellFactory(new InstantCellFactory<>());
-		this.recTimeCol.setCellFactory(new InstantCellFactory<>());
+		this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
+		this.recTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
 	}
 
 	@Override

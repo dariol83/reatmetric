@@ -128,8 +128,8 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
         this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getReceptionTime()));
         this.sourceCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getSource()));
 
-        this.genTimeCol.setCellFactory(new InstantCellFactory<>());
-        this.recTimeCol.setCellFactory(new InstantCellFactory<>());
+        this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
+        this.recTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
         this.qualityCol.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(Quality item, boolean empty) {

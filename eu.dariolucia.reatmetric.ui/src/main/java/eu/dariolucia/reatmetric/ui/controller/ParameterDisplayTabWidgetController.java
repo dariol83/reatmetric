@@ -161,8 +161,8 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         this.alarmStateCol.setCellValueFactory(o -> o.getValue().alarmStateProperty());
         this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(toStringParent(o.getValue().get().getPath())));
 
-        this.genTimeCol.setCellFactory(new InstantCellFactory<>());
-        this.recTimeCol.setCellFactory(new InstantCellFactory<>());
+        this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
+        this.recTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
 
         this.nameCol.setCellFactory(column -> new TableCell<>() {
             @Override

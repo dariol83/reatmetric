@@ -82,8 +82,8 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
 		this.qualifierCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getQualifier()));
 		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));
 
-		this.genTimeCol.setCellFactory(new InstantCellFactory<>());
-		this.recTimeCol.setCellFactory(new InstantCellFactory<>());
+		this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
+		this.recTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
 		this.severityCol.setCellFactory(column -> new TableCell<>() {
 			@Override
 			protected void updateItem(Severity item, boolean empty) {

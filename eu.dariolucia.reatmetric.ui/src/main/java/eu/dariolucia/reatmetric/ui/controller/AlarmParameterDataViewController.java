@@ -86,8 +86,8 @@ public class AlarmParameterDataViewController
 				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getLastNominalValueTime()));
 		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));
 
-		this.genTimeCol.setCellFactory(new InstantCellFactory<>());
-		this.recTimeCol.setCellFactory(new InstantCellFactory<>());
+		this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
+		this.recTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
 		this.currentAlarmStateCol.setCellFactory(column -> new TableCell<>() {
 			@Override
 			protected void updateItem(AlarmState item, boolean empty) {

@@ -18,27 +18,52 @@ package eu.dariolucia.reatmetric.ui.utils;
 
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TreeTableCell;
+import javafx.scene.control.TreeTableColumn;
 import javafx.util.Callback;
 
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-public class InstantCellFactory<T> implements Callback<TableColumn<T, Instant>, TableCell<T, Instant>> {
+public class InstantCellFactory<T> {
 
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS").withZone(ZoneId.of("UTC"));
 
-    @Override
-    public TableCell<T, Instant> call(TableColumn<T, Instant> column) {
-        return new TableCell<>() {
+    public static <T>  Callback<TableColumn<T, Instant>, TableCell<T, Instant>> instantCellFactory() {
+        return new Callback<>() {
             @Override
-            protected void updateItem(Instant item, boolean empty) {
-                super.updateItem(item, empty);
-                if (item != null && !empty && !isEmpty()) {
-                    setText(DATE_TIME_FORMATTER.format(item));
-                } else {
-                    setText("");
-                }
+            public TableCell<T, Instant> call(TableColumn<T, Instant> tInstantTableColumn) {
+                return new TableCell<>() {
+                    @Override
+                    protected void updateItem(Instant item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (item != null && !empty && !isEmpty()) {
+                            setText(DATE_TIME_FORMATTER.format(item));
+                        } else {
+                            setText("");
+                        }
+                    }
+                };
+            }
+        };
+    }
+
+    public static <T>  Callback<TreeTableColumn<T, Instant>, TreeTableCell<T, Instant>> instantTreeCellFactory() {
+        return new Callback<>() {
+            @Override
+            public TreeTableCell<T, Instant> call(TreeTableColumn<T, Instant> tInstantTableColumn) {
+                return new TreeTableCell<>() {
+                    @Override
+                    protected void updateItem(Instant item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (item != null && !empty && !isEmpty()) {
+                            setText(DATE_TIME_FORMATTER.format(item));
+                        } else {
+                            setText("");
+                        }
+                    }
+                };
             }
         };
     }

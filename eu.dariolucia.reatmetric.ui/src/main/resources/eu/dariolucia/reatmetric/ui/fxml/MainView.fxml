@@ -136,6 +136,22 @@
                                          <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/EventDataView.fxml"
                                                      viewName="Event View"/>
                                      </Button>
+                                     <Button text="Activity Verification View" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
+                                         <style>
+                                             -fx-alignment: BASELINE_LEFT;
+                                             -fx-font-size: 14pt;
+                                             -fx-font-weight: bold;
+                                         </style>
+                                         <graphic>
+                                             <ImageView pickOnBounds="true" preserveRatio="true">
+                                                 <image>
+                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/thunder.svg.png" />
+                                                 </image>
+                                             </ImageView>
+                                         </graphic>
+                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ActivityDataView.fxml"
+                                                     viewName="Activity Verification View"/>
+                                     </Button>
                                      <Button text="Alarm View" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
                                          <style>
                                              -fx-alignment: BASELINE_LEFT;
