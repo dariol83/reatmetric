@@ -37,7 +37,7 @@ public class ActivityDescriptor extends AbstractSystemEntityDescriptor {
     private final List<Pair<String, String>> properties;
 
     /**
-     * Contructor of the class.
+     * Constructor of the class.
      *
      * @param path the activity path
      * @param externalId the activity ID

@@ -27,8 +27,9 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
+ * This class allows to filter/subscribe/retrieve event occurrences.
  *
- * @author dario
+ * Objects of this class are immutable.
  */
 public final class EventDataFilter extends AbstractDataItemFilter<EventData> implements Serializable {
     
@@ -51,6 +52,17 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
 
     private final Set<Integer> externalIdList;
 
+    /**
+     * The constructor of the event filter.
+     *
+     * @param parentPath the parent path to select. It can be null: if so, all paths are selected.
+     * @param eventPathList the event paths to exactly select. It can be null: if so, all paths are selected.
+     * @param routeList the routes to select. It can be null: if so, all routes are selected.
+     * @param typeList the types to select. It can be null: if so, all types are selected.
+     * @param sourceList the sources to select. It can be null: if so, all sources are selected.
+     * @param severityList the severities to select. It can be null: if so, all severities are selected.
+     * @param externalIdList the external IDs to select. It can be null: if so, all external IDs are selected.
+     */
     public EventDataFilter(SystemEntityPath parentPath, Collection<SystemEntityPath> eventPathList, Collection<String> routeList, Collection<String> typeList, Collection<String> sourceList, Collection<Severity> severityList, Collection<Integer> externalIdList) {
         this.parentPath = parentPath;
         if(eventPathList != null) {
@@ -85,30 +97,86 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
         }
     }
 
+    /**
+     * The parent path to select: an event is selected if its path is a descendant of the parent path
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified parent path
+     */
     public SystemEntityPath getParentPath() {
         return parentPath;
     }
 
+    /**
+     * The set of exact paths to select: an event is selected if its (event) path is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified paths
+     */
     public Set<SystemEntityPath> getEventPathList() {
         return eventPathList;
     }
 
+    /**
+     * The set of sources to select: an event is selected if its source is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified sources
+     */
     public Set<String> getSourceList() {
         return sourceList;
     }
 
+    /**
+     * The set of severities to select: an event is selected if its severity is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified sources
+     */
     public Set<Severity> getSeverityList() {
         return severityList;
     }
-    
+
+    /**
+     * The set of routes to select: an event is selected if its route is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified routes
+     */
     public Set<String> getRouteList() {
         return routeList;
     }
-    
+
+    /**
+     * The set of types to select: an event is selected if its type is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified types
+     */
     public Set<String> getTypeList() {
         return typeList;
     }
 
+    /**
+     * The set of external IDs to select: an event is selected if its external ID is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified external IDs
+     */
     public Set<Integer> getExternalIdList() {
         return externalIdList;
     }

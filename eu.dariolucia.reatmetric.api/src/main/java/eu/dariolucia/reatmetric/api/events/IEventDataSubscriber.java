@@ -20,8 +20,7 @@ package eu.dariolucia.reatmetric.api.events;
 import eu.dariolucia.reatmetric.api.common.IDataItemSubscriber;
 
 /**
- *
- * @author dario
+ * This interface is a specialisation of the {@link IDataItemSubscriber}, for event occurrences.
  */
 public interface IEventDataSubscriber extends IDataItemSubscriber<EventData> {
     

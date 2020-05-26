@@ -29,6 +29,8 @@ import java.util.Set;
 
 /**
  * This class allows to filter/subscribe/retrieve activity occurrences.
+ *
+ * Objects of this class are immutable.
  */
 public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<ActivityOccurrenceData> implements Serializable {
 

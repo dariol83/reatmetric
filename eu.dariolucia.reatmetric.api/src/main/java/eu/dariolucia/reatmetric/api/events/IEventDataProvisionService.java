@@ -22,8 +22,8 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 /**
- *
- * @author dario
+ * This interface is a specialisation of the {@link IDataItemProvisionService}, for event occurrences. In addition, it provides
+ * descriptors for the specified event.
  */
 public interface IEventDataProvisionService extends IDataItemProvisionService<IEventDataSubscriber, EventDataFilter, EventData> {
 

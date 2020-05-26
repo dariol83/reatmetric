@@ -26,6 +26,9 @@ import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * This interface is a specialisation of the {@link IDataItemArchive}, for events.
+ */
 public interface IEventDataArchive extends IDataItemArchive<EventData, EventDataFilter> {
 
 }

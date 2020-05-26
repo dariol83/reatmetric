@@ -26,6 +26,8 @@ import java.util.*;
 
 /**
  * This class allows to filter/subscribe/retrieve parameter alarms.
+ *
+ * Objects of this class are immutable.
  */
 public final class AlarmParameterDataFilter extends AbstractDataItemFilter<AlarmParameterData> implements Serializable {
 
@@ -46,9 +48,9 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
      * The constructor of the alarm parameter filter.
      *
      * @param parentPath the parent path to select. It can be null: if so, all paths are selected.
-     * @param pathList the list of paths to exactly select. It can be null: if so, all paths are selected.
-     * @param alarmStateList the list of current alarm states to select. It can be null: if so, all alarm states are selected.
-     * @param externalIdList the list of activity IDs to select. It can be null: if so, all activities are selected.
+     * @param pathList the paths to exactly select. It can be null: if so, all paths are selected.
+     * @param alarmStateList the current alarm states to select. It can be null: if so, all alarm states are selected.
+     * @param externalIdList the activity IDs to select. It can be null: if so, all activities are selected.
      */
     public AlarmParameterDataFilter(SystemEntityPath parentPath, Collection<SystemEntityPath> pathList, Collection<AlarmState> alarmStateList, Collection<Integer> externalIdList) {
         this.parentPath = parentPath;
