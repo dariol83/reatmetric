@@ -30,56 +30,61 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.control.TreeTableView?>
 <?import javafx.scene.control.TreeTableColumn?>
-<VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityDataViewController">
- <children>
-    <ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
-       <items>
-          <ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" prefHeight="25.0" prefWidth="91.0" selected="true" text="Live" />
-           <Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart" text="|&lt;" />
-           <Button fx:id="goBackFastBtn" disable="true" mnemonicParsing="false" onAction="#goBackFast" text="&lt;&lt;" />
-           <Button fx:id="goBackOneBtn" disable="true" mnemonicParsing="false" onAction="#goBackOne" text="&lt;" />
-           <Button fx:id="selectTimeBtn" disable="true" mnemonicParsing="false" onAction="#selectTimeButtonSelected" prefHeight="25.0" prefWidth="180.0" text="---" />
-           <Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne" text="&gt;" />
-           <Button fx:id="goForwardFastBtn" disable="true" mnemonicParsing="false" onAction="#goForwardFast" text="&gt;&gt;" />
-           <Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd" text="&gt;|" />
-          <Label text=" " />
-          <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
-          <Label text=" " />
-           <Button fx:id="filterBtn" mnemonicParsing="false" onAction="#filterButtonSelected" text="Filter..." />
-           <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
-              <graphic>
-                  <ImageView pickOnBounds="true" preserveRatio="true">
-                      <image>
-                          <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/printer.svg.png" />
-                      </image>
-                  </ImageView>
-              </graphic>
-          </Button>
-       </items>
-    </ToolBar>
-    <TreeTableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
-      <columns>
-        <TreeTableColumn fx:id="nameCol" editable="false" prefWidth="130.0" text="Name" />
-        <TreeTableColumn fx:id="stateCol" editable="false" prefWidth="100.0" text="State" />
-        <TreeTableColumn fx:id="statusCol" editable="false" prefWidth="100.0" text="Status" />
-        <TreeTableColumn fx:id="genTimeCol" editable="false" prefWidth="200.0" text="Gen. Time" />
-        <TreeTableColumn fx:id="execTimeCol" editable="false" prefWidth="200.0" text="Exec. Time" />
-          <TreeTableColumn fx:id="sourceCol" editable="false" prefWidth="100.0" text="Source" />
-          <TreeTableColumn fx:id="typeCol" editable="false" prefWidth="100.0" text="Type" />
-          <TreeTableColumn fx:id="routeCol" editable="false" prefWidth="100.0" text="Route" />
-        <TreeTableColumn fx:id="resultCol" editable="false" prefWidth="100.0" text="Result" />
-        <TreeTableColumn fx:id="parentCol" editable="false" prefWidth="130.0" text="Parent" />
-      </columns>
-      <contextMenu>
-          <ContextMenu>
-            <items>
-                <MenuItem mnemonicParsing="false" onAction="#onPurgeMenuItem" text="Purge selected activity occurrence(s)" />
-            </items>
-          </ContextMenu>
-       </contextMenu>
-    </TreeTableView>
- </children>
- <padding>
-    <Insets top="0.01" />
- </padding>
-</VBox>
+<?import javafx.scene.control.TitledPane?>
+<TitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Events" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityDataViewController">
+    <content>
+    <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1">
+     <children>
+        <ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
+           <items>
+              <ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" prefHeight="25.0" prefWidth="91.0" selected="true" text="Live" />
+               <Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart" text="|&lt;" />
+               <Button fx:id="goBackFastBtn" disable="true" mnemonicParsing="false" onAction="#goBackFast" text="&lt;&lt;" />
+               <Button fx:id="goBackOneBtn" disable="true" mnemonicParsing="false" onAction="#goBackOne" text="&lt;" />
+               <Button fx:id="selectTimeBtn" disable="true" mnemonicParsing="false" onAction="#selectTimeButtonSelected" prefHeight="25.0" prefWidth="180.0" text="---" />
+               <Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne" text="&gt;" />
+               <Button fx:id="goForwardFastBtn" disable="true" mnemonicParsing="false" onAction="#goForwardFast" text="&gt;&gt;" />
+               <Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd" text="&gt;|" />
+              <Label text=" " />
+              <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
+              <Label text=" " />
+               <Button fx:id="filterBtn" mnemonicParsing="false" onAction="#filterButtonSelected" text="Filter..." />
+               <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
+                  <graphic>
+                      <ImageView pickOnBounds="true" preserveRatio="true">
+                          <image>
+                              <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/printer.svg.png" />
+                          </image>
+                      </ImageView>
+                  </graphic>
+              </Button>
+           </items>
+        </ToolBar>
+        <TreeTableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
+          <columns>
+            <TreeTableColumn fx:id="nameCol" editable="false" prefWidth="130.0" text="Name" />
+            <TreeTableColumn fx:id="stateCol" editable="false" prefWidth="100.0" text="State" />
+            <TreeTableColumn fx:id="statusCol" editable="false" prefWidth="100.0" text="Status" />
+            <TreeTableColumn fx:id="genTimeCol" editable="false" prefWidth="200.0" text="Gen. Time" />
+            <TreeTableColumn fx:id="execTimeCol" editable="false" prefWidth="200.0" text="Exec. Time" />
+              <TreeTableColumn fx:id="sourceCol" editable="false" prefWidth="100.0" text="Source" />
+              <TreeTableColumn fx:id="typeCol" editable="false" prefWidth="100.0" text="Type" />
+              <TreeTableColumn fx:id="routeCol" editable="false" prefWidth="100.0" text="Route" />
+            <TreeTableColumn fx:id="resultCol" editable="false" prefWidth="100.0" text="Result" />
+            <TreeTableColumn fx:id="parentCol" editable="false" prefWidth="130.0" text="Parent" />
+          </columns>
+          <contextMenu>
+              <ContextMenu>
+                <items>
+                    <MenuItem mnemonicParsing="false" onAction="#onPurgeMenuItem" text="Purge selected activity occurrence(s)" />
+                </items>
+              </ContextMenu>
+           </contextMenu>
+        </TreeTableView>
+     </children>
+     <padding>
+        <Insets top="0.01" />
+     </padding>
+    </VBox>
+    </content>
+</TitledPane>

@@ -18,16 +18,14 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceDataFilter;
-import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.activity.*;
+import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
-import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
-import eu.dariolucia.reatmetric.ui.utils.ParameterDisplayCoordinator;
+import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
@@ -43,15 +41,24 @@ import javafx.stage.Window;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * FXML Controller class
  *
  * @author dario
  */
-public class ActivityDataViewController extends AbstractDisplayController {
+public class ActivityDataViewController extends AbstractDisplayController implements IActivityOccurrenceDataSubscriber {
+
+    protected static final int MAX_ENTRIES = 100;
+
+    // Pane control
+    @FXML
+    protected TitledPane displayTitledPane;
 
     // Live/retrieval controls
     @FXML
@@ -89,7 +96,7 @@ public class ActivityDataViewController extends AbstractDisplayController {
     @FXML
     private TreeTableColumn<ActivityOccurrenceDataWrapper, String> nameCol;
     @FXML
-    private TreeTableColumn<ActivityOccurrenceDataWrapper, String> stateCol;
+    private TreeTableColumn<ActivityOccurrenceDataWrapper, ActivityOccurrenceState> stateCol;
     @FXML
     private TreeTableColumn<ActivityOccurrenceDataWrapper, String> statusCol;
     @FXML
@@ -107,15 +114,20 @@ public class ActivityDataViewController extends AbstractDisplayController {
     @FXML
     private TreeTableColumn<ActivityOccurrenceDataWrapper, String> parentCol;
 
-    protected volatile ActivityOccurrenceDataFilter currentActivityFilter = new ActivityOccurrenceDataFilter(null, null, null, null, null, null);
-
     // Popup selector for date/time
     protected final Popup dateTimePopup = new Popup();
+
+    // Popup selector for filter
+    protected final Popup filterPopup = new Popup();
 
     // Time selector controller
     protected DateTimePickerWidgetController dateTimePickerController;
 
-    private volatile boolean live = false;
+    // Filter controller
+    protected IFilterController<ActivityOccurrenceDataFilter> dataItemFilterController;
+
+    // Temporary object queue
+    private DataProcessingDelegator<ActivityOccurrenceData> delegator;
 
     @Override
     protected Window retrieveWindow() {
@@ -152,10 +164,138 @@ public class ActivityDataViewController extends AbstractDisplayController {
             e.printStackTrace();
         }
 
-        // TODO: set cell value factory
+        this.filterPopup.setAutoHide(true);
+        this.filterPopup.setHideOnEscape(true);
+
+        try {
+            URL filterWidgetUrl = getClass().getClassLoader()
+                    .getResource("eu/dariolucia/reatmetric/ui/fxml/ActivityOccurrenceDataFilterWidget.fxml");
+            FXMLLoader loader = new FXMLLoader(filterWidgetUrl);
+            Parent filterSelector = loader.load();
+            this.dataItemFilterController = loader.getController();
+            this.filterPopup.getContent().addAll(filterSelector);
+            // Load the controller hide with select
+            this.dataItemFilterController.setActionAfterSelection(() -> {
+                this.filterPopup.hide();
+                applyFilter(this.dataItemFilterController.getSelectedFilter());
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        this.nameCol.setCellValueFactory(o -> o.getValue().getValue().nameProperty());
+        this.stateCol.setCellValueFactory(o -> o.getValue().getValue().stateProperty());
+        this.statusCol.setCellValueFactory(o -> o.getValue().getValue().statusProperty());
+        this.sourceCol.setCellValueFactory(o -> o.getValue().getValue().sourceProperty());
+        this.routeCol.setCellValueFactory(o -> o.getValue().getValue().routeProperty());
+        this.typeCol.setCellValueFactory(o -> o.getValue().getValue().typeProperty());
+        this.resultCol.setCellValueFactory(o -> o.getValue().getValue().resultProperty());
+        this.genTimeCol.setCellValueFactory(o -> o.getValue().getValue().generationTimeProperty());
+        this.execTimeCol.setCellValueFactory(o -> o.getValue().getValue().executionTimeProperty());
+        this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getParentPathAsString()));
 
         this.genTimeCol.setCellFactory(InstantCellFactory.instantTreeCellFactory());
         this.execTimeCol.setCellFactory(InstantCellFactory.instantTreeCellFactory());
+
+        this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
+    }
+
+    protected void applyFilter(ActivityOccurrenceDataFilter selectedFilter) {
+        this.dataItemFilterController.setSelectedFilter(selectedFilter);
+        // Apply the filter on the current table
+        if(selectedFilter != null && !selectedFilter.isClear()) {
+            ((FilterableTreeItem<ActivityOccurrenceDataWrapper>) dataItemTableView.getRoot()).predicateProperty().setValue(new FilterWrapper(selectedFilter));
+        } else {
+            ((FilterableTreeItem<ActivityOccurrenceDataWrapper>) dataItemTableView.getRoot()).predicateProperty().setValue(p -> true);
+        }
+        if(this.liveTgl == null || this.liveTgl.isSelected()) {
+            if(selectedFilter == null || selectedFilter.isClear()) {
+                ReatmetricUI.threadPool(getClass()).execute(() -> {
+                    try {
+                        doServiceSubscribe(selectedFilter);
+                        markFilterDeactivated();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+            } else {
+                ReatmetricUI.threadPool(getClass()).execute(() -> {
+                    try {
+                        doServiceSubscribe(selectedFilter);
+                        markFilterActivated();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
+        } else {
+            if(selectedFilter == null || selectedFilter.isClear()) {
+                markFilterDeactivated();
+            } else {
+                markFilterActivated();
+            }
+            moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, getNumVisibleRow(), selectedFilter);
+        }
+    }
+
+    private void moveToTime(Instant selectedTime, RetrievalDirection direction, int n, ActivityOccurrenceDataFilter currentFilter) {
+        if(this.selectTimeBtn != null) {
+            this.selectTimeBtn.setText(formatTime(selectedTime));
+        }
+
+        markProgressBusy();
+        ReatmetricUI.threadPool(getClass()).execute(() -> {
+            try {
+                // TODO
+                // List<ActivityOccurrenceData> messages = doRetrieve(selectedTime, n, direction, currentFilter);
+                // addDataItemsBack(messages, n, true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            markProgressReady();
+        });
+    }
+
+    private int getNumVisibleRow() {
+        double h = this.dataItemTableView.getHeight();
+        h -= 30; // Header
+        return (int) (h / this.dataItemTableView.getFixedCellSize()) + 1;
+    }
+
+    private void markFilterDeactivated() {
+        this.filterBtn.setStyle("");
+    }
+
+    private void markFilterActivated() {
+        this.filterBtn.setStyle("-fx-background-color: -fx-faint-focus-color");
+    }
+
+
+    protected Consumer<List<ActivityOccurrenceData>> buildIncomingDataDelegatorAction() {
+        return (List<ActivityOccurrenceData> t) -> {
+            addDataItems(t, true, true);
+        };
+    }
+
+    protected void addDataItems(List<ActivityOccurrenceData> messages, boolean fromLive, boolean addOnTop) {
+        if(fromLive) {
+            // Revert the list
+            Collections.reverse(messages);
+        }
+        Platform.runLater(() -> {
+            if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
+                if (addOnTop) {
+                    // TODO
+                } else {
+                    // TODO
+                }
+                if (!fromLive) {
+                    this.dataItemTableView.scrollTo(0);
+                }
+
+                updateSelectTime();
+            }
+        });
     }
 
     @FXML
@@ -245,28 +385,48 @@ public class ActivityDataViewController extends AbstractDisplayController {
 
     private void restoreColumnConfiguration() {
         if (this.system != null) {
-            // TODO TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+            TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
         }
     }
 
     private void persistColumnConfiguration() {
         if (this.system != null) {
-            // TODO TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+            TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
         }
     }
 
-    public void startSubscription() {
-        this.live = true;
+    protected final void startSubscription() {
+        ReatmetricUI.threadPool(getClass()).execute(() -> {
+            this.delegator.resume();
+            try {
+                doServiceSubscribe(getCurrentFilter());
+            } catch (ReatmetricException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
-    public void stopSubscription() {
-        this.live = false;
+    protected ActivityOccurrenceDataFilter getCurrentFilter() {
+        return this.dataItemFilterController != null ? this.dataItemFilterController.getSelectedFilter() : null;
     }
 
-    protected void updateFilter() {
-        // TODO this.currentParameterFilter = new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()), null, null, null, null);
-        // Update the subscriptions
-        ParameterDisplayCoordinator.instance().filterUpdated();
+    protected final void stopSubscription() {
+        ReatmetricUI.threadPool(getClass()).execute(() -> {
+            try {
+                doServiceUnsubscribe();
+            } catch (ReatmetricException e) {
+                e.printStackTrace();
+            }
+            this.delegator.suspend();
+        });
+    }
+
+    protected void doServiceSubscribe(ActivityOccurrenceDataFilter selectedFilter) throws ReatmetricException {
+        ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().subscribe(this, selectedFilter);
+    }
+
+    protected void doServiceUnsubscribe() throws ReatmetricException {
+        ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().unsubscribe(this);
     }
 
     protected void updateSelectTime() {
@@ -294,7 +454,7 @@ public class ActivityDataViewController extends AbstractDisplayController {
 
     @Override
     protected Control doBuildNodeForPrinting() {
-        return null; // TODO TableViewUtil.buildNodeForPrinting(this.dataItemTableView);
+        return TableViewUtil.buildNodeForPrinting(this.dataItemTableView);
     }
 
     @Override
@@ -303,10 +463,6 @@ public class ActivityDataViewController extends AbstractDisplayController {
         if (oldStatus) {
             persistColumnConfiguration();
         }
-    }
-
-    public ActivityOccurrenceDataFilter getCurrentParameterFilter() {
-        return currentActivityFilter;
     }
 
     @Override
@@ -322,14 +478,6 @@ public class ActivityDataViewController extends AbstractDisplayController {
 
     protected String doGetComponentId() {
         return "ParameterDataView";
-    }
-
-    public void updateDataItems(List<ParameterData> messages) {
-        Platform.runLater(() -> {
-            // TODO
-            // this.dataItemTableView.refresh();
-            updateSelectTime();
-        });
     }
 
     @FXML
@@ -352,41 +500,71 @@ public class ActivityDataViewController extends AbstractDisplayController {
         event.consume();
     }
 
-    public boolean isLive() {
-        return this.live;
-    }
-
     @FXML
     public void onPurgeMenuItem(ActionEvent actionEvent) {
+        // TODO
+    }
 
+    @Override
+    public void dataItemsReceived(List<ActivityOccurrenceData> dataItems) {
+        Platform.runLater(() -> {
+            delegator.delegate(dataItems);
+            updateSelectTime();
+        });
     }
 
     public static class ActivityOccurrenceDataWrapper {
 
         private final SystemEntityPath path;
-        private final SimpleObjectProperty<ActivityOccurrenceData> property = new SimpleObjectProperty<>();
+        private final SimpleObjectProperty<Object> property = new SimpleObjectProperty<>();
 
+        private final SimpleStringProperty name = new SimpleStringProperty();
+        private final SimpleStringProperty status = new SimpleStringProperty();
         private final SimpleObjectProperty<Instant> generationTime = new SimpleObjectProperty<>();
-        private final SimpleObjectProperty<Instant> receptionTime = new SimpleObjectProperty<>();
-        private final SimpleStringProperty rawValue = new SimpleStringProperty();
-        private final SimpleStringProperty engValue = new SimpleStringProperty();
-        private final SimpleObjectProperty<Validity> validity = new SimpleObjectProperty<>();
-        private final SimpleObjectProperty<AlarmState> alarmState = new SimpleObjectProperty<>();
+        private final SimpleObjectProperty<Instant> executionTime = new SimpleObjectProperty<>();
+        private final SimpleStringProperty route = new SimpleStringProperty();
+        private final SimpleStringProperty source = new SimpleStringProperty();
+        private final SimpleStringProperty type = new SimpleStringProperty();
+        private final SimpleObjectProperty<ActivityOccurrenceState> state = new SimpleObjectProperty<>();
+        private final SimpleObjectProperty<Object> result = new SimpleObjectProperty<>();
 
         public ActivityOccurrenceDataWrapper(ActivityOccurrenceData data, SystemEntityPath path) {
+            this.path = path;
+            set(data);
+        }
+
+        public ActivityOccurrenceDataWrapper(ActivityOccurrenceReport data, SystemEntityPath path) {
+            this.path = path;
+            set(data);
+        }
+
+        private void set(ActivityOccurrenceReport data) {
             property.set(data);
             generationTime.set(data.getGenerationTime());
-            // TODO
-            this.path = path;
+            executionTime.set(data.getExecutionTime());
+            route.set("");
+            source.set("");
+            type.set("");
+            state.set(data.getState());
+            result.set(data.getResult());
+            status.set(data.getStatus().name());
+            name.set(data.getName());
         }
 
         public void set(ActivityOccurrenceData data) {
             property.set(data);
             generationTime.set(data.getGenerationTime());
-            // TODO
+            executionTime.set(data.getExecutionTime());
+            route.set(data.getRoute());
+            source.set(data.getSource());
+            type.set(data.getType());
+            state.set(data.getCurrentState());
+            result.set(data.getResult());
+            status.set("");
+            name.set(data.getName());
         }
 
-        public ActivityOccurrenceData get() {
+        public Object get() {
             return property.getValue();
         }
 
@@ -394,30 +572,66 @@ public class ActivityDataViewController extends AbstractDisplayController {
             return generationTime;
         }
 
-        public SimpleObjectProperty<Instant> receptionTimeProperty() {
-            return receptionTime;
+        public SimpleObjectProperty<Instant> executionTimeProperty() {
+            return executionTime;
         }
 
-        public SimpleStringProperty rawValueProperty() {
-            return rawValue;
+        public SimpleStringProperty routeProperty() {
+            return route;
         }
 
-        public SimpleStringProperty engValueProperty() {
-            return engValue;
+        public SimpleStringProperty typeProperty() {
+            return type;
         }
 
-        public SimpleObjectProperty<Validity> validityProperty() {
-            return validity;
+        public SimpleObjectProperty<ActivityOccurrenceState> stateProperty() {
+            return state;
         }
 
-        public SimpleObjectProperty<AlarmState> alarmStateProperty() {
-            return alarmState;
+        public SimpleObjectProperty<Object> resultProperty() {
+            return result;
+        }
+
+        public SimpleStringProperty nameProperty() {
+            return name;
+        }
+
+        public SimpleStringProperty statusProperty() {
+            return status;
         }
 
         public SystemEntityPath getPath() {
             return this.path;
         }
 
+        public SimpleStringProperty sourceProperty() {
+            return source;
+        }
+
+        public String getParentPathAsString() {
+            if(path != null) {
+                return path.getParent().asString();
+            } else {
+                return "";
+            }
+        }
     }
 
+    public static class FilterWrapper implements Predicate<ActivityOccurrenceDataWrapper> {
+
+        private final ActivityOccurrenceDataFilter filter;
+
+        public FilterWrapper(ActivityOccurrenceDataFilter selectedFilter) {
+            this.filter = selectedFilter;
+        }
+
+        @Override
+        public boolean test(ActivityOccurrenceDataWrapper activityOccurrenceDataWrapper) {
+            if(activityOccurrenceDataWrapper.get() instanceof ActivityOccurrenceReport) {
+                return true;
+            } else {
+                return filter.test((ActivityOccurrenceData) activityOccurrenceDataWrapper.get());
+            }
+        }
+    }
 }

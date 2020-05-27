@@ -30,14 +30,7 @@ import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
-import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -59,7 +52,6 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -580,49 +572,4 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             });
         }
     }
-
-    /*
-     * Stack Overflow snippet from: https://stackoverflow.com/questions/15897936/javafx-2-treeview-filtering/34426897#34426897
-     *
-     * Thanks to kaznovac (https://stackoverflow.com/users/382655/kaznovac)
-     */
-    public static class FilterableTreeItem<T> extends TreeItem<T> {
-        private final ObservableList<TreeItem<T>> sourceChildren = FXCollections.observableArrayList();
-        private final FilteredList<TreeItem<T>> filteredChildren = new FilteredList<>(sourceChildren);
-        private final ObjectProperty<Predicate<T>> predicate = new SimpleObjectProperty<>();
-
-        public FilterableTreeItem(T value) {
-            super(value);
-
-            filteredChildren.predicateProperty().bind(Bindings.createObjectBinding(() -> {
-                return child -> {
-                    if (child instanceof FilterableTreeItem) {
-                        ((FilterableTreeItem<T>) child).predicateProperty().set(predicate.get());
-                    }
-                    if (predicate.get() == null || !child.getChildren().isEmpty()) {
-                        return true;
-                    }
-                    return predicate.get().test(child.getValue());
-                };
-            } , predicate));
-
-            filteredChildren.addListener((ListChangeListener<TreeItem<T>>) c -> {
-                while (c.next()) {
-                    getChildren().removeAll(c.getRemoved());
-                    getChildren().addAll(c.getAddedSubList());
-                }
-            });
-        }
-
-        public ObservableList<TreeItem<T>> getSourceChildren() {
-            return sourceChildren;
-        }
-
-        public ObjectProperty<Predicate<T>> predicateProperty() {
-            return predicate;
-        }
-    }
-    /*
-     * End of Stack Overflow snippet
-     */
 }

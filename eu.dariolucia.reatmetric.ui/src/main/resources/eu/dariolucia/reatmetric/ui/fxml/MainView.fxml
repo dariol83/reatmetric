@@ -145,7 +145,7 @@
                                          <graphic>
                                              <ImageView pickOnBounds="true" preserveRatio="true">
                                                  <image>
-                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/thunder.svg.png" />
+                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/cogs.svg.png" />
                                                  </image>
                                              </ImageView>
                                          </graphic>
