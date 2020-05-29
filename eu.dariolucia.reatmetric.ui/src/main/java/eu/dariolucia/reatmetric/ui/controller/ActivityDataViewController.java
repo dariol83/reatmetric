@@ -19,11 +19,15 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.activity.*;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.*;
+import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
+import eu.dariolucia.reatmetric.ui.utils.FilterableTreeItem;
+import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
+import eu.dariolucia.reatmetric.ui.utils.TableViewUtil;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
@@ -41,9 +45,7 @@ import javafx.stage.Window;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -129,6 +131,9 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     // Temporary object queue
     private DataProcessingDelegator<ActivityOccurrenceData> delegator;
 
+    private Map<IUniqueId, FilterableTreeItem<ActivityOccurrenceDataWrapper>> activityMap = new HashMap<>();
+    private Map<IUniqueId, Map<String, FilterableTreeItem<ActivityOccurrenceDataWrapper>>> activityProgressMap = new HashMap<>();
+
     @Override
     protected Window retrieveWindow() {
         return liveTgl.getScene().getWindow();
@@ -169,7 +174,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
         try {
             URL filterWidgetUrl = getClass().getClassLoader()
-                    .getResource("eu/dariolucia/reatmetric/ui/fxml/ActivityOccurrenceDataFilterWidget.fxml");
+                    .getResource("eu/dariolucia/reatmetric/ui/fxml/ActivityDataFilterWidget.fxml");
             FXMLLoader loader = new FXMLLoader(filterWidgetUrl);
             Parent filterSelector = loader.load();
             this.dataItemFilterController = loader.getController();
@@ -198,6 +203,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         this.execTimeCol.setCellFactory(InstantCellFactory.instantTreeCellFactory());
 
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
+        this.dataItemTableView.setShowRoot(false);
+        this.dataItemTableView.setRoot(new FilterableTreeItem<>(null));
     }
 
     protected void applyFilter(ActivityOccurrenceDataFilter selectedFilter) {
@@ -284,18 +291,48 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         }
         Platform.runLater(() -> {
             if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
-                if (addOnTop) {
-                    // TODO
-                } else {
-                    // TODO
+                for(ActivityOccurrenceData aod : messages) {
+                    createOrUpdate(aod, addOnTop);
                 }
                 if (!fromLive) {
                     this.dataItemTableView.scrollTo(0);
                 }
-
+                // TODO: check if MAX_ENTRIES is exceeded, remove one at the top or end, depending on addOnTop - remove also from maps
                 updateSelectTime();
             }
         });
+    }
+
+    private void createOrUpdate(ActivityOccurrenceData aod, boolean addOnTop) {
+        FilterableTreeItem<ActivityOccurrenceDataWrapper> wrapper = activityMap.get(aod.getInternalId());
+        if(wrapper == null) {
+            wrapper = new FilterableTreeItem<>(new ActivityOccurrenceDataWrapper(aod, aod.getPath()));
+            activityMap.put(aod.getInternalId(), wrapper);
+            if(addOnTop) {
+                dataItemTableView.getRoot().getChildren().add(0, wrapper);
+            } else {
+                dataItemTableView.getRoot().getChildren().add(wrapper);
+
+            }
+        }
+        update(wrapper, aod);
+    }
+
+    private void update(TreeItem<ActivityOccurrenceDataWrapper> wrapper, ActivityOccurrenceData aod) {
+        wrapper.getValue().set(aod);
+        // Progress now
+        Map<String, FilterableTreeItem<ActivityOccurrenceDataWrapper>> progresses = activityProgressMap.computeIfAbsent(aod.getInternalId(), k -> new LinkedHashMap<>());
+        for(ActivityOccurrenceReport rep : aod.getProgressReports()) {
+            FilterableTreeItem<ActivityOccurrenceDataWrapper> reportWrapper = progresses.get(rep.getName());
+            if(reportWrapper == null) {
+                reportWrapper = new FilterableTreeItem<>(new ActivityOccurrenceDataWrapper(rep, aod.getPath()));
+                progresses.put(rep.getName(), reportWrapper);
+                wrapper.getChildren().add(reportWrapper);
+            }
+            if(reportWrapper.getValue().isReportToUpdate(rep)) {
+                reportWrapper.getValue().set(rep);
+            }
+        }
     }
 
     @FXML
@@ -434,7 +471,21 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         if (this.dataItemTableView.getRoot().getChildren().isEmpty()) {
             this.selectTimeBtn.setText("---");
         } else {
-            // TODO
+            Instant latest = null;
+            for(FilterableTreeItem<ActivityOccurrenceDataWrapper> item : activityMap.values()) {
+                if(latest == null) {
+                    latest = item.getValue().generationTimeProperty().get();
+                } else {
+                    if(latest.isBefore(item.getValue().generationTimeProperty().get())) {
+                        latest = item.getValue().generationTimeProperty().get();
+                    }
+                }
+            }
+            if(latest == null) {
+                this.selectTimeBtn.setText("---");
+            } else {
+                this.selectTimeBtn.setText(formatTime(latest));
+            }
         }
     }
 
@@ -477,7 +528,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     protected String doGetComponentId() {
-        return "ParameterDataView";
+        return "ActivityDataView";
     }
 
     @FXML
@@ -509,7 +560,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     public void dataItemsReceived(List<ActivityOccurrenceData> dataItems) {
         Platform.runLater(() -> {
             delegator.delegate(dataItems);
-            updateSelectTime();
+            // updateSelectTime();
         });
     }
 
@@ -538,7 +589,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             set(data);
         }
 
-        private void set(ActivityOccurrenceReport data) {
+        public void set(ActivityOccurrenceReport data) {
             property.set(data);
             generationTime.set(data.getGenerationTime());
             executionTime.set(data.getExecutionTime());
@@ -613,6 +664,27 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                 return path.getParent().asString();
             } else {
                 return "";
+            }
+        }
+
+        public boolean isReportToUpdate(ActivityOccurrenceReport rep) {
+            if(get() instanceof ActivityOccurrenceReport) {
+                ActivityOccurrenceReport current = (ActivityOccurrenceReport) get();
+                if(current.getStatus() == ActivityReportState.PENDING || current.getStatus() == ActivityReportState.EXPECTED) {
+                    // If you have an update here, you replace it
+                    return true;
+                } else if(current.getGenerationTime().isBefore(rep.getGenerationTime())) {
+                    // If the report is newer, you replace it
+                    return true;
+                } else if(current.getGenerationTime().equals(rep.getGenerationTime())) {
+                    // If the report has the same time... depends on the state
+                    return rep.getStatus().compareTo(current.getStatus()) > 0;
+                } else {
+                    // Nothing here
+                    return false;
+                }
+            } else {
+                return false;
             }
         }
     }

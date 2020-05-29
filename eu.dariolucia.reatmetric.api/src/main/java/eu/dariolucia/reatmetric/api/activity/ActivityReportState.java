@@ -21,6 +21,10 @@ package eu.dariolucia.reatmetric.api.activity;
  */
 public enum ActivityReportState {
     /**
+     * The stage state is unknown and no better prediction can be done
+     */
+    UNKNOWN,
+    /**
      * The stage should be concluded, but no confirmation of the stage was received yet
      */
     EXPECTED,
@@ -29,13 +33,13 @@ public enum ActivityReportState {
      */
     PENDING,
     /**
-     * The stage is reported as successfully executed
-     */
-    OK,
-    /**
      * The timeout linked to the stage expired
      */
     TIMEOUT,
+    /**
+     * The stage is reported as successfully executed
+     */
+    OK,
     /**
      * The stage is reported as failed, but this failure is not fatal for the execution of the activity occurrence
      */
@@ -48,9 +52,5 @@ public enum ActivityReportState {
      * This specific state is reported in relation to a verification expression, linked to the {@link ActivityOccurrenceState#VERIFICATION}
      * when the expression cannot be evaluated
      */
-    ERROR,
-    /**
-     * The stage state is unknown and no better prediction can be done
-     */
-    UNKNOWN
+    ERROR
 }

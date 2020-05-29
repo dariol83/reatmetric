@@ -194,6 +194,7 @@ public class ConnectorStatusWidgetController implements Initializable {
     public void startStopButtonClicked(MouseEvent mouseEvent) {
         if(!connector.isInitialised() && !connector.getSupportedProperties().isEmpty()) {
             // Init and connect now
+            startStopSwitch.setSelected(false);
             TransportConnectorInitDialog.openWizard(connector, startStopSwitch, true);
         } else if(lastStatus == null || lastStatus.getStatus() == TransportConnectionStatus.NOT_INIT
                 || lastStatus.getStatus() == TransportConnectionStatus.IDLE
