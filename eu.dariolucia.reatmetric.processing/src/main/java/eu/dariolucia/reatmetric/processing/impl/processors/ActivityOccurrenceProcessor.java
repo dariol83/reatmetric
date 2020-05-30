@@ -145,6 +145,8 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         ActivityOccurrenceReport report = new ActivityOccurrenceReport(new LongUniqueId(parent.processor.getNextId(ActivityOccurrenceReport.class)), generationTime, null, name, currentState, executionTime, reportState, nextState, result);
         // Add the report to the list
         reports.add(report);
+        // TODO: the generation of the current state shall be done before the generation of the report. The approach shall be revised, as PENDING next state reports should not make
+        //  the activity occurrence to advance. The state reported inside the report should be the one provided in the ActivityProcess object, and not currentState
         // Set the current state: prevent going back
         if(currentState == null || currentState.ordinal() <= nextState.ordinal()) {
             currentState = nextState;

@@ -50,11 +50,9 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcVcConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -373,18 +371,19 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     if(uplinked.size() == dataUnits.size()) { // All CLTUs/Frames uplinked, so command is all on its way
                         informServiceBroker(TcPacketPhase.UPLINKED, time, tcTrackers);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_UPLINK, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
-                        if(useAd) {
-                            reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
-                        } else {
+                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+                        if(!useAd) {
                             // Other stages are not in the scope of this class: send out a RECEIVED_ONBOARD success after uplink time + propagation delay on the service broker only
                             Instant estimatedOnboardReceptionTime = time.plusNanos(configuration.getPropagationDelay() * 1000);
                             if(configuration.getPropagationDelay() < 1000000) { // Less than one second propagation delay: report onboard reception now
                                 informServiceBroker(TcPacketPhase.RECEIVED_ONBOARD, estimatedOnboardReceptionTime, tcTrackers);
+                                reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.EXPECTED, ActivityOccurrenceState.TRANSMISSION);
                             } else {
                                 TimerTask tt = new TimerTask() {
                                     @Override
                                     public void run() {
                                         informServiceBroker(TcPacketPhase.RECEIVED_ONBOARD, estimatedOnboardReceptionTime, tcTrackers);
+                                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.EXPECTED, ActivityOccurrenceState.TRANSMISSION);
                                     }
                                 };
                                 uplinkTimer.schedule(tt, new Date(estimatedOnboardReceptionTime.toEpochMilli()));
