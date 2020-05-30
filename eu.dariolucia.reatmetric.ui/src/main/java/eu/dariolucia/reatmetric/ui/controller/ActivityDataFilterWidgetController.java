@@ -129,13 +129,13 @@ public class ActivityDataFilterWidgetController implements Initializable, IFilte
         } else {
             this.stateCheckbox.setSelected(this.selectedFilter.getStateList() != null);
             this.sourceCheckbox.setSelected(this.selectedFilter.getSourceList() != null);
-            this.activityPathCheckbox.setSelected(false); // TODO: add to filter
+            this.activityPathCheckbox.setSelected(this.selectedFilter.getActivityPathList() != null);
             this.pathCheckbox.setSelected(this.selectedFilter.getParentPath() != null);
             this.routeCheckbox.setSelected(this.selectedFilter.getRouteList() != null);
             this.typeCheckbox.setSelected(this.selectedFilter.getTypeList() != null);
              
             this.sourceText.setText(IFilterController.toStringList(this.selectedFilter.getSourceList()));
-            this.activityPathText.setText(IFilterController.toStringList(null)); // TODO: add to filter
+            this.activityPathText.setText(IFilterController.toStringList(this.selectedFilter.getActivityPathList()));
             this.routeText.setText(IFilterController.toStringList(this.selectedFilter.getRouteList()));
             this.typeText.setText(IFilterController.toStringList(this.selectedFilter.getTypeList()));
             this.pathText.setText(this.selectedFilter.getParentPath() != null ? this.selectedFilter.getParentPath().asString() : "");
@@ -149,11 +149,11 @@ public class ActivityDataFilterWidgetController implements Initializable, IFilte
     private ActivityOccurrenceDataFilter deriveFromWidgets() {
         List<ActivityOccurrenceState> stateList = deriveSelectedState();
         List<String> sourceList = deriveSelectedSource();
-        // List<SystemEntityPath> eventPathList = deriveSelectedEventPath();
+        List<SystemEntityPath> activityPathList = deriveSelectedActivityPath();
         List<String> typeList = deriveSelectedType();
         List<String> routeList = deriveSelectedRoute();
         SystemEntityPath parentPath = deriveParentPath();
-        return new ActivityOccurrenceDataFilter(parentPath, routeList, typeList, stateList, sourceList, null); // TODO: add path list
+        return new ActivityOccurrenceDataFilter(parentPath, activityPathList, routeList, typeList, stateList, sourceList, null);
     }
 
     private List<String> deriveSelectedSource() {
@@ -164,7 +164,7 @@ public class ActivityDataFilterWidgetController implements Initializable, IFilte
         }
     }
 
-    private List<SystemEntityPath> deriveSelectedEventPath() {
+    private List<SystemEntityPath> deriveSelectedActivityPath() {
         if(this.activityPathCheckbox.isSelected()) {
             return Arrays.stream(this.activityPathText.getText().split(",")).map(SystemEntityPath::fromString).collect(Collectors.toCollection(LinkedList::new));
         } else {

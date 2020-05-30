@@ -352,6 +352,9 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
             if(filter.getParentPath() != null) {
                 query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
             }
+            if(filter.getActivityPathList() != null && !filter.getActivityPathList().isEmpty()) {
+                query.append("AND Path IN (").append(toFilterListString(filter.getActivityPathList(), SystemEntityPath::asString, "'")).append(") ");
+            }
             if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
                 query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
             }
@@ -396,6 +399,9 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         if(filter != null && !filter.isClear()) {
             if(filter.getParentPath() != null) {
                 query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+            }
+            if(filter.getActivityPathList() != null && !filter.getActivityPathList().isEmpty()) {
+                query.append("AND Path IN (").append(toFilterListString(filter.getActivityPathList(), SystemEntityPath::asString, "'")).append(") ");
             }
             if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
                 query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
@@ -463,6 +469,9 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         if(filter != null && !filter.isClear()) {
             if(filter.getParentPath() != null) {
                 query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+            }
+            if(filter.getActivityPathList() != null && !filter.getActivityPathList().isEmpty()) {
+                query.append("AND Path IN (").append(toFilterListString(filter.getActivityPathList(), SystemEntityPath::asString, "'")).append(") ");
             }
             if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
                 query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");

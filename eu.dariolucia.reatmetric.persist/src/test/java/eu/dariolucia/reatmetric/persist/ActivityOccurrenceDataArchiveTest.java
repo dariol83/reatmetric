@@ -154,12 +154,12 @@ class ActivityOccurrenceDataArchiveTest {
             assertEquals(2L, items.get(0).getInternalId().asLong());
             assertEquals(1L, items.get(1).getInternalId().asLong());
             // retrieve: expected 1
-            items = activityArchive.retrieve(t.plusMillis(10000), 10, RetrievalDirection.TO_PAST, new ActivityOccurrenceDataFilter(null, Arrays.asList("routeB", "routeC"), Arrays.asList("t1", "t2"), null, null, null));
+            items = activityArchive.retrieve(t.plusMillis(10000), 10, RetrievalDirection.TO_PAST, new ActivityOccurrenceDataFilter(null, null, Arrays.asList("routeB", "routeC"), Arrays.asList("t1", "t2"), null, null, null));
             assertEquals(1, items.size());
             assertEquals(1L, items.get(0).getInternalId().asLong());
             assertEquals("routeB", items.get(0).getRoute());
             // retrieve: expected 2
-            items = activityArchive.retrieve(t.plusMillis(10000), 10, RetrievalDirection.TO_PAST, new ActivityOccurrenceDataFilter(SystemEntityPath.fromString("root.activity2"), Arrays.asList("routeA", "routeB", "routeC"), null, null, null, null));
+            items = activityArchive.retrieve(t.plusMillis(10000), 10, RetrievalDirection.TO_PAST, new ActivityOccurrenceDataFilter(SystemEntityPath.fromString("root.activity2"), null, Arrays.asList("routeA", "routeB", "routeC"), null, null, null, null));
             assertEquals(2, items.size());
             assertEquals(2L, items.get(0).getInternalId().asLong());
             assertEquals(1L, items.get(1).getInternalId().asLong());
@@ -171,7 +171,7 @@ class ActivityOccurrenceDataArchiveTest {
             assertEquals(1L, items.get(0).getInternalId().asLong());
             assertEquals(0L, items.get(1).getInternalId().asLong());
             // retrieve: expected 1
-            items = activityArchive.retrieve(t.plusMillis(2000),  new ActivityOccurrenceDataFilter(null, Arrays.asList("routeB", "routeC"), Arrays.asList("t1", "t2"), Collections.singletonList(ActivityOccurrenceState.EXECUTION), Arrays.asList("sourceA", "sourceB"), null), null);
+            items = activityArchive.retrieve(t.plusMillis(2000),  new ActivityOccurrenceDataFilter(null, null, Arrays.asList("routeB", "routeC"), Arrays.asList("t1", "t2"), Collections.singletonList(ActivityOccurrenceState.EXECUTION), Arrays.asList("sourceA", "sourceB"), null), null);
             assertEquals(1, items.size());
             assertEquals(1L, items.get(0).getInternalId().asLong());
             assertEquals("val1", items.get(0).getProperties().get("prop1"));

@@ -200,7 +200,7 @@ public class ArchiveInitialiser implements IProcessingModelInitialiser {
             while (!isDone) {
                 int maxIdx = Math.min(startIdx + chunkSize, actDefs.size());
                 List<Integer> chunk = actDefs.subList(startIdx, maxIdx);
-                List<ActivityOccurrenceData> activities = arc.retrieve(initTime, new ActivityOccurrenceDataFilter(null, null, null, null, null, chunk), maxLookBackTime);
+                List<ActivityOccurrenceData> activities = arc.retrieve(initTime, new ActivityOccurrenceDataFilter(null, null, null, null, null, null, chunk), maxLookBackTime);
                 // Add activities
                 for(ActivityOccurrenceData aod : activities) {
                     // Reports are sorted by generation time

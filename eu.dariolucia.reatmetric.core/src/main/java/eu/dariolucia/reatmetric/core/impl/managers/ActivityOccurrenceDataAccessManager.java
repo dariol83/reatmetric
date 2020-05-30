@@ -45,7 +45,7 @@ public class ActivityOccurrenceDataAccessManager extends AbstractAccessManager<A
     @Override
     protected AbstractAccessSubscriber<ActivityOccurrenceData, ActivityOccurrenceDataFilter, IActivityOccurrenceDataSubscriber> createSubscriber(IActivityOccurrenceDataSubscriber subscriber, ActivityOccurrenceDataFilter filter, IProcessingModel model) {
         if(filter == null) {
-            filter = new ActivityOccurrenceDataFilter(null, null, null, null, null, null);
+            filter = new ActivityOccurrenceDataFilter(null, null, null, null, null, null, null);
         }
         return new ActivityOccurrenceDataAccessSubscriber(subscriber, filter, model);
     }

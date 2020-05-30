@@ -41,6 +41,8 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
 
 	private final SystemEntityPath parentPath;
 
+    private final Set<SystemEntityPath> activityPathList;
+
     private final Set<String> routeList;
 
     private final Set<String> sourceList;
@@ -55,14 +57,20 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
      * The constructor of the activity occurrence filter.
      *
      * @param parentPath the parent path to select. It can be null: if so, all paths are selected.
+     * @param activityPathList the activity paths to exactly select. It can be null: if so, all paths are selected.
      * @param routeList the list of routes to select. It can be null: if so, all routes are selected.
      * @param typeList the list of types to select. It can be null: if so, all types are selected.
      * @param stateList the list of activity occurrence states to select. It can be null: if so, all states are selected.
      * @param sourceList the list of sources to select. It can be null: if so, all sources are selected.
      * @param externalIdList the list of activity IDs to select. It can be null: if so, all activities are selected.
      */
-    public ActivityOccurrenceDataFilter(SystemEntityPath parentPath, List<String> routeList, List<String> typeList, List<ActivityOccurrenceState> stateList, List<String> sourceList, List<Integer> externalIdList) {
+    public ActivityOccurrenceDataFilter(SystemEntityPath parentPath, List<SystemEntityPath> activityPathList, List<String> routeList, List<String> typeList, List<ActivityOccurrenceState> stateList, List<String> sourceList, List<Integer> externalIdList) {
         this.parentPath = parentPath;
+        if(activityPathList != null) {
+            this.activityPathList = Collections.unmodifiableSet(new LinkedHashSet<>(activityPathList));
+        } else {
+            this.activityPathList = null;
+        }
         if(routeList != null) {
             this.routeList = Collections.unmodifiableSet(new LinkedHashSet<>(routeList));
         } else {
@@ -100,6 +108,18 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
      */
     public SystemEntityPath getParentPath() {
         return parentPath;
+    }
+
+    /**
+     * The set of exact paths to select: an activity is selected if its (activity) path is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified paths
+     */
+    public Set<SystemEntityPath> getActivityPathList() {
+        return activityPathList;
     }
 
     /**
@@ -164,12 +184,15 @@ public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<A
 
     @Override
     public boolean isClear() {
-        return this.parentPath == null && this.stateList == null && this.routeList == null && this.typeList == null && this.sourceList == null && this.externalIdList == null;
+        return this.parentPath == null && this.activityPathList == null && this.stateList == null && this.routeList == null && this.typeList == null && this.sourceList == null && this.externalIdList == null;
     }
 
     @Override
     public boolean test(ActivityOccurrenceData item) {
         if(parentPath != null && !parentPath.isParentOf(item.getPath())) {
+            return false;
+        }
+        if(activityPathList != null && !activityPathList.contains(item.getPath())) {
             return false;
         }
         if(stateList != null && !stateList.contains(item.getCurrentState())) {
