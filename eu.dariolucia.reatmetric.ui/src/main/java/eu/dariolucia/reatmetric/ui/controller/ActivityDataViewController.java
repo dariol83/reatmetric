@@ -37,6 +37,7 @@ import javafx.geometry.Bounds;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
+import javafx.scene.paint.Color;
 import javafx.stage.Popup;
 import javafx.stage.Window;
 
@@ -98,7 +99,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @FXML
     private TreeTableColumn<ActivityOccurrenceDataWrapper, ActivityOccurrenceState> stateCol;
     @FXML
-    private TreeTableColumn<ActivityOccurrenceDataWrapper, String> statusCol;
+    private TreeTableColumn<ActivityOccurrenceDataWrapper, ActivityReportState> statusCol;
     @FXML
     private TreeTableColumn<ActivityOccurrenceDataWrapper, String> sourceCol;
     @FXML
@@ -129,8 +130,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     // Temporary object queue
     private DataProcessingDelegator<ActivityOccurrenceData> delegator;
 
-    private Map<IUniqueId, FilterableTreeItem<ActivityOccurrenceDataWrapper>> activityMap = new HashMap<>();
-    private Map<IUniqueId, Map<String, FilterableTreeItem<ActivityOccurrenceDataWrapper>>> activityProgressMap = new HashMap<>();
+    private Map<IUniqueId, TreeItem<ActivityOccurrenceDataWrapper>> activityMap = new HashMap<>();
+    private Map<IUniqueId, Map<String, TreeItem<ActivityOccurrenceDataWrapper>>> activityProgressMap = new HashMap<>();
 
     @Override
     protected Window retrieveWindow() {
@@ -200,9 +201,86 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         this.genTimeCol.setCellFactory(InstantCellFactory.instantTreeCellFactory());
         this.execTimeCol.setCellFactory(InstantCellFactory.instantTreeCellFactory());
 
+        this.stateCol.setCellFactory(column -> new TreeTableCell<>() {
+            @Override
+            protected void updateItem(ActivityOccurrenceState item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(item.name());
+                    switch (item) {
+                        case RELEASE:
+                        case CREATION:
+                            setTextFill(Color.BLACK);
+                            break;
+                        case TRANSMISSION:
+                            setTextFill(Color.BLUE);
+                            break;
+                        case SCHEDULING:
+                            setTextFill(Color.LIGHTBLUE);
+                            break;
+                        case EXECUTION:
+                            setTextFill(Color.LAWNGREEN);
+                            break;
+                        case VERIFICATION:
+                            setTextFill(Color.LIMEGREEN);
+                            break;
+                        case COMPLETED:
+                            setTextFill(Color.DARKGREEN);
+                            break;
+                        default:
+                            setTextFill(null);
+                            break;
+                    }
+                } else {
+                    setText("");
+                    setGraphic(null);
+                }
+            }
+        });
+        this.statusCol.setCellFactory(column -> new TreeTableCell<>() {
+            @Override
+            protected void updateItem(ActivityReportState item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(item.name());
+                    switch (item) {
+                        case OK:
+                            setTextFill(Color.GREEN);
+                            break;
+                        case FAIL:
+                            setTextFill(Color.DARKRED);
+                            break;
+                        case FATAL:
+                            setTextFill(Color.RED);
+                            break;
+                        case PENDING:
+                            setTextFill(Color.BLUE);
+                            break;
+                        case EXPECTED:
+                            setTextFill(Color.LIMEGREEN);
+                            break;
+                        case UNKNOWN:
+                            setTextFill(Color.GRAY);
+                            break;
+                        case ERROR:
+                            setTextFill(Color.ORANGERED);
+                            break;
+                        case TIMEOUT:
+                            setTextFill(Color.GOLD);
+                            break;
+                        default:
+                            setTextFill(null);
+                            break;
+                    }
+                } else {
+                    setText("");
+                    setGraphic(null);
+                }
+            }
+        });
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
         this.dataItemTableView.setShowRoot(false);
-        this.dataItemTableView.setRoot(new FilterableTreeItem<>(null));
+        this.dataItemTableView.setRoot(new FilterableTreeItem<>(null, false));
     }
 
     protected void applyFilter(ActivityOccurrenceDataFilter selectedFilter) {
@@ -258,24 +336,24 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     protected Consumer<List<ActivityOccurrenceData>> buildIncomingDataDelegatorAction() {
-        return (List<ActivityOccurrenceData> t) -> addDataItems(t, true, true);
+        return (List<ActivityOccurrenceData> t) -> addDataItems(t, true);
     }
 
-    protected void addDataItems(List<ActivityOccurrenceData> messages, boolean fromLive, boolean addOnTop) {
-        if(fromLive) {
-            // Revert the list
-            Collections.reverse(messages);
-        }
+    protected void addDataItems(List<ActivityOccurrenceData> messages, boolean fromLive) {
+        // if(!fromLive) {
+        //    // Revert the list
+        //    Collections.reverse(messages);
+        // }
         Platform.runLater(() -> {
             if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
                 for(ActivityOccurrenceData aod : messages) {
-                    createOrUpdate(aod, addOnTop);
+                    createOrUpdate(aod, true);
                 }
                 if (!fromLive) {
                     this.dataItemTableView.scrollTo(0);
                 }
                 // Check if MAX_ENTRIES is exceeded, remove one at the top or end, depending on addOnTop - remove also from maps
-                removeExceedingEntries(addOnTop);
+                removeExceedingEntries(true);
                 updateSelectTime();
             }
         });
@@ -302,7 +380,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     protected void clearTable() {
-        dataItemTableView.getRoot().getChildren().clear();
+        ((FilterableTreeItem<ActivityOccurrenceDataWrapper>)dataItemTableView.getRoot()).getSourceChildren().clear();
         activityProgressMap.clear();
         activityMap.clear();
         dataItemTableView.layout();
@@ -324,28 +402,30 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     private void removeActivities(int from, int to) {
+        // Collect the FilteredTreeItem to remove
+        Set<TreeItem<ActivityOccurrenceDataWrapper>> toRemove = new HashSet<>();
         for(int i = from; i < to; ++i) {
-            removeActivityAtPosition(i);
+            toRemove.add(removeActivityAtPosition(i));
         }
-        dataItemTableView.getRoot().getChildren().remove(from, to);
+        ((FilterableTreeItem<ActivityOccurrenceDataWrapper>)dataItemTableView.getRoot()).getSourceChildren().removeAll(toRemove);
     }
 
-    private void removeActivityAtPosition(int i) {
+    private TreeItem<ActivityOccurrenceDataWrapper> removeActivityAtPosition(int i) {
         ActivityOccurrenceDataWrapper w = dataItemTableView.getRoot().getChildren().get(i).getValue();
         activityMap.remove(w.getUniqueId());
         activityProgressMap.remove(w.getUniqueId());
+        return dataItemTableView.getRoot().getChildren().get(i);
     }
 
     private void createOrUpdate(ActivityOccurrenceData aod, boolean addOnTop) {
-        FilterableTreeItem<ActivityOccurrenceDataWrapper> wrapper = activityMap.get(aod.getInternalId());
+        TreeItem<ActivityOccurrenceDataWrapper> wrapper = activityMap.get(aod.getInternalId());
         if(wrapper == null) {
-            wrapper = new FilterableTreeItem<>(new ActivityOccurrenceDataWrapper(aod, aod.getPath()));
+            wrapper = new TreeItem<>(new ActivityOccurrenceDataWrapper(aod, aod.getPath()));
             activityMap.put(aod.getInternalId(), wrapper);
             if(addOnTop) {
-                dataItemTableView.getRoot().getChildren().add(0, wrapper);
+                ((FilterableTreeItem<ActivityOccurrenceDataWrapper>)dataItemTableView.getRoot()).getSourceChildren().add(0, wrapper);
             } else {
-                dataItemTableView.getRoot().getChildren().add(wrapper);
-
+                ((FilterableTreeItem<ActivityOccurrenceDataWrapper>)dataItemTableView.getRoot()).getSourceChildren().add(wrapper);
             }
         }
         update(wrapper, aod);
@@ -354,11 +434,11 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     private void update(TreeItem<ActivityOccurrenceDataWrapper> wrapper, ActivityOccurrenceData aod) {
         wrapper.getValue().set(aod);
         // Progress now
-        Map<String, FilterableTreeItem<ActivityOccurrenceDataWrapper>> progresses = activityProgressMap.computeIfAbsent(aod.getInternalId(), k -> new LinkedHashMap<>());
+        Map<String, TreeItem<ActivityOccurrenceDataWrapper>> progresses = activityProgressMap.computeIfAbsent(aod.getInternalId(), k -> new LinkedHashMap<>());
         for(ActivityOccurrenceReport rep : aod.getProgressReports()) {
-            FilterableTreeItem<ActivityOccurrenceDataWrapper> reportWrapper = progresses.get(rep.getName());
+            TreeItem<ActivityOccurrenceDataWrapper> reportWrapper = progresses.get(rep.getName());
             if(reportWrapper == null) {
-                reportWrapper = new FilterableTreeItem<>(new ActivityOccurrenceDataWrapper(rep, aod.getPath()));
+                reportWrapper = new TreeItem<>(new ActivityOccurrenceDataWrapper(rep, aod.getPath()));
                 progresses.put(rep.getName(), reportWrapper);
                 wrapper.getChildren().add(reportWrapper);
             }
@@ -384,6 +464,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @FXML
     protected void liveToggleSelected(ActionEvent e) {
         if (this.liveTgl.isSelected()) {
+            clearTable();
+            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter());
             startSubscription();
         } else {
             stopSubscription();
@@ -393,42 +475,42 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
     @FXML
     protected void goToStart(ActionEvent e) {
-        if (!isProgressBusy()) {
+        if (isProcessingAvailable()) {
             moveToTime(Instant.EPOCH, RetrievalDirection.TO_FUTURE, 1, this.dataItemFilterController.getSelectedFilter());
         }
     }
 
     @FXML
     protected void goBackOne(ActionEvent e) {
-        if (!isProgressBusy()) {
+        if (isProcessingAvailable()) {
             fetchRecords(1, RetrievalDirection.TO_PAST);
         }
     }
 
     @FXML
     protected void goBackFast(ActionEvent e) {
-        if (!isProgressBusy()) {
+        if (isProcessingAvailable()) {
             fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_PAST);
         }
     }
 
     @FXML
     protected void goToEnd(ActionEvent e) {
-        if (!isProgressBusy()) {
+        if (isProcessingAvailable()) {
             moveToTime(Instant.ofEpochSecond(3600*24*365*1000L), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
         }
     }
 
     @FXML
     protected void goForwardOne(ActionEvent e) {
-        if (!isProgressBusy()) {
+        if (isProcessingAvailable()) {
             fetchRecords(1, RetrievalDirection.TO_FUTURE);
         }
     }
 
     @FXML
     protected void goForwardFast(ActionEvent e) {
-        if (!isProgressBusy()) {
+        if (isProcessingAvailable()) {
             fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_FUTURE);
         }
     }
@@ -445,9 +527,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             try {
                 List<ActivityOccurrenceData> messages = doRetrieve((ActivityOccurrenceData) om.get(), n, direction, this.dataItemFilterController.getSelectedFilter());
                 if (direction == RetrievalDirection.TO_FUTURE) {
-                    // Reverse the list before adding it
-                    Collections.reverse(messages);
-                    addDataItems(messages, false, true);
+                    addDataItems(messages, false);
                 } else {
                     addDataItemsBack(messages, n, false);
                 }
@@ -553,12 +633,15 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     protected void updateSelectTime() {
-        // Take the latest generation time from the table
-        if (this.dataItemTableView.getRoot().getChildren().isEmpty()) {
+        if(this.selectTimeBtn == null) {
+            return;
+        }
+        // Take the first item from the table and use the generation time as value of the text
+        if (dataItemTableView.getRoot().getChildren().isEmpty()) {
             this.selectTimeBtn.setText("---");
         } else {
             Instant latest = null;
-            for(FilterableTreeItem<ActivityOccurrenceDataWrapper> item : activityMap.values()) {
+            for(TreeItem<ActivityOccurrenceDataWrapper> item : activityMap.values()) {
                 if(latest == null) {
                     latest = item.getValue().generationTimeProperty().get();
                 } else {
@@ -569,8 +652,10 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             }
             if(latest == null) {
                 this.selectTimeBtn.setText("---");
+                this.dateTimePickerController.setSelectedTime(null);
             } else {
                 this.selectTimeBtn.setText(formatTime(latest));
+                this.dateTimePickerController.setSelectedTime(latest);
             }
         }
     }
@@ -585,8 +670,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         });
     }
 
-    private boolean isProgressBusy() {
-        return this.progressIndicator.isVisible();
+    private boolean isProcessingAvailable() {
+        return !this.progressIndicator.isVisible();
     }
 
     @Override
@@ -608,7 +693,9 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         // Restore column configuration
         restoreColumnConfiguration();
         // Start subscription if there
-        if (this.liveTgl.isSelected()) {
+        if (this.liveTgl == null || this.liveTgl.isSelected()) {
+            clearTable();
+            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter());
             startSubscription();
         }
     }
@@ -660,9 +747,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
     @Override
     public void dataItemsReceived(List<ActivityOccurrenceData> dataItems) {
-        Platform.runLater(() -> {
-            delegator.delegate(dataItems);
-        });
+        Platform.runLater(() -> delegator.delegate(dataItems));
     }
 
     public static class ActivityOccurrenceDataWrapper {
@@ -671,7 +756,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         private final SimpleObjectProperty<Object> property = new SimpleObjectProperty<>();
 
         private final SimpleStringProperty name = new SimpleStringProperty();
-        private final SimpleStringProperty status = new SimpleStringProperty();
+        private final SimpleObjectProperty<ActivityReportState> status = new SimpleObjectProperty<>();
         private final SimpleObjectProperty<Instant> generationTime = new SimpleObjectProperty<>();
         private final SimpleObjectProperty<Instant> executionTime = new SimpleObjectProperty<>();
         private final SimpleStringProperty route = new SimpleStringProperty();
@@ -699,8 +784,30 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             type.set("");
             state.set(data.getState());
             result.set(data.getResult());
-            status.set(data.getStatus().name());
+            status.set(data.getStatus());
             name.set(data.getName());
+        }
+
+        private void deriveStatus(ActivityOccurrenceData data) {
+            // The status of the activity: can be OK, FAIL, PENDING, UNKNOWN (not others)
+            // OK -> Activity is COMPLETED && no FATAL present && last state in verification or execution state is OK)
+            // FAIL -> Activity is COMPLETED && (FATAL present || last state in verification or execution state is FAIL)
+            // UNKNOWN -> Activity is COMPLETED && no FATAL present && no execution state reported
+            // PENDING -> Activity is not completed
+            if(data.getCurrentState() == ActivityOccurrenceState.COMPLETED) {
+                for(int i = data.getProgressReports().size() - 1; i >= 0; --i) {
+                    ActivityOccurrenceReport report = data.getProgressReports().get(i);
+                    if(report.getStatus() == ActivityReportState.FATAL || report.getStatus() == ActivityReportState.FAIL) {
+                        statusProperty().set(ActivityReportState.FAIL);
+                    } else if(report.getStatus() == ActivityReportState.OK && (report.getState() == ActivityOccurrenceState.EXECUTION || report.getState() == ActivityOccurrenceState.VERIFICATION)) {
+                        statusProperty().set(ActivityReportState.OK);
+                    } else {
+                        statusProperty().set(ActivityReportState.UNKNOWN);
+                    }
+                }
+            } else {
+                statusProperty().set(ActivityReportState.PENDING);
+            }
         }
 
         public void set(ActivityOccurrenceData data) {
@@ -712,8 +819,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             type.set(data.getType());
             state.set(data.getCurrentState());
             result.set(data.getResult());
-            status.set("");
             name.set(data.getName());
+            deriveStatus(data);
         }
 
         public Object get() {
@@ -748,7 +855,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             return name;
         }
 
-        public SimpleStringProperty statusProperty() {
+        public SimpleObjectProperty<ActivityReportState> statusProperty() {
             return status;
         }
 

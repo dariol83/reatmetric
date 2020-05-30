@@ -272,6 +272,17 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         return retrieveAndBuild(connection, filter, finalQuery);
     }
 
+    @Override
+    protected List<ActivityOccurrenceData> doRetrieve(Connection connection, Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, ActivityOccurrenceDataFilter filter) throws SQLException {
+        if(startTime.isBefore(MINIMUM_TIME)) {
+            startTime = MINIMUM_TIME;
+        } else if(startTime.isAfter(MAXIMUM_TIME)) {
+            startTime = MAXIMUM_TIME;
+        }
+        String finalQuery = buildRetrieveQuery(startTime, internalId, numRecords, direction, filter);
+        return retrieveAndBuild(connection, filter, finalQuery);
+    }
+
     private List<ActivityOccurrenceData> retrieveAndBuild(Connection connection, ActivityOccurrenceDataFilter filter, String finalQuery) throws SQLException {
         List<ActivityOccurrenceData> result = new ArrayList<>();
         try (Statement prepStmt = connection.createStatement()) {

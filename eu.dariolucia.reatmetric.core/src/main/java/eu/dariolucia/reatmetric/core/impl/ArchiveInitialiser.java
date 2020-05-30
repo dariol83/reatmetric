@@ -210,7 +210,7 @@ public class ArchiveInitialiser implements IProcessingModelInitialiser {
                         sanitized = sanitize(aod);
                     }
                     // Check status
-                    if(sanitized.getCurrentState() != ActivityOccurrenceState.COMPLETION) {
+                    if(sanitized.getCurrentState() != ActivityOccurrenceState.COMPLETED) {
                         List<AbstractDataItem> items = activity2state.computeIfAbsent(sanitized.getExternalId(), o -> new LinkedList<>());
                         items.add(sanitized);
                     }

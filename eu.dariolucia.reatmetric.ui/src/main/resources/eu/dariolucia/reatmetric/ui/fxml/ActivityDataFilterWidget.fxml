@@ -47,7 +47,7 @@
             <Tooltip text="Comma-separated values" />
          </tooltip>
       </TextField>
-      <CheckBox fx:id="activityPathCheckbox" mnemonicParsing="false" text="Event Path" />
+      <CheckBox fx:id="activityPathCheckbox" mnemonicParsing="false" text="Activity Path" />
       <TextField fx:id="activityPathText">
          <tooltip>
             <Tooltip text="Comma-separated values" />

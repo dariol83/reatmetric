@@ -183,7 +183,6 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             startSubscription();
         } else {
             stopSubscription();
-            // moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), getCurrentFilter());
             updateSelectTime();
         }
     }
@@ -203,42 +202,42 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
 
     @FXML
     protected void goToStart(ActionEvent e) {
-        if(!isProgressBusy()) {
+        if(isProcessingAvailable()) {
             moveToTime(Instant.EPOCH, RetrievalDirection.TO_FUTURE, 1, this.dataItemFilterController.getSelectedFilter());
         }
     }
 
     @FXML
     protected void goBackFast(ActionEvent e) {
-        if(!isProgressBusy()) {
+        if(isProcessingAvailable()) {
             fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_PAST);
         }
     }
 
     @FXML
     protected void goBackOne(ActionEvent e) {
-        if(!isProgressBusy()) {
+        if(isProcessingAvailable()) {
             fetchRecords(1, RetrievalDirection.TO_PAST);
         }
     }
 
     @FXML
     protected void goToEnd(ActionEvent e) {
-        if(!isProgressBusy()) {
+        if(isProcessingAvailable()) {
             moveToTime(Instant.ofEpochSecond(3600*24*365*1000L), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
         }
     }
 
     @FXML
     protected void goForwardFast(ActionEvent e) {
-        if(!isProgressBusy()) {
+        if(isProcessingAvailable()) {
             fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_FUTURE);
         }
     }
 
     @FXML
     protected void goForwardOne(ActionEvent e) {
-        if(!isProgressBusy()) {
+        if(isProcessingAvailable()) {
             fetchRecords(1, RetrievalDirection.TO_FUTURE);
         }
     }
@@ -293,8 +292,6 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         }
         // Clear the table                
         clearTable();
-        // Remove the additional header fields
-        removeAdditionalHeaderFields();
     }
 
     @Override
@@ -416,11 +413,6 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         updateSelectTime();
     }
 
-    private void removeAdditionalHeaderFields() {
-        this.dataItemTableView.layout();
-        this.dataItemTableView.refresh();
-    }
-
     private void moveToTime(Instant selectedTime, RetrievalDirection direction, int n, V currentFilter) {
     	if(this.selectTimeBtn != null) {
     		this.selectTimeBtn.setText(formatTime(selectedTime));
@@ -446,8 +438,8 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         Platform.runLater(() -> this.progressIndicator.setVisible(false));
     }
 
-    private boolean isProgressBusy() {
-        return this.progressIndicator.isVisible();
+    private boolean isProcessingAvailable() {
+        return !this.progressIndicator.isVisible();
     }
     
     private T getFirst() {

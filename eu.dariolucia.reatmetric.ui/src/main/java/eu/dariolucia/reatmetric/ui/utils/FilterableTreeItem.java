@@ -28,9 +28,11 @@ import javafx.scene.control.TreeItem;
 import java.util.function.Predicate;
 
 /*
- * Stack Overflow snippet from: https://stackoverflow.com/questions/15897936/javafx-2-treeview-filtering/34426897#34426897
+ * Stack Overflow original snippet from: https://stackoverflow.com/questions/15897936/javafx-2-treeview-filtering/34426897#34426897
  *
  * Thanks to kaznovac (https://stackoverflow.com/users/382655/kaznovac)
+ *
+ * Enhanced to support first-level filtering and correct item list ordering
  */
 public class FilterableTreeItem<T> extends TreeItem<T> {
     private final ObservableList<TreeItem<T>> sourceChildren = FXCollections.observableArrayList();
@@ -38,6 +40,10 @@ public class FilterableTreeItem<T> extends TreeItem<T> {
     private final ObjectProperty<Predicate<T>> predicate = new SimpleObjectProperty<>();
 
     public FilterableTreeItem(T value) {
+        this(value, true);
+    }
+
+    public FilterableTreeItem(T value, boolean considerChildren) {
         super(value);
 
         filteredChildren.predicateProperty().bind(Bindings.createObjectBinding(() -> {
@@ -45,7 +51,11 @@ public class FilterableTreeItem<T> extends TreeItem<T> {
                 if (child instanceof FilterableTreeItem) {
                     ((FilterableTreeItem<T>) child).predicateProperty().set(predicate.get());
                 }
-                if (predicate.get() == null || !child.getChildren().isEmpty()) {
+                if (predicate.get() == null) {
+                    return true;
+                }
+                // This condition prevents filtering if the treeitem has children: can be disabled by constructor
+                if(considerChildren && !child.getChildren().isEmpty()) {
                     return true;
                 }
                 return predicate.get().test(child.getValue());
@@ -55,7 +65,7 @@ public class FilterableTreeItem<T> extends TreeItem<T> {
         filteredChildren.addListener((ListChangeListener<TreeItem<T>>) c -> {
             while (c.next()) {
                 getChildren().removeAll(c.getRemoved());
-                getChildren().addAll(c.getAddedSubList());
+                getChildren().addAll(c.getFrom(), c.getAddedSubList());
             }
         });
     }

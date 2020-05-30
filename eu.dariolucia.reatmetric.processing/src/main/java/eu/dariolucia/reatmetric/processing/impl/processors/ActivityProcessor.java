@@ -468,7 +468,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         for(AbstractDataItem adi : result) {
             if(adi instanceof ActivityOccurrenceData) {
                 ActivityOccurrenceState theState = ((ActivityOccurrenceData) adi).getCurrentState();
-                if(theState == ActivityOccurrenceState.COMPLETION) {
+                if(theState == ActivityOccurrenceState.COMPLETED) {
                     if(LOG.isLoggable(Level.FINER)) {
                         LOG.finer("Removing activity occurrence " + adi.getInternalId() + " of activity " + getSystemEntityId() + ", since completed");
                     }
@@ -677,7 +677,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         List<AbstractDataItem> stateList = initialiser.getState(getSystemEntityId(), SystemEntityType.ACTIVITY);
         for(AbstractDataItem data : stateList) {
             ActivityOccurrenceData aod = (ActivityOccurrenceData) data;
-            if(aod.getCurrentState() != ActivityOccurrenceState.COMPLETION) {
+            if(aod.getCurrentState() != ActivityOccurrenceState.COMPLETED) {
                 id2occurrence.put(aod.getInternalId(), new ActivityOccurrenceProcessor(this, aod));
             }
         }

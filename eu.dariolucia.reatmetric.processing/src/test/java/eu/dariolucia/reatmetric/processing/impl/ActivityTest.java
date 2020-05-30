@@ -106,7 +106,7 @@ class ActivityTest {
             assertEquals("A", state.getRoute());
             assertEquals("TC", state.getType());
             assertNull(state.getResult());
-            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+            assertEquals(ActivityOccurrenceState.COMPLETED, state.getCurrentState());
         }
 
         // Request activity execution: change of fixed value (wrong)
@@ -162,7 +162,7 @@ class ActivityTest {
             assertEquals("A", state.getRoute());
             assertEquals("TC", state.getType());
             assertNull(state.getResult());
-            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+            assertEquals(ActivityOccurrenceState.COMPLETED, state.getCurrentState());
         }
 
         // Deregister handler
@@ -217,7 +217,7 @@ class ActivityTest {
             assertEquals("A", state.getRoute());
             assertEquals("TC", state.getType());
             assertNull(state.getResult());
-            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+            assertEquals(ActivityOccurrenceState.COMPLETED, state.getCurrentState());
         }
 
         // Request activity execution: wrong value on ARG2
@@ -279,7 +279,7 @@ class ActivityTest {
             assertEquals("A", state.getRoute());
             assertEquals("TC", state.getType());
             assertNull(state.getResult());
-            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+            assertEquals(ActivityOccurrenceState.COMPLETED, state.getCurrentState());
         }
 
         // Request activity execution: wrong value on referenced ARG4
@@ -366,7 +366,7 @@ class ActivityTest {
             assertEquals("A", state.getRoute());
             assertEquals("TC", state.getType());
             assertEquals(4L, state.getResult());
-            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+            assertEquals(ActivityOccurrenceState.COMPLETED, state.getCurrentState());
         }
 
         // Deregister handler
@@ -469,7 +469,7 @@ class ActivityTest {
             assertEquals("ACT3", state.getName());
             assertEquals("ROOT.ELEMENT.ACT3", state.getPath().asString());
             assertEquals(121L, state.getArguments().get("ARG1"));
-            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+            assertEquals(ActivityOccurrenceState.COMPLETED, state.getCurrentState());
             assertEquals(ActivityReportState.FAIL, state.getProgressReports().get(state.getProgressReports().size() - 1).getStatus());
             assertEquals("Verification", state.getProgressReports().get(state.getProgressReports().size() - 1).getName());
         }
@@ -522,7 +522,7 @@ class ActivityTest {
             assertEquals("A", state.getRoute());
             assertEquals("TC", state.getType());
             assertNull(state.getResult());
-            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+            assertEquals(ActivityOccurrenceState.COMPLETED, state.getCurrentState());
 
             // Verify the two timeouts
             boolean tTimeoutFound = false;
@@ -587,7 +587,7 @@ class ActivityTest {
             assertEquals("A", state.getRoute());
             assertEquals("TC", state.getType());
             assertNull(state.getResult());
-            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+            assertEquals(ActivityOccurrenceState.COMPLETED, state.getCurrentState());
         }
 
         // Deregister handler
@@ -670,7 +670,7 @@ class ActivityTest {
             assertEquals("C", state.getRoute());
             assertEquals("TC", state.getType());
             assertNull(state.getResult());
-            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+            assertEquals(ActivityOccurrenceState.COMPLETED, state.getCurrentState());
         }
 
         // Deregister handler
@@ -725,7 +725,7 @@ class ActivityTest {
             assertEquals("TC", state.getType());
             assertNull(state.getResult());
             assertNotNull(state.getExecutionTime());
-            assertEquals(ActivityOccurrenceState.COMPLETION, state.getCurrentState());
+            assertEquals(ActivityOccurrenceState.COMPLETED, state.getCurrentState());
 
             // Verify the two timeouts
             boolean tTimeoutFound = false;

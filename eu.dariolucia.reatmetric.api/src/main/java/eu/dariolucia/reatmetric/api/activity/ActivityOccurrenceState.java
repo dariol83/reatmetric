@@ -65,7 +65,7 @@ public enum ActivityOccurrenceState {
      * The state of an activity occurrence when its lifecycle is completed. The {@link ActivityOccurrenceState} in the
      * processing model is no longer updated and the activity occurrence is removed from the processing model.
      */
-    COMPLETION("Completion");
+    COMPLETED("Completed");
 
     String formatString;
 
