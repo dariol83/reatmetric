@@ -496,7 +496,11 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     private void checkSimpleArgument(Object rawValue, Object engValue, PlainArgumentDefinition argDef) throws ProcessingModelException {
-        // TODO: check if you want checks in OR, AND, or something else (e.g. flag at check level). Now it is AND.
+        // If checks are defined, check in OR: as soon as one is good, then good.
+        if(argDef.getChecks().isEmpty()) {
+            return;
+        }
+        boolean oneApplicableFound = false;
         for (CheckDefinition cd : argDef.getChecks()) {
             // applicability condition: if not applicable, ignore the check
             if (cd.getApplicability() != null) {
@@ -510,6 +514,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                     throw new ProcessingModelException("Error when evaluating applicability for check " + cd.getName() + " on activity " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
                 }
             }
+            oneApplicableFound = true;
             // if the check is on the eng. value, but this is null, then the check is skipped
             if(!cd.isRawValueChecked() && engValue == null) {
                 continue;
@@ -518,11 +523,19 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             try {
                 AlarmState as = cd.check(valueToCheck, null, 0, processor);
                 if (as != AlarmState.NOMINAL) {
-                    throw new ProcessingModelException("Value " + valueToCheck + " of argument " + argDef.getName() + " failed execution of check " + cd.getName() + ": " + as);
+                    // throw new ProcessingModelException("Value " + valueToCheck + " of argument " + argDef.getName() + " failed execution of check " + cd.getName() + ": " + as);
+                    continue;
+                } else {
+                    // All good
+                    return;
                 }
             } catch (CheckException e) {
                 throw new ProcessingModelException("Value " + valueToCheck + " of argument " + argDef.getName() + " failed execution of check " + cd.getName() + ": " + e.getMessage(), e);
             }
+        }
+        // If you reach this stage and one applicable was found but not OK, then error
+        if(oneApplicableFound) {
+            throw new ProcessingModelException("Argument " + argDef.getName() + " failed execution of argument checks");
         }
     }
 
