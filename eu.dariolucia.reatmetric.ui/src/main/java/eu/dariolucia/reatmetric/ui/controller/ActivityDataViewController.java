@@ -20,14 +20,12 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
-import eu.dariolucia.reatmetric.ui.utils.FilterableTreeItem;
-import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
-import eu.dariolucia.reatmetric.ui.utils.TableViewUtil;
+import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
@@ -163,7 +161,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             // Load the controller hide with select
             this.dateTimePickerController.setActionAfterSelection(() -> {
                 this.dateTimePopup.hide();
-                moveToTime(this.dateTimePickerController.getSelectedTime());
+                moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
             });
         } catch (IOException e) {
             e.printStackTrace();
@@ -245,24 +243,6 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         }
     }
 
-    private void moveToTime(Instant selectedTime, RetrievalDirection direction, int n, ActivityOccurrenceDataFilter currentFilter) {
-        if(this.selectTimeBtn != null) {
-            this.selectTimeBtn.setText(formatTime(selectedTime));
-        }
-
-        markProgressBusy();
-        ReatmetricUI.threadPool(getClass()).execute(() -> {
-            try {
-                // TODO
-                // List<ActivityOccurrenceData> messages = doRetrieve(selectedTime, n, direction, currentFilter);
-                // addDataItemsBack(messages, n, true);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            markProgressReady();
-        });
-    }
-
     private int getNumVisibleRow() {
         double h = this.dataItemTableView.getHeight();
         h -= 30; // Header
@@ -277,11 +257,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         this.filterBtn.setStyle("-fx-background-color: -fx-faint-focus-color");
     }
 
-
     protected Consumer<List<ActivityOccurrenceData>> buildIncomingDataDelegatorAction() {
-        return (List<ActivityOccurrenceData> t) -> {
-            addDataItems(t, true, true);
-        };
+        return (List<ActivityOccurrenceData> t) -> addDataItems(t, true, true);
     }
 
     protected void addDataItems(List<ActivityOccurrenceData> messages, boolean fromLive, boolean addOnTop) {
@@ -297,10 +274,66 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                 if (!fromLive) {
                     this.dataItemTableView.scrollTo(0);
                 }
-                // TODO: check if MAX_ENTRIES is exceeded, remove one at the top or end, depending on addOnTop - remove also from maps
+                // Check if MAX_ENTRIES is exceeded, remove one at the top or end, depending on addOnTop - remove also from maps
+                removeExceedingEntries(addOnTop);
                 updateSelectTime();
             }
         });
+    }
+
+    protected void addDataItemsBack(List<ActivityOccurrenceData> messages, int n, boolean clearTable) {
+        Platform.runLater(() -> {
+            if (!this.displayTitledPane.isDisabled()) {
+                if (clearTable) {
+                    clearTable();
+                }
+                int toRemoveTop = dataItemTableView.getRoot().getChildren().size() > n ? n : dataItemTableView.getRoot().getChildren().size() - 1;
+                if (toRemoveTop > 0) {
+                    removeActivities(0, toRemoveTop);
+                }
+                for(ActivityOccurrenceData aod : messages) {
+                    createOrUpdate(aod, false);
+                }
+                this.dataItemTableView.scrollTo(0);
+                this.dataItemTableView.refresh();
+                updateSelectTime();
+            }
+        });
+    }
+
+    protected void clearTable() {
+        dataItemTableView.getRoot().getChildren().clear();
+        activityProgressMap.clear();
+        activityMap.clear();
+        dataItemTableView.layout();
+        dataItemTableView.refresh();
+        updateSelectTime();
+    }
+
+    private void removeExceedingEntries(boolean newAddedOnTop) {
+        int toRemove = dataItemTableView.getRoot().getChildren().size() - MAX_ENTRIES;
+        if(toRemove > 0) {
+            if(newAddedOnTop) {
+                // Remove from the bottom, also from the maps
+                removeActivities(dataItemTableView.getRoot().getChildren().size() - toRemove, dataItemTableView.getRoot().getChildren().size());
+            } else {
+                // Remove from the top, also from the maps
+                removeActivities(0, toRemove);
+            }
+        }
+    }
+
+    private void removeActivities(int from, int to) {
+        for(int i = from; i < to; ++i) {
+            removeActivityAtPosition(i);
+        }
+        dataItemTableView.getRoot().getChildren().remove(from, to);
+    }
+
+    private void removeActivityAtPosition(int i) {
+        ActivityOccurrenceDataWrapper w = dataItemTableView.getRoot().getChildren().get(i).getValue();
+        activityMap.remove(w.getUniqueId());
+        activityProgressMap.remove(w.getUniqueId());
     }
 
     private void createOrUpdate(ActivityOccurrenceData aod, boolean addOnTop) {
@@ -361,58 +394,111 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @FXML
     protected void goToStart(ActionEvent e) {
         if (!isProgressBusy()) {
-            moveToTime(Instant.EPOCH);
+            moveToTime(Instant.EPOCH, RetrievalDirection.TO_FUTURE, 1, this.dataItemFilterController.getSelectedFilter());
         }
     }
 
     @FXML
     protected void goBackOne(ActionEvent e) {
         if (!isProgressBusy()) {
-            // TODO
+            fetchRecords(1, RetrievalDirection.TO_PAST);
         }
     }
 
     @FXML
     protected void goBackFast(ActionEvent e) {
         if (!isProgressBusy()) {
-            // TODO
+            fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_PAST);
         }
     }
 
     @FXML
     protected void goToEnd(ActionEvent e) {
         if (!isProgressBusy()) {
-            moveToTime(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L));
+            moveToTime(Instant.ofEpochSecond(3600*24*365*1000L), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
         }
     }
 
     @FXML
     protected void goForwardOne(ActionEvent e) {
         if (!isProgressBusy()) {
-            // TODO
+            fetchRecords(1, RetrievalDirection.TO_FUTURE);
         }
     }
 
     @FXML
     protected void goForwardFast(ActionEvent e) {
         if (!isProgressBusy()) {
-            // TODO
+            fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_FUTURE);
         }
+    }
+
+    protected void fetchRecords(int n, RetrievalDirection direction) {
+        if(dataItemTableView.getRoot().getChildren().isEmpty()) {
+            return;
+        }
+        // Get the first message in the table
+        ActivityOccurrenceDataWrapper om = direction == RetrievalDirection.TO_FUTURE ? getFirst() : getLast();
+        // Retrieve the next one and add it on top
+        markProgressBusy();
+        ReatmetricUI.threadPool(getClass()).execute(() -> {
+            try {
+                List<ActivityOccurrenceData> messages = doRetrieve((ActivityOccurrenceData) om.get(), n, direction, this.dataItemFilterController.getSelectedFilter());
+                if (direction == RetrievalDirection.TO_FUTURE) {
+                    // Reverse the list before adding it
+                    Collections.reverse(messages);
+                    addDataItems(messages, false, true);
+                } else {
+                    addDataItemsBack(messages, n, false);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            markProgressReady();
+        });
+    }
+
+    private List<ActivityOccurrenceData> doRetrieve(ActivityOccurrenceData activityOccurrenceData, int n, RetrievalDirection direction, ActivityOccurrenceDataFilter selectedFilter) throws ReatmetricException {
+        return ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().retrieve(activityOccurrenceData, n, direction,
+                selectedFilter);
+    }
+
+    private List<ActivityOccurrenceData> doRetrieve(Instant time, int n, RetrievalDirection direction, ActivityOccurrenceDataFilter selectedFilter) throws ReatmetricException {
+        return ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().retrieve(time, n, direction,
+                selectedFilter);
+    }
+
+    private ActivityOccurrenceDataWrapper getFirst() {
+        return this.dataItemTableView.getRoot().getChildren().get(0).getValue();
+    }
+
+    private ActivityOccurrenceDataWrapper getLast() {
+        return this.dataItemTableView.getRoot().getChildren().get(this.dataItemTableView.getRoot().getChildren().size() - 1).getValue();
     }
 
     @FXML
     protected void filterButtonSelected(ActionEvent e) {
-        if (!isProgressBusy()) {
-            // TODO
+        if (this.filterPopup.isShowing()) {
+            this.filterPopup.hide();
+        } else {
+            Bounds b = this.filterBtn.localToScreen(this.filterBtn.getBoundsInLocal());
+            this.filterPopup.setX(b.getMinX());
+            this.filterPopup.setY(b.getMaxY());
+            this.filterPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+            this.filterPopup.show(this.displayTitledPane.getScene().getWindow());
         }
     }
 
-    protected void moveToTime(Instant selectedTime) {
-        this.selectTimeBtn.setText(formatTime(selectedTime));
+    protected void moveToTime(Instant selectedTime, RetrievalDirection direction, int n, ActivityOccurrenceDataFilter currentFilter) {
+        if(this.selectTimeBtn != null) {
+            this.selectTimeBtn.setText(formatTime(selectedTime));
+        }
+
         markProgressBusy();
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                // TODO
+                List<ActivityOccurrenceData> messages = doRetrieve(selectedTime, n, direction, currentFilter);
+                addDataItemsBack(messages, n, true);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -553,14 +639,29 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
     @FXML
     public void onPurgeMenuItem(ActionEvent actionEvent) {
-        // TODO
+        List<TreeItem<ActivityOccurrenceDataWrapper>> selected = this.dataItemTableView.getSelectionModel().getSelectedItems();
+        boolean confirm = DialogUtils.confirm("Purge activity occurrences", null, "If you continue, the monitoring of the selected occurrences will stop and the occurrences will be removed " +
+                "from the processing model. Do you want to purge the selected occurrences?");
+        if(!confirm) {
+            return;
+        }
+        final List<Pair<Integer, IUniqueId>> purgeList = new LinkedList<>();
+        for(TreeItem<ActivityOccurrenceDataWrapper> item : selected) {
+            purgeList.add(Pair.of(((ActivityOccurrenceData)item.getValue().get()).getExternalId(), ((ActivityOccurrenceData)item.getValue().get()).getInternalId()));
+        }
+        ReatmetricUI.threadPool(getClass()).execute(() -> {
+            try {
+                ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().purgeActivities(purgeList);
+            } catch (ReatmetricException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     @Override
     public void dataItemsReceived(List<ActivityOccurrenceData> dataItems) {
         Platform.runLater(() -> {
             delegator.delegate(dataItems);
-            // updateSelectTime();
         });
     }
 
@@ -661,7 +762,12 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
         public String getParentPathAsString() {
             if(path != null) {
-                return path.getParent().asString();
+                SystemEntityPath parent = path.getParent();
+                if(parent != null) {
+                    return parent.asString();
+                } else {
+                    return "";
+                }
             } else {
                 return "";
             }
@@ -685,6 +791,14 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                 }
             } else {
                 return false;
+            }
+        }
+
+        public IUniqueId getUniqueId() {
+            if(get() instanceof ActivityOccurrenceData) {
+                return ((ActivityOccurrenceData) get()).getInternalId();
+            } else {
+                return null;
             }
         }
     }

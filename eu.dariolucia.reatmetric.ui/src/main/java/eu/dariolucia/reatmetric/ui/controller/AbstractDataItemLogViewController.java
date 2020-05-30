@@ -26,7 +26,6 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.TableViewUtil;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.event.ActionEvent;
@@ -41,7 +40,6 @@ import javafx.stage.Window;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -136,7 +134,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent dateTimePicker = loader.load();
-            this.dateTimePickerController = (DateTimePickerWidgetController) loader.getController();
+            this.dateTimePickerController = loader.getController();
             this.dateTimePopup.getContent().addAll(dateTimePicker);
             // Load the controller hide with select
             this.dateTimePickerController.setActionAfterSelection(() -> {
@@ -174,9 +172,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     protected Consumer<List<T>> buildIncomingDataDelegatorAction() {
-        return (List<T> t) -> {
-            addDataItems(t, true, true);
-        };
+        return (List<T> t) -> addDataItems(t, true);
     }
     
     @FXML
@@ -261,7 +257,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
                 if (direction == RetrievalDirection.TO_FUTURE) {
                     // Reverse the list before adding it
                     Collections.reverse(messages);
-                    addDataItems(messages, false, true);
+                    addDataItems(messages, false);
                 } else {
                     addDataItemsBack(messages, n, false);
                 }
@@ -334,30 +330,21 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         this.delegator.delegate(objects);
     }
 
-    protected void addDataItems(List<T> messages, boolean fromLive, boolean addOnTop) {
+    protected void addDataItems(List<T> messages, boolean fromLive) {
         if(fromLive) {
             // Revert the list
             Collections.reverse(messages);
         }
         Platform.runLater(() -> {
             if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
-                if (addOnTop) {
-                    this.dataItemList.addAll(0, messages);
-                    if (this.filteredItemList.size() > MAX_ENTRIES) {
-                        int toRemove = dataItemList.size() - MAX_ENTRIES;
-                        dataItemList.remove(dataItemList.size() - toRemove, dataItemList.size());
-                    }
-                } else {
-                    this.dataItemList.addAll(messages);
-                    if (this.filteredItemList.size() > MAX_ENTRIES) {
-                        int toRemove = dataItemList.size() - MAX_ENTRIES;
-                        dataItemList.remove(0, toRemove);
-                    }
+                this.dataItemList.addAll(0, messages);
+                if (this.filteredItemList.size() > MAX_ENTRIES) {
+                    int toRemove = dataItemList.size() - MAX_ENTRIES;
+                    dataItemList.remove(dataItemList.size() - toRemove, dataItemList.size());
                 }
                 if (!fromLive) {
                     this.dataItemTableView.scrollTo(0);
                 }
-                // this.dataItemTableView.refresh();
                 updateSelectTime();
             }
         });
@@ -456,9 +443,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     private void markProgressReady() {
-        Platform.runLater(() -> {
-            this.progressIndicator.setVisible(false);
-        });
+        Platform.runLater(() -> this.progressIndicator.setVisible(false));
     }
 
     private boolean isProgressBusy() {
@@ -527,6 +512,8 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
    
     @Override
     protected Control doBuildNodeForPrinting() {
+        return TableViewUtil.buildNodeForPrinting(this.dataItemTableView);
+        /*
         List<?> items = new ArrayList<>(this.dataItemTableView.getItems());
         TableView<?> cloned = new TableView<>(FXCollections.observableArrayList(items));
         double width = 0;
@@ -543,6 +530,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         cloned.setPrefWidth(width);
         cloned.setPrefHeight(height);
         return cloned;
+        */
     }
     
     protected V getCurrentFilter() {
