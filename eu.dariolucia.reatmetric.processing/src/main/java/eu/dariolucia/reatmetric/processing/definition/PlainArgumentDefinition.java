@@ -61,10 +61,9 @@ public class PlainArgumentDefinition extends AbstractArgumentDefinition {
 
     /**
      * The list of checks applied to the <b>raw value</b> of the activity argument. In this case, there is no need to specify
-     * severity and number of violations. If one check is applicable and it passes, the argument value is accepted, i.e.
-     * the checks are linked in an OR fashion.
+     * severity and number of violations. Checks are specified in an AND fashion: all applicable checks must be fulfilled, in
+     * order to verify the argument.
      *
-     * TODO: check if this is the desired behaviour, perhaps an AND is more coherent with the parameter processing
      */
     @XmlElementWrapper(name = "checks")
     @XmlElements({

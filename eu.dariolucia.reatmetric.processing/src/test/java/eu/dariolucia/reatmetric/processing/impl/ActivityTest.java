@@ -237,7 +237,7 @@ class ActivityTest {
                 fail("Exception expected: limit value for ARG2 not detected");
             } catch(ProcessingModelException e) {
                 // good, check exception message
-                assertTrue(e.getMessage().startsWith("Argument ARG2 failed execution of argument checks"));
+                assertTrue(e.getMessage().startsWith("Value 70000 of argument ARG2"));
             }
         }
 
@@ -306,7 +306,7 @@ class ActivityTest {
                 fail("Exception expected: limit value for ARG4 not detected");
             } catch(ProcessingModelException e) {
                 // good, check exception message
-                assertTrue(e.getMessage().startsWith("Argument ARG4 failed execution of argument checks"));
+                assertTrue(e.getMessage().startsWith("Value 1010 of argument ARG4"));
             }
         }
 
