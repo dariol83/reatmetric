@@ -20,11 +20,13 @@ import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.incomin
 import eu.dariolucia.ccsds.sle.utl.config.ServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.UtlConfigurationFile;
 import eu.dariolucia.ccsds.sle.utl.config.cltu.CltuServiceInstanceConfiguration;
+import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.si.*;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuProductionStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuServiceInstanceProvider;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuUplinkStatusEnum;
+import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstanceProvider;
 import eu.dariolucia.reatmetric.api.common.Pair;
 
 import java.io.BufferedReader;
@@ -36,41 +38,52 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
-public class SpacecraftTcResponder {
+public class SpacecraftSimulator {
 
-    private static final Logger LOG = Logger.getLogger(SpacecraftTcResponder.class.getName());
+    private static final Logger LOG = Logger.getLogger(SpacecraftSimulator.class.getName());
 
     public static void main(String[] args) throws IOException {
-        if (args.length != 2) {
-            System.err.println("Usage: SpacecraftTcResponder <path to SLE configuration file> <CLTU SIID to use>");
+        if (args.length != 3) {
+            System.err.println("Usage: SpacecraftSimulator <path to SLE configuration file> <path to TM TC file> <spacecraft configuration>");
             System.exit(1);
         }
         // Load the SLE configuration file
         UtlConfigurationFile sleConfFile = UtlConfigurationFile.load(new FileInputStream(args[0]));
         CltuServiceInstanceConfiguration cltuConf = null;
+        RafServiceInstanceConfiguration rafConf = null;
         for (ServiceInstanceConfiguration sic : sleConfFile.getServiceInstances()) {
-            if (sic.getServiceInstanceIdentifier().equals(args[1]) && sic instanceof CltuServiceInstanceConfiguration) {
+            if (cltuConf == null && sic instanceof CltuServiceInstanceConfiguration) {
                 cltuConf = (CltuServiceInstanceConfiguration) sic;
-                break;
+            }
+            if (rafConf == null && sic instanceof RafServiceInstanceConfiguration) {
+                rafConf = (RafServiceInstanceConfiguration) sic;
             }
         }
         if (cltuConf == null) {
-            System.err.println("Error: cannot find service instance " + args[1] + " in file " + args[0]);
+            System.err.println("Error: cannot find CLTU service instance in file " + args[0]);
+            System.exit(1);
+        }
+        if (rafConf == null) {
+            System.err.println("Error: cannot find RAF service instance in file " + args[0]);
             System.exit(1);
         }
         // Create the CLTU service instance
         CltuServiceInstanceProvider cltuServiceInstanceProvider = new CltuServiceInstanceProvider(sleConfFile.getPeerConfiguration(), cltuConf);
         cltuServiceInstanceProvider.configure();
-        // Register the frame producer so that it becomes active when the status of the service instance goes to ACTIVE and stops when it goes to not ACTIVE
-        cltuServiceInstanceProvider.register(new TcResponder(cltuServiceInstanceProvider));
-        // Wait for BIND
-        cltuServiceInstanceProvider.waitForBind(true, null);
+        // Create the RAF service instance
+        RafServiceInstanceProvider rafServiceInstanceProvider = new RafServiceInstanceProvider(sleConfFile.getPeerConfiguration(), rafConf);
+        rafServiceInstanceProvider.configure();
+
+        // Create the spacecraft emulator
+        SpacecraftModel sm = new SpacecraftModel(args[1], args[2], cltuServiceInstanceProvider, rafServiceInstanceProvider);
+        sm.startProcessing();
+
         // Exit when the user presses Enter
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         br.readLine();
-        // Disconnect and dispose
-        cltuServiceInstanceProvider.peerAbort(PeerAbortReasonEnum.OPERATIONAL_REQUIREMENTS);
-        cltuServiceInstanceProvider.dispose();
+
+        //
+        sm.stopProcessing();
         // Bye
     }
 
