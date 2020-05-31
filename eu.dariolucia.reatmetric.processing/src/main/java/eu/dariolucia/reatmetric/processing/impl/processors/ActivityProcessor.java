@@ -220,31 +220,8 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             // Start with the checks of the activity request: argument presence and type, route presence
             // Check if the route exists
             processor.checkHandlerAvailability(request.getRoute(), definition.getType());
-            // Build the map of activity arguments with the corresponding raw values
-            Map<String, Object> name2value = new TreeMap<>();
-            for (AbstractActivityArgument aarg : request.getArguments()) {
-                AbstractArgumentDefinition aargDef = name2argumentDefinition.get(aarg.getName());
-                // Argument is defined?
-                if (aargDef == null) {
-                    throw new ProcessingModelException("Argument " + aarg.getName() + " not present in the activity definition");
-                }
-                if(aarg instanceof PlainActivityArgument) {
-                    PlainActivityArgument arg = (PlainActivityArgument) aarg;
-                    PlainArgumentDefinition argDef = (PlainArgumentDefinition) aargDef;
-                    Object finalValue = createSimpleArgument(arg, argDef);
-                    // Check and add the value to the final value map: if null do not add it but do not raise an exception
-                    verifyAndAdd(name2value, argDef, finalValue, false);
-                } else if(aarg instanceof ArrayActivityArgument) {
-                    ArrayActivityArgument garg = (ArrayActivityArgument) aarg;
-                    ArrayArgumentDefinition gargDef = (ArrayArgumentDefinition) aargDef;
-                    // Encode an object value of type Array
-                    Array arrayValue = createGroup(garg, gargDef);
-                    // Check and add the value to the final value map: if null do not add it but do not raise an exception
-                    verifyAndAdd(name2value, gargDef, arrayValue, false);
-                } else {
-                    throw new ProcessingModelException("Argument " + aarg.getName() + " has definition type not supported: " + aarg.getClass().getName());
-                }
-            }
+            // Build the map of activity arguments with the corresponding raw values (decalibration and checks done)
+            Map<String, Object> name2value = buildFinalArgumentMap(request, true);
             // Verify that all arguments are specified and, if some are not, use the default values if specified. If not, throw exception
             for (AbstractArgumentDefinition ad : definition.getArguments()) {
                 // If the argument was not provided, use the default value
@@ -290,7 +267,35 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         }
     }
 
-    private Array createGroup(ArrayActivityArgument garg, ArrayArgumentDefinition gargDef) throws ProcessingModelException {
+    private Map<String, Object> buildFinalArgumentMap(ActivityRequest request, boolean applyChecks) throws ProcessingModelException {
+        Map<String, Object> name2value = new LinkedHashMap<>();
+        for (AbstractActivityArgument aarg : request.getArguments()) {
+            AbstractArgumentDefinition aargDef = name2argumentDefinition.get(aarg.getName());
+            // Argument is defined?
+            if (aargDef == null) {
+                throw new ProcessingModelException("Argument " + aarg.getName() + " not present in the activity definition");
+            }
+            if (aarg instanceof PlainActivityArgument) {
+                PlainActivityArgument arg = (PlainActivityArgument) aarg;
+                PlainArgumentDefinition argDef = (PlainArgumentDefinition) aargDef;
+                Object finalValue = createSimpleArgument(arg, argDef, applyChecks);
+                // Check and add the value to the final value map: if null do not add it but do not raise an exception
+                verifyAndAdd(name2value, argDef, finalValue, false);
+            } else if (aarg instanceof ArrayActivityArgument) {
+                ArrayActivityArgument garg = (ArrayActivityArgument) aarg;
+                ArrayArgumentDefinition gargDef = (ArrayArgumentDefinition) aargDef;
+                // Encode an object value of type Array
+                Array arrayValue = createGroup(garg, gargDef, applyChecks);
+                // Check and add the value to the final value map: if null do not add it but do not raise an exception
+                verifyAndAdd(name2value, gargDef, arrayValue, false);
+            } else {
+                throw new ProcessingModelException("Argument " + aarg.getName() + " has definition type not supported: " + aarg.getClass().getName());
+            }
+        }
+        return name2value;
+    }
+
+    private Array createGroup(ArrayActivityArgument garg, ArrayArgumentDefinition gargDef, boolean applyChecks) throws ProcessingModelException {
         List<Array.Record> records = new LinkedList<>();
         for(ArrayActivityArgumentRecord rec : garg.getRecords()) {
             List<Pair<String, Object>> elements = new LinkedList<>();
@@ -303,43 +308,13 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                 if(aaa instanceof PlainActivityArgument) {
                     PlainActivityArgument arg = (PlainActivityArgument) aaa;
                     PlainArgumentDefinition argDef = (PlainArgumentDefinition) aargDef;
-                    Object finalValue = createSimpleArgument(arg, argDef);
+                    Object finalValue = createSimpleArgument(arg, argDef, applyChecks);
                     elements.add(Pair.of(arg.getName(), finalValue));
                 } else if(aaa instanceof ArrayActivityArgument) {
                     ArrayActivityArgument gaaa = (ArrayActivityArgument) aaa;
                     ArrayArgumentDefinition gaaaDef = (ArrayArgumentDefinition) aargDef;
                     // Encode an object value of type Array
-                    Array arrayValue = createGroup(gaaa, gaaaDef);
-                    elements.add(Pair.of(gaaa.getName(), arrayValue));
-                } else {
-                    throw new ProcessingModelException("Argument " + aaa.getName() + " has definition type not supported: " + aaa.getClass().getName());
-                }
-            }
-            records.add(new Array.Record(elements));
-        }
-        return new Array(records);
-    }
-
-    /**
-     * Create a {@link Array} value using only the raw values of the supplied {@link ArrayActivityArgument}.
-     *
-     * @param garg the activity group argument
-     * @return the group
-     * @throws ProcessingModelException in case of problems during the creation of the group
-     */
-    private Array createGroup(ArrayActivityArgument garg) throws ProcessingModelException {
-        List<Array.Record> records = new LinkedList<>();
-        for(ArrayActivityArgumentRecord rec : garg.getRecords()) {
-            List<Pair<String, Object>> elements = new LinkedList<>();
-            for(AbstractActivityArgument aaa : rec.getElements()) {
-                if(aaa instanceof PlainActivityArgument) {
-                    PlainActivityArgument arg = (PlainActivityArgument) aaa;
-                    Object finalValue = arg.getRawValue();
-                    elements.add(Pair.of(arg.getName(), finalValue));
-                } else if(aaa instanceof ArrayActivityArgument) {
-                    ArrayActivityArgument gaaa = (ArrayActivityArgument) aaa;
-                    // Encode an object value of type Array
-                    Array arrayValue = createGroup(gaaa);
+                    Array arrayValue = createGroup(gaaa, gaaaDef, applyChecks);
                     elements.add(Pair.of(gaaa.getName(), arrayValue));
                 } else {
                     throw new ProcessingModelException("Argument " + aaa.getName() + " has definition type not supported: " + aaa.getClass().getName());
@@ -359,7 +334,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         return null;
     }
 
-    private Object createSimpleArgument(PlainActivityArgument arg, PlainArgumentDefinition argDef) throws ProcessingModelException {
+    private Object createSimpleArgument(PlainActivityArgument arg, PlainArgumentDefinition argDef, boolean applyChecks) throws ProcessingModelException {
         // Type is correct?
         if (arg.getEngValue() != null && !ValueUtil.typeMatch(argDef.getEngineeringType(), arg.getEngValue())) {
             throw new ProcessingModelException("Argument " + arg.getName() + " set with engineering value not matching the argument engineering value definition type " + argDef.getEngineeringType() + ", expected " + argDef.getEngineeringType().getAssignedClass().getSimpleName());
@@ -381,7 +356,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             }
         }
         // Check this argument now
-        checkSimpleArgument(finalValue, arg.getEngValue(), argDef);
+        if(applyChecks) {
+            checkSimpleArgument(finalValue, arg.getEngValue(), argDef);
+        }
         // If all fine, go
         return finalValue;
     }
@@ -527,17 +504,10 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
 
     public List<AbstractDataItem> create(ActivityRequest request, ActivityProgress progress) throws ProcessingModelException {
         if(entityStatus == Status.ENABLED) {
-            // Build the map of activity arguments with the corresponding raw values
-            Map<String, Object> name2value = new TreeMap<>();
-            for (AbstractActivityArgument arg : request.getArguments()) {
-                if(arg instanceof PlainActivityArgument) {
-                    name2value.put(arg.getName(), ((PlainActivityArgument) arg).getRawValue()); // TODO: raw value only, decision to be revised
-                } else if(arg instanceof ArrayActivityArgument) {
-                    // Build the Array object
-                    name2value.put(arg.getName(), createGroup((ArrayActivityArgument) arg)); // TODO: raw value only, decision to be revised
-                }
-            }
-            //
+            // Build the map of activity arguments with the corresponding raw values, no checks applied, we need to accept the information from the caller
+            Map<String, Object> name2value = buildFinalArgumentMap(request, false);
+            // At this stage we do not verify that all arguments are specified, we need to accept the information provided by the caller, without speculations
+            // The order of the arguments should not be important as well
             ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), progress.getGenerationTime(), name2value, request.getProperties(), new LinkedList<>(), request.getRoute(), request.getSource());
             id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
             // inform the processor that the activity occurrence has been created, check equality to 1 to avoid calling the registration for every occurrence
