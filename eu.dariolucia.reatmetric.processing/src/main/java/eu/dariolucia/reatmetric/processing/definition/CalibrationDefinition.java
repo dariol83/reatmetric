@@ -66,15 +66,21 @@ public abstract class CalibrationDefinition {
         Object result = inputValue;
         // Otherwise, calibrate it
         if(definitions != null && !definitions.isEmpty()) {
+            boolean calibrated = false;
             for(CalibrationDefinition cd : definitions) {
                 try {
                     if (cd.getApplicability() == null || cd.getApplicability().execute(resolver)) {
                         result = cd.calibrate(inputValue, resolver);
+                        calibrated = true;
                         break;
                     }
                 } catch (ValidityException e) {
                     throw new CalibrationException("Applicability of calibration raised error: " + e.getMessage(), e);
                 }
+            }
+            if(!calibrated) {
+                // Potential problem: return null
+                throw new CalibrationException("No applicable calibration found to calibrate value " + inputValue + " to output type " + outputType);
             }
         }
         return sanitize(outputType, result);

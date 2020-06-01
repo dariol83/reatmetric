@@ -144,7 +144,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
                 if (type == 5) {
                     registerEvent(pd, apid, type, subtype);
                 }
-                if (type == 5) {
+                if (type == 1) {
                     registerPus1(pd, apid, type, subtype);
                 }
             }
@@ -238,7 +238,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
             hkCounter = hkCounter % periodicPackets.size();
             try {
                 SpacePacket sp = pkt.generate();
-                packetsToSend.put(sp);
+                if(sp != null) {
+                    packetsToSend.put(sp);
+                }
             } catch (EncodingException | InterruptedException e) {
                 e.printStackTrace();
             }
@@ -247,7 +249,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
                 evtCounter = evtCounter % eventPackets.size();
                 try {
                     SpacePacket spev = evpkt.generate();
-                    packetsToSend.put(spev);
+                    if(spev != null) {
+                        packetsToSend.put(spev);
+                    }
                 } catch (EncodingException | InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -347,6 +351,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     @Override
     public void spacePacketExtracted(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, byte[] packet, boolean qualityIndicator) {
         SpacePacket sp = new SpacePacket(packet, qualityIndicator);
+        System.out.println("Received TC packet: " + StringUtil.toHexDump(packet));
         if (qualityIndicator) {
             AckField acks = new AckField(sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH]);
             if (acks.isAcceptanceAckSet()) {
@@ -370,6 +375,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
             if (pt.apid == packet.getApid() && pt.subtype == subtype) {
                 // Found
                 SpacePacket sp = pt.generate(Arrays.copyOfRange(packet.getPacket(), 0, 4));
+                System.out.println("Queueing PUS 1 packet: " + StringUtil.toHexDump(sp.getPacket()));
                 try {
                     this.packetsToSend.put(sp);
                 } catch (InterruptedException e) {
@@ -383,6 +389,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
             if (pt.subtype == subtype) {
                 // Found
                 SpacePacket sp = pt.generate(Arrays.copyOfRange(packet.getPacket(), 0, 4));
+                System.out.println("Queueing PUS 1 packet (def): " + StringUtil.toHexDump(sp.getPacket()));
                 try {
                     this.packetsToSend.put(sp);
                 } catch (InterruptedException e) {
@@ -427,7 +434,13 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
 
             SpacePacketBuilder builder = SpacePacketBuilder.create().setTelemetryPacket().setApid(apid).setPacketSequenceCount(apidCounter).setSecondaryHeaderFlag(true).setSequenceFlag(SpacePacket.SequenceFlagType.UNSEGMENTED).setQualityIndicator(true);
             builder.addData(encodedPusHeader, 0, secHeaderLen);
-            byte[] encodedBody = encoder.encode(definition.getId(), new DefinitionValueBasedResolver(new DefaultNullBasedResolver(), true));
+            byte[] encodedBody = null;
+            try {
+                encodedBody = encoder.encode(definition.getId(), new DefinitionValueBasedResolver(new DefaultNullBasedResolver(), true));
+            } catch (EncodingException e) {
+                System.out.println("Error when encoding " + definition.getId() + " packet body: " + e.getMessage());
+                return null;
+            }
             builder.addData(encodedBody, SpacePacket.SP_PRIMARY_HEADER_LENGTH + secHeaderLen, encodedBody.length - (SpacePacket.SP_PRIMARY_HEADER_LENGTH + secHeaderLen));
             if (pusConfiguration.getTmPecPresent() == PacketErrorControlType.ISO || pusConfiguration.getTmPecPresent() == PacketErrorControlType.CRC) {
                 builder.addData(new byte[2]);

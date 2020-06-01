@@ -16,26 +16,17 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft;
 
-import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.incoming.pdus.CltuTransferDataInvocation;
 import eu.dariolucia.ccsds.sle.utl.config.ServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.UtlConfigurationFile;
 import eu.dariolucia.ccsds.sle.utl.config.cltu.CltuServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
-import eu.dariolucia.ccsds.sle.utl.si.*;
-import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuProductionStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuServiceInstanceProvider;
-import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuStatusEnum;
-import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuUplinkStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstanceProvider;
-import eu.dariolucia.reatmetric.api.common.Pair;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Date;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Logger;
 
 public class SpacecraftSimulator {
@@ -85,90 +76,5 @@ public class SpacecraftSimulator {
         //
         sm.stopProcessing();
         // Bye
-    }
-
-    private static class TcResponder implements IServiceInstanceListener {
-        private static final int MAX_BUFFER = 10000;
-
-        private final CltuServiceInstanceProvider provider;
-        private final BlockingQueue<Pair<Long, byte[]>> cltus = new LinkedBlockingQueue<>();
-
-        public TcResponder(CltuServiceInstanceProvider provider) {
-            this.provider = provider;
-            this.provider.setTransferDataOperationHandler(this::transferDataReceived);
-            new Thread(this::radiateCltus).start();
-            sendUplinkStatusOk();
-        }
-
-        private void radiateCltus() {
-            while (true) {
-                try {
-                    Pair<Long, byte[]> cltuPair = cltus.take();
-                    if (provider.getCurrentBindingState() == ServiceInstanceBindingStateEnum.ACTIVE) {
-                        Date startTime = new Date();
-                        provider.cltuProgress(cltuPair.getFirst(), CltuStatusEnum.PRODUCTION_STARTED, startTime, null, computeAvailableBuffer());
-                        Thread.sleep(cltuPair.getSecond().length * 8);
-                        provider.cltuProgress(cltuPair.getFirst(), CltuStatusEnum.RADIATED, startTime, new Date(), computeAvailableBuffer());
-                    }
-                } catch (InterruptedException e) {
-                    Thread.interrupted();
-                }
-            }
-        }
-
-        private Long transferDataReceived(CltuTransferDataInvocation cltuTransferDataInvocation) {
-            long availBuff = computeAvailableBuffer();
-            if (availBuff - cltuTransferDataInvocation.getCltuData().value.length < 0) {
-                return -1L; // unable to store
-            }
-            // Add to queue
-            this.cltus.add(Pair.of(cltuTransferDataInvocation.getCltuIdentification().longValue(), cltuTransferDataInvocation.getCltuData().value));
-            return computeAvailableBuffer();
-        }
-
-        @Override
-        public void onStateUpdated(ServiceInstance si, ServiceInstanceState state) {
-            switch (state.getState()) {
-                case UNBOUND:
-                    cltus.clear();
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        private void sendUplinkStatusOk() {
-            provider.updateProductionStatus(CltuProductionStatusEnum.OPERATIONAL, CltuUplinkStatusEnum.NOMINAL, computeAvailableBuffer());
-        }
-
-        private long computeAvailableBuffer() {
-            int used = cltus.stream().map(Pair::getSecond).map(o -> o.length).reduce(0, Integer::sum);
-            return MAX_BUFFER - used;
-        }
-
-        @Override
-        public void onPduReceived(ServiceInstance si, Object operation, String name, byte[] encodedOperation) {
-            // Nothing
-        }
-
-        @Override
-        public void onPduSent(ServiceInstance si, Object operation, String name, byte[] encodedOperation) {
-            LOG.info("Sending PDU " + name);
-        }
-
-        @Override
-        public void onPduSentError(ServiceInstance si, Object operation, String name, byte[] encodedOperation, String error, Exception exception) {
-            // Nothing
-        }
-
-        @Override
-        public void onPduDecodingError(ServiceInstance serviceInstance, byte[] encodedOperation) {
-            // Nothing
-        }
-
-        @Override
-        public void onPduHandlingError(ServiceInstance serviceInstance, Object operation, byte[] encodedOperation) {
-            // Nothing
-        }
     }
 }
