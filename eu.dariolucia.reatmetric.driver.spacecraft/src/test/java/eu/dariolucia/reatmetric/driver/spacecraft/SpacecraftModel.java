@@ -236,6 +236,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
             }
             TmPacketTemplate pkt = this.periodicPackets.get(hkCounter++);
             hkCounter = hkCounter % periodicPackets.size();
+
             try {
                 SpacePacket sp = pkt.generate();
                 if(sp != null) {
@@ -244,6 +245,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
             } catch (EncodingException | InterruptedException e) {
                 e.printStackTrace();
             }
+
             if (Math.random() < 0.01) {
                 TmPacketTemplate evpkt = this.eventPackets.get(evtCounter++);
                 evtCounter = evtCounter % eventPackets.size();

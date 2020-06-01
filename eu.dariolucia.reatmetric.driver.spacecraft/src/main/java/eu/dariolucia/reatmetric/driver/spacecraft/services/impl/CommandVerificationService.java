@@ -232,7 +232,11 @@ public class CommandVerificationService implements IServicePacketSubscriber {
     private void registerCommandStage(TcTracker tracker, String stageName, boolean isLastStage) {
         processingModel.reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), stageName, Instant.now(), ActivityOccurrenceState.EXECUTION, null, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null));
         int id = getTcIdentifier(tracker.getPacket());
-        openCommandVerifications.putIfAbsent(id, Pair.of(tracker, stageName));
+        if(!isLastStage) {
+            openCommandVerifications.putIfAbsent(id, Pair.of(tracker, stageName));
+        } else {
+            openCommandVerifications.put(id, Pair.of(tracker, stageName)); // Override
+        }
     }
 
     private int getTcIdentifier(SpacePacket spacePacket) {
