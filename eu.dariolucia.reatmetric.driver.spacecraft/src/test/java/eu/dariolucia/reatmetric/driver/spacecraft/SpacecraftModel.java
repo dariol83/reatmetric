@@ -58,7 +58,9 @@ import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.*;
+import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
+import javax.xml.bind.JAXBException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -75,13 +77,13 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
 
     public static final long BUFFER_AVAILABLE = 10000L;
 
-    private final String tmTcFilePath;
-    private final String scFilePath;
     private final CltuServiceInstanceProvider cltuProvider;
     private final RafServiceInstanceProvider rafProvider;
 
     private final SpacecraftConfiguration spacecraftConfiguration;
     private final Definition encDecDefs;
+
+    private final ProcessingDefinition processingDefinition;
 
     // TC processing part
     private final ExecutorService cltuProcessor = Executors.newSingleThreadExecutor();
@@ -98,24 +100,25 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     private List<TmPacketTemplate> eventPackets = new LinkedList<>();
     private List<TmPacketTemplate> pus1Packets = new LinkedList<>();
     private Map<Integer, AtomicInteger> apid2counter = new HashMap<>();
+    private final ProcessingModelBasedResolver resolver;
 
     private volatile boolean running = false;
     private Thread tmThread;
     private Thread generationThread;
 
-    public SpacecraftModel(String tmTcFilePath, String spacecraftFilePath, CltuServiceInstanceProvider cltuProvider, RafServiceInstanceProvider rafProvider) throws IOException {
-        this.tmTcFilePath = tmTcFilePath;
-        this.scFilePath = spacecraftFilePath;
+    public SpacecraftModel(String tmTcFilePath, String spacecraftFilePath, CltuServiceInstanceProvider cltuProvider, RafServiceInstanceProvider rafProvider, String processingModelPath) throws IOException, JAXBException {
         this.cltuProvider = cltuProvider;
         this.rafProvider = rafProvider;
         this.cltuProvider.setTransferDataOperationHandler(this::cltuReceived);
         this.encDecDefs = Definition.load(new FileInputStream(tmTcFilePath));
-        this.spacecraftConfiguration = SpacecraftConfiguration.load(new FileInputStream(scFilePath));
+        this.processingDefinition = ProcessingDefinition.load(new FileInputStream(processingModelPath));
+        this.spacecraftConfiguration = SpacecraftConfiguration.load(new FileInputStream(spacecraftFilePath));
         this.spacecraftConfiguration.getTmPacketConfiguration().buildLookupMap();
         initialiseSpacecraftUplink();
         this.tmMux = new TmMasterChannelMuxer(this::sendTmFrame);
         initialiseSpacecraftDownlink();
         initialiseSpacePacketGeneration();
+        this.resolver = new ProcessingModelBasedResolver(processingDefinition, new DefinitionValueBasedResolver(new DefaultNullBasedResolver(), true), spacecraftConfiguration.getTmPacketConfiguration().getParameterIdOffset(), encDecDefs);
     }
 
     private void initialiseSpacePacketGeneration() {
@@ -438,7 +441,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
             builder.addData(encodedPusHeader, 0, secHeaderLen);
             byte[] encodedBody = null;
             try {
-                encodedBody = encoder.encode(definition.getId(), new DefinitionValueBasedResolver(new DefaultNullBasedResolver(), true));
+                encodedBody = encoder.encode(definition.getId(), resolver);
             } catch (EncodingException e) {
                 System.out.println("Error when encoding " + definition.getId() + " packet body: " + e.getMessage());
                 return null;

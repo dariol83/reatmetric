@@ -23,6 +23,7 @@ import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuServiceInstanceProvider;
 import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstanceProvider;
 
+import javax.xml.bind.JAXBException;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -33,9 +34,9 @@ public class SpacecraftSimulator {
 
     private static final Logger LOG = Logger.getLogger(SpacecraftSimulator.class.getName());
 
-    public static void main(String[] args) throws IOException {
-        if (args.length != 3) {
-            System.err.println("Usage: SpacecraftSimulator <path to SLE configuration file> <path to TM TC file> <spacecraft configuration>");
+    public static void main(String[] args) throws IOException, JAXBException {
+        if (args.length != 4) {
+            System.err.println("Usage: SpacecraftSimulator <path to SLE configuration file> <path to TM TC file> <spacecraft configuration> <path to processing model>");
             System.exit(1);
         }
         // Load the SLE configuration file
@@ -66,7 +67,7 @@ public class SpacecraftSimulator {
         rafServiceInstanceProvider.configure();
 
         // Create the spacecraft emulator
-        SpacecraftModel sm = new SpacecraftModel(args[1], args[2], cltuServiceInstanceProvider, rafServiceInstanceProvider);
+        SpacecraftModel sm = new SpacecraftModel(args[1], args[2], cltuServiceInstanceProvider, rafServiceInstanceProvider, args[3]);
         sm.startProcessing();
 
         // Exit when the user presses Enter
