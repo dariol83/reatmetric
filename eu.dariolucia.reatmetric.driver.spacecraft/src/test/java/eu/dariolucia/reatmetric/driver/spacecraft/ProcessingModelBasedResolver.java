@@ -23,6 +23,8 @@ import eu.dariolucia.ccsds.encdec.structure.PathLocation;
 import eu.dariolucia.ccsds.encdec.time.AbsoluteTimeDescriptor;
 import eu.dariolucia.ccsds.encdec.time.RelativeTimeDescriptor;
 import eu.dariolucia.ccsds.encdec.value.BitString;
+import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.definition.*;
 
 import java.time.Duration;
@@ -41,7 +43,7 @@ public class ProcessingModelBasedResolver implements IEncodeResolver {
         this.parameterDefinitions = encodingDefinitions.getParameters();
         this.innerResolver = innerResolver;
         this.acceptableValues = new HashMap<>();
-        // Acceptable values
+        // Acceptable values coming from textual calibrations
         for(ParameterProcessingDefinition ppd : definition.getParameterDefinitions()) {
             List<Object> acceptables = computeAcceptableRawValues(ppd);
             if(acceptables != null) {
@@ -54,8 +56,33 @@ public class ProcessingModelBasedResolver implements IEncodeResolver {
                 lookForParameterIdFields(pd);
             }
         }
-        // TODO: Some parameters need to have a very specific value: are those parameters which play a role in the applicability of calibrations
-        //  These values should be computed and pre-cached immediately.
+        // Some parameters need to have a very specific value: are those parameters which play a role in the applicability of calibrations.
+        // These values should be computed and pre-cached immediately.
+        // Parameters used in calibration applicability condition
+        for(ParameterProcessingDefinition ppd : definition.getParameterDefinitions()) {
+            if(ppd.getCalibrations() != null) {
+                for (CalibrationDefinition cd : ppd.getCalibrations()) {
+                    if (cd.getApplicability() != null) {
+                        Pair<Long, Object> value = deriveApplicabilityValue(cd.getApplicability());
+                        if (value != null) {
+                            cachedValue.put(value.getFirst() - parameterOffset, value.getSecond());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private Pair<Long, Object> deriveApplicabilityValue(ValidityCondition applicability) {
+        if(applicability.getMatch() != null) {
+            long id = applicability.getMatch().getParameter().getId();
+            if(applicability.getMatch().getValue() != null) {
+                Object val = ValueUtil.parse(applicability.getMatch().getValueType(), applicability.getMatch().getValue());
+                return Pair.of(id, val);
+            }
+        }
+        return null;
     }
 
     private void lookForParameterIdFields(PacketDefinition pd) {

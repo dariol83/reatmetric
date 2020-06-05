@@ -52,7 +52,7 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
             @XmlElement(name="calib_expression",type=ExpressionCalibration.class),
             @XmlElement(name="calib_external",type=ExternalCalibration.class),
     })
-    private List<CalibrationDefinition> calibrations;
+    private List<CalibrationDefinition> calibrations = new LinkedList<>();
 
     @XmlElementWrapper(name = "checks")
     @XmlElements({

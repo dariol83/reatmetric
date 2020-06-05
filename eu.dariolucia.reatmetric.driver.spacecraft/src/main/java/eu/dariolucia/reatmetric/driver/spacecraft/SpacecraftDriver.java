@@ -429,7 +429,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     @Override
     public String getHandler() {
-        return String.valueOf(this.configuration.getId());
+        return this.name;
     }
 
     @Override
