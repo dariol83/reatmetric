@@ -799,8 +799,10 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                     ActivityOccurrenceReport report = data.getProgressReports().get(i);
                     if(report.getStatus() == ActivityReportState.FATAL || report.getStatus() == ActivityReportState.FAIL) {
                         statusProperty().set(ActivityReportState.FAIL);
+                        break;
                     } else if(report.getStatus() == ActivityReportState.OK && (report.getState() == ActivityOccurrenceState.EXECUTION || report.getState() == ActivityOccurrenceState.VERIFICATION)) {
                         statusProperty().set(ActivityReportState.OK);
+                        break;
                     } else {
                         statusProperty().set(ActivityReportState.UNKNOWN);
                     }

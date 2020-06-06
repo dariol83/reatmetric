@@ -37,14 +37,14 @@ import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Date;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * This class implements the ECSS PUS 1 command verification service.
+ */
 public class CommandVerificationService implements IServicePacketSubscriber {
 
     private static final Logger LOG = Logger.getLogger(CommandVerificationService.class.getName());
@@ -53,10 +53,7 @@ public class CommandVerificationService implements IServicePacketSubscriber {
     private final IServiceBroker serviceBroker;
     private final IProcessingModel processingModel;
 
-    private final Timer scheduler = new Timer();
-
     private final Map<Integer, Pair<TcTracker, String>> openCommandVerifications = new ConcurrentHashMap<>(); // ID -> TcTracker and stage last name
-    private final Map<Integer, TimerTask> scheduledOpeningCommandVerifications = new ConcurrentHashMap<>();
 
     public CommandVerificationService(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker) {
         this.configuration = configuration;
@@ -71,7 +68,8 @@ public class CommandVerificationService implements IServicePacketSubscriber {
     }
 
     private boolean packetFilter(RawData rawData, SpacePacket spacePacket, Integer type, Integer subtype, Integer destination, Integer source) {
-        return (spacePacket.isTelemetryPacket() && type != null && type == 1) || !spacePacket.isTelemetryPacket();
+        return (spacePacket.isTelemetryPacket() && type != null && type == 1) || // For TM 1,x reports
+                !spacePacket.isTelemetryPacket(); // All TCs
     }
 
     @Override
@@ -156,46 +154,13 @@ public class CommandVerificationService implements IServicePacketSubscriber {
 
     @Override
     public synchronized void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker) {
-        // When a command is successfully UPLINKED, check if:
+        // When a command is successfully RECEIVED_ONBOARD, then it is ready for immediate execution:
         if(phase == TcPacketPhase.RECEIVED_ONBOARD) {
-            // It is a TC for immediate execution?
-            String scheduledTime = tcTracker.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_SCHEDULED_TIME);
-            if(scheduledTime == null || scheduledTime.isBlank()) {
-                // In this case announce all the expected stages from the ack field now
-                registerImmediateTc(tcTracker);
-            } else {
-                // It is a scheduled TC: in this case announce the stages at the provided time
-                Instant time = Instant.parse(scheduledTime);
-                registerScheduledTc(tcTracker, time);
-            }
-        } else if(phase == TcPacketPhase.FAILED) {
-            // Check if there is a command that was scheduled for registration
-            int id = getTcIdentifier(tcTracker.getPacket());
-            TimerTask tt = this.scheduledOpeningCommandVerifications.remove(id);
-            if(tt != null) {
-                tt.cancel();
-            }
-        }
-    }
-
-    private void registerScheduledTc(TcTracker tcTracker, Instant scheduledTime) {
-        Instant now = Instant.now();
-        if(now.toEpochMilli() - scheduledTime.toEpochMilli() < 0) {
-            // Schedule now
             registerImmediateTc(tcTracker);
-        } else {
-            TimerTask scheduleLater = new TimerTask() {
-                @Override
-                public void run() {
-                    registerImmediateTc(tcTracker);
-                }
-            };
-            scheduledOpeningCommandVerifications.putIfAbsent(getTcIdentifier(tcTracker.getPacket()), scheduleLater);
-            scheduler.schedule(scheduleLater, new Date(scheduledTime.toEpochMilli()));
         }
     }
 
-    private synchronized void registerImmediateTc(TcTracker tcTracker) {
+    public synchronized void registerImmediateTc(TcTracker tcTracker) {
         // Register now
         AckField ackFields = tcTracker.getInfo().getPusHeader().getAckField();
         String lastStage = Constants.STAGE_SPACECRAFT_COMPLETED;
@@ -244,10 +209,7 @@ public class CommandVerificationService implements IServicePacketSubscriber {
     }
 
     public void dispose() {
-        scheduler.cancel();
-        scheduler.purge();
         serviceBroker.deregister(this);
         openCommandVerifications.clear();
-        scheduledOpeningCommandVerifications.clear();
     }
 }

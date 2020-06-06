@@ -56,6 +56,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.replay.TmPacketReplayManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.CltuServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
@@ -128,6 +129,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private TimeCorrelationService timeCorrelationService;
     private OnboardEventService onboardEventService;
     private CommandVerificationService commandVerificationService;
+    private OnboardOperationsSchedulingService schedulingService;
 
     private final Map<String, Function<RawData, LinkedHashMap<String, String>>> rawDataRenderers = new TreeMap<>();
     private IRawDataArchive rawDataArchive; // Needed to retrieve raw data without contents, for rendering
@@ -278,6 +280,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.onboardEventService = new OnboardEventService(this.configuration, this.context, this.serviceBroker);
         // Command verification service (PUS 1)
         this.commandVerificationService = new CommandVerificationService(this.configuration, this.context, this.serviceBroker);
+        //
+        this.schedulingService = new OnboardOperationsSchedulingService(this.configuration, this.context, this.serviceBroker);
     }
 
     private void loadServiceBroker() {
@@ -413,6 +417,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.timeCorrelationService.dispose();
         this.onboardEventService.dispose();
         this.commandVerificationService.dispose();
+        this.schedulingService.dispose();
         this.serviceBroker.dispose();
         this.tcPacketProcessor.dispose();
         this.tcDataLinkProcessor.dispose();

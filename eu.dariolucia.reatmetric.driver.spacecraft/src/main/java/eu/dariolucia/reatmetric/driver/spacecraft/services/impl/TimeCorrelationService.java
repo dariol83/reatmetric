@@ -57,6 +57,9 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * This class implements the ECSS PUS 9 time reporting service.
+ */
 public class TimeCorrelationService implements IServicePacketSubscriber, IRawDataSubscriber {
 
     private static final Logger LOG = Logger.getLogger(TimeCorrelationService.class.getName());

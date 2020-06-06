@@ -61,6 +61,8 @@ public class Constants {
     public static final String ACTIVITY_PROPERTY_OVERRIDE_USE_AD_FRAME = "use-ad-mode-override";
     public static final String ACTIVITY_PROPERTY_TC_GROUP_NAME = "group-tc-name";
     public static final String ACTIVITY_PROPERTY_TC_GROUP_TRANSMIT = "group-tc-transmit";
+    public static final String ACTIVITY_PROPERTY_SUBSCHEDULE_ID = "onboard-sub-schedule-id";
+    public static final String ACTIVITY_PROPERTY_SUBSCHEDULE_TRACKING_ID = "linked-scheduled-activity-occurrence";
 
     // Activity stages
     public static final String STAGE_GROUND_STATION_RECEPTION = "Ground Station Reception";
@@ -80,6 +82,7 @@ public class Constants {
 
     // COP-1
     public static final String TC_COP1_ACTIVITY_TYPE = "COP-1";
+
 
 
 }

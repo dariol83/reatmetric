@@ -17,12 +17,36 @@
 package eu.dariolucia.reatmetric.driver.spacecraft.services;
 
 public enum TcPacketPhase {
+    /**
+     * The command has been encoded and ready to be released by the system
+     */
     ENCODED,
+    /**
+     * The command has been released and it is on its way towards the spacecraft
+     */
     RELEASED,
+    /**
+     * The command has been radiated and it will reach the spacecraft at radiation time plus propagation delay
+     */
     UPLINKED,
-    RECEIVED_ONBOARD,
+    /**
+     * The command has reached the spacecraft and it is scheduled for future execution
+     */
     SCHEDULED,
+    /**
+     * The command has reached the spacecraft and it is ready for immediated execution
+     */
+    RECEIVED_ONBOARD,
+    /**
+     * The command started its execution lifecycle
+     */
     STARTED,
+    /**
+     * The command completed its execution lifecycle
+     */
     COMPLETED,
+    /**
+     * The command failed
+     */
     FAILED
 }

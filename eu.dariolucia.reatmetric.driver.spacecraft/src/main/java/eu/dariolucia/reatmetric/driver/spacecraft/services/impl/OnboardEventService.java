@@ -31,6 +31,9 @@ import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
 
 import java.time.Instant;
 
+/**
+ * This class implements the ECSS PUS 5 on-board event service.
+ */
 public class OnboardEventService implements IServicePacketSubscriber {
 
     private final SpacecraftConfiguration configuration;

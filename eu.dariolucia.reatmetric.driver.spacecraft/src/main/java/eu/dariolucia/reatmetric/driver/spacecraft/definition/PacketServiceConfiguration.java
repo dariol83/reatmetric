@@ -26,11 +26,22 @@ public class PacketServiceConfiguration {
     @XmlElement(name = "time-correlation", required = true)
     private TimeCorrelationServiceConfiguration timeCorrelationServiceConfiguration;
 
+    @XmlElement(name = "onboard-scheduling")
+    private OnboardOperationsSchedulingServiceConfiguration OnboardOperationsSchedulingServiceConfiguration;
+
     public TimeCorrelationServiceConfiguration getTimeCorrelationServiceConfiguration() {
         return timeCorrelationServiceConfiguration;
     }
 
     public void setTimeCorrelationServiceConfiguration(TimeCorrelationServiceConfiguration timeCorrelationServiceConfiguration) {
         this.timeCorrelationServiceConfiguration = timeCorrelationServiceConfiguration;
+    }
+
+    public OnboardOperationsSchedulingServiceConfiguration getOnboardOperationsSchedulingServiceConfiguration() {
+        return OnboardOperationsSchedulingServiceConfiguration;
+    }
+
+    public void setOnboardOperationsSchedulingServiceConfiguration(OnboardOperationsSchedulingServiceConfiguration onboardOperationsSchedulingServiceConfiguration) {
+        OnboardOperationsSchedulingServiceConfiguration = onboardOperationsSchedulingServiceConfiguration;
     }
 }

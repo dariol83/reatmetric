@@ -41,6 +41,7 @@ public class ServiceBroker implements IServiceBroker {
        t.setDaemon(true);
        return t;
     });
+
     private final List<Pair<IServicePacketSubscriber, IServicePacketFilter>> subscribers = new CopyOnWriteArrayList<>();
 
     @Override
@@ -93,4 +94,5 @@ public class ServiceBroker implements IServiceBroker {
             }
         });
     }
+
 }

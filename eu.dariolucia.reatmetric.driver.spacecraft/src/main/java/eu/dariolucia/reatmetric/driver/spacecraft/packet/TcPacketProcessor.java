@@ -186,26 +186,8 @@ public class TcPacketProcessor implements IActivityExecutor {
             TcPacketInfo packetInfo = new TcPacketInfo(packetInfoStr, ackOverride, sourceId, mapId, configuration.getTcPacketConfiguration().getSourceIdDefaultValue(), configuration.getTcPacketConfiguration().getTcPecPresent());
             // Construct the space packet using the information in the encoding definition and the configuration (override by activity properties)
             SpacePacket sp = buildPacket(packetInfo, packetUserDataField);
-            Instant encodingTime = Instant.now();
-            // Store the TC packet in the raw data archive
-            RawData rd = distributeAsRawData(activityInvocation, sp, defToEncode, encodingTime);
-            // Build the activity tracker and add it to the Space Packet
-            TcTracker tcTracker = buildTcTracker(activityInvocation, sp, packetInfo, rd);
-            sp.setAnnotationValue(Constants.ANNOTATION_TC_TRACKER, tcTracker);
-            // Notify packet built to service broker: if the packet is time tagged, then the processing will continue in the PUS 11 service implementation
-            serviceBroker.informTcPacket(TcPacketPhase.ENCODED, encodingTime, tcTracker);
-            // Release packet to lower layer (TC layer), unless the activity is scheduled on-board (PUS 11, activity property)
-            String scheduledTime = activityInvocation.getProperties().get(Constants.ACTIVITY_PROPERTY_SCHEDULED_TIME);
-            if (scheduledTime == null || scheduledTime.isBlank()) {
-                // If there is an external connector for the route, go for it
-                ITcPacketConnector externalConnector = this.tcPacketConnectors.get(activityInvocation.getRoute());
-                if(externalConnector != null) {
-                    externalConnector.sendTcPacket(sp, tcTracker);
-                } else {
-                    // Fall back to the TC Data Link processor
-                    tcDataLinkProcessor.sendTcPacket(sp, tcTracker);
-                }
-            }
+            // Send it off, no need to remember the TcTracker here
+            injectTcPacket(activityInvocation, defToEncode, packetInfo, sp);
         } catch(ActivityHandlingException e) {
             LOG.log(Level.SEVERE, "Cannot encode and send TC packet " + defToEncode.getId() + ": " + e.getMessage(), e);
             reportReleaseProgress(context.getProcessingModel(), activityInvocation, ActivityReportState.FATAL);
@@ -213,6 +195,39 @@ public class TcPacketProcessor implements IActivityExecutor {
             LOG.log(Level.SEVERE, "Unexpected error when processing TC packet " + defToEncode.getId() + ": " + e.getMessage(), e);
             reportReleaseProgress(context.getProcessingModel(), activityInvocation, ActivityReportState.FATAL);
         }
+    }
+
+    /**
+     * This method is used to inject a complete space packet (mapped to an activity occurrence) into the lower processing layers.
+     *
+     * @param activityInvocation the activity invocation
+     * @param defToEncode the packet definition
+     * @param packetInfo the TC packet information
+     * @param sp the fully encoded space packet
+     * @throws ActivityHandlingException in case of troubles handling the activity
+     */
+    public TcTracker injectTcPacket(IActivityHandler.ActivityInvocation activityInvocation, PacketDefinition defToEncode, TcPacketInfo packetInfo, SpacePacket sp) throws ActivityHandlingException {
+        Instant encodingTime = Instant.now();
+        // Store the TC packet in the raw data archive
+        RawData rd = distributeAsRawData(activityInvocation, sp, defToEncode, encodingTime);
+        // Build the activity tracker and add it to the Space Packet
+        TcTracker tcTracker = buildTcTracker(activityInvocation, sp, packetInfo, rd);
+        sp.setAnnotationValue(Constants.ANNOTATION_TC_TRACKER, tcTracker);
+        // Notify packet built to service broker: if the packet is time tagged, then the processing will continue in the PUS 11 service implementation
+        serviceBroker.informTcPacket(TcPacketPhase.ENCODED, encodingTime, tcTracker);
+        // Release packet to lower layer (TC layer), unless the activity is scheduled on-board (PUS 11, activity property)
+        String scheduledTime = activityInvocation.getProperties().get(Constants.ACTIVITY_PROPERTY_SCHEDULED_TIME);
+        if (scheduledTime == null || scheduledTime.isBlank()) {
+            // If there is an external connector for the route, go for it
+            ITcPacketConnector externalConnector = this.tcPacketConnectors.get(activityInvocation.getRoute());
+            if(externalConnector != null) {
+                externalConnector.sendTcPacket(sp, tcTracker);
+            } else {
+                // Fall back to the TC Data Link processor
+                tcDataLinkProcessor.sendTcPacket(sp, tcTracker);
+            }
+        }
+        return tcTracker;
     }
 
     private void reportReleaseProgress(IProcessingModel processingModel, IActivityHandler.ActivityInvocation activityInvocation, ActivityReportState status) {
