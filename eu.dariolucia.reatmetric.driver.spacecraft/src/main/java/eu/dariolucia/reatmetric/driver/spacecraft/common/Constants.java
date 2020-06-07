@@ -70,6 +70,7 @@ public class Constants {
     public static final String STAGE_GROUND_STATION_EXECUTION = "Ground Station Execution"; // for THROW-EVENT activities
     public static final String STAGE_ONBOARD_RECEPTION = "On-board Reception";
     public static final String STAGE_SPACECRAFT_SCHEDULED = "Scheduled";
+    public static final String STAGE_ONBOARD_AVAILABILITY = "On-board Availability";
     public static final String STAGE_SPACECRAFT_ACCEPTED = "On-board Acceptance";
     public static final String STAGE_SPACECRAFT_STARTED = "On-board Start";
     public static final String STAGE_SPACECRAFT_PROGRESS = "On-board Progress";

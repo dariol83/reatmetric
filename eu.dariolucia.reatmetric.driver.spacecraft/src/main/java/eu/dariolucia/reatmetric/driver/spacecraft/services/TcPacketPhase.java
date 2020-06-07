@@ -30,13 +30,17 @@ public enum TcPacketPhase {
      */
     UPLINKED,
     /**
+     * The command has reached the spacecraft and it will undergo the envisaged processing
+     */
+    RECEIVED_ONBOARD,
+    /**
      * The command has reached the spacecraft and it is scheduled for future execution
      */
     SCHEDULED,
     /**
-     * The command has reached the spacecraft and it is ready for immediated execution
+     * The command is available onboard for processing by the onboard computer
      */
-    RECEIVED_ONBOARD,
+    AVAILABLE_ONBOARD,
     /**
      * The command started its execution lifecycle
      */

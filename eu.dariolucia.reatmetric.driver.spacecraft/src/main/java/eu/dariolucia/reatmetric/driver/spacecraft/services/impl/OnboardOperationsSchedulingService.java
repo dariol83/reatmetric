@@ -39,24 +39,25 @@ import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * This class implements the ECSS PUS 11 command scheduling service.
+ * This class implements the ECSS PUS 11 command scheduling service (limited to 11,4 and 11,3 commands).
+ * TODO: support for 11,1, 11,2 and status report (minimal capability set) to be implemented
  */
 public class OnboardOperationsSchedulingService implements IServicePacketSubscriber {
 
     private static final Logger LOG = Logger.getLogger(OnboardOperationsSchedulingService.class.getName());
+    public static final int VERIFICATION_AHEAD_MILLIS = 1000;
 
     private final SpacecraftConfiguration configuration;
     private final IServiceBroker serviceBroker;
     private final IServiceCoreContext context;
 
     private final Timer scheduler = new Timer();
+    // This map contains the time-tagged TCs
     private final Map<IUniqueId, LinkedTcTracker> linkedActivityOccurrence2tcTracker = new HashMap<>();
-    private final Map<IUniqueId, TimerTask> scheduledOpeningCommandVerifications = new ConcurrentHashMap<>();
 
     public OnboardOperationsSchedulingService(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker) {
         this.configuration = configuration;
@@ -80,6 +81,11 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
 
     @Override
     public synchronized void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker) {
+        // If a TC is RECEIVED_ONBOARD and it is NOT scheduled, then announce an AVAILABLE_ONBOARD phase
+        if(phase == TcPacketPhase.RECEIVED_ONBOARD && !tcTracker.getInvocation().getProperties().containsKey(Constants.ACTIVITY_PROPERTY_SCHEDULED_TIME)) {
+            serviceBroker.informTcPacket(TcPacketPhase.AVAILABLE_ONBOARD, phaseTime, tcTracker);
+            reportActivityState(tcTracker, phaseTime, ActivityOccurrenceState.EXECUTION, Constants.STAGE_ONBOARD_AVAILABILITY, ActivityReportState.EXPECTED, ActivityOccurrenceState.EXECUTION, phaseTime);
+        }
         // We are interested in TCs having scheduled information in the ENCODED phase
         if(phase == TcPacketPhase.ENCODED && tcTracker.getInvocation().getProperties().containsKey(Constants.ACTIVITY_PROPERTY_SCHEDULED_TIME)) {
             String scheduledTime = tcTracker.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_SCHEDULED_TIME);
@@ -91,10 +97,10 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
                 linkedActivityOccurrence2tcTracker.put(tcTracker.getInvocation().getActivityOccurrenceId(), linkedTracker);
                 // Dispatch a new activity
                 try {
-                    dispatch(targetTime, tcTracker);
+                    dispatch(targetTime, linkedTracker);
                 } catch (ReatmetricException e) {
                     LOG.log(Level.SEVERE, "Error while dispatching 11,4 command for activity " + tcTracker.getInvocation().getPath() + " (" + tcTracker.getInvocation().getActivityOccurrenceId() + "): " + e.getMessage(), e);
-                    linkedTracker.terminate(phaseTime);
+                    linkedTracker.terminate(TcPacketPhase.FAILED, phaseTime, false);
                 }
                 // Stop here
                 return;
@@ -114,41 +120,20 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
             Set<IUniqueId> keys = linkedActivityOccurrence2tcTracker.keySet();
             for(IUniqueId id : keys) {
                 LinkedTcTracker linkedTcTracker = linkedActivityOccurrence2tcTracker.remove(id);
-                linkedTcTracker.terminate(phaseTime);
+                linkedTcTracker.terminate(TcPacketPhase.FAILED, phaseTime, false);
             }
         }
-        // In any case, if the tcTracker is present in the linkedActivityOccurrence2tcTracker and results as STARTED or COMPLETED or FAILED, it should be removed
+        // In any case, if the tcTracker is present in the linkedActivityOccurrence2tcTracker and results as STARTED or COMPLETED or FAILED, it should be removed silently
         if(phase == TcPacketPhase.STARTED || phase == TcPacketPhase.COMPLETED || phase == TcPacketPhase.FAILED) {
             IUniqueId occId = tcTracker.getInvocation().getActivityOccurrenceId();
-            linkedActivityOccurrence2tcTracker.remove(occId);
-            TimerTask task = scheduledOpeningCommandVerifications.remove(occId);
-            if(task != null) {
-                task.cancel();
+            LinkedTcTracker track = linkedActivityOccurrence2tcTracker.remove(occId);
+            if(track != null) {
+                track.terminate(phase, phaseTime, true);
             }
-            scheduler.purge();
         }
     }
 
-    private void registerScheduledTc(LinkedTcTracker tcTracker, Instant scheduledTime) {
-        TimerTask scheduledTc = scheduledOpeningCommandVerifications.remove(tcTracker.tcTracker.getInvocation().getActivityOccurrenceId());
-        if(scheduledTc != null) {
-            boolean okCancelled = scheduledTc.cancel();
-            if(!okCancelled) {
-                return;
-            }
-        }
-        TimerTask scheduleLater = new TimerTask() {
-            @Override
-            public void run() {
-                tcTracker.informOnboardAvailability();
-            }
-        };
-        scheduledOpeningCommandVerifications.putIfAbsent(tcTracker.tcTracker.getInvocation().getActivityOccurrenceId(), scheduleLater);
-        scheduler.schedule(scheduleLater, new Date(scheduledTime.toEpochMilli()));
-        scheduler.purge();
-    }
-
-    private void dispatch(Instant targetTime, TcTracker originalCommand) throws ReatmetricException {
+    private void dispatch(Instant targetTime, LinkedTcTracker originalCommand) throws ReatmetricException {
         OnboardOperationsSchedulingServiceConfiguration conf = configuration.getPacketServiceConfiguration().getOnboardOperationsSchedulingServiceConfiguration();
         SystemEntityPath activity = SystemEntityPath.fromString(conf.getActivityPath());
         ActivityDescriptor descriptor = context.getServiceFactory().getActivityOccurrenceDataMonitorService().getDescriptor(activity);
@@ -163,9 +148,11 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
             for (AbstractActivityArgumentDescriptor arg : descriptor.getArgumentDescriptors()) {
                 if (arg instanceof ActivityPlainArgumentDescriptor && arg.getName().equals(subscheduleName)) {
                     ValueTypeEnum type = ((ActivityPlainArgumentDescriptor) arg).getRawDataType();
-                    String subScheduleIdStr = originalCommand.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_SUBSCHEDULE_ID);
+                    String subScheduleIdStr = originalCommand.tcTracker.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_SUBSCHEDULE_ID);
                     Object value = ValueUtil.parse(type, subScheduleIdStr);
                     subschedule = new PlainActivityArgument(subscheduleName, value, null, false);
+                    // Set the subschedule ID inside the linked tc tracker
+                    originalCommand.setSubscheduleId((Number) value);
                 } else if (arg instanceof ActivityPlainArgumentDescriptor && arg.getName().equals(numCommandsName)) {
                     ValueTypeEnum type = ((ActivityPlainArgumentDescriptor) arg).getRawDataType();
                     Object value = ValueUtil.parse(type, "1");
@@ -180,7 +167,7 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
                         if(innerArgDesc.getRawDataType() == ValueTypeEnum.ABSOLUTE_TIME && execTimeArg == null) {
                             execTimeArg = new PlainActivityArgument(innerArg.getName(), targetTime, null, false);
                         } else if(innerArgDesc.getRawDataType() == ValueTypeEnum.OCTET_STRING && commandArg == null) {
-                            commandArg = new PlainActivityArgument(innerArg.getName(), originalCommand.getPacket().getPacket(), null, false);
+                            commandArg = new PlainActivityArgument(innerArg.getName(), originalCommand.tcTracker.getPacket().getPacket(), null, false);
                         }
                     }
                     ArrayActivityArgumentRecord record = new ArrayActivityArgumentRecord(Arrays.asList(execTimeArg, commandArg));
@@ -198,9 +185,9 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
                 arguments.add(listCommands);
             }
             context.getProcessingModel().startActivity(new ActivityRequest(descriptor.getExternalId(), arguments,
-                    Map.of(Constants.ACTIVITY_PROPERTY_SUBSCHEDULE_TRACKING_ID, String.valueOf(originalCommand.getInvocation().getActivityOccurrenceId().asLong())),
-                    originalCommand.getInvocation().getRoute(),
-                    originalCommand.getInvocation().getSource()));
+                    Map.of(Constants.ACTIVITY_PROPERTY_SUBSCHEDULE_TRACKING_ID, String.valueOf(originalCommand.tcTracker.getInvocation().getActivityOccurrenceId().asLong())),
+                    originalCommand.tcTracker.getInvocation().getRoute(),
+                    originalCommand.tcTracker.getInvocation().getSource()));
         } else {
             // Assume 3 parameters: sub-schedule ID if name is not null; execution time (mandatory); command (mandatory)
             PlainActivityArgument execTimeArg = null;
@@ -211,9 +198,11 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
                     ActivityPlainArgumentDescriptor arg = (ActivityPlainArgumentDescriptor) targ;
                     if (arg.getName().equals(subscheduleName)) {
                         ValueTypeEnum type = arg.getRawDataType();
-                        String subScheduleIdStr = originalCommand.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_SUBSCHEDULE_ID);
+                        String subScheduleIdStr = originalCommand.tcTracker.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_SUBSCHEDULE_ID);
                         Object value = ValueUtil.parse(type, subScheduleIdStr);
                         subschedule = new PlainActivityArgument(subscheduleName, value, null, false);
+                        // Set the subschedule ID inside the linked tc tracker
+                        originalCommand.setSubscheduleId((Number) value);
                     } else if (arg.getName().equals(numCommandsName)) {
                         ValueTypeEnum type = arg.getRawDataType();
                         Object value = ValueUtil.parse(type, "1");
@@ -221,7 +210,7 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
                     } else if (arg.getRawDataType() == ValueTypeEnum.ABSOLUTE_TIME && execTimeArg == null) {
                         execTimeArg = new PlainActivityArgument(arg.getName(), targetTime, null, false);
                     } else if (arg.getRawDataType() == ValueTypeEnum.OCTET_STRING && commandArg == null) {
-                        commandArg = new PlainActivityArgument(arg.getName(), originalCommand.getPacket().getPacket(), null, false);
+                        commandArg = new PlainActivityArgument(arg.getName(), originalCommand.tcTracker.getPacket().getPacket(), null, false);
                     }
                 }
             }
@@ -239,9 +228,9 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
                 arguments.add(commandArg);
             }
             context.getProcessingModel().startActivity(new ActivityRequest(descriptor.getExternalId(), arguments,
-                    Map.of(Constants.ACTIVITY_PROPERTY_SUBSCHEDULE_TRACKING_ID, String.valueOf(originalCommand.getInvocation().getActivityOccurrenceId().asLong())),
-                    originalCommand.getInvocation().getRoute(),
-                    originalCommand.getInvocation().getSource()));
+                    Map.of(Constants.ACTIVITY_PROPERTY_SUBSCHEDULE_TRACKING_ID, String.valueOf(originalCommand.tcTracker.getInvocation().getActivityOccurrenceId().asLong())),
+                    originalCommand.tcTracker.getInvocation().getRoute(),
+                    originalCommand.tcTracker.getInvocation().getSource()));
         }
     }
 
@@ -249,19 +238,20 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
         context.getProcessingModel().reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), name, t, state, executionTime, status, nextState, null));
     }
 
-
     public void dispose() {
         serviceBroker.deregister(this);
         scheduler.purge();
         scheduler.cancel();
+        linkedActivityOccurrence2tcTracker.values().forEach(o -> o.terminate(TcPacketPhase.FAILED, Instant.now(), true));
         linkedActivityOccurrence2tcTracker.clear();
-        scheduledOpeningCommandVerifications.clear();
     }
 
     private class LinkedTcTracker {
 
         private final TcTracker tcTracker;
+        private volatile TimerTask scheduledOpening;
         private volatile Instant currentExecutionTime;
+        private volatile Number subscheduleId;
         private volatile String lastAnnouncedStage = ActivityOccurrenceReport.RELEASE_REPORT_NAME;
         private volatile ActivityOccurrenceState lastAnnouncedState = ActivityOccurrenceState.RELEASE;
 
@@ -288,7 +278,7 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
                     lastAnnouncedState = ActivityOccurrenceState.TRANSMISSION;
                 }
                 break;
-                case RECEIVED_ONBOARD: {
+                case AVAILABLE_ONBOARD: {
                     serviceBroker.informTcPacket(phase, phaseTime, tcTracker);
                     reportActivityState(tcTracker, phaseTime, ActivityOccurrenceState.SCHEDULING, Constants.STAGE_SPACECRAFT_SCHEDULED, ActivityReportState.PENDING, ActivityOccurrenceState.SCHEDULING, null);
                     lastAnnouncedStage = Constants.STAGE_SPACECRAFT_SCHEDULED;
@@ -302,37 +292,55 @@ public class OnboardOperationsSchedulingService implements IServicePacketSubscri
                 }
                 break;
                 case FAILED: {
-                    serviceBroker.informTcPacket(phase, phaseTime, tcTracker);
-                    reportActivityState(tcTracker, phaseTime, lastAnnouncedState, lastAnnouncedStage, ActivityReportState.FATAL, lastAnnouncedState, null);
-                    // Remove from map2
-                    TimerTask task = scheduledOpeningCommandVerifications.remove(tcTracker.getInvocation().getActivityOccurrenceId());
-                    if(task != null) {
-                        task.cancel();
-                    }
-                    linkedActivityOccurrence2tcTracker.remove(tcTracker.getInvocation().getActivityOccurrenceId());
-                    scheduler.purge();
+                    terminate(phase, phaseTime, false);
                 }
                 break;
             }
         }
 
-        public void informOnboardAvailability() {
-            serviceBroker.informTcPacket(TcPacketPhase.RECEIVED_ONBOARD, currentExecutionTime, tcTracker);
-            reportActivityState(tcTracker, currentExecutionTime, ActivityOccurrenceState.SCHEDULING, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.EXPECTED, ActivityOccurrenceState.SCHEDULING, currentExecutionTime);
-            lastAnnouncedStage = Constants.STAGE_SPACECRAFT_SCHEDULED;
-            lastAnnouncedState = ActivityOccurrenceState.SCHEDULING;
+        private synchronized void registerScheduledTc(LinkedTcTracker tcTracker, Instant scheduledTime) {
+            TimerTask scheduledTc = scheduledOpening;
+            if(scheduledTc != null) {
+                boolean okCancelled = scheduledTc.cancel();
+                if(!okCancelled) {
+                    return;
+                }
+            }
+            scheduledOpening = new TimerTask() {
+                @Override
+                public void run() {
+                    tcTracker.informOnboardAvailability();
+                }
+            };
+            scheduler.schedule(scheduledOpening, new Date(scheduledTime.toEpochMilli() - VERIFICATION_AHEAD_MILLIS));
+            scheduler.purge();
         }
 
-        public void terminate(Instant phaseTime) {
-            serviceBroker.informTcPacket(TcPacketPhase.SCHEDULED, phaseTime, tcTracker);
-            reportActivityState(tcTracker, phaseTime, lastAnnouncedState, lastAnnouncedStage, ActivityReportState.FATAL, lastAnnouncedState, null);
+        public void informOnboardAvailability() {
+            serviceBroker.informTcPacket(TcPacketPhase.AVAILABLE_ONBOARD, currentExecutionTime, tcTracker);
+            reportActivityState(tcTracker, currentExecutionTime, ActivityOccurrenceState.EXECUTION, Constants.STAGE_ONBOARD_AVAILABILITY, ActivityReportState.EXPECTED, ActivityOccurrenceState.EXECUTION, currentExecutionTime);
+            lastAnnouncedStage = Constants.STAGE_SPACECRAFT_SCHEDULED;
+            lastAnnouncedState = ActivityOccurrenceState.SCHEDULING;
+            // Remove tracker from map
+            linkedActivityOccurrence2tcTracker.remove(tcTracker.getInvocation().getActivityOccurrenceId());
+            scheduler.purge();
+        }
+
+        public void terminate(TcPacketPhase phase, Instant phaseTime, boolean silently) {
+            if(!silently) {
+                serviceBroker.informTcPacket(phase, phaseTime, tcTracker);
+                reportActivityState(tcTracker, phaseTime, lastAnnouncedState, lastAnnouncedStage, ActivityReportState.FATAL, lastAnnouncedState, null);
+            }
             // Remove from map2
-            TimerTask task = scheduledOpeningCommandVerifications.remove(tcTracker.getInvocation().getActivityOccurrenceId());
-            if(task != null) {
-                task.cancel();
+            if(scheduledOpening != null) {
+                scheduledOpening.cancel();
             }
             linkedActivityOccurrence2tcTracker.remove(tcTracker.getInvocation().getActivityOccurrenceId());
             scheduler.purge();
+        }
+
+        public void setSubscheduleId(Number value) {
+            subscheduleId = value;
         }
     }
 }

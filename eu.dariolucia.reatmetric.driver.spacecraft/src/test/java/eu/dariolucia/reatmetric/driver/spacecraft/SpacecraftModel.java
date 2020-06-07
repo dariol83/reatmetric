@@ -371,7 +371,24 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
             if (acks.isCompletionAckSet()) {
                 queuePus1(sp, 7);
             }
+            if(isTimeTaggedCommand(sp)) {
+                queueCommandExecution(vc, firstFrame, sp);
+            }
         }
+    }
+
+    private void queueCommandExecution(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, SpacePacket sp) {
+        // sp is a 11,4 packet: we need to extract the command to schedule, according to the 11,4 definition
+        // First of all, get rid of the TC PUS header
+
+        // Then, understand if the subschedule and the num of entries is there
+
+        // Finally, read the absolute time and the packet
+    }
+
+    private boolean isTimeTaggedCommand(SpacePacket sp) {
+        // Read type (offset 7) and subtype (byte 8)
+        return sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH + 1] == 11 && sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH + 1] == 4;
     }
 
     private void queuePus1(SpacePacket packet, int subtype) {

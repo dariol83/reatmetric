@@ -154,13 +154,13 @@ public class CommandVerificationService implements IServicePacketSubscriber {
 
     @Override
     public synchronized void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker) {
-        // When a command is successfully RECEIVED_ONBOARD, then it is ready for immediate execution:
-        if(phase == TcPacketPhase.RECEIVED_ONBOARD) {
-            registerImmediateTc(tcTracker);
+        // When a command is successfully AVAILABLE_ONBOARD, then it is ready for immediate execution:
+        if(phase == TcPacketPhase.AVAILABLE_ONBOARD) {
+            registerTcVerificationStages(tcTracker);
         }
     }
 
-    public synchronized void registerImmediateTc(TcTracker tcTracker) {
+    public synchronized void registerTcVerificationStages(TcTracker tcTracker) {
         // Register now
         AckField ackFields = tcTracker.getInfo().getPusHeader().getAckField();
         String lastStage = Constants.STAGE_SPACECRAFT_COMPLETED;
