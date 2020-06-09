@@ -21,10 +21,14 @@ import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.core.api.IDriver;
+import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
+import eu.dariolucia.reatmetric.core.configuration.DriverConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.ServiceConfiguration;
 
 import java.time.Instant;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,6 +47,8 @@ public class ServiceBroker implements IServiceBroker {
     });
 
     private final List<Pair<IServicePacketSubscriber, IServicePacketFilter>> subscribers = new CopyOnWriteArrayList<>();
+
+    private final Map<Integer, IService> serviceMap = new HashMap<>();
 
     @Override
     public void register(IServicePacketSubscriber subscriber, IServicePacketFilter predicateFilter) {
@@ -78,10 +84,12 @@ public class ServiceBroker implements IServiceBroker {
     public void dispose() {
         itemDistributor.shutdownNow();
         subscribers.clear();
+        serviceMap.values().forEach(IService::dispose);
+        serviceMap.clear();
     }
 
     @Override
-    public void informTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker trackerBean) {
+    public void informTcPacket(TcPhase phase, Instant phaseTime, TcTracker trackerBean) {
         itemDistributor.execute(() -> {
             for(Pair<IServicePacketSubscriber, IServicePacketFilter> s : subscribers) {
                 try {
@@ -95,4 +103,8 @@ public class ServiceBroker implements IServiceBroker {
         });
     }
 
+    public void registerService(IService theService) {
+        register(theService, theService.getSubscriptionFilter());
+        serviceMap.put(theService.getServiceType(), theService);
+    }
 }

@@ -39,7 +39,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfigura
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPacketConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.ITimeCorrelation;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
 import java.time.Instant;
@@ -58,18 +58,18 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     private final IPacketDecoder packetDecoder;
     private final IRawDataBroker broker;
     private final TmPacketConfiguration configuration;
-    private final TimeCorrelationService timeCorrelationService;
+    private final ITimeCorrelation ITimeCorrelation;
     private final IServiceBroker serviceBroker;
     private final boolean[] processedVCs;
 
-    public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, TimeCorrelationService timeCorrelationService, IServiceBroker serviceBroker) {
+    public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, ITimeCorrelation ITimeCorrelation, IServiceBroker serviceBroker) {
         this.spacecraft = String.valueOf(configuration.getId());
         this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
         this.processingModel = context.getProcessingModel();
         this.packetDecoder = packetDecoder;
         this.broker = context.getRawDataBroker();
         this.configuration = configuration.getTmPacketConfiguration();
-        this.timeCorrelationService = timeCorrelationService;
+        this.ITimeCorrelation = ITimeCorrelation;
         this.serviceBroker = serviceBroker;
         this.processedVCs = new boolean[64];
         for(int i = 0; i < this.processedVCs.length; ++i) {
@@ -183,7 +183,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                 Instant generationTime = pusHeader.getAbsoluteTime();
                 // 2. apply time correlation
                 if(generationTime != null) {
-                    return timeCorrelationService.toUtc(generationTime);
+                    return ITimeCorrelation.toUtc(generationTime);
                 }
             }
         }

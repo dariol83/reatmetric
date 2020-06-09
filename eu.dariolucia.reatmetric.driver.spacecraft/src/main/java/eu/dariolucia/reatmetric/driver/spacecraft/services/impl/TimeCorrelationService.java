@@ -29,22 +29,20 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.*;
-import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
-import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.configuration.AbstractInitialisationConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.ResumeInitialisationConfiguration;
-import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.PacketErrorControlType;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.TimeCorrelationServiceConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketSubscriber;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.services.TimeCorrelationServiceConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.ITimeCorrelation;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
@@ -60,20 +58,16 @@ import java.util.logging.Logger;
 /**
  * This class implements the ECSS PUS 9 time reporting service.
  */
-public class TimeCorrelationService implements IServicePacketSubscriber, IRawDataSubscriber {
+public class TimeCorrelationService extends AbstractPacketService<TimeCorrelationServiceConfiguration> implements IRawDataSubscriber, ITimeCorrelation {
 
     private static final Logger LOG = Logger.getLogger(TimeCorrelationService.class.getName());
 
     private static final int MATCHING_FRAMES_MAX_SIZE = 16;
 
-    private final String driverName;
-    private final int spacecraftId;
-    private final long propagationDelay;
-    private final IRawDataBroker broker;
-    private final SpacecraftConfiguration configuration;
-    private final IServiceBroker serviceBroker;
-    private final ExecutorService timeCoefficientsDistributor;
-    private final Instant epoch;
+    private int spacecraftId;
+    private long propagationDelay;
+    private ExecutorService timeCoefficientsDistributor;
+    private Instant epoch;
     private volatile int generationPeriod;
 
     private final List<RawData> matchingFrames = new LinkedList<>();
@@ -82,25 +76,27 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     // CUC 4,3 has a resolution of 59.6 nsec, CUC 4,4 is at picosecond level
     private volatile Pair<BigDecimal, BigDecimal> obt2gtCoefficients;
 
-    public TimeCorrelationService(String driverName, SpacecraftConfiguration configuration, ServiceCoreConfiguration coreConfiguration, IServiceCoreContext context, IServiceBroker serviceBroker) throws ReatmetricException {
-        this.driverName = driverName;
-        this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
-        this.spacecraftId = configuration.getId();
-        this.propagationDelay = configuration.getPropagationDelay();
-        this.broker = context.getRawDataBroker();
-        this.configuration = configuration;
-        this.serviceBroker = serviceBroker;
-        this.generationPeriod =  timeCorrelationConfiguration().getGenerationPeriod();
+    @Override
+    public void postInitialisation() throws ReatmetricException {
+        this.epoch = spacecraftConfiguration().getEpoch() == null ? null : Instant.ofEpochMilli(spacecraftConfiguration().getEpoch().getTime());
+        this.spacecraftId = spacecraftConfiguration().getId();
+        this.propagationDelay = spacecraftConfiguration().getPropagationDelay();
+        this.generationPeriod =  configuration().getGenerationPeriod();
         this.timeCoefficientsDistributor = Executors.newSingleThreadExecutor((r) -> {
-            Thread t = new Thread(r, "Spacecraft " + configuration.getName() + " - Time Correlation Service Coefficients Distributor");
+            Thread t = new Thread(r, "Spacecraft " + spacecraftConfiguration().getName() + " - Time Correlation Service Coefficients Distributor");
             t.setDaemon(true);
             return t;
         });
-        this.obt2gtCoefficients = Pair.of(BigDecimal.valueOf(timeCorrelationConfiguration().getInitialCoefficientM()), BigDecimal.valueOf(timeCorrelationConfiguration().getInitialCoefficientQ()));
-        subscribeToBrokers();
-        if(coreConfiguration.getInitialisation() != null) {
-            initialiseTimeCoefficients(coreConfiguration.getInitialisation(), context.getArchive().getArchive(IRawDataArchive.class));
+        this.obt2gtCoefficients = Pair.of(BigDecimal.valueOf(configuration().getInitialCoefficientM()), BigDecimal.valueOf(configuration().getInitialCoefficientQ()));
+        if(serviceCoreConfiguration().getInitialisation() != null) {
+            initialiseTimeCoefficients(serviceCoreConfiguration().getInitialisation(), context().getArchive().getArchive(IRawDataArchive.class));
         }
+        subscribeToRawDataBroker();
+    }
+
+    @Override
+    protected TimeCorrelationServiceConfiguration loadConfiguration(String serviceConfigurationPath) throws IOException {
+        return TimeCorrelationServiceConfiguration.load(new FileInputStream(serviceConfigurationPath));
     }
 
     private void initialiseTimeCoefficients(AbstractInitialisationConfiguration initialisation, IRawDataArchive archive) throws ReatmetricException {
@@ -154,7 +150,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         }
     }
 
-    private void subscribeToBrokers() {
+    private void subscribeToRawDataBroker() {
         // Subscribe to raw data to receive the frames of the spacecraft on VC 0
         RawDataFilter frameFilter = new RawDataFilter(true,
                 null,
@@ -164,16 +160,10 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
                 Collections.singletonList(Quality.GOOD));
         // I do not put there the check on the generation period modulus, because
         // it can change at runtime
-        broker.subscribe(this, null, frameFilter, o -> {
+        context().getRawDataBroker().subscribe(this, null, frameFilter, o -> {
             AbstractTransferFrame atf = (AbstractTransferFrame) o.getData();
             return atf != null && atf.getVirtualChannelId() == 0;
         });
-        // Subscribe to service broker to intercept time packets (APID 0)
-        serviceBroker.register(this, this::packetFilter);
-    }
-
-    private boolean packetFilter(RawData rawData, SpacePacket spacePacket, Integer type, Integer subtype, Integer destination, Integer source) {
-        return spacePacket.getApid() == 0 || (type != null && type == 9);
     }
 
     /**
@@ -183,6 +173,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
      * @param obt the OBT in UTC time scale
      * @return the corresponding ground correlated time in UTC time scale
      */
+    @Override
     public Instant toUtc(Instant obt) {
         Pair<BigDecimal, BigDecimal> coeffs = this.obt2gtCoefficients;
         if(coeffs == null) {
@@ -201,6 +192,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
      * @param utc the ground time in UTC time scale
      * @return the corresponding OBT in UTC time scale
      */
+    @Override
     public Instant toObt(Instant utc) {
         Pair<BigDecimal, BigDecimal> coeffs = this.obt2gtCoefficients;
         if(coeffs == null) {
@@ -246,7 +238,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
             RawData frame = locateFrame((TmFrameDescriptor) packetRawData.getExtension(), this.generationPeriod);
             // 2. If the frame is located, then compute the time couple: (Earth reception time - propagation delay - onboard delay, on board time)
             if (frame != null) {
-                Instant utcTime = frame.getReceptionTime().minusNanos(this.propagationDelay * 1000).minusNanos(timeCorrelationConfiguration().getOnBoardDelay() * 1000);
+                Instant utcTime = frame.getReceptionTime().minusNanos(this.propagationDelay * 1000).minusNanos(configuration().getOnBoardDelay() * 1000);
                 Instant onboardTime = extractOnboardTime(spacePacket);
                 // 3. Add the time couple: this method triggers a best-fit correlation taking into account the available time couples
                 addTimeCouple(onboardTime, utcTime);
@@ -260,9 +252,9 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
     }
 
     @Override
-    public void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker) {
+    public void onTcPacket(TcPhase phase, Instant phaseTime, TcTracker tcTracker) {
         if(tcTracker.getInfo() != null && tcTracker.getInfo().getPusHeader() != null && tcTracker.getInfo().getPusHeader().getServiceType() == 9 && tcTracker.getInfo().getPusHeader().getServiceSubType() == 1) {
-            if(phase == TcPacketPhase.COMPLETED) {
+            if(phase == TcPhase.COMPLETED) {
                 // The TC is over, change the generation period accordingly
                 byte newGenerationPeriod = tcTracker.getPacket().getPacket()[tcTracker.getPacket().getLength() - 1 - (tcTracker.getInfo().getChecksumType() == PacketErrorControlType.NONE ? 0 : 2)];
                 this.generationPeriod = 1 << newGenerationPeriod;
@@ -315,9 +307,9 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
             String mCoeff = obt2gtCoefficients.getFirst().toPlainString();
             String qCoeff = obt2gtCoefficients.getSecond().toPlainString();
             String derivedString = mCoeff + "|" + qCoeff;
-            RawData rd = new RawData(broker.nextRawDataId(), generationTime, Constants.N_TIME_COEFFICIENTS, Constants.T_TIME_COEFFICIENTS, "", String.valueOf(spacecraftId), Quality.GOOD, null, derivedString.getBytes(StandardCharsets.US_ASCII), Instant.now(), driverName, null);
+            RawData rd = new RawData(context().getRawDataBroker().nextRawDataId(), generationTime, Constants.N_TIME_COEFFICIENTS, Constants.T_TIME_COEFFICIENTS, "", String.valueOf(spacecraftId), Quality.GOOD, null, derivedString.getBytes(StandardCharsets.US_ASCII), Instant.now(), driverName(), null);
             try {
-                broker.distribute(Collections.singletonList(rd));
+                context().getRawDataBroker().distribute(Collections.singletonList(rd));
             } catch (ReatmetricException e) {
                 LOG.log(Level.SEVERE, "Cannot store time coefficients [" + derivedString + "] for spacecraft " + spacecraftId + ": " + e.getMessage(), e);
             }
@@ -344,25 +336,21 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         // According to the standard, the time packet has no secondary header, so after SpacePacket.SP_PRIMARY_HEADER_LENGTH, we should have:
         // 1. generation rate field (optional) -> check configuration.isGenerationPeriodReported()
         int idx = SpacePacket.SP_PRIMARY_HEADER_LENGTH;
-        if(timeCorrelationConfiguration().isGenerationPeriodReported()) {
+        if(configuration().isGenerationPeriodReported()) {
             this.generationPeriod = (int) Math.pow(2, Byte.toUnsignedInt(spacePacket.getPacket()[idx]));
             ++idx;
         }
         // 2. time field -> check configuration.getTimeFormat()
-        if(timeCorrelationConfiguration().getTimeFormat().isExplicitPField()) {
+        if(configuration().getTimeFormat().isExplicitPField()) {
             // P-Field, easy
             return TimeUtil.fromCUC(new BitEncoderDecoder(spacePacket.getPacket(), idx, spacePacket.getPacket().length - idx), epoch);
         } else {
             return TimeUtil.fromCUC(spacePacket.getPacket(), idx, spacePacket.getPacket().length - idx,
                     epoch,
-                    timeCorrelationConfiguration().getTimeFormat().getCoarse(),
-                    timeCorrelationConfiguration().getTimeFormat().getFine());
+                    configuration().getTimeFormat().getCoarse(),
+                    configuration().getTimeFormat().getFine());
         }
         // 3. status -> mission specific, reported as parameter already, not relevant here
-    }
-
-    private TimeCorrelationServiceConfiguration timeCorrelationConfiguration() {
-        return configuration.getPacketServiceConfiguration().getTimeCorrelationServiceConfiguration();
     }
 
     private RawData locateFrame(TmFrameDescriptor packetFrameDescriptor, int generationPeriod) {
@@ -377,7 +365,7 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
                     if (atf.getVirtualChannelFrameCount() == targetVcc) {
                         // ... but check time consistency with this frame
                         Duration timeBetweenFrames = Duration.between(packetFrameDescriptor.getEarthReceptionTime(), frame.getReceptionTime());
-                        if (timeBetweenFrames.toNanos() / 1000 <= timeCorrelationConfiguration().getMaximumFrameTimeDelay()) {
+                        if (timeBetweenFrames.toNanos() / 1000 <= configuration().getMaximumFrameTimeDelay()) {
                             // That's the one
                             return frame;
                         }
@@ -389,19 +377,32 @@ public class TimeCorrelationService implements IServicePacketSubscriber, IRawDat
         return null;
     }
 
+    @Override
+    public String getName() {
+        return "Onboard Time Service";
+    }
+
+    @Override
+    public IServicePacketFilter getSubscriptionFilter() {
+        return (rd, sp, pusType, pusSubtype, destination, source) -> sp.getApid() == 0 || (pusType != null && pusType == 9);
+    }
+
+    @Override
+    public int getServiceType() {
+        return 9;
+    }
+
+    @Override
+    public boolean isDirectHandler(TcTracker trackedTc) {
+        return false;
+    }
+
     public void dispose() {
-        serviceBroker.deregister(this);
-        broker.unsubscribe(this);
+        context().getRawDataBroker().unsubscribe(this);
         timeCoefficientsDistributor.shutdown();
     }
 
     @Override
-    public String toString() {
-        return "TimeCorrelationService{" +
-                "spacecraftId=" + spacecraftId +
-                '}';
-    }
-
     public LinkedHashMap<String, String> renderTimeCoefficients(RawData rawData) {
         LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
         String coeffs = new String(rawData.getContents(), StandardCharsets.US_ASCII);

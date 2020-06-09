@@ -23,17 +23,13 @@ import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.Pair;
-import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketSubscriber;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -45,32 +41,11 @@ import java.util.logging.Logger;
 /**
  * This class implements the ECSS PUS 1 command verification service.
  */
-public class CommandVerificationService implements IServicePacketSubscriber {
+public class CommandVerificationService extends AbstractPacketService<Object> {
 
     private static final Logger LOG = Logger.getLogger(CommandVerificationService.class.getName());
 
-    private final SpacecraftConfiguration configuration;
-    private final IServiceBroker serviceBroker;
-    private final IProcessingModel processingModel;
-
     private final Map<Integer, Pair<TcTracker, String>> openCommandVerifications = new ConcurrentHashMap<>(); // ID -> TcTracker and stage last name
-
-    public CommandVerificationService(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker) {
-        this.configuration = configuration;
-        this.serviceBroker = serviceBroker;
-        this.processingModel = context.getProcessingModel();
-        subscribeToBroker();
-    }
-
-    private void subscribeToBroker() {
-        // Subscribe to service broker to intercept event 1 packets (PUS type == 1)
-        serviceBroker.register(this, this::packetFilter);
-    }
-
-    private boolean packetFilter(RawData rawData, SpacePacket spacePacket, Integer type, Integer subtype, Integer destination, Integer source) {
-        return (spacePacket.isTelemetryPacket() && type != null && type == 1) || // For TM 1,x reports
-                !spacePacket.isTelemetryPacket(); // All TCs
-    }
 
     @Override
     public synchronized void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
@@ -83,7 +58,7 @@ public class CommandVerificationService implements IServicePacketSubscriber {
                 packetRawData.getRoute(),
                 packetRawData.getSource(), null);
         // Inject
-        processingModel.raiseEvent(eo);
+        processingModel().raiseEvent(eo);
         // Verify registered TCs
         switch (tmPusHeader.getServiceSubType()) {
             case 1:
@@ -123,26 +98,26 @@ public class CommandVerificationService implements IServicePacketSubscriber {
         } else {
             TcTracker tracker = trackerPair.getFirst();
             boolean lastVerification = trackerPair.getSecond().equals(stageName);
-            TcPacketPhase phase = getTcPacketPhase(stageName, success, lastVerification);
+            TcPhase phase = getTcPacketPhase(stageName, success, lastVerification);
             if(phase != null) {
-                serviceBroker.informTcPacket(phase, generationTime, tracker);
+                serviceBroker().informTcPacket(phase, generationTime, tracker);
             }
-            processingModel.reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), stageName, generationTime, ActivityOccurrenceState.EXECUTION, generationTime, success ? ActivityReportState.OK : ActivityReportState.FATAL, lastVerification ? ActivityOccurrenceState.VERIFICATION : ActivityOccurrenceState.EXECUTION, null));
+            processingModel().reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), stageName, generationTime, ActivityOccurrenceState.EXECUTION, generationTime, success ? ActivityReportState.OK : ActivityReportState.FATAL, lastVerification ? ActivityOccurrenceState.VERIFICATION : ActivityOccurrenceState.EXECUTION, null));
             if(lastVerification || !success) {
                 this.openCommandVerifications.remove(id);
             }
         }
     }
 
-    private TcPacketPhase getTcPacketPhase(String stageName, boolean success, boolean lastVerification) {
+    private TcPhase getTcPacketPhase(String stageName, boolean success, boolean lastVerification) {
         if(!success) {
-            return TcPacketPhase.FAILED;
+            return TcPhase.FAILED;
         } else {
             switch(stageName) {
-                case Constants.STAGE_SPACECRAFT_STARTED: return lastVerification ? TcPacketPhase.COMPLETED : TcPacketPhase.STARTED;
-                case Constants.STAGE_SPACECRAFT_COMPLETED: return TcPacketPhase.COMPLETED;
+                case Constants.STAGE_SPACECRAFT_STARTED: return lastVerification ? TcPhase.COMPLETED : TcPhase.STARTED;
+                case Constants.STAGE_SPACECRAFT_COMPLETED: return TcPhase.COMPLETED;
                 case Constants.STAGE_SPACECRAFT_ACCEPTED:
-                case Constants.STAGE_SPACECRAFT_PROGRESS: return lastVerification ? TcPacketPhase.COMPLETED : null;
+                case Constants.STAGE_SPACECRAFT_PROGRESS: return lastVerification ? TcPhase.COMPLETED : null;
             }
         }
         return null;
@@ -153,9 +128,9 @@ public class CommandVerificationService implements IServicePacketSubscriber {
     }
 
     @Override
-    public synchronized void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker) {
+    public synchronized void onTcPacket(TcPhase phase, Instant phaseTime, TcTracker tcTracker) {
         // When a command is successfully AVAILABLE_ONBOARD, then it is ready for immediate execution:
-        if(phase == TcPacketPhase.AVAILABLE_ONBOARD) {
+        if(phase == TcPhase.AVAILABLE_ONBOARD) {
             registerTcVerificationStages(tcTracker);
         }
     }
@@ -190,12 +165,12 @@ public class CommandVerificationService implements IServicePacketSubscriber {
         }
         if(lastStage == null) {
             // Assume the command executed
-            processingModel.reportActivityProgress(ActivityProgress.of(tcTracker.getInvocation().getActivityId(), tcTracker.getInvocation().getActivityOccurrenceId(), Constants.STAGE_SPACECRAFT_COMPLETED, Instant.now(), ActivityOccurrenceState.EXECUTION, null, ActivityReportState.EXPECTED, ActivityOccurrenceState.VERIFICATION, null));
+            processingModel().reportActivityProgress(ActivityProgress.of(tcTracker.getInvocation().getActivityId(), tcTracker.getInvocation().getActivityOccurrenceId(), Constants.STAGE_SPACECRAFT_COMPLETED, Instant.now(), ActivityOccurrenceState.EXECUTION, null, ActivityReportState.EXPECTED, ActivityOccurrenceState.VERIFICATION, null));
         }
     }
 
     private void registerCommandStage(TcTracker tracker, String stageName, boolean isLastStage) {
-        processingModel.reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), stageName, Instant.now(), ActivityOccurrenceState.EXECUTION, null, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null));
+        processingModel().reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), stageName, Instant.now(), ActivityOccurrenceState.EXECUTION, null, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null));
         int id = getTcIdentifier(tracker.getPacket());
         if(!isLastStage) {
             openCommandVerifications.putIfAbsent(id, Pair.of(tracker, stageName));
@@ -208,8 +183,35 @@ public class CommandVerificationService implements IServicePacketSubscriber {
         return ByteBuffer.wrap(spacePacket.getPacket(), 0, 4).getInt();
     }
 
+    @Override
+    public String getName() {
+        return "Command Verification Service";
+    }
+
+    @Override
+    public IServicePacketFilter getSubscriptionFilter() {
+        return (rd, sp, pusType, pusSubtype, destination, source) ->
+             (sp.isTelemetryPacket() && pusType != null && pusType == 1) || // For TM 1,x reports
+                    !sp.isTelemetryPacket(); // All TCs
+    }
+
+    @Override
+    public int getServiceType() {
+        return 1;
+    }
+
+    @Override
+    public boolean isDirectHandler(TcTracker trackedTc) {
+        return false;
+    }
+
+    @Override
     public void dispose() {
-        serviceBroker.deregister(this);
         openCommandVerifications.clear();
+    }
+
+    @Override
+    protected Object loadConfiguration(String serviceConfigurationPath) {
+        return null;
     }
 }

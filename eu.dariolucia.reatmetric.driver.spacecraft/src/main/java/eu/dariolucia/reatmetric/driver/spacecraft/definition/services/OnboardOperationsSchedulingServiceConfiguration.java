@@ -14,17 +14,33 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.definition;
+package eu.dariolucia.reatmetric.driver.spacecraft.definition.services;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.*;
+import java.io.IOException;
+import java.io.InputStream;
+
+@XmlRootElement(name = "onboard-scheduling-service", namespace = "http://dariolucia.eu/reatmetric/driver/spacecraft/onboard-scheduling-service")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class OnboardOperationsSchedulingServiceConfiguration {
 
-    @XmlAttribute(name = "activity-path", required=true)
+    public static OnboardOperationsSchedulingServiceConfiguration load(InputStream is) throws IOException {
+        try {
+            JAXBContext jc = JAXBContext.newInstance(OnboardOperationsSchedulingServiceConfiguration.class);
+            Unmarshaller u = jc.createUnmarshaller();
+            OnboardOperationsSchedulingServiceConfiguration o = (OnboardOperationsSchedulingServiceConfiguration) u.unmarshal(is);
+            return o;
+        } catch (JAXBException e) {
+            throw new IOException(e);
+        }
+    }
+
+    @XmlAttribute(name = "schedule-activity-path", required=true)
     private String activityPath;
 
     @XmlAttribute(name = "sub-schedule-id-name")

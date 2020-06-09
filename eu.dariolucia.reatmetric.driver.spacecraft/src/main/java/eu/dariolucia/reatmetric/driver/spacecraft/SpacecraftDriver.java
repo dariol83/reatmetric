@@ -49,15 +49,13 @@ import eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketCon
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.DataUnitType;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.ExternalConnectorConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.ServiceConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TcPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TmPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.replay.TmPacketReplayManager;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IService;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.CltuServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
@@ -126,10 +124,6 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private TcDataLinkProcessor tcDataLinkProcessor;
 
     private ServiceBroker serviceBroker;
-    private TimeCorrelationService timeCorrelationService;
-    private OnboardEventService onboardEventService;
-    private CommandVerificationService commandVerificationService;
-    private OnboardOperationsSchedulingService schedulingService;
 
     private final Map<String, Function<RawData, LinkedHashMap<String, String>>> rawDataRenderers = new TreeMap<>();
     private IRawDataArchive rawDataArchive; // Needed to retrieve raw data without contents, for rendering
@@ -157,8 +151,6 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             loadEncodingDecodingDefinitions(driverConfigurationDirectory + File.separator + ENCODING_DECODING_DEFINITION_FILE);
             // Load the service broker
             loadServiceBroker();
-            // Load the different TM packet services
-            loadPacketServices();
             // Load the TM Packet processor
             loadTmPacketProcessor();
             // Load the TM Data Link processor
@@ -171,6 +163,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             loadTcDataLinkProcessor();
             // Load the TC Packet processor
             loadTcPacketProcessor();
+            // Load the different packet services
+            loadPacketServices();
             // Load packet replayer
             loadTmPacketReplayer();
             // Initialise raw data renderers
@@ -264,7 +258,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.rawDataRenderers.put(Constants.T_TM_PACKET, tmPacketProcessor::renderTmPacket);
         this.rawDataRenderers.put(Constants.T_IDLE_PACKET, tmPacketProcessor::renderTmPacket);
         this.rawDataRenderers.put(Constants.T_BAD_PACKET, tmPacketProcessor::renderBadPacket);
-        this.rawDataRenderers.put(Constants.T_TIME_COEFFICIENTS, timeCorrelationService::renderTimeCoefficients);
+        this.rawDataRenderers.put(Constants.T_TIME_COEFFICIENTS, timeCorrelationService::renderTimeCoefficients); // TODO: add mechanism to ask services to add renderers
         this.rawDataRenderers.put(Constants.T_TC_PACKET, tcPacketProcessor::renderTcPacket);
     }
 
@@ -274,14 +268,21 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     private void loadPacketServices() throws ReatmetricException {
-        // Time correlation service (PUS 9) -> if start from time, initialise time coefficients
-        this.timeCorrelationService = new TimeCorrelationService(this.name, this.configuration, this.coreConfiguration, this.context, this.serviceBroker);
-        // On-board event service (PUS 5)
-        this.onboardEventService = new OnboardEventService(this.configuration, this.context, this.serviceBroker);
-        // Command verification service (PUS 1)
-        this.commandVerificationService = new CommandVerificationService(this.configuration, this.context, this.serviceBroker);
-        //
-        this.schedulingService = new OnboardOperationsSchedulingService(this.configuration, this.context, this.serviceBroker);
+        for(ServiceConfiguration sc : configuration.getPacketServiceConfiguration().getServices()) {
+            IService theService = loadService(sc);
+            serviceBroker.registerService(theService);
+        }
+    }
+
+    private IService loadService(ServiceConfiguration dc) throws ReatmetricException {
+        ServiceLoader<IService> serviceLoader = ServiceLoader.load(IService.class);
+        Optional<ServiceLoader.Provider<IService>> provider = serviceLoader.stream().filter(pr -> pr.type().getName().equals(dc.getType())).findFirst();
+        IService theService = null;
+        if(provider.isPresent()) {
+            theService = provider.get().get();
+            theService.initialise(dc.getConfiguration(), this.name, this.configuration, this.coreConfiguration, this.context, this.serviceBroker);
+        }
+        return theService;
     }
 
     private void loadServiceBroker() {
@@ -292,7 +293,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.tmPacketProcessor = new TmPacketProcessor(this.configuration,
                 this.context,
                 this.packetDecoder,
-                this.timeCorrelationService,
+                this.timeCorrelationService, // TODO: add call to service broker to use/locate such interface and remove this parameter
                 this.serviceBroker);
         this.tmPacketProcessor.initialise();
     }
@@ -414,10 +415,6 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.tmPacketReplayer.dispose();
         this.tmDataLinkProcessor.dispose();
         this.tmPacketProcessor.dispose();
-        this.timeCorrelationService.dispose();
-        this.onboardEventService.dispose();
-        this.commandVerificationService.dispose();
-        this.schedulingService.dispose();
         this.serviceBroker.dispose();
         this.tcPacketProcessor.dispose();
         this.tcDataLinkProcessor.dispose();

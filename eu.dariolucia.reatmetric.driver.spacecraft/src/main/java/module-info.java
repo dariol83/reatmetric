@@ -17,6 +17,10 @@
 import eu.dariolucia.reatmetric.driver.spacecraft.SpacecraftDriver;
 import eu.dariolucia.reatmetric.driver.spacecraft.encoding.SpacePacketDecodingExtension;
 import eu.dariolucia.reatmetric.driver.spacecraft.encoding.SpacePacketEncodingExtension;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptorValueExtensionHandler;
 
 open module eu.dariolucia.reatmetric.driver.spacecraft {
@@ -24,6 +28,7 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
     uses eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
     uses eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe.ITcFrameConnector;
     uses eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector;
+    uses eu.dariolucia.reatmetric.driver.spacecraft.services.IService;
 
     requires java.logging;
     requires java.xml.bind;
@@ -37,16 +42,20 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
 
     exports eu.dariolucia.reatmetric.driver.spacecraft;
     exports eu.dariolucia.reatmetric.driver.spacecraft.services;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.services.impl;
     exports eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu;
     exports eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe;
     exports eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket;
     exports eu.dariolucia.reatmetric.driver.spacecraft.activity;
     exports eu.dariolucia.reatmetric.driver.spacecraft.common;
     exports eu.dariolucia.reatmetric.driver.spacecraft.definition;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.definition.services;
 
     provides eu.dariolucia.reatmetric.api.value.IValueExtensionHandler with TmFrameDescriptorValueExtensionHandler;
     provides eu.dariolucia.reatmetric.core.api.IDriver with SpacecraftDriver;
 
     provides eu.dariolucia.ccsds.encdec.extension.IDecoderExtension with SpacePacketDecodingExtension;
     provides eu.dariolucia.ccsds.encdec.extension.IEncoderExtension with SpacePacketEncodingExtension;
+
+    provides eu.dariolucia.reatmetric.driver.spacecraft.services.IService with CommandVerificationService, OnboardEventService, OnboardOperationsSchedulingService, TimeCorrelationService;
 }

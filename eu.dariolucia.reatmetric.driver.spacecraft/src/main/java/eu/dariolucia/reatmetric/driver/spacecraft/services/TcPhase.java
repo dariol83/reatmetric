@@ -16,7 +16,7 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.services;
 
-public enum TcPacketPhase {
+public enum TcPhase {
     /**
      * The command has been encoded and ready to be released by the system
      */

@@ -48,7 +48,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcVcConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
 import java.time.Instant;
 import java.util.*;
@@ -175,7 +175,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             if (vcToUse == null) {
                 LOG.log(Level.SEVERE, "Transmission of space packet from activity " + tcTracker.getInvocation().getPath() + " on TC VC " + tcVcId + " not possible: TC VC " + tcVcId + " not configured");
                 Instant t = Instant.now();
-                informServiceBroker(TcPacketPhase.FAILED, t, Collections.singletonList(tcTracker));
+                informServiceBroker(TcPhase.FAILED, t, Collections.singletonList(tcTracker));
                 reportActivityState(Collections.singletonList(tcTracker), t, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE);
                 return;
             }
@@ -285,7 +285,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         lastGeneratedFrames.add(generatedFrame);
     }
 
-    private void informServiceBroker(TcPacketPhase phase, Instant time, List<TcTracker> trackers) {
+    private void informServiceBroker(TcPhase phase, Instant time, List<TcTracker> trackers) {
         for (TcTracker tracker : trackers) {
             serviceBroker.informTcPacket(phase, time, tracker);
         }
@@ -339,14 +339,14 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 case RELEASED: { // The CLTU/Frame was sent to the ground station
                     released.add(id);
                     if(released.size() == dataUnits.size()) { // All released
-                        informServiceBroker(TcPacketPhase.RELEASED, time, tcTrackers);
+                        informServiceBroker(TcPhase.RELEASED, time, tcTrackers);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                     }
                 }
                 break;
                 case RELEASE_FAILED: { // Release problem
-                    informServiceBroker(TcPacketPhase.FAILED, time, tcTrackers);
+                    informServiceBroker(TcPhase.FAILED, time, tcTrackers);
                     reportActivityState(tcTrackers, time, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE);
                     lifecycleCompleted = true;
                 }
@@ -361,7 +361,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 }
                 break;
                 case REJECTED: { // The CLTU/Frame was rejected by the ground station or discarded -> all related TC requests to be marked as failed in ground station reception
-                    informServiceBroker(TcPacketPhase.FAILED, time, tcTrackers);
+                    informServiceBroker(TcPhase.FAILED, time, tcTrackers);
                     reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
                     lifecycleCompleted = true;
                 }
@@ -369,20 +369,20 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 case UPLINKED: { // The CLTU/Frame was uplinked by the ground station
                     uplinked.add(id);
                     if(uplinked.size() == dataUnits.size()) { // All CLTUs/Frames uplinked, so command is all on its way
-                        informServiceBroker(TcPacketPhase.UPLINKED, time, tcTrackers);
+                        informServiceBroker(TcPhase.UPLINKED, time, tcTrackers);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_UPLINK, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                         if(!useAd) {
                             // Other stages are not in the scope of this class: send out a RECEIVED_ONBOARD success after uplink time + propagation delay on the service broker only
                             Instant estimatedOnboardReceptionTime = time.plusNanos(configuration.getPropagationDelay() * 1000);
                             if(configuration.getPropagationDelay() < 1000000) { // Less than one second propagation delay: report onboard reception now
-                                informServiceBroker(TcPacketPhase.RECEIVED_ONBOARD, estimatedOnboardReceptionTime, tcTrackers);
+                                informServiceBroker(TcPhase.RECEIVED_ONBOARD, estimatedOnboardReceptionTime, tcTrackers);
                                 reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.EXPECTED, ActivityOccurrenceState.TRANSMISSION);
                             } else {
                                 TimerTask tt = new TimerTask() {
                                     @Override
                                     public void run() {
-                                        informServiceBroker(TcPacketPhase.RECEIVED_ONBOARD, estimatedOnboardReceptionTime, tcTrackers);
+                                        informServiceBroker(TcPhase.RECEIVED_ONBOARD, estimatedOnboardReceptionTime, tcTrackers);
                                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.EXPECTED, ActivityOccurrenceState.TRANSMISSION);
                                     }
                                 };
@@ -396,7 +396,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 }
                 break;
                 case UPLINK_FAILED: { // The CLTU/Frame failed uplink -> all related TC requests to be marked as failed in ground station uplink
-                    informServiceBroker(TcPacketPhase.FAILED, time, tcTrackers);
+                    informServiceBroker(TcPhase.FAILED, time, tcTrackers);
                     reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_UPLINK, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
                     lifecycleCompleted = true;
                 }

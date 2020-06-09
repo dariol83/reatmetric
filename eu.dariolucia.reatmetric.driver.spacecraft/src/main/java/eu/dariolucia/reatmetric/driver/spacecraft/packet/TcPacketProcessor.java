@@ -48,7 +48,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcPacketConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TcDataLinkProcessor;
 
 import java.time.Instant;
@@ -214,7 +214,7 @@ public class TcPacketProcessor implements IActivityExecutor {
         TcTracker tcTracker = buildTcTracker(activityInvocation, sp, packetInfo, rd);
         sp.setAnnotationValue(Constants.ANNOTATION_TC_TRACKER, tcTracker);
         // Notify packet built to service broker: if the packet is time tagged, then the processing will continue in the PUS 11 service implementation
-        serviceBroker.informTcPacket(TcPacketPhase.ENCODED, encodingTime, tcTracker);
+        serviceBroker.informTcPacket(TcPhase.ENCODED, encodingTime, tcTracker);
         // Release packet to lower layer (TC layer), unless the activity is scheduled on-board (PUS 11, activity property)
         String scheduledTime = activityInvocation.getProperties().get(Constants.ACTIVITY_PROPERTY_SCHEDULED_TIME);
         if (scheduledTime == null || scheduledTime.isBlank()) {

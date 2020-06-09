@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.definition;
+package eu.dariolucia.reatmetric.driver.spacecraft.services;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import java.util.LinkedList;
-import java.util.List;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
 
-@XmlAccessorType(XmlAccessType.FIELD)
-public class PacketServiceConfiguration {
+import java.time.Instant;
+import java.util.LinkedHashMap;
 
-    @XmlElement(name = "service", required = true)
-    private List<ServiceConfiguration> services = new LinkedList<>();
+public interface ITimeCorrelation {
 
-    public List<ServiceConfiguration> getServices() {
-        return services;
+    default Instant toUtc(Instant obt) {
+        return obt;
     }
 
-    public void setServices(List<ServiceConfiguration> services) {
-        this.services = services;
+    default Instant toObt(Instant utc) {
+        return utc;
     }
+
+    LinkedHashMap<String, String> renderTimeCoefficients(RawData rawData);
 }

@@ -28,5 +28,5 @@ public interface IServicePacketSubscriber {
 
     void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded);
 
-    void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker);
+    void onTcPacket(TcPhase phase, Instant phaseTime, TcTracker tcTracker);
 }

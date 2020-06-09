@@ -18,21 +18,32 @@ package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import java.util.LinkedList;
-import java.util.List;
+import javax.xml.bind.annotation.XmlAttribute;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class PacketServiceConfiguration {
+public class ServiceConfiguration {
 
-    @XmlElement(name = "service", required = true)
-    private List<ServiceConfiguration> services = new LinkedList<>();
+    @XmlAttribute(name = "type", required = true)
+    private String type;
 
-    public List<ServiceConfiguration> getServices() {
-        return services;
+    @XmlAttribute(name = "configuration", required = true)
+    private String configuration;
+
+    public String getType() {
+        return type;
     }
 
-    public void setServices(List<ServiceConfiguration> services) {
-        this.services = services;
+    public ServiceConfiguration setType(String type) {
+        this.type = type;
+        return this;
+    }
+
+    public String getConfiguration() {
+        return configuration;
+    }
+
+    public ServiceConfiguration setConfiguration(String configuration) {
+        this.configuration = configuration;
+        return this;
     }
 }

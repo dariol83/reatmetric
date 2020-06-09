@@ -14,15 +14,31 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.definition;
+package eu.dariolucia.reatmetric.driver.spacecraft.definition.services;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.CucConfiguration;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.*;
+import java.io.IOException;
+import java.io.InputStream;
+
+@XmlRootElement(name = "time-service", namespace = "http://dariolucia.eu/reatmetric/driver/spacecraft/time-service")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class TimeCorrelationServiceConfiguration {
+
+    public static TimeCorrelationServiceConfiguration load(InputStream is) throws IOException {
+        try {
+            JAXBContext jc = JAXBContext.newInstance(TimeCorrelationServiceConfiguration.class);
+            Unmarshaller u = jc.createUnmarshaller();
+            TimeCorrelationServiceConfiguration o = (TimeCorrelationServiceConfiguration) u.unmarshal(is);
+            return o;
+        } catch (JAXBException e) {
+            throw new IOException(e);
+        }
+    }
 
     @XmlAttribute(name = "generation-frame-period")
     private int generationPeriod = 256; // The generation period of the time packet in number of frames

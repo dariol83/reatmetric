@@ -19,42 +19,18 @@ package eu.dariolucia.reatmetric.driver.spacecraft.services.impl;
 import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
-import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketSubscriber;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPacketPhase;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
 import java.time.Instant;
 
 /**
  * This class implements the ECSS PUS 5 on-board event service.
  */
-public class OnboardEventService implements IServicePacketSubscriber {
-
-    private final SpacecraftConfiguration configuration;
-    private final IServiceBroker IServiceBroker;
-    private final IProcessingModel processingModel;
-
-    public OnboardEventService(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker IServiceBroker) {
-        this.configuration = configuration;
-        this.IServiceBroker = IServiceBroker;
-        this.processingModel = context.getProcessingModel();
-        subscribeToBroker();
-    }
-
-    private void subscribeToBroker() {
-        // Subscribe to service broker to intercept event 5 packets (PUS type == 5)
-        IServiceBroker.register(this, this::packetFilter);
-    }
-
-    private boolean packetFilter(RawData rawData, SpacePacket spacePacket, Integer type, Integer subtype, Integer destination, Integer source) {
-        return type != null && type == 5;
-    }
+public class OnboardEventService extends AbstractPacketService<Object> {
 
     @Override
     public void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
@@ -67,15 +43,41 @@ public class OnboardEventService implements IServicePacketSubscriber {
                 packetRawData.getRoute(),
                 packetRawData.getSource(), null);
         // Inject
-        processingModel.raiseEvent(eo);
+        processingModel().raiseEvent(eo);
     }
 
     @Override
-    public void onTcPacket(TcPacketPhase phase, Instant phaseTime, TcTracker tcTracker) {
+    public void onTcPacket(TcPhase phase, Instant phaseTime, TcTracker tcTracker) {
         // Not used
     }
 
+    @Override
+    public String getName() {
+        return "Onboard Event Service";
+    }
+
+    @Override
+    public IServicePacketFilter getSubscriptionFilter() {
+        return (rd, sp, pusType, pusSubtype, destination, source) -> pusType != null && pusType == 5;
+    }
+
+    @Override
+    public int getServiceType() {
+        return 5;
+    }
+
+    @Override
+    public boolean isDirectHandler(TcTracker trackedTc) {
+        return false;
+    }
+
+    @Override
     public void dispose() {
-        IServiceBroker.deregister(this);
+        // Nothing here
+    }
+
+    @Override
+    protected Object loadConfiguration(String serviceConfigurationPath) {
+        return null;
     }
 }
