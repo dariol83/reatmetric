@@ -21,7 +21,6 @@ import eu.dariolucia.ccsds.encdec.definition.PacketDefinition;
 import eu.dariolucia.ccsds.encdec.pus.PusChecksumUtil;
 import eu.dariolucia.ccsds.encdec.pus.TcPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.*;
-import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketEncoder;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.DefaultValueFallbackResolver;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.PathLocationBasedResolver;
 import eu.dariolucia.ccsds.tmtc.transport.builder.SpacePacketBuilder;
@@ -62,11 +61,9 @@ import java.util.logging.Logger;
 import static eu.dariolucia.reatmetric.driver.spacecraft.common.Constants.ACTIVITY_PROPERTY_OVERRIDE_MAP_ID;
 import static eu.dariolucia.reatmetric.driver.spacecraft.common.Constants.ACTIVITY_PROPERTY_OVERRIDE_SOURCE_ID;
 
-public class TcPacketProcessor implements IActivityExecutor {
+public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
 
     private static final Logger LOG = Logger.getLogger(TcPacketProcessor.class.getName());
-
-    private static final int MAX_TC_PACKET_SIZE = 65536;
 
     private final String driverName;
     private final SpacecraftConfiguration configuration;
@@ -86,13 +83,13 @@ public class TcPacketProcessor implements IActivityExecutor {
 
     public TcPacketProcessor(String driverName, Instant epoch, SpacecraftConfiguration configuration, IServiceCoreContext context,
                              IServiceBroker serviceBroker, Definition encodingDecodingDefinitions, TcDataLinkProcessor tcDataLinkProcessor,
-                             IPacketDecoder packetDecoder, List<ITcPacketConnector> tcPacketConnectors) {
+                             List<ITcPacketConnector> tcPacketConnectors) {
         this.driverName = driverName;
         this.configuration = configuration;
         this.context = context;
         this.serviceBroker = serviceBroker;
-        this.packetEncoder = new DefaultPacketEncoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), MAX_TC_PACKET_SIZE, epoch);
-        this.packetDecoder = packetDecoder;
+        this.packetEncoder = serviceBroker.locate(IPacketEncoder.class);
+        this.packetDecoder = serviceBroker.locate(IPacketDecoder.class);;
         this.tcDataLinkProcessor = tcDataLinkProcessor;
 
         // Create a map based on the external ID
@@ -201,23 +198,23 @@ public class TcPacketProcessor implements IActivityExecutor {
      * This method is used to inject a complete space packet (mapped to an activity occurrence) into the lower processing layers.
      *
      * @param activityInvocation the activity invocation
-     * @param defToEncode the packet definition
+     * @param packetDefinition the packet definition
      * @param packetInfo the TC packet information
      * @param sp the fully encoded space packet
      * @throws ActivityHandlingException in case of troubles handling the activity
      */
-    public TcTracker injectTcPacket(IActivityHandler.ActivityInvocation activityInvocation, PacketDefinition defToEncode, TcPacketInfo packetInfo, SpacePacket sp) throws ActivityHandlingException {
+    @Override
+    public TcTracker injectTcPacket(IActivityHandler.ActivityInvocation activityInvocation, PacketDefinition packetDefinition, TcPacketInfo packetInfo, SpacePacket sp) throws ActivityHandlingException {
         Instant encodingTime = Instant.now();
         // Store the TC packet in the raw data archive
-        RawData rd = distributeAsRawData(activityInvocation, sp, defToEncode, encodingTime);
+        RawData rd = distributeAsRawData(activityInvocation, sp, packetDefinition, encodingTime);
         // Build the activity tracker and add it to the Space Packet
         TcTracker tcTracker = buildTcTracker(activityInvocation, sp, packetInfo, rd);
         sp.setAnnotationValue(Constants.ANNOTATION_TC_TRACKER, tcTracker);
         // Notify packet built to service broker: if the packet is time tagged, then the processing will continue in the PUS 11 service implementation
         serviceBroker.informTcPacket(TcPhase.ENCODED, encodingTime, tcTracker);
-        // Release packet to lower layer (TC layer), unless the activity is scheduled on-board (PUS 11, activity property)
-        String scheduledTime = activityInvocation.getProperties().get(Constants.ACTIVITY_PROPERTY_SCHEDULED_TIME);
-        if (scheduledTime == null || scheduledTime.isBlank()) {
+        // Release packet to lower layer (TC layer), unless the activity is directly handled by a service (e.g. PUS 11, activity property)
+        if (!serviceBroker.isDirectlyHandled(tcTracker)) {
             // If there is an external connector for the route, go for it
             ITcPacketConnector externalConnector = this.tcPacketConnectors.get(activityInvocation.getRoute());
             if(externalConnector != null) {

@@ -31,5 +31,7 @@ public interface ITimeCorrelation {
         return utc;
     }
 
-    LinkedHashMap<String, String> renderTimeCoefficients(RawData rawData);
+    default LinkedHashMap<String, String> renderTimeCoefficients(RawData rawData) {
+        return null;
+    }
 }

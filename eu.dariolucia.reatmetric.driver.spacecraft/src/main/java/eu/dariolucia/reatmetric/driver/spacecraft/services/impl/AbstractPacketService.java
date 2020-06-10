@@ -45,8 +45,12 @@ public abstract class AbstractPacketService<T> implements IService {
         this.serviceCoreConfiguration = coreConfiguration;
         this.context = context;
         this.serviceBroker = serviceBroker;
-        this.configuration = loadConfiguration(serviceConfigurationPath);
-        postInitialisation();
+        try {
+            this.configuration = loadConfiguration(serviceConfigurationPath);
+            postInitialisation();
+        } catch (IOException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     protected void postInitialisation() throws ReatmetricException {

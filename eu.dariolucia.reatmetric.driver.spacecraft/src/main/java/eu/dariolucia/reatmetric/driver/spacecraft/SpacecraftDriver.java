@@ -19,8 +19,11 @@ package eu.dariolucia.reatmetric.driver.spacecraft;
 import eu.dariolucia.ccsds.encdec.definition.Definition;
 import eu.dariolucia.ccsds.encdec.identifier.IPacketIdentifier;
 import eu.dariolucia.ccsds.encdec.identifier.impl.FieldGroupBasedPacketIdentifier;
+import eu.dariolucia.ccsds.encdec.structure.IPacketDecoder;
+import eu.dariolucia.ccsds.encdec.structure.IPacketEncoder;
 import eu.dariolucia.ccsds.encdec.structure.PacketDefinitionIndexer;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketDecoder;
+import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketEncoder;
 import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.ServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.UtlConfigurationFile;
@@ -51,6 +54,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.DataUnitType;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.ExternalConnectorConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.ServiceConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.packet.ITcPacketInjector;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TcPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TmPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.replay.TmPacketReplayManager;
@@ -103,6 +107,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private static final String CONFIGURATION_FILE = "configuration.xml";
     private static final String ENCODING_DECODING_DEFINITION_FILE = "tmtc.xml";
 
+    private static final int MAX_TC_PACKET_SIZE = 65536;
+
     private String name;
     private Instant epoch;
     private SpacecraftConfiguration configuration;
@@ -112,6 +118,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     private Definition encodingDecodingDefinitions;
     private IPacketIdentifier packetIdentifier;
+    private DefaultPacketDecoder packetDecoder;
+    private DefaultPacketEncoder packetEncoder;
 
     private volatile SystemStatus status = SystemStatus.UNKNOWN;
 
@@ -135,7 +143,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private final List<ITcPacketConnector> tcPacketConnectors = new LinkedList<>();
     // The next field is constructed upon getTransportConnectors invocation
     private List<ITransportConnector> allConnectors;
-    private DefaultPacketDecoder packetDecoder;
+
 
     @Override
     public void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException {
@@ -151,6 +159,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             loadEncodingDecodingDefinitions(driverConfigurationDirectory + File.separator + ENCODING_DECODING_DEFINITION_FILE);
             // Load the service broker
             loadServiceBroker();
+            // Load the different packet services
+            loadPacketServices();
             // Load the TM Packet processor
             loadTmPacketProcessor();
             // Load the TM Data Link processor
@@ -163,18 +173,22 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             loadTcDataLinkProcessor();
             // Load the TC Packet processor
             loadTcPacketProcessor();
-            // Load the different packet services
-            loadPacketServices();
             // Load packet replayer
             loadTmPacketReplayer();
             // Initialise raw data renderers
             loadRawDataRenderers();
+            // Finalise service loading
+            finaliseServiceLoading();
             // Ready to go
             updateStatus(SystemStatus.NOMINAL);
         } catch (Exception e) {
             updateStatus(SystemStatus.ALARM);
             throw new DriverException(e);
         }
+    }
+
+    private void finaliseServiceLoading() {
+        this.serviceBroker.finaliseServiceLoading();
     }
 
     private void loadExternalConnectors() {
@@ -237,8 +251,9 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     private void loadTcPacketProcessor() {
-        tcPacketProcessor = new TcPacketProcessor(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions, this.tcDataLinkProcessor, this.packetDecoder, getTcPacketConnectors());
+        tcPacketProcessor = new TcPacketProcessor(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions, this.tcDataLinkProcessor, getTcPacketConnectors());
         registerActivityExecutor(tcPacketProcessor);
+        serviceBroker.registerServiceInterface(ITcPacketInjector.class, tcPacketProcessor);
     }
 
     private List<ITcPacketConnector> getTcPacketConnectors() {
@@ -258,8 +273,10 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.rawDataRenderers.put(Constants.T_TM_PACKET, tmPacketProcessor::renderTmPacket);
         this.rawDataRenderers.put(Constants.T_IDLE_PACKET, tmPacketProcessor::renderTmPacket);
         this.rawDataRenderers.put(Constants.T_BAD_PACKET, tmPacketProcessor::renderBadPacket);
-        this.rawDataRenderers.put(Constants.T_TIME_COEFFICIENTS, timeCorrelationService::renderTimeCoefficients); // TODO: add mechanism to ask services to add renderers
         this.rawDataRenderers.put(Constants.T_TC_PACKET, tcPacketProcessor::renderTcPacket);
+
+        Map<String, Function<RawData, LinkedHashMap<String, String>>> serviceRenderers = this.serviceBroker.getServiceRenderers();
+        this.rawDataRenderers.putAll(serviceRenderers);
     }
 
     private void loadTmPacketReplayer() {
@@ -287,13 +304,14 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     private void loadServiceBroker() {
         this.serviceBroker = new ServiceBroker();
+        this.serviceBroker.registerServiceInterface(IPacketEncoder.class, this.packetEncoder);
+        this.serviceBroker.registerServiceInterface(IPacketDecoder.class, this.packetDecoder);
+        this.serviceBroker.registerServiceInterface(IPacketIdentifier.class, this.packetIdentifier);
     }
 
     private void loadTmPacketProcessor() {
         this.tmPacketProcessor = new TmPacketProcessor(this.configuration,
                 this.context,
-                this.packetDecoder,
-                this.timeCorrelationService, // TODO: add call to service broker to use/locate such interface and remove this parameter
                 this.serviceBroker);
         this.tmPacketProcessor.initialise();
     }
@@ -303,6 +321,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.encodingDecodingDefinitions = Definition.load(new FileInputStream(filePath));
         this.packetIdentifier = new FieldGroupBasedPacketIdentifier(this.encodingDecodingDefinitions, true, Collections.singletonList(Constants.ENCDEC_TM_PACKET_TYPE));
         this.packetDecoder = new DefaultPacketDecoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), epoch);
+        this.packetEncoder = new DefaultPacketEncoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), MAX_TC_PACKET_SIZE, epoch);
     }
 
     private void loadTmDataLinkProcessor() {

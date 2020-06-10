@@ -317,7 +317,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
 
     private void sendTmFrame(TmTransferFrame tmTransferFrame) {
         // Send the transfer frame
-        // if vcId == 0 and vcc == 0, generate time packet
+        // if vcId == 0 and vcc == 0, generate time packet: generation rate is 256
         if (tmTransferFrame.getVirtualChannelId() == 0 && tmTransferFrame.getVirtualChannelFrameCount() == 0) {
             generateTimePacket(Instant.now());
         }
@@ -329,8 +329,11 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     private void generateTimePacket(Instant now) {
         int apidCounter = getNextCounter(0);
         SpacePacketBuilder builder = SpacePacketBuilder.create().setTelemetryPacket().setApid(0).setPacketSequenceCount(apidCounter).setSecondaryHeaderFlag(false).setSequenceFlag(SpacePacket.SequenceFlagType.UNSEGMENTED).setQualityIndicator(true);
-        boolean generationPeriodReported = spacecraftConfiguration.getPacketServiceConfiguration().getTimeCorrelationServiceConfiguration().isGenerationPeriodReported();
-        CucConfiguration format = spacecraftConfiguration.getPacketServiceConfiguration().getTimeCorrelationServiceConfiguration().getTimeFormat();
+        boolean generationPeriodReported = true; // Hardcoded
+        CucConfiguration format = new CucConfiguration();
+        format.setCoarse(4); // Hardcoded
+        format.setFine(2); // Hardcoded
+        format.setExplicitPField(true); // Hardcoded
         if (generationPeriodReported) {
             builder.addData(new byte[]{8});
         }

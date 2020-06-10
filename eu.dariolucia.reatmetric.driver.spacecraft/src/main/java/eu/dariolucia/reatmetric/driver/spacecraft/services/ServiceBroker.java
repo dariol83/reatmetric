@@ -21,17 +21,17 @@ import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.core.api.IDriver;
-import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
-import eu.dariolucia.reatmetric.core.configuration.DriverConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.ServiceConfiguration;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -49,6 +49,7 @@ public class ServiceBroker implements IServiceBroker {
     private final List<Pair<IServicePacketSubscriber, IServicePacketFilter>> subscribers = new CopyOnWriteArrayList<>();
 
     private final Map<Integer, IService> serviceMap = new HashMap<>();
+    private final Map<Class, Object> serviceLocator = new HashMap<>();
 
     @Override
     public void register(IServicePacketSubscriber subscriber, IServicePacketFilter predicateFilter) {
@@ -103,8 +104,54 @@ public class ServiceBroker implements IServiceBroker {
         });
     }
 
+    @Override
+    public <T> T locate(Class<T> interfaceClass) {
+        Object service = serviceLocator.get(interfaceClass);
+        if(service == null) {
+            for (IService s : serviceMap.values()) {
+                if (interfaceClass.isAssignableFrom(s.getClass())) {
+                    serviceLocator.put(interfaceClass, s);
+                    return (T) s;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public boolean isDirectlyHandled(TcTracker tcTracker) {
+        // Get the service
+        IService s = null;
+        if(tcTracker != null && tcTracker.getInfo() != null && tcTracker.getInfo().getPusHeader() != null) {
+            int pusType = tcTracker.getInfo().getPusHeader().getServiceType();
+            s = this.serviceMap.get(pusType);
+        }
+        // If there is a service, ask
+        if(s != null) {
+            return s.isDirectHandler(tcTracker);
+        }
+        // If not, return false
+        return false;
+    }
+
+    public <T> void registerServiceInterface(Class<T> locator, T theService) {
+        serviceLocator.put(locator, theService);
+    }
+
     public void registerService(IService theService) {
         register(theService, theService.getSubscriptionFilter());
         serviceMap.put(theService.getServiceType(), theService);
+    }
+
+    public Map<String, Function<RawData, LinkedHashMap<String, String>>> getServiceRenderers() {
+        Map<String, Function<RawData, LinkedHashMap<String, String>>> serviceRenderers = new HashMap<>();
+        for(IService s : serviceMap.values()) {
+            s.registerRawDataRenderers(serviceRenderers);
+        }
+        return serviceRenderers;
+    }
+
+    public void finaliseServiceLoading() {
+        serviceMap.values().forEach(IService::finaliseServiceLoading);
     }
 }

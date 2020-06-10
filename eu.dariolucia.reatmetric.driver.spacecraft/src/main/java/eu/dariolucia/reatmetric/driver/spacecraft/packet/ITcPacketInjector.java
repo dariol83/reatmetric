@@ -14,26 +14,15 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.services;
+package eu.dariolucia.reatmetric.driver.spacecraft.packet;
 
-import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
-import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
+import eu.dariolucia.ccsds.encdec.definition.PacketDefinition;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
-import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfo;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 
-import java.time.Instant;
-
-public interface IServiceBroker {
-    void register(IServicePacketSubscriber subscriber, IServicePacketFilter predicateFilter);
-
-    void deregister(IServicePacketSubscriber subscriber);
-
-    void distributeTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded);
-
-    void informTcPacket(TcPhase phase, Instant phaseTime, TcTracker trackerBean);
-
-    <T> T locate(Class<T> interfaceClass);
-
-    boolean isDirectlyHandled(TcTracker tcTracker);
+public interface ITcPacketInjector {
+    TcTracker injectTcPacket(IActivityHandler.ActivityInvocation activityInvocation, PacketDefinition packetDefinition, TcPacketInfo packetInfo, SpacePacket sp) throws ActivityHandlingException;
 }

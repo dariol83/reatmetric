@@ -52,6 +52,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -400,6 +401,11 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     public void dispose() {
         context().getRawDataBroker().unsubscribe(this);
         timeCoefficientsDistributor.shutdown();
+    }
+
+    @Override
+    public void registerRawDataRenderers(Map<String, Function<RawData, LinkedHashMap<String, String>>> serviceRenderers) {
+        serviceRenderers.put(Constants.T_TIME_COEFFICIENTS, this::renderTimeCoefficients);
     }
 
     @Override

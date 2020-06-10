@@ -27,10 +27,12 @@ import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Interface for packet service implementations.
- * // TODO split services in modules
  */
 public interface IService extends IServicePacketSubscriber {
 
@@ -91,6 +93,18 @@ public interface IService extends IServicePacketSubscriber {
 
     @Override
     default void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
+        // Override if needed
+    }
+
+    default void registerRawDataRenderers(Map<String, Function<RawData, LinkedHashMap<String, String>>> serviceRenderers) {
+        // Override if needed
+    }
+
+    /**
+     * This method is called to inform implementations that the locate(...) function on the service broker is available and it
+     * can be used to look up for implementations.
+     */
+    default void finaliseServiceLoading() {
         // Override if needed
     }
 }

@@ -52,24 +52,41 @@ public class TmPacketProcessor implements IRawDataSubscriber {
 
     private static final Logger LOG = Logger.getLogger(TmPacketProcessor.class.getName());
 
+    private static final ITimeCorrelation IDENTITY_TIME_CORRELATION = new ITimeCorrelation() {
+        @Override
+        public Instant toUtc(Instant obt) {
+            return obt;
+        }
+
+        @Override
+        public Instant toObt(Instant utc) {
+            return utc;
+        }
+    };
+
     private final String spacecraft;
     private final Instant epoch;
     private final IProcessingModel processingModel;
     private final IPacketDecoder packetDecoder;
     private final IRawDataBroker broker;
     private final TmPacketConfiguration configuration;
-    private final ITimeCorrelation ITimeCorrelation;
+    private final ITimeCorrelation timeCorrelation;
     private final IServiceBroker serviceBroker;
     private final boolean[] processedVCs;
 
-    public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketDecoder packetDecoder, ITimeCorrelation ITimeCorrelation, IServiceBroker serviceBroker) {
+    public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker) {
         this.spacecraft = String.valueOf(configuration.getId());
         this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
         this.processingModel = context.getProcessingModel();
-        this.packetDecoder = packetDecoder;
+        this.packetDecoder = serviceBroker.locate(IPacketDecoder.class);
         this.broker = context.getRawDataBroker();
         this.configuration = configuration.getTmPacketConfiguration();
-        this.ITimeCorrelation = ITimeCorrelation;
+        ITimeCorrelation timeCorrelationService = serviceBroker.locate(eu.dariolucia.reatmetric.driver.spacecraft.services.ITimeCorrelation.class);
+        if(timeCorrelationService != null) {
+            this.timeCorrelation = timeCorrelationService;
+        } else {
+            this.timeCorrelation = IDENTITY_TIME_CORRELATION;
+        }
         this.serviceBroker = serviceBroker;
         this.processedVCs = new boolean[64];
         for(int i = 0; i < this.processedVCs.length; ++i) {
@@ -183,7 +200,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
                 Instant generationTime = pusHeader.getAbsoluteTime();
                 // 2. apply time correlation
                 if(generationTime != null) {
-                    return ITimeCorrelation.toUtc(generationTime);
+                    return timeCorrelation.toUtc(generationTime);
                 }
             }
         }
