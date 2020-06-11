@@ -232,7 +232,7 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
     public void dispose() {
         scheduler.purge();
         scheduler.cancel();
-        linkedActivityOccurrence2tcTracker.values().forEach(o -> o.terminate(TcPhase.FAILED, Instant.now(), true));
+        new HashSet<>(linkedActivityOccurrence2tcTracker.values()).forEach(o -> o.terminate(TcPhase.FAILED, Instant.now(), true)); // Avoid concurrent modification exception
         linkedActivityOccurrence2tcTracker.clear();
     }
 
