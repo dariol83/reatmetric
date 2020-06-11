@@ -59,6 +59,8 @@ public class ReatmetricServiceHolder {
                 this.listeners.forEach(o -> o.systemConnected(this.system));
             } catch (ReatmetricException e) {
                 LOG.log(Level.SEVERE, "Exception while initialising system " + this.system.getName() + ": " + e.getMessage(), e);
+                statusUpdateFunction(SystemStatus.ALARM);
+                this.listeners.forEach(o -> o.systemDisconnected(this.system));
             }
         }
         this.listeners.forEach(IReatmetricServiceListener::stopGlobalOperationProgress);

@@ -90,6 +90,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     private ChannelDecoder<TcTransferFrame> cltuDecoder;
     private final Map<Integer, TcReceiverVirtualChannel> id2tcvc = new HashMap<>();
     private final Map<Integer, Boolean> id2segmentation = new HashMap<>();
+    private final Timer queueeTcScheduler = new Timer();
 
     // TM processing part
     private final BlockingQueue<SpacePacket> packetsToSend = new ArrayBlockingQueue<>(1000);
@@ -329,14 +330,11 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     private void generateTimePacket(Instant now) {
         int apidCounter = getNextCounter(0);
         SpacePacketBuilder builder = SpacePacketBuilder.create().setTelemetryPacket().setApid(0).setPacketSequenceCount(apidCounter).setSecondaryHeaderFlag(false).setSequenceFlag(SpacePacket.SequenceFlagType.UNSEGMENTED).setQualityIndicator(true);
-        boolean generationPeriodReported = true; // Hardcoded
+        builder.addData(new byte[]{8}); // Hardcoded: report of generation period
         CucConfiguration format = new CucConfiguration();
         format.setCoarse(4); // Hardcoded
         format.setFine(2); // Hardcoded
         format.setExplicitPField(true); // Hardcoded
-        if (generationPeriodReported) {
-            builder.addData(new byte[]{8});
-        }
         byte[] obt = TimeUtil.toCUC(now, spacecraftConfiguration.getEpoch() != null ? spacecraftConfiguration.getEpoch().toInstant() : null, format.getCoarse(), format.getFine(), format.isExplicitPField());
         builder.addData(obt);
         SpacePacket sp = builder.build();
@@ -382,16 +380,27 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
 
     private void queueCommandExecution(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, SpacePacket sp) {
         // sp is a 11,4 packet: we need to extract the command to schedule, according to the 11,4 definition
-        // First of all, get rid of the TC PUS header
-
+        // First of all, get rid of the TC PUS header: assume sourceLen octet align
+        int sourceLenSpare = (spacecraftConfiguration.getTcPacketConfiguration().getSourceIdLength() + spacecraftConfiguration.getTcPacketConfiguration().getSpareLength()) / 8;
         // Then, understand if the subschedule and the num of entries is there
-
-        // Finally, read the absolute time and the packet
+        int subScheduleByteLen = 1; // Hardcoded
+        int counterByteLen = 1; // Hardcoded
+        // Finally, read the absolute time and the packet (limited to time and command, only 1)
+        byte[] cucTime = Arrays.copyOfRange(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + 3 + sourceLenSpare + subScheduleByteLen + counterByteLen, SpacePacket.SP_PRIMARY_HEADER_LENGTH + 3 + sourceLenSpare + subScheduleByteLen + counterByteLen + 6);
+        Instant time = TimeUtil.fromCUC(cucTime, spacecraftConfiguration.getEpoch().toInstant(), 4,2);
+        byte[] packet = Arrays.copyOfRange(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + 3 + sourceLenSpare + subScheduleByteLen + counterByteLen + 6, sp.getPacket().length - 2); // -2 to consider PECF, hardcoded
+        System.out.println("Scheduled TC at " + time + ": " + StringUtil.toHexDump(packet));
+        queueeTcScheduler.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                spacePacketExtracted(vc, firstFrame, packet, true);
+            }
+        }, new Date(time.toEpochMilli()));
     }
 
     private boolean isTimeTaggedCommand(SpacePacket sp) {
         // Read type (offset 7) and subtype (byte 8)
-        return sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH + 1] == 11 && sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH + 1] == 4;
+        return sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH + 1] == 11 && sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH + 2] == 4;
     }
 
     private void queuePus1(SpacePacket packet, int subtype) {

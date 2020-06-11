@@ -251,9 +251,9 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     private void loadTcPacketProcessor() {
-        tcPacketProcessor = new TcPacketProcessor(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions, this.tcDataLinkProcessor, getTcPacketConnectors());
+        this.tcPacketProcessor = new TcPacketProcessor(this.name, this.epoch, this.configuration, this.context, this.serviceBroker, this.encodingDecodingDefinitions, this.tcDataLinkProcessor, getTcPacketConnectors());
         registerActivityExecutor(tcPacketProcessor);
-        serviceBroker.registerServiceInterface(ITcPacketInjector.class, tcPacketProcessor);
+        this.serviceBroker.registerServiceInterface(ITcPacketInjector.class, tcPacketProcessor);
     }
 
     private List<ITcPacketConnector> getTcPacketConnectors() {
@@ -288,6 +288,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         for(ServiceConfiguration sc : configuration.getPacketServiceConfiguration().getServices()) {
             IService theService = loadService(sc);
             serviceBroker.registerService(theService);
+            LOG.info(theService.getName() + " registered");
         }
     }
 

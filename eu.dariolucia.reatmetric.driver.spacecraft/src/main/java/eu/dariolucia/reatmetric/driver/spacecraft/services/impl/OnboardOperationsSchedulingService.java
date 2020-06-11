@@ -274,7 +274,6 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
                 }
                 break;
                 case AVAILABLE_ONBOARD: {
-                    serviceBroker().informTcPacket(phase, phaseTime, tcTracker);
                     reportActivityState(tcTracker, phaseTime, ActivityOccurrenceState.SCHEDULING, Constants.STAGE_SPACECRAFT_SCHEDULED, ActivityReportState.PENDING, ActivityOccurrenceState.SCHEDULING, null);
                     lastAnnouncedStage = Constants.STAGE_SPACECRAFT_SCHEDULED;
                     lastAnnouncedState = ActivityOccurrenceState.SCHEDULING;

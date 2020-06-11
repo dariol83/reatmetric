@@ -106,32 +106,22 @@ public class ServiceBroker implements IServiceBroker {
 
     @Override
     public <T> T locate(Class<T> interfaceClass) {
-        Object service = serviceLocator.get(interfaceClass);
+        T service = (T) serviceLocator.get(interfaceClass);
         if(service == null) {
             for (IService s : serviceMap.values()) {
                 if (interfaceClass.isAssignableFrom(s.getClass())) {
                     serviceLocator.put(interfaceClass, s);
-                    return (T) s;
+                    service = (T) s;
                 }
             }
         }
-        return null;
+        return service;
     }
 
     @Override
     public boolean isDirectlyHandled(TcTracker tcTracker) {
-        // Get the service
-        IService s = null;
-        if(tcTracker != null && tcTracker.getInfo() != null && tcTracker.getInfo().getPusHeader() != null) {
-            int pusType = tcTracker.getInfo().getPusHeader().getServiceType();
-            s = this.serviceMap.get(pusType);
-        }
-        // If there is a service, ask
-        if(s != null) {
-            return s.isDirectHandler(tcTracker);
-        }
-        // If not, return false
-        return false;
+        // Ask all services
+        return this.serviceMap.values().stream().anyMatch(o -> o.isDirectHandler(tcTracker));
     }
 
     public <T> void registerServiceInterface(Class<T> locator, T theService) {
