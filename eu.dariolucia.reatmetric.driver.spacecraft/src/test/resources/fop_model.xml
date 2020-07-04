@@ -1,0 +1,43 @@
+<!--
+  ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~          http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
+    <activities>
+        <activity id="#1000" location="FOP.DIRECTIVE" description="Send a directive to the FOP engine" type="COP-1">
+            <argument name="TCVCID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="DIRECTIVE" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="0">
+                    <point x="INIT_AD_WITHOUT_CLCW" y="0" />
+                    <point x="INIT_AD_WITH_CLCW" y="1" />
+                    <point x="INIT_AD_WITH_UNLOCK" y="2" />
+                    <point x="INIT_AD_WITH_SET_V_R" y="3" />
+                    <point x="TERMINATE" y="4" />
+                    <point x="RESUME" y="5" />
+                    <point x="SET_V_S" y="6" />
+                    <point x="SET_FOP_SLIDING_WINDOW" y="7" />
+                    <point x="SET_T1_INITIAL" y="8" />
+                    <point x="SET_TRANSMISSION_LIMIT" y="9" />
+                    <point x="SET_TIMEOUT_TYPE" y="10" />
+                </decalib_ienum>
+            </argument>
+            <argument name="QUALIFIER" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+        </activity>
+    </activities>
+</ns1:processing>

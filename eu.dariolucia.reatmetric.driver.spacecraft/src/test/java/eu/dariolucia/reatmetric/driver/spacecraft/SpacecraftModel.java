@@ -34,14 +34,13 @@ import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.incomin
 import eu.dariolucia.ccsds.sle.utl.si.LockStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ProductionStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ServiceInstanceBindingStateEnum;
-import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuProductionStatusEnum;
-import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuServiceInstanceProvider;
-import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuStatusEnum;
-import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuUplinkStatusEnum;
+import eu.dariolucia.ccsds.sle.utl.si.cltu.*;
 import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstanceProvider;
 import eu.dariolucia.ccsds.tmtc.coding.ChannelDecoder;
 import eu.dariolucia.ccsds.tmtc.coding.decoder.CltuDecoder;
 import eu.dariolucia.ccsds.tmtc.coding.decoder.CltuRandomizerDecoder;
+import eu.dariolucia.ccsds.tmtc.cop1.farm.FarmEngine;
+import eu.dariolucia.ccsds.tmtc.cop1.farm.FarmState;
 import eu.dariolucia.ccsds.tmtc.datalink.channel.VirtualChannelAccessMode;
 import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.AbstractReceiverVirtualChannel;
 import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.IVirtualChannelReceiverOutput;
@@ -51,7 +50,6 @@ import eu.dariolucia.ccsds.tmtc.datalink.channel.sender.mux.TmMasterChannelMuxer
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TcTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
-import eu.dariolucia.ccsds.tmtc.ocf.builder.ClcwBuilder;
 import eu.dariolucia.ccsds.tmtc.ocf.pdu.AbstractOcf;
 import eu.dariolucia.ccsds.tmtc.transport.builder.SpacePacketBuilder;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
@@ -75,7 +73,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SpacecraftModel implements IVirtualChannelReceiverOutput {
 
-    public static final long BUFFER_AVAILABLE = 10000L;
+    public static final int BUFFER_AVAILABLE = 10000;
 
     private final CltuServiceInstanceProvider cltuProvider;
     private final RafServiceInstanceProvider rafProvider;
@@ -91,6 +89,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     private final Map<Integer, TcReceiverVirtualChannel> id2tcvc = new HashMap<>();
     private final Map<Integer, Boolean> id2segmentation = new HashMap<>();
     private final Timer queueeTcScheduler = new Timer();
+    private final FarmEngine farm;
 
     // TM processing part
     private final BlockingQueue<SpacePacket> packetsToSend = new ArrayBlockingQueue<>(1000);
@@ -115,11 +114,21 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
         this.processingDefinition = ProcessingDefinition.load(new FileInputStream(processingModelPath));
         this.spacecraftConfiguration = SpacecraftConfiguration.load(new FileInputStream(spacecraftFilePath));
         this.spacecraftConfiguration.getTmPacketConfiguration().buildLookupMap();
+        this.farm = new FarmEngine(0, this::tcFrameOutput, true, 10, 20, FarmState.S3, 0);
+        this.farm.setStatusField(7);
+        this.farm.setReservedSpare(0);
+        this.farm.setNoRfAvailableFlag(false);
+        this.farm.setNoBitLockFlag(false);
         initialiseSpacecraftUplink();
         this.tmMux = new TmMasterChannelMuxer(this::sendTmFrame);
         initialiseSpacecraftDownlink();
         initialiseSpacePacketGeneration();
         this.resolver = new ProcessingModelBasedResolver(processingDefinition, new DefinitionValueBasedResolver(new DefaultNullBasedResolver(), true), spacecraftConfiguration.getTmPacketConfiguration().getParameterIdOffset(), encDecDefs);
+    }
+
+    private void tcFrameOutput(TcTransferFrame tcTransferFrame) {
+        // Pass TC frame to appropriate VC
+        id2tcvc.get((int) tcTransferFrame.getVirtualChannelId()).accept(tcTransferFrame);
     }
 
     private void initialiseSpacePacketGeneration() {
@@ -184,17 +193,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     }
 
     private AbstractOcf provideOcf(int tmVcId) {
-        // TODO: COP-1 support
-        return ClcwBuilder.create().setCopInEffect(false).setFarmBCounter(0).setLockoutFlag(false)
-                .setNoBitlockFlag(cltuProvider.getCurrentBindingState() != ServiceInstanceBindingStateEnum.ACTIVE)
-                .setNoRfAvailableFlag(cltuProvider.getCurrentBindingState() != ServiceInstanceBindingStateEnum.ACTIVE)
-                .setReportValue(0)
-                .setVirtualChannelId(0)
-                .setReservedSpare(0)
-                .setRetransmitFlag(false)
-                .setStatusField(0)
-                .setWaitFlag(false)
-                .build();
+        return farm.get();
     }
 
     private void initialiseSpacecraftUplink() {
@@ -295,9 +294,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
         }
     }
 
-    private Long cltuReceived(CltuTransferDataInvocation cltuTransferDataInvocation) {
+    private CltuTransferDataResult cltuReceived(CltuTransferDataInvocation cltuTransferDataInvocation) {
         this.cltuProcessor.execute(() -> processCltu(cltuTransferDataInvocation.getCltuIdentification().longValue(), cltuTransferDataInvocation.getCltuData().value));
-        return BUFFER_AVAILABLE;
+        return CltuTransferDataResult.noError(BUFFER_AVAILABLE);
     }
 
     private void processCltu(long cltuId, byte[] cltu) {
@@ -311,9 +310,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
         cltuProvider.cltuProgress(cltuId, CltuStatusEnum.RADIATED, startTime, new Date(), BUFFER_AVAILABLE);
         // Process the CLTU
         TcTransferFrame decodedTcFrame = cltuDecoder.apply(cltu);
-        // TODO: COP-1 support
-        // Pass TC frame to appropriate VC
-        id2tcvc.get((int) decodedTcFrame.getVirtualChannelId()).accept(decodedTcFrame);
+        farm.frameArrived(decodedTcFrame);
     }
 
     private void sendTmFrame(TmTransferFrame tmTransferFrame) {

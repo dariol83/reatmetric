@@ -42,7 +42,8 @@ public class Constants {
     public static final String ANNOTATION_UNIQUE_ID = "##UNIQUE_ID";
     public static final String ANNOTATION_VCID = "##VCID";
     public static final String ANNOTATION_TC_TRACKER = "##TC_TRACKER";
-    public static final Object ANNOTATION_TC_PUS_HEADER = "##TC_PUS_HEADER";
+    public static final String ANNOTATION_TC_PUS_HEADER = "##TC_PUS_HEADER";
+    public static final String ANNOTATION_TC_FRAME_ID = "##TC_FRAME_TRACKING_ID";
 
     // encdec definition: TM/TC packet type
     public static final String ENCDEC_TM_PACKET_TYPE = "TM";
@@ -76,6 +77,8 @@ public class Constants {
     public static final String STAGE_SPACECRAFT_PROGRESS = "On-board Progress";
     public static final String STAGE_SPACECRAFT_COMPLETED = "On-board Completion";
 
+    public static final String STAGE_FOP_DIRECTIVE = "FOP Directive Execution";
+
     // CLTU Throw Event
     public static final String SLE_CLTU_THROW_EVENT_ACTIVITY_TYPE = "THROW-EVENT";
     public static final String SLE_CLTU_THROW_EVENT_IDENTIFIER_ARG_NAME = "EVENT-IDENTIFIER";
@@ -84,6 +87,8 @@ public class Constants {
     // COP-1
     public static final String TC_COP1_ACTIVITY_TYPE = "COP-1";
 
-
-
+    // FOP directive arguments
+    public static final String ARGUMENT_FOP_DIRECTIVE_TC_VC_ID = "TCVCID";
+    public static final String ARGUMENT_FOP_DIRECTIVE_DIRECTIVE_ID = "DIRECTIVE";
+    public static final String ARGUMENT_FOP_DIRECTIVE_QUALIFIER = "QUALIFIER";
 }
