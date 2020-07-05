@@ -112,6 +112,11 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 BcFrameCollector bcFactory = new BcFrameCollector(tcChannels[i].getSecond());
                 tcChannels[i].getSecond().register(bcFactory);
                 fopEngines[i] = new FopEngine(i, tcChannels[i].getSecond()::getNextVirtualChannelFrameCounter, tcChannels[i].getSecond()::setVirtualChannelFrameCounter, bcFactory, bcFactory, this::frameOutput);
+                // Default values for the FOP engine
+                fopEngines[i].directive(null, FopDirective.SET_T1_INITIAL, 10);
+                fopEngines[i].directive(null, FopDirective.SET_FOP_SLIDING_WINDOW, 1);
+                fopEngines[i].directive(null, FopDirective.SET_TRANSMISSION_LIMIT, 1);
+                fopEngines[i].directive(null, FopDirective.SET_TIMEOUT_TYPE, 0);
                 fopEngines[i].register(this);
             }
         }
@@ -316,7 +321,9 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             }
         }
         for(FopEngine fop : fopEngines) {
-            fop.dispose();
+            if(fop != null) {
+                fop.dispose();
+            }
         }
     }
 
@@ -330,7 +337,10 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
     private void informServiceBroker(TcPhase phase, Instant time, List<TcTracker> trackers) {
         for (TcTracker tracker : trackers) {
-            serviceBroker.informTcPacket(phase, time, tracker);
+            // To be reported only if there is actually a packet, not for a BC frame for COP-1 controlling
+            if(tracker.getPacket() != null) {
+                serviceBroker.informTcPacket(phase, time, tracker);
+            }
         }
     }
 
@@ -342,6 +352,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
     @Override
     public void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) {
+        // TODO: add activity to set AD mode
         context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.PENDING, ActivityOccurrenceState.RELEASE, null));
         // Three parameters: TC VC ID (enumeration: 0 to 7), directive ID (enumeration: as per FopDirective enum), qualifier (enumeration)
         int tcVcId = (int) activityInvocation.getArguments().get(Constants.ARGUMENT_FOP_DIRECTIVE_TC_VC_ID);
@@ -356,7 +367,8 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             long frameInTransmissionId = -activityInvocation.getActivityOccurrenceId().asLong();
             cltuId2requestTracker.put(frameInTransmissionId, tracker);
             // Initialise the tracker
-            tracker.initialise(Collections.emptyList(), Collections.singletonList(frameInTransmissionId));
+            TcTracker tcTracker = new TcTracker(activityInvocation, null, null, null);
+            tracker.initialise(Collections.singletonList(tcTracker), Collections.singletonList(frameInTransmissionId));
             context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), Constants.STAGE_GROUND_STATION_RECEPTION, Instant.now(), ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION, null));
         } else {
             context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), Constants.STAGE_FOP_DIRECTIVE, Instant.now(), ActivityOccurrenceState.EXECUTION, null, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null));
@@ -392,6 +404,10 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
     @Override
     public void directiveNotification(FopEngine engine, FopOperationStatus status, Object tag, FopDirective directive, int qualifier) {
+        if(tag == null) {
+            // Ignore, can still be an initialisation callback
+            return;
+        }
         IActivityHandler.ActivityInvocation activityInvocation = (IActivityHandler.ActivityInvocation) tag;
         if(status == FopOperationStatus.REJECT_RESPONSE || status == FopOperationStatus.NEGATIVE_CONFIRM) {
             context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), Constants.STAGE_FOP_DIRECTIVE, Instant.now(), ActivityOccurrenceState.EXECUTION, null, ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, null));
@@ -414,7 +430,11 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     @Override
     public void statusReport(FopEngine engine, FopStatus status) {
         if(!status.getPreviousState().equals(status.getCurrentState())) {
-            LOG.info("FOP engine for TC VC " + engine.getVirtualChannelId() + ": " + status.getPreviousState() + " -> " + status.getCurrentState());
+            if(status.getCurrentState() == FopState.S6) {
+                LOG.warning("FOP engine for TC VC " + engine.getVirtualChannelId() + ": " + status.getPreviousState() + " -> " + status.getCurrentState());
+            } else {
+                LOG.info("FOP engine for TC VC " + engine.getVirtualChannelId() + ": " + status.getPreviousState() + " -> " + status.getCurrentState());
+            }
         }
     }
 

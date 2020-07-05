@@ -481,7 +481,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
      * This method closes all connections and disposes the internal resources, if any. The class is marked as disposed
      * and cannot be used anymore.
      */
-    public void dispose() throws ArchiveException {
+    public synchronized void dispose() throws ArchiveException {
         if(LOG.isLoggable(Level.FINEST)) {
             LOG.finest(this + " - dispose() called");
         }

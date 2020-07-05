@@ -264,9 +264,9 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     }
 
     private void addTimeCouple(Instant onboardTime, Instant utcTime) {
-        if(LOG.isLoggable(Level.INFO))
+        if(LOG.isLoggable(Level.FINE))
         {
-            LOG.log(Level.INFO, String.format("Adding time couple: OBT=%s, UTC=%s", onboardTime.toString(), utcTime.toString()));
+            LOG.log(Level.FINE, String.format("Adding time couple: OBT=%s, UTC=%s", onboardTime.toString(), utcTime.toString()));
         }
         this.timeCouples.add(Pair.of(onboardTime, utcTime));
         if(this.timeCouples.size() > 2) {
@@ -292,9 +292,9 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
             Pair<BigDecimal, BigDecimal> sTc = convert(secondTimeCouple);
             BigDecimal m = (fTc.getSecond().subtract(sTc.getSecond())).divide(fTc.getFirst().subtract(sTc.getFirst()), 9, RoundingMode.HALF_UP);
             BigDecimal q = sTc.getSecond().subtract(m.multiply(sTc.getFirst()));
-            if(LOG.isLoggable(Level.INFO))
+            if(LOG.isLoggable(Level.FINE))
             {
-                LOG.log(Level.INFO, String.format("Time coefficient generated: m=%s, q=%s", m.toPlainString(), q.toPlainString()));
+                LOG.log(Level.FINE, String.format("Time coefficient generated: m=%s, q=%s", m.toPlainString(), q.toPlainString()));
             }
             this.obt2gtCoefficients = Pair.of(m, q);
             // Distribute the coefficients: generation time is the UTC generation time of the most recent time couple

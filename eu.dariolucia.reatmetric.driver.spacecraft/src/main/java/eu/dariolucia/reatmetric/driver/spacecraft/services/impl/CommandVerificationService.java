@@ -33,6 +33,8 @@ import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -46,6 +48,7 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
     private static final Logger LOG = Logger.getLogger(CommandVerificationService.class.getName());
 
     private final Map<Integer, Pair<TcTracker, String>> openCommandVerifications = new ConcurrentHashMap<>(); // ID -> TcTracker and stage last name
+    private final Map<Integer, List<QueuedReport>> queuedReportMap = new ConcurrentHashMap<>();
 
     @Override
     public synchronized void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
@@ -94,18 +97,29 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
         int id = getTcIdentifierFromReport(spacePacket, tmPusHeader);
         Pair<TcTracker, String> trackerPair = this.openCommandVerifications.get(id);
         if(trackerPair == null) {
-            LOG.log(Level.WARNING, "Received Command Verification (" + tmPusHeader.getServiceType() + ", " + tmPusHeader.getServiceSubType() + "): originator telecommand " + String.format("%04X", id) + " not registered");
+            LOG.log(Level.WARNING, "Received Command Verification (" + tmPusHeader.getServiceType() + ", " + tmPusHeader.getServiceSubType() + "): originator telecommand " + String.format("%04X", id) + " not registered, queueing report for later processing");
+            // Put the report in a queue for later processing, in case the command is finally registered
+            queueReport(id, generationTime, stageName, success);
         } else {
-            TcTracker tracker = trackerPair.getFirst();
-            boolean lastVerification = trackerPair.getSecond().equals(stageName);
-            TcPhase phase = getTcPacketPhase(stageName, success, lastVerification);
-            if(phase != null) {
-                serviceBroker().informTcPacket(phase, generationTime, tracker);
-            }
-            processingModel().reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), stageName, generationTime, ActivityOccurrenceState.EXECUTION, generationTime, success ? ActivityReportState.OK : ActivityReportState.FATAL, lastVerification ? ActivityOccurrenceState.VERIFICATION : ActivityOccurrenceState.EXECUTION, null));
-            if(lastVerification || !success) {
-                this.openCommandVerifications.remove(id);
-            }
+            processReport(id, trackerPair, generationTime, stageName, success);
+        }
+    }
+
+    private void queueReport(int id, Instant generationTime, String stageName, boolean success) {
+        List<QueuedReport> list = queuedReportMap.computeIfAbsent(id, o -> new LinkedList<>());
+        list.add(new QueuedReport(id, generationTime, stageName, success));
+    }
+
+    private void processReport(int id, Pair<TcTracker, String> trackerPair, Instant generationTime, String stageName, boolean success) {
+        TcTracker tracker = trackerPair.getFirst();
+        boolean lastVerification = trackerPair.getSecond().equals(stageName);
+        TcPhase phase = getTcPacketPhase(stageName, success, lastVerification);
+        if(phase != null) {
+            serviceBroker().informTcPacket(phase, generationTime, tracker);
+        }
+        processingModel().reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), stageName, generationTime, ActivityOccurrenceState.EXECUTION, generationTime, success ? ActivityReportState.OK : ActivityReportState.FATAL, lastVerification ? ActivityOccurrenceState.VERIFICATION : ActivityOccurrenceState.EXECUTION, null));
+        if(lastVerification || !success) {
+            this.openCommandVerifications.remove(id);
         }
     }
 
@@ -132,6 +146,22 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
         // When a command is successfully AVAILABLE_ONBOARD, then it is ready for immediate execution:
         if(phase == TcPhase.AVAILABLE_ONBOARD) {
             registerTcVerificationStages(tcTracker);
+        }
+        // Verify is past acks are pending this command
+        verifyPendingAcks(getTcIdentifier(tcTracker.getPacket()), phaseTime);
+    }
+
+    private void verifyPendingAcks(int id, Instant phaseTime) {
+        List<QueuedReport> reps = queuedReportMap.get(id);
+        Pair<TcTracker, String> pair = openCommandVerifications.get(id);
+        if(reps != null && pair != null) {
+            for(QueuedReport report : reps) {
+                // TODO: reports that are too old wrt the phase time, should not be processed: remember that you are in this part
+                //  of the code because the report arrived before the command verification stages were announced. Comparison with ground
+                //  times - to be recorded -, not with generation times.
+                processReport(id, pair, report.getGenerationTime(), report.getStageName(), report.isSuccess());
+            }
+            queuedReportMap.remove(id);
         }
     }
 
@@ -213,5 +243,35 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
     @Override
     protected Object loadConfiguration(String serviceConfigurationPath) {
         return null;
+    }
+
+    private static class QueuedReport {
+        private final int id;
+        private final Instant generationTime;
+        private final String stageName;
+        private final boolean success;
+
+        public QueuedReport(int id, Instant generationTime, String stageName, boolean success) {
+            this.id = id;
+            this.generationTime = generationTime;
+            this.stageName = stageName;
+            this.success = success;
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public Instant getGenerationTime() {
+            return generationTime;
+        }
+
+        public String getStageName() {
+            return stageName;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
     }
 }

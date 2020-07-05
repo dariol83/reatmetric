@@ -52,8 +52,6 @@ public class ConnectorStatusWidgetController implements Initializable {
     @FXML
     public ImageView initImg;
     @FXML
-    public Label messageLbl;
-    @FXML
     public Label alarmLbl;
     @FXML
     public Label rxLabel;
@@ -72,7 +70,6 @@ public class ConnectorStatusWidgetController implements Initializable {
         // Assume already in the UI thread
         lastStatus = status;
         nameLbl.setText(status.getName());
-        messageLbl.setText(status.getMessage());
         updateAlarmLabel(status.getAlarmState());
         updateStatusCircle(status.getStatus());
         updateRateLabel(rxLabel, status.getRxRate());
@@ -84,7 +81,6 @@ public class ConnectorStatusWidgetController implements Initializable {
     public void setConnector(ITransportConnector connector) {
         this.connector = connector;
         nameLbl.setText(connector.getName());
-        messageLbl.setText("");
         updateStatusCircle(connector.getConnectionStatus());
         updateAlarmLabel(AlarmState.UNKNOWN);
         updateRateLabel(txLabel, 0);

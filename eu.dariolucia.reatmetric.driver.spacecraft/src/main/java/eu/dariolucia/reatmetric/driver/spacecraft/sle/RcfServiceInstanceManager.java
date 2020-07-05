@@ -73,19 +73,23 @@ public class RcfServiceInstanceManager extends SleServiceInstanceManager<RcfServ
     }
 
     private void process(RcfStatusReportInvocationV1 operation) {
-        LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": Status report received: carrier=" + LockStatusEnum.fromCode(operation.getCarrierLockStatus().intValue()) +
-                ", subcarrier=" + LockStatusEnum.fromCode(operation.getSubcarrierLockStatus().intValue()) +
-                ", bitlock=" + LockStatusEnum.fromCode(operation.getSymbolSyncLockStatus().intValue()) +
-                ", frame lock=" + LockStatusEnum.fromCode(operation.getFrameSyncLockStatus().intValue()));
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(serviceInstance.getServiceInstanceIdentifier() + ": Status report received: carrier=" + LockStatusEnum.fromCode(operation.getCarrierLockStatus().intValue()) +
+                    ", subcarrier=" + LockStatusEnum.fromCode(operation.getSubcarrierLockStatus().intValue()) +
+                    ", bitlock=" + LockStatusEnum.fromCode(operation.getSymbolSyncLockStatus().intValue()) +
+                    ", frame lock=" + LockStatusEnum.fromCode(operation.getFrameSyncLockStatus().intValue()));
+        }
         ProductionStatusEnum prodStatus = ProductionStatusEnum.fromCode(operation.getProductionStatus().intValue());
         updateProductionStatus(prodStatus);
     }
 
     private void process(RcfStatusReportInvocation operation) {
-        LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": Status report received: carrier=" + LockStatusEnum.fromCode(operation.getCarrierLockStatus().intValue()) +
-                ", subcarrier=" + LockStatusEnum.fromCode(operation.getSubcarrierLockStatus().intValue()) +
-                ", bitlock=" + LockStatusEnum.fromCode(operation.getSymbolSyncLockStatus().intValue()) +
-                ", frame lock=" + LockStatusEnum.fromCode(operation.getFrameSyncLockStatus().intValue()));
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(serviceInstance.getServiceInstanceIdentifier() + ": Status report received: carrier=" + LockStatusEnum.fromCode(operation.getCarrierLockStatus().intValue()) +
+                    ", subcarrier=" + LockStatusEnum.fromCode(operation.getSubcarrierLockStatus().intValue()) +
+                    ", bitlock=" + LockStatusEnum.fromCode(operation.getSymbolSyncLockStatus().intValue()) +
+                    ", frame lock=" + LockStatusEnum.fromCode(operation.getFrameSyncLockStatus().intValue()));
+        }
         ProductionStatusEnum prodStatus = ProductionStatusEnum.fromCode(operation.getProductionStatus().intValue());
         updateProductionStatus(prodStatus);
     }
@@ -94,7 +98,9 @@ public class RcfServiceInstanceManager extends SleServiceInstanceManager<RcfServ
         if(operation.getResult().getNegativeResult() != null) {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Negative RCF SCHEDULE STATUS REPORT return: " + RcfDiagnosticsStrings.getScheduleStatusReportDiagnostic(operation.getResult().getNegativeResult()));
         } else {
-            LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": RCF SCHEDULE STATUS REPORT positive return");
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": RCF SCHEDULE STATUS REPORT positive return");
+            }
         }
     }
 
@@ -125,17 +131,13 @@ public class RcfServiceInstanceManager extends SleServiceInstanceManager<RcfServ
     private void process(RcfSyncNotifyInvocation operation) {
         if(operation.getNotification().getEndOfData() != null) {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": End of data received");
-            updateMessage("End of data received");
         } else if(operation.getNotification().getExcessiveDataBacklog() != null) {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Data discarded due to excessive backlog");
-            updateMessage("Data discarded received");
         } else if(operation.getNotification().getLossFrameSync() != null) {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Frame synchronisation lost");
-            updateMessage("Frame synchronisation lost");
         } else if(operation.getNotification().getProductionStatusChange() != null) {
             ProductionStatusEnum prodStatus = ProductionStatusEnum.fromCode(operation.getNotification().getProductionStatusChange().intValue());
             updateProductionStatus(prodStatus);
-            updateMessage("Production status: " + prodStatus.name());
         } else {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Unknown RAF SYNC NOTIFY received");
         }
@@ -143,7 +145,9 @@ public class RcfServiceInstanceManager extends SleServiceInstanceManager<RcfServ
 
     private void updateProductionStatus(ProductionStatusEnum prodStatus) {
         if (prodStatus == ProductionStatusEnum.RUNNING) {
-            LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": Production status " + prodStatus);
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer(serviceInstance.getServiceInstanceIdentifier() + ": Production status " + prodStatus);
+            }
             updateAlarmState(AlarmState.NOMINAL);
         } else {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Production status " + prodStatus);

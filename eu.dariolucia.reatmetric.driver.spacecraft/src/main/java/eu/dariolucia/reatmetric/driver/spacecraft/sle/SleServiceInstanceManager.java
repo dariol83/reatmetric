@@ -28,6 +28,7 @@ import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.AbstractTransportConnector;
@@ -276,12 +277,11 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
                 break;
             case UNBOUND:
                 updateConnectionStatus(isInitialised() ? TransportConnectionStatus.IDLE : TransportConnectionStatus.NOT_INIT);
-                updateMessage("Service instance disconnected");
+                updateAlarmState(AlarmState.NOT_APPLICABLE);
                 break;
         }
         if(state.getLastError() != null) {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": " + state.getLastError());
-            updateMessage(state.getLastError());
         }
     }
 

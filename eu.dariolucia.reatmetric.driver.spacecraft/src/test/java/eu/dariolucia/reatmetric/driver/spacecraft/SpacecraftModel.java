@@ -70,8 +70,11 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 public class SpacecraftModel implements IVirtualChannelReceiverOutput {
+
+    private final static Logger LOG = Logger.getLogger(SpacecraftModel.class.getName());
 
     public static final int BUFFER_AVAILABLE = 10000;
 
@@ -233,7 +236,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
         int evtCounter = 0;
         while (running) {
             try {
-                Thread.sleep(10);
+                Thread.sleep(50);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

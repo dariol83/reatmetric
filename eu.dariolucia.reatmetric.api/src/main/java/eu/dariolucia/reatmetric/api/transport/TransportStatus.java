@@ -24,15 +24,13 @@ import eu.dariolucia.reatmetric.api.model.AlarmState;
 public final class TransportStatus {
 
     private final String name;
-    private final String message;
     private final TransportConnectionStatus status;
     private final AlarmState alarmState;
     private final long txRate;
     private final long rxRate;
 
-    public TransportStatus(String name, String message, TransportConnectionStatus status, long txRate, long rxRate, AlarmState alarmState) {
+    public TransportStatus(String name, TransportConnectionStatus status, long txRate, long rxRate, AlarmState alarmState) {
         this.name = name;
-        this.message = message;
         this.status = status;
         this.txRate = txRate;
         this.rxRate = rxRate;
@@ -46,15 +44,6 @@ public final class TransportStatus {
      */
     public String getName() {
         return name;
-    }
-
-    /**
-     * The message that the connector wants to report with this status update.
-     *
-     * @return the message, can be null
-     */
-    public String getMessage() {
-        return message;
     }
 
     /**
@@ -98,7 +87,6 @@ public final class TransportStatus {
     public String toString() {
         return "TransportStatus{" +
                 "name='" + name + '\'' +
-                ", message='" + message + '\'' +
                 ", status=" + status +
                 ", txRate=" + txRate +
                 ", rxRate=" + rxRate +

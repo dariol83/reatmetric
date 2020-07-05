@@ -40,7 +40,6 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
 
     private volatile long lastTxRate = 0;
     private volatile long lastRxRate = 0;
-    private volatile String lastMessage = "";
     private volatile AlarmState lastAlarmState = AlarmState.UNKNOWN;
 
     private final Map<String, Object> initialisationMap = new HashMap<>();
@@ -213,7 +212,7 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
     private void notifySubscribers() {
         this.subscribers.forEach((s) -> {
             try {
-                s.status(this, new TransportStatus(name, lastMessage, connectionStatus, lastTxRate, lastRxRate, lastAlarmState));
+                s.status(this, new TransportStatus(name, connectionStatus, lastTxRate, lastRxRate, lastAlarmState));
             } catch(Exception e) {
                 LOG.log(Level.WARNING, getName() + ": cannot notify subscriber " + s + ": " + e.getMessage(), e);
             }
@@ -223,14 +222,6 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
     protected void updateConnectionStatus(TransportConnectionStatus status) {
         boolean toNotify = !Objects.equals(status, this.connectionStatus);
         this.connectionStatus = status;
-        if(toNotify) {
-            notifySubscribers();
-        }
-    }
-
-    protected void updateMessage(String message) {
-        boolean toNotify = !Objects.equals(message, this.lastMessage);
-        this.lastMessage = message;
         if(toNotify) {
             notifySubscribers();
         }

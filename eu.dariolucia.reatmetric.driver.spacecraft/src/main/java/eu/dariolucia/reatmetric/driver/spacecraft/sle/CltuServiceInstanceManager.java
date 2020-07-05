@@ -189,11 +189,13 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
     }
 
     private void process(CltuStatusReportInvocation operation) {
-        LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": status report received: CLTU free buffer=" + operation.getCltuBufferAvailable().intValue() +
-                ", CLTU processed=" + operation.getNumberOfCltusProcessed() +
-                ", CLTU radiated=" + operation.getNumberOfCltusRadiated() +
-                ", CLTU received=" + operation.getNumberOfCltusReceived() +
-                ", uplink status=" + CltuUplinkStatusEnum.values()[operation.getUplinkStatus().intValue()]);
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(serviceInstance.getServiceInstanceIdentifier() + ": status report received: CLTU free buffer=" + operation.getCltuBufferAvailable().intValue() +
+                    ", CLTU processed=" + operation.getNumberOfCltusProcessed() +
+                    ", CLTU radiated=" + operation.getNumberOfCltusRadiated() +
+                    ", CLTU received=" + operation.getNumberOfCltusReceived() +
+                    ", uplink status=" + CltuUplinkStatusEnum.values()[operation.getUplinkStatus().intValue()]);
+        }
         // The first report after the bind should report the effective buffer capacity
         if (this.bufferCapacity == 0) {
             this.bufferCapacity = operation.getCltuBufferAvailable().intValue();
@@ -208,7 +210,9 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
         if (operation.getResult().getNegativeResult() != null) {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": negative CLTU SCHEDULE STATUS REPORT return: " + CltuDiagnosticsStrings.getScheduleStatusReportDiagnostic(operation.getResult().getNegativeResult()));
         } else {
-            LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": CLTU SCHEDULE STATUS REPORT positive return");
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer(serviceInstance.getServiceInstanceIdentifier() + ": CLTU SCHEDULE STATUS REPORT positive return");
+            }
         }
     }
 
@@ -329,7 +333,7 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
             long eventId = operation.getCltuNotification().getEventConditionEvFalse().longValue();
             throwEventCompleted(eventId, false);
         } else if (operation.getCltuNotification().getBufferEmpty() != null) {
-            LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": CLTU buffer empty");
+            LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": CLTU buffer empty");
         } else {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Unknown CLTU ASYNC NOTIFY received");
         }
@@ -400,7 +404,9 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
 
     private void updateProductionStatus(ProductionStatusEnum prodStatus, CltuUplinkStatusEnum status) {
         if (prodStatus == ProductionStatusEnum.RUNNING && status == CltuUplinkStatusEnum.NOMINAL) {
-            LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": Production status " + prodStatus + ", uplink status " + status);
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer(serviceInstance.getServiceInstanceIdentifier() + ": Production status " + prodStatus + ", uplink status " + status);
+            }
             updateAlarmState(AlarmState.NOMINAL);
         } else {
             LOG.warning(serviceInstance.getServiceInstanceIdentifier() + ": Production status " + prodStatus + ", uplink status " + status);

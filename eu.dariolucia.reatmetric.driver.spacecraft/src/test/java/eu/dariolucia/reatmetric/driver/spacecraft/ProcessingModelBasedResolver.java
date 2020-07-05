@@ -30,8 +30,11 @@ import eu.dariolucia.reatmetric.processing.definition.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.logging.Logger;
 
 public class ProcessingModelBasedResolver implements IEncodeResolver {
+
+    private final static Logger LOG = Logger.getLogger(ProcessingModelBasedResolver.class.getName());
 
     private final List<ParameterDefinition> parameterDefinitions;
     private final IEncodeResolver innerResolver;
@@ -79,6 +82,7 @@ public class ProcessingModelBasedResolver implements IEncodeResolver {
             long id = applicability.getMatch().getParameter().getId();
             if(applicability.getMatch().getValue() != null) {
                 Object val = ValueUtil.parse(applicability.getMatch().getValueType(), applicability.getMatch().getValue());
+                LOG.info("Preset parameter ID " + id + " with value " + val);
                 return Pair.of(id, val);
             }
         }
