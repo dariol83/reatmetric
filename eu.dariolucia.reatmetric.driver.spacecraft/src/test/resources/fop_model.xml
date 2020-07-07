@@ -39,5 +39,10 @@
                 <default_fixed type="RAW" value="0" />
             </argument>
         </activity>
+        <activity id="#1001" location="TC.SET_AD" description="Set the AD value as default" type="COP-1">
+            <argument name="SET_AD" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="">
+                <default_fixed type="RAW" value="false" />
+            </argument>
+        </activity>
     </activities>
 </ns1:processing>

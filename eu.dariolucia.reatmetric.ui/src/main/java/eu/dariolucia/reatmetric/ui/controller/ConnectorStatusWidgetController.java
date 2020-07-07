@@ -31,7 +31,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
-import org.controlsfx.control.ToggleSwitch;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -44,6 +43,8 @@ public class ConnectorStatusWidgetController implements Initializable {
 
     private static final Image ACTION_INIT_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/cog.svg.png"));
     private static final Image ACTION_ABORT_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/close-circle.svg.png"));
+    private static final Image ACTION_PLAY_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/play.svg.png"));
+    private static final Image ACTION_STOP_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/stop.svg.png"));
 
     @FXML
     public Circle statusCircle;
@@ -58,7 +59,7 @@ public class ConnectorStatusWidgetController implements Initializable {
     @FXML
     public Label txLabel;
     @FXML
-    public ToggleSwitch startStopSwitch;
+    public ImageView startStopImg;
     @FXML
     public ImageView abortImg;
 
@@ -91,9 +92,9 @@ public class ConnectorStatusWidgetController implements Initializable {
     private void updateStatusButton(TransportConnectionStatus status) {
         if(status == TransportConnectionStatus.IDLE || status == TransportConnectionStatus.ERROR ||
                 status == TransportConnectionStatus.NOT_INIT || status == TransportConnectionStatus.ABORTED) {
-            startStopSwitch.setSelected(false);
+            startStopImg.setImage(ACTION_PLAY_IMG);
         } else {
-            startStopSwitch.setSelected(true);
+            startStopImg.setImage(ACTION_STOP_IMG);
         }
     }
 
@@ -190,8 +191,7 @@ public class ConnectorStatusWidgetController implements Initializable {
     public void startStopButtonClicked(MouseEvent mouseEvent) {
         if(!connector.isInitialised() && !connector.getSupportedProperties().isEmpty()) {
             // Init and connect now
-            startStopSwitch.setSelected(false);
-            TransportConnectorInitDialog.openWizard(connector, startStopSwitch, true);
+            TransportConnectorInitDialog.openWizard(connector, startStopImg, true);
         } else if(lastStatus == null || lastStatus.getStatus() == TransportConnectionStatus.NOT_INIT
                 || lastStatus.getStatus() == TransportConnectionStatus.IDLE
                 || lastStatus.getStatus() == TransportConnectionStatus.ERROR

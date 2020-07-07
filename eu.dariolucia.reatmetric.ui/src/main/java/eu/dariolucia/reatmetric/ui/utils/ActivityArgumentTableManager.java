@@ -594,6 +594,24 @@ public class ActivityArgumentTableManager {
                 rawSelection.setSelected(false);
                 engSelection.setSelected(true);
             }
+
+            Platform.runLater(() -> {
+                focusOnControl(rawSelection.isSelected(), rawValueControl, engValueControl);
+            });
+        }
+
+        private void focusOnControl(boolean rawValueSelected, Control rawValueControl, Control engValueControl) {
+            if(rawValueSelected) {
+                rawValueControl.requestFocus();
+                if(rawValueControl instanceof TextField) {
+                    ((TextField) rawValueControl).selectAll();
+                }
+            } else {
+                engValueControl.requestFocus();
+                if(engValueControl instanceof TextField) {
+                    ((TextField) engValueControl).selectAll();
+                }
+            }
         }
 
         public VBox getNode() {

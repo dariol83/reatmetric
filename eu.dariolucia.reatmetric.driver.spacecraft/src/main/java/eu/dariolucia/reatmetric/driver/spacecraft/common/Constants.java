@@ -78,6 +78,7 @@ public class Constants {
     public static final String STAGE_SPACECRAFT_COMPLETED = "On-board Completion";
 
     public static final String STAGE_FOP_DIRECTIVE = "FOP Directive Execution";
+    public static final String STAGE_LOCAL_EXECUTION = "Local Execution";
 
     // CLTU Throw Event
     public static final String SLE_CLTU_THROW_EVENT_ACTIVITY_TYPE = "THROW-EVENT";
@@ -86,9 +87,12 @@ public class Constants {
 
     // COP-1
     public static final String TC_COP1_ACTIVITY_TYPE = "COP-1";
+    public static final String TC_COP1_DIRECTIVE_NAME = "DIRECTIVE";
+    public static final String TC_COP1_SET_AD_NAME = "SET_AD";
 
-    // FOP directive arguments
+    // COP-1 / FOP directive arguments
     public static final String ARGUMENT_FOP_DIRECTIVE_TC_VC_ID = "TCVCID";
     public static final String ARGUMENT_FOP_DIRECTIVE_DIRECTIVE_ID = "DIRECTIVE";
     public static final String ARGUMENT_FOP_DIRECTIVE_QUALIFIER = "QUALIFIER";
+    public static final String ARGUMENT_TC_SET_AD = "SET_AD";
 }

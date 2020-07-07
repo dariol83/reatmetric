@@ -42,10 +42,13 @@ import java.util.logging.Logger;
 
 /**
  * This class implements the ECSS PUS 1 command verification service.
+ *
+ * TODO: restore from archived state
  */
 public class CommandVerificationService extends AbstractPacketService<Object> {
 
     private static final Logger LOG = Logger.getLogger(CommandVerificationService.class.getName());
+    public static final long DELAYED_REPORT_VALIDITY_TIME_MILLI = 3600 * 1000L;
 
     private final Map<Integer, Pair<TcTracker, String>> openCommandVerifications = new ConcurrentHashMap<>(); // ID -> TcTracker and stage last name
     private final Map<Integer, List<QueuedReport>> queuedReportMap = new ConcurrentHashMap<>();
@@ -107,7 +110,7 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
 
     private void queueReport(int id, Instant generationTime, String stageName, boolean success) {
         List<QueuedReport> list = queuedReportMap.computeIfAbsent(id, o -> new LinkedList<>());
-        list.add(new QueuedReport(id, generationTime, stageName, success));
+        list.add(new QueuedReport(id, generationTime, stageName, success, Instant.now()));
     }
 
     private void processReport(int id, Pair<TcTracker, String> trackerPair, Instant generationTime, String stageName, boolean success) {
@@ -156,10 +159,14 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
         Pair<TcTracker, String> pair = openCommandVerifications.get(id);
         if(reps != null && pair != null) {
             for(QueuedReport report : reps) {
-                // TODO: reports that are too old wrt the phase time, should not be processed: remember that you are in this part
-                //  of the code because the report arrived before the command verification stages were announced. Comparison with ground
-                //  times - to be recorded -, not with generation times.
-                processReport(id, pair, report.getGenerationTime(), report.getStageName(), report.isSuccess());
+                // Reports that are too old wrt the phase time, should not be processed: remember that you are in this part
+                // of the code because the report arrived before the command verification stages were announced. Comparison with ground
+                // times, not with generation times.
+                //
+                // Hardcoded to 1 hour.
+                if(Math.abs(phaseTime.toEpochMilli() - report.getProcessingTime().toEpochMilli()) < DELAYED_REPORT_VALIDITY_TIME_MILLI) {
+                    processReport(id, pair, report.getGenerationTime(), report.getStageName(), report.isSuccess());
+                }
             }
             queuedReportMap.remove(id);
         }
@@ -250,12 +257,14 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
         private final Instant generationTime;
         private final String stageName;
         private final boolean success;
+        private final Instant processingTime;
 
-        public QueuedReport(int id, Instant generationTime, String stageName, boolean success) {
+        public QueuedReport(int id, Instant generationTime, String stageName, boolean success, Instant processingTime) {
             this.id = id;
             this.generationTime = generationTime;
             this.stageName = stageName;
             this.success = success;
+            this.processingTime = processingTime;
         }
 
         public int getId() {
@@ -272,6 +281,10 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
 
         public boolean isSuccess() {
             return success;
+        }
+
+        public Instant getProcessingTime() {
+            return processingTime;
         }
     }
 }

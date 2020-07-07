@@ -123,12 +123,12 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
 
             boolean bindReturned = bindSemaphore.tryAcquire(5, TimeUnit.SECONDS);
             if (!bindReturned) {
-                serviceInstance.peerAbort(PeerAbortReasonEnum.OTHER_REASON);
-                throw new TransportException("BIND operation timeout");
+                // serviceInstance.peerAbort(PeerAbortReasonEnum.OTHER_REASON);
+                throw new TransportException("BIND operation timeout: service instance " + getServiceInstanceIdentifier());
             }
             if (serviceInstance.getCurrentBindingState() != ServiceInstanceBindingStateEnum.READY) {
-                serviceInstance.peerAbort(PeerAbortReasonEnum.OTHER_REASON);
-                throw new TransportException("BIND not completed successfully");
+                // serviceInstance.peerAbort(PeerAbortReasonEnum.OTHER_REASON);
+                throw new TransportException("BIND not completed successfully: service instance " + getServiceInstanceIdentifier());
             }
 
             // We can start now
@@ -136,12 +136,12 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
 
             boolean startReturned = startSemaphore.tryAcquire(5, TimeUnit.SECONDS);
             if (!startReturned) {
-                serviceInstance.peerAbort(PeerAbortReasonEnum.OTHER_REASON);
-                throw new TransportException("START operation timeout");
+                // serviceInstance.peerAbort(PeerAbortReasonEnum.OTHER_REASON);
+                throw new TransportException("START operation timeout: service instance " + getServiceInstanceIdentifier());
             }
             if (serviceInstance.getCurrentBindingState() != ServiceInstanceBindingStateEnum.ACTIVE) {
-                serviceInstance.peerAbort(PeerAbortReasonEnum.OTHER_REASON);
-                throw new TransportException("START not completed successfully");
+                // serviceInstance.peerAbort(PeerAbortReasonEnum.OTHER_REASON);
+                throw new TransportException("START not completed successfully: service instance " + getServiceInstanceIdentifier() + " in state " + serviceInstance.getCurrentBindingState());
             }
 
             finalizeConnection();
@@ -277,7 +277,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
                 break;
             case UNBOUND:
                 updateConnectionStatus(isInitialised() ? TransportConnectionStatus.IDLE : TransportConnectionStatus.NOT_INIT);
-                updateAlarmState(AlarmState.NOT_APPLICABLE);
+                updateAlarmState(AlarmState.UNKNOWN);
                 break;
         }
         if(state.getLastError() != null) {

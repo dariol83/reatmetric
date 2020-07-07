@@ -167,6 +167,8 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     public void forwardActivityToHandler(IUniqueId occurrenceId, int activityId, Instant creationTime, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, String route, String source) throws ProcessingModelException {
         // Check if the route exist
         IActivityHandler handler = checkHandlerAvailability(route, type);
+        // Assume positive dispatch at this stage
+        reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.RELEASE, null));
         // All fine, schedule the dispatch
         this.activityOccurrenceDispatcher.execute(() -> {
             try {
@@ -177,9 +179,9 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.fine(String.format("Activity occurrence %s forwarded", occurrenceId));
                 }
-                reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.RELEASE, null));
             } catch (ActivityHandlingException e) {
                 LOG.log(Level.SEVERE, String.format("Failure forwarding activity occurrence %s of activity %s to the activity handler on route %s", occurrenceId, path, route), e);
+                // Overwrite status
                 reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE, null));
             }
         });

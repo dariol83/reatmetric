@@ -46,7 +46,15 @@
                   <Label text=" " />
                   <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
                   <Label text=" " />
-                  <Button fx:id="filterBtn" mnemonicParsing="false" onAction="#filterButtonSelected" text="Filter..." />
+                   <Button fx:id="filterBtn" mnemonicParsing="false" onAction="#filterButtonSelected">
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/filter.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                   </Button>
                    <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
                        <graphic>
                            <ImageView pickOnBounds="true" preserveRatio="true">
