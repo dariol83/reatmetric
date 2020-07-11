@@ -29,7 +29,9 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.fxml.FXML;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
+import javafx.scene.paint.Color;
 
 import java.net.URL;
 import java.time.Instant;
@@ -76,6 +78,67 @@ public class ParameterDataLogViewController extends AbstractDataItemLogViewContr
 
 		this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
 		this.recTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
+
+		this.validityCol.setCellFactory(column -> new TableCell<>() {
+			@Override
+			protected void updateItem(Validity item, boolean empty) {
+				super.updateItem(item, empty);
+				if (item != null && !empty && !isEmpty()) {
+					setText(item.name());
+					switch (item) {
+						case INVALID:
+							setTextFill(Color.RED);
+							break;
+						case ERROR:
+							setTextFill(Color.DARKRED);
+							break;
+						case UNKNOWN:
+							setTextFill(Color.CHOCOLATE);
+							break;
+						default:
+							setTextFill(Color.DARKGREEN);
+							break;
+					}
+				} else {
+					setText("");
+					setGraphic(null);
+				}
+			}
+		});
+		this.alarmStateCol.setCellFactory(column -> new TableCell<>() {
+			@Override
+			protected void updateItem(AlarmState item, boolean empty) {
+				super.updateItem(item, empty);
+				if (item != null && !empty && !isEmpty()) {
+					setText(item.name());
+					switch (item) {
+						case ALARM:
+							setTextFill(Color.RED);
+							break;
+						case ERROR:
+							setTextFill(Color.DARKRED);
+							break;
+						case WARNING:
+							setTextFill(Color.CHOCOLATE);
+							break;
+						case VIOLATED:
+							setTextFill(Color.DARKGOLDENROD);
+							break;
+						case UNKNOWN:
+						case NOT_APPLICABLE:
+						case NOT_CHECKED:
+							setTextFill(Color.GRAY);
+							break;
+						default:
+							setTextFill(Color.DARKGREEN);
+							break;
+					}
+				} else {
+					setText("");
+					setGraphic(null);
+				}
+			}
+		});
 	}
 
 	@Override

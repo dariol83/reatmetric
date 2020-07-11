@@ -43,6 +43,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import javafx.scene.paint.Color;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -179,6 +180,66 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                         setText("");
                     }
                     currentRow.setStyle("");
+                }
+            }
+        });
+        this.validityCol.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(Validity item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(item.name());
+                    switch (item) {
+                        case INVALID:
+                            setTextFill(Color.RED);
+                            break;
+                        case ERROR:
+                            setTextFill(Color.DARKRED);
+                            break;
+                        case UNKNOWN:
+                            setTextFill(Color.CHOCOLATE);
+                            break;
+                        default:
+                            setTextFill(Color.DARKGREEN);
+                            break;
+                    }
+                } else {
+                    setText("");
+                    setGraphic(null);
+                }
+            }
+        });
+        this.alarmStateCol.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(AlarmState item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(item.name());
+                    switch (item) {
+                        case ALARM:
+                            setTextFill(Color.RED);
+                            break;
+                        case ERROR:
+                            setTextFill(Color.DARKRED);
+                            break;
+                        case WARNING:
+                            setTextFill(Color.CHOCOLATE);
+                            break;
+                        case VIOLATED:
+                            setTextFill(Color.DARKGOLDENROD);
+                            break;
+                        case UNKNOWN:
+                        case NOT_APPLICABLE:
+                        case NOT_CHECKED:
+                            setTextFill(Color.GRAY);
+                            break;
+                        default:
+                            setTextFill(Color.DARKGREEN);
+                            break;
+                    }
+                } else {
+                    setText("");
+                    setGraphic(null);
                 }
             }
         });

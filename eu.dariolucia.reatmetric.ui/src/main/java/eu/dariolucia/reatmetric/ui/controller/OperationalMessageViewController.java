@@ -73,7 +73,7 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
                     setText(item.name());
                     switch (item) {
                         case ALARM:
-                            setTextFill(Color.DARKRED);
+                            setTextFill(Color.RED);
                             break;
                         case WARN:
                             setTextFill(Color.DARKORANGE);

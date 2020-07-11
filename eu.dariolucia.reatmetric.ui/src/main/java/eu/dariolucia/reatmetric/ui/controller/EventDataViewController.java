@@ -92,6 +92,9 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
 					setText(item.name());
 					switch (item) {
 						case ALARM:
+							setTextFill(Color.RED);
+							break;
+						case ERROR:
 							setTextFill(Color.DARKRED);
 							break;
 						case WARN:
