@@ -66,6 +66,15 @@
                       </ImageView>
                   </graphic>
               </Button>
+               <Button fx:id="removeBtn" mnemonicParsing="false" onAction="#removeButtonSelected">
+                   <graphic>
+                       <ImageView pickOnBounds="true" preserveRatio="true">
+                           <image>
+                               <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/trash.svg.png" />
+                           </image>
+                       </ImageView>
+                   </graphic>
+               </Button>
            </items>
         </ToolBar>
         <TreeTableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">

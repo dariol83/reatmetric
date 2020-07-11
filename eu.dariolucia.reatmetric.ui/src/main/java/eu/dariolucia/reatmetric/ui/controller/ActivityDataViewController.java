@@ -86,6 +86,10 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @FXML
     protected Button printBtn;
 
+    // Remove button
+    @FXML
+    protected Button removeBtn;
+
     // Progress indicator for data retrieval
     @FXML
     protected ProgressIndicator progressIndicator;
@@ -459,6 +463,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             this.dateTimePopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
             this.dateTimePopup.show(this.liveTgl.getScene().getWindow());
         }
+        e.consume();
     }
 
     @FXML
@@ -471,6 +476,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             stopSubscription();
             updateSelectTime();
         }
+        e.consume();
     }
 
     @FXML
@@ -478,6 +484,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         if (isProcessingAvailable()) {
             moveToTime(Instant.EPOCH, RetrievalDirection.TO_FUTURE, 1, this.dataItemFilterController.getSelectedFilter());
         }
+        e.consume();
     }
 
     @FXML
@@ -485,6 +492,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         if (isProcessingAvailable()) {
             fetchRecords(1, RetrievalDirection.TO_PAST);
         }
+        e.consume();
     }
 
     @FXML
@@ -492,6 +500,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         if (isProcessingAvailable()) {
             fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_PAST);
         }
+        e.consume();
     }
 
     @FXML
@@ -499,6 +508,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         if (isProcessingAvailable()) {
             moveToTime(Instant.ofEpochSecond(3600*24*365*1000L), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
         }
+        e.consume();
     }
 
     @FXML
@@ -506,6 +516,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         if (isProcessingAvailable()) {
             fetchRecords(1, RetrievalDirection.TO_FUTURE);
         }
+        e.consume();
     }
 
     @FXML
@@ -513,6 +524,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         if (isProcessingAvailable()) {
             fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_FUTURE);
         }
+        e.consume();
     }
 
     protected void fetchRecords(int n, RetrievalDirection direction) {
@@ -567,6 +579,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             this.filterPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
             this.filterPopup.show(this.displayTitledPane.getScene().getWindow());
         }
+        e.consume();
     }
 
     protected void moveToTime(Instant selectedTime, RetrievalDirection direction, int n, ActivityOccurrenceDataFilter currentFilter) {
@@ -665,9 +678,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     private void markProgressReady() {
-        Platform.runLater(() -> {
-            this.progressIndicator.setVisible(false);
-        });
+        Platform.runLater(() -> this.progressIndicator.setVisible(false));
     }
 
     private boolean isProcessingAvailable() {
@@ -725,7 +736,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     @FXML
-    public void onPurgeMenuItem(ActionEvent actionEvent) {
+    public void onPurgeMenuItem(ActionEvent event) {
         List<TreeItem<ActivityOccurrenceDataWrapper>> selected = this.dataItemTableView.getSelectionModel().getSelectedItems();
         boolean confirm = DialogUtils.confirm("Purge activity occurrences", null, "If you continue, the monitoring of the selected occurrences will stop and the occurrences will be removed " +
                 "from the processing model. Do you want to purge the selected occurrences?");
@@ -743,6 +754,18 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                 e.printStackTrace();
             }
         });
+        event.consume();
+    }
+
+    @FXML
+    public void removeButtonSelected(ActionEvent event) {
+        boolean confirm = DialogUtils.confirm("Remove activity occurrences", null, "If you continue, the display will be cleared from the currently displayed activity occurrences. " +
+                "Do you want to continue?");
+        if(!confirm) {
+            return;
+        }
+        this.dataItemTableView.getRoot().getChildren().remove(0, this.dataItemTableView.getRoot().getChildren().size());
+        event.consume();
     }
 
     @Override
