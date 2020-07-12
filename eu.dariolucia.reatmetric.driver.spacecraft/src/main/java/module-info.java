@@ -15,6 +15,7 @@
  */
 
 import eu.dariolucia.reatmetric.driver.spacecraft.SpacecraftDriver;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfoValueExtensionHandler;
 import eu.dariolucia.reatmetric.driver.spacecraft.encoding.SpacePacketDecodingExtension;
 import eu.dariolucia.reatmetric.driver.spacecraft.encoding.SpacePacketEncodingExtension;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService;
@@ -51,7 +52,8 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
     exports eu.dariolucia.reatmetric.driver.spacecraft.definition;
     exports eu.dariolucia.reatmetric.driver.spacecraft.definition.services;
 
-    provides eu.dariolucia.reatmetric.api.value.IValueExtensionHandler with TmFrameDescriptorValueExtensionHandler;
+    provides eu.dariolucia.reatmetric.api.value.IValueExtensionHandler with TmFrameDescriptorValueExtensionHandler, TcPacketInfoValueExtensionHandler;
+
     provides eu.dariolucia.reatmetric.core.api.IDriver with SpacecraftDriver;
 
     provides eu.dariolucia.ccsds.encdec.extension.IDecoderExtension with SpacePacketDecodingExtension;

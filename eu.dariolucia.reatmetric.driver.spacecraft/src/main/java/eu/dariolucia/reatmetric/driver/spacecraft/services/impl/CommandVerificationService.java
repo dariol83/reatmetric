@@ -20,30 +20,43 @@ import eu.dariolucia.ccsds.encdec.pus.AckField;
 import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataArchive;
+import eu.dariolucia.reatmetric.api.archive.IArchive;
+import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
+import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
+import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
+import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
+import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
+import eu.dariolucia.reatmetric.core.configuration.AbstractInitialisationConfiguration;
+import eu.dariolucia.reatmetric.core.configuration.ResumeInitialisationConfiguration;
+import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfo;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * This class implements the ECSS PUS 1 command verification service.
- *
- * TODO: restore from archived state
  */
 public class CommandVerificationService extends AbstractPacketService<Object> {
 
@@ -51,7 +64,80 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
     public static final long DELAYED_REPORT_VALIDITY_TIME_MILLI = 3600 * 1000L;
 
     private final Map<Integer, Pair<TcTracker, String>> openCommandVerifications = new ConcurrentHashMap<>(); // ID -> TcTracker and stage last name
-    private final Map<Integer, List<QueuedReport>> queuedReportMap = new ConcurrentHashMap<>();
+    private final Map<Integer, List<QueuedReport>> queuedReportMap = new ConcurrentHashMap<>(); // This content is transient and should not be restored
+
+    @Override
+    public void postInitialisation() throws ReatmetricException {
+        if(serviceCoreConfiguration().getInitialisation() != null) {
+            initialiseOpenVerificationMap(serviceCoreConfiguration().getInitialisation());
+        }
+    }
+
+    private void initialiseOpenVerificationMap(AbstractInitialisationConfiguration initialisation) throws ReatmetricException {
+        IRawDataArchive rawDataArchive = context().getArchive().getArchive(IRawDataArchive.class);
+        IActivityOccurrenceDataArchive actOccArchive = context().getArchive().getArchive(IActivityOccurrenceDataArchive.class);
+        if(initialisation instanceof TimeInitialisationConfiguration) {
+            // Get the verification map with generation time at the specified one from the reference archive
+            String location = ((TimeInitialisationConfiguration) initialisation).getArchiveLocation();
+            Instant time = ((TimeInitialisationConfiguration) initialisation).getTime().toInstant();
+            if(location == null) {
+                // No archive location -> use current archive
+                retrieveOpenVerificationMap(rawDataArchive, actOccArchive, time);
+            } else {
+                // Archive location -> use external archive
+                initialiseFromExternalArchive(location, time);
+            }
+        } else if(initialisation instanceof ResumeInitialisationConfiguration) {
+            // Get the latest verification map in the raw data broker
+            Instant latestGenerationTime = rawDataArchive.retrieveLastGenerationTime();
+            // If latestGenerationTime is null, it means that the archive is empty for this data type
+            if(latestGenerationTime != null) {
+                retrieveOpenVerificationMap(rawDataArchive, actOccArchive, latestGenerationTime);
+            }
+        } else {
+            throw new IllegalArgumentException("Initialisation configuration for command verification service not supported: " + initialisation.getClass().getName());
+        }
+    }
+
+    private void initialiseFromExternalArchive(String location, Instant time) throws ReatmetricException {
+        ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
+        if (archiveLoader.findFirst().isPresent()) {
+            IArchive externalArchive = archiveLoader.findFirst().get().buildArchive(location);
+            externalArchive.connect();
+            IRawDataArchive rawDataArchive = externalArchive.getArchive(IRawDataArchive.class);
+            IActivityOccurrenceDataArchive accOccArchive = externalArchive.getArchive(IActivityOccurrenceDataArchive.class);
+            retrieveOpenVerificationMap(rawDataArchive, accOccArchive, time);
+            externalArchive.dispose();
+        } else {
+            throw new ReatmetricException("Initialisation archive configured to " + location + ", but no archive factory deployed");
+        }
+    }
+
+    private void retrieveOpenVerificationMap(IRawDataArchive rawDataArchive, IActivityOccurrenceDataArchive actOccArchive, Instant latestGenerationTime) throws ArchiveException {
+        List<RawData> data = rawDataArchive.retrieve(latestGenerationTime, 1, RetrievalDirection.TO_PAST, new RawDataFilter(true, Constants.N_TC_VERIFICATION_MAP, null, Collections.singletonList(Constants.T_TC_VERIFICATION_MAP), Collections.singletonList(String.valueOf(spacecraftConfiguration().getId())), Collections.singletonList(Quality.GOOD)));
+        if(!data.isEmpty()) {
+            String serializedMap = new String(data.get(0).getContents(), StandardCharsets.US_ASCII);
+            String[] entries = serializedMap.split("#", -1);
+            for(String entry : entries) {
+                int id = Integer.parseInt(entry.substring(0, entry.indexOf('=')));
+                String rest = entry.substring(entry.indexOf('=') + 1);
+                String lastStage = rest.substring(0, rest.indexOf(';'));
+                long actInvId = Long.parseLong(rest.substring(rest.indexOf(';') + 1), rest.indexOf('|'));
+                long rawDataId = Long.parseLong(rest.substring(rest.indexOf('|') + 1));
+                RawData tc = rawDataArchive.retrieve(new LongUniqueId(rawDataId));
+                ActivityOccurrenceData accOccData = actOccArchive.retrieve(new LongUniqueId(actInvId));
+                IActivityHandler.ActivityInvocation rebuiltInvocation = new IActivityHandler.ActivityInvocation(new LongUniqueId(actInvId),
+                        accOccData.getExternalId(), accOccData.getGenerationTime(), accOccData.getPath(), accOccData.getType(), accOccData.getArguments(), accOccData.getProperties(), accOccData.getRoute(), accOccData.getSource());
+                SpacePacket sp = new SpacePacket(tc.getContents(), tc.getQuality() == Quality.GOOD);
+                TcPacketInfo packetInfo = (TcPacketInfo) tc.getExtension();
+                openCommandVerifications.put(id, Pair.of(new TcTracker(rebuiltInvocation, sp, packetInfo, tc), lastStage));
+            }
+        } else {
+            if(LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, "Open verification map for spacecraft " + spacecraftConfiguration().getId() + " at time " + latestGenerationTime + " not found");
+            }
+        }
+    }
 
     @Override
     public synchronized void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
@@ -122,8 +208,13 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
         }
         processingModel().reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), stageName, generationTime, ActivityOccurrenceState.EXECUTION, generationTime, success ? ActivityReportState.OK : ActivityReportState.FATAL, lastVerification ? ActivityOccurrenceState.VERIFICATION : ActivityOccurrenceState.EXECUTION, null));
         if(lastVerification || !success) {
-            this.openCommandVerifications.remove(id);
+            removeFromOpenVerification(id);
         }
+    }
+
+    private void removeFromOpenVerification(int id) {
+        this.openCommandVerifications.remove(id);
+        storeVerificationMap();
     }
 
     private TcPhase getTcPacketPhase(String stageName, boolean success, boolean lastVerification) {
@@ -200,10 +291,39 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
         if(ackFields.isCompletionAckSet()) {
             registerCommandStage(tcTracker, Constants.STAGE_SPACECRAFT_COMPLETED, Constants.STAGE_SPACECRAFT_COMPLETED.equals(lastStage));
         }
-        if(lastStage == null) {
+        if(lastStage != null) {
+            // Store verification map
+            storeVerificationMap();
+        } else {
             // Assume the command executed
             processingModel().reportActivityProgress(ActivityProgress.of(tcTracker.getInvocation().getActivityId(), tcTracker.getInvocation().getActivityOccurrenceId(), Constants.STAGE_SPACECRAFT_COMPLETED, Instant.now(), ActivityOccurrenceState.EXECUTION, null, ActivityReportState.EXPECTED, ActivityOccurrenceState.VERIFICATION, null));
         }
+    }
+
+    private void storeVerificationMap() {
+        Instant now = Instant.now();
+        String serializedMap = serializeOpenVerificationMap();
+        RawData rd = new RawData(context().getRawDataBroker().nextRawDataId(), now, Constants.N_TC_VERIFICATION_MAP, Constants.T_TC_VERIFICATION_MAP, "", String.valueOf(spacecraftConfiguration().getId()), Quality.GOOD, null, serializedMap.getBytes(StandardCharsets.US_ASCII), now, driverName(), null);
+        try {
+            context().getRawDataBroker().distribute(Collections.singletonList(rd));
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot store open verification map for spacecraft " + spacecraftConfiguration().getId() + ": " + e.getMessage(), e);
+        }
+    }
+
+    private String serializeOpenVerificationMap() {
+        StringBuilder sb = new StringBuilder();
+        for(Map.Entry<Integer, Pair<TcTracker, String>> entry : this.openCommandVerifications.entrySet()) {
+            sb.append(entry.getKey()).append('=');
+            sb.append(entry.getValue().getSecond()).append(';');
+            sb.append(entry.getValue().getFirst().getInvocation().getActivityOccurrenceId().asLong()).append('|');
+            sb.append(entry.getValue().getFirst().getRawData().getInternalId().asLong());
+            sb.append('#');
+        }
+        if(sb.length() > 0) {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        return sb.toString();
     }
 
     private void registerCommandStage(TcTracker tracker, String stageName, boolean isLastStage) {

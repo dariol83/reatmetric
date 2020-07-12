@@ -207,7 +207,7 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
     public TcTracker injectTcPacket(IActivityHandler.ActivityInvocation activityInvocation, PacketDefinition packetDefinition, TcPacketInfo packetInfo, SpacePacket sp) throws ActivityHandlingException {
         Instant encodingTime = Instant.now();
         // Store the TC packet in the raw data archive
-        RawData rd = distributeAsRawData(activityInvocation, sp, packetDefinition, encodingTime);
+        RawData rd = distributeAsRawData(activityInvocation, sp, packetDefinition, encodingTime, packetInfo);
         // Build the activity tracker and add it to the Space Packet
         TcTracker tcTracker = buildTcTracker(activityInvocation, sp, packetInfo, rd);
         sp.setAnnotationValue(Constants.ANNOTATION_TC_TRACKER, tcTracker);
@@ -231,10 +231,10 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
         processingModel.reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, status, ActivityOccurrenceState.RELEASE, null));
     }
 
-    private RawData distributeAsRawData(IActivityHandler.ActivityInvocation activityInvocation, SpacePacket sp, PacketDefinition defToEncode, Instant buildTime) {
-        RawData rd = new RawData(context.getRawDataBroker().nextRawDataId(), activityInvocation.getGenerationTime(), defToEncode.getId(), defToEncode.getType(),
+    private RawData distributeAsRawData(IActivityHandler.ActivityInvocation activityInvocation, SpacePacket sp, PacketDefinition defToEncode, Instant buildTime, TcPacketInfo packetInfo) {
+        RawData rd = new RawData(context.getRawDataBroker().nextRawDataId(), activityInvocation.getGenerationTime(), defToEncode.getId(), Constants.T_TC_PACKET,
                 activityInvocation.getRoute(), activityInvocation.getSource(), Quality.GOOD, activityInvocation.getActivityOccurrenceId(), sp.getPacket(),
-                buildTime, driverName, null);
+                buildTime, driverName, packetInfo);
         rd.setData(sp);
         try {
             context.getRawDataBroker().distribute(Collections.singletonList(rd));
@@ -332,8 +332,9 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
         if(sp == null) {
             sp = new SpacePacket(rawData.getContents(), rawData.getQuality().equals(Quality.GOOD));
         }
-        TcPusHeader pusHeader = (TcPusHeader) sp.getAnnotationValue(Constants.ANNOTATION_TC_PUS_HEADER);
-        if (pusHeader == null && sp.isSecondaryHeaderFlag()) {
+        // Recompute the PUS header (we need the encoded length to perform correct extraction)
+        TcPusHeader pusHeader = null;
+        if (sp.isSecondaryHeaderFlag()) {
             TcPacketConfiguration conf = configuration.getTcPacketConfiguration();
             if (conf != null) {
                 pusHeader = TcPusHeader.decodeFrom(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.getSourceIdLength());

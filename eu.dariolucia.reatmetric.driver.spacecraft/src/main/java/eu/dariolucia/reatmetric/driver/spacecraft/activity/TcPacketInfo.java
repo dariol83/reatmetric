@@ -25,6 +25,8 @@ import java.util.Map;
 
 public class TcPacketInfo {
 
+    public static final short TYPE_ID = 101;
+
     public static final String APID_KEY = "APID";
     public static final String PUSTYPE_KEY = "PUSTYPE";
     public static final String PUSSUBTYPE_KEY = "PUSSUBTYPE";
@@ -99,6 +101,14 @@ public class TcPacketInfo {
         }
     }
 
+    public TcPacketInfo(int apid, TcPusHeader pusHeader, int map, PacketErrorControlType checksumType) {
+        this.apid = apid;
+        this.pusHeader = pusHeader;
+        this.map = map;
+        this.mapUsed = this.map > -1;
+        this.checksumType = checksumType;
+    }
+
     public TcPusHeader getPusHeader() {
         return pusHeader;
     }
@@ -118,4 +128,5 @@ public class TcPacketInfo {
     public PacketErrorControlType getChecksumType() {
         return checksumType;
     }
+
 }

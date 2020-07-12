@@ -21,6 +21,7 @@ public class Constants {
     public static final String N_TM_TRANSFER_FRAME = "TRANSFER FRAME";
     public static final String N_UNKNOWN_PACKET = "UNKNOWN";
     public static final String N_TIME_COEFFICIENTS = "TIME COEFFICIENT";
+    public static final String N_TC_VERIFICATION_MAP = "TC VERIFICATION MAP";
 
     // RawData Types
     public static final String T_TM_FRAME = "TM FRAME";
@@ -32,6 +33,7 @@ public class Constants {
     public static final String T_BAD_PACKET = "BAD PACKET";
     public static final String T_UNKNOWN_PACKET = "UNKNOWN PACKET";
     public static final String T_TIME_COEFFICIENTS = "TIME COEFF";
+    public static final String T_TC_VERIFICATION_MAP = "TC VERIFICATION MAP";
 
     // Annotations at AbstractTransferFrame/SpacePacket level
     public static final String ANNOTATION_ROUTE = "##ROUTE";

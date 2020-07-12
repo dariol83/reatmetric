@@ -41,7 +41,7 @@ public class TmFrameDescriptorValueExtensionHandler implements IValueExtensionHa
     @Override
     public Object parse(String s) {
         if(!s.startsWith("[") || !s.endsWith("]")) {
-            return new IllegalArgumentException("String " + s + " cannot be parsed as TmFrameDescriptor");
+            throw new IllegalArgumentException("String " + s + " cannot be parsed as TmFrameDescriptor");
         }
         // Remove the two square brackets
         s = s.substring(1, s.length() - 1);
