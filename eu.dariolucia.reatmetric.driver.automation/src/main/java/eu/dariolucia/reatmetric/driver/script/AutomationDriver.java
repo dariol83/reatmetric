@@ -19,12 +19,10 @@ package eu.dariolucia.reatmetric.driver.script;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
-import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
-import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.IDriver;
 import eu.dariolucia.reatmetric.core.api.IDriverListener;
@@ -34,12 +32,11 @@ import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.script.common.Constants;
 import eu.dariolucia.reatmetric.driver.script.definition.AutomationConfiguration;
-import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
-import eu.dariolucia.reatmetric.processing.definition.SymbolDefinition;
+import eu.dariolucia.reatmetric.driver.script.internal.ScriptExecutionManager;
 
 import javax.script.*;
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.*;
+import java.nio.file.Files;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -69,6 +66,8 @@ public class AutomationDriver implements IDriver, IActivityHandler {
     private volatile IDriverListener subscriber;
     private volatile AutomationConfiguration configuration;
 
+    private volatile String apiData;
+
     // For activity execution
     private volatile ExecutorService executor;
 
@@ -89,6 +88,15 @@ public class AutomationDriver implements IDriver, IActivityHandler {
                 toReturn.setDaemon(true);
                 return toReturn;
             });
+            InputStream is = this.getClass().getClassLoader().getResourceAsStream(Constants.API_RESOURCE_FILE);
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            StringBuilder sb = new StringBuilder();
+            String read = null;
+            while((read = br.readLine()) != null) {
+                sb.append(read).append((char) 10);
+            }
+            apiData = sb.toString();
+
             this.running = true;
             // Inform that everything is fine
             subscriber.driverStatusUpdate(this.name, SystemStatus.NOMINAL);
@@ -192,10 +200,18 @@ public class AutomationDriver implements IDriver, IActivityHandler {
                 // Record verification
                 announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null);
                 // Look up script: first argument plus argument name
-                // TODO
+                String fileName = (String) activityInvocation.getArguments().get(Constants.ARGUMENT_FILE_NAME);
+                if(fileName == null) {
+                    // Use the full path name as script name
+                    fileName = activityInvocation.getPath().asString();
+                }
+                File f = new File(configuration.getScriptFolder() + File.separator + fileName);
+                if(!f.exists()) {
+                    throw new FileNotFoundException("File " + f.getAbsolutePath() + " does not exist");
+                }
+                String contents = Files.readString(f.toPath());
                 // Run script and retrieve result
-                Object result = null;
-                // TODO
+                Object result = execute(contents, activityInvocation, fileName);
                 // Report final state
                 announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.VERIFICATION, result);
             }
@@ -209,7 +225,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
         model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, genTime, reportState, occState, result));
     }
 
-    public Object execute(String file, Map<String, Object> argumentValues) throws ScriptException {
+    public Object execute(String file, IActivityHandler.ActivityInvocation invocation, String fileName) throws ScriptException {
         //
         ScriptEngine engine = new ScriptEngineManager().getEngineByName("graal.js");
         Bindings bindings = engine.getBindings(ScriptContext.ENGINE_SCOPE);
@@ -218,10 +234,16 @@ public class AutomationDriver implements IDriver, IActivityHandler {
 
         // Do not compile, just run
 
-        // Prepare the bindings
-        // TODO
+        // Prepare the bindings (arguments)
+        for(Map.Entry<String, Object> entry : invocation.getArguments().entrySet()) {
+            if(!entry.getKey().equals(Constants.ARGUMENT_FILE_NAME)) {
+                bindings.put(entry.getKey(), entry.getValue());
+            }
+        }
         // Add API functions
-        // TODO
+        ScriptExecutionManager manager = new ScriptExecutionManager(context, invocation, fileName);
+        bindings.put(Constants.BINDING_SCRIPT_MANAGER, manager);
+        engine.eval(apiData);
         // Evaluate the script
         return engine.eval(file, bindings);
     }

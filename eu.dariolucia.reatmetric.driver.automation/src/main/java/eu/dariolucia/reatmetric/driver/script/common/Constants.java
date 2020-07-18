@@ -22,4 +22,10 @@ public class Constants {
 
     // First argument -> file name
     public static final String ARGUMENT_FILE_NAME = "FILENAME";
+
+    // Bindings
+    public static final String BINDING_SCRIPT_MANAGER = "_scriptManager";
+
+    // API resource js file
+    public static final String API_RESOURCE_FILE = "init.js";
 }
