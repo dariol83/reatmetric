@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.script.definition;
+package eu.dariolucia.reatmetric.driver.automation.definition;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -22,9 +22,6 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
 
 @XmlRootElement(name = "automation", namespace = "http://dariolucia.eu/reatmetric/driver/automation")
 @XmlAccessorType(XmlAccessType.FIELD)

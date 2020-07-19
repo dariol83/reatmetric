@@ -249,4 +249,31 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
         }
         return sb.toString().trim();
     }
+
+    /**
+     * This method derives the aggregated status of the activity occurrence. The status of the activity: can be OK, FAIL,
+     * PENDING, UNKNOWN (not others).
+     *
+     * OK -> Activity is COMPLETED && no FATAL present && last state in verification or execution state is OK)
+     * FAIL -> Activity is COMPLETED && (FATAL present || last state in verification or execution state is FAIL)
+     * UNKNOWN -> Activity is COMPLETED && no FATAL present && no execution state reported
+     * PENDING -> Activity is not completed
+     *
+     * @return the aggregated status
+     */
+    public ActivityReportState aggregateStatus() {
+        if(getCurrentState() == ActivityOccurrenceState.COMPLETED) {
+            for(int i = getProgressReports().size() - 1; i >= 0; --i) {
+                ActivityOccurrenceReport report = getProgressReports().get(i);
+                if(report.getStatus() == ActivityReportState.FATAL || report.getStatus() == ActivityReportState.FAIL) {
+                    return ActivityReportState.FAIL;
+                } else if(report.getStatus() == ActivityReportState.OK && (report.getState() == ActivityOccurrenceState.EXECUTION || report.getState() == ActivityOccurrenceState.VERIFICATION)) {
+                    return ActivityReportState.OK;
+                }
+            }
+            return ActivityReportState.UNKNOWN;
+        } else {
+            return ActivityReportState.PENDING;
+        }
+    }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.script.common;
+package eu.dariolucia.reatmetric.driver.automation.common;
 
 public class Constants {
     // Activity Type
@@ -28,4 +28,7 @@ public class Constants {
 
     // API resource js file
     public static final String API_RESOURCE_FILE = "init.js";
+
+    // Automation engine route
+    public static final String AUTOMATION_ROUTE = "Automation Engine";
 }

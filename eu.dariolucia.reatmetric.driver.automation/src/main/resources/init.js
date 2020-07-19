@@ -1,35 +1,39 @@
-function info(var message) {
+function info(message) {
     _scriptManager.info(message);
 }
 
-function warning(var message) {
+function warning(message) {
     _scriptManager.warning(message);
 }
 
-function alarm(var message) {
+function alarm(message) {
     _scriptManager.alarm(message);
 }
 
-function parameter(var paramPath) {
+function parameter(paramPath) {
     return _scriptManager.parameter(paramPath);
 }
 
-function event(var eventPath) {
+function event(eventPath) {
     return _scriptManager.event(eventPath);
 }
 
-function injectRaw(var paramPath, var value) {
-    return _scriptManager.inject(paramPath, value, true);
+function set(paramPath, value) {
+    return _scriptManager.set(paramPath, value, false);
 }
 
-function injectEng(var paramPath, var value) {
-    return _scriptManager.inject(paramPath, value, false);
+function raise(eventPath) {
+    return _scriptManager.raise(eventPath, null, null);
 }
 
-function raise(var eventPath) {
-    return _scriptManager.raise(eventPath);
+function raise(eventPath, qualifier) {
+    return _scriptManager.raise(eventPath, qualifier, null);
 }
 
-function prepareActivity(var activityPath) {
+function raise(eventPath, qualifier, report) {
+    return _scriptManager.raise(eventPath, qualifier, report);
+}
+
+function prepareActivity(activityPath) {
     return _scriptManager.prepareActivity(activityPath);
 }

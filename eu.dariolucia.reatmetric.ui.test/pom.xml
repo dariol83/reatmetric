@@ -46,6 +46,11 @@
             <artifactId>eu.dariolucia.reatmetric.ui</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.automation</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
 	    <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.driver.test</artifactId>

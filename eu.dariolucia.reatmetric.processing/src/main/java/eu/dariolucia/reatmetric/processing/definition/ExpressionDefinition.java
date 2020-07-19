@@ -83,7 +83,7 @@ public class ExpressionDefinition {
             bindings.put("polyglot.js.allowAllAccess", true);
             bindings.put("polyglot.js.allowHostAccess", true);
         }
-        // First time: try to compile the script
+        // First time: try to compile the automation
         if(canBeCompiled && compiledScript == null) {
             if (engine instanceof Compilable) {
                 Compilable cc = (Compilable) engine;
@@ -104,7 +104,7 @@ public class ExpressionDefinition {
         if(additionalBindings != null) {
             bindings.putAll(additionalBindings);
         }
-        // Evaluate the script
+        // Evaluate the automation
         if (compiledScript != null) {
             return compiledScript.eval(bindings);
         } else {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.script;
+package eu.dariolucia.reatmetric.driver.automation;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
@@ -30,9 +30,9 @@ import eu.dariolucia.reatmetric.core.api.IRawDataRenderer;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
-import eu.dariolucia.reatmetric.driver.script.common.Constants;
-import eu.dariolucia.reatmetric.driver.script.definition.AutomationConfiguration;
-import eu.dariolucia.reatmetric.driver.script.internal.ScriptExecutionManager;
+import eu.dariolucia.reatmetric.driver.automation.common.Constants;
+import eu.dariolucia.reatmetric.driver.automation.definition.AutomationConfiguration;
+import eu.dariolucia.reatmetric.driver.automation.internal.ScriptExecutionManager;
 
 import javax.script.*;
 import java.io.*;
@@ -47,14 +47,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * This driver provides the capability to execute script and automation procedures written in Javascript.
+ * This driver provides the capability to execute automation and automation procedures written in Javascript.
  *
  * The driver provides a simple API to scripts under execution, to easily access archived and processing data.
  */
 public class AutomationDriver implements IDriver, IActivityHandler {
 
     private static final Logger LOG = Logger.getLogger(AutomationDriver.class.getName());
-    private static final String CONFIGURATION_FILE = "automation_configuration.xml";
+    private static final String CONFIGURATION_FILE = "configuration.xml";
     public static final String EXECUTION_STAGE = "Execution";
 
     private volatile SystemStatus status = SystemStatus.UNKNOWN;
@@ -170,7 +170,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
 
     @Override
     public List<String> getSupportedRoutes() {
-        return Collections.emptyList();
+        return Collections.singletonList(Constants.AUTOMATION_ROUTE);
     }
 
     @Override
@@ -191,18 +191,18 @@ public class AutomationDriver implements IDriver, IActivityHandler {
 
     @Override
     public boolean getRouteAvailability(String route) {
-        return true;
+        return route.equals(Constants.AUTOMATION_ROUTE);
     }
 
     private void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
         try {
             synchronized (this) {
                 // Record verification
-                announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null);
-                // Look up script: first argument plus argument name
+                announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null, ActivityOccurrenceState.EXECUTION);
+                // Look up automation: first argument plus argument name
                 String fileName = (String) activityInvocation.getArguments().get(Constants.ARGUMENT_FILE_NAME);
                 if(fileName == null) {
-                    // Use the full path name as script name
+                    // Use the full path name as automation name
                     fileName = activityInvocation.getPath().asString();
                 }
                 File f = new File(configuration.getScriptFolder() + File.separator + fileName);
@@ -210,19 +210,19 @@ public class AutomationDriver implements IDriver, IActivityHandler {
                     throw new FileNotFoundException("File " + f.getAbsolutePath() + " does not exist");
                 }
                 String contents = Files.readString(f.toPath());
-                // Run script and retrieve result
+                // Run automation and retrieve result
                 Object result = execute(contents, activityInvocation, fileName);
                 // Report final state
-                announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.VERIFICATION, result);
+                announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, result, ActivityOccurrenceState.VERIFICATION);
             }
         } catch(Exception e) {
             LOG.log(Level.SEVERE, "Execution of procedure " + activityInvocation.getActivityOccurrenceId() + " failed: " + e.getMessage(), e);
-            announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.VERIFICATION, null);
+            announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, null, ActivityOccurrenceState.EXECUTION);
         }
     }
 
-    protected static void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, Object result) {
-        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, genTime, reportState, occState, result));
+    protected static void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, Object result, ActivityOccurrenceState nextState) {
+        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, genTime, reportState, nextState, result));
     }
 
     public Object execute(String file, IActivityHandler.ActivityInvocation invocation, String fileName) throws ScriptException {
@@ -244,7 +244,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
         ScriptExecutionManager manager = new ScriptExecutionManager(context, invocation, fileName);
         bindings.put(Constants.BINDING_SCRIPT_MANAGER, manager);
         engine.eval(apiData);
-        // Evaluate the script
+        // Evaluate the automation
         return engine.eval(file, bindings);
     }
 }

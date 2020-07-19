@@ -7,7 +7,7 @@ open module eu.dariolucia.reatmetric.driver.automation {
     requires eu.dariolucia.reatmetric.core;
     requires eu.dariolucia.reatmetric.processing;
 
-    exports eu.dariolucia.reatmetric.driver.script;
+    exports eu.dariolucia.reatmetric.driver.automation;
 
-    provides eu.dariolucia.reatmetric.core.api.IDriver with eu.dariolucia.reatmetric.driver.script.AutomationDriver;
+    provides eu.dariolucia.reatmetric.core.api.IDriver with eu.dariolucia.reatmetric.driver.automation.AutomationDriver;
 }

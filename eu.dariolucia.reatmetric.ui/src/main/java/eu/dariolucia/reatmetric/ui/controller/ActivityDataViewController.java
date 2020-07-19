@@ -812,27 +812,29 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         }
 
         private void deriveStatus(ActivityOccurrenceData data) {
-            // The status of the activity: can be OK, FAIL, PENDING, UNKNOWN (not others)
-            // OK -> Activity is COMPLETED && no FATAL present && last state in verification or execution state is OK)
-            // FAIL -> Activity is COMPLETED && (FATAL present || last state in verification or execution state is FAIL)
-            // UNKNOWN -> Activity is COMPLETED && no FATAL present && no execution state reported
-            // PENDING -> Activity is not completed
-            if(data.getCurrentState() == ActivityOccurrenceState.COMPLETED) {
-                for(int i = data.getProgressReports().size() - 1; i >= 0; --i) {
-                    ActivityOccurrenceReport report = data.getProgressReports().get(i);
-                    if(report.getStatus() == ActivityReportState.FATAL || report.getStatus() == ActivityReportState.FAIL) {
-                        statusProperty().set(ActivityReportState.FAIL);
-                        break;
-                    } else if(report.getStatus() == ActivityReportState.OK && (report.getState() == ActivityOccurrenceState.EXECUTION || report.getState() == ActivityOccurrenceState.VERIFICATION)) {
-                        statusProperty().set(ActivityReportState.OK);
-                        break;
-                    } else {
-                        statusProperty().set(ActivityReportState.UNKNOWN);
-                    }
-                }
-            } else {
-                statusProperty().set(ActivityReportState.PENDING);
-            }
+            statusProperty().set(data.aggregateStatus());
+
+//            // The status of the activity: can be OK, FAIL, PENDING, UNKNOWN (not others)
+//            // OK -> Activity is COMPLETED && no FATAL present && last state in verification or execution state is OK)
+//            // FAIL -> Activity is COMPLETED && (FATAL present || last state in verification or execution state is FAIL)
+//            // UNKNOWN -> Activity is COMPLETED && no FATAL present && no execution state reported
+//            // PENDING -> Activity is not completed
+//            if(data.getCurrentState() == ActivityOccurrenceState.COMPLETED) {
+//                for(int i = data.getProgressReports().size() - 1; i >= 0; --i) {
+//                    ActivityOccurrenceReport report = data.getProgressReports().get(i);
+//                    if(report.getStatus() == ActivityReportState.FATAL || report.getStatus() == ActivityReportState.FAIL) {
+//                        statusProperty().set(ActivityReportState.FAIL);
+//                        break;
+//                    } else if(report.getStatus() == ActivityReportState.OK && (report.getState() == ActivityOccurrenceState.EXECUTION || report.getState() == ActivityOccurrenceState.VERIFICATION)) {
+//                        statusProperty().set(ActivityReportState.OK);
+//                        break;
+//                    } else {
+//                        statusProperty().set(ActivityReportState.UNKNOWN);
+//                    }
+//                }
+//            } else {
+//                statusProperty().set(ActivityReportState.PENDING);
+//            }
         }
 
         public void set(ActivityOccurrenceData data) {
