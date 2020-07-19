@@ -196,7 +196,7 @@ public class ScriptExecutionManager {
             this.request = request;
         }
 
-        public void invoke() {
+        private void invoke() {
             if(this.invocationFailed) {
                 return;
             }
