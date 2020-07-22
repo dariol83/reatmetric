@@ -17,6 +17,7 @@ ReatMetric is a modular framework, decomposed in modules following the Java modu
 - **eu.dariolucia.reatmetric.persist**: this module contains an implementation of the archiving interfaces as defined by the _api_ module based on Apache Derby and a file-based approach. While this implementation is suited for one-off testing and small M&C systems, its usage in large scale systems is not suggested, due to the file-based approach limitations.
 - **eu.dariolucia.reatmetric.processing**: this module contains the implementation of the M&C processing capabilities at the level of parameters, events and activities. The terminology as well as the conceptual decomposition is partially derived from the ECSS standard ECSS-E-ST-70-31C: while the data definition tries to cover to the maximum possible extent the standard, the coverage is not complete in order to limit the complexity of its implementation.
 - **eu.dariolucia.reatmetric.core**: this module provides an implementation of the main service specified by the _api_ module, and it has a direct dependency on the _processing_ implementation. It provides brokers for raw data distribution and message distribution and defines a lower level API for the definition of _drivers_.
+- **eu.dariolucia.reatmetric.driver.automation**: this module provides a driver implementation of an automation system capable to execute Javascript-based scripts.
 - **eu.dariolucia.reatmetric.driver.spacecraft**: this module provides a driver implementation for the monitoring and control of a CCSDS/ECSS-PUS compliant spacecraft. Currently it includes support for the reception of TM/AOS frames via SLE RAF/RCF services, TM packet extraction, parameter decoding, PUS 9 time correlation, PUS 5 event mapping, PUS 1 command verification, PUS 11 on-board command scheduling (limited to 11,4 commands), telecommand encoding and CLTU transmission via SLE CLTU, full COP-1 support.
 - **eu.dariolucia.reatmetric.driver.test**: this module is a simple test driver that shows how to implement a simple custom driver.
 - **eu.dariolucia.reatmetric.ui**: this module implements a fully featured UI (JavaFX-based) that can be used to start and operate a ReatMetric-based system.
@@ -60,7 +61,6 @@ The ReatMetric modules are based on a very limited set of dependencies:
 ## Implement your driver
 
 ## Roadmap
-- Automation system
 - Activity scheduler
 - Alternative _persist_ implementations (server-based - in addition to file-based - Apache Derby, PostgreSQL)
 - Remoting and Web interface
