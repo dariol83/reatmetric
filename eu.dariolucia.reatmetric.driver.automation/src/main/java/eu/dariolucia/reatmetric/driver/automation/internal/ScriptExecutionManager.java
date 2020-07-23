@@ -23,19 +23,20 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.api.processing.input.*;
+import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
+import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
+import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -85,6 +86,32 @@ public class ScriptExecutionManager {
         }
     }
 
+    public SystemEntity systemEntity(String path) {
+        try {
+            return context.getServiceFactory().getSystemModelMonitorService().getSystemEntityAt(SystemEntityPath.fromString(path));
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot fetch system entity " + path + " from automation " + fileName + ": " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public void enable(String path) {
+        try {
+            context.getServiceFactory().getSystemModelMonitorService().enable(SystemEntityPath.fromString(path));
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot enable system entity " + path + " from automation " + fileName + ": " + e.getMessage(), e);
+        }
+    }
+
+    public void disable(String path) {
+        try {
+            context.getServiceFactory().getSystemModelMonitorService().disable(SystemEntityPath.fromString(path));
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot disable system entity " + path + " from automation " + fileName + ": " + e.getMessage(), e);
+        }
+    }
+
+
     public boolean set(String paramPath, Object value) {
         Instant now = Instant.now();
         try {
@@ -111,8 +138,90 @@ public class ScriptExecutionManager {
         }
     }
 
-    public ActivityInvocationBuilder prepareActivity(String activityPath) throws ReatmetricException {
-        return new ActivityInvocationBuilder(activityPath);
+    public ActivityInvocationBuilder prepareActivity(String activityPath) {
+        try {
+            return new ActivityInvocationBuilder(activityPath);
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot invoke activity " + activityPath + " from automation " + fileName + ": " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public TransportConnectionStatus connectorStatus(String connectorName) {
+        try {
+            return context.getServiceFactory().getTransportConnectors().stream().filter(o -> o.getName().equals(connectorName)).map(ITransportConnector::getConnectionStatus).findFirst().orElse(null);
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot retrieve status of transport connector " + connectorName + " from automation " + fileName + ": " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public boolean startConnector(String connectorName) {
+        try {
+            for(ITransportConnector c : context.getServiceFactory().getTransportConnectors()) {
+                if(c.getName().equals(connectorName)) {
+                    c.connect();
+                    return true;
+                }
+            }
+            return false;
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot connect transport connector " + connectorName + " from automation " + fileName + ": " + e.getMessage(), e);
+            return false;
+        }
+    }
+
+    public boolean stopConnector(String connectorName) {
+        try {
+            for(ITransportConnector c : context.getServiceFactory().getTransportConnectors()) {
+                if(c.getName().equals(connectorName)) {
+                    c.disconnect();
+                    return true;
+                }
+            }
+            return false;
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot disconnect transport connector " + connectorName + " from automation " + fileName + ": " + e.getMessage(), e);
+            return false;
+        }
+    }
+
+    public boolean abortConnector(String connectorName) {
+        try {
+            for(ITransportConnector c : context.getServiceFactory().getTransportConnectors()) {
+                if(c.getName().equals(connectorName)) {
+                    c.abort();
+                    return true;
+                }
+            }
+            return false;
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot abort transport connector " + connectorName + " from automation " + fileName + ": " + e.getMessage(), e);
+            return false;
+        }
+    }
+
+    public boolean initConnector(String connectorName, String[] keys, Object[] values) {
+        if(keys.length != values.length) {
+            LOG.log(Level.SEVERE, "Cannot initialise transport connector " + connectorName + " from automation " + fileName + ": lists of keys-values differ in size");
+            return false;
+        }
+        Map<String, Object> map = new LinkedHashMap<>();
+        for(int i = 0; i < keys.length; ++i) {
+            map.put(keys[i], values[i]);
+        }
+        try {
+            for(ITransportConnector c : context.getServiceFactory().getTransportConnectors()) {
+                if(c.getName().equals(connectorName)) {
+                    c.initialise(map);
+                    return true;
+                }
+            }
+            return false;
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot initialise transport connector " + connectorName + " from automation " + fileName + ": " + e.getMessage(), e);
+            return false;
+        }
     }
 
     private void logMessage(String message, Severity severity) {

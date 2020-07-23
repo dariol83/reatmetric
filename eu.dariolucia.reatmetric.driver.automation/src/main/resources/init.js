@@ -37,3 +37,37 @@ function raise(eventPath, qualifier, report) {
 function prepareActivity(activityPath) {
     return _scriptManager.prepareActivity(activityPath);
 }
+
+// -------
+
+function connectorStatus(connectorName) {
+    return _scriptManager.connectorStatus(connectorName);
+}
+
+function startConnector(connectorName) {
+    return _scriptManager.startConnector(connectorName);
+}
+
+function stopConnector(connectorName) {
+    return _scriptManager.stopConnector(connectorName);
+}
+
+function abortConnector(connectorName) {
+    return _scriptManager.abortConnector(connectorName);
+}
+
+function initConnector(connectorName, keys, values) {
+    return _scriptManager.initConnector(connectorName, keys, values);
+}
+
+function systemEntity(path) {
+    return _scriptManager.systemEntity(path);
+}
+
+function enable(path) {
+    return _scriptManager.enable(path);
+}
+
+function disable(path) {
+    return _scriptManager.disable(path);
+}
