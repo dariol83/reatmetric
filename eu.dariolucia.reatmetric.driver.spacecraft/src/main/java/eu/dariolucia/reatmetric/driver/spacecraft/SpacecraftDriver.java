@@ -151,7 +151,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.context = context;
         this.coreConfiguration = coreConfiguration;
         this.listener = subscriber;
-        this.rawDataArchive = context.getArchive().getArchive(IRawDataArchive.class);
+        this.rawDataArchive = context.getArchive() != null ? context.getArchive().getArchive(IRawDataArchive.class) : null;
         try {
             // Load the driver configuration
             loadDriverConfiguration(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE);
@@ -469,7 +469,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             throw new ReatmetricException("Raw data with type " + rawData.getType() + " cannot be processed by driver " + configuration.getName() + ", expecting types " + getSupportedTypes());
         }
         // Ok, now check if raw data has contents. If not, retrieve the one with the contents.
-        if(!rawData.isContentsSet()) {
+        if(!rawData.isContentsSet() && rawDataArchive != null) {
             rawData = rawDataArchive.retrieve(rawData.getInternalId());
         }
         return renderingFunction.apply(rawData);

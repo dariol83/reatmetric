@@ -36,7 +36,9 @@ public class ServiceCoreConfiguration {
         Unmarshaller u = jc.createUnmarshaller();
         ServiceCoreConfiguration configuration = (ServiceCoreConfiguration) u.unmarshal(is);
         // Update $HOME
-        configuration.setArchiveLocation(configuration.getArchiveLocation().replace(HOME_VAR, HOME_DIR));
+        if(configuration.getArchiveLocation() != null) {
+            configuration.setArchiveLocation(configuration.getArchiveLocation().replace(HOME_VAR, HOME_DIR));
+        }
         configuration.setDefinitionsLocation(configuration.getDefinitionsLocation().replace(HOME_VAR, HOME_DIR));
         configuration.setLogPropertyFile(configuration.getLogPropertyFile().replace(HOME_VAR, HOME_DIR));
         for(DriverConfiguration dc : configuration.getDrivers()) {
@@ -51,7 +53,7 @@ public class ServiceCoreConfiguration {
     @XmlElement(name = "log-property-file")
     private String logPropertyFile;
 
-    @XmlElement(name = "archive-location", required = true)
+    @XmlElement(name = "archive-location")
     private String archiveLocation;
 
     @XmlElement(name = "definitions-location", required = true)
