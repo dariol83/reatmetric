@@ -83,4 +83,6 @@ public interface IProcessingModel {
     List<ActivityRouteState> getRouteAvailability() throws ProcessingModelException;
 
     List<ActivityRouteState> getRouteAvailability(String type) throws ProcessingModelException;
+
+    ProcessingModelStats getCurrentStats();
 }

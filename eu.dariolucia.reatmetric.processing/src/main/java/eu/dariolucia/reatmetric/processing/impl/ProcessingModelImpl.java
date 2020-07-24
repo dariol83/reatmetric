@@ -39,6 +39,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -85,6 +86,11 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private final IProcessingModelInitialiser initialiser;
 
+    private final Timer performanceSampler = new Timer("Reatmetric Processing - Sampler", true);
+    private final AtomicLong dataItemOutput = new AtomicLong(0);
+    private final AtomicReference<ProcessingModelStats> lastStats = new AtomicReference<>(new ProcessingModelStats(Instant.now(), 0, 0));
+    private Instant lastSampleGenerationTime;
+
     /**
      * The set of running activity processors, i.e. those processors that have at least one activity occurrence currently
      * loaded.
@@ -109,6 +115,29 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         activityDispatcher.submit(() -> doDispatch(activityDispatcher, activityUpdateTaskQueue));
         // Create redirector that uses the asynchronous notifier
         outputRedirector = createOutputRedirector();
+        // Create performance samples
+        performanceSampler.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                sample();
+            }
+        }, 1000, 2000);
+    }
+
+    private void sample() {
+        synchronized (performanceSampler) {
+            Instant genTime = Instant.now();
+            if (lastSampleGenerationTime == null) {
+                lastSampleGenerationTime = genTime;
+                dataItemOutput.set(0);
+            } else {
+                long numItems = dataItemOutput.getAndSet(0);
+                int millis = (int) (genTime.toEpochMilli() - lastSampleGenerationTime.toEpochMilli());
+                double itemsPerSecond = (numItems / (double) millis) * 1000;
+                lastStats.set(new ProcessingModelStats(genTime, tmUpdateTaskQueue.size(), itemsPerSecond));
+            }
+            LOG.log(Level.INFO, "Processing status: " + lastStats.get());
+        }
     }
 
     public IProcessingModelInitialiser getInitialiser() {
@@ -116,7 +145,12 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     private Consumer<List<AbstractDataItem>> createOutputRedirector() {
-        return items -> notifier.submit(() -> output.notifyUpdate(items));
+        return items -> notifier.submit(() -> {
+            synchronized (performanceSampler) {
+                dataItemOutput.addAndGet(items.size());
+            }
+            output.notifyUpdate(items);
+        });
     }
 
     private void doDispatch(ExecutorService executor, BlockingQueue<ProcessingTask> queue) {
@@ -393,6 +427,11 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
             }
         }
         return states;
+    }
+
+    @Override
+    public ProcessingModelStats getCurrentStats() {
+        return this.lastStats.get();
     }
 
     @Override

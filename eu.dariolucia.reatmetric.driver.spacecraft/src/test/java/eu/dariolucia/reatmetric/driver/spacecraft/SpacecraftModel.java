@@ -236,7 +236,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
         int evtCounter = 0;
         while (running) {
             try {
-                Thread.sleep(50);
+                if(hkCounter % 10 == 0) {
+                    Thread.sleep(1);
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
