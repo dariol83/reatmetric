@@ -178,7 +178,15 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     public synchronized List<AbstractDataItem> process(ParameterSample newValue) throws ProcessingModelException {
         // Guard condition: if this parameter has an expression, newValue must be null
         if(definition.getExpression() != null && newValue != null) {
-            LOG.log(Level.SEVERE, "Parameter " + definition.getId() + " (" + definition.getLocation() + ") is a synthetic parameter, but a sample was injected. Processing ignored.");
+            LOG.log(Level.SEVERE, String.format("Parameter %d (%s) is a synthetic parameter, but a sample was injected. Processing ignored.", definition.getId(), definition.getLocation()));
+            return Collections.emptyList();
+        }
+        // Re-evaluation: a re-evaluation state only makes sense if: this is synthetic parameter or there was a previous value to be re-evaluated.
+        // If that is not the case, it is pointless to continue with the processing.
+        if(newValue == null && definition.getExpression() == null && (this.state == null || this.state.getSourceValue() == null)) {
+            if(LOG.isLoggable(Level.FINEST)) {
+                LOG.log(Level.FINEST, String.format("Skipping re-evaluation of parameter %d (%s) as there is no previous sample", definition.getId(), definition.getLocation()));
+            }
             return Collections.emptyList();
         }
         // Previous value
@@ -278,8 +286,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             } else {
                 this.builder.setRoute(state == null ? null : state.getRoute());
                 this.builder.setContainerId(state == null ? null : state.getRawDataContainerId());
-                // Re-evaluation, so set the reception time to now
-                receptionTime = Instant.now();
+                // Re-evaluation, do not change the reception time
+                receptionTime = state == null ? null : state.getReceptionTime();
             }
             // Sanitize the reception time
             this.builder.setReceptionTime(receptionTime);

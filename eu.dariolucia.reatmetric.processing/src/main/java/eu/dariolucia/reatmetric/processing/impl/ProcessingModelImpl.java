@@ -87,9 +87,9 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     private final IProcessingModelInitialiser initialiser;
 
     private final Timer performanceSampler = new Timer("Reatmetric Processing - Sampler", true);
-    private final AtomicLong dataItemOutput = new AtomicLong(0);
     private final AtomicReference<ProcessingModelStats> lastStats = new AtomicReference<>(new ProcessingModelStats(Instant.now(), 0, 0));
     private Instant lastSampleGenerationTime;
+    private long dataItemOutput = 0;
 
     /**
      * The set of running activity processors, i.e. those processors that have at least one activity occurrence currently
@@ -129,14 +129,17 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
             Instant genTime = Instant.now();
             if (lastSampleGenerationTime == null) {
                 lastSampleGenerationTime = genTime;
-                dataItemOutput.set(0);
+                dataItemOutput = 0;
             } else {
-                long numItems = dataItemOutput.getAndSet(0);
+                long numItems = dataItemOutput;
+                dataItemOutput = 0;
                 int millis = (int) (genTime.toEpochMilli() - lastSampleGenerationTime.toEpochMilli());
-                double itemsPerSecond = (numItems / (double) millis) * 1000;
+                lastSampleGenerationTime = genTime;
+                double itemsPerSecond = (numItems / (millis/1000.0));
                 lastStats.set(new ProcessingModelStats(genTime, tmUpdateTaskQueue.size(), itemsPerSecond));
+                // TODO: remove this log line once done with testing and exposed to the MMI
+                LOG.log(Level.INFO, "Processing status: items in the period: " + numItems + " - period (ms): " + millis + " - " + lastStats.get());
             }
-            LOG.log(Level.INFO, "Processing status: " + lastStats.get());
         }
     }
 
@@ -147,7 +150,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     private Consumer<List<AbstractDataItem>> createOutputRedirector() {
         return items -> notifier.submit(() -> {
             synchronized (performanceSampler) {
-                dataItemOutput.addAndGet(items.size());
+                dataItemOutput += items.size();
             }
             output.notifyUpdate(items);
         });

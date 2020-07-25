@@ -70,11 +70,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 public class SpacecraftModel implements IVirtualChannelReceiverOutput {
-
-    private final static Logger LOG = Logger.getLogger(SpacecraftModel.class.getName());
 
     public static final int BUFFER_AVAILABLE = 10000;
 
@@ -104,6 +101,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     private List<TmPacketTemplate> pus1Packets = new LinkedList<>();
     private Map<Integer, AtomicInteger> apid2counter = new HashMap<>();
     private final ProcessingModelBasedResolver resolver;
+    private final ExecutorService frameSender = Executors.newFixedThreadPool(1);
 
     private volatile boolean running = false;
     private Thread tmThread;
@@ -225,7 +223,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
         cltuProvider.updateProductionStatus(CltuProductionStatusEnum.OPERATIONAL, CltuUplinkStatusEnum.NOMINAL, BUFFER_AVAILABLE);
         cltuProvider.waitForBind(true, null);
         rafProvider.waitForBind(true, null);
-        tmThread = new Thread(this::sendPackets);
+        tmThread = new Thread(this::sendPackets, "Packet Sender");
         tmThread.start();
         generationThread = new Thread(this::generatePackets);
         generationThread.start();
@@ -236,7 +234,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
         int evtCounter = 0;
         while (running) {
             try {
-                if(hkCounter % 10 == 0) {
+                if(hkCounter % 3 == 0) {
                     Thread.sleep(1);
                 }
             } catch (InterruptedException e) {
@@ -250,7 +248,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
                 if(sp != null) {
                     packetsToSend.put(sp);
                 }
-            } catch (EncodingException | InterruptedException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
@@ -262,7 +260,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
                     if(spev != null) {
                         packetsToSend.put(spev);
                     }
-                } catch (EncodingException | InterruptedException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -284,8 +282,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
                 if (Math.random() < 0.01) {
                     sendIdlePacket(vcToUse);
                 }
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 Thread.interrupted();
+                e.printStackTrace();
             }
         }
     }
@@ -319,14 +318,19 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     }
 
     private void sendTmFrame(TmTransferFrame tmTransferFrame) {
-        // Send the transfer frame
-        // if vcId == 0 and vcc == 0, generate time packet: generation rate is 256
-        if (tmTransferFrame.getVirtualChannelId() == 0 && tmTransferFrame.getVirtualChannelFrameCount() == 0) {
-            generateTimePacket(Instant.now());
-        }
-        if (rafProvider.getCurrentBindingState() == ServiceInstanceBindingStateEnum.ACTIVE) {
-            rafProvider.transferData(tmTransferFrame.getFrame(), 0, 1, Instant.now(), false, StringUtil.toHexDump("ANTENNA-TEST".getBytes(StandardCharsets.ISO_8859_1)), false, new byte[0]);
-        }
+        this.frameSender.execute(() -> {
+            // Send the transfer frame
+            // if vcId == 0 and vcc == 0, generate time packet: generation rate is 256
+            if (tmTransferFrame.getVirtualChannelId() == 0 && tmTransferFrame.getVirtualChannelFrameCount() == 0) {
+                generateTimePacket(Instant.now());
+            }
+            if (rafProvider.getCurrentBindingState() == ServiceInstanceBindingStateEnum.ACTIVE) {
+                boolean result = rafProvider.transferData(tmTransferFrame.getFrame(), 0, 1, Instant.now(), false, StringUtil.toHexDump("ANTENNA-TEST".getBytes(StandardCharsets.ISO_8859_1)), false, new byte[0]);
+                if (!result) {
+                    System.out.println("Error transferring TF");
+                }
+            }
+        });
     }
 
     private void generateTimePacket(Instant now) {

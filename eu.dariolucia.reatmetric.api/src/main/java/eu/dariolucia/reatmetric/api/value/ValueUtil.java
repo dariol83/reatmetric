@@ -461,6 +461,9 @@ public class ValueUtil {
         if(result == null) {
             return null;
         }
+        if(type == ValueTypeEnum.EXTENSION) {
+            return result;
+        }
         if(result.getClass().equals(type.getAssignedClass())) {
             return result;
         }
