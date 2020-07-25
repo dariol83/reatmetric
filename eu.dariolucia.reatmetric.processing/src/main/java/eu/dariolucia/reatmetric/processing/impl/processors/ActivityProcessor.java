@@ -217,6 +217,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
 
     public List<AbstractDataItem> invoke(ActivityRequest request) throws ProcessingModelException {
         if(entityStatus == Status.ENABLED) {
+            if(LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, "Activity invocation request for activity " + getPath() + " received by the processing model");
+            }
             // Start with the checks of the activity request: argument presence and type, route presence
             // Check if the route exists
             processor.checkHandlerAvailability(request.getRoute(), definition.getType());

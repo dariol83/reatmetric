@@ -322,6 +322,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         Platform.runLater(() -> {
             enableMainViewItems();
             this.systemLbl.setText(system.getName());
+            // TODO: add tooltip with debug information
             ReatmetricUI.setStatusLabel("System " + system.getName() + " connected");
         });
     }
@@ -330,6 +331,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     public void systemDisconnected(IReatmetricSystem system) {
         Platform.runLater(() -> {
             disableMainViewItems();
+            // TODO: remove tooltip with debug information
             ReatmetricUI.setStatusLabel("System " + system.getName() + " disconnected");
         });
     }

@@ -167,6 +167,19 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                     // Replace the state
                     this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
                     generatedStates.add(this.state);
+                    // Log the event
+                    switch(definition.getSeverity()) {
+                        case ALARM:
+                        case ERROR:
+                            LOG.log(Level.SEVERE, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
+                            break;
+                        case WARN:
+                            LOG.log(Level.WARNING, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
+                            break;
+                        case INFO:
+                            LOG.log(Level.INFO, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
+                            break;
+                    }
                 }
                 // Remember the generation time (needed to check if inhibition is needed)
                 this.lastReportedEventTime = generationTime;
