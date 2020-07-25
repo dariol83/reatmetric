@@ -43,7 +43,7 @@
         <dependency>
             <groupId>eu.dariolucia.ccsds</groupId>
             <artifactId>eu.dariolucia.ccsds.sle.utl</artifactId>
-            <version>0.4.0-SNAPSHOT</version>
+            <version>${ccsds.version}</version>
         </dependency>
         <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
