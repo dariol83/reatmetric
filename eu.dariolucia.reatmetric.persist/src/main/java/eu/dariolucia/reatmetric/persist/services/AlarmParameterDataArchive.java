@@ -241,7 +241,7 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
 
     @Override
     public String toString() {
-        return "Alarm Parameter Data Archive";
+        return "Alarm Parameter Archive";
     }
 
     @Override

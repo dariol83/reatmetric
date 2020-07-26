@@ -30,6 +30,7 @@ import eu.dariolucia.ccsds.sle.utl.config.UtlConfigurationFile;
 import eu.dariolucia.ccsds.sle.utl.config.cltu.CltuServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.rcf.RcfServiceInstanceConfiguration;
+import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
@@ -543,5 +544,13 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             }
         }
         return false;
+    }
+
+    @Override
+    public List<DebugInformation> currentDebugInfo() {
+        List<DebugInformation> toReturn = new ArrayList<>();
+        toReturn.addAll(this.tmDataLinkProcessor.currentDebugInfo()); // # of frames and extracted packets per second
+        toReturn.addAll(this.tmPacketProcessor.currentDebugInfo()); // # of extracted parameter samples per second
+        return toReturn;
     }
 }

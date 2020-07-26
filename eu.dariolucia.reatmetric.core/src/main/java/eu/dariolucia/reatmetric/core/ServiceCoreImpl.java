@@ -22,6 +22,7 @@ import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionSer
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
+import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
@@ -71,6 +72,8 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
     private RawDataBrokerImpl rawDataBroker;
     private ProcessingModelManager processingModelManager;
     private Consumer<SystemStatus> statusSubscriber;
+
+    private volatile boolean initialised = false;
 
     public ServiceCoreImpl() {
         try {
@@ -135,6 +138,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         }
         // Derive system status
         deriveSystemStatus();
+        initialised = true;
         // Done and ready to go
         LOG.info("Reatmetric Core System loaded with status " + systemStatus);
     }
@@ -165,6 +169,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
 
     @Override
     public void dispose() throws ReatmetricException {
+        initialised = false;
         for(IDriver d : drivers) {
             d.dispose();
         }
@@ -313,4 +318,19 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         deriveSystemStatus();
     }
 
+    @Override
+    public List<DebugInformation> currentDebugInfo() {
+        if(!initialised) {
+            return Collections.emptyList();
+        }
+        List<DebugInformation> toReturn = new ArrayList<>(100);
+        toReturn.addAll(this.processingModelManager.getProcessingModel().currentDebugInfo());
+        if(this.archive != null) {
+            toReturn.addAll(this.archive.currentDebugInfo());
+        }
+        for(IDriver d : this.drivers) {
+            toReturn.addAll(d.currentDebugInfo());
+        }
+        return toReturn;
+    }
 }

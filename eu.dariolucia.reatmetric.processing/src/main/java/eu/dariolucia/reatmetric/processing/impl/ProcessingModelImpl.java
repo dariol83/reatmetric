@@ -51,6 +51,11 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private static final int UPDATE_TASK_CAPACITY = 1000;
 
+    public static final String PROCESSING_MODEL_NAME = "Processing Model";
+    public static final String DEBUG_INPUT_QUEUE_SIZE = "Input queue size";
+    public static final String DEBUG_OUTPUT_DATA_ITEMS = "Output data items";
+    public static final String DEBUG_OUTPUT_DATA_ITEMS_UNIT = "data items/second";
+
     public static final String FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME = "Forwarding to Activity Handler";
 
     public static final int USER_DISPATCHING_QUEUE = 0;
@@ -87,7 +92,10 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     private final IProcessingModelInitialiser initialiser;
 
     private final Timer performanceSampler = new Timer("Reatmetric Processing - Sampler", true);
-    private final AtomicReference<ProcessingModelStats> lastStats = new AtomicReference<>(new ProcessingModelStats(Instant.now(), 0, 0));
+    private final AtomicReference<List<DebugInformation>> lastStats = new AtomicReference<>(Arrays.asList(
+            DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_INPUT_QUEUE_SIZE, 0, UPDATE_TASK_CAPACITY, ""),
+            DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_OUTPUT_DATA_ITEMS, 0, null, DEBUG_OUTPUT_DATA_ITEMS_UNIT)
+    ));
     private Instant lastSampleGenerationTime;
     private long dataItemOutput = 0;
 
@@ -136,9 +144,11 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 int millis = (int) (genTime.toEpochMilli() - lastSampleGenerationTime.toEpochMilli());
                 lastSampleGenerationTime = genTime;
                 double itemsPerSecond = (numItems / (millis/1000.0));
-                lastStats.set(new ProcessingModelStats(genTime, tmUpdateTaskQueue.size(), itemsPerSecond));
-                // TODO: remove this log line once done with testing and exposed to the MMI
-                LOG.log(Level.INFO, "Processing status: items in the period: " + numItems + " - period (ms): " + millis + " - " + lastStats.get());
+                List<DebugInformation> toSet = Arrays.asList(
+                        DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_INPUT_QUEUE_SIZE, tmUpdateTaskQueue.size(), UPDATE_TASK_CAPACITY, ""),
+                        DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_OUTPUT_DATA_ITEMS, (int) itemsPerSecond, null, DEBUG_OUTPUT_DATA_ITEMS_UNIT)
+                );
+                lastStats.set(toSet);
             }
         }
     }
@@ -433,7 +443,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     @Override
-    public ProcessingModelStats getCurrentStats() {
+    public List<DebugInformation> currentDebugInfo() {
         return this.lastStats.get();
     }
 

@@ -17,10 +17,7 @@
 package eu.dariolucia.reatmetric.api.archive;
 
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
-import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.common.*;
 
 import java.time.Instant;
 import java.util.List;
@@ -31,7 +28,7 @@ import java.util.List;
  * @param <T> the {@link AbstractDataItem} that this service stores/retrieves
  * @param <K> the {@link AbstractDataItemFilter} that can be used with this service
  */
-public interface IDataItemArchive<T extends AbstractDataItem, K extends AbstractDataItemFilter<T>> {
+public interface IDataItemArchive<T extends AbstractDataItem, K extends AbstractDataItemFilter<T>> extends IDebugInfoProvider {
 
     /**
      * Retrieve a maximum of numRecords data items, with a generation time greater/lower or equals than the provided startTime (if

@@ -85,6 +85,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private Circle alarmCrl;
 
     @FXML
+    private Button debugButton;
+    private final PopOver debugPopOver = new PopOver();
+
+    @FXML
     private Label systemLbl;
     @FXML
     private Label statusLbl;
@@ -230,6 +234,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		}
 		layoutBox.setPadding(new Insets(8));
 		connectPopOver.setArrowLocation(PopOver.ArrowLocation.LEFT_TOP);
+        connectPopOver.setDetachable(false);
 		connectPopOver.setContentNode(layoutBox);
 		// Set the CSS
 		systemBox.getStylesheets().add(getClass().getClassLoader()
@@ -257,6 +262,21 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 		connectPopOver.show(connectButton);
 	}
 
+    @FXML
+    public void debugAction(ActionEvent actionEvent) {
+        try {
+            Parent root = FXMLLoader.load(getClass().getClassLoader()
+                    .getResource("eu/dariolucia/reatmetric/ui/fxml/DebugDialog.fxml"));
+
+            debugPopOver.setContentNode(root);
+            debugPopOver.setArrowLocation(PopOver.ArrowLocation.BOTTOM_LEFT);
+            debugPopOver.setTitle("Debug Information");
+            debugPopOver.show(debugButton);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 	@FXML
     public void aboutAction(ActionEvent actionEvent) {
         try {
@@ -265,6 +285,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
 			infoPopOver.setContentNode(root);
 			infoPopOver.setArrowLocation(PopOver.ArrowLocation.RIGHT_TOP);
+			infoPopOver.setDetachable(false);
 			infoPopOver.setTitle("About ReatMetric...");
 			infoPopOver.show(infoButton);
         } catch (IOException e) {
@@ -297,6 +318,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         // Expand first
         sideAccordion.setExpandedPane(sideAccordion.getPanes().get(0));
 
+        debugPopOver.setHideOnEscape(true);
         infoPopOver.setHideOnEscape(true);
         connectPopOver.setHideOnEscape(true);
     }

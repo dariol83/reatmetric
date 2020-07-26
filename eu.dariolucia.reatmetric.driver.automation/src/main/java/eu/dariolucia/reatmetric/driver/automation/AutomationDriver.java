@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.driver.automation;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
@@ -246,5 +247,11 @@ public class AutomationDriver implements IDriver, IActivityHandler {
         engine.eval(apiData);
         // Evaluate the automation
         return engine.eval(file, bindings);
+    }
+
+    @Override
+    public List<DebugInformation> currentDebugInfo() {
+        // TODO: implement if needed
+        return Collections.emptyList();
     }
 }

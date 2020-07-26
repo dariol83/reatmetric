@@ -25,6 +25,8 @@ import eu.dariolucia.ccsds.encdec.structure.ParameterValue;
 import eu.dariolucia.ccsds.encdec.value.BitString;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.reatmetric.api.common.DebugInformation;
+import eu.dariolucia.reatmetric.api.common.IDebugInfoProvider;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
@@ -44,11 +46,12 @@ import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class TmPacketProcessor implements IRawDataSubscriber {
+public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider {
 
     private static final Logger LOG = Logger.getLogger(TmPacketProcessor.class.getName());
 
@@ -74,6 +77,16 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     private final IServiceBroker serviceBroker;
     private final boolean[] processedVCs;
 
+    private final Timer performanceSampler = new Timer("TM Packet Processor - Sampler", true);
+    private final AtomicReference<List<DebugInformation>> lastStats = new AtomicReference<>(Arrays.asList(
+            DebugInformation.of("TM Packet Processor", "Input packets", 0, null, "packets/second"),
+            DebugInformation.of("TM Packet Processor", "Output parameters", 0, null, "parameters/second")
+    ));
+    private Instant lastSampleGenerationTime;
+    private long packetInput = 0;
+    private long parameterOutput = 0;
+
+
     public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker) {
         this.spacecraft = String.valueOf(configuration.getId());
         this.epoch = configuration.getEpoch() == null ? null : Instant.ofEpochMilli(configuration.getEpoch().getTime());
@@ -92,6 +105,38 @@ public class TmPacketProcessor implements IRawDataSubscriber {
         for(int i = 0; i < this.processedVCs.length; ++i) {
             if(this.configuration.getProcessVcs() != null && this.configuration.getProcessVcs().contains(i)) {
                 this.processedVCs[i] = true;
+            }
+        }
+        // Create performance samples
+        performanceSampler.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                sample();
+            }
+        }, 1000, 2000);
+    }
+
+    private void sample() {
+        synchronized (performanceSampler) {
+            Instant genTime = Instant.now();
+            if (lastSampleGenerationTime == null) {
+                lastSampleGenerationTime = genTime;
+                packetInput = 0;
+                parameterOutput = 0;
+            } else {
+                long packetInputCurr = packetInput;
+                packetInput = 0;
+                long paramOutputCurr = parameterOutput;
+                parameterOutput = 0;
+                int millis = (int) (genTime.toEpochMilli() - lastSampleGenerationTime.toEpochMilli());
+                lastSampleGenerationTime = genTime;
+                double pktPerSecond = (packetInputCurr / (millis/1000.0));
+                double paramsPerSecond = (paramOutputCurr / (millis/1000.0));
+                List<DebugInformation> toSet = Arrays.asList(
+                        DebugInformation.of("TM Packet Processor", "Input packets", (int) pktPerSecond, null, "packets/second"),
+                        DebugInformation.of("TM Packet Processor", "Output parameters", (int) paramsPerSecond, null, "parameters/second")
+                );
+                lastStats.set(toSet);
             }
         }
     }
@@ -128,6 +173,10 @@ public class TmPacketProcessor implements IRawDataSubscriber {
 
     @Override
     public void dataItemsReceived(List<RawData> messages) {
+        // Add performance indicator
+        synchronized (performanceSampler) {
+            packetInput += messages.size();
+        }
         for(RawData rd : messages) {
             try {
                 // To correctly apply generation time derivation ,we need to remember which raw data is used, as we need the generation time of the packet.
@@ -172,6 +221,10 @@ public class TmPacketProcessor implements IRawDataSubscriber {
     }
 
     private void forwardParameterResult(RawData packet, List<ParameterValue> decodedParameters) {
+        // Add performance indicator
+        synchronized (performanceSampler) {
+            parameterOutput += decodedParameters.size();
+        }
         List<ParameterSample> samples = new ArrayList<>(decodedParameters.size());
         for(ParameterValue pv : decodedParameters) {
             samples.add(mapSample(packet, pv));
@@ -238,6 +291,7 @@ public class TmPacketProcessor implements IRawDataSubscriber {
 
     public void dispose() {
         this.broker.unsubscribe(this);
+        this.performanceSampler.cancel();
     }
 
     public LinkedHashMap<String, String> renderTmPacket(RawData rawData) {
@@ -298,5 +352,10 @@ public class TmPacketProcessor implements IRawDataSubscriber {
 
     public LinkedHashMap<String, String> renderBadPacket(RawData rawData) {
         return null;
+    }
+
+    @Override
+    public List<DebugInformation> currentDebugInfo() {
+        return lastStats.get();
     }
 }

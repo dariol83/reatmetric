@@ -26,7 +26,7 @@ import eu.dariolucia.reatmetric.api.processing.input.*;
 
 import java.util.List;
 
-public interface IProcessingModel {
+public interface IProcessingModel extends IDebugInfoProvider {
 
     void injectParameters(List<ParameterSample> sampleList);
 
@@ -83,6 +83,4 @@ public interface IProcessingModel {
     List<ActivityRouteState> getRouteAvailability() throws ProcessingModelException;
 
     List<ActivityRouteState> getRouteAvailability(String type) throws ProcessingModelException;
-
-    ProcessingModelStats getCurrentStats();
 }

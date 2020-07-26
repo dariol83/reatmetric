@@ -283,7 +283,7 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
 
     @Override
     public String toString() {
-        return "Parameter Data Archive";
+        return "Parameter Archive";
     }
 
     @Override

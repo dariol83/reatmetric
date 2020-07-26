@@ -19,11 +19,12 @@ package eu.dariolucia.reatmetric.api.archive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
+import eu.dariolucia.reatmetric.api.common.IDebugInfoProvider;
 
 /**
  * This interface specifies the entry point contract for archive service providers.
  */
-public interface IArchive {
+public interface IArchive extends IDebugInfoProvider {
 
     /**
      * Connect to the archive backend system. The archive can be used only after return from this invocation.

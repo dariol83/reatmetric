@@ -23,6 +23,7 @@ import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
+import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.events.IEventDataArchive;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataArchive;
@@ -37,14 +38,13 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class Archive implements IArchive {
+
+    public static final String ARCHIVE_NAME = "Archive";
 
     private static final Logger LOG = Logger.getLogger(Archive.class.getName());
 
@@ -214,5 +214,14 @@ public class Archive implements IArchive {
         conn.setReadOnly(!isWriter);
         conn.setTransactionIsolation(isWriter ? Connection.TRANSACTION_SERIALIZABLE : Connection.TRANSACTION_READ_UNCOMMITTED);
         return conn;
+    }
+
+    @Override
+    public List<DebugInformation> currentDebugInfo() {
+        List<DebugInformation> toReturn = new ArrayList<>(20);
+        for(IDataItemArchive archive : registeredArchives.values()) {
+            toReturn.addAll(archive.currentDebugInfo());
+        }
+        return toReturn;
     }
 }

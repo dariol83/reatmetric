@@ -287,7 +287,7 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
 
     @Override
     public String toString() {
-        return "Event Data Archive";
+        return "Event Archive";
     }
 
     @Override

@@ -30,11 +30,12 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K extends AbstractDataItemFilter<T>> {
+public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K extends AbstractDataItemFilter<T>> implements IDebugInfoProvider {
 
     private static final Logger LOG = Logger.getLogger(AbstractDataItemArchive.class.getName());
 
@@ -60,9 +61,12 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected Connection retrieveConnection; // subclasses should access this field in a synchronized block/method
 
     private final AtomicLong storedItemsInLastSamplingPeriod = new AtomicLong();
-    private Instant lastSamplingTime;
-    private volatile boolean samplingActive;
+    private Instant lastSamplingTime = Instant.now();
     private final Timer sampler = new Timer();
+    private final AtomicReference<List<DebugInformation>> lastStats = new AtomicReference<>(Arrays.asList(
+            DebugInformation.of(Archive.ARCHIVE_NAME, toString() + " Input Queue", 0, MAX_STORAGE_QUEUE, ""),
+            DebugInformation.of(Archive.ARCHIVE_NAME, toString() + " Storage Rate", 0, null, "items/second")
+    ));
 
     private volatile boolean disposed;
 
@@ -80,6 +84,12 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         };
         this.latencyStoreTimer.schedule(this.latencyTask, 0, MAX_LATENCY_TIME);
         this.disposed = false;
+        this.sampler.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                sample();
+            }
+        }, 1000, 2000);
         if(LOG.isLoggable(Level.FINE)) {
             LOG.fine(this + " instance - parent constructor completed");
         }
@@ -507,6 +517,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
         this.retrieveConnection = null;
         this.storageQueue.clear();
+        this.sampler.cancel();
     }
 
     /**************************************************************************************************
@@ -567,23 +578,18 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     private void sample() {
         Instant now = Instant.now();
         long items = storedItemsInLastSamplingPeriod.getAndSet(0);
-        if(lastSamplingTime == null) {
-            lastSamplingTime = now;
-        } else {
-            long millis = now.toEpochMilli() - lastSamplingTime.toEpochMilli();
-            double itemsPerSec = (items / (double) millis) * 1000;
-            if(LOG.isLoggable(Level.INFO)) {
-                LOG.info(this + " storage rate: " + itemsPerSec + " items/sec");
-            }
-        }
+        long millis = now.toEpochMilli() - lastSamplingTime.toEpochMilli();
+        double itemsPerSec = (items / (millis/1000.0));
+        lastSamplingTime = now;
+        List<DebugInformation> toSet = Arrays.asList(
+                DebugInformation.of(Archive.ARCHIVE_NAME, toString() + " Input Queue", storageQueue.size(), MAX_STORAGE_QUEUE, ""),
+                DebugInformation.of(Archive.ARCHIVE_NAME, toString() + " Storage Rate", (int) itemsPerSec, null, "items/second")
+        );
+        lastStats.set(toSet);
     }
 
-    protected void setSamplingOn() {
-        sampler.schedule(new TimerTask() {
-            @Override
-            public void run() {
-                sample();
-            }
-        }, 1000, 1000);
+    @Override
+    public List<DebugInformation> currentDebugInfo() {
+        return lastStats.get();
     }
 }

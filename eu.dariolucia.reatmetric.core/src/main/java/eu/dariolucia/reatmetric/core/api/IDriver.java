@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.core.api;
 
+import eu.dariolucia.reatmetric.api.common.IDebugInfoProvider;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
@@ -24,7 +25,7 @@ import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 
 import java.util.List;
 
-public interface IDriver {
+public interface IDriver extends IDebugInfoProvider {
 
     void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException;
 

@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.driver.test;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
@@ -308,5 +309,15 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
     @Override
     public LinkedHashMap<String, String> render(RawData rawData) {
         return decoder.render(rawData);
+    }
+
+    /* ************************************************************************* *
+     * {@link IDebugInfoProvider} implementation
+     * ************************************************************************* */
+
+    @Override
+    public List<DebugInformation> currentDebugInfo() {
+        // TODO: implement if needed
+        return Collections.emptyList();
     }
 }

@@ -30,6 +30,8 @@ import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.ccsds.tmtc.ocf.pdu.Clcw;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.reatmetric.api.common.DebugInformation;
+import eu.dariolucia.reatmetric.api.common.IDebugInfoProvider;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
@@ -45,6 +47,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -52,7 +55,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawDataSubscriber {
+public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawDataSubscriber, IDebugInfoProvider {
 
     private static final Logger LOG = Logger.getLogger(TmDataLinkProcessor.class.getName());
 
@@ -66,6 +69,15 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     private final String driverName;
     private VirtualChannelReceiverDemux demultiplexer;
 
+    private final Timer performanceSampler = new Timer("TM Data Link Processor - Sampler", true);
+    private final AtomicReference<List<DebugInformation>> lastStats = new AtomicReference<>(Arrays.asList(
+            DebugInformation.of("TM Data Link Processor", "Transfer frames", 0, null, "frames/second"),
+            DebugInformation.of("TM Data Link Processor", "Space packets", 0, null, "packets/second")
+    ));
+    private Instant lastSampleGenerationTime;
+    private long frameInput = 0;
+    private long packetOutput = 0;
+
     public TmDataLinkProcessor(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketIdentifier packetIdentifier, BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver, BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker) {
         this.driverName = driverName;
         this.spacecraftId = configuration.getId();
@@ -75,6 +87,38 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         this.processedVCs = new boolean[64];
         this.generationTimeResolver = generationTimeResolver;
         this.packetQualityChecker = packetQualityChecker;
+        // Create performance samples
+        performanceSampler.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                sample();
+            }
+        }, 1000, 2000);
+    }
+
+    private void sample() {
+        synchronized (performanceSampler) {
+            Instant genTime = Instant.now();
+            if (lastSampleGenerationTime == null) {
+                lastSampleGenerationTime = genTime;
+                frameInput = 0;
+                packetOutput = 0;
+            } else {
+                long frameInputCurr = frameInput;
+                frameInput = 0;
+                long packetOutputCurr = packetOutput;
+                packetOutput = 0;
+                int millis = (int) (genTime.toEpochMilli() - lastSampleGenerationTime.toEpochMilli());
+                lastSampleGenerationTime = genTime;
+                double framesPerSecond = (frameInputCurr / (millis/1000.0));
+                double packetsPerSecond = (packetOutputCurr / (millis/1000.0));
+                List<DebugInformation> toSet = Arrays.asList(
+                        DebugInformation.of("TM Data Link Processor", "Transfer frames", (int) framesPerSecond, null, "frames/second"),
+                        DebugInformation.of("TM Data Link Processor", "Space packets", (int) packetsPerSecond, null, "packets/second")
+                );
+                lastStats.set(toSet);
+            }
+        }
     }
 
     public void initialise() {
@@ -139,6 +183,10 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
 
     @Override
     public void spacePacketExtracted(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, byte[] packet, boolean qualityIndicator) {
+        // Add performance indicator
+        synchronized (performanceSampler) {
+            ++packetOutput;
+        }
         // Read route from the frame annotated map
         Instant receptionTime = (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME);
         if(receptionTime == null) {
@@ -212,6 +260,10 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
 
     @Override
     public void dataItemsReceived(List<RawData> messages) {
+        // Add performance indicator
+        synchronized (performanceSampler) {
+            frameInput += messages.size();
+        }
         for(RawData rd : messages) {
             AbstractTransferFrame atf = (AbstractTransferFrame) rd.getData();
             demultiplexer.accept(atf);
@@ -219,6 +271,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     }
 
     public void dispose() {
+        performanceSampler.cancel();
         broker.unsubscribe(this);
     }
 
@@ -301,5 +354,10 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
             toReturn.put("Validity FECF", String.valueOf(frame.isValid()));
         }
         return toReturn;
+    }
+
+    @Override
+    public List<DebugInformation> currentDebugInfo() {
+        return lastStats.get();
     }
 }

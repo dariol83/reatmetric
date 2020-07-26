@@ -33,6 +33,7 @@
   ~ limitations under the License.
   -->
 
+<?import javafx.scene.control.Tooltip?>
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="900.0" prefWidth="1700.0" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.MainViewController">
    <children>
       <HBox alignment="CENTER_LEFT" prefHeight="96.0" prefWidth="200.0" style="-fx-background-color: #191970">
@@ -255,6 +256,18 @@
             <Circle fx:id="nominalCrl" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
             <Circle fx:id="warningCrl" fill="#382700" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
             <Circle fx:id="alarmCrl" fill="#360000" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
+            <Button fx:id="debugButton" mnemonicParsing="false" prefHeight="16.0" prefWidth="16.0" onAction="#debugAction">
+                 <graphic>
+                     <ImageView pickOnBounds="true" preserveRatio="true">
+                         <image>
+                             <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/medical.svg.png" />
+                         </image>
+                     </ImageView>
+                 </graphic>
+                <tooltip>
+                    <Tooltip text="Debug information" />
+                </tooltip>
+            </Button>
             <Label fx:id="statusLbl" prefHeight="17.0" prefWidth="700.0" HBox.hgrow="ALWAYS">
                <font>
                   <Font size="11.0" />

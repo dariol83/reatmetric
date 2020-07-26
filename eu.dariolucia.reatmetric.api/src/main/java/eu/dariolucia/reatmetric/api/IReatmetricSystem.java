@@ -20,6 +20,7 @@ package eu.dariolucia.reatmetric.api;
 import eu.dariolucia.reatmetric.api.activity.IActivityExecutionService;
 import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
+import eu.dariolucia.reatmetric.api.common.IDebugInfoProvider;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
@@ -36,7 +37,7 @@ import java.util.function.Consumer;
  *
  * @author dario
  */
-public interface IReatmetricSystem {
+public interface IReatmetricSystem extends IDebugInfoProvider {
 
     void initialise(Consumer<SystemStatus> statusUpdateSubscriber) throws ReatmetricException;
 

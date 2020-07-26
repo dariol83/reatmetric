@@ -537,7 +537,7 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
 
     @Override
     public String toString() {
-        return "Activity Occurrence Data Archive";
+        return "Activity Occurrence Archive";
     }
 
     @Override

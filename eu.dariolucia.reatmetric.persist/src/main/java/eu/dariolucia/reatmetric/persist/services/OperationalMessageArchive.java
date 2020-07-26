@@ -169,7 +169,7 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
 
     @Override
     public String toString() {
-        return "Operational Message Archive";
+        return "Message Archive";
     }
 
     @Override
