@@ -110,7 +110,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     private static final int MAX_TC_PACKET_SIZE = 65536;
 
-    private String name;
+    private volatile String name;
     private Instant epoch;
     private SpacecraftConfiguration configuration;
     private ServiceCoreConfiguration coreConfiguration;
@@ -548,9 +548,12 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     @Override
     public List<DebugInformation> currentDebugInfo() {
+        if(this.name == null) {
+            return Collections.emptyList();
+        }
         List<DebugInformation> toReturn = new ArrayList<>();
-        toReturn.addAll(this.tmDataLinkProcessor.currentDebugInfo()); // # of frames and extracted packets per second
         toReturn.addAll(this.tmPacketProcessor.currentDebugInfo()); // # of extracted parameter samples per second
+        toReturn.addAll(this.tmDataLinkProcessor.currentDebugInfo()); // # of frames and extracted packets per second
         return toReturn;
     }
 }

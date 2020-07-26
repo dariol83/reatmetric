@@ -46,6 +46,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -66,6 +67,7 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
             return utc;
         }
     };
+    private static final int MAX_INPUT_QUEUE_SIZE = 5000;
 
     private final String spacecraft;
     private final Instant epoch;
@@ -79,6 +81,7 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
 
     private final Timer performanceSampler = new Timer("TM Packet Processor - Sampler", true);
     private final AtomicReference<List<DebugInformation>> lastStats = new AtomicReference<>(Arrays.asList(
+            DebugInformation.of("TM Packet Processor", "Input queue", 0, MAX_INPUT_QUEUE_SIZE, ""),
             DebugInformation.of("TM Packet Processor", "Input packets", 0, null, "packets/second"),
             DebugInformation.of("TM Packet Processor", "Output parameters", 0, null, "parameters/second")
     ));
@@ -86,6 +89,11 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
     private long packetInput = 0;
     private long parameterOutput = 0;
 
+    private final BlockingQueue<RawData> incomingPacketsQueue = new ArrayBlockingQueue<>(MAX_INPUT_QUEUE_SIZE);
+
+    private final ExecutorService dispatcherService = Executors.newFixedThreadPool(1);
+    private final ExecutorService decoderService = Executors.newFixedThreadPool(2); // TODO: make it configurable
+    private final ExecutorService notifierService = Executors.newFixedThreadPool(1);
 
     public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker) {
         this.spacecraft = String.valueOf(configuration.getId());
@@ -132,7 +140,9 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
                 lastSampleGenerationTime = genTime;
                 double pktPerSecond = (packetInputCurr / (millis/1000.0));
                 double paramsPerSecond = (paramOutputCurr / (millis/1000.0));
+
                 List<DebugInformation> toSet = Arrays.asList(
+                        DebugInformation.of("TM Packet Processor", "Input queue", incomingPacketsQueue.size(), MAX_INPUT_QUEUE_SIZE, ""),
                         DebugInformation.of("TM Packet Processor", "Input packets", (int) pktPerSecond, null, "packets/second"),
                         DebugInformation.of("TM Packet Processor", "Output parameters", (int) paramsPerSecond, null, "parameters/second")
                 );
@@ -143,6 +153,7 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
 
     public void initialise() {
         subscribeToBroker();
+        dispatcherService.execute(this::dispatcherThreadMain);
     }
 
     private void subscribeToBroker() {
@@ -177,42 +188,116 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         synchronized (performanceSampler) {
             packetInput += messages.size();
         }
-        for(RawData rd : messages) {
-            try {
-                // To correctly apply generation time derivation ,we need to remember which raw data is used, as we need the generation time of the packet.
-                // We build an anonymous class for this purpose.
-                ParameterTimeGenerationComputer timeGenerationComputer = new ParameterTimeGenerationComputer(rd);
-                // At this stage, we need to have the TmPusHeader available, or a clear indication that the packet does not have such header
-                // If the RawData data property has no SpacePacket, we have to instantiate one
-                SpacePacket spacePacket = (SpacePacket) rd.getData();
-                if (spacePacket == null) {
-                    spacePacket = new SpacePacket(rd.getContents(), rd.getQuality() == Quality.GOOD);
-                }
 
-                // If the header is already part of the SpacePacket annotation, then good. If not, we have to compute it (we are in playback, maybe)
-                TmPusHeader pusHeader = (TmPusHeader) spacePacket.getAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER);
-                if (pusHeader == null && spacePacket.isSecondaryHeaderFlag()) {
-                    TmPusConfiguration conf = configuration.getPusConfigurationFor(spacePacket.getApid());
-                    if (conf != null) {
-                        pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.getObtConfiguration() != null && conf.getObtConfiguration().isExplicitPField(), epoch, conf.getTimeDescriptor());
-                        spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
+        synchronized (incomingPacketsQueue) {
+            while(incomingPacketsQueue.size() + messages.size() > MAX_INPUT_QUEUE_SIZE) { // It would block
+                try {
+                    incomingPacketsQueue.wait();
+                } catch (InterruptedException e) {
+                    // If interrupted, it is time to go
+                    LOG.log(Level.WARNING, "TM Packet Processor input queue storage interrupted");
+                    return;
+                }
+            }
+            incomingPacketsQueue.addAll(messages);
+            incomingPacketsQueue.notifyAll();
+        }
+
+        // That's it
+    }
+
+
+    private void dispatcherThreadMain() {
+        List<RawData> itemsToProcess = new ArrayList<>(MAX_INPUT_QUEUE_SIZE);
+        while(!dispatcherService.isShutdown()) {
+            itemsToProcess.clear();
+            synchronized (incomingPacketsQueue) {
+                while(incomingPacketsQueue.isEmpty() && !dispatcherService.isShutdown()) {
+                    try {
+                        incomingPacketsQueue.wait();
+                    } catch (InterruptedException e) {
+                        // If interrupted, it is time to go
+                        LOG.log(Level.WARNING, "TM Packet Processor dispatcher service interrupted while waiting for data");
+                        return;
                     }
                 }
-
-                // Expectation is that the definitions refer to the start of the space packet
-                DecodingResult result = null;
-                int offset = 0;
-                try {
-                    result = packetDecoder.decode(rd.getName(), rd.getContents(), offset, rd.getContents().length - offset, timeGenerationComputer);
-                    forwardParameterResult(rd, result.getDecodedParameters());
-                } catch (DecodingException e) {
-                    LOG.log(Level.SEVERE, "Cannot decode packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
-                }
-                // Finally, notify all services about the new TM packet
-                notifyExtensionServices(rd, spacePacket, pusHeader, result);
-            } catch (Exception e) {
-                LOG.log(Level.SEVERE, "Unforeseen exception when processing packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
+                incomingPacketsQueue.drainTo(itemsToProcess);
+                incomingPacketsQueue.notifyAll();
             }
+            processPackets(itemsToProcess);
+        }
+    }
+
+    private void processPackets(List<RawData> itemsToProcess) {
+        List<Future<PacketDecodingResult>> results = new ArrayList<>(itemsToProcess.size());
+        for(RawData rd : itemsToProcess) {
+            results.add(decoderService.submit(() -> process(rd)));
+        }
+        for(Future<PacketDecodingResult> fpdt : results) {
+            PacketDecodingResult pdt = null;
+            try {
+                pdt = fpdt.get();
+            } catch (InterruptedException e) {
+                LOG.log(Level.WARNING, "TM Packet Processor dispatcher service interrupted while waiting for result");
+                return;
+            } catch (ExecutionException e) {
+                LOG.log(Level.SEVERE, "TM Packet Processor dispatcher service exception while decoding packet", e);
+            }
+            if(pdt != null) {
+                notifySpacePacketResults(pdt.getRawData(), pdt.getSpacePacket(), pdt.getPusHeader(), pdt.getResult());
+            }
+        }
+    }
+
+    private PacketDecodingResult process(RawData rd) {
+        try {
+            // To correctly apply generation time derivation ,we need to remember which raw data is used, as we need the generation time of the packet.
+            // We build an anonymous class for this purpose.
+            ParameterTimeGenerationComputer timeGenerationComputer = new ParameterTimeGenerationComputer(rd);
+            // At this stage, we need to have the TmPusHeader available, or a clear indication that the packet does not have such header
+            // If the RawData data property has no SpacePacket, we have to instantiate one
+            SpacePacket spacePacket = (SpacePacket) rd.getData();
+            if (spacePacket == null) {
+                spacePacket = new SpacePacket(rd.getContents(), rd.getQuality() == Quality.GOOD);
+            }
+
+            // If the header is already part of the SpacePacket annotation, then good. If not, we have to compute it (we are in playback, maybe)
+            TmPusHeader pusHeader = (TmPusHeader) spacePacket.getAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER);
+            if (pusHeader == null && spacePacket.isSecondaryHeaderFlag()) {
+                TmPusConfiguration conf = configuration.getPusConfigurationFor(spacePacket.getApid());
+                if (conf != null) {
+                    pusHeader = TmPusHeader.decodeFrom(spacePacket.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.getObtConfiguration() != null && conf.getObtConfiguration().isExplicitPField(), epoch, conf.getTimeDescriptor());
+                    spacePacket.setAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER, pusHeader);
+                }
+            }
+
+            // Expectation is that the definitions refer to the start of the space packet
+            DecodingResult result = null;
+            int offset = 0;
+            try {
+                result = packetDecoder.decode(rd.getName(), rd.getContents(), offset, rd.getContents().length - offset, timeGenerationComputer);
+            } catch (DecodingException e) {
+                LOG.log(Level.SEVERE, "Cannot decode packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
+            }
+
+            // Return result
+            return new PacketDecodingResult(rd, spacePacket, pusHeader, result);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Unforeseen exception when processing packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private void notifySpacePacketResults(RawData rd, SpacePacket spacePacket, TmPusHeader pusHeader, DecodingResult result) {
+        if(!notifierService.isShutdown()) {
+            notifierService.execute(() -> {
+                // Forward to processing model and ...
+                if (result != null) {
+                    forwardParameterResult(rd, result.getDecodedParameters());
+                }
+                // ... notify all services about the new TM packet
+                notifyExtensionServices(rd, spacePacket, pusHeader, result);
+            });
         }
     }
 
@@ -292,6 +377,9 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
     public void dispose() {
         this.broker.unsubscribe(this);
         this.performanceSampler.cancel();
+        this.dispatcherService.shutdownNow();
+        this.decoderService.shutdownNow();
+        this.notifierService.shutdownNow();
     }
 
     public LinkedHashMap<String, String> renderTmPacket(RawData rawData) {
@@ -357,5 +445,36 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
     @Override
     public List<DebugInformation> currentDebugInfo() {
         return lastStats.get();
+    }
+
+    private class PacketDecodingResult {
+
+        private final RawData rawData;
+        private final SpacePacket spacePacket;
+        private final TmPusHeader pusHeader;
+        private final DecodingResult result;
+
+        public PacketDecodingResult(RawData rawData, SpacePacket spacePacket, TmPusHeader pusHeader, DecodingResult result) {
+            this.rawData = rawData;
+            this.spacePacket = spacePacket;
+            this.pusHeader = pusHeader;
+            this.result = result;
+        }
+
+        public RawData getRawData() {
+            return rawData;
+        }
+
+        public SpacePacket getSpacePacket() {
+            return spacePacket;
+        }
+
+        public TmPusHeader getPusHeader() {
+            return pusHeader;
+        }
+
+        public DecodingResult getResult() {
+            return result;
+        }
     }
 }

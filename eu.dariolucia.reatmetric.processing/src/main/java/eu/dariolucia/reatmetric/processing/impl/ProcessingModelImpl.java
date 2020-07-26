@@ -72,7 +72,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     private final BlockingQueue<ProcessingTask> tmUpdateTaskQueue = new ArrayBlockingQueue<>(UPDATE_TASK_CAPACITY);
     private final BlockingQueue<ProcessingTask> activityUpdateTaskQueue = new ArrayBlockingQueue<>(UPDATE_TASK_CAPACITY);
 
-    private final ExecutorService taskProcessors = ThreadUtil.newCachedThreadExecutor("Reatmetric Processing - Task Processor");
+    private final ExecutorService taskProcessors = ThreadUtil.newCachedThreadExecutor("Reatmetric Processing - Task Processor"); // TODO: make it configurable
 
     private final ExecutorService tmDispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing - TM Dispatcher");
     private final ExecutorService activityDispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing - Activity Dispatcher");
