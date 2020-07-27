@@ -32,6 +32,7 @@ import javafx.scene.control.Control;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.transform.Scale;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import java.net.URL;
@@ -50,6 +51,8 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     protected String user = System.getProperty("user.name");
 
     protected boolean serviceConnected = false;
+
+    private volatile Stage detachedStage = null;
 
     /**
      * Initializes the controller class.
@@ -150,6 +153,12 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
 
     protected abstract void doSystemConnected(IReatmetricSystem system, boolean oldStatus);
 
+    public void setDetached(Stage stage) {
+        this.detachedStage = stage;
+    }
 
+    public boolean isDetached() {
+        return this.detachedStage != null;
+    }
 }
 
