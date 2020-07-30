@@ -69,18 +69,26 @@ public class DebugDialogController implements Initializable {
         IReatmetricSystem system = ReatmetricUI.selectedSystem().getSystem();
         if(system != null) {
             List<DebugInformation> info = system.currentDebugInfo();
-            Platform.runLater(() -> {
-                updateData(info);
-            });
+            if(info == null || info.isEmpty()) {
+                setEmptyDebugInformation();
+            } else {
+                Platform.runLater(() -> {
+                    updateData(info);
+                });
+            }
         } else {
-            Platform.runLater(() -> {
-                vboxParent.getChildren().clear();
-                id2control.clear();
-                Label l = new Label("No debug information currently available");
-                l.setPadding(new Insets(4.0));
-                vboxParent.getChildren().add(l);
-            });
+            setEmptyDebugInformation();
         }
+    }
+
+    private void setEmptyDebugInformation() {
+        Platform.runLater(() -> {
+            vboxParent.getChildren().clear();
+            id2control.clear();
+            Label l = new Label("No debug information currently available");
+            l.setPadding(new Insets(4.0));
+            vboxParent.getChildren().add(l);
+        });
     }
 
     private void updateData(List<DebugInformation> info) {

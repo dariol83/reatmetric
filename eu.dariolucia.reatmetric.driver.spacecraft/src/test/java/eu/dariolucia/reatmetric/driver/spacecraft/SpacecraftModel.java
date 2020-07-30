@@ -31,9 +31,8 @@ import eu.dariolucia.ccsds.encdec.structure.resolvers.DefaultNullBasedResolver;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.DefinitionValueBasedResolver;
 import eu.dariolucia.ccsds.encdec.value.TimeUtil;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.incoming.pdus.CltuTransferDataInvocation;
-import eu.dariolucia.ccsds.sle.utl.si.LockStatusEnum;
-import eu.dariolucia.ccsds.sle.utl.si.ProductionStatusEnum;
-import eu.dariolucia.ccsds.sle.utl.si.ServiceInstanceBindingStateEnum;
+import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.outgoing.pdus.RafTransferBuffer;
+import eu.dariolucia.ccsds.sle.utl.si.*;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.*;
 import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstanceProvider;
 import eu.dariolucia.ccsds.tmtc.coding.ChannelDecoder;
@@ -71,7 +70,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SpacecraftModel implements IVirtualChannelReceiverOutput {
+public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceInstanceListener {
 
     public static final int BUFFER_AVAILABLE = 10000;
 
@@ -84,7 +83,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     private final ProcessingDefinition processingDefinition;
 
     // TC processing part
-    private final ExecutorService cltuProcessor = Executors.newSingleThreadExecutor();
+    private final ExecutorService cltuProcessor = Executors.newSingleThreadExecutor(); // OK, test tool
     private ChannelDecoder<TcTransferFrame> cltuDecoder;
     private final Map<Integer, TcReceiverVirtualChannel> id2tcvc = new HashMap<>();
     private final Map<Integer, Boolean> id2segmentation = new HashMap<>();
@@ -101,7 +100,12 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     private List<TmPacketTemplate> pus1Packets = new LinkedList<>();
     private Map<Integer, AtomicInteger> apid2counter = new HashMap<>();
     private final ProcessingModelBasedResolver resolver;
-    private final ExecutorService frameSender = Executors.newFixedThreadPool(1);
+    private final ExecutorService frameSender = Executors.newFixedThreadPool(1); // OK, test tool
+
+    private final Timer performanceSampler = new Timer("Spacecraft Sampler", true);
+    private Instant lastSampleGenerationTime;
+    private long packetsPerSecond = 0;
+    private long framesPerSecond = 0;
 
     private volatile boolean running = false;
     private Thread tmThread;
@@ -110,6 +114,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
     public SpacecraftModel(String tmTcFilePath, String spacecraftFilePath, CltuServiceInstanceProvider cltuProvider, RafServiceInstanceProvider rafProvider, String processingModelPath) throws IOException, JAXBException {
         this.cltuProvider = cltuProvider;
         this.rafProvider = rafProvider;
+        this.rafProvider.register(this);
         this.cltuProvider.setTransferDataOperationHandler(this::cltuReceived);
         this.encDecDefs = Definition.load(new FileInputStream(tmTcFilePath));
         this.processingDefinition = ProcessingDefinition.load(new FileInputStream(processingModelPath));
@@ -125,6 +130,34 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
         initialiseSpacecraftDownlink();
         initialiseSpacePacketGeneration();
         this.resolver = new ProcessingModelBasedResolver(processingDefinition, new DefinitionValueBasedResolver(new DefaultNullBasedResolver(), true), spacecraftConfiguration.getTmPacketConfiguration().getParameterIdOffset(), encDecDefs);
+        // Create performance samples
+        performanceSampler.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                sample();
+            }
+        }, 1000, 2000);
+    }
+
+    private void sample() {
+        synchronized (performanceSampler) {
+            Instant genTime = Instant.now();
+            if (lastSampleGenerationTime == null) {
+                lastSampleGenerationTime = genTime;
+                packetsPerSecond = 0;
+                framesPerSecond = 0;
+            } else {
+                long numPackets = packetsPerSecond;
+                packetsPerSecond = 0;
+                long numFrames = framesPerSecond;
+                framesPerSecond = 0;
+                int millis = (int) (genTime.toEpochMilli() - lastSampleGenerationTime.toEpochMilli());
+                lastSampleGenerationTime = genTime;
+                double numPacketsPerSecond = (numPackets / (millis/1000.0));
+                double numFramesPerSecond = (numFrames / (millis/1000.0));
+                System.out.println("Frames per second: " + (int) numFramesPerSecond + ", packets per second: " + numPacketsPerSecond);
+            }
+        }
     }
 
     private void tcFrameOutput(TcTransferFrame tcTransferFrame) {
@@ -247,6 +280,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
                 SpacePacket sp = pkt.generate();
                 if(sp != null) {
                     packetsToSend.put(sp);
+                    synchronized (performanceSampler) {
+                        ++packetsPerSecond;
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -259,6 +295,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
                     SpacePacket spev = evpkt.generate();
                     if(spev != null) {
                         packetsToSend.put(spev);
+                        synchronized (performanceSampler) {
+                            ++packetsPerSecond;
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -346,6 +385,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
         SpacePacket sp = builder.build();
         try {
             this.packetsToSend.put(sp);
+            synchronized (performanceSampler) {
+                ++packetsPerSecond;
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -418,6 +460,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
                 System.out.println("Queueing PUS 1 packet: " + StringUtil.toHexDump(sp.getPacket()));
                 try {
                     this.packetsToSend.put(sp);
+                    synchronized (performanceSampler) {
+                        ++packetsPerSecond;
+                    }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -432,6 +477,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
                 System.out.println("Queueing PUS 1 packet (def): " + StringUtil.toHexDump(sp.getPacket()));
                 try {
                     this.packetsToSend.put(sp);
+                    synchronized (performanceSampler) {
+                        ++packetsPerSecond;
+                    }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -448,6 +496,41 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput {
         tmThread.interrupt();
         generationThread.interrupt();
         packetsToSend.clear();
+        performanceSampler.cancel();
+    }
+
+    @Override
+    public void onStateUpdated(ServiceInstance si, ServiceInstanceState state) {
+
+    }
+
+    @Override
+    public void onPduReceived(ServiceInstance si, Object operation, String name, byte[] encodedOperation) {
+
+    }
+
+    @Override
+    public void onPduSent(ServiceInstance si, Object operation, String name, byte[] encodedOperation) {
+        if(operation instanceof RafTransferBuffer) {
+            synchronized (performanceSampler) {
+                framesPerSecond += ((RafTransferBuffer) operation).getFrameOrNotification().size();
+            }
+        }
+    }
+
+    @Override
+    public void onPduSentError(ServiceInstance si, Object operation, String name, byte[] encodedOperation, String error, Exception exception) {
+
+    }
+
+    @Override
+    public void onPduDecodingError(ServiceInstance serviceInstance, byte[] encodedOperation) {
+
+    }
+
+    @Override
+    public void onPduHandlingError(ServiceInstance serviceInstance, Object operation, byte[] encodedOperation) {
+
     }
 
     private class TmPacketTemplate {

@@ -36,7 +36,6 @@ import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelFactory;
-import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
@@ -317,7 +316,7 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
         public SystemModelSubscriberWrapper(ISystemModelSubscriber subscriber) {
             this.subscriber = subscriber;
             this.dispatcher = Executors.newSingleThreadExecutor((r) -> {
-                Thread t = new Thread();
+                Thread t = new Thread(r);
                 t.setName("Reatmetric System Model Dispatcher - " + subscriber);
                 t.setDaemon(true);
                 return t;
