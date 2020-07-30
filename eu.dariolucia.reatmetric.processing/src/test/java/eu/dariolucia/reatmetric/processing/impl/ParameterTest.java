@@ -371,8 +371,8 @@ class ParameterTest {
         ParameterSample b = ParameterSample.of(1020, 20);
         model.injectParameters(Collections.singletonList(b));
 
-        //
-        AwaitUtil.awaitAndVerify(5000, outList::size, 8);
+        // 3 updates plus system entity update skipped due to no sample
+        AwaitUtil.awaitAndVerify(5000, outList::size, 2);
 
         // Checks
         for(int i = 0; i < outList.size(); ++i) {
@@ -409,7 +409,7 @@ class ParameterTest {
         model.injectParameters(Collections.singletonList(b));
 
         //
-        AwaitUtil.awaitAndVerify(5000, outList::size, 9);
+        AwaitUtil.awaitAndVerify(5000, outList::size, 3);
 
         // Checks
         for(int i = 0; i < outList.size(); ++i) {
@@ -447,7 +447,7 @@ class ParameterTest {
         model.injectParameters(Collections.singletonList(b));
 
         //
-        AwaitUtil.awaitAndVerify(5000, outList::size, 4);
+        AwaitUtil.awaitAndVerify(5000, outList::size, 2);
 
         // Checks
         for(int i = 0; i < outList.size(); ++i) {
@@ -472,7 +472,7 @@ class ParameterTest {
         model.injectParameters(Collections.singletonList(b));
 
         //
-        AwaitUtil.awaitAndVerify(5000, outList::size, 5);
+        AwaitUtil.awaitAndVerify(5000, outList::size, 2);
 
         // Checks
         for(int i = 0; i < outList.size(); ++i) {
@@ -499,7 +499,7 @@ class ParameterTest {
         model.injectParameters(Collections.singletonList(b));
 
         //
-        AwaitUtil.awaitAndVerify(5000, outList::size, 5);
+        AwaitUtil.awaitAndVerify(5000, outList::size, 1);
 
         // Checks
         for(int i = 0; i < outList.size(); ++i) {
@@ -507,16 +507,8 @@ class ParameterTest {
                 assertEquals(1026, ((ParameterData) outList.get(i)).getExternalId());
                 assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
                 assertEquals(AlarmState.NOT_CHECKED, ((ParameterData) outList.get(i)).getAlarmState());
-            } else if(((ParameterData) outList.get(i)).getExternalId() == 1027) {
-                assertEquals(1027, ((ParameterData) outList.get(i)).getExternalId());
-                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
-                ++i;
-                assertEquals("VALMATCH5", ((SystemEntity) outList.get(i)).getName()); // Unknown -> Not checked
             } else {
-                assertEquals(1028, ((ParameterData) outList.get(i)).getExternalId());
-                assertEquals(Validity.INVALID, ((ParameterData) outList.get(i)).getValidity()); // The other value is not set
-                ++i;
-                assertEquals("VALMATCH6", ((SystemEntity) outList.get(i)).getName()); // Not checked -> Unknown
+                fail("Expected 1026");
             }
         }
     }
@@ -700,26 +692,21 @@ class ParameterTest {
         ParameterSample b = ParameterSample.of(1065, current);
         ParameterSample c = ParameterSample.of(1066, next);
         model.injectParameters(Arrays.asList(b, c));
-        // 6 updates out
+        // 4 updates out: CONDPARAM is not re-evaluated due to missing sample at this stage
+        AwaitUtil.awaitAndVerify(5000, outList::size, 4);
+
         ParameterSample paramSample = ParameterSample.of(1061, 3.2);
         // 1 out
         model.injectParameters(Collections.singletonList(paramSample));
 
         // Expect 7 updates
-        AwaitUtil.awaitAndVerify(5000, outList::size, 7);
+        AwaitUtil.awaitAndVerify(5000, outList::size, 6);
 
-        boolean firstEntry = true;
         for(int i = 0; i < outList.size(); ++i) {
             if(outList.get(i) instanceof ParameterData && ((ParameterData) outList.get(i)).getExternalId() == 1061) {
-                if(firstEntry) {
-                    assertNull(((ParameterData) outList.get(i)).getSourceValue());
-                    assertNull(((ParameterData) outList.get(i)).getEngValue());
-                    firstEntry = false;
-                } else {
-                    assertEquals(1061, ((ParameterData) outList.get(i)).getExternalId());
-                    assertEquals(3.2, ((ParameterData) outList.get(i)).getSourceValue());
-                    assertEquals(0.13649, (Double) ((ParameterData) outList.get(i)).getEngValue(), 0.00001);
-                }
+                assertEquals(1061, ((ParameterData) outList.get(i)).getExternalId());
+                assertEquals(3.2, ((ParameterData) outList.get(i)).getSourceValue());
+                assertEquals(0.13649, (Double) ((ParameterData) outList.get(i)).getEngValue(), 0.00001);
             }
         }
 

@@ -578,7 +578,7 @@ class ActivityTest {
             assertEquals(1L, id1.asLong());
 
             //
-            AwaitUtil.awaitAndVerify(5000, outList::size, 3);
+            AwaitUtil.awaitAndVerify(5000, outList::size, 4);
 
             // Get the final state and check what it contains
             ActivityOccurrenceData state = (ActivityOccurrenceData) outList.get(outList.size() - 1);

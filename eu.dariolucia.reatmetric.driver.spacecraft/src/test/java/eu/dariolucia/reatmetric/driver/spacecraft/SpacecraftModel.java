@@ -266,13 +266,13 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         int hkCounter = 0;
         int evtCounter = 0;
         while (running) {
- //           try {
+            try {
  //               if(hkCounter % 1 == 0) {
- //                   Thread.sleep(1);
+                    Thread.sleep(1);
  //               }
- //           } catch (InterruptedException e) {
- //               e.printStackTrace();
- //           }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             TmPacketTemplate pkt = this.periodicPackets.get(hkCounter++);
             hkCounter = hkCounter % periodicPackets.size();
 

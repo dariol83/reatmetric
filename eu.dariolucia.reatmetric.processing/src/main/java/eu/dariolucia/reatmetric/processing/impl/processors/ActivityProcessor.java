@@ -345,8 +345,8 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         if (arg.getRawValue() != null && !ValueUtil.typeMatch(argDef.getRawType(), arg.getRawValue())) {
             throw new ProcessingModelException("Argument " + arg.getName() + " set with raw value not matching the argument raw value definition type " + argDef.getRawType() + ", expected " + argDef.getRawType().getAssignedClass().getSimpleName());
         }
-        // Argument is fixed? Then check if there is corresponding value.
-        if (argDef.isFixed()) {
+        // Argument is fixed and need to apply the checks? Then check if there is corresponding value.
+        if (argDef.isFixed() && applyChecks) {
             checkSameValue(argDef, arg);
         }
         // If it is engineering value and there is a decalibration function, decalibrate
