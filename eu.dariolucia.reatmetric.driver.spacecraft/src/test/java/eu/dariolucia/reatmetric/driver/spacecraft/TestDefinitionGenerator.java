@@ -16,7 +16,7 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft;
 
-import eu.dariolucia.ccsds.encdec.definition.Definition;
+import eu.dariolucia.ccsds.encdec.definition.*;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.processing.definition.*;
@@ -24,10 +24,7 @@ import eu.dariolucia.reatmetric.processing.definition.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,7 +35,7 @@ public class TestDefinitionGenerator {
 
     public static void main(String[] args) throws IOException {
         if(args.length != 1) {
-            System.err.println("USage: TestDefinitionGenerator <path to folder>");
+            System.err.println("Usage: TestDefinitionGenerator <path to folder>");
             System.exit(1);
         }
 
@@ -52,8 +49,268 @@ public class TestDefinitionGenerator {
     }
 
     private static Definition generatePacketDefinitions(ProcessingDefinition defs) {
+        Definition d = new Definition();
+        // Create the parameter definitions
+        Map<ParameterProcessingDefinition, ParameterDefinition> proc2param = new HashMap<>();
+        for(ParameterProcessingDefinition ppd : defs.getParameterDefinitions()) {
+            if(ppd.getExpression() != null) {
+                continue;
+            }
+            ParameterDefinition pd = new ParameterDefinition();
+            pd.setDescription(ppd.getDescription());
+            pd.setId(extractName(ppd.getLocation()));
+            pd.setType(mapType(ppd.getRawType()));
+            pd.setExternalId(ppd.getId() - 100000);
+            d.getParameters().add(pd);
+            proc2param.put(ppd, pd);
+        }
+        System.out.println("Mapped " + d.getParameters().size() + " onboard parameters");
+        // Now create the identification fields
+        IdentField ifApid = new IdentField("I-APID", 0, 16, 2047, 0, 0, 0);
+        IdentField ifPType = new IdentField("I-PUS-TYPE", 7, 1, -1, 0, 0, 0);
+        IdentField ifPSubtype = new IdentField("I-PUS-SUBTYPE", 8, 1, -1, 0, 0, 0);
+        IdentField ifP1 = new IdentField("I-P1", 16, 1, -1, 0, 0, 0);
+
+        d.getIdentificationFields().addAll(Arrays.asList(ifApid, ifPType, ifPSubtype, ifP1));
+
+        Queue<ParameterProcessingDefinition> parametersToAdd = new LinkedList<>();
+        System.out.println("Processing " + defs.getParameterDefinitions().size() + " parameters");
+        for(ParameterProcessingDefinition ppd : defs.getParameterDefinitions()) {
+            if(ppd.getExpression() == null) {
+                parametersToAdd.add(ppd);
+            }
+        }
+        System.out.println("Number of TM parameters to encode in 3,25 packets: " + parametersToAdd.size());
+        int commonSelector = 0;
+        List<ParameterProcessingDefinition> commonPool = new ArrayList<>();
+        for(int i = 0; i < 100; ++i) {
+            commonPool.add(defs.getParameterDefinitions().get(i * 7));
+        }
+        commonPool = commonPool.stream().filter(pd -> pd.getExpression() == null).collect(Collectors.toList());
+
+        // Now the packets: create 1620 PUS 3,25 using 5 templates (324 cycles). SID is I-P1, location of parameters is absolute.
+        // Number of parameters: 57, 42, 62, 47, 52 (260 parameters per cycle). Each APID covers 50 different packets with the SID.
+        // Each packet contains 100 parameters from the pool of parameters, and 2 parameters from a common parameter pool of 100 parameters
+        int apid = 100;
+        int sid = 0;
+        int packetId = 0;
+        final int firstParameterStartOffset = 128;
+        for(int i = 0; i < 324; ++i) {
+            {
+                PacketDefinition pd1 = new PacketDefinition();
+                pd1.setExternalId(packetId++);
+                pd1.setId("TM-325-" + String.format("%04d", apid) + "-" + String.format("%02d", sid));
+                pd1.setDescription("Packet " + pd1.getId());
+                pd1.setType("TM");
+                pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 3));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, 25));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid));
+                pd1.setStructure(new PacketStructure());
+                int offset = firstParameterStartOffset;
+                for(int k = 0; k < 55; ++k) {
+                    ParameterProcessingDefinition toMap = parametersToAdd.remove();
+                    offset += addParameter(pd1.getStructure(), toMap, proc2param.get(toMap), offset);
+                }
+                // Add two common parameters
+                ParameterProcessingDefinition c1 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c1, proc2param.get(c1), offset);
+                ParameterProcessingDefinition c2 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c2, proc2param.get(c2), offset);
+                d.getPacketDefinitions().add(pd1);
+            }
+            {
+                PacketDefinition pd1 = new PacketDefinition();
+                pd1.setExternalId(packetId++);
+                pd1.setId("TM-325-" + String.format("%04d", apid) + "-" + String.format("%02d", sid));
+                pd1.setDescription("Packet " + pd1.getId());
+                pd1.setType("TM");
+                pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 3));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, 25));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid));
+                pd1.setStructure(new PacketStructure());
+                int offset = firstParameterStartOffset;
+                for(int k = 0; k < 40; ++k) {
+                    ParameterProcessingDefinition toMap = parametersToAdd.remove();
+                    offset += addParameter(pd1.getStructure(), toMap, proc2param.get(toMap), offset);
+                }
+                // Add two common parameters
+                ParameterProcessingDefinition c1 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c1, proc2param.get(c1), offset);
+                ParameterProcessingDefinition c2 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c2, proc2param.get(c2), offset);
+                d.getPacketDefinitions().add(pd1);
+            }
+            {
+                PacketDefinition pd1 = new PacketDefinition();
+                pd1.setExternalId(packetId++);
+                pd1.setId("TM-325-" + String.format("%04d", apid) + "-" + String.format("%02d", sid));
+                pd1.setDescription("Packet " + pd1.getId());
+                pd1.setType("TM");
+                pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 3));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, 25));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid));
+                pd1.setStructure(new PacketStructure());
+                int offset = firstParameterStartOffset;
+                for(int k = 0; k < 60; ++k) {
+                    ParameterProcessingDefinition toMap = parametersToAdd.remove();
+                    offset += addParameter(pd1.getStructure(), toMap, proc2param.get(toMap), offset);
+                }
+                // Add two common parameters
+                ParameterProcessingDefinition c1 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c1, proc2param.get(c1), offset);
+                ParameterProcessingDefinition c2 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c2, proc2param.get(c2), offset);
+                d.getPacketDefinitions().add(pd1);
+            }
+            {
+                PacketDefinition pd1 = new PacketDefinition();
+                pd1.setExternalId(packetId++);
+                pd1.setId("TM-325-" + String.format("%04d", apid) + "-" + String.format("%02d", sid));
+                pd1.setDescription("Packet " + pd1.getId());
+                pd1.setType("TM");
+                pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 3));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, 25));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid));
+                pd1.setStructure(new PacketStructure());
+                int offset = firstParameterStartOffset;
+                for(int k = 0; k < 45; ++k) {
+                    ParameterProcessingDefinition toMap = parametersToAdd.remove();
+                    offset += addParameter(pd1.getStructure(), toMap, proc2param.get(toMap), offset);
+                }
+                // Add two common parameters
+                ParameterProcessingDefinition c1 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c1, proc2param.get(c1), offset);
+                ParameterProcessingDefinition c2 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c2, proc2param.get(c2), offset);
+                d.getPacketDefinitions().add(pd1);
+            }
+            {
+                PacketDefinition pd1 = new PacketDefinition();
+                pd1.setExternalId(packetId++);
+                pd1.setId("TM-325-" + String.format("%04d", apid) + "-" + String.format("%02d", sid));
+                pd1.setDescription("Packet " + pd1.getId());
+                pd1.setType("TM");
+                pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 3));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, 25));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid));
+                pd1.setStructure(new PacketStructure());
+                int offset = firstParameterStartOffset;
+                for(int k = 0; k < 50; ++k) {
+                    ParameterProcessingDefinition toMap = parametersToAdd.remove();
+                    offset += addParameter(pd1.getStructure(), toMap, proc2param.get(toMap), offset);
+                }
+                // Add two common parameters
+                ParameterProcessingDefinition c1 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c1, proc2param.get(c1), offset);
+                ParameterProcessingDefinition c2 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c2, proc2param.get(c2), offset);
+                d.getPacketDefinitions().add(pd1);
+            }
+            // Increment SID and APID
+            if(i % 10 == 9) {
+                ++apid;
+                sid = 0;
+            } else {
+                ++sid;
+            }
+        }
+        // Generate packets for PUS 5 events
         // TODO
-        return null;
+        // Generate packets for PUS 1 events
+        // TODO
+        // Generate TC packets for defined activities
+        // TODO
+        // Generate TC packet for 11,4 command
+        // TODO
+        return d;
+    }
+
+    private static int addParameter(PacketStructure structure, ParameterProcessingDefinition toMap, ParameterDefinition parameterDefinition, int bitOffset) {
+        EncodedParameter ep = new EncodedParameter();
+        ep.setId("EI-" + extractName(toMap.getLocation()));
+        FixedType type = mapType(toMap.getRawType());
+        ep.setType(type);
+        ep.setLocation(new FixedAbsoluteLocation(bitOffset));
+        ep.setLinkedParameter(new FixedLinkedParameter(parameterDefinition));
+        ep.setTime(new GenerationTime(null, null, 0));
+        structure.getEncodedItems().add(ep);
+        switch(type.getType()) {
+            case BOOLEAN:
+                return 1;
+            case ENUMERATED:
+            case SIGNED_INTEGER:
+            case UNSIGNED_INTEGER:
+            case BIT_STRING:
+                return type.getLength();
+            case REAL:
+                if(type.getLength() == 1 || type.getLength() == 3) {
+                    return 32;
+                } else if(type.getLength() == 2) {
+                    return 64;
+                } else {
+                    return 48;
+                }
+            case OCTET_STRING:
+            case CHARACTER_STRING:
+                return type.getLength() * Byte.SIZE;
+            case ABSOLUTE_TIME:
+            case RELATIVE_TIME: // CUC 4,3 always
+                return 7 * Byte.SIZE;
+            default:
+                throw new IllegalArgumentException("Generation software bug for type " + type.getType());
+        }
+    }
+
+    private static FixedType mapType(ValueTypeEnum rawType) {
+        switch (rawType) {
+            case BOOLEAN: return new FixedType(DataTypeEnum.BOOLEAN, 1);
+            case ENUMERATED: return new FixedType(DataTypeEnum.ENUMERATED, 16);
+            case SIGNED_INTEGER: return new FixedType(DataTypeEnum.SIGNED_INTEGER, 24);
+            case UNSIGNED_INTEGER: return new FixedType(DataTypeEnum.UNSIGNED_INTEGER, 32);
+            case BIT_STRING: return new FixedType(DataTypeEnum.BIT_STRING, 10);
+            case REAL: return new FixedType(DataTypeEnum.REAL, 1);
+            case OCTET_STRING: return new FixedType(DataTypeEnum.OCTET_STRING, 12);
+            case CHARACTER_STRING: return new FixedType(DataTypeEnum.CHARACTER_STRING, 10);
+            case ABSOLUTE_TIME: return new FixedType(DataTypeEnum.ABSOLUTE_TIME, 18);
+            case RELATIVE_TIME: return new FixedType(DataTypeEnum.RELATIVE_TIME, 18);
+            default:
+                throw new IllegalArgumentException("Generation software bug for type " + rawType);
+        }
     }
 
     private static ProcessingDefinition generateProcessingDefinitions() {
@@ -80,9 +337,18 @@ public class TestDefinitionGenerator {
         // Then, as part of the cycle, we have the generation of 10 activities with zero, one, two and three arguments.
 
         // Each cycle generates 85 parameters, 10 events and 10 activities. 1000 cycles are performed: 85K parameters, 10K events, 10k activities.
+        Set<String> prefixSet = new TreeSet<>();
         for(int i = 0; i < 1000; ++i) {
             String prefix = generateProcessingPrefix();
-            generateProcessingData(pd, prefix);
+            prefixSet.add(prefix);
+            generateParameterProcessingData(pd, prefix);
+        }
+
+        // Set the counter very high, so that we can map flawlessly TM packets to events, without overlapping with parameter IDs
+        ID_COUNTER = 200000;
+
+        for(String prefix : prefixSet) {
+            generateEventActivitiesProcessingData(pd, prefix);
         }
         // Finally, we have the generation of one event per PUS 1 verification report (8 events in total), 1 PUS (11,4) activity and 1 activity per type, to change
         // the parameter values
@@ -180,6 +446,10 @@ public class TestDefinitionGenerator {
         addActivityArgument(seta5, "VALUE", ValueTypeEnum.OCTET_STRING);
         pd.getActivityDefinitions().add(seta5);
 
+        System.out.println("Generated " + pd.getParameterDefinitions().size() + " parameters");
+        System.out.println("Generated " + pd.getEventDefinitions().size() + " events");
+        System.out.println("Generated " + pd.getActivityDefinitions().size() + " activities");
+
         return pd;
     }
 
@@ -203,7 +473,8 @@ public class TestDefinitionGenerator {
         return toReturn;
     }
 
-    private static void generateProcessingData(ProcessingDefinition pd, String prefix) {
+
+    private static void generateParameterProcessingData(ProcessingDefinition pd, String prefix) {
         int counter = 0;
 
         // Enumerations
@@ -613,9 +884,11 @@ public class TestDefinitionGenerator {
                 new SymbolDefinition(extractName(pe4.getLocation()), pe4.getId(), PropertyBinding.SOURCE_VALUE)
         )));
         pd.getParameterDefinitions().add(ps5);
+    }
 
-        counter = 0;
-        ID_COUNTER += 100;
+
+    private static void generateEventActivitiesProcessingData(ProcessingDefinition pd, String prefix) {
+        int counter = 0;
 
         // Events: 10 onboard, 2 condition-driven
         EventProcessingDefinition epd1 = buildEventProcessingDefinition(prefix, counter++, Severity.ALARM);
