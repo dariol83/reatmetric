@@ -250,14 +250,136 @@ public class TestDefinitionGenerator {
             }
         }
         // Generate packets for PUS 5 events
-        // TODO
+        apid = 100;
+        sid = 0;
+        for(EventProcessingDefinition epd : defs.getEventDefinitions()) {
+            if(epd.getType().equals("ON-BOARD")) {
+                PacketDefinition pd1 = new PacketDefinition();
+                pd1.setExternalId(epd.getId());
+                int severity = derivePus5Severity(epd.getSeverity());
+                pd1.setId("TM-5" + severity + "-" + String.format("%04d", apid) + "-" + String.format("%02d", sid));
+                pd1.setDescription("Packet for " + epd.getDescription());
+                pd1.setType("TM");
+                pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 5));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, severity));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid));
+                pd1.setStructure(new PacketStructure());
+                int offset = firstParameterStartOffset;
+                // Add two common parameters
+                ParameterProcessingDefinition c1 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c1, proc2param.get(c1), offset);
+                ParameterProcessingDefinition c2 = commonPool.get(commonSelector++);
+                if(commonSelector >= commonPool.size()) {
+                    commonSelector = 0;
+                }
+                offset += addParameter(pd1.getStructure(), c2, proc2param.get(c2), offset);
+                d.getPacketDefinitions().add(pd1);
+
+                if(++sid == 20) {
+                    ++apid;
+                    sid = 0;
+                }
+            }
+        }
         // Generate packets for PUS 1 events
-        // TODO
-        // Generate TC packets for defined activities
-        // TODO
+        apid = 900;
+        sid = 0;
+        for(EventProcessingDefinition epd : defs.getEventDefinitions()) {
+            if(epd.getType().equals("TC VERIFICATION")) {
+                PacketDefinition pd1 = new PacketDefinition();
+                pd1.setExternalId(epd.getId());
+                pd1.setId("TM-1-" + String.format("%04d", apid) + "-" + String.format("%02d", sid));
+                pd1.setDescription("Packet for " + epd.getDescription());
+                pd1.setType("TM");
+                int subtype = derivePus1Subtype(epd.getDescription());
+                pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 1));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, subtype));
+                pd1.setStructure(new PacketStructure());
+                int offset = firstParameterStartOffset;
+                // Add one parameter 4 bytes
+                EncodedParameter ep = new EncodedParameter("EI-PKT", new FixedType(DataTypeEnum.OCTET_STRING, 4), null);
+                ep.setLocation(new FixedAbsoluteLocation(offset));
+                pd1.getStructure().getEncodedItems().add(ep);
+                d.getPacketDefinitions().add(pd1);
+            }
+        }
+
+        apid = 1000;
+        int pus = 100;
+        int subt = 0;
         // Generate TC packet for 11,4 command
-        // TODO
+        for(ActivityProcessingDefinition epd : defs.getActivityDefinitions()) {
+            PacketDefinition pd1 = new PacketDefinition();
+            pd1.setExternalId(epd.getId());
+            String name = extractName(epd.getLocation());
+            pd1.setId(name);
+            pd1.setDescription("TC for " + epd.getDescription());
+            pd1.setType("TC");
+            pd1.setStructure(new PacketStructure());
+            if(name.startsWith("SCHEDULE")) {
+                EncodedParameter ep = new EncodedParameter("Subschedule-ID", new FixedType(DataTypeEnum.UNSIGNED_INTEGER, 1), null);
+                pd1.getStructure().getEncodedItems().add(ep);
+                EncodedParameter ep2 = new EncodedParameter("A-01", new FixedType(DataTypeEnum.UNSIGNED_INTEGER, 1), null);
+                ep2.setValue("2");
+                EncodedParameter ep3 = new EncodedParameter("Time", new FixedType(DataTypeEnum.ABSOLUTE_TIME, 17), null); // a CUC 4,2
+                pd1.getStructure().getEncodedItems().add(ep3);
+                EncodedParameter ep4 = new EncodedParameter("TC", new FixedType(DataTypeEnum.OCTET_STRING, 0), null);
+                pd1.getStructure().getEncodedItems().add(ep4);
+                pd1.setExtension("APID=" + apid + ".PUSTYPE="+pus + ".PUSSUBTYPE=" + subt + ".ACKS=X--X.CRITICAL=true");
+            } else {
+                // Map arguments as they are
+                for(AbstractArgumentDefinition aad : epd.getArguments()) {
+                    PlainArgumentDefinition pad = (PlainArgumentDefinition) aad;
+                    EncodedParameter mapped = new EncodedParameter(pad.getName(), mapType(pad.getRawType()), null);
+                    pd1.getStructure().getEncodedItems().add(mapped);
+                }
+                if(epd.getId() % 2 == 0) {
+                    pd1.setExtension("APID=" + apid + ".PUSTYPE=" + pus + ".PUSSUBTYPE=" + subt + ".ACKS=XX-X");
+                } else {
+                    pd1.setExtension("APID=" + apid + ".PUSTYPE=" + pus + ".PUSSUBTYPE=" + subt + ".ACKS=X---");
+                }
+            }
+            d.getPacketDefinitions().add(pd1);
+            if(++subt >= 200) {
+                ++pus;
+                subt = 0;
+            }
+            if(pus >= 120) {
+                ++apid;
+                pus = 0;
+            }
+        }
         return d;
+    }
+
+    private static int derivePus1Subtype(String description) {
+        if(description.contains("Acceptance")) {
+            return description.contains("Success") ? 1 : 2;
+        }
+        if(description.contains("Start")) {
+            return description.contains("Success") ? 1 : 2;
+        }
+        if(description.contains("Progress")) {
+            return description.contains("Success") ? 1 : 2;
+        }
+        if(description.contains("Completion")) {
+            return description.contains("Success") ? 1 : 2;
+        }
+        throw new IllegalArgumentException("Cannot derive PUS 1 type: " + description);
+    }
+
+    private static int derivePus5Severity(Severity severity) {
+        switch (severity) {
+            case ALARM: return 4;
+            case ERROR: return 3;
+            case WARN: return 2;
+            default: return 1;
+        }
     }
 
     private static int addParameter(PacketStructure structure, ParameterProcessingDefinition toMap, ParameterDefinition parameterDefinition, int bitOffset) {
