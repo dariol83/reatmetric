@@ -29,12 +29,21 @@ public class EventProcessingDefinition extends AbstractProcessingDefinition {
     @XmlAttribute
     private String type = "";
 
+    /**
+     * Inhibition period in milliseconds
+     */
     @XmlAttribute
     private int inhibitionPeriod = 0;
 
     @XmlElement(name = "condition")
     private ExpressionDefinition condition;
 
+    /**
+     * The inhibition period in milliseconds. If a new event is detected/reported within the inhibition period window,
+     * the event is ignored.
+     *
+     * @return the inhibition period in milliseconds
+     */
     public int getInhibitionPeriod() {
         return inhibitionPeriod;
     }
