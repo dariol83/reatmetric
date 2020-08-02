@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft;
+package eu.dariolucia.reatmetric.driver.spacecraft.test;
 
 import eu.dariolucia.ccsds.sle.utl.config.ServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.UtlConfigurationFile;
@@ -31,9 +31,20 @@ import java.io.InputStreamReader;
 import java.time.Instant;
 import java.util.logging.Logger;
 
+/**
+ * This application allows to replay a TM file containing the hex dump of TM frames (one frame per line), optionally prefixed
+ * with the reception time on Earth and a pipe '|' before the frame dump, i.e:
+ *
+ * &lt;yyyy-mm-dd'T'hh:mm:ss.SSSSSS'Z'&gt;'|'&lt;frame dump&gt;
+ *
+ * The application needs the path to the SLE file and the name of the RAF service instance to instantiate and use for transfer.
+ *
+ * The transfer starts automatically upon activation of the RAF SI by the user. 1 frame per second is transferred.
+ */
 public class SpacecraftTmReplayer {
 
     private static final Logger LOG = Logger.getLogger(SpacecraftTmReplayer.class.getName());
+    public static final int FRAME_PERIOD = 1000;
 
     public static void main(String[] args) throws IOException {
         if(args.length != 3) {
@@ -126,7 +137,7 @@ public class SpacecraftTmReplayer {
                             frame = StringUtil.toByteArray(line);
                         }
                         provider.transferData(frame, ReturnServiceInstanceProvider.FRAME_QUALITY_GOOD, 0, ert, false, PduStringUtil.toHexDump("ANTENNA".getBytes()), false, null);
-                        Thread.sleep(1000);
+                        Thread.sleep(FRAME_PERIOD);
                     }
                     provider.endOfData();
                 } catch (IOException e) {

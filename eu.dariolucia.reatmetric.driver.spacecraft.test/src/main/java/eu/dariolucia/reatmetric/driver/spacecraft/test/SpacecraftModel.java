@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft;
+package eu.dariolucia.reatmetric.driver.spacecraft.test;
 
-import eu.dariolucia.ccsds.encdec.definition.Definition;
-import eu.dariolucia.ccsds.encdec.definition.IdentField;
-import eu.dariolucia.ccsds.encdec.definition.IdentFieldMatcher;
-import eu.dariolucia.ccsds.encdec.definition.PacketDefinition;
+import eu.dariolucia.ccsds.encdec.definition.*;
 import eu.dariolucia.ccsds.encdec.pus.AckField;
 import eu.dariolucia.ccsds.encdec.pus.PusChecksumUtil;
+import eu.dariolucia.ccsds.encdec.pus.TcPusHeader;
 import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.EncodingException;
 import eu.dariolucia.ccsds.encdec.structure.IPacketEncoder;
@@ -29,6 +27,7 @@ import eu.dariolucia.ccsds.encdec.structure.PacketDefinitionIndexer;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketEncoder;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.DefaultNullBasedResolver;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.DefinitionValueBasedResolver;
+import eu.dariolucia.ccsds.encdec.time.AbsoluteTimeDescriptor;
 import eu.dariolucia.ccsds.encdec.value.TimeUtil;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.incoming.pdus.CltuTransferDataInvocation;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.outgoing.pdus.RafTransferBuffer;
@@ -70,9 +69,38 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * A simple implementation of a spacecraft model. It generates:
+ * <ul>
+ *     <li>TM packets 3,25 present in the definition, using parameter values derived from the default or expected values of the processing model (i.e. textual calibrations), round robin generation</li>
+ *     <li>TM packets 5,x present in the definition, using random generation</li>
+ *     <li>TM packets 1,x present in the definition, according to the ack flags configured in the TC</li>
+ *     <li>TM packets APID 0 (time packets) at VCC = 0 for VC 0</li>
+ *     <li>TM idle packets in case the remaining length inside a TM frame is less than 10 bytes</li>
+ * </ul>
+ *
+ * All TM data is delivered on VC 0.
+ *
+ * The application processes:
+ * <ul>
+ *     <li>All TC commands, by sending back ACKs defined as per ACK flags</li>
+ *     <li>PUS 11,4 command, with the limitation of 1 TC per 11,4, single subschedule ID (it is actually ignored), N present and hardcoded to 1</li>
+ *     <li>Specific SETTER commands </li>
+ * </ul>
+ *
+ *
+ *
+ */
 public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceInstanceListener {
 
     public static final int BUFFER_AVAILABLE = 10000;
+    public static final String APID_FIELD_NAME = "I-APID";
+    public static final String PUS_TYPE_FIELD_NAME = "I-PUS-TYPE";
+    public static final String PUS_SUBTYPE_FIELD_NAME = "I-PUS-SUBTYPE";
+    public static final int TM_FRAME_LENGTH = 1115;
+    public static final int PACKET_GENERATION_PERIOD_MS = 1;
+    public static final int SETTER_APID = 10;
+    public static final int SETTER_PUS = 69;
 
     private final CltuServiceInstanceProvider cltuProvider;
     private final RafServiceInstanceProvider rafProvider;
@@ -175,13 +203,13 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 int type = 0;
                 int subtype = 0;
                 for (IdentFieldMatcher md : pd.getMatchers()) {
-                    if (md.getField().getId().equals("I-APID")) {
+                    if (md.getField().getId().equals(APID_FIELD_NAME)) {
                         apid = md.getValue();
                     }
-                    if (md.getField().getId().equals("I-PUS-TYPE")) {
+                    if (md.getField().getId().equals(PUS_TYPE_FIELD_NAME)) {
                         type = md.getValue();
                     }
-                    if (md.getField().getId().equals("I-PUS-SUBTYPE")) {
+                    if (md.getField().getId().equals(PUS_SUBTYPE_FIELD_NAME)) {
                         subtype = md.getValue();
                     }
                 }
@@ -213,13 +241,13 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private void initialiseSpacecraftDownlink() {
         if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() == null) {
             TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), 0, VirtualChannelAccessMode.PACKET,
-                    spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), 1115, tmMux::getNextCounter, this::provideOcf);
+                    spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf);
             vc.register(tmMux);
             this.id2tmvc.put(0, vc);
         } else {
             for (Integer vcId : spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs()) {
                 TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), vcId, VirtualChannelAccessMode.PACKET,
-                        spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), 1115, tmMux::getNextCounter, this::provideOcf);
+                        spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf);
                 vc.register(tmMux);
                 this.id2tmvc.put(vcId, vc);
             }
@@ -267,9 +295,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         int evtCounter = 0;
         while (running) {
             try {
- //               if(hkCounter % 1 == 0) {
-                    Thread.sleep(1);
- //               }
+                Thread.sleep(PACKET_GENERATION_PERIOD_MS);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -423,7 +449,57 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             if(isTimeTaggedCommand(sp)) {
                 queueCommandExecution(vc, firstFrame, sp);
             }
+            if(isSetterCommand(sp)) {
+                executeSetterCommand(sp);
+            }
         }
+    }
+
+    private void executeSetterCommand(SpacePacket sp) {
+        try {
+            // Retrieve type code, name and value
+            TcPusHeader pusHeader = TcPusHeader.decodeFrom(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, 8);
+            int type = ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength(), 2).getShort();
+            byte[] strname = new byte[8];
+            ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 2, 8).get(strname);
+            String name = new String(strname);
+            // Depending on the type, retrieve the value
+            Object value = null;
+            switch (type) {
+                case 1: // Enum -> 16 bits
+                    value = ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 2).getShort();
+                    break;
+                case 2: // SI -> 32 bits
+                    value = (long) ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 4).getInt();
+                    break;
+                case 3: // UI -> 32 bits
+                    value = (long) Integer.toUnsignedLong(ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 4).getInt());
+                    break;
+                case 4: // Real -> 32 bits
+                    value = ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 4).getFloat();
+                    break;
+                case 6: // Octet string -> 12 bytes
+                    value = new byte[12];
+                    ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 12).get((byte[]) value);
+                    break;
+                default:
+                    System.out.println("Setter packet ignored, unknown type " + type + " for parameter " + name);
+                    break;
+            }
+            // Locate the parameter
+            if(value != null) {
+                resolver.updateParameterValue(name, value);
+            } else {
+                System.out.println("Setter packet ignored, value null for parameter " + name);
+            }
+        } catch (Exception e) {
+            System.out.println("Setter packet ignored, exception detected");
+            e.printStackTrace();
+        }
+    }
+
+    private boolean isSetterCommand(SpacePacket sp) {
+        return sp.getApid() == SETTER_APID && sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH + 1] == SETTER_PUS;
     }
 
     private void queueCommandExecution(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, SpacePacket sp) {
@@ -431,8 +507,8 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         // First of all, get rid of the TC PUS header: assume sourceLen octet align
         int sourceLenSpare = (spacecraftConfiguration.getTcPacketConfiguration().getSourceIdLength() + spacecraftConfiguration.getTcPacketConfiguration().getSpareLength()) / 8;
         // Then, understand if the subschedule and the num of entries is there
-        int subScheduleByteLen = 1; // Hardcoded
-        int counterByteLen = 1; // Hardcoded
+        int subScheduleByteLen = 1; // Hardcoded as per test data definition
+        int counterByteLen = 1; // Hardcoded as per test data definition
         // Finally, read the absolute time and the packet (limited to time and command, only 1)
         byte[] cucTime = Arrays.copyOfRange(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + 3 + sourceLenSpare + subScheduleByteLen + counterByteLen, SpacePacket.SP_PRIMARY_HEADER_LENGTH + 3 + sourceLenSpare + subScheduleByteLen + counterByteLen + 6);
         Instant time = TimeUtil.fromCUC(cucTime, spacecraftConfiguration.getEpoch().toInstant(), 4,2);

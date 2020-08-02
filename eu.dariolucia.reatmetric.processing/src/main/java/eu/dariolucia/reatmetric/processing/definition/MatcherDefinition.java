@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
+import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
@@ -142,6 +143,10 @@ public class MatcherDefinition {
         } else {
             paramValue = param.value();
         }
+        // At this stage, if the value is null (no value at all), any comparison is meaningless, therefore we return an invalid state
+        if(paramValue == null) {
+            return false;
+        }
         Object compareValue = null;
         if(valueType != null && value != null) {
             // Construct the value
@@ -152,6 +157,10 @@ public class MatcherDefinition {
                 compareValue = ref.rawValue();
             } else {
                 compareValue = ref.value();
+            }
+            // At this stage, if the value is null, then no way to compare
+            if(compareValue == null) {
+                return false;
             }
         } else {
             throw new MatcherException("Neither value nor reference attributes are set, cannot compare");
@@ -173,7 +182,7 @@ public class MatcherDefinition {
                 return operator == MatcherType.GT || operator == MatcherType.GT_EQUAL;
             }
         } else {
-            // XXX: a null will make the instanceof returning false, this might not be desirable
+            // nulls are handled before
             throw new MatcherException("Provided values '" + paramValue + "' and '" + compareValue + "' cannot be casted to Comparable, cannot compare");
         }
     }

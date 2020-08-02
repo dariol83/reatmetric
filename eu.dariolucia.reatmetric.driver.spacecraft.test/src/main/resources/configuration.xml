@@ -16,50 +16,43 @@
 
 <ns1:spacecraft xmlns:ns1="http://dariolucia.eu/reatmetric/driver/spacecraft">
 	<!-- Spacecraft name -->
-	<name>XXX</name>
+	<name>TEST</name>
 	<!-- Spacecraft ID -->
 	<id>123</id>
 	<!-- Agency epoch - not specified means 1st Jan 1958 00:00:00 -->
 	<obt-epoch>2000-01-01T00:00:00.000Z</obt-epoch>
 	<!-- Propagation delay - in microseconds - not specified means 0 -->
-	<propagation-delay>3600000000</propagation-delay>
+	<propagation-delay>0</propagation-delay>
 	<!-- TC datalink configuration -->
 	<tc randomize="true" fecf="true" ad-mode-default="false">
 		<tc-vc-descriptor tc-vc="0" segmentation="false" default-tc-vc="true" />
 	</tc>
 	<!-- TM datalink configuration -->
-	<tm 
-		fecf="false" 
-		derandomize="false">
-		<!-- VC to be processed -->
-		<vc-limit>
-			<vc>0</vc>
-		</vc-limit>
+	<tm fecf="true" derandomize="false">
 		<type>TM</type>
 	</tm>
 	<!-- TM packet configuration -->
-	<tm-packet 
-		parameter-id-offset="1000000">
+	<tm-packet parameter-id-offset="100000">
 		<default-pus-configuration 
-			destination-field-length="0" 
+			destination-field-length="8" 
 			packet-subcounter-present="false" 
 			tm-spare-length="0" 
 			tm-pec-present="NONE">
-			<obt-cuc-config explicit-p-field="false" coarse="4" fine="3" />
+			<obt-cuc-config explicit-p-field="false" coarse="4" fine="2" />
 		</default-pus-configuration>
 	</tm-packet>
 	<tc-packet
-			activity-tc-packet-type="TC"
-			pus-source-id-default-value="123"
-			pus-source-id-length="8"
-			pus-spare-length="0"
-			tc-pec-present="CRC">
+		activity-tc-packet-type="TC"
+		pus-source-id-default-value="123"
+		pus-source-id-length="8"
+		pus-spare-length="0"
+		tc-pec-present="CRC">
 	</tc-packet>
-	<!-- PUS configuration -->
+	<!-- Service configuration -->
 	<services>
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService" configuration="<path to configuration file>" />
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService" configuration="<path to configuration file>" />
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService" configuration="" />
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService" configuration="" />
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService" configuration="C:\Users\dario\reatmetric_test\test\services\time_correlation.xml" />
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService" configuration="C:\Users\dario\reatmetric_test\test\services\onboard_scheduling.xml" />
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService" configuration="" /> 
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService" configuration="" /> 
 	</services>
 </ns1:spacecraft>

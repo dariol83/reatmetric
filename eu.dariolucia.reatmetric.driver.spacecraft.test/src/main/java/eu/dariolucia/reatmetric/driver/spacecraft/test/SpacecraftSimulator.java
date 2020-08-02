@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft;
+package eu.dariolucia.reatmetric.driver.spacecraft.test;
 
 import eu.dariolucia.ccsds.sle.utl.config.ServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.UtlConfigurationFile;
@@ -30,13 +30,22 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.logging.Logger;
 
+/**
+ * A simple spacecraft simulator that generates random data, as defined by the processing model and TM/TC packet definition, using hardcoded
+ * configuration for the TM/TC datalink and packet layers.
+ *
+ * With respect to the SLE configuration, the simulator uses a single RAF SI for TM, and a CLTU SI for CLTU reception. These SIs will be the
+ * first ones that the system will locate in the provided SLE configuration file.
+ *
+ *
+ */
 public class SpacecraftSimulator {
 
     private static final Logger LOG = Logger.getLogger(SpacecraftSimulator.class.getName());
 
     public static void main(String[] args) throws IOException, JAXBException {
         if (args.length != 4) {
-            System.err.println("Usage: SpacecraftSimulator <path to SLE configuration file> <path to TM TC file> <spacecraft configuration> <path to processing model>");
+            System.err.println("Usage: SpacecraftSimulator <path to SLE configuration file> <path to TM/TC configuration file> <spacecraft configuration> <path to processing model>");
             System.exit(1);
         }
         // Load the SLE configuration file

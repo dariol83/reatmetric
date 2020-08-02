@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft;
+package eu.dariolucia.reatmetric.driver.spacecraft.test;
 
 import eu.dariolucia.ccsds.encdec.definition.*;
 import eu.dariolucia.reatmetric.api.messages.Severity;
@@ -28,6 +28,28 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * This application generates the test data configuration (processing model and TM/TC packet definitions) that allows
+ * testing of the ReatMetric spacecraft driver.
+ *
+ * The generated data assumes the following packet configuration (in line with the Spacecraft Simulator implementation
+ * and with the test configuration files inside the 'resources' folder):
+ * <ul>
+ *     <li>Parameter ID offset to be set to 100000;</li>
+ *     <li>TM packet: destination field length: 8 bits; no packet error control field; OBT time: implicit CUC 4,2;</li>
+ *     <li>TC packet: source field length: 8 bits; CRC packet error control field;</li>
+ *     <li>PUS 11,4: single TC to be scheduled, N = 1.</li>
+ * </ul>
+ *
+ * This application generates:
+ * <ul>
+ *     <li>a processing model configuration file with 85'000 parameters, 10'000 events and 10'000 activity definitions</li>
+ *     <li>a TM/TC packet definition configuration file with 80'000 onboard parameters, ca 1'600 PUS 3,25 pockets, 10'000 PUS 5 event packets and 10'000 TC commands</li>
+ * </ul>
+ *
+ * Specific PUS 1 report packets, PUS 11,4 TC and setter TCs (which are processed by the {@link SpacecraftSimulator} accordingly to change
+ * parameter values) are also generated.
+ */
 public class TestDefinitionGenerator {
 
     private static final char[] PREFIX_COUNTER = new char[] {'A', 'A', 'A'};
@@ -66,7 +88,7 @@ public class TestDefinitionGenerator {
         }
         System.out.println("Mapped " + d.getParameters().size() + " onboard parameters");
         // Now create the identification fields
-        IdentField ifApid = new IdentField("I-APID", 0, 16, 2047, 0, 0, 0);
+        IdentField ifApid = new IdentField("I-APID", 0, 2, 2047, 0, 0, 0);
         IdentField ifPType = new IdentField("I-PUS-TYPE", 7, 1, -1, 0, 0, 0);
         IdentField ifPSubtype = new IdentField("I-PUS-SUBTYPE", 8, 1, -1, 0, 0, 0);
         IdentField ifP1 = new IdentField("I-P1", 16, 1, -1, 0, 0, 0);
@@ -88,14 +110,14 @@ public class TestDefinitionGenerator {
         }
         commonPool = commonPool.stream().filter(pd -> pd.getExpression() == null).collect(Collectors.toList());
 
-        // Now the packets: create 1620 PUS 3,25 using 5 templates (324 cycles). SID is I-P1, location of parameters is absolute.
+        // Now the packets: create ca 1500 PUS 3,25 using 5 templates (320 cycles). SID is I-P1, location of parameters is absolute.
         // Number of parameters: 57, 42, 62, 47, 52 (260 parameters per cycle). Each APID covers 50 different packets with the SID.
         // Each packet contains 100 parameters from the pool of parameters, and 2 parameters from a common parameter pool of 100 parameters
         int apid = 100;
         int sid = 0;
         int packetId = 0;
         final int firstParameterStartOffset = 128;
-        for(int i = 0; i < 324; ++i) {
+        for(int i = 0; i < 320; ++i) {
             {
                 PacketDefinition pd1 = new PacketDefinition();
                 pd1.setExternalId(packetId++);
@@ -249,6 +271,16 @@ public class TestDefinitionGenerator {
                 ++sid;
             }
         }
+        // Generate time packet
+        PacketDefinition timepkt = new PacketDefinition();
+        timepkt.setExternalId(packetId++);
+        timepkt.setId("TIME PACKET");
+        timepkt.setDescription("Time Packet");
+        timepkt.setType("TM");
+        timepkt.getMatchers().add(new IdentFieldMatcher(ifApid, 0));
+        timepkt.setStructure(new PacketStructure());
+        d.getPacketDefinitions().add(timepkt);
+
         // Generate packets for PUS 5 events
         apid = 100;
         sid = 0;
@@ -312,6 +344,10 @@ public class TestDefinitionGenerator {
         apid = 1000;
         int pus = 100;
         int subt = 0;
+
+        final int setterAPID = 10;
+        int setterIdPus = 69;
+        int setterSubt = 0;
         // Generate TC packet for 11,4 command
         for(ActivityProcessingDefinition epd : defs.getActivityDefinitions()) {
             PacketDefinition pd1 = new PacketDefinition();
@@ -330,7 +366,7 @@ public class TestDefinitionGenerator {
                 pd1.getStructure().getEncodedItems().add(ep3);
                 EncodedParameter ep4 = new EncodedParameter("TC", new FixedType(DataTypeEnum.OCTET_STRING, 0), null);
                 pd1.getStructure().getEncodedItems().add(ep4);
-                pd1.setExtension("APID=" + apid + ".PUSTYPE="+pus + ".PUSSUBTYPE=" + subt + ".ACKS=X--X.CRITICAL=true");
+                pd1.setExtension("APID=" + apid + ".PUSTYPE=" + pus + ".PUSSUBTYPE=" + subt + ".ACKS=X--X.CRITICAL=true");
             } else {
                 // Map arguments as they are
                 for(AbstractArgumentDefinition aad : epd.getArguments()) {
@@ -338,10 +374,14 @@ public class TestDefinitionGenerator {
                     EncodedParameter mapped = new EncodedParameter(pad.getName(), mapType(pad.getRawType()), null);
                     pd1.getStructure().getEncodedItems().add(mapped);
                 }
-                if(epd.getId() % 2 == 0) {
-                    pd1.setExtension("APID=" + apid + ".PUSTYPE=" + pus + ".PUSSUBTYPE=" + subt + ".ACKS=XX-X");
+                if(name.startsWith("SETTER")) {
+                    pd1.setExtension("APID=" + setterAPID + ".PUSTYPE=" + setterIdPus + ".PUSSUBTYPE=" + (setterSubt++) + ".ACKS=XX-X");
                 } else {
-                    pd1.setExtension("APID=" + apid + ".PUSTYPE=" + pus + ".PUSSUBTYPE=" + subt + ".ACKS=X---");
+                    if (epd.getId() % 2 == 0) {
+                        pd1.setExtension("APID=" + apid + ".PUSTYPE=" + pus + ".PUSSUBTYPE=" + subt + ".ACKS=XX-X");
+                    } else {
+                        pd1.setExtension("APID=" + apid + ".PUSTYPE=" + pus + ".PUSSUBTYPE=" + subt + ".ACKS=X---");
+                    }
                 }
             }
             d.getPacketDefinitions().add(pd1);
@@ -354,6 +394,7 @@ public class TestDefinitionGenerator {
                 pus = 0;
             }
         }
+
         return d;
     }
 
@@ -422,12 +463,12 @@ public class TestDefinitionGenerator {
         switch (rawType) {
             case BOOLEAN: return new FixedType(DataTypeEnum.BOOLEAN, 1);
             case ENUMERATED: return new FixedType(DataTypeEnum.ENUMERATED, 16);
-            case SIGNED_INTEGER: return new FixedType(DataTypeEnum.SIGNED_INTEGER, 24);
+            case SIGNED_INTEGER: return new FixedType(DataTypeEnum.SIGNED_INTEGER, 32);
             case UNSIGNED_INTEGER: return new FixedType(DataTypeEnum.UNSIGNED_INTEGER, 32);
             case BIT_STRING: return new FixedType(DataTypeEnum.BIT_STRING, 10);
             case REAL: return new FixedType(DataTypeEnum.REAL, 1);
             case OCTET_STRING: return new FixedType(DataTypeEnum.OCTET_STRING, 12);
-            case CHARACTER_STRING: return new FixedType(DataTypeEnum.CHARACTER_STRING, 10);
+            case CHARACTER_STRING: return new FixedType(DataTypeEnum.CHARACTER_STRING, 8);
             case ABSOLUTE_TIME: return new FixedType(DataTypeEnum.ABSOLUTE_TIME, 18);
             case RELATIVE_TIME: return new FixedType(DataTypeEnum.RELATIVE_TIME, 18);
             default:
@@ -466,8 +507,10 @@ public class TestDefinitionGenerator {
             generateParameterProcessingData(pd, prefix);
         }
 
+        System.out.println("Counter after parameter generation: " + ID_COUNTER);
+
         // Set the counter very high, so that we can map flawlessly TM packets to events, without overlapping with parameter IDs
-        ID_COUNTER = 200000;
+        ID_COUNTER = 1000000;
 
         for(String prefix : prefixSet) {
             generateEventActivitiesProcessingData(pd, prefix);
@@ -538,41 +581,75 @@ public class TestDefinitionGenerator {
         counter = 0;
         ID_COUNTER += 10;
 
-        ActivityProcessingDefinition seta1 = buildActivityProcessingDefinition("SETTER", counter++);
-        addFixedActivityArgument(seta1, "TYPE", ValueTypeEnum.ENUMERATED, String.valueOf(ValueTypeEnum.ENUMERATED.ordinal()));
-        addActivityArgument(seta1, "NAME", ValueTypeEnum.CHARACTER_STRING);
-        addActivityArgument(seta1, "VALUE", ValueTypeEnum.ENUMERATED);
-        pd.getActivityDefinitions().add(seta1);
+        ActivityProcessingDefinition enumSetter = buildActivityProcessingDefinition("SETTER", counter++);
+        addFixedActivityArgument(enumSetter, "TYPE", ValueTypeEnum.ENUMERATED, String.valueOf(ValueTypeEnum.ENUMERATED.ordinal()));
+        addActivityArgument(enumSetter, "NAME", ValueTypeEnum.CHARACTER_STRING);
+        addActivityArgument(enumSetter, "VALUE", ValueTypeEnum.ENUMERATED);
+        pd.getActivityDefinitions().add(enumSetter);
 
-        ActivityProcessingDefinition seta2 = buildActivityProcessingDefinition("SETTER", counter++);
-        addFixedActivityArgument(seta2, "TYPE", ValueTypeEnum.ENUMERATED, String.valueOf(ValueTypeEnum.UNSIGNED_INTEGER.ordinal()));
-        addActivityArgument(seta2, "NAME", ValueTypeEnum.CHARACTER_STRING);
-        addActivityArgument(seta2, "VALUE", ValueTypeEnum.UNSIGNED_INTEGER);
-        pd.getActivityDefinitions().add(seta2);
+        ActivityProcessingDefinition uintSetter = buildActivityProcessingDefinition("SETTER", counter++);
+        addFixedActivityArgument(uintSetter, "TYPE", ValueTypeEnum.ENUMERATED, String.valueOf(ValueTypeEnum.UNSIGNED_INTEGER.ordinal()));
+        addActivityArgument(uintSetter, "NAME", ValueTypeEnum.CHARACTER_STRING);
+        addActivityArgument(uintSetter, "VALUE", ValueTypeEnum.UNSIGNED_INTEGER);
+        pd.getActivityDefinitions().add(uintSetter);
 
-        ActivityProcessingDefinition seta3 = buildActivityProcessingDefinition("SETTER", counter++);
-        addFixedActivityArgument(seta3, "TYPE", ValueTypeEnum.ENUMERATED, String.valueOf(ValueTypeEnum.SIGNED_INTEGER.ordinal()));
-        addActivityArgument(seta3, "NAME", ValueTypeEnum.CHARACTER_STRING);
-        addActivityArgument(seta3, "VALUE", ValueTypeEnum.SIGNED_INTEGER);
-        pd.getActivityDefinitions().add(seta3);
+        ActivityProcessingDefinition sigintSetter = buildActivityProcessingDefinition("SETTER", counter++);
+        addFixedActivityArgument(sigintSetter, "TYPE", ValueTypeEnum.ENUMERATED, String.valueOf(ValueTypeEnum.SIGNED_INTEGER.ordinal()));
+        addActivityArgument(sigintSetter, "NAME", ValueTypeEnum.CHARACTER_STRING);
+        addActivityArgument(sigintSetter, "VALUE", ValueTypeEnum.SIGNED_INTEGER);
+        pd.getActivityDefinitions().add(sigintSetter);
 
-        ActivityProcessingDefinition seta4 = buildActivityProcessingDefinition("SETTER", counter++);
-        addFixedActivityArgument(seta4, "TYPE", ValueTypeEnum.ENUMERATED, String.valueOf(ValueTypeEnum.REAL.ordinal()));
-        addActivityArgument(seta4, "NAME", ValueTypeEnum.CHARACTER_STRING);
-        addActivityArgument(seta4, "VALUE", ValueTypeEnum.REAL);
-        pd.getActivityDefinitions().add(seta4);
+        ActivityProcessingDefinition realSetter = buildActivityProcessingDefinition("SETTER", counter++);
+        addFixedActivityArgument(realSetter, "TYPE", ValueTypeEnum.ENUMERATED, String.valueOf(ValueTypeEnum.REAL.ordinal()));
+        addActivityArgument(realSetter, "NAME", ValueTypeEnum.CHARACTER_STRING);
+        addActivityArgument(realSetter, "VALUE", ValueTypeEnum.REAL);
+        pd.getActivityDefinitions().add(realSetter);
 
-        ActivityProcessingDefinition seta5 = buildActivityProcessingDefinition("SETTER", counter++);
-        addFixedActivityArgument(seta5, "TYPE", ValueTypeEnum.ENUMERATED, String.valueOf(ValueTypeEnum.OCTET_STRING.ordinal()));
-        addActivityArgument(seta5, "NAME", ValueTypeEnum.CHARACTER_STRING);
-        addActivityArgument(seta5, "VALUE", ValueTypeEnum.OCTET_STRING);
-        pd.getActivityDefinitions().add(seta5);
+        ActivityProcessingDefinition octSetter = buildActivityProcessingDefinition("SETTER", counter++);
+        addFixedActivityArgument(octSetter, "TYPE", ValueTypeEnum.ENUMERATED, String.valueOf(ValueTypeEnum.OCTET_STRING.ordinal()));
+        addActivityArgument(octSetter, "NAME", ValueTypeEnum.CHARACTER_STRING);
+        addActivityArgument(octSetter, "VALUE", ValueTypeEnum.OCTET_STRING);
+        pd.getActivityDefinitions().add(octSetter);
+
+        // Attach setters to the parameters
+        for(ParameterProcessingDefinition ppd : pd.getParameterDefinitions()) {
+            if(ppd.getExpression() == null) {
+                switch(ppd.getRawType()) {
+                    case ENUMERATED:
+                        attachSetter(ppd, enumSetter);
+                        break;
+                    case SIGNED_INTEGER:
+                        attachSetter(ppd, sigintSetter);
+                        break;
+                    case UNSIGNED_INTEGER:
+                        attachSetter(ppd, uintSetter);
+                        break;
+                    case REAL:
+                        attachSetter(ppd, realSetter);
+                        break;
+                    case OCTET_STRING:
+                        attachSetter(ppd, octSetter);
+                        break;
+                }
+            }
+        }
 
         System.out.println("Generated " + pd.getParameterDefinitions().size() + " parameters");
         System.out.println("Generated " + pd.getEventDefinitions().size() + " events");
         System.out.println("Generated " + pd.getActivityDefinitions().size() + " activities");
 
         return pd;
+    }
+
+    private static void attachSetter(ParameterProcessingDefinition ppd, ActivityProcessingDefinition enumSetter) {
+        ppd.setSetter(new ParameterSetterDefinition());
+        ppd.getSetter().setActivity(enumSetter);
+        ppd.getSetter().setSetArgument("VALUE");
+        PlainArgumentInvocationDefinition nameArg = new PlainArgumentInvocationDefinition();
+        nameArg.setName("NAME");
+        nameArg.setRawValue(true);
+        nameArg.setValue(extractName(ppd.getLocation()));
+        ppd.getSetter().setArguments(Arrays.asList(nameArg));
     }
 
     private static void addFixedActivityArgument(ActivityProcessingDefinition seta1, String type, ValueTypeEnum enumerated, String value) {
@@ -625,7 +702,7 @@ public class TestDefinitionGenerator {
         pe6.setChecks(generateExpectedValueCheck(CheckSeverity.WARNING, ValueTypeEnum.ENUMERATED, 0, 1, 2));
         pd.getParameterDefinitions().add(pe6);
 
-        ParameterProcessingDefinition pe7 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.ENUMERATED, ValueTypeEnum.ENUMERATED);
+        ParameterProcessingDefinition pe7 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.ENUMERATED, ValueTypeEnum.CHARACTER_STRING);
         pe7.setValidity(new ValidityCondition(new MatcherDefinition(pe1, MatcherType.EQUAL, ValueTypeEnum.CHARACTER_STRING, "ON"))); // default is to use the engineering value for the comparison
         pe7.setCalibrations(generateTextualCalibration("STATE_A", "STATE_B", "STATE_C", "STATE_D", "STATE_E", "STATE_F", "AUX", "N/A"));
         pe6.setChecks(generateExpectedValueCheck(CheckSeverity.ALARM, ValueTypeEnum.CHARACTER_STRING, "STATE_A", "STATE_B", "STATE_C", "STATE_D", "STATE_E"));
@@ -704,7 +781,7 @@ public class TestDefinitionGenerator {
         // Unsigned integers
         ParameterProcessingDefinition pui1 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.UNSIGNED_INTEGER, ValueTypeEnum.UNSIGNED_INTEGER);
         pui1.setUnit("mps");
-        pui1.setChecks(generateLimitCheck(CheckSeverity.WARNING, ValueTypeEnum.SIGNED_INTEGER, 100L, 200L));
+        pui1.setChecks(generateLimitCheck(CheckSeverity.WARNING, ValueTypeEnum.UNSIGNED_INTEGER, 100L, 200L));
         pd.getParameterDefinitions().add(pui1);
 
         ParameterProcessingDefinition pui2 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.UNSIGNED_INTEGER, ValueTypeEnum.UNSIGNED_INTEGER);
@@ -751,7 +828,7 @@ public class TestDefinitionGenerator {
         // Reals
         ParameterProcessingDefinition pr1 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.REAL, ValueTypeEnum.REAL);
         pr1.setUnit("mps");
-        pr1.setChecks(generateLimitCheck(CheckSeverity.WARNING, ValueTypeEnum.SIGNED_INTEGER, 20, 30));
+        pr1.setChecks(generateLimitCheck(CheckSeverity.WARNING, ValueTypeEnum.REAL, 20, 30));
         pd.getParameterDefinitions().add(pr1);
 
         ParameterProcessingDefinition pr2 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.REAL, ValueTypeEnum.REAL);
@@ -999,7 +1076,7 @@ public class TestDefinitionGenerator {
 
         // Synthetic
         ParameterProcessingDefinition ps5 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.CHARACTER_STRING, ValueTypeEnum.CHARACTER_STRING);
-        ps1.setExpression(new ExpressionDefinition("function eval() { \n" +
+        ps5.setExpression(new ExpressionDefinition("function eval() { \n" +
                 "  return " + extractName(pe4.getLocation()) + " + \"_TEST\" \n" +
                 "} \n" +
                 "eval();", Arrays.asList(
@@ -1105,7 +1182,7 @@ public class TestDefinitionGenerator {
     private static ActivityProcessingDefinition buildActivityProcessingDefinition(String prefix, int counter) {
         ActivityProcessingDefinition epd = new ActivityProcessingDefinition();
         epd.setId(ID_COUNTER++);
-        String name = String.format("%s%s%04d", prefix, "E", ++counter);
+        String name = String.format("%s%s%04d", prefix, "A", counter);
         epd.setDescription("Description of activity " + name);
         epd.setLocation(String.format("SPACE.SC.%s.%s", prefix, name));
         epd.setType("TC");
@@ -1116,9 +1193,10 @@ public class TestDefinitionGenerator {
     private static EventProcessingDefinition buildEventProcessingDefinition(String prefix, int counter, Severity severity) {
         EventProcessingDefinition epd = new EventProcessingDefinition();
         epd.setId(ID_COUNTER++);
-        String name = String.format("%s%s%04d", prefix, "E", ++counter);
+        String name = String.format("%s%s%04d", prefix, "E", counter);
         epd.setDescription("Description of event " + name + " with severity " + severity);
         epd.setLocation(String.format("SPACE.SC.%s.%s", prefix, name));
+        epd.setSeverity(severity);
         return epd;
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft;
+package eu.dariolucia.reatmetric.driver.spacecraft.test;
 
 import eu.dariolucia.ccsds.encdec.definition.*;
 import eu.dariolucia.ccsds.encdec.structure.EncodingException;
@@ -24,12 +24,14 @@ import eu.dariolucia.ccsds.encdec.time.AbsoluteTimeDescriptor;
 import eu.dariolucia.ccsds.encdec.time.RelativeTimeDescriptor;
 import eu.dariolucia.ccsds.encdec.value.BitString;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.definition.*;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 public class ProcessingModelBasedResolver implements IEncodeResolver {
@@ -39,8 +41,9 @@ public class ProcessingModelBasedResolver implements IEncodeResolver {
     private final List<ParameterDefinition> parameterDefinitions;
     private final IEncodeResolver innerResolver;
     private final Map<Integer, List<Object>> acceptableValues;
+    private final Map<String, Long> name2idInTmTc = new HashMap<>();
     private final Set<String> parameters = new HashSet<>();
-    private final Map<Long, Object> cachedValue = new HashMap<>();
+    private final Map<Long, Object> cachedValue = new ConcurrentHashMap<>();
 
     public ProcessingModelBasedResolver(ProcessingDefinition definition, IEncodeResolver innerResolver, int parameterOffset, Definition encodingDefinitions) {
         this.parameterDefinitions = encodingDefinitions.getParameters();
@@ -48,6 +51,7 @@ public class ProcessingModelBasedResolver implements IEncodeResolver {
         this.acceptableValues = new HashMap<>();
         // Acceptable values coming from textual calibrations
         for(ParameterProcessingDefinition ppd : definition.getParameterDefinitions()) {
+            name2idInTmTc.put(extractName(ppd.getLocation()), (long) (ppd.getId() - parameterOffset));
             List<Object> acceptables = computeAcceptableRawValues(ppd);
             if(acceptables != null) {
                 acceptableValues.put(ppd.getId() - parameterOffset, acceptables);
@@ -67,7 +71,7 @@ public class ProcessingModelBasedResolver implements IEncodeResolver {
                 for (CalibrationDefinition cd : ppd.getCalibrations()) {
                     if (cd.getApplicability() != null) {
                         Pair<Long, Object> value = deriveApplicabilityValue(cd.getApplicability());
-                        if (value != null) {
+                        if (value != null && value.getSecond() != null) {
                             cachedValue.put(value.getFirst() - parameterOffset, value.getSecond());
                             break;
                         }
@@ -77,16 +81,50 @@ public class ProcessingModelBasedResolver implements IEncodeResolver {
         }
     }
 
+    private static String extractName(String location) {
+        return location.substring(location.lastIndexOf('.') + 1);
+    }
+
     private Pair<Long, Object> deriveApplicabilityValue(ValidityCondition applicability) {
         if(applicability.getMatch() != null) {
             long id = applicability.getMatch().getParameter().getId();
             if(applicability.getMatch().getValue() != null) {
                 Object val = ValueUtil.parse(applicability.getMatch().getValueType(), applicability.getMatch().getValue());
+                // If the match is against an engineering value and val is a string, there is the likelyhood that a textual calibration
+                // is applied. Check the parameter and, if so, decalibrate.
+                if(!applicability.getMatch().isUseRawValue() && val instanceof String && (applicability.getMatch().getParameter().getRawType() == ValueTypeEnum.ENUMERATED
+                || applicability.getMatch().getParameter().getRawType() == ValueTypeEnum.SIGNED_INTEGER || applicability.getMatch().getParameter().getRawType() == ValueTypeEnum.UNSIGNED_INTEGER)) {
+                    // Decalibrate val with the first textual calibration you find for the pointed parameter
+                    val = decalibrate((String) val, applicability.getMatch().getParameter());
+                }
                 LOG.info("Preset parameter ID " + id + " with value " + val);
                 return Pair.of(id, val);
             }
         }
         return null;
+    }
+
+    private Object decalibrate(String val, ParameterProcessingDefinition parameter) {
+        for (CalibrationDefinition cd : parameter.getCalibrations()) {
+            if (cd instanceof EnumCalibration) {
+                EnumCalibration theCalib = (EnumCalibration) cd;
+                for(EnumCalibrationPoint calibPoint : theCalib.getPoints()) {
+                    if(calibPoint.getValue().equals(val)) {
+                        if (parameter.getRawType() == ValueTypeEnum.ENUMERATED) {
+                            return (int) calibPoint.getInput();
+                        } else {
+                            return calibPoint.getInput();
+                        }
+                    }
+                }
+            }
+        }
+        // Not found, so go for val = 0
+        if (parameter.getRawType() == ValueTypeEnum.ENUMERATED) {
+            return 0;
+        } else {
+            return Long.valueOf(0L);
+        }
     }
 
     private void lookForParameterIdFields(PacketDefinition pd) {
@@ -298,5 +336,14 @@ public class ProcessingModelBasedResolver implements IEncodeResolver {
     @Override
     public RelativeTimeDescriptor getRelativeTimeDescriptor(EncodedParameter parameter, PathLocation location, Duration value) throws EncodingException {
         return innerResolver.getRelativeTimeDescriptor(parameter, location, value);
+    }
+
+    public void updateParameterValue(String name, Object value) {
+        if(this.name2idInTmTc.containsKey(name)) {
+            long id = this.name2idInTmTc.get(name);
+            cachedValue.put(id, value);
+        } else {
+            throw new RuntimeException("Parameter name " + name + " not found in value map");
+        }
     }
 }

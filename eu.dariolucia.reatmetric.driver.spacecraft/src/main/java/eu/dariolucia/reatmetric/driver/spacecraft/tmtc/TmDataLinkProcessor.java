@@ -213,6 +213,8 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                     LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " not identified: " + e.getMessage(), e);
                 } catch (PacketAmbiguityException e) {
                     LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " ambiguous: " + e.getMessage(), e);
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " error during identification: " + e.getMessage(), e);
                 }
             }
             // Perform time generation extraction/time correlation
