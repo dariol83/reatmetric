@@ -83,6 +83,7 @@
         <module>eu.dariolucia.reatmetric.persist</module>
         <module>eu.dariolucia.reatmetric.driver.automation</module>
         <module>eu.dariolucia.reatmetric.driver.spacecraft</module>
+        <module>eu.dariolucia.reatmetric.driver.spacecraft.test</module>
         <module>eu.dariolucia.reatmetric.driver.test</module>
         <module>eu.dariolucia.reatmetric.ui</module>
         <module>eu.dariolucia.reatmetric.ui.test</module>

@@ -167,17 +167,17 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                     // Replace the state
                     this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
                     generatedStates.add(this.state);
-                    // Log the event
+                    // Log the event // FIXME: decomment once testing is done
                     switch(definition.getSeverity()) {
                         case ALARM:
                         case ERROR:
-                            LOG.log(Level.SEVERE, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
+                            // LOG.log(Level.SEVERE, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
                             break;
                         case WARN:
-                            LOG.log(Level.WARNING, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
+                            // LOG.log(Level.WARNING, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
                             break;
                         case INFO:
-                            LOG.log(Level.INFO, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
+                            // LOG.log(Level.INFO, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
                             break;
                     }
                 }

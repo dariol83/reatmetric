@@ -183,7 +183,8 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 lastSampleGenerationTime = genTime;
                 double numPacketsPerSecond = (numPackets / (millis/1000.0));
                 double numFramesPerSecond = (numFrames / (millis/1000.0));
-                System.out.println("Frames per second: " + (int) numFramesPerSecond + ", packets per second: " + numPacketsPerSecond);
+                // FIXME: Decomment once investigation finished
+                // System.out.println("Frames per second: " + (int) numFramesPerSecond + ", packets per second: " + numPacketsPerSecond);
             }
         }
     }
@@ -434,6 +435,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         System.out.println("Received TC packet: " + StringUtil.toHexDump(packet));
         if (qualityIndicator) {
             AckField acks = new AckField(sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH]);
+            System.out.println("ACK flags: " + acks);
             if (acks.isAcceptanceAckSet()) {
                 queuePus1(sp, 1);
             }
@@ -467,7 +469,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             Object value = null;
             switch (type) {
                 case 1: // Enum -> 16 bits
-                    value = ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 2).getShort();
+                    value = (int) ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 2).getShort();
                     break;
                 case 2: // SI -> 32 bits
                     value = (long) ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 4).getInt();
@@ -476,7 +478,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     value = (long) Integer.toUnsignedLong(ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 4).getInt());
                     break;
                 case 4: // Real -> 32 bits
-                    value = ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 4).getFloat();
+                    value = (double) ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 4).getFloat();
                     break;
                 case 6: // Octet string -> 12 bytes
                     value = new byte[12];
@@ -562,6 +564,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 return;
             }
         }
+        System.out.println("Queueing PUS 1 packet with subtype " + subtype + " not found");
     }
 
     public void stopProcessing() {

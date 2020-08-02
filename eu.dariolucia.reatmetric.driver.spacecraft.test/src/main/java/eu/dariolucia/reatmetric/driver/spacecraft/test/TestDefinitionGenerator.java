@@ -342,7 +342,7 @@ public class TestDefinitionGenerator {
         }
 
         apid = 1000;
-        int pus = 100;
+        int pus = 30;
         int subt = 0;
 
         final int setterAPID = 10;
@@ -360,13 +360,13 @@ public class TestDefinitionGenerator {
             if(name.startsWith("SCHEDULE")) {
                 EncodedParameter ep = new EncodedParameter("Subschedule-ID", new FixedType(DataTypeEnum.UNSIGNED_INTEGER, 1), null);
                 pd1.getStructure().getEncodedItems().add(ep);
-                EncodedParameter ep2 = new EncodedParameter("A-01", new FixedType(DataTypeEnum.UNSIGNED_INTEGER, 1), null);
-                ep2.setValue("2");
+                EncodedParameter ep2 = new EncodedParameter("N-01", new FixedType(DataTypeEnum.UNSIGNED_INTEGER, 1), null);
+                ep2.setValue("1");
                 EncodedParameter ep3 = new EncodedParameter("Time", new FixedType(DataTypeEnum.ABSOLUTE_TIME, 17), null); // a CUC 4,2
                 pd1.getStructure().getEncodedItems().add(ep3);
                 EncodedParameter ep4 = new EncodedParameter("TC", new FixedType(DataTypeEnum.OCTET_STRING, 0), null);
                 pd1.getStructure().getEncodedItems().add(ep4);
-                pd1.setExtension("APID=" + apid + ".PUSTYPE=" + pus + ".PUSSUBTYPE=" + subt + ".ACKS=X--X.CRITICAL=true");
+                pd1.setExtension("APID=" + apid + ".PUSTYPE=11.PUSSUBTYPE=4.ACKS=X--X.CRITICAL=true");
             } else {
                 // Map arguments as they are
                 for(AbstractArgumentDefinition aad : epd.getArguments()) {
@@ -391,7 +391,7 @@ public class TestDefinitionGenerator {
             }
             if(pus >= 120) {
                 ++apid;
-                pus = 0;
+                pus = 30;
             }
         }
 
@@ -403,13 +403,13 @@ public class TestDefinitionGenerator {
             return description.contains("Success") ? 1 : 2;
         }
         if(description.contains("Start")) {
-            return description.contains("Success") ? 1 : 2;
+            return description.contains("Success") ? 3 : 4;
         }
         if(description.contains("Progress")) {
-            return description.contains("Success") ? 1 : 2;
+            return description.contains("Success") ? 5 : 6;
         }
         if(description.contains("Completion")) {
-            return description.contains("Success") ? 1 : 2;
+            return description.contains("Success") ? 7 : 8;
         }
         throw new IllegalArgumentException("Cannot derive PUS 1 type: " + description);
     }
