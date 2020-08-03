@@ -82,6 +82,8 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
         // If it is a 11,4, check for the tracked activity and announce phases accordingly
         if(tcTracker.getInfo().getPusHeader().getServiceType() == 11 && tcTracker.getInfo().getPusHeader().getServiceSubType() == 4) {
             // Get the original tracker
+            // It could be more than one activity linked to the PUS 11,4 TC, so use a concatenation of IDs, separated by |. The approach is identical though (use a for loop).
+            // But in this implementation we support a single TC per PUS 11,4, so the above is not needed.
             String occIdStr = tcTracker.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_SUBSCHEDULE_TRACKING_ID);
             LinkedTcTracker linkedTcTracker = linkedActivityOccurrence2tcTracker.get(new LongUniqueId(Long.parseLong(occIdStr)));
             // Update the tracking information
