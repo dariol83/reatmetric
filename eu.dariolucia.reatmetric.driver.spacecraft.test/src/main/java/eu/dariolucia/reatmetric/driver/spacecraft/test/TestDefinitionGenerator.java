@@ -358,10 +358,11 @@ public class TestDefinitionGenerator {
             pd1.setType("TC");
             pd1.setStructure(new PacketStructure());
             if(name.startsWith("SCHEDULE")) {
-                EncodedParameter ep = new EncodedParameter("Subschedule-ID", new FixedType(DataTypeEnum.UNSIGNED_INTEGER, 1), null);
+                EncodedParameter ep = new EncodedParameter("Subschedule-ID", new FixedType(DataTypeEnum.UNSIGNED_INTEGER, 8), null);
                 pd1.getStructure().getEncodedItems().add(ep);
-                EncodedParameter ep2 = new EncodedParameter("N-01", new FixedType(DataTypeEnum.UNSIGNED_INTEGER, 1), null);
+                EncodedParameter ep2 = new EncodedParameter("N-01", new FixedType(DataTypeEnum.UNSIGNED_INTEGER, 8), null);
                 ep2.setValue("1");
+                pd1.getStructure().getEncodedItems().add(ep2);
                 EncodedParameter ep3 = new EncodedParameter("Time", new FixedType(DataTypeEnum.ABSOLUTE_TIME, 17), null); // a CUC 4,2
                 pd1.getStructure().getEncodedItems().add(ep3);
                 EncodedParameter ep4 = new EncodedParameter("TC", new FixedType(DataTypeEnum.OCTET_STRING, 0), null);
@@ -573,7 +574,8 @@ public class TestDefinitionGenerator {
 
         ActivityProcessingDefinition apd4 = buildActivityProcessingDefinition("SCHEDULE", counter++);
         apd4.setDescription("Schedule TC execution");
-        addActivityArgument(apd4, "Subschedule-ID", ValueTypeEnum.UNSIGNED_INTEGER);
+        PlainArgumentDefinition ssId = addActivityArgument(apd4, "Subschedule-ID", ValueTypeEnum.UNSIGNED_INTEGER);
+        ssId.setDefaultValue(new FixedDefaultValue(DefaultValueType.RAW, "0"));
         addActivityArgument(apd4, "Time", ValueTypeEnum.ABSOLUTE_TIME);
         addActivityArgument(apd4, "TC", ValueTypeEnum.OCTET_STRING);
         pd.getActivityDefinitions().add(apd4);

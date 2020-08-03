@@ -340,10 +340,10 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     private Object createSimpleArgument(PlainActivityArgument arg, PlainArgumentDefinition argDef, boolean applyChecks) throws ProcessingModelException {
         // Type is correct?
         if (arg.getEngValue() != null && !ValueUtil.typeMatch(argDef.getEngineeringType(), arg.getEngValue())) {
-            throw new ProcessingModelException("Argument " + arg.getName() + " set with engineering value not matching the argument engineering value definition type " + argDef.getEngineeringType() + ", expected " + argDef.getEngineeringType().getAssignedClass().getSimpleName());
+            throw new ProcessingModelException("Argument " + arg.getName() + " set with engineering value not matching the argument engineering value definition type " + argDef.getEngineeringType() + ", expected " + argDef.getEngineeringType().getAssignedClass().getSimpleName() + ", actual is " + arg.getEngValue().getClass().getSimpleName());
         }
         if (arg.getRawValue() != null && !ValueUtil.typeMatch(argDef.getRawType(), arg.getRawValue())) {
-            throw new ProcessingModelException("Argument " + arg.getName() + " set with raw value not matching the argument raw value definition type " + argDef.getRawType() + ", expected " + argDef.getRawType().getAssignedClass().getSimpleName());
+            throw new ProcessingModelException("Argument " + arg.getName() + " set with raw value not matching the argument raw value definition type " + argDef.getRawType() + ", expected " + argDef.getRawType().getAssignedClass().getSimpleName() + ", actual is " + arg.getRawValue().getClass().getSimpleName());
         }
         // Argument is fixed and need to apply the checks? Then check if there is corresponding value.
         if (argDef.isFixed() && applyChecks) {

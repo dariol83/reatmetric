@@ -510,7 +510,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         int sourceLenSpare = (spacecraftConfiguration.getTcPacketConfiguration().getSourceIdLength() + spacecraftConfiguration.getTcPacketConfiguration().getSpareLength()) / 8;
         // Then, understand if the subschedule and the num of entries is there
         int subScheduleByteLen = 1; // Hardcoded as per test data definition
-        int counterByteLen = 1; // Hardcoded as per test data definition
+        int counterByteLen = 1; // Hardcoded as per test data definition (N-01)
         // Finally, read the absolute time and the packet (limited to time and command, only 1)
         byte[] cucTime = Arrays.copyOfRange(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + 3 + sourceLenSpare + subScheduleByteLen + counterByteLen, SpacePacket.SP_PRIMARY_HEADER_LENGTH + 3 + sourceLenSpare + subScheduleByteLen + counterByteLen + 6);
         Instant time = TimeUtil.fromCUC(cucTime, spacecraftConfiguration.getEpoch().toInstant(), 4,2);

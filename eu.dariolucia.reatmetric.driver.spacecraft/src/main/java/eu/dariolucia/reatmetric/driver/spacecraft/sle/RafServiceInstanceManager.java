@@ -73,8 +73,8 @@ public class RafServiceInstanceManager extends SleServiceInstanceManager<RafServ
     }
 
     private void process(RafStatusReportInvocationV1toV2 operation) {
-        if(LOG.isLoggable(Level.INFO)) {
-            LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": Status report received: carrier=" + LockStatusEnum.fromCode(operation.getCarrierLockStatus().intValue()) +
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(serviceInstance.getServiceInstanceIdentifier() + ": Status report received: carrier=" + LockStatusEnum.fromCode(operation.getCarrierLockStatus().intValue()) +
                     ", subcarrier=" + LockStatusEnum.fromCode(operation.getSubcarrierLockStatus().intValue()) +
                     ", bitlock=" + LockStatusEnum.fromCode(operation.getSymbolSyncLockStatus().intValue()) +
                     ", frame lock=" + LockStatusEnum.fromCode(operation.getFrameSyncLockStatus().intValue()));
@@ -84,8 +84,8 @@ public class RafServiceInstanceManager extends SleServiceInstanceManager<RafServ
     }
 
     private void process(RafStatusReportInvocation operation) {
-        if(LOG.isLoggable(Level.INFO)) {
-            LOG.info(serviceInstance.getServiceInstanceIdentifier() + ": Status report received: carrier=" + LockStatusEnum.fromCode(operation.getCarrierLockStatus().intValue()) +
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer(serviceInstance.getServiceInstanceIdentifier() + ": Status report received: carrier=" + LockStatusEnum.fromCode(operation.getCarrierLockStatus().intValue()) +
                     ", subcarrier=" + LockStatusEnum.fromCode(operation.getSubcarrierLockStatus().intValue()) +
                     ", bitlock=" + LockStatusEnum.fromCode(operation.getSymbolSyncLockStatus().intValue()) +
                     ", frame lock=" + LockStatusEnum.fromCode(operation.getFrameSyncLockStatus().intValue()));
