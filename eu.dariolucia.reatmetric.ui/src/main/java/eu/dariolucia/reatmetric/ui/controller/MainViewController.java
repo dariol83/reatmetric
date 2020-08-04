@@ -22,7 +22,6 @@ import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import eu.dariolucia.reatmetric.ui.plugin.ReatmetricPluginInspector;
-import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -48,7 +47,6 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import org.controlsfx.control.PopOver;
 
-import javax.swing.text.html.CSS;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -62,6 +60,10 @@ import java.util.logging.Logger;
 public class MainViewController implements Initializable, IReatmetricServiceListener {
 
     private static final Logger LOG = Logger.getLogger(MainViewController.class.getName());
+    public static final String WARNING_COLOR = "#CCAA00";
+    public static final String ALARM_COLOR = "#CC0000";
+    public static final String NOMINAL_COLOR = "#00FF15";
+    public static final String DISABLED_COLOR = "#003915";
 
     private final Image CONNECT_IMAGE = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/48px/plug-f.svg.png"));
     private final Image DISCONNECT_IMAGE = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/48px/plug.svg.png"));
@@ -310,7 +312,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/DebugDialog.fxml"));
 
             debugPopOver.setContentNode(root);
-            debugPopOver.setArrowLocation(PopOver.ArrowLocation.BOTTOM_LEFT);
+            debugPopOver.setArrowLocation(PopOver.ArrowLocation.BOTTOM_RIGHT);
             debugPopOver.setTitle("Debug Information");
             debugPopOver.show(debugButton);
         } catch (IOException e) {
@@ -385,7 +387,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         Platform.runLater(() -> {
             enableMainViewItems();
             this.systemLbl.setText(system.getName());
-            // TODO: add tooltip with debug information
             ReatmetricUI.setStatusLabel("System " + system.getName() + " connected");
         });
     }
@@ -394,7 +395,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     public void systemDisconnected(IReatmetricSystem system) {
         Platform.runLater(() -> {
             disableMainViewItems();
-            // TODO: remove tooltip with debug information
             ReatmetricUI.setStatusLabel("System " + system.getName() + " disconnected");
         });
     }
@@ -451,24 +451,16 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         Platform.runLater(() -> {
             switch (state) {
                 case ALARM:
-                    this.nominalCrl.setFill(Paint.valueOf("#003915"));
-                    this.warningCrl.setFill(Paint.valueOf("#382700"));
-                    this.alarmCrl.setFill(Paint.valueOf("#CC0000"));
+                    this.nominalCrl.setFill(Paint.valueOf(ALARM_COLOR));
                     break;
                 case WARNING:
-                    this.nominalCrl.setFill(Paint.valueOf("#003915"));
-                    this.warningCrl.setFill(Paint.valueOf("#CCAA00"));
-                    this.alarmCrl.setFill(Paint.valueOf("#360000"));
+                    this.nominalCrl.setFill(Paint.valueOf(WARNING_COLOR));
                     break;
                 case NOMINAL:
-                    this.nominalCrl.setFill(Paint.valueOf("#00FF15"));
-                    this.warningCrl.setFill(Paint.valueOf("#382700"));
-                    this.alarmCrl.setFill(Paint.valueOf("#360000"));
+                    this.nominalCrl.setFill(Paint.valueOf(NOMINAL_COLOR));
                     break;
                 default:
-                    this.nominalCrl.setFill(Paint.valueOf("#003915"));
-                    this.warningCrl.setFill(Paint.valueOf("#382700"));
-                    this.alarmCrl.setFill(Paint.valueOf("#360000"));
+                    this.nominalCrl.setFill(Paint.valueOf(DISABLED_COLOR));
                     break;
             }
         });
