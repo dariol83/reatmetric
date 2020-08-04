@@ -130,4 +130,8 @@ public class ActivityProcessingDefinition extends AbstractProcessingDefinition {
     public void setVerification(ExpressionDefinition verification) {
         this.verification = verification;
     }
+
+    public AbstractArgumentDefinition getArgumentByName(String argument) {
+        return this.arguments.stream().filter(o -> o.getName().equals(argument)).findFirst().orElse(null);
+    }
 }

@@ -16,6 +16,8 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+
 import javax.xml.bind.annotation.*;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,6 +31,23 @@ public class ParameterSetterDefinition {
 
     @XmlAttribute(name="set_argument", required = true)
     private String setArgument;
+
+    /**
+     * The decalibration converts the setter engineering value into the corresponding raw value. If no
+     * decalibration is specified, then the engineering value is provided as-is to the activity corresponding argument
+     * in engineering value format.
+     */
+    @XmlElements({
+            @XmlElement(name="decalib_xy",type=XYCalibration.class),
+            @XmlElement(name="decalib_poly",type=PolyCalibration.class),
+            @XmlElement(name="decalib_log",type=LogCalibration.class),
+            @XmlElement(name="decalib_enum",type=EnumCalibration.class),
+            @XmlElement(name="decalib_range_enum",type=RangeEnumCalibration.class),
+            @XmlElement(name="decalib_ienum",type=InvertedEnumCalibration.class),
+            @XmlElement(name="decalib_expression",type=ExpressionCalibration.class),
+            @XmlElement(name="decalib_external",type=ExternalCalibration.class),
+    })
+    private CalibrationDefinition decalibration;
 
     @XmlElements({
             @XmlElement(name="fixed_argument",type= PlainArgumentInvocationDefinition.class),
@@ -70,4 +89,14 @@ public class ParameterSetterDefinition {
     public void setProperties(List<KeyValue> properties) {
         this.properties = properties;
     }
+
+    public CalibrationDefinition getDecalibration() {
+        return decalibration;
+    }
+
+    public void setDecalibration(CalibrationDefinition decalibration) {
+        this.decalibration = decalibration;
+    }
+
+
 }

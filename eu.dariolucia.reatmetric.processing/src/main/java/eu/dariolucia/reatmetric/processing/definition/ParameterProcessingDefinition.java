@@ -150,4 +150,89 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     public void setSetter(ParameterSetterDefinition setter) {
         this.setter = setter;
     }
+
+    public List<Object> buildExpectedValuesRaw() {
+        if(getSetter() == null) {
+            // Return null
+            return null;
+        }
+        if(getSetter().getDecalibration() instanceof InvertedEnumCalibration) {
+            InvertedEnumCalibration iec = (InvertedEnumCalibration) getSetter().getDecalibration();
+            List<Object> rawValues = new LinkedList<>();
+            for(InvertedEnumCalibrationPoint p : iec.getPoints()) {
+                Object valueToAdd = p.getValue();
+                if(getRawType() == ValueTypeEnum.ENUMERATED) {
+                    valueToAdd = ((Long) valueToAdd).intValue();
+                }
+                rawValues.add(valueToAdd);
+            }
+            if(iec.getDefaultValue() != null) {
+                Object valueToAdd = iec.getDefaultValue();
+                if(getRawType() == ValueTypeEnum.ENUMERATED) {
+                    valueToAdd = (iec.getDefaultValue()).intValue();
+                }
+                if(!rawValues.contains(valueToAdd)) {
+                    rawValues.add(valueToAdd);
+                }
+            }
+            return rawValues;
+        }
+        if(getSetter().getDecalibration() instanceof EnumCalibration) {
+            EnumCalibration iec = (EnumCalibration) getSetter().getDecalibration();
+            List<Object> rawValues = new LinkedList<>();
+            for(EnumCalibrationPoint p : iec.getPoints()) {
+                rawValues.add(p.getValue());
+            }
+            if(iec.getDefaultValue() != null) {
+                if(!rawValues.contains(iec.getDefaultValue())) {
+                    rawValues.add(iec.getDefaultValue());
+                }
+            }
+            return rawValues;
+        }
+        // Look for the activity definition
+        PlainArgumentDefinition valueArgument = (PlainArgumentDefinition) getSetter().getActivity().getArgumentByName(getSetter().getSetArgument());
+        if(valueArgument != null) {
+            return valueArgument.buildExpectedValuesRaw();
+        } else {
+            return null;
+        }
+    }
+
+    public List<Object> buildExpectedValuesEng() {
+        if(getSetter() == null) {
+            // Return null
+            return null;
+        }
+        if(getSetter().getDecalibration() != null) {
+            if(getSetter().getDecalibration() instanceof InvertedEnumCalibration) {
+                InvertedEnumCalibration iec = (InvertedEnumCalibration) getSetter().getDecalibration();
+                List<Object> engValues = new LinkedList<>();
+                for(InvertedEnumCalibrationPoint p : iec.getPoints()) {
+                    engValues.add(p.getInput());
+                }
+                return engValues;
+            }
+            if(getSetter().getDecalibration() instanceof EnumCalibration) {
+                EnumCalibration iec = (EnumCalibration) getSetter().getDecalibration();
+                List<Object> engValues = new LinkedList<>();
+                for(EnumCalibrationPoint p : iec.getPoints()) {
+                    Object valueToAdd =  p.getInput();
+                    if(getEngineeringType() == ValueTypeEnum.ENUMERATED) {
+                        valueToAdd = ((Long)  p.getInput()).intValue();
+                    }
+                    engValues.add(valueToAdd);
+                }
+                return engValues;
+            }
+        }
+        // Look for the activity definition
+        PlainArgumentDefinition valueArgument = (PlainArgumentDefinition) getSetter().getActivity().getArgumentByName(getSetter().getSetArgument());
+        if(valueArgument != null) {
+            return valueArgument.buildExpectedValuesEng();
+        } else {
+            return null;
+        }
+    }
+
 }

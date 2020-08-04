@@ -143,4 +143,71 @@ public class PlainArgumentDefinition extends AbstractArgumentDefinition {
     public void setChecks(List<CheckDefinition> checks) {
         this.checks = checks;
     }
+
+    public List<Object> buildExpectedValuesRaw() {
+        if(getDecalibration() != null) {
+            if(getDecalibration() instanceof InvertedEnumCalibration) {
+                InvertedEnumCalibration iec = (InvertedEnumCalibration) getDecalibration();
+                List<Object> rawValues = new LinkedList<>();
+                for(InvertedEnumCalibrationPoint p : iec.getPoints()) {
+                    Object valueToAdd = p.getValue();
+                    if(getRawType() == ValueTypeEnum.ENUMERATED) {
+                        valueToAdd = ((Long) valueToAdd).intValue();
+                    }
+                    rawValues.add(valueToAdd);
+                }
+                if(iec.getDefaultValue() != null) {
+                    Object valueToAdd = iec.getDefaultValue();
+                    if(getRawType() == ValueTypeEnum.ENUMERATED) {
+                        valueToAdd = (iec.getDefaultValue()).intValue();
+                    }
+                    if(!rawValues.contains(valueToAdd)) {
+                        rawValues.add(valueToAdd);
+                    }
+                }
+                return rawValues;
+            }
+            if(getDecalibration() instanceof EnumCalibration) {
+                EnumCalibration iec = (EnumCalibration) getDecalibration();
+                List<Object> rawValues = new LinkedList<>();
+                for(EnumCalibrationPoint p : iec.getPoints()) {
+                    rawValues.add(p.getValue());
+                }
+                if(iec.getDefaultValue() != null) {
+                    if(!rawValues.contains(iec.getDefaultValue())) {
+                        rawValues.add(iec.getDefaultValue());
+                    }
+                }
+                return rawValues;
+            }
+        }
+        return null;
+    }
+
+    public List<Object> buildExpectedValuesEng() {
+        if(getDecalibration() != null) {
+            if(getDecalibration() instanceof InvertedEnumCalibration) {
+                InvertedEnumCalibration iec = (InvertedEnumCalibration) getDecalibration();
+                List<Object> engValues = new LinkedList<>();
+                for(InvertedEnumCalibrationPoint p : iec.getPoints()) {
+                    engValues.add(p.getInput());
+                }
+                return engValues;
+            }
+            if(getDecalibration() instanceof EnumCalibration) {
+                EnumCalibration iec = (EnumCalibration) getDecalibration();
+                List<Object> engValues = new LinkedList<>();
+                for(EnumCalibrationPoint p : iec.getPoints()) {
+                    Object valueToAdd =  p.getInput();
+                    if(getEngineeringType() == ValueTypeEnum.ENUMERATED) {
+                        valueToAdd = ((Long)  p.getInput()).intValue();
+                    }
+                    engValues.add(valueToAdd);
+                }
+                return engValues;
+            }
+        }
+        return null;
+    }
+
 }

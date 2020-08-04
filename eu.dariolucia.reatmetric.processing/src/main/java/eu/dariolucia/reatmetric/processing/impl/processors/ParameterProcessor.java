@@ -31,7 +31,6 @@ import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelExcepti
 import eu.dariolucia.reatmetric.api.processing.input.*;
 import eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding;
 import eu.dariolucia.reatmetric.api.value.ValueException;
-import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
@@ -92,49 +91,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 definition.getSetter() != null,
                 definition.getSetter() != null ? definition.getSetter().getActivity().getType() : null,
                 definition.getSetter() != null ? definition.getSetter().getActivity().getDefaultRoute() : null,
-                buildExpectedValuesRaw(definition.getCalibrations()),
-                buildExpectedValuesEng(definition.getCalibrations()));
+                definition.buildExpectedValuesRaw(),
+                definition.buildExpectedValuesEng());
     }
-
-    private List<Object> buildExpectedValuesRaw(List<CalibrationDefinition> cals) {
-        if(cals == null) {
-            return null;
-        }
-        for(CalibrationDefinition cal : cals ) {
-            if(cal instanceof EnumCalibration) {
-                EnumCalibration calibration = (EnumCalibration) cal;
-                List<Object> rawValues = new LinkedList<>();
-                for(EnumCalibrationPoint p : calibration.getPoints()) {
-                    Object valueToAdd = p.getInput();
-                    if(definition.getRawType() == ValueTypeEnum.ENUMERATED) {
-                        valueToAdd = ((Long) valueToAdd).intValue();
-                    }
-                    rawValues.add(valueToAdd);
-                }
-                return rawValues;
-            }
-        }
-        return null;
-    }
-
-    private List<Object> buildExpectedValuesEng(List<CalibrationDefinition> cals) {
-        if(cals == null) {
-            return null;
-        }
-        for(CalibrationDefinition cal : cals ) {
-            if(cal instanceof EnumCalibration) {
-                EnumCalibration calibration = (EnumCalibration) cal;
-                List<Object> engValues = new LinkedList<>();
-                for(EnumCalibrationPoint p : calibration.getPoints()) {
-                    Object valueToAdd = p.getValue();
-                    engValues.add(valueToAdd);
-                }
-                return engValues;
-            }
-        }
-        return null;
-    }
-
 
     private void buildDefaultState() {
         Object sourceValue = null;
@@ -506,7 +465,21 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         // Provide the arguments on the defined order
         for(AbstractArgumentDefinition ad : setter.getActivity().getArguments()) {
             if(ad.getName().equals(setter.getSetArgument())) {
-                toReturn.add(new PlainActivityArgument(ad.getName(), request.isEngineeringUsed() ? null : request.getValue(), request.isEngineeringUsed() ? request.getValue() : null, request.isEngineeringUsed()));
+                // At this stage, we need to check if the parameter processor needs to perform its own decalibration function and provide the raw value to the activity request
+                // or if it has to continue with the standard process
+                if(definition.getSetter().getDecalibration() == null || !request.isEngineeringUsed()) {
+                    // Continue as usual
+                    toReturn.add(new PlainActivityArgument(ad.getName(), request.isEngineeringUsed() ? null : request.getValue(), request.isEngineeringUsed() ? request.getValue() : null, request.isEngineeringUsed()));
+                } else {
+                    // Decalibrate and use the raw value
+                    Object theRawValue;
+                    try {
+                        theRawValue = CalibrationDefinition.performDecalibration(definition.getSetter().getDecalibration(), request.getValue(), definition.getRawType(), processor);
+                    } catch (CalibrationException e) {
+                        throw new ProcessingModelException("Cannot decalibrate setter argument " + definition.getSetter().getSetArgument() + " with parameter-defined decalibration: " + e.getMessage(), e);
+                    }
+                    toReturn.add(new PlainActivityArgument(ad.getName(), theRawValue, null, false));
+                }
             } else {
                 AbstractActivityArgument alreadyBuilt = argumentMap.get(ad.getName());
                 if(alreadyBuilt != null) {

@@ -647,11 +647,21 @@ public class TestDefinitionGenerator {
         ppd.setSetter(new ParameterSetterDefinition());
         ppd.getSetter().setActivity(enumSetter);
         ppd.getSetter().setSetArgument("VALUE");
+        ppd.getSetter().setDecalibration(ppd.getCalibrations() != null && !ppd.getCalibrations().isEmpty() ? generateDecalibration(ppd) : null);
         PlainArgumentInvocationDefinition nameArg = new PlainArgumentInvocationDefinition();
         nameArg.setName("NAME");
         nameArg.setRawValue(true);
         nameArg.setValue(extractName(ppd.getLocation()));
         ppd.getSetter().setArguments(Arrays.asList(nameArg));
+    }
+
+    private static CalibrationDefinition generateDecalibration(ParameterProcessingDefinition ppd) {
+        for(CalibrationDefinition cd : ppd.getCalibrations()) {
+            if(cd instanceof EnumCalibration) {
+                return ((EnumCalibration)cd).buildInvertedEnum();
+            }
+        }
+        return null;
     }
 
     private static void addFixedActivityArgument(ActivityProcessingDefinition seta1, String type, ValueTypeEnum enumerated, String value) {
