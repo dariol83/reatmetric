@@ -82,7 +82,18 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
         this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
         // Build the descriptor
-        this.descriptor = new ParameterDescriptor(getPath(), getSystemEntityId(), definition.getDescription(), definition.getRawType(), definition.getEngineeringType(), definition.getUnit(), definition.getExpression() != null, definition.getSetter() != null, definition.getSetter() != null ? definition.getSetter().getActivity().getDefaultRoute(): null, definition.getSetter() != null ? definition.getSetter().getActivity().getType(): null,buildExpectedValuesRaw(definition.getCalibrations()), buildExpectedValuesEng(definition.getCalibrations()));
+        this.descriptor = new ParameterDescriptor(getPath(),
+                getSystemEntityId(),
+                definition.getDescription(),
+                definition.getRawType(),
+                definition.getEngineeringType(),
+                definition.getUnit(),
+                definition.getExpression() != null,
+                definition.getSetter() != null,
+                definition.getSetter() != null ? definition.getSetter().getActivity().getType() : null,
+                definition.getSetter() != null ? definition.getSetter().getActivity().getDefaultRoute() : null,
+                buildExpectedValuesRaw(definition.getCalibrations()),
+                buildExpectedValuesEng(definition.getCalibrations()));
     }
 
     private List<Object> buildExpectedValuesRaw(List<CalibrationDefinition> cals) {
@@ -463,6 +474,10 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             if(!propertyMap.containsKey(kv.getKey())) {
                 propertyMap.put(kv.getKey(), kv.getValue());
             }
+        }
+        // Overwrite with the setter properties
+        for(Map.Entry<String, String> kv : request.getProperties().entrySet()) {
+            propertyMap.put(kv.getKey(), kv.getValue());
         }
         return new ActivityRequest(setter.getActivity().getId(), buildSetArgumentList(request, setter), propertyMap, request.getRoute(), request.getSource());
     }

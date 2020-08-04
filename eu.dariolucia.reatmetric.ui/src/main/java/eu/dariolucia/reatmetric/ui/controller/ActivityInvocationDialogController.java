@@ -23,10 +23,10 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.ActivityArgumentTableManager;
+import eu.dariolucia.reatmetric.ui.utils.PropertyBean;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -287,22 +287,4 @@ public class ActivityInvocationDialogController implements Initializable {
         refreshRoutes(null, null);
     }
 
-    private static class PropertyBean {
-
-        private final SimpleStringProperty key;
-        private final SimpleStringProperty value;
-
-        public PropertyBean(Pair<String, String> property) {
-            key = new SimpleStringProperty(property.getFirst());
-            value = new SimpleStringProperty(property.getSecond());
-        }
-
-        public SimpleStringProperty keyProperty() {
-            return key;
-        }
-
-        public SimpleStringProperty valueProperty() {
-            return value;
-        }
-    }
 }
