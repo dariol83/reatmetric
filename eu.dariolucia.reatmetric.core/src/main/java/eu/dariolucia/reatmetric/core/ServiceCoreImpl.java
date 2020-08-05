@@ -27,8 +27,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
-import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
-import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService;
+import eu.dariolucia.reatmetric.api.messages.*;
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
@@ -110,7 +109,8 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         // Load the operational data broker
         LOG.info("Loading operational message broker");
         IOperationalMessageArchive messageArchive = archive != null ? archive.getArchive(IOperationalMessageArchive.class) : null;
-        messageBroker = new OperationalMessageBrokerImpl(messageArchive);
+        IAcknowledgedMessageArchive ackMessageArchive = archive != null ? archive.getArchive(IAcknowledgedMessageArchive.class) : null;
+        messageBroker = new OperationalMessageBrokerImpl(messageArchive, ackMessageArchive);
         // Load the raw data broker
         LOG.info("Loading raw data broker");
         IRawDataArchive rawDataArchive = archive != null ? archive.getArchive(IRawDataArchive.class) : null;
@@ -246,6 +246,16 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
     @Override
     public IOperationalMessageProvisionService getOperationalMessageMonitorService() {
         return messageBroker;
+    }
+
+    @Override
+    public IAcknowledgedMessageProvisionService getAcknowledgedMessageMonitorService() {
+        return messageBroker.getAcknowledgedMessageBroker();
+    }
+
+    @Override
+    public IAcknowledgementService getAcknowledgementService() {
+        return messageBroker.getAcknowledgedMessageBroker();
     }
 
     @Override

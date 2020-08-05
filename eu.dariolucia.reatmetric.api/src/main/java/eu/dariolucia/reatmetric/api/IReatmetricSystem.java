@@ -24,6 +24,8 @@ import eu.dariolucia.reatmetric.api.common.IDebugInfoProvider;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
+import eu.dariolucia.reatmetric.api.messages.IAcknowledgedMessageProvisionService;
+import eu.dariolucia.reatmetric.api.messages.IAcknowledgementService;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService;
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
@@ -46,7 +48,11 @@ public interface IReatmetricSystem extends IDebugInfoProvider {
     String getName();
     
     IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException;
-    
+
+    IAcknowledgedMessageProvisionService getAcknowledgedMessageMonitorService() throws ReatmetricException;
+
+    IAcknowledgementService getAcknowledgementService() throws ReatmetricException;
+
     IRawDataProvisionService getRawDataMonitorService() throws ReatmetricException;
     
     IParameterDataProvisionService getParameterDataMonitorService() throws ReatmetricException;

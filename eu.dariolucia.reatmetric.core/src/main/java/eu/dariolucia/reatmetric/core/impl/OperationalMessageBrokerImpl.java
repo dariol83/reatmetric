@@ -49,7 +49,9 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
     private final List<OperationalMessageSubscriptionManager> subscribers = new CopyOnWriteArrayList<>();
     private final Map<IOperationalMessageSubscriber, OperationalMessageSubscriptionManager> subscriberIndex = new ConcurrentHashMap<>();
 
-    public OperationalMessageBrokerImpl(IOperationalMessageArchive archive) throws ArchiveException {
+    private final AcknowledgedMessageBrokerImpl acknowledgedMessageBroker;
+
+    public OperationalMessageBrokerImpl(IOperationalMessageArchive archive, IAcknowledgedMessageArchive ackArchive) throws ArchiveException {
         this.archive = archive;
         this.sequencer = new AtomicLong();
         IUniqueId lastStoredUniqueId = archive != null ? archive.retrieveLastId() : null;
@@ -58,8 +60,16 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
         } else {
             this.sequencer.set(lastStoredUniqueId.asLong());
         }
+        // Initialise ack messages
+        this.acknowledgedMessageBroker = new AcknowledgedMessageBrokerImpl(ackArchive);
+        this.acknowledgedMessageBroker.initialise();
+        // Initialise logger handler
         setLevel(Level.INFO);
         Logger.getLogger("eu.dariolucia.reatmetric").addHandler(this);
+    }
+
+    public AcknowledgedMessageBrokerImpl getAcknowledgedMessageBroker() {
+        return this.acknowledgedMessageBroker;
     }
 
     @Override
@@ -107,6 +117,7 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
                 }
             }
         }
+        this.acknowledgedMessageBroker.distribute(items);
     }
 
     @Override

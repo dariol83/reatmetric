@@ -33,7 +33,7 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
     /**
 	 * 
 	 */
-	private static final long serialVersionUID = 4447421541107887154L;
+	private static final long serialVersionUID = 1L;
 
 	private final String id;
 
