@@ -87,10 +87,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     @FXML
     private Circle nominalCrl;
-    @FXML
-    private Circle warningCrl;
-    @FXML
-    private Circle alarmCrl;
 
     @FXML
     private Button debugButton;
@@ -114,6 +110,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	private final PopOver infoPopOver = new PopOver();
 
 	private double oldSplitterPosition = 0.2;
+
+    private final PopOver messagePopOver = new PopOver();
 
     @FXML
     private void viewAction(Event event) {
@@ -363,7 +361,11 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
         debugPopOver.setHideOnEscape(true);
         infoPopOver.setHideOnEscape(true);
+        messagePopOver.setHideOnEscape(true);
         connectPopOver.setHideOnEscape(true);
+
+        // Create ack table view
+        // TODO
     }
 
     @Override
@@ -388,7 +390,12 @@ public class MainViewController implements Initializable, IReatmetricServiceList
             enableMainViewItems();
             this.systemLbl.setText(system.getName());
             ReatmetricUI.setStatusLabel("System " + system.getName() + " connected");
+            registerAcknowledgeMonitor();
         });
+    }
+
+    private void registerAcknowledgeMonitor() {
+        // TODO
     }
 
     @Override
@@ -396,7 +403,12 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         Platform.runLater(() -> {
             disableMainViewItems();
             ReatmetricUI.setStatusLabel("System " + system.getName() + " disconnected");
+            deregisterAcknowledgeMonitor();
         });
+    }
+
+    private void deregisterAcknowledgeMonitor() {
+        // TODO
     }
 
     @Override
@@ -404,6 +416,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         Platform.runLater(() -> {
             updateStatusIndicator(status);
         });
+    }
+
+    protected void signalAckStatusChanged(boolean inAlarm) {
+        // TODO
     }
 
     /*
