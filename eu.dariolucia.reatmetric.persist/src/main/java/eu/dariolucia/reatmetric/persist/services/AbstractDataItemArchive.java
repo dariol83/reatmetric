@@ -524,15 +524,15 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
      * Conversion methods
      **************************************************************************************************/
 
-    protected Timestamp toTimestamp(Instant t) {
+    protected static Timestamp toTimestamp(Instant t) {
         return t == null ? null : Timestamp.from(t);
     }
 
-    protected Instant toInstant(Timestamp genTime) {
+    protected static Instant toInstant(Timestamp genTime) {
         return genTime == null ? null : genTime.toInstant();
     }
 
-    protected Object toObject(Blob b) throws IOException, SQLException {
+    protected static Object toObject(Blob b) throws IOException, SQLException {
         Object toReturn = null;
         if(b != null) {
             InputStream ois = b.getBinaryStream();
@@ -541,22 +541,22 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         return toReturn;
     }
 
-    protected InputStream toInputstream(Object data) {
+    protected static InputStream toInputstream(Object data) {
         if(data == null) {
             return null;
         }
         return new ByteArrayInputStream(ValueUtil.serialize(data));
     }
 
-    protected byte[] toByteArray(InputStream is) throws IOException {
+    protected static byte[] toByteArray(InputStream is) throws IOException {
         return is.readAllBytes();
     }
 
-    protected <E extends Enum<E>> String toEnumFilterListString(Set<E> enumList) {
+    protected static <E extends Enum<E>> String toEnumFilterListString(Set<E> enumList) {
         return toFilterListString(enumList, Enum::ordinal, null);
     }
 
-    protected <E> String toFilterListString(Set<E> list, Function<E, Object> extractor, String delimiter) {
+    protected static <E> String toFilterListString(Set<E> list, Function<E, Object> extractor, String delimiter) {
         StringBuilder sb = new StringBuilder();
         int i = 0;
         for(E o : list) {

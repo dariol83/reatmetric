@@ -37,7 +37,7 @@ public class AcknowledgedMessage extends AbstractDataItem implements Serializabl
 
     private final String user;
 
-    public AcknowledgedMessage(IUniqueId internalId, Instant generationTime, Object extension, OperationalMessage message, AcknowledgementState state, Instant acknowledgementTime, String user) {
+    public AcknowledgedMessage(IUniqueId internalId, Instant generationTime, OperationalMessage message, AcknowledgementState state, Instant acknowledgementTime, String user, Object extension) {
         super(internalId, generationTime, extension);
         this.message = message;
         this.state = state;
@@ -62,7 +62,7 @@ public class AcknowledgedMessage extends AbstractDataItem implements Serializabl
     }
 
     public AcknowledgedMessage ack(String user) {
-        return new AcknowledgedMessage(getInternalId(), getGenerationTime(), getExtension(), getMessage(), AcknowledgementState.ACKNOWLEDGED, Instant.now(), user);
+        return new AcknowledgedMessage(getInternalId(), getGenerationTime(), getMessage(), AcknowledgementState.ACKNOWLEDGED, Instant.now(), user, getExtension());
     }
 
     @Override

@@ -135,14 +135,18 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     }
 
     @Override
-    protected OperationalMessage mapToItem(ResultSet rs, OperationalMessageFilter usedFilder) throws SQLException, IOException {
-        long uniqueId = rs.getLong(1);
-        Timestamp genTime = rs.getTimestamp(2);
-        String messageId = rs.getString(3);
-        String messageText = rs.getString(4);
-        String messageSource = rs.getString(5);
-        Severity severity = Severity.values()[rs.getShort(6)];
-        Blob extensionBlob = rs.getBlob(7);
+    protected OperationalMessage mapToItem(ResultSet rs, OperationalMessageFilter usedFilter) throws SQLException, IOException {
+        return mapToItem(rs, usedFilter, 0);
+    }
+
+    static OperationalMessage mapToItem(ResultSet rs, OperationalMessageFilter usedFilter, int offset) throws SQLException, IOException {
+        long uniqueId = rs.getLong(offset + 1);
+        Timestamp genTime = rs.getTimestamp(offset + 2);
+        String messageId = rs.getString(offset + 3);
+        String messageText = rs.getString(offset + 4);
+        String messageSource = rs.getString(offset + 5);
+        Severity severity = Severity.values()[rs.getShort(offset + 6)];
+        Blob extensionBlob = rs.getBlob(offset + 7);
         Object extension = null;
         if(extensionBlob != null && !rs.wasNull()) {
             extension = toObject(extensionBlob);

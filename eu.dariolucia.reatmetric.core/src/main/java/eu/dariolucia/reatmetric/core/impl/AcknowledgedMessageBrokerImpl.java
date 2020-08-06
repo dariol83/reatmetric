@@ -130,7 +130,7 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
         for(OperationalMessage om : items) {
             if(toBeAcknowledged(om)) {
                 IUniqueId idToAssign = nextOperationalMessageId();
-                AcknowledgedMessage toAck = new AcknowledgedMessage(idToAssign, om.getGenerationTime(), null, om, AcknowledgementState.PENDING, null, null);
+                AcknowledgedMessage toAck = new AcknowledgedMessage(idToAssign, om.getGenerationTime(), om, AcknowledgementState.PENDING, null, null, null);
                 toReturn.add(toAck);
             }
         }
