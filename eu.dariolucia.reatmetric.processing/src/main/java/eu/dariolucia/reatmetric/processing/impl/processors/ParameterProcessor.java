@@ -203,8 +203,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                             latestGenerationTime = theGenTime;
                         }
                     }
-                    // If latestGenerationTime is after the current generation time, then expression shall be re-evaluated
-                    if(generationTime == null || (latestGenerationTime != null && latestGenerationTime.isAfter(generationTime))) {
+                    // At this stage, if latestGenerationTime is null, it means that there is no value coming from the depending samples. So skip.
+                    // If latestGenerationTime is after the current generation time, then expression shall be re-evaluated.
+                    if(latestGenerationTime != null && (generationTime == null || latestGenerationTime.isAfter(generationTime))) {
                         // Use the latest generation time
                         generationTime = latestGenerationTime;
                         try {
@@ -239,6 +240,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                     }
                 }
             }
+
             // Set validity
             this.builder.setValidity(validity);
             // Set the source value and the generation time
@@ -250,16 +252,24 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             this.builder.setAlarmState(alarmState);
             // Build final state, set it and return it
             if(newValue != null) {
+                // We have a new sample
                 this.builder.setRoute(newValue.getRoute());
                 this.builder.setContainerId(newValue.getContainerId());
                 receptionTime = newValue.getReceptionTime(); // This can never be null
             } else {
+                // We are in the case of re-evaluation
                 this.builder.setRoute(state == null ? null : state.getRoute());
                 this.builder.setContainerId(state == null ? null : state.getRawDataContainerId());
-                // Re-evaluation, do not change the reception time
-                receptionTime = state == null ? null : state.getReceptionTime();
+                // What is the reception time?
+                if(definition.getExpression() != null && this.builder.isChangedSinceLastBuild()) {
+                    // Re-evaluation, set reception time to now if it is an expression and if the builder is in a changed state.
+                    receptionTime = Instant.now();
+                } else {
+                    // Re-evaluation, do not change the reception time if it is not an expression.
+                    receptionTime = state == null || state.getReceptionTime() == null ? generationTime : state.getReceptionTime();
+                }
             }
-            // Sanitize the reception time
+            // Set the reception time
             this.builder.setReceptionTime(receptionTime);
             // Replace the state
             if(this.builder.isChangedSinceLastBuild()) {

@@ -16,7 +16,10 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.test;
 
-import eu.dariolucia.ccsds.encdec.definition.*;
+import eu.dariolucia.ccsds.encdec.definition.Definition;
+import eu.dariolucia.ccsds.encdec.definition.IdentField;
+import eu.dariolucia.ccsds.encdec.definition.IdentFieldMatcher;
+import eu.dariolucia.ccsds.encdec.definition.PacketDefinition;
 import eu.dariolucia.ccsds.encdec.pus.AckField;
 import eu.dariolucia.ccsds.encdec.pus.PusChecksumUtil;
 import eu.dariolucia.ccsds.encdec.pus.TcPusHeader;
@@ -27,7 +30,6 @@ import eu.dariolucia.ccsds.encdec.structure.PacketDefinitionIndexer;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketEncoder;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.DefaultNullBasedResolver;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.DefinitionValueBasedResolver;
-import eu.dariolucia.ccsds.encdec.time.AbsoluteTimeDescriptor;
 import eu.dariolucia.ccsds.encdec.value.TimeUtil;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.cltu.incoming.pdus.CltuTransferDataInvocation;
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.outgoing.pdus.RafTransferBuffer;
@@ -99,6 +101,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     public static final String PUS_SUBTYPE_FIELD_NAME = "I-PUS-SUBTYPE";
     public static final int TM_FRAME_LENGTH = 1115;
     public static final int PACKET_GENERATION_PERIOD_MS = 1;
+    public static final int CYCLE_MODULE_SLEEP = 4;
     public static final int SETTER_APID = 10;
     public static final int SETTER_PUS = 69;
 
@@ -294,15 +297,21 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private void generatePackets() {
         int hkCounter = 0;
         int evtCounter = 0;
+        int counter = 0;
         while (running) {
             try {
-                Thread.sleep(PACKET_GENERATION_PERIOD_MS);
+                if(counter % CYCLE_MODULE_SLEEP == 0) {
+                    Thread.sleep(PACKET_GENERATION_PERIOD_MS);
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
             TmPacketTemplate pkt = this.periodicPackets.get(hkCounter++);
             hkCounter = hkCounter % periodicPackets.size();
-
+            ++counter;
+            if(counter == Integer.MAX_VALUE) {
+                counter = 0;
+            }
             try {
                 SpacePacket sp = pkt.generate();
                 if(sp != null) {
