@@ -24,9 +24,9 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox prefHeight="240.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.AckMessageDialogController">
+<VBox prefHeight="240.0" prefWidth="1350.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.AckMessageDialogController">
    <children>
-      <TableView fx:id="ackMessageTableView" fixedCellSize="20.0" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+      <TableView fx:id="ackMessageTableView" fixedCellSize="20.0" prefHeight="200.0" prefWidth="1400.0" VBox.vgrow="ALWAYS">
          <columns>
             <TableColumn fx:id="idCol" editable="false" prefWidth="75.0" sortable="false" text="ID" />
             <TableColumn fx:id="severityCol" editable="false" prefWidth="75.0" sortable="false" text="Severity" />
@@ -38,17 +38,20 @@
       <HBox prefHeight="40.0">
          <children>
             <Region HBox.hgrow="ALWAYS" />
-            <Button mnemonicParsing="false" prefWidth="100.0" text="Ack. Selected" onAction="#ackSelectionButtonSelected">
+            <Button mnemonicParsing="false" onAction="#ackSelectionButtonSelected" prefWidth="100.0" text="Ack. Selected">
                <HBox.margin>
-                  <Insets right="4.0" top="4.0" />
+                  <Insets right="4.0" top="8.0" />
                </HBox.margin>
             </Button>
-            <Button mnemonicParsing="false" prefWidth="100.0" text="Ack. All" onAction="#ackAllButtonSelected">
+            <Button mnemonicParsing="false" onAction="#ackAllButtonSelected" prefWidth="100.0" text="Ack. All">
                <HBox.margin>
-                  <Insets right="4.0" top="4.0" />
+                  <Insets right="4.0" top="8.0" />
                </HBox.margin>
             </Button>
          </children>
       </HBox>
    </children>
+   <padding>
+      <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+   </padding>
 </VBox>

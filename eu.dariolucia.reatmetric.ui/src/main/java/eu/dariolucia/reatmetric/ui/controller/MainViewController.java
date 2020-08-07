@@ -22,6 +22,9 @@ import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import eu.dariolucia.reatmetric.ui.plugin.ReatmetricPluginInspector;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -37,6 +40,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Paint;
@@ -45,6 +49,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.controlsfx.control.PopOver;
 
 import java.io.IOException;
@@ -72,6 +77,9 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private static final String VIEW_NAME = "viewName";
 
     private static final URL CSS_URL = MainViewController.class.getClassLoader().getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
+
+    private static final String SYSTEM_LABEL_CSS_STYLE_NOALARM = "-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;";
+    private static final String SYSTEM_LABEL_CSS_STYLE_ALARM = "-fx-border-color: black; -fx-background-color: #c60000; -fx-text-fill: #FFFFFF;";
 
     private final ReatmetricPluginInspector serviceInspector = new ReatmetricPluginInspector();
 
@@ -104,14 +112,12 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	private final PopOver connectPopOver = new PopOver();
 
     @FXML
-    private Button sideButton;
-    @FXML
     private Button infoButton;
 	private final PopOver infoPopOver = new PopOver();
 
-	private double oldSplitterPosition = 0.2;
-
     private final PopOver messagePopOver = new PopOver();
+    private AckMessageDialogController ackMessageController;
+    private Timeline alarmFlashTimeline;
 
     @FXML
     private void viewAction(Event event) {
@@ -198,18 +204,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
             return viewButton.getProperties().get(VIEW_NAME).toString();
         } else {
             return "Unknown";
-        }
-    }
-
-    @FXML
-    public void sideAction(ActionEvent event) {
-        if(mainSplitter.getDividerPositions()[0] <= 0.01) {
-            // mainSplitter.setMaxWidth(Double.MAX_VALUE);
-            mainSplitter.setDividerPositions(oldSplitterPosition, 1 - oldSplitterPosition);
-        } else {
-            oldSplitterPosition = mainSplitter.getDividerPositions()[0];
-            // mainSplitter.setMaxWidth(0);
-            mainSplitter.setDividerPositions(0.0, 1);
         }
     }
 
@@ -334,6 +328,13 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         }
     }
 
+    @FXML
+    public void systemLabelAction(MouseEvent actionEvent) {
+        if(ReatmetricUI.selectedSystem().getSystem() != null) {
+            messagePopOver.show(systemLbl);
+        }
+    }
+
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         // Set tabpane image
@@ -365,7 +366,28 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         connectPopOver.setHideOnEscape(true);
 
         // Create ack table view
-        // TODO
+        try {
+            URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/AckMessageDialog.fxml");
+            FXMLLoader loader = new FXMLLoader(datePickerUrl);
+            Parent root = loader.load();
+            ackMessageController = loader.getController();
+            messagePopOver.setContentNode(root);
+            messagePopOver.setArrowLocation(PopOver.ArrowLocation.TOP_LEFT);
+            messagePopOver.setTitle("Messages for acknowledgement");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Flashing timeline
+        alarmFlashTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(0.5), e -> {
+                    systemLbl.setStyle(SYSTEM_LABEL_CSS_STYLE_ALARM);
+                }),
+                new KeyFrame(Duration.seconds(1.0), e -> {
+                    systemLbl.setStyle(SYSTEM_LABEL_CSS_STYLE_NOALARM);
+                })
+        );
+        alarmFlashTimeline.setCycleCount(Animation.INDEFINITE);
     }
 
     @Override
@@ -395,7 +417,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
     private void registerAcknowledgeMonitor() {
-        // TODO
+        ackMessageController.activate(this::signalAckStatusChanged);
     }
 
     @Override
@@ -408,7 +430,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
     private void deregisterAcknowledgeMonitor() {
-        // TODO
+        ackMessageController.deactivate();
     }
 
     @Override
@@ -419,7 +441,14 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
     protected void signalAckStatusChanged(boolean inAlarm) {
-        // TODO
+        if(inAlarm) {
+            if(alarmFlashTimeline.getStatus() != Animation.Status.RUNNING) {
+                alarmFlashTimeline.play();
+            }
+        } else {
+            alarmFlashTimeline.pause();
+            systemLbl.setStyle(SYSTEM_LABEL_CSS_STYLE_NOALARM);
+        }
     }
 
     /*
