@@ -693,6 +693,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @Override
     protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
         this.liveTgl.setSelected(false);
+        this.displayTitledPane.setDisable(true);
         if (oldStatus) {
             persistColumnConfiguration();
         }
@@ -701,6 +702,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @Override
     protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
         this.liveTgl.setSelected(true);
+        this.displayTitledPane.setDisable(false);
         // Restore column configuration
         restoreColumnConfiguration();
         // Start subscription if there

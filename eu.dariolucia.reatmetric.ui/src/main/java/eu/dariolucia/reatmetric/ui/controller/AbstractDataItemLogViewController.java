@@ -305,9 +305,12 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         restoreColumnConfiguration();
         // Start subscription if there
         if (this.liveTgl == null || this.liveTgl.isSelected()) {
-        	clearTable();
-            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter());
-            startSubscription();
+            // Allow table to be present and layed out before getting its size
+            Platform.runLater(() -> {
+                clearTable();
+                moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter());
+                startSubscription();
+            });
         }
     }
     
