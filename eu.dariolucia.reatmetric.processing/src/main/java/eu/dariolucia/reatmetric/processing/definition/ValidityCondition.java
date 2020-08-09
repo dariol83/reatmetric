@@ -62,13 +62,17 @@ public class ValidityCondition {
     public boolean execute(IBindingResolver resolver) throws ValidityException {
         if(condition != null) {
             try {
-                Object o = this.condition.execute(resolver, null);
+                // FIXME: (expression) decomment after investigation on memory footprint
+                // Object o = this.condition.execute(resolver, null);
+                Object o = true;
                 if(!(o instanceof Boolean)) {
                     throw new ValidityException("Error while evaluating validity condition: expression returned a non-boolean value");
                 }
                 return (Boolean) o;
-            } catch (ScriptException e) {
-                throw new ValidityException("Error while evaluating validity condition: " + e.getMessage(), e);
+            // } catch (ScriptException e) {
+            //     throw new ValidityException("Error while evaluating validity condition: " + e.getMessage(), e);
+            } catch (Exception e) {
+                throw new ValidityException("Error (unexpected) while evaluating validity condition: " + e.getMessage(), e);
             }
         } else if(match != null) {
             try {

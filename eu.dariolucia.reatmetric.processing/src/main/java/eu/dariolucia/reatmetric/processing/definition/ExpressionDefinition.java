@@ -76,13 +76,18 @@ public class ExpressionDefinition {
     private transient ScriptEngine engine;
 
     public Object execute(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
+        return "0";
+        /*
+        // FIXME: (expression) decomment after investigation on memory footprint
         // One engine per expression, to avoid concurrent access: might not be wise from a memory POV...
         if(engine == null) {
-            engine = new ScriptEngineManager().getEngineByName("graal.js");
+            // engine = new ScriptEngineManager().getEngineByName("graal.js");
+            engine = new ScriptEngineManager().getEngineByName("nashorn");
             bindings = engine.getBindings(ScriptContext.ENGINE_SCOPE);
             bindings.put("polyglot.js.allowAllAccess", true);
             bindings.put("polyglot.js.allowHostAccess", true);
         }
+
         // First time: try to compile the automation
         if(canBeCompiled && compiledScript == null) {
             if (engine instanceof Compilable) {
@@ -97,6 +102,7 @@ public class ExpressionDefinition {
                 canBeCompiled = false;
             }
         }
+
         // Update the bindings
         for(SymbolDefinition sd : symbols) {
             bindings.put(sd.getName(), toBindingProperty(sd.getBinding(), resolver.resolve(sd.getReference())));
@@ -104,12 +110,14 @@ public class ExpressionDefinition {
         if(additionalBindings != null) {
             bindings.putAll(additionalBindings);
         }
+
         // Evaluate the automation
         if (compiledScript != null) {
             return compiledScript.eval(bindings);
         } else {
             return engine.eval(expression, bindings);
         }
+        */
     }
 
     private Object toBindingProperty(PropertyBinding binding, IEntityBinding resolve) throws ScriptException {

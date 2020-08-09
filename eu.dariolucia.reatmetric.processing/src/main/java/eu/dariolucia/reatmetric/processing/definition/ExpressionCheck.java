@@ -57,11 +57,15 @@ public class ExpressionCheck extends CheckDefinition{
         // Check
         boolean violated;
         try {
-            violated = (Boolean) definition.execute(resolver, Collections.singletonMap(INPUT_BINDING, currentValue));
-        } catch (ScriptException e) {
-            throw new CheckException("Cannot check value " + currentValue + " using expression", e);
+            // FIXME: (expression) decomment after investigation on memory footprint
+            // violated = (Boolean) definition.execute(resolver, Collections.singletonMap(INPUT_BINDING, currentValue));
+            violated = false;
+        // } catch (ScriptException e) {
+        //     throw new CheckException("Cannot check value " + currentValue + " using expression", e);
         } catch (ClassCastException e) {
             throw new CheckException("Cannot check value " + currentValue + " using expression: wrong return type", e);
+        } catch (Exception e) {
+            throw new CheckException("Cannot (unexpected) check value " + currentValue + " using expression: unexpected exception", e);
         }
         // Return result
         return deriveState(violated, currentViolations);

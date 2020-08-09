@@ -101,7 +101,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     public static final String PUS_SUBTYPE_FIELD_NAME = "I-PUS-SUBTYPE";
     public static final int TM_FRAME_LENGTH = 1115;
     public static final int PACKET_GENERATION_PERIOD_MS = 1;
-    public static final int CYCLE_MODULE_SLEEP = 4;
+    public static final int CYCLE_MODULE_SLEEP = 10;
     public static final int SETTER_APID = 10;
     public static final int SETTER_PUS = 69;
 
@@ -187,7 +187,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 double numPacketsPerSecond = (numPackets / (millis/1000.0));
                 double numFramesPerSecond = (numFrames / (millis/1000.0));
                 // FIXME: Decomment once investigation finished
-                // System.out.println("Frames per second: " + (int) numFramesPerSecond + ", packets per second: " + numPacketsPerSecond);
+                System.out.println("Frames per second: " + (int) numFramesPerSecond + ", packets per second: " + numPacketsPerSecond);
             }
         }
     }

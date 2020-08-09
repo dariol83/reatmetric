@@ -37,7 +37,6 @@ import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.AlarmParameterDataBuilder;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.ParameterDataBuilder;
 
-import javax.script.ScriptException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -211,7 +210,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                         try {
                             sourceValue = definition.getExpression().execute(processor, null);
                             sourceValue = ValueUtil.convert(sourceValue, definition.getRawType());
-                        } catch (ScriptException | ValueException e) {
+                        } catch (Exception e) {
                             LOG.log(Level.SEVERE, "Error when computing value of parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
                             // Overrule validity to be INVALID
                             validity = Validity.INVALID;
