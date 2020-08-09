@@ -112,7 +112,7 @@ public class TestDefinitionGenerator {
 
         // Now the packets: create ca 1500 PUS 3,25 using 5 templates (320 cycles). SID is I-P1, location of parameters is absolute.
         // Number of parameters: 57, 42, 62, 47, 52 (260 parameters per cycle). Each APID covers 50 different packets with the SID.
-        // Each packet contains 100 parameters from the pool of parameters, and 2 parameters from a common parameter pool of 100 parameters
+        // Each packet contains many parameters from the pool of parameters, and 2 parameters from a common parameter pool of 100 parameters
         int apid = 100;
         int sid = 0;
         int packetId = 0;
@@ -127,7 +127,7 @@ public class TestDefinitionGenerator {
                 pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
                 pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 3));
                 pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, 25));
-                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid++));
                 pd1.setStructure(new PacketStructure());
                 int offset = firstParameterStartOffset;
                 for(int k = 0; k < 55; ++k) {
@@ -156,7 +156,7 @@ public class TestDefinitionGenerator {
                 pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
                 pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 3));
                 pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, 25));
-                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid++));
                 pd1.setStructure(new PacketStructure());
                 int offset = firstParameterStartOffset;
                 for(int k = 0; k < 40; ++k) {
@@ -185,7 +185,7 @@ public class TestDefinitionGenerator {
                 pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
                 pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 3));
                 pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, 25));
-                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid++));
                 pd1.setStructure(new PacketStructure());
                 int offset = firstParameterStartOffset;
                 for(int k = 0; k < 60; ++k) {
@@ -214,7 +214,7 @@ public class TestDefinitionGenerator {
                 pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
                 pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 3));
                 pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, 25));
-                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid++));
                 pd1.setStructure(new PacketStructure());
                 int offset = firstParameterStartOffset;
                 for(int k = 0; k < 45; ++k) {
@@ -243,7 +243,7 @@ public class TestDefinitionGenerator {
                 pd1.getMatchers().add(new IdentFieldMatcher(ifApid, apid));
                 pd1.getMatchers().add(new IdentFieldMatcher(ifPType, 3));
                 pd1.getMatchers().add(new IdentFieldMatcher(ifPSubtype, 25));
-                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid));
+                pd1.getMatchers().add(new IdentFieldMatcher(ifP1, sid++));
                 pd1.setStructure(new PacketStructure());
                 int offset = firstParameterStartOffset;
                 for(int k = 0; k < 50; ++k) {
@@ -267,8 +267,6 @@ public class TestDefinitionGenerator {
             if(i % 10 == 9) {
                 ++apid;
                 sid = 0;
-            } else {
-                ++sid;
             }
         }
         // Generate time packet
