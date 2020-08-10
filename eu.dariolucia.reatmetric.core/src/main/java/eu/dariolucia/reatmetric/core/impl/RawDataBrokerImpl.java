@@ -26,14 +26,11 @@ import eu.dariolucia.reatmetric.core.ServiceCoreImpl;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.logging.Level;
@@ -147,18 +144,17 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
 
     private static class RawDataSubscriptionManager {
 
+        private static final int MAX_QUEUE = 1000;
         private static final Predicate<RawData> IDENTITY_FILTER = (o) -> true;
 
-        // FIXME: replace with bounded blocking queue and poller thread
-        private final ExecutorService dispatcher = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "Raw Data Subscription Dispatcher");
-            t.setDaemon(true);
-            return t;
-        });
+        private final Thread dispatcher;
+        private final BlockingQueue<RawData> items;
+
         private final IRawDataSubscriber subscriber;
         private Predicate<RawData> preFilter;
         private Predicate<RawData> filter;
         private Predicate<RawData> postFilter;
+        private volatile boolean running = true;
 
         public RawDataSubscriptionManager(IRawDataSubscriber subscriber, Predicate<RawData> preFilter, RawDataFilter filter, Predicate<RawData> postFilter) {
             this.subscriber = subscriber;
@@ -166,15 +162,63 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
             this.filter = filter;
             this.postFilter = postFilter;
             sanitizeFilters();
+            this.items = new LinkedBlockingQueue<>();
+            this.dispatcher = new Thread(this::run);
+            this.dispatcher.setName("Raw Data Dispatcher Thread");
+            this.dispatcher.setDaemon(true);
+            this.dispatcher.start();
         }
 
-        public void notifyItems(List<RawData> items) {
-            dispatcher.submit(() -> {
-                List<RawData> toNotify = filterItems(items);
-                if(!toNotify.isEmpty()) {
-                    subscriber.dataItemsReceived(toNotify);
+        private void run() {
+            List<RawData> toProcess;
+            while(running) {
+                toProcess = new ArrayList<>();
+                // Wait for item
+                synchronized (this) {
+                    while(running && items.isEmpty()) {
+                        try {
+                            this.wait();
+                        } catch (InterruptedException e) {
+                            // Repeat the cycle
+                        }
+                    }
+                    if(!running) {
+                        items.clear();
+                        this.notifyAll();
+                        return;
+                    }
+                    // Drain
+                    items.drainTo(toProcess);
+                    this.notifyAll();
                 }
-            });
+                if(!toProcess.isEmpty()) {
+                    subscriber.dataItemsReceived(toProcess);
+                }
+            }
+        }
+
+        public void notifyItems(List<RawData> toDistribute) {
+            List<RawData> toNotify = filterItems(toDistribute);
+            if(!toNotify.isEmpty()) {
+                // Wait for space
+                synchronized (this) {
+                    while(running && items.size() >= MAX_QUEUE && !Thread.currentThread().equals(dispatcher)) {
+                        try {
+                            items.wait();
+                        } catch (InterruptedException e) {
+                            // Repeat the cycle
+                        }
+                    }
+                    if(!running) {
+                        items.clear();
+                        this.notifyAll();
+                        return;
+                    }
+                    // Add
+                    items.addAll(toNotify);
+                    this.notifyAll();
+                }
+            }
         }
 
         private synchronized List<RawData> filterItems(List<RawData> items) {
@@ -201,7 +245,8 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
         }
 
         public synchronized void terminate() {
-            dispatcher.shutdownNow();
+            running = false;
+            notifyAll();
         }
     }
 }
