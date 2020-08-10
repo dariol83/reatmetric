@@ -187,7 +187,11 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
 
         private static final Predicate<OperationalMessage> IDENTITY_FILTER = (o) -> true;
 
-        private final ExecutorService dispatcher = Executors.newSingleThreadExecutor(); // OK to use, only 1 job, separate queue
+        private final ExecutorService dispatcher = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "Operational Message Subscription Dispatcher");
+            t.setDaemon(true);
+            return t;
+        }); // OK to use, only 1 job, separate queue
         private final BlockingQueue<OperationalMessage> queue = new ArrayBlockingQueue<>(1000);
         private final IOperationalMessageSubscriber subscriber;
         private final boolean timely;

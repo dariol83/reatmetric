@@ -180,7 +180,11 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
 
         private static final Predicate<AcknowledgedMessage> IDENTITY_FILTER = (o) -> true;
 
-        private final ExecutorService dispatcher = Executors.newSingleThreadExecutor(); // OK to use, only 1 job, separate queue
+        private final ExecutorService dispatcher = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "Acknowledged Message Subscription Dispatcher");
+            t.setDaemon(true);
+            return t;
+        }); // OK to use, only 1 job, separate queue
         private final BlockingQueue<AcknowledgedMessage> queue = new ArrayBlockingQueue<>(1000);
         private final IAcknowledgedMessageSubscriber subscriber;
         private final boolean timely;

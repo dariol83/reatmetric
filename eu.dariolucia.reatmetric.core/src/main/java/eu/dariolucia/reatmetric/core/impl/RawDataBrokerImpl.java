@@ -150,7 +150,11 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
         private static final Predicate<RawData> IDENTITY_FILTER = (o) -> true;
 
         // FIXME: replace with bounded blocking queue and poller thread
-        private final ExecutorService dispatcher = Executors.newSingleThreadExecutor();
+        private final ExecutorService dispatcher = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "Raw Data Subscription Dispatcher");
+            t.setDaemon(true);
+            return t;
+        });
         private final IRawDataSubscriber subscriber;
         private Predicate<RawData> preFilter;
         private Predicate<RawData> filter;

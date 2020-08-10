@@ -290,7 +290,12 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
             // Convert to big decimals: integral part seconds, decimal part nanoseconds
             Pair<BigDecimal, BigDecimal> fTc = convert(firstTimeCouple);
             Pair<BigDecimal, BigDecimal> sTc = convert(secondTimeCouple);
-            BigDecimal m = (fTc.getSecond().subtract(sTc.getSecond())).divide(fTc.getFirst().subtract(sTc.getFirst()), 9, RoundingMode.HALF_UP);
+            BigDecimal divisor = fTc.getFirst().subtract(sTc.getFirst());
+            if(divisor.doubleValue() == 0.0) {
+                // Avoid ArithmeticException
+                return;
+            }
+            BigDecimal m = (fTc.getSecond().subtract(sTc.getSecond())).divide(divisor, 9, RoundingMode.HALF_UP);
             BigDecimal q = sTc.getSecond().subtract(m.multiply(sTc.getFirst()));
             if(LOG.isLoggable(Level.FINE))
             {

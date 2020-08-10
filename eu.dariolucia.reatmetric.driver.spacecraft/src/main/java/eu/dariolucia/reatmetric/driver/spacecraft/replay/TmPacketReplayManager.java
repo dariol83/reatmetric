@@ -138,6 +138,7 @@ public class TmPacketReplayManager extends AbstractTransportConnector {
             extract(startTime, endTime, spacecraftId);
         });
         extractionThread.setDaemon(true);
+        extractionThread.setName("TM Packet Replay Extraction Thread");
         extractionThread.start();
     }
 

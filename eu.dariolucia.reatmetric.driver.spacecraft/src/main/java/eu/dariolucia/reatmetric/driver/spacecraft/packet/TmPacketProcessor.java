@@ -91,9 +91,21 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
 
     private final BlockingQueue<RawData> incomingPacketsQueue = new ArrayBlockingQueue<>(MAX_INPUT_QUEUE_SIZE);
 
-    private final ExecutorService dispatcherService = Executors.newFixedThreadPool(1);
-    private final ExecutorService decoderService = Executors.newFixedThreadPool(2); // TODO: make it configurable
-    private final ExecutorService notifierService = Executors.newFixedThreadPool(1);
+    private final ExecutorService dispatcherService = Executors.newFixedThreadPool(1, (r) -> {
+        Thread t = new Thread(r, "TM Packet Processing - Dispatcher");
+        t.setDaemon(true);
+        return t;
+    });
+    private final ExecutorService decoderService = Executors.newFixedThreadPool(2, (r) -> {
+        Thread t = new Thread(r, "TM Packet Processing - Decoder");
+        t.setDaemon(true);
+        return t;
+    }); // TODO: make it configurable
+    private final ExecutorService notifierService = Executors.newFixedThreadPool(1, (r) -> {
+        Thread t = new Thread(r, "TM Packet Processing - Notifier");
+        t.setDaemon(true);
+        return t;
+    });
 
     public TmPacketProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker) {
         this.spacecraft = String.valueOf(configuration.getId());
