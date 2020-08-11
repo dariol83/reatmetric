@@ -20,15 +20,20 @@ import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEntityBinding;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEventBinding;
 import eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.Source;
+import org.graalvm.polyglot.Value;
 
-import javax.script.*;
+import javax.script.Bindings;
+import javax.script.ScriptEngine;
+import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -70,13 +75,32 @@ public class ExpressionDefinition {
     // Transient state, runtime methods
     // ----------------------------------------------------------------------------------------------------------------
 
-    private transient CompiledScript compiledScript;
+    private transient Source compiledScript;
     private transient boolean canBeCompiled = true;
     private transient Bindings bindings;
     private transient ScriptEngine engine;
 
     public Object execute(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
-        return "0";
+        try (Engine engine = Engine.create()) {
+            Source source = Source.create("js", expression);
+            try (Context context = Context.newBuilder()
+                    .engine(engine)
+                    .build()) {
+                Value bindings = context.getBindings("js");
+                // Update the bindings
+                for(SymbolDefinition sd : symbols) {
+                    bindings.putMember(sd.getName(), toBindingProperty(sd.getBinding(), resolver.resolve(sd.getReference())));
+                }
+                if(additionalBindings != null) {
+                    for(Map.Entry<String, Object> entry : additionalBindings.entrySet()) {
+                        bindings.putMember(entry.getKey(), entry.getValue());
+                    }
+                }
+                Value returnValue = context.eval(source);
+                return returnValue.as(Object.class);
+            }
+        }
+
         /*
         // FIXME: (expression) decomment after investigation on memory footprint
         // One engine per expression, to avoid concurrent access: might not be wise from a memory POV...

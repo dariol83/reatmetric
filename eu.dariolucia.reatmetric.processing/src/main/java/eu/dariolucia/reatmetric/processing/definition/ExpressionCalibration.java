@@ -50,11 +50,9 @@ public class ExpressionCalibration extends CalibrationDefinition {
     @Override
     public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
         try {
-            return "0.0";
-            // FIXME: (expression) decomment after investigation on memory footprint
-            // return definition.execute(resolver, Collections.singletonMap(INPUT_BINDING, valueToCalibrate));
-        // } catch (ScriptException e) {
-        //    throw new CalibrationException("Cannot calibrate value " + valueToCalibrate + " using expression", e);
+            return definition.execute(resolver, Collections.singletonMap(INPUT_BINDING, valueToCalibrate));
+        } catch (ScriptException e) {
+            throw new CalibrationException("Cannot calibrate value " + valueToCalibrate + " using expression", e);
         } catch (Exception e) {
             throw new CalibrationException("Cannot (unexpected) calibrate value " + valueToCalibrate + " using expression", e);
         }
