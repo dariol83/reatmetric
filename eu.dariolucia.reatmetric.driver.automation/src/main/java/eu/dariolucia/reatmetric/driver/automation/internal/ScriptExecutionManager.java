@@ -32,7 +32,6 @@ import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelExcepti
 import eu.dariolucia.reatmetric.api.processing.input.*;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
-import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 
 import java.time.Instant;
@@ -238,8 +237,9 @@ public class ScriptExecutionManager {
 
         public ActivityInvocationBuilder(String activityPath) throws ReatmetricException {
             try {
-                int id = context.getProcessingModel().getExternalIdOf(SystemEntityPath.fromString(activityPath));
-                this.requestBuilder = ActivityRequest.newRequest(id);
+                SystemEntityPath systemEntityPath = SystemEntityPath.fromString(activityPath);
+                int id = context.getProcessingModel().getExternalIdOf(systemEntityPath);
+                this.requestBuilder = ActivityRequest.newRequest(id, systemEntityPath);
             } catch (ProcessingModelException e) {
                 LOG.log(Level.SEVERE,"Cannot request invocation of " + activityPath + " from automation " + fileName + ": " + e.getMessage(), e);
                 throw e;

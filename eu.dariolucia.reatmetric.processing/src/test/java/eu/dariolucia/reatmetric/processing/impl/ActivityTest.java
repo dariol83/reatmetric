@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
@@ -79,7 +80,7 @@ class ActivityTest {
             outList.clear();
             testLogger.info("Invocation 1");
 
-            ActivityRequest ar1 = ActivityRequest.newRequest(1000)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1000, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", true))
                     .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
                     .withProperty("custom", "hello world")
@@ -114,7 +115,7 @@ class ActivityTest {
             outList.clear();
             testLogger.info("Invocation 2");
 
-            ActivityRequest ar1 = ActivityRequest.newRequest(1000)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1000, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", true))
                     .withArgument(PlainActivityArgument.ofSource("ARG3", 4.5))
                     .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
@@ -135,7 +136,7 @@ class ActivityTest {
             outList.clear();
             testLogger.info("Invocation 3");
 
-            ActivityRequest ar1 = ActivityRequest.newRequest(1000)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1000, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", false))
                     .withArgument(PlainActivityArgument.ofSource("ARG3", 12.4))
                     .withArgument(PlainActivityArgument.ofEngineering("ARG4", "OFF"))
@@ -190,7 +191,7 @@ class ActivityTest {
             outList.clear();
             testLogger.info("Invocation 1");
 
-            ActivityRequest ar1 = ActivityRequest.newRequest(1001)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1001, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", true))
                     .withArgument(PlainActivityArgument.ofEngineering("ARG2", 1000L))
                     .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
@@ -225,7 +226,7 @@ class ActivityTest {
             outList.clear();
             testLogger.info("Invocation 2");
 
-            ActivityRequest ar1 = ActivityRequest.newRequest(1001)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1001, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", true))
                     .withArgument(PlainActivityArgument.ofEngineering("ARG2", 70000L))
                     .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
@@ -254,7 +255,7 @@ class ActivityTest {
 
             outList.clear();
             // Invoke activity
-            ActivityRequest ar1 = ActivityRequest.newRequest(1001)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1001, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", false))
                     .withArgument(PlainActivityArgument.ofSource("ARG2", 3000L))
                     .withRoute("A")
@@ -295,7 +296,7 @@ class ActivityTest {
 
             outList.clear();
 
-            ActivityRequest ar1 = ActivityRequest.newRequest(1001)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1001, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", true))
                     .withArgument(PlainActivityArgument.ofEngineering("ARG2", 4000L))
                     .withRoute("A")
@@ -339,7 +340,7 @@ class ActivityTest {
             outList.clear();
             testLogger.info("Invocation 1");
 
-            ActivityRequest ar1 = ActivityRequest.newRequest(1001)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1001, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", true))
                     .withArgument(PlainActivityArgument.ofEngineering("ARG2", 1000L))
                     .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
@@ -399,7 +400,7 @@ class ActivityTest {
             AwaitUtil.awaitAndVerify(5000, outList::size, 2);
             outList.clear();
             // Invoke
-            ActivityRequest ar1 = ActivityRequest.newRequest(1002)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1002, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", 120L))
                     .withRoute("A")
                     .withSource("XXX")
@@ -432,7 +433,7 @@ class ActivityTest {
             outList.clear();
             testLogger.info("Invocation 2");
             // Invoke
-            ActivityRequest ar1 = ActivityRequest.newRequest(1002)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1002, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", 121L))
                     .withRoute("A")
                     .withSource("XXX")
@@ -503,7 +504,7 @@ class ActivityTest {
             outList.clear();
             testLogger.info("Invocation 1");
             // Invoke
-            ActivityRequest ar1 = ActivityRequest.newRequest(1003)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1003, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", 120L))
                     .withRoute("A")
                     .withSource("XXX")
@@ -567,7 +568,7 @@ class ActivityTest {
             // Set route A as unavailable
             h1.markRouteAsUnavailable("A");
 
-            ActivityRequest ar1 = ActivityRequest.newRequest(1000)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1000, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", true))
                     .withArgument(PlainActivityArgument.ofEngineering("ARG4", "ON"))
                     .withRoute("A")
@@ -616,7 +617,7 @@ class ActivityTest {
             outList.clear();
             testLogger.info("Invocation 1");
 
-            ActivityRequest ar1 = ActivityRequest.newRequest(1000)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1000, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", true))
                     .withArgument(PlainActivityArgument.ofSource("ARG2", 104L))
                     .withArgument(PlainActivityArgument.ofSource("ARG3", 7.9))
@@ -702,7 +703,7 @@ class ActivityTest {
             outList.clear();
             testLogger.info("Invocation 1");
             // Invoke
-            ActivityRequest ar1 = ActivityRequest.newRequest(1003)
+            ActivityRequest ar1 = ActivityRequest.newRequest(1003, SystemEntityPath.fromString("Not important"))
                     .withArgument(PlainActivityArgument.ofSource("ARG1", 120L))
                     .withProperty(SchedulingLifecycleStrategy.SCHEDULED_EXECUTION_TIME_KEY, Instant.now().plusSeconds(10).toString())
                     .withRoute("A")

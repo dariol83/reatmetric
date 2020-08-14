@@ -139,7 +139,7 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
      *
      * It can be null.
      *
-     * @return the specified sources
+     * @return the specified severity
      */
     public Set<Severity> getSeverityList() {
         return severityList;

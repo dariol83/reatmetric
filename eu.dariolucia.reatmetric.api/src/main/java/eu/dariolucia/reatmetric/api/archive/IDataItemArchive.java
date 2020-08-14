@@ -132,6 +132,22 @@ public interface IDataItemArchive<T extends AbstractDataItem, K extends Abstract
     Instant retrieveLastGenerationTime(Class<? extends AbstractDataItem> type) throws ArchiveException;
 
     /**
+     * Remove the item having the specified internal ID.
+     *
+     * @param id the ID to remove
+     * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the retrieval operation to be completed successfully
+     */
+    void remove(IUniqueId id) throws ArchiveException;
+
+    /**
+     * Remove the items matching the specified filter.
+     *
+     * @param filter the filter to use
+     * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the retrieval operation to be completed successfully
+     */
+    void remove(K filter) throws ArchiveException;
+
+    /**
      * Delete all entries in the archive strictly following (generationTime > referenceTime) or preceeding (generationTime < referenceTime)
      * the provided time.
      *

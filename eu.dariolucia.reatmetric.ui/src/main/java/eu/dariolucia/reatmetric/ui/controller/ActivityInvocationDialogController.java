@@ -267,7 +267,7 @@ public class ActivityInvocationDialogController implements Initializable {
         for(PropertyBean pb : propertiesTableView.getItems()) {
             propertyMap.put(pb.keyProperty().get(), pb.valueProperty().get());
         }
-        return new ActivityRequest(descriptor.getExternalId(), argumentTableManager.buildArgumentList(), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
+        return new ActivityRequest(descriptor.getExternalId(), descriptor.getPath(), argumentTableManager.buildArgumentList(), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
     }
 
     @FXML

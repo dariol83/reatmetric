@@ -447,7 +447,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         for(Map.Entry<String, String> kv : request.getProperties().entrySet()) {
             propertyMap.put(kv.getKey(), kv.getValue());
         }
-        return new ActivityRequest(setter.getActivity().getId(), buildSetArgumentList(request, setter), propertyMap, request.getRoute(), request.getSource());
+        return new ActivityRequest(setter.getActivity().getId(), SystemEntityPath.fromString(setter.getActivity().getLocation()), buildSetArgumentList(request, setter), propertyMap, request.getRoute(), request.getSource());
     }
 
     private List<AbstractActivityArgument> buildSetArgumentList(SetParameterRequest request, ParameterSetterDefinition setter) throws ProcessingModelException {

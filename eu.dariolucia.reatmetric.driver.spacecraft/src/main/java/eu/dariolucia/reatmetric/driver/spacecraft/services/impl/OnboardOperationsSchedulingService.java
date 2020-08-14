@@ -158,7 +158,7 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
             if(listCommands != null) {
                 arguments.add(listCommands);
             }
-            processingModel().startActivity(new ActivityRequest(descriptor.getExternalId(), arguments,
+            processingModel().startActivity(new ActivityRequest(descriptor.getExternalId(), descriptor.getPath(), arguments,
                     Map.of(Constants.ACTIVITY_PROPERTY_SUBSCHEDULE_TRACKING_ID, String.valueOf(originalCommand.tcTracker.getInvocation().getActivityOccurrenceId().asLong())),
                     originalCommand.tcTracker.getInvocation().getRoute(),
                     originalCommand.tcTracker.getInvocation().getSource()));
@@ -201,7 +201,7 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
             if(commandArg != null) {
                 arguments.add(commandArg);
             }
-            processingModel().startActivity(new ActivityRequest(descriptor.getExternalId(), arguments,
+            processingModel().startActivity(new ActivityRequest(descriptor.getExternalId(), descriptor.getPath(), arguments,
                     Map.of(Constants.ACTIVITY_PROPERTY_SUBSCHEDULE_TRACKING_ID, String.valueOf(originalCommand.tcTracker.getInvocation().getActivityOccurrenceId().asLong())),
                     originalCommand.tcTracker.getInvocation().getRoute(),
                     originalCommand.tcTracker.getInvocation().getSource()));

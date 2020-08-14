@@ -344,7 +344,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
     }
 
-    public IUniqueId retrieveLastId() throws ArchiveException {
+    public synchronized IUniqueId retrieveLastId() throws ArchiveException {
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - retrieveLastId() called");
         }
@@ -356,7 +356,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
     }
 
-    public IUniqueId retrieveLastId(Class<? extends AbstractDataItem> type) throws ArchiveException {
+    public synchronized IUniqueId retrieveLastId(Class<? extends AbstractDataItem> type) throws ArchiveException {
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - retrieveLastId(Class) called: type=" + type.getSimpleName());
         }
@@ -486,6 +486,16 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
      * @return the data item type
      */
     protected abstract Class<T> getMainType();
+
+    public void remove(IUniqueId id) throws ArchiveException {
+        // TODO: implement standard approach
+        throw new UnsupportedOperationException();
+    }
+
+    public void remove(K filter) throws ArchiveException {
+        // TODO: implement standard approach
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * This method closes all connections and disposes the internal resources, if any. The class is marked as disposed

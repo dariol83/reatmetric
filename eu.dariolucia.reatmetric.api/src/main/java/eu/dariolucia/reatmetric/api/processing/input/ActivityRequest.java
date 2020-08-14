@@ -16,18 +16,24 @@
 
 package eu.dariolucia.reatmetric.api.processing.input;
 
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+
 import java.util.*;
 
 public final class ActivityRequest extends AbstractInputDataItem {
 
-    public static ActivityRequest.Builder newRequest(int id) {
-        return new Builder(id);
+    public static ActivityRequest.Builder newRequest(int id, SystemEntityPath path) {
+        return new Builder(id, path);
     }
 
     /**
      * The ID (System Entity ID) of the activity to be requested
      */
     private final int id;
+    /**
+     * The path of the activity to be requested
+     */
+    private final SystemEntityPath path;
     /**
      * The list of arguments.
      */
@@ -45,16 +51,21 @@ public final class ActivityRequest extends AbstractInputDataItem {
      */
     private final String source;
 
-    public ActivityRequest(int id, List<AbstractActivityArgument> arguments, Map<String, String> properties, String route, String source) {
+    public ActivityRequest(int id, SystemEntityPath path, List<AbstractActivityArgument> arguments, Map<String, String> properties, String route, String source) {
         this.id = id;
         this.arguments = List.copyOf(arguments);
         this.properties = Collections.unmodifiableMap(new TreeMap<>(properties));
         this.route = route;
         this.source = source;
+        this.path = path;
     }
 
     public int getId() {
         return id;
+    }
+
+    public SystemEntityPath getPath() {
+        return path;
     }
 
     public List<AbstractActivityArgument> getArguments() {
@@ -79,6 +90,7 @@ public final class ActivityRequest extends AbstractInputDataItem {
         if (o == null || getClass() != o.getClass()) return false;
         ActivityRequest that = (ActivityRequest) o;
         return getId() == that.getId() &&
+                Objects.equals(getPath(), that.getPath()) &&
                 Objects.equals(getArguments(), that.getArguments()) &&
                 Objects.equals(getProperties(), that.getProperties()) &&
                 Objects.equals(getRoute(), that.getRoute()) &&
@@ -87,13 +99,14 @@ public final class ActivityRequest extends AbstractInputDataItem {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId(), getArguments(), getProperties(), getRoute(), getSource());
+        return Objects.hash(getId(), getPath(), getArguments(), getProperties(), getRoute(), getSource());
     }
 
     @Override
     public String toString() {
         return "ActivityRequest{" +
                 "id=" + id +
+                ", path=" + path +
                 ", arguments=" + arguments +
                 ", properties=" + properties +
                 ", route='" + route + '\'' +
@@ -103,13 +116,15 @@ public final class ActivityRequest extends AbstractInputDataItem {
 
     public static class Builder {
         private final int id;
+        private final SystemEntityPath path;
         private List<AbstractActivityArgument> arguments = new LinkedList<>();
         private Map<String, String> properties = new TreeMap<>();
         private String route;
         private String source;
 
-        public Builder(int id) {
+        public Builder(int id, SystemEntityPath path) {
             this.id = id;
+            this.path = path;
         }
 
         public Builder withArgument(AbstractActivityArgument argument) {
@@ -143,7 +158,7 @@ public final class ActivityRequest extends AbstractInputDataItem {
         }
 
         public ActivityRequest build() {
-            return new ActivityRequest(id, arguments, properties, route, source);
+            return new ActivityRequest(id, path, arguments, properties, route, source);
         }
     }
 }
