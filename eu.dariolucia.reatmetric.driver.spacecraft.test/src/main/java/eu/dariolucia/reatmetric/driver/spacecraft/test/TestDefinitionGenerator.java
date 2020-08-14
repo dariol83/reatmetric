@@ -1087,7 +1087,7 @@ public class TestDefinitionGenerator {
         // Synthetic
         ParameterProcessingDefinition ps5 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.CHARACTER_STRING, ValueTypeEnum.CHARACTER_STRING);
         ps5.setExpression(new ExpressionDefinition("function eval() { \n" +
-                "  return " + extractName(pe4.getLocation()) + " + \"_TEST\" \n" +
+                "  return " + extractName(pe4.getLocation()) + " + \"_TEST\"; \n" +
                 "} \n" +
                 "eval();", Arrays.asList(
                 new SymbolDefinition(extractName(pe4.getLocation()), pe4.getId(), PropertyBinding.SOURCE_VALUE)
