@@ -1,5 +1,7 @@
 package eu.dariolucia.reatmetric.api.scheduler;
 
-public abstract class AbstractSchedulingTrigger {
+import java.io.Serializable;
+
+public abstract class AbstractSchedulingTrigger implements Serializable {
 
 }

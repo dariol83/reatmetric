@@ -29,6 +29,7 @@ import eu.dariolucia.reatmetric.api.messages.IAcknowledgedMessageArchive;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageArchive;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
+import eu.dariolucia.reatmetric.api.scheduler.IScheduledActivityDataArchive;
 import eu.dariolucia.reatmetric.persist.services.*;
 
 import java.io.BufferedReader;
@@ -85,6 +86,7 @@ public class Archive implements IArchive {
             registeredArchives.put(IAlarmParameterDataArchive.class, new AlarmParameterDataArchive(this));
             registeredArchives.put(IActivityOccurrenceDataArchive.class, new ActivityOccurrenceDataArchive(this));
             registeredArchives.put(IAcknowledgedMessageArchive.class, new AcknowledgedMessageArchive(this));
+            registeredArchives.put(IScheduledActivityDataArchive.class, new ScheduledActivityDataArchive(this));
         } catch (SQLException e) {
             throw new ArchiveException(e);
         }

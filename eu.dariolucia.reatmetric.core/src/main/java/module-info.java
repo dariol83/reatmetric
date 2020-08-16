@@ -30,6 +30,7 @@ open module eu.dariolucia.reatmetric.core {
     uses eu.dariolucia.reatmetric.core.api.IDriver;
     uses eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
     uses eu.dariolucia.reatmetric.api.processing.IProcessingModelFactory;
+    uses eu.dariolucia.reatmetric.api.scheduler.ISchedulerFactory;
 
     provides IReatmetricSystem with eu.dariolucia.reatmetric.core.ServiceCoreImpl;
 }

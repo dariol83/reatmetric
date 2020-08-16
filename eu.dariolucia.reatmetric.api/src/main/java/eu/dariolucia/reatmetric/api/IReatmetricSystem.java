@@ -30,6 +30,8 @@ import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
+import eu.dariolucia.reatmetric.api.scheduler.IScheduledActivityDataProvisionService;
+import eu.dariolucia.reatmetric.api.scheduler.IScheduler;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 
 import java.util.List;
@@ -66,6 +68,10 @@ public interface IReatmetricSystem extends IDebugInfoProvider {
     IActivityOccurrenceDataProvisionService getActivityOccurrenceDataMonitorService() throws ReatmetricException;
 
     IActivityExecutionService getActivityExecutionService() throws ReatmetricException;
+
+    IScheduler getScheduler() throws ReatmetricException;
+
+    IScheduledActivityDataProvisionService getScheduledActivityDataMonitorService() throws ReatmetricException;
 
     List<ITransportConnector> getTransportConnectors() throws ReatmetricException;
 }

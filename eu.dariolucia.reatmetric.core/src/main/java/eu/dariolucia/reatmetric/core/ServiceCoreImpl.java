@@ -36,6 +36,9 @@ import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelExcepti
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.api.scheduler.IScheduledActivityDataProvisionService;
+import eu.dariolucia.reatmetric.api.scheduler.IScheduler;
+import eu.dariolucia.reatmetric.api.scheduler.ISchedulerFactory;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.*;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
@@ -67,6 +70,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
     private volatile SystemStatus systemStatus = SystemStatus.UNKNOWN;
 
     private IArchive archive;
+    private IScheduler scheduler;
     private OperationalMessageBrokerImpl messageBroker;
     private RawDataBrokerImpl rawDataBroker;
     private ProcessingModelManager processingModelManager;
@@ -118,6 +122,15 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         // Load the processing model manager and services
         LOG.info("Loading processing model");
         processingModelManager = new ProcessingModelManager(archive, configuration.getDefinitionsLocation(), configuration.getInitialisation());
+        // Load the scheduler
+        LOG.info("Loading scheduler");
+        ServiceLoader<ISchedulerFactory> scheduleLoader = ServiceLoader.load(ISchedulerFactory.class);
+        if(scheduleLoader.findFirst().isPresent()) {
+            scheduler = scheduleLoader.findFirst().get().buildScheduler(archive);
+            scheduler.initialise();
+        } else {
+            LOG.warning("Scheduler implementation not found");
+        }
         // Load the drivers
         for(DriverConfiguration dc : configuration.getDrivers()) {
             LOG.info("Loading driver " + dc.getName());
@@ -291,6 +304,16 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
     @Override
     public IActivityExecutionService getActivityExecutionService() {
         return processingModelManager;
+    }
+
+    @Override
+    public IScheduler getScheduler() {
+        return scheduler;
+    }
+
+    @Override
+    public IScheduledActivityDataProvisionService getScheduledActivityDataMonitorService() {
+        return scheduler;
     }
 
     @Override

@@ -45,7 +45,7 @@ public class AcknowledgedMessageArchive extends AbstractDataItemArchive<Acknowle
             "b.UniqueId, b.GenerationTime, b.Id, b.Text, b.Source, b.Severity, b.AdditionalData " +
             "FROM ACK_MESSAGE_TABLE as a JOIN OPERATIONAL_MESSAGE_TABLE as b " +
             "ON (a.MessageId = b.UniqueId) " +
-            "WHERE UniqueId=?";
+            "WHERE a.UniqueId=?";
     private static final String LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM ACK_MESSAGE_TABLE";
 
     public AcknowledgedMessageArchive(Archive controller) throws SQLException {

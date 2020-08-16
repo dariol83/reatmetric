@@ -90,17 +90,17 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
                 sample();
             }
         }, 1000, 2000);
-        if(LOG.isLoggable(Level.FINE)) {
+        if (LOG.isLoggable(Level.FINE)) {
             LOG.fine(this + " instance - parent constructor completed");
         }
     }
 
     protected synchronized void storeBuffer() {
-        if(LOG.isLoggable(Level.FINEST)) {
+        if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest(this + " - storeBuffer called: storageQueue.size() = " + storageQueue.size());
         }
         drainingQueue.clear();
-        if(!storageQueue.isEmpty()) {
+        if (!storageQueue.isEmpty()) {
             storageQueue.drainTo(drainingQueue);
             try {
                 doStore(storeConnection, drainingQueue);
@@ -118,24 +118,24 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     protected void doStore(Connection connection, List<T> itemsToStore) throws SQLException, IOException {
-        if(LOG.isLoggable(Level.FINER)) {
+        if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - request to store " + itemsToStore.size() + " items");
-            if(LOG.isLoggable(Level.FINEST)) {
+            if (LOG.isLoggable(Level.FINEST)) {
                 for (T item : itemsToStore) {
                     LOG.finest("Storing " + item);
                 }
             }
         }
-        if(storeStatement == null) {
+        if (storeStatement == null) {
             storeStatement = createStoreStatement(connection);
         }
         storeStatement.clearBatch();
-        for(T item : itemsToStore) {
+        for (T item : itemsToStore) {
             setItemPropertiesToStatement(storeStatement, item);
             storeStatement.addBatch();
         }
         int[] numUpdates = storeStatement.executeBatch();
-        if(LOG.isLoggable(Level.FINEST)) {
+        if (LOG.isLoggable(Level.FINEST)) {
             for (int i = 0; i < numUpdates.length; i++) {
                 if (numUpdates[i] == -2) {
                     LOG.finest("Batch job[" + i +
@@ -154,7 +154,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected abstract PreparedStatement createStoreStatement(Connection connection) throws SQLException;
 
     public void store(List<T> items) throws ArchiveException {
-        if(LOG.isLoggable(Level.FINEST)) {
+        if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest(this + " - store(List) called: items.size() = " + items.size());
         }
         checkDisposed();
@@ -163,7 +163,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     public void store(T item) throws ArchiveException {
-        if(LOG.isLoggable(Level.FINEST)) {
+        if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest(this + " - store(T) called");
         }
         checkDisposed();
@@ -172,7 +172,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     protected void checkDisposed() throws ArchiveException {
-        if(this.disposed) {
+        if (this.disposed) {
             throw new ArchiveException("Archive disposed");
         }
     }
@@ -188,13 +188,13 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     public synchronized T retrieve(IUniqueId uniqueId) throws ArchiveException {
-        if(LOG.isLoggable(Level.FINER)) {
+        if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - retrieve(IUniqueId) called: uniqueId=" + uniqueId);
         }
         checkDisposed();
         try {
             return doRetrieve(retrieveConnection, uniqueId);
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             throw new ArchiveException(e);
         }
     }
@@ -203,7 +203,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         String finalQuery = buildRetrieveByIdQuery();
         T result = null;
         try (PreparedStatement prepStmt = connection.prepareStatement(finalQuery)) {
-            if(LOG.isLoggable(Level.FINEST)) {
+            if (LOG.isLoggable(Level.FINEST)) {
                 LOG.finest(this + " - retrieve statement: " + finalQuery);
             }
             prepStmt.setLong(1, uniqueId.asLong());
@@ -229,7 +229,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     public synchronized List<T> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, K filter) throws ArchiveException {
-        if(LOG.isLoggable(Level.FINER)) {
+        if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - retrieve(Instant,int,RetrievalDirection,K) called: startTime=" + startTime + ", numRecords=" + numRecords + ", direction=" + direction);
         }
         checkDisposed();
@@ -241,15 +241,15 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     protected List<T> doRetrieve(Connection connection, Instant startTime, int numRecords, RetrievalDirection direction, K filter) throws SQLException {
-        if(startTime.isBefore(MINIMUM_TIME)) {
+        if (startTime.isBefore(MINIMUM_TIME)) {
             startTime = MINIMUM_TIME;
-        } else if(startTime.isAfter(MAXIMUM_TIME)) {
+        } else if (startTime.isAfter(MAXIMUM_TIME)) {
             startTime = MAXIMUM_TIME;
         }
         String finalQuery = buildRetrieveQuery(startTime, numRecords, direction, filter);
         List<T> result = new ArrayList<>(numRecords);
         try (Statement prepStmt = connection.createStatement()) {
-            if(LOG.isLoggable(Level.FINER)) {
+            if (LOG.isLoggable(Level.FINER)) {
                 LOG.finer(this + " - retrieve statement: " + finalQuery);
             }
             try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
@@ -273,7 +273,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected abstract String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, K filter);
 
     public synchronized List<T> retrieve(T startItem, int numRecords, RetrievalDirection direction, K filter) throws ArchiveException {
-        if(LOG.isLoggable(Level.FINER)) {
+        if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - retrieve(T,int,RetrievalDirection,K) called: startItem=" + startItem + ", numRecords=" + numRecords + ", direction=" + direction);
         }
         checkDisposed();
@@ -289,7 +289,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         List<T> largeSize = doRetrieve(connection, startItem.getGenerationTime(), startItem.getInternalId(), numRecords + LOOK_AHEAD_SPAN, direction, filter);
         // Now scan and get rid of the startItem object: in order to work, equality must work correctly (typically only on the internalId)
         int position = largeSize.indexOf(startItem);
-        if(position == -1) {
+        if (position == -1) {
             return largeSize.subList(0, Math.min(numRecords, largeSize.size()));
         } else {
             return largeSize.subList(position + 1, position + 1 + Math.min(numRecords, largeSize.size() - position - 1));
@@ -297,15 +297,15 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     protected List<T> doRetrieve(Connection connection, Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, K filter) throws SQLException {
-        if(startTime.isBefore(MINIMUM_TIME)) {
+        if (startTime.isBefore(MINIMUM_TIME)) {
             startTime = MINIMUM_TIME;
-        } else if(startTime.isAfter(MAXIMUM_TIME)) {
+        } else if (startTime.isAfter(MAXIMUM_TIME)) {
             startTime = MAXIMUM_TIME;
         }
         String finalQuery = buildRetrieveQuery(startTime, internalId, numRecords, direction, filter);
         List<T> result = new ArrayList<>(numRecords);
         try (Statement prepStmt = connection.createStatement()) {
-            if(LOG.isLoggable(Level.FINER)) {
+            if (LOG.isLoggable(Level.FINER)) {
                 LOG.finer(this + " - retrieve statement: " + finalQuery);
             }
             try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
@@ -327,7 +327,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected abstract String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, K filter);
 
     protected void addTimeInfo(StringBuilder query, Instant startTime, IUniqueId internalId, RetrievalDirection direction) {
-        if(direction == RetrievalDirection.TO_FUTURE) {
+        if (direction == RetrievalDirection.TO_FUTURE) {
             query.append("(GenerationTime > '").append(toTimestamp(startTime).toString())
                     .append("' OR (GenerationTime = '").append(toTimestamp(startTime).toString()).append("' AND UniqueId >= ").append(internalId.asLong()).append(") ) ");
         } else {
@@ -337,7 +337,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     protected void addTimeInfo(StringBuilder query, Instant startTime, RetrievalDirection direction) {
-        if(direction == RetrievalDirection.TO_FUTURE) {
+        if (direction == RetrievalDirection.TO_FUTURE) {
             query.append("GenerationTime >= '").append(toTimestamp(startTime).toString()).append("' ");
         } else {
             query.append("GenerationTime <= '").append(toTimestamp(startTime).toString()).append("' ");
@@ -345,25 +345,25 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     public synchronized IUniqueId retrieveLastId() throws ArchiveException {
-        if(LOG.isLoggable(Level.FINER)) {
+        if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - retrieveLastId() called");
         }
         checkDisposed();
         try {
             return doRetrieveLastId(retrieveConnection, getMainType());
-        } catch (SQLException|UnsupportedOperationException e) {
+        } catch (SQLException | UnsupportedOperationException e) {
             throw new ArchiveException(e);
         }
     }
 
     public synchronized IUniqueId retrieveLastId(Class<? extends AbstractDataItem> type) throws ArchiveException {
-        if(LOG.isLoggable(Level.FINER)) {
+        if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - retrieveLastId(Class) called: type=" + type.getSimpleName());
         }
         checkDisposed();
         try {
             return doRetrieveLastId(retrieveConnection, type);
-        } catch (SQLException|UnsupportedOperationException e) {
+        } catch (SQLException | UnsupportedOperationException e) {
             throw new ArchiveException(e);
         }
     }
@@ -371,7 +371,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected IUniqueId doRetrieveLastId(Connection connection, Class<? extends AbstractDataItem> type) throws SQLException {
         try (Statement prepStmt = connection.createStatement()) {
             String finalQuery = getLastIdQuery(type);
-            if(LOG.isLoggable(Level.FINER)) {
+            if (LOG.isLoggable(Level.FINER)) {
                 LOG.finer(this + " - retrieve statement: " + finalQuery);
             }
             try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
@@ -403,7 +403,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
      * @throws UnsupportedOperationException if the type is not supported
      */
     protected String getLastIdQuery(Class<? extends AbstractDataItem> type) throws UnsupportedOperationException {
-        if(!getMainType().equals(type)) {
+        if (!getMainType().equals(type)) {
             throw new UnsupportedOperationException("Provided type " + type.getName() + " not supported by " + this);
         } else {
             return getLastIdQuery();
@@ -415,14 +415,14 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     public synchronized Instant retrieveLastGenerationTime(Class<? extends AbstractDataItem> type) throws ArchiveException {
-        if(LOG.isLoggable(Level.FINER)) {
+        if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - retrieveLastGenerationTime(Class) called: type=" + type.getSimpleName());
         }
         checkDisposed();
         try {
             try (Statement prepStmt = retrieveConnection.createStatement()) {
                 String finalQuery = getLastGenerationTimeQuery(type);
-                if(LOG.isLoggable(Level.FINER)) {
+                if (LOG.isLoggable(Level.FINER)) {
                     LOG.finer(this + " - retrieve statement: " + finalQuery);
                 }
                 try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
@@ -435,7 +435,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
                     retrieveConnection.commit();
                 }
             }
-        } catch (SQLException|UnsupportedOperationException e) {
+        } catch (SQLException | UnsupportedOperationException e) {
             throw new ArchiveException(e);
         }
     }
@@ -449,15 +449,15 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected abstract String getLastGenerationTimeQuery(Class<? extends AbstractDataItem> type);
 
     public synchronized void purge(Instant referenceTime, RetrievalDirection direction) throws ArchiveException {
-        if(LOG.isLoggable(Level.FINER)) {
+        if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - purge(Instant,RetrievalDirection) called: referenceTime=" + referenceTime + ", direction=" + direction);
         }
         checkDisposed();
         try {
             try (Statement prepStmt = storeConnection.createStatement()) {
                 try {
-                    for(String query : getPurgeQuery(referenceTime, direction)) {
-                        if(LOG.isLoggable(Level.FINER)) {
+                    for (String query : getPurgeQuery(referenceTime, direction)) {
+                        if (LOG.isLoggable(Level.FINER)) {
                             LOG.finer(this + " - delete statement: " + query);
                         }
                         prepStmt.executeQuery(query);
@@ -466,7 +466,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
                     storeConnection.commit();
                 }
             }
-        } catch (SQLException|UnsupportedOperationException e) {
+        } catch (SQLException | UnsupportedOperationException e) {
             throw new ArchiveException(e);
         }
     }
@@ -475,7 +475,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
      * This method must return a list of queries in the form: DELETE FROM [TABLE from type] WHERE GenerationTime [&lt; or &gt; from direction] 'referenceTime'
      *
      * @param referenceTime the reference time
-     * @param direction the direction of deletion
+     * @param direction     the direction of deletion
      * @return the query
      */
     protected abstract List<String> getPurgeQuery(Instant referenceTime, RetrievalDirection direction);
@@ -487,14 +487,56 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
      */
     protected abstract Class<T> getMainType();
 
-    public void remove(IUniqueId id) throws ArchiveException {
-        // TODO: implement standard approach
-        throw new UnsupportedOperationException();
+    public synchronized void remove(IUniqueId id) throws ArchiveException {
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - remove(IUniqueId) called: id=" + id);
+        }
+        checkDisposed();
+        try {
+            try (Statement prepStmt = storeConnection.createStatement()) {
+                try {
+                    String query = getRemoveQuery(id);
+                    if (LOG.isLoggable(Level.FINER)) {
+                        LOG.finer(this + " - delete statement: " + query);
+                    }
+                    prepStmt.executeQuery(query);
+                } finally {
+                    storeConnection.commit();
+                }
+            }
+        } catch (SQLException | UnsupportedOperationException e) {
+            throw new ArchiveException(e);
+        }
     }
 
-    public void remove(K filter) throws ArchiveException {
-        // TODO: implement standard approach
-        throw new UnsupportedOperationException();
+    protected String getRemoveQuery(IUniqueId id) {
+        throw new UnsupportedOperationException("Not implemented for this data type");
+    }
+
+    public synchronized void remove(K filter) throws ArchiveException {
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - remove(AbstractDataItemFilter) called: filter=" + filter);
+        }
+        checkDisposed();
+        try {
+            try (Statement prepStmt = storeConnection.createStatement()) {
+                try {
+                    String query = getRemoveQuery(filter);
+                    if (LOG.isLoggable(Level.FINER)) {
+                        LOG.finer(this + " - delete statement: " + query);
+                    }
+                    prepStmt.executeQuery(query);
+                } finally {
+                    storeConnection.commit();
+                }
+            }
+        } catch (SQLException | UnsupportedOperationException e) {
+            throw new ArchiveException(e);
+        }
+    }
+
+    protected String getRemoveQuery(K filter) {
+        throw new UnsupportedOperationException("Not implemented for this data type");
     }
 
     /**
@@ -502,7 +544,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
      * and cannot be used anymore.
      */
     public synchronized void dispose() throws ArchiveException {
-        if(LOG.isLoggable(Level.FINEST)) {
+        if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest(this + " - dispose() called");
         }
         checkDisposed();
@@ -510,7 +552,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         this.latencyTask.cancel();
         this.latencyTask = null;
         this.latencyStoreTimer.cancel();
-        if(storeConnection != null) {
+        if (storeConnection != null) {
             try {
                 this.storeConnection.close();
             } catch (SQLException e) {
@@ -518,7 +560,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             }
         }
         this.storeConnection = null;
-        if(retrieveConnection != null) {
+        if (retrieveConnection != null) {
             try {
                 this.retrieveConnection.close();
             } catch (SQLException e) {
@@ -544,7 +586,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
 
     protected static Object toObject(Blob b) throws IOException, SQLException {
         Object toReturn = null;
-        if(b != null) {
+        if (b != null) {
             InputStream ois = b.getBinaryStream();
             toReturn = ValueUtil.deserialize(ois.readAllBytes());
         }
@@ -552,7 +594,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     }
 
     protected static InputStream toInputstream(Object data) {
-        if(data == null) {
+        if (data == null) {
             return null;
         }
         return new ByteArrayInputStream(ValueUtil.serialize(data));
@@ -569,15 +611,15 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
     protected static <E> String toFilterListString(Set<E> list, Function<E, Object> extractor, String delimiter) {
         StringBuilder sb = new StringBuilder();
         int i = 0;
-        for(E o : list) {
-            if(delimiter != null) {
+        for (E o : list) {
+            if (delimiter != null) {
                 sb.append(delimiter);
             }
             sb.append(extractor.apply(o));
-            if(delimiter != null) {
+            if (delimiter != null) {
                 sb.append(delimiter);
             }
-            if(i != list.size() - 1) {
+            if (i != list.size() - 1) {
                 sb.append(",");
             }
             ++i;
@@ -589,7 +631,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         Instant now = Instant.now();
         long items = storedItemsInLastSamplingPeriod.getAndSet(0);
         long millis = now.toEpochMilli() - lastSamplingTime.toEpochMilli();
-        double itemsPerSec = (items / (millis/1000.0));
+        double itemsPerSec = (items / (millis / 1000.0));
         lastSamplingTime = now;
         List<DebugInformation> toSet = Arrays.asList(
                 DebugInformation.of(Archive.ARCHIVE_NAME, toString() + " Input Queue", storageQueue.size(), MAX_STORAGE_QUEUE, ""),

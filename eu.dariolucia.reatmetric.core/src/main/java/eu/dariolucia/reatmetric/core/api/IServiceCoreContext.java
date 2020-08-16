@@ -19,10 +19,13 @@ package eu.dariolucia.reatmetric.core.api;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.scheduler.IScheduler;
 
 public interface IServiceCoreContext {
 
     IArchive getArchive();
+
+    IScheduler getScheduler();
 
     IProcessingModel getProcessingModel();
 

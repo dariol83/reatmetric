@@ -16,6 +16,8 @@
 
 package eu.dariolucia.reatmetric.api.processing.input;
 
-public abstract class AbstractInputDataItem {
+import java.io.Serializable;
+
+public abstract class AbstractInputDataItem implements Serializable {
     // Marker class
 }
