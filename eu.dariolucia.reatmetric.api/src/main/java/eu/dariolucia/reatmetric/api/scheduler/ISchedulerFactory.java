@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.api.scheduler;
 
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.scheduler.exceptions.SchedulingException;
 
 /**
@@ -34,9 +35,10 @@ public interface ISchedulerFactory {
      * implementations are allowed to cache objects or use a singleton-based design.
      *
      * @param archive the archive system, can be null: in such case, nothing is restored
+     * @param model  the processing model, cannot be null
      * @return an implementation of {@link IScheduler} interface
      * @throws SchedulingException in case of problems arising from the construction of the specific {@link IScheduler} object
      */
-    IScheduler buildScheduler(IArchive archive) throws SchedulingException;
+    IScheduler buildScheduler(IArchive archive, IProcessingModel model) throws SchedulingException;
 
 }
