@@ -32,6 +32,7 @@ import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -96,7 +97,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             props.add(Pair.of(kv.getKey(), kv.getValue()));
         }
         // Build the object
-        return new ActivityDescriptor(getPath(), getSystemEntityId(), definition.getDescription(),definition.getDefaultRoute(), definition.getType(), argDescriptors, props);
+        return new ActivityDescriptor(getPath(), getSystemEntityId(), definition.getDescription(),definition.getDefaultRoute(), definition.getType(), argDescriptors, props, Duration.ofMillis(definition.getExpectedDuration()));
     }
 
     private ActivityArrayArgumentDescriptor createArrayArgumentDescriptor(boolean stopOnReferenceDefaultValue, ArrayArgumentDefinition agd) {

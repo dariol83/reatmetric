@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -35,6 +36,7 @@ public class ActivityDescriptor extends AbstractSystemEntityDescriptor {
     private final String activityType;
     private final List<AbstractActivityArgumentDescriptor> argumentDescriptors;
     private final List<Pair<String, String>> properties;
+    private final Duration expectedDuration;
 
     /**
      * Constructor of the class.
@@ -46,14 +48,16 @@ public class ActivityDescriptor extends AbstractSystemEntityDescriptor {
      * @param activityType the activity type
      * @param argumentDescriptors the list of argument descriptors
      * @param properties the list of properties
+     * @param expectedDuration the expected duration of the activity
      */
-    public ActivityDescriptor(SystemEntityPath path, int externalId, String description, String defaultRoute, String activityType, List<AbstractActivityArgumentDescriptor> argumentDescriptors, List<Pair<String, String>> properties) {
+    public ActivityDescriptor(SystemEntityPath path, int externalId, String description, String defaultRoute, String activityType, List<AbstractActivityArgumentDescriptor> argumentDescriptors, List<Pair<String, String>> properties, Duration expectedDuration) {
         super(path, externalId, SystemEntityType.ACTIVITY);
         this.description = description;
         this.defaultRoute = defaultRoute;
         this.activityType = activityType;
         this.argumentDescriptors = List.copyOf(argumentDescriptors);
         this.properties = List.copyOf(properties);
+        this.expectedDuration = expectedDuration;
     }
 
     /**
@@ -99,5 +103,14 @@ public class ActivityDescriptor extends AbstractSystemEntityDescriptor {
      */
     public List<Pair<String, String>> getProperties() {
         return properties;
+    }
+
+    /**
+     * Return the expected duration of the activity, as specified in the definition.
+     *
+     * @return the expected activity duration
+     */
+    public Duration getExpectedDuration() {
+        return expectedDuration;
     }
 }

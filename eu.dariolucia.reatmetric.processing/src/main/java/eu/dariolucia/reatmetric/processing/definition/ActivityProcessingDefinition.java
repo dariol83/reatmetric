@@ -55,6 +55,9 @@ public class ActivityProcessingDefinition extends AbstractProcessingDefinition {
     @XmlAttribute(name = "verification_timeout")
     private int verificationTimeout = 0; // in seconds, 0 means disabled
 
+    @XmlAttribute(name = "expected_duration")
+    private int expectedDuration = 1000; // in milliseconds, only positive numbers allowed, default: 1 second
+
     @XmlElements({
             @XmlElement(name="argument",type= PlainArgumentDefinition.class),
             @XmlElement(name="array",type= ArrayArgumentDefinition.class)
@@ -133,5 +136,13 @@ public class ActivityProcessingDefinition extends AbstractProcessingDefinition {
 
     public AbstractArgumentDefinition getArgumentByName(String argument) {
         return this.arguments.stream().filter(o -> o.getName().equals(argument)).findFirst().orElse(null);
+    }
+
+    public int getExpectedDuration() {
+        return expectedDuration;
+    }
+
+    public void setExpectedDuration(int expectedDuration) {
+        this.expectedDuration = expectedDuration;
     }
 }

@@ -5,6 +5,7 @@ import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.AbstractSchedulingTrigger;
 import eu.dariolucia.reatmetric.api.scheduler.ConflictStrategy;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 
@@ -24,14 +25,17 @@ public final class SchedulingRequest extends AbstractInputDataItem {
 
     private final ConflictStrategy conflictStrategy;
 
-    public SchedulingRequest(ActivityRequest request, Set<String> resources, String source, long externalId, AbstractSchedulingTrigger trigger, Instant latestInvocationTime, ConflictStrategy conflictStrategy) {
+    private final Duration expectedDuration;
+
+    public SchedulingRequest(ActivityRequest request, Set<String> resources, String source, long externalId, AbstractSchedulingTrigger trigger, Instant latestInvocationTime, ConflictStrategy conflictStrategy, Duration expectedDuration) {
         this.request = request;
-        this.resources = resources;
+        this.resources = Set.copyOf(resources);
         this.source = source;
         this.externalId = externalId;
         this.trigger = trigger;
         this.latestInvocationTime = latestInvocationTime;
         this.conflictStrategy = conflictStrategy;
+        this.expectedDuration = expectedDuration;
     }
 
     public ActivityRequest getRequest() {
@@ -60,6 +64,10 @@ public final class SchedulingRequest extends AbstractInputDataItem {
 
     public ConflictStrategy getConflictStrategy() {
         return conflictStrategy;
+    }
+
+    public Duration getExpectedDuration() {
+        return expectedDuration;
     }
 }
 
