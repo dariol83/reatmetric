@@ -128,6 +128,8 @@ CREATE TABLE SCHEDULED_ACTIVITY_DATA_TABLE (
    ExternalId BIGINT NOT NULL,
    Trigger BLOB NOT NULL,
    LatestInvocationTime TIMESTAMP,
+   StartTime TIMESTAMP NOT NULL,
+   EndTime TIMESTAMP NOT NULL,
    ConflictStrategy SMALLINT NOT NULL,
    State SMALLINT NOT NULL,
    AdditionalData BLOB,

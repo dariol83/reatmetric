@@ -28,6 +28,9 @@ public final class SchedulingRequest extends AbstractInputDataItem {
     private final Duration expectedDuration;
 
     public SchedulingRequest(ActivityRequest request, Set<String> resources, String source, long externalId, AbstractSchedulingTrigger trigger, Instant latestInvocationTime, ConflictStrategy conflictStrategy, Duration expectedDuration) {
+        if(expectedDuration == null) {
+            throw new NullPointerException("Expected duration must be provided");
+        }
         this.request = request;
         this.resources = Set.copyOf(resources);
         this.source = source;

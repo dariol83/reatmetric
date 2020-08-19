@@ -31,5 +31,9 @@ public enum SchedulingState {
     /**
      * The activity occurrence was completed unsuccessfully (status is COMPLETED-!OK)
      */
-    FINISHED_FAIL
+    FINISHED_FAIL,
+    /**
+     * The activity has been removed from the scheduler when it was in SCHEDULED state.
+     */
+    REMOVED;
 }

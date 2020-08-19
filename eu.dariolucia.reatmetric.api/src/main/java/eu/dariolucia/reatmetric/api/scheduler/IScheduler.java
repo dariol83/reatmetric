@@ -61,9 +61,9 @@ public interface IScheduler extends IScheduledActivityDataProvisionService {
      */
     ScheduledActivityData update(IUniqueId originalId, SchedulingRequest newRequest, CreationConflictStrategy conflictStrategy) throws SchedulingException;
 
-    boolean remove(IUniqueId scheduledId) throws SchedulingException;
+    void remove(IUniqueId scheduledId) throws SchedulingException;
 
-    boolean remove(ScheduledActivityDataFilter filter) throws SchedulingException;
+    void remove(ScheduledActivityDataFilter filter) throws SchedulingException;
 
     /**
      * This operation removes all the scheduled activities between startTime and endTime belonging to the provided scheduling source,

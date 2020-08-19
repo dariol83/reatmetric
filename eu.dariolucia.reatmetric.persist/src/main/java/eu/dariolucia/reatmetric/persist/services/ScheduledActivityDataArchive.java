@@ -16,12 +16,10 @@
 
 package eu.dariolucia.reatmetric.persist.services;
 
-import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
-import eu.dariolucia.reatmetric.api.messages.*;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.*;
@@ -39,10 +37,10 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
     private static final Logger LOG = Logger.getLogger(ScheduledActivityDataArchive.class.getName());
 
     private static final String STORE_STATEMENT = "MERGE INTO SCHEDULED_ACTIVITY_DATA_TABLE USING SYSIBM.SYSDUMMY1 ON UniqueId = ? " +
-            "WHEN MATCHED THEN UPDATE SET GenerationTime = ?, ActivityRequest = ?, Path = ?, ActivityOccurrence = ?, Resources = ?, Source = ?, ExternalId = ?, Trigger = ?, LatestInvocationTime = ?, ConflictStrategy = ?, State = ?, AdditionalData = ? " +
-            "WHEN NOT MATCHED THEN INSERT (UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,ConflictStrategy,State,AdditionalData) VALUES (?,?,?, ?,?,?, ?,?,?, ?,?,?, ?)";
+            "WHEN MATCHED THEN UPDATE SET GenerationTime = ?, ActivityRequest = ?, Path = ?, ActivityOccurrence = ?, Resources = ?, Source = ?, ExternalId = ?, Trigger = ?, LatestInvocationTime = ?, StartTime = ?, EndTime = ?, ConflictStrategy = ?, State = ?, AdditionalData = ? " +
+            "WHEN NOT MATCHED THEN INSERT (UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,EndTime,ConflictStrategy,State,AdditionalData) VALUES (?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM SCHEDULED_ACTIVITY_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
-    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,ConflictStrategy,State,AdditionalData " +
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,EndTime,ConflictStrategy,State,AdditionalData " +
             "FROM SCHEDULED_ACTIVITY_DATA_TABLE " +
             "WHERE UniqueId=?";
     private static final String LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM SCHEDULED_ACTIVITY_DATA_TABLE";
@@ -72,40 +70,44 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         } else {
             storeStatement.setNull(10, Types.BLOB);
         }
-        storeStatement.setShort(11, (short) item.getConflictStrategy().ordinal());
-        storeStatement.setShort(12, (short) item.getState().ordinal());
+        storeStatement.setTimestamp(11, toTimestamp(item.getStartTime()));
+        storeStatement.setTimestamp(12, toTimestamp(item.getEndTime()));
+        storeStatement.setShort(13, (short) item.getConflictStrategy().ordinal());
+        storeStatement.setShort(14, (short) item.getState().ordinal());
         Object extension = item.getExtension();
         if(extension == null) {
-            storeStatement.setNull(13, Types.BLOB);
+            storeStatement.setNull(15, Types.BLOB);
         } else {
-            storeStatement.setBlob(13, toInputstream(item.getExtension()));
+            storeStatement.setBlob(15, toInputstream(item.getExtension()));
         }
 
 
-        storeStatement.setLong(14, item.getInternalId().asLong());
-        storeStatement.setTimestamp(15, toTimestamp(item.getGenerationTime()));
-        storeStatement.setBlob(16, toInputstream(item.getRequest()));
-        storeStatement.setString(17, item.getRequest().getPath().asString());
+        storeStatement.setLong(16, item.getInternalId().asLong());
+        storeStatement.setTimestamp(17, toTimestamp(item.getGenerationTime()));
+        storeStatement.setBlob(18, toInputstream(item.getRequest()));
+        storeStatement.setString(19, item.getRequest().getPath().asString());
         if(item.getActivityOccurrence() != null) {
-            storeStatement.setLong(18, item.getActivityOccurrence().asLong());
+            storeStatement.setLong(20, item.getActivityOccurrence().asLong());
         } else {
-            storeStatement.setNull(18, Types.BIGINT);
+            storeStatement.setNull(20, Types.BIGINT);
         }
-        storeStatement.setString(19, resources);
-        storeStatement.setString(20, item.getSource());
-        storeStatement.setLong(21, item.getExternalId());
-        storeStatement.setBlob(22, toInputstream(item.getTrigger()));
+        storeStatement.setString(21, resources);
+        storeStatement.setString(22, item.getSource());
+        storeStatement.setLong(23, item.getExternalId());
+        storeStatement.setBlob(24, toInputstream(item.getTrigger()));
         if(item.getLatestInvocationTime() != null) {
-            storeStatement.setTimestamp(23, toTimestamp(item.getLatestInvocationTime()));
+            storeStatement.setTimestamp(25, toTimestamp(item.getLatestInvocationTime()));
         } else {
-            storeStatement.setNull(23, Types.BLOB);
+            storeStatement.setNull(25, Types.BLOB);
         }
-        storeStatement.setShort(24, (short) item.getConflictStrategy().ordinal());
-        storeStatement.setShort(25, (short) item.getState().ordinal());
+        storeStatement.setTimestamp(26, toTimestamp(item.getStartTime()));
+        storeStatement.setTimestamp(27, toTimestamp(item.getEndTime()));
+        storeStatement.setShort(28, (short) item.getConflictStrategy().ordinal());
+        storeStatement.setShort(29, (short) item.getState().ordinal());
         if(extension == null) {
-            storeStatement.setNull(26, Types.BLOB);
+            storeStatement.setNull(30, Types.BLOB);
         } else {
-            storeStatement.setBlob(26, toInputstream(item.getExtension()));
+            storeStatement.setBlob(30, toInputstream(item.getExtension()));
         }
     }
 
@@ -204,15 +206,19 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         if(rs.wasNull()) {
             latestInvocTime = null;
         }
-        ConflictStrategy conflictStrategy = ConflictStrategy.values()[rs.getShort(11)];
-        SchedulingState state = SchedulingState.values()[rs.getShort(12)];
-        Blob extensionBlob = rs.getBlob(13);
+        Timestamp startTime = rs.getTimestamp(11);
+
+        Timestamp endTime = rs.getTimestamp(12);
+
+        ConflictStrategy conflictStrategy = ConflictStrategy.values()[rs.getShort(13)];
+        SchedulingState state = SchedulingState.values()[rs.getShort(14)];
+        Blob extensionBlob = rs.getBlob(15);
         Object extension = null;
         if(extensionBlob != null && !rs.wasNull()) {
             extension = toObject(extensionBlob);
         }
         return new ScheduledActivityData(new LongUniqueId(uniqueId), toInstant(genTime), request,
-                actOcc == null ? null : new LongUniqueId(actOcc), resources, source, extId, trigger, toInstant(latestInvocTime), conflictStrategy, state, extension);
+                actOcc == null ? null : new LongUniqueId(actOcc), resources, source, extId, trigger, toInstant(latestInvocTime), toInstant(startTime), toInstant(endTime), conflictStrategy, state, extension);
     }
 
     private Set<String> parseResources(String string) {

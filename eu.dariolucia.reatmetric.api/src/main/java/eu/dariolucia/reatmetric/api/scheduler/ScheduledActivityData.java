@@ -4,6 +4,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Set;
@@ -24,6 +25,9 @@ public final class ScheduledActivityData extends AbstractDataItem {
 
     private final Instant latestInvocationTime;
 
+    private final Instant startTime;
+    private final Instant endTime;
+
     private final ConflictStrategy conflictStrategy;
 
     private final SchedulingState state;
@@ -43,7 +47,7 @@ public final class ScheduledActivityData extends AbstractDataItem {
      * @param state
      * @param extension
      */
-    public ScheduledActivityData(IUniqueId internalId, Instant generationTime, ActivityRequest request, IUniqueId activityOccurrence, Collection<String> resources, String source, long externalId, AbstractSchedulingTrigger trigger, Instant latestInvocationTime, ConflictStrategy conflictStrategy, SchedulingState state, Object extension) {
+    public ScheduledActivityData(IUniqueId internalId, Instant generationTime, ActivityRequest request, IUniqueId activityOccurrence, Collection<String> resources, String source, long externalId, AbstractSchedulingTrigger trigger, Instant latestInvocationTime, Instant startTime, Instant endTime, ConflictStrategy conflictStrategy, SchedulingState state, Object extension) {
         super(internalId, generationTime, extension);
         if(resources == null) {
             throw new NullPointerException("Resources cannot be null");
@@ -64,6 +68,8 @@ public final class ScheduledActivityData extends AbstractDataItem {
         this.latestInvocationTime = latestInvocationTime;
         this.conflictStrategy = conflictStrategy;
         this.state = state;
+        this.startTime = startTime;
+        this.endTime = endTime;
     }
 
     public ActivityRequest getRequest() {
@@ -100,5 +106,22 @@ public final class ScheduledActivityData extends AbstractDataItem {
 
     public SchedulingState getState() {
         return state;
+    }
+
+    public Instant getStartTime() {
+        return startTime;
+    }
+
+    public Instant getEndTime() {
+        return endTime;
+    }
+
+    public Duration getExpectedDuration() {
+        return Duration.between(startTime, endTime);
+    }
+
+    public boolean overlapsWith(Instant otherStartTime, Instant otherEndTime) {
+        return (startTime.isAfter(otherStartTime) && startTime.isBefore(otherEndTime)) ||
+                (endTime.isAfter(otherStartTime) && endTime.isBefore(otherEndTime));
     }
 }
