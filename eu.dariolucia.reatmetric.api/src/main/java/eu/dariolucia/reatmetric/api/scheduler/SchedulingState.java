@@ -13,9 +13,13 @@ public enum SchedulingState {
      */
     WAITING,
     /**
-     * The activity has been triggered but it is ignored to missing resources.
+     * The activity has been triggered but it is ignored due to missing resources.
      */
     IGNORED,
+    /**
+     * The activity has been triggered but the scheduler was disabled.
+     */
+    DISABLED,
     /**
      * The activity was triggered and the activity occurrence was dispatched for invocation.
      */

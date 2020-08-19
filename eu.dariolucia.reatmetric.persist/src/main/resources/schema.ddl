@@ -129,7 +129,7 @@ CREATE TABLE SCHEDULED_ACTIVITY_DATA_TABLE (
    Trigger BLOB NOT NULL,
    LatestInvocationTime TIMESTAMP,
    StartTime TIMESTAMP NOT NULL,
-   EndTime TIMESTAMP NOT NULL,
+   Duration INT NOT NULL,
    ConflictStrategy SMALLINT NOT NULL,
    State SMALLINT NOT NULL,
    AdditionalData BLOB,

@@ -24,6 +24,8 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.exceptions.SchedulingException;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
@@ -152,47 +154,52 @@ public class Scheduler implements IScheduler {
     }
 
     private void setEnable(boolean isEnabled) {
-        if (enabled != isEnabled) {
-            enabled = isEnabled;
-            for (ScheduledTask st : id2scheduledTask.values()) {
-                st.informEnablementChange(isEnabled);
-            }
-        }
+        enabled = isEnabled;
     }
 
     @Override
-    public synchronized boolean isEnabled() throws SchedulingException {
+    public boolean isEnabled() {
         return enabled;
     }
 
     @Override
     public ScheduledActivityData schedule(SchedulingRequest request, CreationConflictStrategy conflictStrategy) throws SchedulingException {
         try {
-            return dispatcher.submit(() -> {
-                // Check if the creation conflict strategy allows for the scheduling
-                List<ScheduledTask> conflictingTasks = computeConflicts(Collections.singletonList(request));
-                if (conflictingTasks.isEmpty() || conflictStrategy == CreationConflictStrategy.ADD_ANYWAY) {
-                    // Add the request as-is
-                    return addTask(request);
-                } else {
-                    // There is a conflict
-                    if (conflictStrategy == CreationConflictStrategy.ABORT) {
-                        // Abort the operation, leave the schedule untouched
-                        throw new SchedulingException("Conflict detected between the request and the following tasks: " + conflictingTasks + ", scheduling request aborted");
-                    } else if (conflictStrategy == CreationConflictStrategy.SKIP_NEW) {
-                        // Return null to indicate that the request is skipped
-                        return null;
-                    } else if (conflictStrategy == CreationConflictStrategy.REMOVE_PREVIOUS) {
-                        // Remove the conflicting tasks and add the new task
-                        removeTasks(conflictingTasks);
-                        return addTask(request);
-                    } else {
-                        throw new IllegalArgumentException("CreationConflictStrategy " + conflictStrategy + " not handled, software bug");
-                    }
-                }
-            }).get();
+            return dispatcher.submit(() -> scheduleTask(request, conflictStrategy)).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new SchedulingException(e);
+        }
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     *
+     * @param request
+     * @param conflictStrategy
+     * @return
+     * @throws SchedulingException
+     */
+    private ScheduledActivityData scheduleTask(SchedulingRequest request, CreationConflictStrategy conflictStrategy) throws SchedulingException {
+        // Check if the creation conflict strategy allows for the scheduling
+        List<ScheduledTask> conflictingTasks = computeConflicts(Collections.singletonList(request));
+        if (conflictingTasks.isEmpty() || conflictStrategy == CreationConflictStrategy.ADD_ANYWAY) {
+            // Add the request as-is
+            return addTask(request);
+        } else {
+            // There is a conflict
+            if (conflictStrategy == CreationConflictStrategy.ABORT) {
+                // Abort the operation, leave the schedule untouched
+                throw new SchedulingException("Conflict detected between the request and the following tasks: " + conflictingTasks + ", scheduling request aborted");
+            } else if (conflictStrategy == CreationConflictStrategy.SKIP_NEW) {
+                // Return null to indicate that the request is skipped
+                return null;
+            } else if (conflictStrategy == CreationConflictStrategy.REMOVE_PREVIOUS) {
+                // Remove the conflicting tasks and add the new task
+                removeTasks(conflictingTasks);
+                return addTask(request);
+            } else {
+                throw new IllegalArgumentException("CreationConflictStrategy " + conflictStrategy + " not handled, software bug");
+            }
         }
     }
 
@@ -243,7 +250,7 @@ public class Scheduler implements IScheduler {
         List<ScheduledTask> toReturn = new LinkedList<>();
         // For each request, check if there are conflicts
         for (SchedulingRequest sr : requests) {
-            Pair<Instant, Instant> timeInfo = computeTimeInformation(sr);
+            Pair<Instant, Duration> timeInfo = computeTimeInformation(sr);
             for (ScheduledTask task : this.id2scheduledTask.values()) {
                 if (task.conflictsWith(sr, timeInfo) && !conflictingIds.contains(task.getCurrentData().getInternalId())) {
                     toReturn.add(task);
@@ -254,17 +261,17 @@ public class Scheduler implements IScheduler {
         return toReturn;
     }
 
-    public Pair<Instant, Instant> computeTimeInformation(SchedulingRequest sr) {
+    public Pair<Instant, Duration> computeTimeInformation(SchedulingRequest sr) {
         if (sr.getTrigger() instanceof EventBasedSchedulingTrigger) {
-            return Pair.of(Instant.EPOCH, Instant.MAX);
+            return Pair.of(sr.getLatestInvocationTime(), sr.getExpectedDuration());
         } else if (sr.getTrigger() instanceof AbsoluteTimeSchedulingTrigger) {
             AbsoluteTimeSchedulingTrigger trigger = (AbsoluteTimeSchedulingTrigger) sr.getTrigger();
             Duration duration = sr.getExpectedDuration();
-            return Pair.of(trigger.getReleaseTime(), trigger.getReleaseTime().plus(duration));
+            return Pair.of(trigger.getReleaseTime(), duration);
         } else if (sr.getTrigger() instanceof RelativeTimeSchedulingTrigger) {
             Instant triggerTime = computePredecessorsLatestEndTime(((RelativeTimeSchedulingTrigger) sr.getTrigger()).getPredecessors());
             Duration duration = sr.getExpectedDuration();
-            return Pair.of(triggerTime, triggerTime.plus(duration));
+            return Pair.of(triggerTime, duration);
         } else {
             throw new IllegalArgumentException("Object " + sr.getTrigger() + " not handled");
         }
@@ -282,9 +289,26 @@ public class Scheduler implements IScheduler {
     }
 
     @Override
-    public List<ScheduledActivityData> schedule(List<SchedulingRequest> request, CreationConflictStrategy conflictStrategy) throws SchedulingException {
-        // TODO
-        throw new UnsupportedOperationException();
+    public List<ScheduledActivityData> schedule(List<SchedulingRequest> requests, CreationConflictStrategy conflictStrategy) throws SchedulingException {
+        try {
+            return dispatcher.submit(() -> {
+                List<ScheduledActivityData> toReturn = new LinkedList<>();
+                List<ScheduledTask> conflictingTasks = computeConflicts(requests);
+                if(!conflictingTasks.isEmpty() && conflictStrategy == CreationConflictStrategy.ABORT) {
+                    throw new SchedulingException("Conflict detected with provided scheduling requests: " + conflictingTasks);
+                } else {
+                    for(SchedulingRequest sr : requests) {
+                        ScheduledActivityData data = scheduleTask(sr, conflictStrategy);
+                        if(data != null) {
+                            toReturn.add(data);
+                        }
+                    }
+                }
+                return toReturn;
+            }).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new SchedulingException(e);
+        }
     }
 
     @Override
@@ -339,7 +363,12 @@ public class Scheduler implements IScheduler {
         }
     }
 
-    private void removeTask(IUniqueId scheduledId) {
+    /**
+     * To be called by the dispatcher thread.
+     *
+     * @param scheduledId
+     */
+    public void removeTask(IUniqueId scheduledId) {
         // remove from the current internal set
         ScheduledTask st = id2scheduledTask.remove(scheduledId);
         if (st != null) {
@@ -422,4 +451,51 @@ public class Scheduler implements IScheduler {
         return true;
     }
 
+    /**
+     * To be called from the dispatcher thread.
+     *
+     * @param resources
+     */
+    public boolean registerResources(Set<String> resources) {
+        // TODO
+        return false;
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     *
+     * @param request
+     */
+    public IUniqueId startActivity(ActivityRequest request) throws ProcessingModelException {
+        return processingModel.startActivity(request);
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     *
+     * @param resources
+     */
+    public void releaseResources(Set<String> resources) {
+        this.currentlyUsedResources.removeAll(resources);
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     *
+     * @param scheduledTask
+     */
+    public void notifyTask(ScheduledTask scheduledTask) {
+        storeAndDistribute(scheduledTask.getCurrentData());
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     *
+     * @param scheduledTask
+     */
+    public void abortConflictingTasksWith(ScheduledTask scheduledTask) {
+        List<ScheduledTask> conflictingTasks = computeConflicts(Collections.singletonList(scheduledTask.getRequest()));
+        conflictingTasks.remove(scheduledTask);
+        removeTasks(conflictingTasks);
+    }
 }

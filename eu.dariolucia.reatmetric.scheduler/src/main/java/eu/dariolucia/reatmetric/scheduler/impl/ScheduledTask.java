@@ -4,11 +4,13 @@ import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.events.EventData;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.exceptions.SchedulingException;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import eu.dariolucia.reatmetric.scheduler.Scheduler;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
@@ -27,6 +29,10 @@ public class ScheduledTask {
     private final ExecutorService dispatcher;
     private final IUniqueId taskId;
 
+    private IUniqueId activityId;
+    private volatile TimerTask latestExecutionTimeHandler;
+    private boolean resourcesAcquired = false;
+
     public ScheduledTask(Scheduler scheduler, Timer timer, ExecutorService dispatcher, SchedulingRequest request) {
         this.scheduler = scheduler;
         this.request = request;
@@ -43,7 +49,7 @@ public class ScheduledTask {
         return currentData;
     }
 
-    public boolean conflictsWith(SchedulingRequest request, Pair<Instant, Instant> requestTimeInfo) {
+    public boolean conflictsWith(SchedulingRequest request, Pair<Instant, Duration> requestTimeInfo) {
         // An event-driven task can never conflict
         if(this.request.getTrigger() instanceof EventBasedSchedulingTrigger ||
             request.getTrigger() instanceof EventBasedSchedulingTrigger) {
@@ -56,7 +62,7 @@ public class ScheduledTask {
         // At this stage, there is a conflict in the set of declared resources.
         // To declare a conflict, there must be an overlap in the two expected execution times AND the task should not be
         // already completed (should never be the case).
-        return this.currentData.overlapsWith(requestTimeInfo.getFirst(), requestTimeInfo.getSecond());
+        return this.currentData.overlapsWith(requestTimeInfo.getFirst(), requestTimeInfo.getFirst().plus(requestTimeInfo.getSecond()));
     }
 
     /**
@@ -77,22 +83,21 @@ public class ScheduledTask {
                 timingHandler = new TimerTask() {
                     @Override
                     public void run() {
-                        if(this != timingHandler) {
-                            return;
+                        if(this == timingHandler) {
+                            runTask(false);
                         }
-                        runTask();
                     }
                 };
                 timer.schedule(timingHandler, new Date(((AbsoluteTimeSchedulingTrigger) request.getTrigger()).getReleaseTime().toEpochMilli()));
             } else if(request.getTrigger() instanceof RelativeTimeSchedulingTrigger) {
                 // Do nothing unless the task shall actually start: if no ID is in the scheduler map, it can start
                 if(scheduler.areAllCompleted(((RelativeTimeSchedulingTrigger) request.getTrigger()).getPredecessors())) {
-                    runTask();
+                    runTask(false);
                 }
             } else if(request.getTrigger() instanceof EventBasedSchedulingTrigger) {
                 scheduler.updateEventFilter(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent());
             } else {
-                // TODO log or exception
+                throw new SchedulingException("Cannot update trigger evaluation for task " + this.taskId + ", trigger type " + request.getTrigger() + " not recognised");
             }
         } else {
             throw new SchedulingException("Cannot update trigger evaluation for task " + this.taskId + ", task is not scheduled anymore");
@@ -103,7 +108,7 @@ public class ScheduledTask {
      * To be called from the dispatcher thread.
      */
     private void initialiseCurrentData() {
-        Pair<Instant, Instant> timeWindow = scheduler.computeTimeInformation(this.request);
+        Pair<Instant, Duration> timeWindow = scheduler.computeTimeInformation(this.request);
         this.currentData = new ScheduledActivityData(this.taskId, timeWindow.getFirst(), this.request.getRequest(), null, this.request.getResources(), this.request.getSource(), this.request.getExternalId(), this.request.getTrigger(), this.request.getLatestInvocationTime(),
                 timeWindow.getFirst(), timeWindow.getSecond(), this.request.getConflictStrategy(), SchedulingState.SCHEDULED, null);
     }
@@ -126,20 +131,110 @@ public class ScheduledTask {
         // TODO
     }
 
-    private void runTask() {
+    private ScheduledActivityData buildUpdatedSchedulingActivityData(Instant newTime, IUniqueId newOccurrence, SchedulingState state) {
+        return new ScheduledActivityData(this.taskId,
+                newTime,
+                this.request.getRequest(),
+                newOccurrence,
+                this.request.getResources(),
+                this.request.getSource(),
+                this.request.getExternalId(),
+                this.request.getTrigger(),
+                this.request.getLatestInvocationTime(),
+                newTime,
+                this.request.getExpectedDuration(),
+                this.request.getConflictStrategy(),
+                state,
+                null);
+    }
+
+    private void runTask(boolean lastPossibleExecution) {
         dispatcher.submit(() -> {
             // Try to run the activity if the scheduler is enabled, if all resources are available and if all constraints are satisfied
-            // TODO
+            Instant newStartTime = Instant.now();
+            // First, check the resources
+            if(!scheduler.registerResources(request.getResources())) {
+                // Not all the resources are available: check the conflict strategy ....
+                switch(request.getConflictStrategy()) {
+                    case WAIT: {
+                        //
+                        if(lastPossibleExecution) {
+                            // Expired, therefore task ignored and move on ...
+                            this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
+                                    null,
+                                    SchedulingState.IGNORED);
+                            scheduler.removeTask(taskId);
+                        } else {
+                            // Wait for some update in the resource status
+                            this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
+                                    null,
+                                    SchedulingState.WAITING);
+                            startLatestExecutionTimer();
+                            scheduler.notifyTask(this);
+                        }
+                    }
+                    break;
+                    case DO_NOT_START_AND_FORGET: {
+                        // Mark as ignored and move on ...
+                        this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
+                                null,
+                                SchedulingState.IGNORED);
+                        scheduler.removeTask(taskId);
+                    }
+                    break;
+                    case ABORT_OTHER_AND_START: {
+                        scheduler.abortConflictingTasksWith(this);
+                        runTask(lastPossibleExecution);
+                    }
+                    break;
+                }
+            } else {
+                this.resourcesAcquired = true;
+                // The resources are available and now assigned to this task - Check scheduler status
+                if(scheduler.isEnabled()) {
+                    // Start the task now
+                    stopLatestExecutionTimer();
+                    try {
+                        this.activityId = this.scheduler.startActivity(this.request.getRequest());
+                        this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
+                                this.activityId,
+                                SchedulingState.RUNNING);
+                        scheduler.notifyTask(this);
+                    } catch (ProcessingModelException e) {
+                        // Fail and remove
+                        this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
+                                null,
+                                SchedulingState.FINISHED_FAIL);
+                        scheduler.removeTask(taskId);
+                    }
+                } else {
+                    // Release the resources and report the task as DISABLED. This task is dead.
+                    this.currentData = buildUpdatedSchedulingActivityData(newStartTime, null, SchedulingState.DISABLED);
+                    scheduler.removeTask(taskId);
+                }
+            }
         });
     }
 
-    /**
-     * To be called from the dispatcher thread.
-     *
-     * @param isEnabled
-     */
-    public void informEnablementChange(boolean isEnabled) {
-        // TODO
+    private void stopLatestExecutionTimer() {
+        if(this.latestExecutionTimeHandler != null) {
+            this.latestExecutionTimeHandler.cancel();
+            this.latestExecutionTimeHandler = null;
+        }
+    }
+
+    private void startLatestExecutionTimer() {
+        if(this.latestExecutionTimeHandler == null && this.request.getLatestInvocationTime() != null) {
+            this.latestExecutionTimeHandler = new TimerTask() {
+                @Override
+                public void run() {
+                    if(latestExecutionTimeHandler == this) {
+                        runTask(true);
+                    }
+                }
+            };
+            this.timer.schedule(this.latestExecutionTimeHandler, new Date(this.request.getLatestInvocationTime().toEpochMilli()));
+        }
     }
 
     public IUniqueId getId() {
@@ -150,8 +245,19 @@ public class ScheduledTask {
      * To be called from the dispatcher thread.
      */
     public void abortTask() {
-        // TODO: if running, request model to abort, mark as ABORTED, return false
-        // TODO: if scheduled, disable trigger, mark as REMOVED, return true
-        // TODO: if not any of the two above, the activity is already over, so do not do anything, return false.
+        if(resourcesAcquired) {
+            scheduler.releaseResources(request.getResources());
+        }
+        // TODO: if running, request model to abort, release resources, mark as ABORTED
+        // TODO: if scheduled or waiting, disable trigger, mark as REMOVED
+        // TODO: if not any of the two above, the activity is already over, so do not do anything
+    }
+
+
+    @Override
+    public String toString() {
+        return "ScheduledTask{" +
+                "taskId=" + taskId.asLong() +
+                '}';
     }
 }

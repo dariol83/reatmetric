@@ -20,9 +20,5 @@ public enum ConflictStrategy {
     /**
      * Abort ALL activities that are holding up the required resources, and then start the activity.
      */
-    ABORT_OTHER_AND_START,
-    /**
-     * Ignore the resource constraints and start the activity anyway.
-     */
-    START_ANYWAY
+    ABORT_OTHER_AND_START;
 }

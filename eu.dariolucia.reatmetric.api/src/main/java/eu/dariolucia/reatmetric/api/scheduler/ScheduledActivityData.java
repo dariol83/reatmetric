@@ -26,28 +26,13 @@ public final class ScheduledActivityData extends AbstractDataItem {
     private final Instant latestInvocationTime;
 
     private final Instant startTime;
-    private final Instant endTime;
+    private final Duration duration;
 
     private final ConflictStrategy conflictStrategy;
 
     private final SchedulingState state;
 
-    /**
-     *
-     * @param internalId
-     * @param generationTime
-     * @param request
-     * @param activityOccurrence
-     * @param resources the resources required by this activity: not null, each string can contain any characters except whitespaces
-     * @param source
-     * @param externalId
-     * @param trigger
-     * @param latestInvocationTime
-     * @param conflictStrategy
-     * @param state
-     * @param extension
-     */
-    public ScheduledActivityData(IUniqueId internalId, Instant generationTime, ActivityRequest request, IUniqueId activityOccurrence, Collection<String> resources, String source, long externalId, AbstractSchedulingTrigger trigger, Instant latestInvocationTime, Instant startTime, Instant endTime, ConflictStrategy conflictStrategy, SchedulingState state, Object extension) {
+    public ScheduledActivityData(IUniqueId internalId, Instant generationTime, ActivityRequest request, IUniqueId activityOccurrence, Collection<String> resources, String source, long externalId, AbstractSchedulingTrigger trigger, Instant latestInvocationTime, Instant startTime, Duration duration, ConflictStrategy conflictStrategy, SchedulingState state, Object extension) {
         super(internalId, generationTime, extension);
         if(resources == null) {
             throw new NullPointerException("Resources cannot be null");
@@ -69,7 +54,7 @@ public final class ScheduledActivityData extends AbstractDataItem {
         this.conflictStrategy = conflictStrategy;
         this.state = state;
         this.startTime = startTime;
-        this.endTime = endTime;
+        this.duration = duration;
     }
 
     public ActivityRequest getRequest() {
@@ -112,16 +97,16 @@ public final class ScheduledActivityData extends AbstractDataItem {
         return startTime;
     }
 
-    public Instant getEndTime() {
-        return endTime;
-    }
-
-    public Duration getExpectedDuration() {
-        return Duration.between(startTime, endTime);
+    public Duration getDuration() {
+        return duration;
     }
 
     public boolean overlapsWith(Instant otherStartTime, Instant otherEndTime) {
         return (startTime.isAfter(otherStartTime) && startTime.isBefore(otherEndTime)) ||
-                (endTime.isAfter(otherStartTime) && endTime.isBefore(otherEndTime));
+                (startTime.plus(duration).isAfter(otherStartTime) && startTime.plus(duration).isBefore(otherEndTime));
+    }
+
+    public Instant getEndTime() {
+        return startTime.plus(duration);
     }
 }

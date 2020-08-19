@@ -19,4 +19,11 @@ public class RelativeTimeSchedulingTrigger extends AbstractSchedulingTrigger {
     public List<IUniqueId> getPredecessors() {
         return predecessors;
     }
+
+    @Override
+    public String toString() {
+        return "RelativeTimeSchedulingTrigger{" +
+                "predecessors=" + predecessors +
+                "} " + super.toString();
+    }
 }

@@ -28,4 +28,12 @@ public class EventBasedSchedulingTrigger extends AbstractSchedulingTrigger {
     public int getProtectionTime() {
         return protectionTime;
     }
+
+    @Override
+    public String toString() {
+        return "EventBasedSchedulingTrigger{" +
+                "event=" + event +
+                ", protectionTime=" + protectionTime +
+                "} " + super.toString();
+    }
 }

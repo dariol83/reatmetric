@@ -16,4 +16,11 @@ public class AbsoluteTimeSchedulingTrigger extends AbstractSchedulingTrigger {
     public Instant getReleaseTime() {
         return releaseTime;
     }
+
+    @Override
+    public String toString() {
+        return "AbsoluteTimeSchedulingTrigger{" +
+                "releaseTime=" + releaseTime +
+                "} " + super.toString();
+    }
 }

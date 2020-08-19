@@ -27,6 +27,7 @@ import eu.dariolucia.reatmetric.persist.Archive;
 
 import java.io.IOException;
 import java.sql.*;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Level;
@@ -37,10 +38,10 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
     private static final Logger LOG = Logger.getLogger(ScheduledActivityDataArchive.class.getName());
 
     private static final String STORE_STATEMENT = "MERGE INTO SCHEDULED_ACTIVITY_DATA_TABLE USING SYSIBM.SYSDUMMY1 ON UniqueId = ? " +
-            "WHEN MATCHED THEN UPDATE SET GenerationTime = ?, ActivityRequest = ?, Path = ?, ActivityOccurrence = ?, Resources = ?, Source = ?, ExternalId = ?, Trigger = ?, LatestInvocationTime = ?, StartTime = ?, EndTime = ?, ConflictStrategy = ?, State = ?, AdditionalData = ? " +
-            "WHEN NOT MATCHED THEN INSERT (UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,EndTime,ConflictStrategy,State,AdditionalData) VALUES (?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?,?)";
+            "WHEN MATCHED THEN UPDATE SET GenerationTime = ?, ActivityRequest = ?, Path = ?, ActivityOccurrence = ?, Resources = ?, Source = ?, ExternalId = ?, Trigger = ?, LatestInvocationTime = ?, StartTime = ?, Duration = ?, ConflictStrategy = ?, State = ?, AdditionalData = ? " +
+            "WHEN NOT MATCHED THEN INSERT (UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,Duration,ConflictStrategy,State,AdditionalData) VALUES (?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM SCHEDULED_ACTIVITY_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
-    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,EndTime,ConflictStrategy,State,AdditionalData " +
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,Duration,ConflictStrategy,State,AdditionalData " +
             "FROM SCHEDULED_ACTIVITY_DATA_TABLE " +
             "WHERE UniqueId=?";
     private static final String LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM SCHEDULED_ACTIVITY_DATA_TABLE";
@@ -71,7 +72,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
             storeStatement.setNull(10, Types.BLOB);
         }
         storeStatement.setTimestamp(11, toTimestamp(item.getStartTime()));
-        storeStatement.setTimestamp(12, toTimestamp(item.getEndTime()));
+        storeStatement.setInt(12, (int) item.getDuration().toSeconds());
         storeStatement.setShort(13, (short) item.getConflictStrategy().ordinal());
         storeStatement.setShort(14, (short) item.getState().ordinal());
         Object extension = item.getExtension();
@@ -101,7 +102,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
             storeStatement.setNull(25, Types.BLOB);
         }
         storeStatement.setTimestamp(26, toTimestamp(item.getStartTime()));
-        storeStatement.setTimestamp(27, toTimestamp(item.getEndTime()));
+        storeStatement.setInt(27, (int) item.getDuration().toSeconds());
         storeStatement.setShort(28, (short) item.getConflictStrategy().ordinal());
         storeStatement.setShort(29, (short) item.getState().ordinal());
         if(extension == null) {
@@ -208,7 +209,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         }
         Timestamp startTime = rs.getTimestamp(11);
 
-        Timestamp endTime = rs.getTimestamp(12);
+        int duration = rs.getInt(12);
 
         ConflictStrategy conflictStrategy = ConflictStrategy.values()[rs.getShort(13)];
         SchedulingState state = SchedulingState.values()[rs.getShort(14)];
@@ -218,7 +219,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
             extension = toObject(extensionBlob);
         }
         return new ScheduledActivityData(new LongUniqueId(uniqueId), toInstant(genTime), request,
-                actOcc == null ? null : new LongUniqueId(actOcc), resources, source, extId, trigger, toInstant(latestInvocTime), toInstant(startTime), toInstant(endTime), conflictStrategy, state, extension);
+                actOcc == null ? null : new LongUniqueId(actOcc), resources, source, extId, trigger, toInstant(latestInvocTime), toInstant(startTime), Duration.ofSeconds(duration), conflictStrategy, state, extension);
     }
 
     private Set<String> parseResources(String string) {
