@@ -16,8 +16,11 @@
 
 package eu.dariolucia.reatmetric.scheduler;
 
+import eu.dariolucia.reatmetric.api.activity.IActivityExecutionService;
+import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
+import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.scheduler.IScheduler;
 import eu.dariolucia.reatmetric.api.scheduler.ISchedulerFactory;
@@ -25,7 +28,7 @@ import eu.dariolucia.reatmetric.api.scheduler.ISchedulerFactory;
 public class SchedulerFactory implements ISchedulerFactory {
 
     @Override
-    public IScheduler buildScheduler(IArchive archive, IProcessingModel model) {
-        return new Scheduler(archive, model);
+    public IScheduler buildScheduler(IArchive archive, IActivityExecutionService activityExecutor, IEventDataProvisionService eventMonService, IActivityOccurrenceDataProvisionService activityMonService) {
+        return new Scheduler(archive, activityExecutor, eventMonService, activityMonService);
     }
 }

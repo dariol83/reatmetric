@@ -16,6 +16,10 @@
 
 package eu.dariolucia.reatmetric.scheduler;
 
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
+import eu.dariolucia.reatmetric.api.activity.IActivityExecutionService;
+import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
+import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataSubscriber;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
@@ -23,13 +27,14 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
-import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.events.EventData;
+import eu.dariolucia.reatmetric.api.events.EventDataFilter;
+import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
+import eu.dariolucia.reatmetric.api.events.IEventDataSubscriber;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.exceptions.SchedulingException;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
-import eu.dariolucia.reatmetric.scheduler.impl.ScheduledTask;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -45,7 +50,9 @@ public class Scheduler implements IScheduler {
     private static final Logger LOG = Logger.getLogger(Scheduler.class.getName());
 
     private final IScheduledActivityDataArchive archive;
-    private final IProcessingModel processingModel;
+    private final IActivityExecutionService executionService;
+    private final IEventDataProvisionService eventService;
+    private final IActivityOccurrenceDataProvisionService activityService;
 
     private final List<ISchedulerSubscriber> schedulerSubscribers = new CopyOnWriteArrayList<>();
 
@@ -81,16 +88,26 @@ public class Scheduler implements IScheduler {
      * The set if resources currently taken by running scheduled tasks.
      */
     private final Set<String> currentlyUsedResources = new TreeSet<>();
+    /**
+     * For event-based activities.
+     */
+    private final List<Integer> subscribedEvents = new LinkedList<>();
 
     private volatile boolean enabled;
 
-    public Scheduler(IArchive archive, IProcessingModel model) {
+    private final IActivityOccurrenceDataSubscriber activitySubscriber = dataItems -> dispatcher.submit(() -> activityUpdate(dataItems));
+    private final IEventDataSubscriber eventSubscriber = dataItems -> dispatcher.submit(() -> eventUpdate(dataItems));
+    private EventDataFilter currentEventFilter = null;
+
+    public Scheduler(IArchive archive, IActivityExecutionService activityExecutor, IEventDataProvisionService eventMonService, IActivityOccurrenceDataProvisionService activityMonService) {
         if (archive != null) {
             this.archive = archive.getArchive(IScheduledActivityDataArchive.class);
         } else {
             this.archive = null;
         }
-        this.processingModel = model;
+        this.executionService = activityExecutor;
+        this.eventService = eventMonService;
+        this.activityService = activityMonService;
         IUniqueId lastStoredUniqueId = null;
         try {
             lastStoredUniqueId = this.archive != null ? this.archive.retrieveLastId() : null;
@@ -102,8 +119,11 @@ public class Scheduler implements IScheduler {
         } else {
             this.sequencer.set(lastStoredUniqueId.asLong());
         }
+        // Subscribe to get info about all activities
+        this.activityService.subscribe(activitySubscriber, null);
     }
 
+    @Override
     public void dispose() {
         dispatcher.submit(this::cleanUp);
         dispatcher.shutdown();
@@ -115,13 +135,19 @@ public class Scheduler implements IScheduler {
     }
 
     private void cleanUp() {
-        // TODO unsubscribe to processing model
+        // Unsubscribe to processing model
+        this.activityService.unsubscribe(activitySubscriber);
+        if(currentEventFilter != null) {
+            eventService.unsubscribe(eventSubscriber);
+            currentEventFilter = null;
+        }
         // Clear subscriptions
         schedulerSubscribers.clear();
+        subscriberIndex.clear();
     }
 
     @Override
-    public void initialise() throws SchedulingException {
+    public void initialise() {
         if (LOG.isLoggable(Level.FINE)) {
             LOG.fine("initialise() invoked");
         }
@@ -140,21 +166,20 @@ public class Scheduler implements IScheduler {
     }
 
     @Override
-    public void enable() throws SchedulingException {
-        dispatcher.submit(() -> {
-            setEnable(true);
-        });
+    public void enable() {
+        dispatcher.submit(() -> setEnable(true));
     }
 
     @Override
-    public void disable() throws SchedulingException {
-        dispatcher.submit(() -> {
-            setEnable(false);
-        });
+    public void disable() {
+        dispatcher.submit(() -> setEnable(false));
     }
 
     private void setEnable(boolean isEnabled) {
-        enabled = isEnabled;
+        if(enabled != isEnabled) {
+            enabled = isEnabled;
+            notifier.submit(() -> schedulerSubscribers.forEach(o -> o.schedulerEnablementChanged(enabled)));
+        }
     }
 
     @Override
@@ -174,10 +199,10 @@ public class Scheduler implements IScheduler {
     /**
      * To be called from the dispatcher thread.
      *
-     * @param request
-     * @param conflictStrategy
-     * @return
-     * @throws SchedulingException
+     * @param request the request to schedule
+     * @param conflictStrategy the strategy resolution at creation time
+     * @return the state of the created scheduled task or null if no task is created due to {@link CreationConflictStrategy#SKIP_NEW}
+     * @throws SchedulingException if the operation is aborted due to {@link CreationConflictStrategy#ABORT}
      */
     private ScheduledActivityData scheduleTask(SchedulingRequest request, CreationConflictStrategy conflictStrategy) throws SchedulingException {
         // Check if the creation conflict strategy allows for the scheduling
@@ -328,7 +353,7 @@ public class Scheduler implements IScheduler {
     }
 
     @Override
-    public ScheduledActivityData update(IUniqueId originalId, SchedulingRequest newRequest, CreationConflictStrategy conflictStrategy) throws SchedulingException {
+    public ScheduledActivityData update(IUniqueId originalId, SchedulingRequest newRequest, CreationConflictStrategy conflictStrategy) {
         // TODO
         throw new UnsupportedOperationException();
     }
@@ -336,9 +361,7 @@ public class Scheduler implements IScheduler {
     @Override
     public void remove(IUniqueId scheduledId) throws SchedulingException {
         try {
-            dispatcher.submit(() -> {
-                removeTask(scheduledId);
-            }).get();
+            dispatcher.submit(() -> removeTask(scheduledId)).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new SchedulingException(e);
         }
@@ -366,14 +389,14 @@ public class Scheduler implements IScheduler {
     /**
      * To be called by the dispatcher thread.
      *
-     * @param scheduledId
+     * @param scheduledId the scheduled task to remove
      */
     public void removeTask(IUniqueId scheduledId) {
         // remove from the current internal set
         ScheduledTask st = id2scheduledTask.remove(scheduledId);
         if (st != null) {
             st.abortTask();
-            // remove from the archive, in case
+            // update or remove in the archive
             ScheduledActivityData sad = st.getCurrentData();
             storeAndDistribute(sad);
         }
@@ -423,26 +446,32 @@ public class Scheduler implements IScheduler {
         return archive.retrieve(startItem, numRecords, direction, filter);
     }
 
-    public IUniqueId getNextId() {
+    IUniqueId getNextId() {
         return new LongUniqueId(sequencer.incrementAndGet());
     }
 
     /**
      * To be called from the dispatcher thread.
-     *
-     * @param event
      */
-    public void updateEventFilter(int event) {
-        // TODO: subscribe or update subscription for events
+    void updateEventFilter(Integer newEvent, boolean remove) {
+        if(remove) {
+            subscribedEvents.remove((Object) newEvent);
+        } else {
+            subscribedEvents.add(newEvent);
+        }
+        if(subscribedEvents.isEmpty()) {
+            currentEventFilter = null;
+            eventService.unsubscribe(eventSubscriber);
+        } else {
+            currentEventFilter = new EventDataFilter(null, null, null, null, null, null, subscribedEvents);
+            eventService.subscribe(eventSubscriber, currentEventFilter);
+        }
     }
 
     /**
      * To be called from the dispatcher thread.
-     *
-     * @param predecessors
-     * @return
      */
-    public boolean areAllCompleted(List<IUniqueId> predecessors) {
+    boolean areAllCompleted(List<IUniqueId> predecessors) {
         for (IUniqueId id : predecessors) {
             if (id2scheduledTask.containsKey(id)) {
                 return false;
@@ -453,49 +482,61 @@ public class Scheduler implements IScheduler {
 
     /**
      * To be called from the dispatcher thread.
-     *
-     * @param resources
      */
-    public boolean registerResources(Set<String> resources) {
-        // TODO
-        return false;
+    boolean registerResources(Set<String> resources) {
+        if(Collections.disjoint(this.currentlyUsedResources, resources)) {
+            this.currentlyUsedResources.addAll(resources);
+            return true;
+        } else {
+            return false;
+        }
     }
 
     /**
      * To be called from the dispatcher thread.
-     *
-     * @param request
      */
-    public IUniqueId startActivity(ActivityRequest request) throws ProcessingModelException {
-        return processingModel.startActivity(request);
+    IUniqueId startActivity(ActivityRequest request) throws ReatmetricException {
+        return executionService.startActivity(request);
     }
 
     /**
      * To be called from the dispatcher thread.
-     *
-     * @param resources
      */
-    public void releaseResources(Set<String> resources) {
+    void releaseResources(Set<String> resources) {
         this.currentlyUsedResources.removeAll(resources);
     }
 
     /**
      * To be called from the dispatcher thread.
-     *
-     * @param scheduledTask
      */
-    public void notifyTask(ScheduledTask scheduledTask) {
+    void notifyTask(ScheduledTask scheduledTask) {
         storeAndDistribute(scheduledTask.getCurrentData());
     }
 
     /**
      * To be called from the dispatcher thread.
-     *
-     * @param scheduledTask
      */
-    public void abortConflictingTasksWith(ScheduledTask scheduledTask) {
+    void abortConflictingTasksWith(ScheduledTask scheduledTask) {
         List<ScheduledTask> conflictingTasks = computeConflicts(Collections.singletonList(scheduledTask.getRequest()));
         conflictingTasks.remove(scheduledTask);
         removeTasks(conflictingTasks);
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     */
+    void eventUpdate(List<EventData> dataItems) {
+        for(EventData ed : dataItems) {
+            for (ScheduledTask st : id2scheduledTask.values()) {
+                st.newEventOccurrence(ed);
+            }
+        }
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     */
+    void activityUpdate(List<ActivityOccurrenceData> dataItems) {
+        // TODO
     }
 }

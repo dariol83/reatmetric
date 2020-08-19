@@ -1,8 +1,25 @@
-package eu.dariolucia.reatmetric.scheduler.impl;
+/*
+ * Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package eu.dariolucia.reatmetric.scheduler;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.api.scheduler.*;
@@ -32,6 +49,8 @@ public class ScheduledTask {
     private IUniqueId activityId;
     private volatile TimerTask latestExecutionTimeHandler;
     private boolean resourcesAcquired = false;
+
+    private Instant lastEventTriggerInvocation = null;
 
     public ScheduledTask(Scheduler scheduler, Timer timer, ExecutorService dispatcher, SchedulingRequest request) {
         this.scheduler = scheduler;
@@ -95,7 +114,7 @@ public class ScheduledTask {
                     runTask(false);
                 }
             } else if(request.getTrigger() instanceof EventBasedSchedulingTrigger) {
-                scheduler.updateEventFilter(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent());
+                scheduler.updateEventFilter(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent(),  false);
             } else {
                 throw new SchedulingException("Cannot update trigger evaluation for task " + this.taskId + ", trigger type " + request.getTrigger() + " not recognised");
             }
@@ -116,10 +135,19 @@ public class ScheduledTask {
     /**
      * To be called from the dispatcher thread.
      *
-     * @param event
+     * @param event the event to check
      */
     public void newEventOccurrence(EventData event) {
-        // TODO
+        Instant now = Instant.now();
+        if(currentData.getState() == SchedulingState.SCHEDULED &&
+                (request.getTrigger() instanceof EventBasedSchedulingTrigger && ((EventBasedSchedulingTrigger) request.getTrigger()).getEvent() == event.getExternalId()) &&
+                (request.getLatestInvocationTime() == null || request.getLatestInvocationTime().isAfter(now))) {
+            // Check if the protection time is OK
+            if(lastEventTriggerInvocation == null || lastEventTriggerInvocation.plusMillis(((EventBasedSchedulingTrigger) request.getTrigger()).getProtectionTime()).isBefore(now)) {
+                lastEventTriggerInvocation = now;
+                runTask(false);
+            }
+        }
     }
 
     /**
@@ -200,7 +228,7 @@ public class ScheduledTask {
                                 this.activityId,
                                 SchedulingState.RUNNING);
                         scheduler.notifyTask(this);
-                    } catch (ProcessingModelException e) {
+                    } catch (ReatmetricException e) {
                         // Fail and remove
                         this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
                                 null,

@@ -81,6 +81,8 @@ public interface IScheduler extends IScheduledActivityDataProvisionService {
      */
     List<ScheduledActivityData> load(Instant startTime, Instant endTime, List<SchedulingRequest> requests, String source, CreationConflictStrategy conflictStrategy);
 
-
-
+    /**
+     * Dispose the scheduler. Pending tasks will not be modified, to allow resume (if the archiving is enabled).
+     */
+    void dispose();
 }

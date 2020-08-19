@@ -126,7 +126,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         LOG.info("Loading scheduler");
         ServiceLoader<ISchedulerFactory> scheduleLoader = ServiceLoader.load(ISchedulerFactory.class);
         if(scheduleLoader.findFirst().isPresent()) {
-            scheduler = scheduleLoader.findFirst().get().buildScheduler(archive, processingModelManager.getProcessingModel());
+            scheduler = scheduleLoader.findFirst().get().buildScheduler(archive, processingModelManager, processingModelManager.getEventDataMonitorService(), processingModelManager.getActivityOccurrenceDataMonitorService());
             scheduler.initialise();
         } else {
             LOG.warning("Scheduler implementation not found");
@@ -185,6 +185,10 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         initialised = false;
         for(IDriver d : drivers) {
             d.dispose();
+        }
+        if(scheduler != null) {
+            scheduler.dispose();
+            scheduler = null;
         }
         if(processingModelManager != null) {
             processingModelManager.dispose();
