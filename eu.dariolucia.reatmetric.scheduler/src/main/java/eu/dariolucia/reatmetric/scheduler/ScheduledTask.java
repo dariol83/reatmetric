@@ -41,27 +41,54 @@ public class ScheduledTask {
 
     private static final Logger LOG = Logger.getLogger(ScheduledTask.class.getName());
 
-    private SchedulingRequest request;
-    private volatile TimerTask timingHandler;
-    private ScheduledActivityData currentData;
-
     private final Scheduler scheduler;
     private final Timer timer;
     private final ExecutorService dispatcher;
     private final IUniqueId taskId;
 
-    private IUniqueId activityId;
-    private volatile TimerTask latestExecutionTimeHandler;
-    private boolean resourcesAcquired = false;
+    private SchedulingRequest request;
+    private ScheduledActivityData currentData;
 
+    /**
+     * TimerTask for absolute time scheduling requests
+     */
+    private volatile TimerTask timingHandler;
+    /**
+     * TimerTask activated when the activity has a latest execution time set
+     */
+    private volatile TimerTask latestExecutionTimeHandler;
+    /**
+     * The activity occurrence ID of the activity once invoked
+     */
+    private IUniqueId activityId;
+    /**
+     * If true, then it means that this task acquired the declared resources, and they must be released when the task is over
+     */
+    private boolean resourcesAcquired = false;
+    /**
+     * For event-based activities, this information is needed to enforce the protection mechanism
+     */
     private Instant lastEventTriggerInvocation = null;
 
-    public ScheduledTask(Scheduler scheduler, Timer timer, ExecutorService dispatcher, SchedulingRequest request) {
+    public ScheduledTask(Scheduler scheduler, Timer timer, ExecutorService dispatcher, SchedulingRequest request, IUniqueId originalId) {
         this.scheduler = scheduler;
         this.request = request;
         this.timer = timer;
         this.dispatcher = dispatcher;
-        this.taskId = this.scheduler.getNextId();
+        if(originalId != null) {
+            this.taskId = originalId;
+        } else {
+            this.taskId = this.scheduler.getNextId();
+        }
+    }
+
+    public ScheduledTask(Scheduler scheduler, Timer timer, ExecutorService dispatcher, ScheduledActivityData item) {
+        this.scheduler = scheduler;
+        this.timer = timer;
+        this.dispatcher = dispatcher;
+        this.taskId = item.getInternalId();
+        this.currentData = item;
+        this.request = new SchedulingRequest(item.getRequest(), item.getResources(), item.getSource(), item.getExternalId(), item.getTrigger(), item.getLatestInvocationTime(), item.getConflictStrategy(), item.getDuration());
     }
 
     public SchedulingRequest getRequest() {
@@ -238,7 +265,7 @@ public class ScheduledTask {
         dispatcher.submit(() -> {
             // Guard condition: you can reach this only if SCHEDULED or WAITING. If this happens in a different situation, error
             if(currentData.getState() != SchedulingState.SCHEDULED && currentData.getState() != SchedulingState.WAITING) {
-                LOG.log(Level.SEVERE, "Scheduled task " + taskId + " with state " + currentData.getState() + " requested to executed. Request ignored.");
+                LOG.log(Level.SEVERE, "Scheduled task " + taskId + " with state " + currentData.getState() + " requested to executed, request ignored.");
                 return;
             }
             // Try to run the activity if the scheduler is enabled, if all resources are available and if all constraints are satisfied
@@ -367,6 +394,9 @@ public class ScheduledTask {
                     SchedulingState.ABORTED);
         } else {
             // if not any of the two above, the activity is already over, so do not do anything
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.fine("Task " + taskId + " already in state " + currentData.getState() + ", abort not performed");
+            }
         }
         // Remove the activity occurrence ID from the set of interesting ones
         if(activityId != null) {

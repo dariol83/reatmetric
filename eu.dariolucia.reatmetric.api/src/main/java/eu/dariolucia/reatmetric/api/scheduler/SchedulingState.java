@@ -25,7 +25,7 @@ public enum SchedulingState {
      */
     RUNNING,
     /**
-     * The activity occurrence was aborted by the user or by another activity.
+     * The activity occurrence was aborted by the user, the scheduler or by another activity.
      */
     ABORTED,
     /**
@@ -39,5 +39,9 @@ public enum SchedulingState {
     /**
      * The activity has been removed from the scheduler when it was in SCHEDULED state.
      */
-    REMOVED;
+    REMOVED,
+    /**
+     * The activity was running when the scheduler was shut down and the current status is unknown.
+     */
+    UNKNOWN
 }
