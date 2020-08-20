@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.driver.automation;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
@@ -49,7 +50,7 @@ import java.util.logging.Logger;
 
 /**
  * This driver provides the capability to execute automation and automation procedures written in Javascript.
- *
+ * <p>
  * The driver provides a simple API to scripts under execution, to easily access archived and processing data.
  */
 public class AutomationDriver implements IDriver, IActivityHandler {
@@ -93,7 +94,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
             BufferedReader br = new BufferedReader(new InputStreamReader(is));
             StringBuilder sb = new StringBuilder();
             String read = null;
-            while((read = br.readLine()) != null) {
+            while ((read = br.readLine()) != null) {
                 sb.append(read).append((char) 10);
             }
             apiData = sb.toString();
@@ -110,7 +111,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
     private void updateStatus(SystemStatus s) {
         boolean toNotify = s != this.status;
         this.status = s;
-        if(toNotify) {
+        if (toNotify) {
             this.subscriber.driverStatusUpdate(this.name, this.status);
         }
     }
@@ -181,10 +182,10 @@ public class AutomationDriver implements IDriver, IActivityHandler {
 
     @Override
     public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
-        if(!activityInvocation.getType().equals(Constants.T_SCRIPT_TYPE)) {
+        if (!activityInvocation.getType().equals(Constants.T_SCRIPT_TYPE)) {
             throw new ActivityHandlingException("Type " + activityInvocation.getType() + " not supported");
         }
-        if(activityInvocation.getArguments() == null) {
+        if (activityInvocation.getArguments() == null) {
             throw new ActivityHandlingException("Activity invocation has null argument map");
         }
         executor.submit(() -> execute(activityInvocation, model));
@@ -195,28 +196,31 @@ public class AutomationDriver implements IDriver, IActivityHandler {
         return route.equals(Constants.AUTOMATION_ROUTE);
     }
 
+    @Override
+    public void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException {
+        // TODO: record running scripts in a map, find way to tell GraalVM to abort execution/evaluation (if possible), execution stage shall be reported as FATAL
+    }
+
     private void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
         try {
-            synchronized (this) {
-                // Record verification
-                announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null, ActivityOccurrenceState.EXECUTION);
-                // Look up automation: first argument plus argument name
-                String fileName = (String) activityInvocation.getArguments().get(Constants.ARGUMENT_FILE_NAME);
-                if(fileName == null) {
-                    // Use the full path name as automation name
-                    fileName = activityInvocation.getPath().asString();
-                }
-                File f = new File(configuration.getScriptFolder() + File.separator + fileName);
-                if(!f.exists()) {
-                    throw new FileNotFoundException("File " + f.getAbsolutePath() + " does not exist");
-                }
-                String contents = Files.readString(f.toPath());
-                // Run automation and retrieve result
-                Object result = execute(contents, activityInvocation, fileName);
-                // Report final state
-                announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, result, ActivityOccurrenceState.VERIFICATION);
+            // Record verification
+            announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null, ActivityOccurrenceState.EXECUTION);
+            // Look up automation: first argument plus argument name
+            String fileName = (String) activityInvocation.getArguments().get(Constants.ARGUMENT_FILE_NAME);
+            if (fileName == null) {
+                // Use the full path name as automation name
+                fileName = activityInvocation.getPath().asString();
             }
-        } catch(Exception e) {
+            File f = new File(configuration.getScriptFolder() + File.separator + fileName);
+            if (!f.exists()) {
+                throw new FileNotFoundException("File " + f.getAbsolutePath() + " does not exist");
+            }
+            String contents = Files.readString(f.toPath());
+            // Run automation and retrieve result
+            Object result = execute(contents, activityInvocation, fileName);
+            // Report final state
+            announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, result, ActivityOccurrenceState.VERIFICATION);
+        } catch (Exception e) {
             LOG.log(Level.SEVERE, "Execution of procedure " + activityInvocation.getActivityOccurrenceId() + " failed: " + e.getMessage(), e);
             announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, null, ActivityOccurrenceState.EXECUTION);
         }
@@ -227,7 +231,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
     }
 
     public Object execute(String file, IActivityHandler.ActivityInvocation invocation, String fileName) throws ScriptException {
-        //
+        // TODO: replace with GraalVM proper way
         ScriptEngine engine = new ScriptEngineManager().getEngineByName("graal.js");
         Bindings bindings = engine.getBindings(ScriptContext.ENGINE_SCOPE);
         bindings.put("polyglot.js.allowAllAccess", true);
@@ -236,8 +240,8 @@ public class AutomationDriver implements IDriver, IActivityHandler {
         // Do not compile, just run
 
         // Prepare the bindings (arguments)
-        for(Map.Entry<String, Object> entry : invocation.getArguments().entrySet()) {
-            if(!entry.getKey().equals(Constants.ARGUMENT_FILE_NAME)) {
+        for (Map.Entry<String, Object> entry : invocation.getArguments().entrySet()) {
+            if (!entry.getKey().equals(Constants.ARGUMENT_FILE_NAME)) {
                 bindings.put(entry.getKey(), entry.getValue());
             }
         }

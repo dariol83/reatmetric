@@ -40,6 +40,8 @@ public interface IProcessingModel extends IDebugInfoProvider {
 
     void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) throws ProcessingModelException;
 
+    void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ProcessingModelException;
+
     List<ActivityOccurrenceData> getActiveActivityOccurrences();
 
     IUniqueId setParameterValue(SetParameterRequest request) throws ProcessingModelException;

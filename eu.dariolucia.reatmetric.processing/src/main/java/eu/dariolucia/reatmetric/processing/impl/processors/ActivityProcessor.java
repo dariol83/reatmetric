@@ -555,6 +555,32 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         }
     }
 
+    public List<AbstractDataItem> abort(IUniqueId occurrenceId) {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer("Aborting activity occurrence " + occurrenceId + " of activity " + getSystemEntityId());
+        }
+        if(entityStatus == Status.ENABLED) {
+            ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
+            if (aop == null) {
+                if (LOG.isLoggable(Level.WARNING)) {
+                    LOG.warning("No activity occurrence with ID " + occurrenceId + " found, abort request not processed");
+                }
+                return Collections.emptyList();
+            } else {
+                // Abort is simply forwarded and handled by the implementor: the processing model does not take any initiative here, because
+                // it might be that the activity CANNOT be aborted
+                aop.abort();
+                return Collections.emptyList();
+            }
+        } else {
+            // Completely ignore the processing
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Activity abort request not processed for activity " + getPath() + ": activity processing is disabled");
+            }
+            return Collections.emptyList();
+        }
+    }
+
     @Override
     public void visit(IProcessingModelVisitor visitor) {
         for(ActivityOccurrenceProcessor proc : id2occurrence.values()) {

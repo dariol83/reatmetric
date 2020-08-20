@@ -291,6 +291,11 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
         return processingModel.setParameterValue(request);
     }
 
+    @Override
+    public void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ReatmetricException {
+        processingModel.abortActivity(activityId, activityOccurrenceId);
+    }
+
     public IProcessingModel getProcessingModel() {
         return processingModel;
     }

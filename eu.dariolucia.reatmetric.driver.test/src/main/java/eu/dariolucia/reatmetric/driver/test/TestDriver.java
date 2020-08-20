@@ -254,6 +254,11 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         }
     }
 
+    @Override
+    public void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException {
+        // TODO: not implemented yet
+    }
+
     private boolean connectorReady() {
         return connector.isInitialised() && connector.isReady();
     }

@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.processing.impl.stubs;
 
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
@@ -99,6 +100,11 @@ public class ActivityHandlerStub implements IActivityHandler {
     @Override
     public boolean getRouteAvailability(String route) throws ActivityHandlingException {
         return !unavailableRoutes.contains(route);
+    }
+
+    @Override
+    public void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException {
+        // Do nothing
     }
 
     public void setLifecycle(LifecycleStrategy lifecycle) {

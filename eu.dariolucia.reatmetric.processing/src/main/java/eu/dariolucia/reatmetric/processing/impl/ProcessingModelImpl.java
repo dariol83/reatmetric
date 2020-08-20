@@ -227,9 +227,27 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                     LOG.fine(String.format("Activity occurrence %s forwarded", occurrenceId));
                 }
             } catch (ActivityHandlingException e) {
-                LOG.log(Level.SEVERE, String.format("Failure forwarding activity occurrence %s of activity %s to the activity handler on route %s", occurrenceId, path, route), e);
+                LOG.log(Level.SEVERE, String.format("Failure forwarding activity occurrence %s of activity %s to the activity handler on route %s: %s", occurrenceId, path, route, e.getMessage()), e);
                 // Overwrite status
                 reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE, null));
+            }
+        });
+    }
+
+    public void forwardAbortToHandler(IUniqueId occurrenceId, int activityId, String route, String type) throws ProcessingModelException {
+        IActivityHandler handler = checkHandlerAvailability(route, type);
+        // All fine, schedule the dispatch
+        this.activityOccurrenceDispatcher.execute(() -> {
+            try {
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.fine(String.format("Forwarding abort of activity occurrence %s to the activity handler on route %s", occurrenceId, route));
+                }
+                handler.abortActivity(activityId, occurrenceId);
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.fine(String.format("Abort of activity occurrence %s forwarded", occurrenceId));
+                }
+            } catch (ActivityHandlingException e) {
+                LOG.log(Level.SEVERE, String.format("Failure forwarding abort of activity occurrence %s to the activity handler on route %s: %s", occurrenceId, route, e.getMessage()), e);
             }
         });
     }
@@ -314,6 +332,17 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     public void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = activityOccurrenceIds.stream().map(PurgeActivityOperation::new).collect(Collectors.toList());
+        // Schedule task
+        scheduleTask(operations, USER_DISPATCHING_QUEUE);
+    }
+
+    @Override
+    public void abortActivity(int activityId, IUniqueId activityOccurrenceId) {
+        if(activityOccurrenceId == null) {
+            throw new IllegalArgumentException("Null activity occurrence ID");
+        }
+        // Build the list of operations to be performed
+        List<AbstractModelOperation<?>> operations = Collections.singletonList(new AbortActivityOperation(activityId, activityOccurrenceId));
         // Schedule task
         scheduleTask(operations, USER_DISPATCHING_QUEUE);
     }
@@ -520,5 +549,6 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     public IEntityBinding resolve(int systemEntityId) {
         return graphModel.getBinding(systemEntityId);
     }
+
 
 }

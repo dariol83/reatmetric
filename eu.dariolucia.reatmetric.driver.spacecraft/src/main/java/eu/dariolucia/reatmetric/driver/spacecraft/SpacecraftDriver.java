@@ -31,6 +31,7 @@ import eu.dariolucia.ccsds.sle.utl.config.cltu.CltuServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.rcf.RcfServiceInstanceConfiguration;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
@@ -544,6 +545,11 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             }
         }
         return false;
+    }
+
+    @Override
+    public void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException {
+        // TODO: not implemented yet ... I do not even know if this can be done at all. For sure for group activities not yet released, but for others it is impossible
     }
 
     @Override

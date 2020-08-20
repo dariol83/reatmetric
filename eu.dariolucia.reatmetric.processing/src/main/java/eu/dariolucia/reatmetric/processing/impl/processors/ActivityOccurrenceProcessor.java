@@ -313,7 +313,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
 
     public List<AbstractDataItem> purge() {
         if (currentState == ActivityOccurrenceState.COMPLETED) {
-            // Activity occurrence in its final state, update discarded
+            // Activity occurrence in its final state, purge discarded
             if (LOG.isLoggable(Level.WARNING)) {
                 LOG.warning(String.format("Purge request for activity occurrence %s of activity %s discarded, activity occurrence already completed", occurrenceId, parent.getPath()));
             }
@@ -327,6 +327,21 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         generateReport(ActivityOccurrenceReport.PURGE_REPORT_NAME, Instant.now(), null, this.currentState, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETED);
         // Return list
         return List.copyOf(temporaryDataItemList);
+    }
+
+    public void abort()  {
+        if (currentState == ActivityOccurrenceState.COMPLETED) {
+            // Activity occurrence in its final state, abort discarded
+            if (LOG.isLoggable(Level.WARNING)) {
+                LOG.warning(String.format("Abort request for activity occurrence %s of activity %s discarded, activity occurrence already completed", occurrenceId, parent.getPath()));
+            }
+        }
+        // Forward to the activity handler
+        try {
+            parent.processor.forwardAbortToHandler(occurrenceId, parent.getSystemEntityId(), route, parent.getDefinition().getType());
+        } catch (ProcessingModelException e) {
+            LOG.log(Level.SEVERE, String.format("Abort request for activity occurrence %s:%d cannot be forwarded to the activity handler identified by route %s and type %s: %s", parent.getPath(), occurrenceId.asLong(), route, parent.getDefinition().getType(), e.getMessage()));
+        }
     }
 
     public List<AbstractDataItem> evaluate() {

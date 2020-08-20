@@ -87,4 +87,13 @@ public interface IActivityExecutionService {
      */
     IUniqueId setParameterValue(SetParameterRequest request) throws ReatmetricException;
 
+    /**
+     * Request the abortion of an activity occurrence. Whether an activity occurrence can be aborted depends on the
+     * activity implementation.
+     *
+     * @param activityId the activity ID
+     * @param activityOccurrenceId the activity occurrence to abort
+     * @throws ReatmetricException in case of problems during the activity abort
+     */
+    void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ReatmetricException;
 }

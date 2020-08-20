@@ -38,6 +38,8 @@ public interface IActivityHandler {
 
     boolean getRouteAvailability(String route) throws ActivityHandlingException;
 
+    void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException;
+
     class ActivityInvocation {
         private final IUniqueId activityOccurrenceId;
         private final Instant generationTime;
