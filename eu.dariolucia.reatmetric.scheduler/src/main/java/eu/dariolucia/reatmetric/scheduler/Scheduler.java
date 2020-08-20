@@ -85,6 +85,10 @@ public class Scheduler implements IScheduler {
      */
     private final Map<IUniqueId, ScheduledTask> id2scheduledTask = new HashMap<>();
     /**
+     * This map allows quick access to the task handling a specific activity occurrence execution.
+     */
+    private final Map<IUniqueId, ScheduledTask> activityId2scheduledTask = new HashMap<>();
+    /**
      * The set if resources currently taken by running scheduled tasks.
      */
     private final Set<String> currentlyUsedResources = new TreeSet<>();
@@ -194,6 +198,10 @@ public class Scheduler implements IScheduler {
         } catch (InterruptedException | ExecutionException e) {
             throw new SchedulingException(e);
         }
+    }
+
+    void internalScheduleRequest(SchedulingRequest request, CreationConflictStrategy conflictStrategy) {
+        dispatcher.submit(() -> scheduleTask(request, conflictStrategy));
     }
 
     /**
@@ -403,9 +411,51 @@ public class Scheduler implements IScheduler {
     }
 
     @Override
-    public List<ScheduledActivityData> load(Instant startTime, Instant endTime, List<SchedulingRequest> requests, String source, CreationConflictStrategy conflictStrategy) {
-        // TODO
-        throw new UnsupportedOperationException();
+    public List<ScheduledActivityData> load(Instant startTime, Instant endTime, List<SchedulingRequest> requests, String source, CreationConflictStrategy conflictStrategy) throws SchedulingException {
+        try {
+            return dispatcher.submit(() -> {
+                List<ScheduledActivityData> toReturn = new LinkedList<>();
+                // First, retrieve all scheduled activities from startTime to endTime
+                List<ScheduledTask> tasks = retrieveTasksFrom(startTime, endTime);
+                // Now, check if there is one task belonging to source, that is not SCHEDULED. If so, abort with exception.
+                Optional<ScheduledTask> runningTask = tasks.stream().filter(o -> o.getCurrentData().getSource().equals(source)).filter(o -> !o.getCurrentData().getState().equals(SchedulingState.SCHEDULED)).findFirst();
+                if(runningTask.isPresent()) {
+                    throw new SchedulingException("Task " + runningTask.get().getId() + " already in state " + runningTask.get().getCurrentData().getState() + ", cannot replace the schedule period");
+                }
+                // If you are here, there is no scheduled task from the provided source that started, so they can be all removed. Let's check for conflicts.
+                List<ScheduledTask> conflictingTasks = computeConflicts(requests);
+                // Remove the tasks of this source, they will go away
+                conflictingTasks.removeIf(o -> o.getCurrentData().getSource().equals(source));
+                // Final check
+                if(!conflictingTasks.isEmpty() && conflictStrategy == CreationConflictStrategy.ABORT) {
+                    throw new SchedulingException("Conflict detected with provided scheduling requests: " + conflictingTasks);
+                }
+                // OK, at this stage the import can be handled.
+                // Remove the tasks from source
+                for(ScheduledTask st : tasks) {
+                    if(st.getCurrentData().getSource().equals(source)) {
+                        removeTask(st.getId());
+                    }
+                }
+                // Add new tasks
+                for(SchedulingRequest sr : requests) {
+                    ScheduledActivityData data = scheduleTask(sr, conflictStrategy);
+                    if(data != null) {
+                        toReturn.add(data);
+                    }
+                }
+                return toReturn;
+            }).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new SchedulingException(e);
+        }
+    }
+
+    private List<ScheduledTask> retrieveTasksFrom(Instant startTime, Instant endTime) {
+        return id2scheduledTask.values().stream()
+                .filter(o -> (o.getCurrentData().getStartTime().isAfter(startTime) || o.getCurrentData().getStartTime().equals(startTime)) &&
+                        (o.getCurrentData().getStartTime().isBefore(endTime) || o.getCurrentData().getStartTime().equals(endTime)))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -455,7 +505,7 @@ public class Scheduler implements IScheduler {
      */
     void updateEventFilter(Integer newEvent, boolean remove) {
         if(remove) {
-            subscribedEvents.remove((Object) newEvent);
+            subscribedEvents.remove(newEvent);
         } else {
             subscribedEvents.add(newEvent);
         }
@@ -504,6 +554,12 @@ public class Scheduler implements IScheduler {
      */
     void releaseResources(Set<String> resources) {
         this.currentlyUsedResources.removeAll(resources);
+        // Check waiting tasks
+        for(ScheduledTask st : id2scheduledTask.values()) {
+            if(st.getCurrentData().getState() == SchedulingState.WAITING) {
+                st.evaluateRun();
+            }
+        }
     }
 
     /**
@@ -518,7 +574,11 @@ public class Scheduler implements IScheduler {
      */
     void abortConflictingTasksWith(ScheduledTask scheduledTask) {
         List<ScheduledTask> conflictingTasks = computeConflicts(Collections.singletonList(scheduledTask.getRequest()));
+        // Remove this task
         conflictingTasks.remove(scheduledTask);
+        // Remove all tasks that are still in SCHEDULED or WAITING
+        conflictingTasks.removeIf(o -> o.getCurrentData().getState() == SchedulingState.SCHEDULED || o.getCurrentData().getState() == SchedulingState.WAITING);
+        // Remove remaining tasks
         removeTasks(conflictingTasks);
     }
 
@@ -537,6 +597,32 @@ public class Scheduler implements IScheduler {
      * To be called from the dispatcher thread.
      */
     void activityUpdate(List<ActivityOccurrenceData> dataItems) {
-        // TODO
+        for(ActivityOccurrenceData aod : dataItems) {
+            ScheduledTask st = activityId2scheduledTask.get(aod.getInternalId());
+            if(st != null) {
+                st.activityStatusUpdate(aod);
+            }
+        }
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     */
+    void deregisterActivity(IUniqueId activityId) {
+        this.activityId2scheduledTask.remove(activityId);
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     */
+    void registerActivity(IUniqueId activityId, ScheduledTask scheduledTask) {
+        this.activityId2scheduledTask.put(activityId, scheduledTask);
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     */
+    void abortActivity(IUniqueId activityId) {
+        // TODO: introduce abort operation in all the TC chain
     }
 }

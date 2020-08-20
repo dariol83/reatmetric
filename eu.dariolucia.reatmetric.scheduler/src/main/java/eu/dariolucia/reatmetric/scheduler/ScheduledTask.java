@@ -17,15 +17,15 @@
 package eu.dariolucia.reatmetric.scheduler;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
+import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
-import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.exceptions.SchedulingException;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
-import eu.dariolucia.reatmetric.scheduler.Scheduler;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -34,8 +34,12 @@ import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ScheduledTask {
+
+    private static final Logger LOG = Logger.getLogger(ScheduledTask.class.getName());
 
     private SchedulingRequest request;
     private volatile TimerTask timingHandler;
@@ -140,12 +144,15 @@ public class ScheduledTask {
     public void newEventOccurrence(EventData event) {
         Instant now = Instant.now();
         if(currentData.getState() == SchedulingState.SCHEDULED &&
+                scheduler.isEnabled() &&
                 (request.getTrigger() instanceof EventBasedSchedulingTrigger && ((EventBasedSchedulingTrigger) request.getTrigger()).getEvent() == event.getExternalId()) &&
                 (request.getLatestInvocationTime() == null || request.getLatestInvocationTime().isAfter(now))) {
             // Check if the protection time is OK
             if(lastEventTriggerInvocation == null || lastEventTriggerInvocation.plusMillis(((EventBasedSchedulingTrigger) request.getTrigger()).getProtectionTime()).isBefore(now)) {
                 lastEventTriggerInvocation = now;
-                runTask(false);
+                SchedulingRequest newRequest = generateImmediateRequest(now);
+                CreationConflictStrategy newConflictStrategy = CreationConflictStrategy.ADD_ANYWAY; // It will be handled by the ConflictStrategy of the request
+                scheduler.internalScheduleRequest(newRequest, newConflictStrategy);
             }
         }
     }
@@ -153,10 +160,54 @@ public class ScheduledTask {
     /**
      * To be called from the dispatcher thread.
      *
-     * @param data
+     * @param now time to start
+     */
+    private SchedulingRequest generateImmediateRequest(Instant now) {
+        return new SchedulingRequest(request.getRequest(), request.getResources(), request.getSource(), request.getExternalId(),
+                new AbsoluteTimeSchedulingTrigger(now), request.getLatestInvocationTime(), request.getConflictStrategy(), request.getExpectedDuration());
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     *
+     * @param data the activity occurrence for this task
      */
     public void activityStatusUpdate(ActivityOccurrenceData data) {
-        // TODO
+        Instant now = Instant.now();
+        if(data.getCurrentState() == ActivityOccurrenceState.COMPLETED) {
+            // Activity completed: the state is finally set and the task is removed
+            this.currentData = buildUpdatedSchedulingActivityData(currentData.getStartTime(),
+                    Duration.between(currentData.getStartTime(), now),
+                    activityId,
+                    data.aggregateStatus() == ActivityReportState.OK ? SchedulingState.FINISHED_NOMINAL : SchedulingState.FINISHED_FAIL);
+            scheduler.deregisterActivity(activityId);
+            activityId = null;
+            checkForTaskRemoval();
+        } else {
+            // Activity is in progress
+            this.currentData = buildUpdatedSchedulingActivityData(currentData.getStartTime(),
+                    Duration.between(currentData.getStartTime(), now),
+                    activityId,
+                    SchedulingState.RUNNING);
+            scheduler.notifyTask(this);
+        }
+    }
+
+    private ScheduledActivityData buildUpdatedSchedulingActivityData(Instant startTime, Duration duration, IUniqueId occurrence, SchedulingState state) {
+        return new ScheduledActivityData(this.taskId,
+                startTime,
+                this.request.getRequest(),
+                occurrence,
+                this.request.getResources(),
+                this.request.getSource(),
+                this.request.getExternalId(),
+                this.request.getTrigger(),
+                this.request.getLatestInvocationTime(),
+                startTime,
+                duration,
+                this.request.getConflictStrategy(),
+                state,
+                null);
     }
 
     private ScheduledActivityData buildUpdatedSchedulingActivityData(Instant newTime, IUniqueId newOccurrence, SchedulingState state) {
@@ -176,8 +227,20 @@ public class ScheduledTask {
                 null);
     }
 
+    public void evaluateRun() {
+        runTask(false);
+    }
+
     private void runTask(boolean lastPossibleExecution) {
+        if(request.getTrigger() instanceof EventBasedSchedulingTrigger) {
+            throw new IllegalStateException("runTask invoked on an event based task, software bug");
+        }
         dispatcher.submit(() -> {
+            // Guard condition: you can reach this only if SCHEDULED or WAITING. If this happens in a different situation, error
+            if(currentData.getState() != SchedulingState.SCHEDULED && currentData.getState() != SchedulingState.WAITING) {
+                LOG.log(Level.SEVERE, "Scheduled task " + taskId + " with state " + currentData.getState() + " requested to executed. Request ignored.");
+                return;
+            }
             // Try to run the activity if the scheduler is enabled, if all resources are available and if all constraints are satisfied
             Instant newStartTime = Instant.now();
             // First, check the resources
@@ -191,7 +254,7 @@ public class ScheduledTask {
                             this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
                                     null,
                                     SchedulingState.IGNORED);
-                            scheduler.removeTask(taskId);
+                            checkForTaskRemoval();
                         } else {
                             // Wait for some update in the resource status
                             this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
@@ -207,7 +270,7 @@ public class ScheduledTask {
                         this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
                                 null,
                                 SchedulingState.IGNORED);
-                        scheduler.removeTask(taskId);
+                        checkForTaskRemoval();
                     }
                     break;
                     case ABORT_OTHER_AND_START: {
@@ -224,6 +287,7 @@ public class ScheduledTask {
                     stopLatestExecutionTimer();
                     try {
                         this.activityId = this.scheduler.startActivity(this.request.getRequest());
+                        scheduler.registerActivity(this.activityId, this);
                         this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
                                 this.activityId,
                                 SchedulingState.RUNNING);
@@ -233,15 +297,21 @@ public class ScheduledTask {
                         this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
                                 null,
                                 SchedulingState.FINISHED_FAIL);
-                        scheduler.removeTask(taskId);
+                        checkForTaskRemoval();
                     }
                 } else {
-                    // Release the resources and report the task as DISABLED. This task is dead.
-                    this.currentData = buildUpdatedSchedulingActivityData(newStartTime, null, SchedulingState.DISABLED);
-                    scheduler.removeTask(taskId);
+                    // Release the resources and report the task as DISABLED. This task is dead if not an event-based task.
+                    this.currentData = buildUpdatedSchedulingActivityData(newStartTime, null,
+                            SchedulingState.DISABLED);
+                    checkForTaskRemoval();
                 }
             }
         });
+    }
+
+    private void checkForTaskRemoval() {
+        // An event-based task cannot be removed
+        scheduler.removeTask(taskId);
     }
 
     private void stopLatestExecutionTimer() {
@@ -273,12 +343,40 @@ public class ScheduledTask {
      * To be called from the dispatcher thread.
      */
     public void abortTask() {
+        // Release resources
         if(resourcesAcquired) {
             scheduler.releaseResources(request.getResources());
+            resourcesAcquired = false;
         }
-        // TODO: if running, request model to abort, release resources, mark as ABORTED
-        // TODO: if scheduled or waiting, disable trigger, mark as REMOVED
-        // TODO: if not any of the two above, the activity is already over, so do not do anything
+        // Update the state
+        if(currentData.getState() == SchedulingState.RUNNING) {
+            // if running, request model to abort, mark as ABORTED
+            scheduler.abortActivity(activityId);
+            this.currentData = buildUpdatedSchedulingActivityData(currentData.getStartTime(),
+                    this.activityId,
+                    SchedulingState.ABORTED);
+        } else if(currentData.getState() == SchedulingState.WAITING || currentData.getState() == SchedulingState.SCHEDULED) {
+            // if scheduled or waiting, disable trigger, mark as REMOVED
+            stopLatestExecutionTimer();
+            if(timingHandler != null) {
+                timingHandler.cancel();
+                timingHandler = null;
+            }
+            this.currentData = buildUpdatedSchedulingActivityData(currentData.getStartTime(),
+                    this.activityId,
+                    SchedulingState.ABORTED);
+        } else {
+            // if not any of the two above, the activity is already over, so do not do anything
+        }
+        // Remove the activity occurrence ID from the set of interesting ones
+        if(activityId != null) {
+            scheduler.deregisterActivity(activityId);
+            activityId = null;
+        }
+        // Remove the event from the list of interesting ones
+        if(request.getTrigger() instanceof EventBasedSchedulingTrigger) {
+            scheduler.updateEventFilter(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent(), true);
+        }
     }
 
 
@@ -288,4 +386,5 @@ public class ScheduledTask {
                 "taskId=" + taskId.asLong() +
                 '}';
     }
+
 }

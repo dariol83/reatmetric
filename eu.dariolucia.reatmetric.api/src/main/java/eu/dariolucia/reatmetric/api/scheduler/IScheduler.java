@@ -70,7 +70,14 @@ public interface IScheduler extends IScheduledActivityDataProvisionService {
      * and adds the new scheduling requests. This is effectively the operation needed to replace schedule increments belonging to
      * a given source.
      *
-     * If a merge is instead requested, method {@link IScheduler#schedule(List, CreationConflictStrategy)} should be used.
+     * If there are activities already under execution in the provided time period from the requesting source, the load operation will
+     * fail with an exception and the schedule will not be modified.
+     *
+     * If there is a conflict (resource-wise) between the new scheduling requests and the scheduled activities, then this is handled
+     * according to the specified conflictStrategy.
+     *
+     * If a merge with existing activities from the same source is instead requested, the method {@link IScheduler#schedule(List, CreationConflictStrategy)}
+     * should be used instead.
      *
      * @param startTime the start of the schedule increment
      * @param endTime the end of the schedule increments
@@ -78,8 +85,9 @@ public interface IScheduler extends IScheduledActivityDataProvisionService {
      * @param source the source requesting the loading
      * @param conflictStrategy the conflict strategy to use with respect to resources
      * @return the list of scheduled operations
+     * @throws SchedulingException in case of already running activities in the defined time interval for the requesting source
      */
-    List<ScheduledActivityData> load(Instant startTime, Instant endTime, List<SchedulingRequest> requests, String source, CreationConflictStrategy conflictStrategy);
+    List<ScheduledActivityData> load(Instant startTime, Instant endTime, List<SchedulingRequest> requests, String source, CreationConflictStrategy conflictStrategy) throws SchedulingException;
 
     /**
      * Dispose the scheduler. Pending tasks will not be modified, to allow resume (if the archiving is enabled).
