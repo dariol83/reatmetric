@@ -137,7 +137,6 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
         return toReturn;
     }
 
-    // TODO: different strategy to decide (extension point? ... for a proof of concept it is OK)
     private boolean toBeAcknowledged(OperationalMessage om) {
         return om.getSeverity() == Severity.ALARM || om.getSeverity() == Severity.WARN || om.getSeverity() == Severity.ERROR;
     }

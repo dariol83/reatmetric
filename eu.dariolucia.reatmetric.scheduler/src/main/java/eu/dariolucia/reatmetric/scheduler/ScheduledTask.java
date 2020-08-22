@@ -378,7 +378,7 @@ public class ScheduledTask {
         // Update the state
         if(currentData.getState() == SchedulingState.RUNNING) {
             // if running, request model to abort, mark as ABORTED
-            scheduler.abortActivity(activityId);
+            scheduler.abortActivity(request.getRequest().getId(), activityId);
             this.currentData = buildUpdatedSchedulingActivityData(currentData.getStartTime(),
                     this.activityId,
                     SchedulingState.ABORTED);

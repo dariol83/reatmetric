@@ -704,7 +704,11 @@ public class Scheduler implements IScheduler {
     /**
      * To be called from the dispatcher thread.
      */
-    void abortActivity(IUniqueId activityId) {
-        // TODO: introduce abort operation in all the TC chain
+    void abortActivity(int activityId, IUniqueId activityOccurrenceId) {
+        try {
+            this.executionService.abortActivity(activityId, activityOccurrenceId);
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot abort activity occurrence " + activityOccurrenceId + ": " + e.getMessage(), e);
+        }
     }
 }

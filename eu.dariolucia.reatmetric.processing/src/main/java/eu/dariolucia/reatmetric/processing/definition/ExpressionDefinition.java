@@ -100,48 +100,6 @@ public class ExpressionDefinition {
                 return returnValue.as(Object.class);
             }
         }
-
-        /*
-        // FIXME: (expression) decomment after investigation on memory footprint
-        // One engine per expression, to avoid concurrent access: might not be wise from a memory POV...
-        if(engine == null) {
-            // engine = new ScriptEngineManager().getEngineByName("graal.js");
-            engine = new ScriptEngineManager().getEngineByName("nashorn");
-            bindings = engine.getBindings(ScriptContext.ENGINE_SCOPE);
-            bindings.put("polyglot.js.allowAllAccess", true);
-            bindings.put("polyglot.js.allowHostAccess", true);
-        }
-
-        // First time: try to compile the automation
-        if(canBeCompiled && compiledScript == null) {
-            if (engine instanceof Compilable) {
-                Compilable cc = (Compilable) engine;
-                try {
-                    compiledScript = cc.compile(expression);
-                } catch (ScriptException e) {
-                    LOG.log(Level.SEVERE, "Expression " + expression + " cannot be compiled: " + e.getMessage(), e);
-                    canBeCompiled = false;
-                }
-            } else {
-                canBeCompiled = false;
-            }
-        }
-
-        // Update the bindings
-        for(SymbolDefinition sd : symbols) {
-            bindings.put(sd.getName(), toBindingProperty(sd.getBinding(), resolver.resolve(sd.getReference())));
-        }
-        if(additionalBindings != null) {
-            bindings.putAll(additionalBindings);
-        }
-
-        // Evaluate the automation
-        if (compiledScript != null) {
-            return compiledScript.eval(bindings);
-        } else {
-            return engine.eval(expression, bindings);
-        }
-        */
     }
 
     private Object toBindingProperty(PropertyBinding binding, IEntityBinding resolve) throws ScriptException {
