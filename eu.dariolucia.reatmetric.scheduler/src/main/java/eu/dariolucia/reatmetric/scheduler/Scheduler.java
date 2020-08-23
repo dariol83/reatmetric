@@ -244,6 +244,7 @@ public class Scheduler implements IScheduler {
             enabled = isEnabled;
             notifier.submit(() -> schedulerSubscribers.forEach(o -> o.schedulerEnablementChanged(enabled)));
         }
+        LOG.log(Level.INFO, "Scheduler " + (enabled ? "enabled" : "disabled"));
     }
 
     @Override

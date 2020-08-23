@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController;
+import eu.dariolucia.reatmetric.ui.controller.ActivitySchedulingDialogController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.layout.VBox;
@@ -44,5 +45,10 @@ public class ActivityInvocationDialogUtil {
         Pair<Node, ActivityInvocationDialogController> asBuilt = createActivityInvocationDialog();
         asBuilt.getSecond().initialiseActivityDialog(descriptor, request, routeList);
         return asBuilt;
+    }
+
+    public static Pair<Node, ActivitySchedulingDialogController> createActivitySchedulingDialog() {
+        // TODO
+        return null;
     }
 }

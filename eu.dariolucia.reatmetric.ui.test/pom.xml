@@ -41,6 +41,11 @@
             <artifactId>eu.dariolucia.reatmetric.core</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.scheduler</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
 	    <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.ui</artifactId>

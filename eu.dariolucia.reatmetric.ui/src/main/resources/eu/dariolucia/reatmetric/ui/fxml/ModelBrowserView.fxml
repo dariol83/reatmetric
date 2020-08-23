@@ -62,6 +62,15 @@
                                     </ImageView>
                                 </graphic>
                             </MenuItem>
+                            <MenuItem fx:id="scheduleActivityMenuItem" mnemonicParsing="false" onAction="#scheduleActivityAction" text="Schedule...">
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/chronometer.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
                             <SeparatorMenuItem fx:id="executeActivitySeparator" />
                             <MenuItem fx:id="collapseAllMenuItem" mnemonicParsing="false" onAction="#collapseItemAction" text="Collapse all">
                                 <graphic>

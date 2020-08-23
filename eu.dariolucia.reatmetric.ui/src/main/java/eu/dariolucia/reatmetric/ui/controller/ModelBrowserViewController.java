@@ -120,6 +120,8 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     @FXML
     private MenuItem executeActivityMenuItem;
     @FXML
+    private MenuItem scheduleActivityMenuItem;
+    @FXML
     private MenuItem setParameterMenuItem;
     @FXML
     private SeparatorMenuItem setParameterSeparator;
@@ -452,11 +454,62 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         boolean showActivity = selected.getValue().getType() == SystemEntityType.ACTIVITY;
         executeActivitySeparator.setVisible(showActivity);
         executeActivityMenuItem.setVisible(showActivity);
+        scheduleActivityMenuItem.setVisible(showActivity);
 
         // Set parameter: show also if not settable
         boolean showSetParameter = selected.getValue().getType() == SystemEntityType.PARAMETER;
         setParameterMenuItem.setVisible(showSetParameter);
         setParameterSeparator.setVisible(showSetParameter);
+    }
+
+    @FXML
+    private void scheduleActivityAction(ActionEvent actionEvent) {
+        TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
+        if(selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.ACTIVITY) {
+            return;
+        }
+        try {
+            // Get the descriptor
+            AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getValue().getExternalId());
+            if (descriptor instanceof ActivityDescriptor) {
+                // Get the route list
+                Supplier<List<ActivityRouteState>> routeList = () -> {
+                    try {
+                        return ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ActivityDescriptor) descriptor).getActivityType());
+                    } catch (ReatmetricException e) {
+                        LOG.log(Level.WARNING, "Cannot retrieve the list of routes for activity type " + ((ActivityDescriptor) descriptor).getActivityType() + ": " + e.getMessage(), e);
+                        return Collections.emptyList();
+                    }
+                };
+                Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityInvocationDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, activityRequestMap.get(descriptor.getPath().asString()), routeList);
+                Pair<Node, ActivitySchedulingDialogController> scheduleDialogPair = ActivityInvocationDialogUtil.createActivitySchedulingDialog(); // To select the resources, scheduling source, triggering condition
+                // Create the popup
+                Dialog<ButtonType> d = new Dialog<>();
+                d.setTitle("Schedule activity " + descriptor.getPath().getLastPathElement());
+                d.initModality(Modality.APPLICATION_MODAL);
+                d.initOwner(modelTree.getScene().getWindow());
+                d.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
+
+                Tab scheduleTab = new Tab("Schedule Information");
+                scheduleTab.setContent(scheduleDialogPair.getFirst());
+                Tab activityTab = new Tab("Activity");
+                activityTab.setContent(activityDialogPair.getFirst());
+                TabPane innerTabPane = new TabPane(scheduleTab, activityTab);
+                d.getDialogPane().setContent(innerTabPane);
+                Button ok = (Button) d.getDialogPane().lookupButton(ButtonType.OK);
+                activityDialogPair.getSecond().bindOkButton(ok);
+                Optional<ButtonType> result = d.showAndWait();
+                if(result.isPresent() && result.get().equals(ButtonType.OK)) {
+                    scheduleActivity(activityDialogPair.getSecond(), scheduleDialogPair.getSecond());
+                }
+            }
+        } catch (IOException | ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
+        }
+    }
+
+    private void scheduleActivity(ActivityInvocationDialogController second, ActivitySchedulingDialogController second1) {
+        // TODO
     }
 
     @FXML

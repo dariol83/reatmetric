@@ -230,6 +230,22 @@
                                          <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/OperationalMessageView.fxml"
                                                      viewName="Operational Messages"/>
                                      </Button>
+                                     <Button text="Scheduler" mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
+                                         <style>
+                                             -fx-alignment: BASELINE_LEFT;
+                                             -fx-font-size: 14pt;
+                                             -fx-font-weight: bold;
+                                         </style>
+                                         <graphic>
+                                             <ImageView pickOnBounds="true" preserveRatio="true">
+                                                 <image>
+                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/chronometer.svg.png" />
+                                                 </image>
+                                             </ImageView>
+                                         </graphic>
+                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/SchedulerView.fxml"
+                                                     viewName="Scheduler"/>
+                                     </Button>
                                  </children>
                               </VBox>
                            </content>
