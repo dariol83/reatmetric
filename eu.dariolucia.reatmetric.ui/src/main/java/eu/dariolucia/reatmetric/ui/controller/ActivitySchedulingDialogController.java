@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.scheduler.AbsoluteTimeSchedulingTrigger;
+import eu.dariolucia.reatmetric.api.scheduler.ConflictStrategy;
 import eu.dariolucia.reatmetric.api.scheduler.EventBasedSchedulingTrigger;
 import eu.dariolucia.reatmetric.api.scheduler.RelativeTimeSchedulingTrigger;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
@@ -25,10 +26,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.RadioButton;
-import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.*;
 
 import java.net.URL;
 import java.time.LocalDate;
@@ -36,7 +34,10 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.ResourceBundle;
+import java.util.Set;
 
 public class ActivitySchedulingDialogController implements Initializable {
 
@@ -65,18 +66,35 @@ public class ActivitySchedulingDialogController implements Initializable {
     @FXML
     public TextField absoluteTimeText;
 
-    private final SimpleBooleanProperty entriesValid = new SimpleBooleanProperty(false);
+    @FXML
+    public TextField expectedDurationText;
+    @FXML
+    public TextField taskExternalIdText;
+    @FXML
+    public CheckBox latestExecutionCheckbox;
+    @FXML
+    public DatePicker latestExecutionDatePicker;
+    @FXML
+    public TextField latestExecutionTimeText;
+    @FXML
+    public ChoiceBox<ConflictStrategy> conflictChoice;
 
-    // TODO: add support for latest invocation time, external id specification, conflict strategy, expected duration
+    private final SimpleBooleanProperty entriesValid = new SimpleBooleanProperty(false);
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        conflictChoice.getItems().addAll(ConflictStrategy.values());
+        conflictChoice.getSelectionModel().select(0); // Select WAIT
+
         relativeTimeText.disableProperty().bind(relativeTimeRadio.selectedProperty().not());
         externalIdText.disableProperty().bind(relativeTimeRadio.selectedProperty().not());
         eventPathText.disableProperty().bind(eventDrivenRadio.selectedProperty().not());
         protectionTimeText.disableProperty().bind(eventDrivenRadio.selectedProperty().not());
         absoluteDatePicker.disableProperty().bind(absoluteTimeRadio.selectedProperty().not());
         absoluteTimeText.disableProperty().bind(absoluteTimeRadio.selectedProperty().not());
+
+        latestExecutionDatePicker.disableProperty().bind(latestExecutionCheckbox.selectedProperty().not());
+        latestExecutionTimeText.disableProperty().bind(latestExecutionCheckbox.selectedProperty().not());
 
         sourceText.textProperty().addListener(o -> validate());
         resourcesText.textProperty().addListener(o -> validate());
@@ -94,7 +112,13 @@ public class ActivitySchedulingDialogController implements Initializable {
         eventPathText.textProperty().addListener(o -> validate());
         protectionTimeText.textProperty().addListener(o -> validate());
         absoluteTimeText.textProperty().addListener(o -> validate());
+        expectedDurationText.textProperty().addListener(o -> validate());
+        taskExternalIdText.textProperty().addListener(o -> validate());
+        latestExecutionCheckbox.selectedProperty().addListener(o -> validate());
+        latestExecutionDatePicker.valueProperty().addListener(o -> validate());
+        latestExecutionTimeText.textProperty().addListener(o -> validate());
 
+        validate();
     }
 
     public void setRequest(SchedulingRequest request) {
@@ -145,6 +169,35 @@ public class ActivitySchedulingDialogController implements Initializable {
         } else {
             setError(resourcesText, false);
         }
+        if (taskExternalIdText.getText().isBlank() || getTaskExternalId() == null) {
+            setError(taskExternalIdText, true);
+            errorFound = true;
+        } else {
+            setError(taskExternalIdText, false);
+        }
+        if (expectedDurationText.getText().isBlank() || getExpectedDuration() == null) {
+            setError(expectedDurationText, true);
+            errorFound = true;
+        } else {
+            setError(expectedDurationText, false);
+        }
+        if(latestExecutionCheckbox.isSelected()) {
+            if(latestExecutionDatePicker.getValue() == null) {
+                setError(latestExecutionDatePicker, true);
+                errorFound = true;
+            } else {
+                setError(latestExecutionDatePicker, false);
+            }
+            if (latestExecutionTimeText.getText().isBlank() || getLatestExecutionTime() == null) {
+                setError(latestExecutionTimeText, true);
+                errorFound = true;
+            } else {
+                setError(latestExecutionTimeText, false);
+            }
+        } else {
+            setError(latestExecutionDatePicker, false);
+            setError(latestExecutionTimeText, false);
+        }
         if(absoluteTimeRadio.isSelected()) {
             if(absoluteDatePicker.getValue() == null) {
                 setError(absoluteDatePicker, true);
@@ -152,7 +205,7 @@ public class ActivitySchedulingDialogController implements Initializable {
             } else {
                 setError(absoluteDatePicker, false);
             }
-            if (absoluteTimeText.getText().isBlank() || getAbsoluteTimeText() == null) {
+            if (absoluteTimeText.getText().isBlank() || getAbsoluteTime() == null) {
                 setError(absoluteTimeText, true);
                 errorFound = true;
             } else {
@@ -163,13 +216,13 @@ public class ActivitySchedulingDialogController implements Initializable {
             setError(absoluteTimeText, false);
         }
         if(relativeTimeRadio.isSelected()) {
-            if (relativeTimeText.getText().isBlank() || getRelativeTimeText() == null) {
+            if (relativeTimeText.getText().isBlank() || getRelativeTime() == null) {
                 setError(relativeTimeText, true);
                 errorFound = true;
             } else {
                 setError(relativeTimeText, false);
             }
-            if (externalIdText.getText().isBlank() || getExternalIdText() == null) {
+            if (externalIdText.getText().isBlank() || getRelativeTriggerExternalIds() == null) {
                 setError(externalIdText, true);
                 errorFound = true;
             } else {
@@ -186,7 +239,7 @@ public class ActivitySchedulingDialogController implements Initializable {
             } else {
                 setError(eventPathText, false);
             }
-            if (protectionTimeText.getText().isBlank() || getProtectionTimeText() == null) {
+            if (protectionTimeText.getText().isBlank() || getProtectionTime() == null) {
                 setError(protectionTimeText, true);
                 errorFound = true;
             } else {
@@ -200,7 +253,7 @@ public class ActivitySchedulingDialogController implements Initializable {
         entriesValid.set(!errorFound);
     }
 
-    public Integer getProtectionTimeText() {
+    public Integer getProtectionTime() {
         try {
             return Integer.parseInt(protectionTimeText.getText());
         } catch (NumberFormatException e) {
@@ -208,15 +261,36 @@ public class ActivitySchedulingDialogController implements Initializable {
         }
     }
 
-    public Long getExternalIdText() {
+    public Long getTaskExternalId() {
         try {
-            return Long.parseLong(externalIdText.getText());
+            return Long.parseLong(taskExternalIdText.getText());
         } catch (NumberFormatException e) {
             return null;
         }
     }
 
-    public Integer getRelativeTimeText() {
+    public Set<Long> getRelativeTriggerExternalIds() {
+        String[] spl = externalIdText.getText().split(",", -1);
+        Long[] toReturn = new Long[spl.length];
+        for(int i = 0; i < spl.length; ++i) {
+            try {
+                toReturn[i] = Long.parseLong(spl[i].trim());
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return new LinkedHashSet<>(Arrays.asList(toReturn));
+    }
+
+    public Integer getExpectedDuration() {
+        try {
+            return Integer.parseInt(expectedDurationText.getText());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public Integer getRelativeTime() {
         try {
             return Integer.parseInt(relativeTimeText.getText());
         } catch (NumberFormatException e) {
@@ -224,7 +298,15 @@ public class ActivitySchedulingDialogController implements Initializable {
         }
     }
 
-    public LocalTime getAbsoluteTimeText() {
+    public LocalTime getLatestExecutionTime() {
+        try {
+            return LocalTime.parse(latestExecutionTimeText.getText());
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    public LocalTime getAbsoluteTime() {
         try {
             return LocalTime.parse(absoluteTimeText.getText());
         } catch (DateTimeParseException e) {

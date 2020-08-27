@@ -26,6 +26,8 @@
   ~ limitations under the License.
   -->
 
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ChoiceBox?>
 <VBox spacing="8.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivitySchedulingDialogController">
    <children>
       <HBox spacing="8.0" VBox.vgrow="NEVER">
@@ -40,6 +42,31 @@
             <TextField fx:id="resourcesText" prefWidth="200.0" promptText="Comma-separated resource names" />
            </children>
        </HBox>
+      <HBox spacing="8.0" VBox.vgrow="NEVER">
+         <children>
+            <Label prefWidth="150.0" text="Expected Duration" />
+            <TextField fx:id="expectedDurationText" prefWidth="200.0" promptText="In seconds" />
+         </children>
+      </HBox>
+      <HBox spacing="8.0" VBox.vgrow="NEVER">
+         <children>
+            <Label prefWidth="150.0" text="External ID" />
+            <TextField fx:id="taskExternalIdText" prefWidth="200.0" promptText="Scheduled task external ID" />
+         </children>
+      </HBox>
+      <HBox spacing="8.0" VBox.vgrow="NEVER">
+         <children>
+            <CheckBox fx:id="latestExecutionCheckbox" prefWidth="150.0" text="Latest Execution Time" />
+            <DatePicker fx:id="latestExecutionDatePicker" prefWidth="200.0" />
+            <TextField fx:id="latestExecutionTimeText" prefWidth="100.0" promptText="HH:MM:SS" />
+         </children>
+      </HBox>
+      <HBox spacing="8.0" VBox.vgrow="NEVER">
+         <children>
+            <Label prefWidth="150.0" text="Conflict Strategy" />
+            <ChoiceBox fx:id="conflictChoice" prefWidth="200.0" />
+         </children>
+      </HBox>
       <Separator prefWidth="200.0" />
       <HBox fillHeight="false" spacing="8.0">
          <children>
@@ -79,12 +106,12 @@
                   </HBox>
                   <HBox>
                      <children>
-                        <TextField fx:id="externalIdText" prefWidth="200.0">
+                        <TextField fx:id="externalIdText" prefWidth="200.0"  promptText="Comma-separated scheduled task external IDs">
                            <HBox.margin>
                               <Insets right="8.0" />
                            </HBox.margin>
                         </TextField>
-                        <Label text="External Task ID" />
+                        <Label text="Scheduled Tasks External IDs" />
                      </children>
                   </HBox>
                </children>
