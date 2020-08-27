@@ -47,8 +47,11 @@ public class ActivityInvocationDialogUtil {
         return asBuilt;
     }
 
-    public static Pair<Node, ActivitySchedulingDialogController> createActivitySchedulingDialog() {
-        // TODO
-        return null;
+    public static Pair<Node, ActivitySchedulingDialogController> createActivitySchedulingDialog() throws IOException {
+        URL datePickerUrl = ActivityInvocationDialogUtil.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/ActivitySchedulingDialog.fxml");
+        FXMLLoader loader = new FXMLLoader(datePickerUrl);
+        VBox root = loader.load();
+        ActivitySchedulingDialogController controller = loader.getController();
+        return Pair.of(root, controller);
     }
 }

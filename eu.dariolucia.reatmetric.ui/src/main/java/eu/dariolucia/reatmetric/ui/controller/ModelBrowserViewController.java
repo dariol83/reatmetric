@@ -482,6 +482,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     }
                 };
                 Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityInvocationDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, activityRequestMap.get(descriptor.getPath().asString()), routeList);
+                activityDialogPair.getSecond().hideRouteControls();
                 Pair<Node, ActivitySchedulingDialogController> scheduleDialogPair = ActivityInvocationDialogUtil.createActivitySchedulingDialog(); // To select the resources, scheduling source, triggering condition
                 // Create the popup
                 Dialog<ButtonType> d = new Dialog<>();

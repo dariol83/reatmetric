@@ -16,275 +16,245 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
-import eu.dariolucia.reatmetric.api.activity.ActivityRouteAvailability;
-import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
-import eu.dariolucia.reatmetric.api.common.Pair;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
-import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.ActivityArgumentTableManager;
-import eu.dariolucia.reatmetric.ui.utils.PropertyBean;
-import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
+import eu.dariolucia.reatmetric.api.scheduler.AbsoluteTimeSchedulingTrigger;
+import eu.dariolucia.reatmetric.api.scheduler.EventBasedSchedulingTrigger;
+import eu.dariolucia.reatmetric.api.scheduler.RelativeTimeSchedulingTrigger;
+import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.event.ActionEvent;
+import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.*;
-import javafx.scene.control.cell.TextFieldTableCell;
-import javafx.scene.input.KeyCode;
-import javafx.scene.layout.VBox;
-import javafx.scene.paint.Paint;
-import javafx.scene.shape.Circle;
-import javafx.util.Callback;
-import org.controlsfx.control.ToggleSwitch;
+import javafx.scene.Node;
+import javafx.scene.control.DatePicker;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleGroup;
 
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class ActivitySchedulingDialogController implements Initializable {
 
-    @FXML
-    protected Accordion accordion;
-    @FXML
-    protected Label activityLabel;
-    @FXML
-    protected Label typeLabel;
-    @FXML
-    protected Label descriptionLabel;
-    @FXML
-    protected ComboBox<ActivityRouteState> routeChoiceBox;
-    @FXML
-    protected ToggleSwitch forceToggleSwitch;
-    @FXML
-    protected Button refreshButton;
-
-    private final SimpleBooleanProperty routeChoiceBoxValid = new SimpleBooleanProperty(false);
 
     @FXML
-    protected VBox argumentVBox;
-
-    private ActivityArgumentTableManager argumentTableManager;
-
+    public TextField sourceText;
     @FXML
-    protected TableView<PropertyBean> propertiesTableView;
+    public TextField resourcesText;
     @FXML
-    protected TableColumn<PropertyBean, String> keyColumn;
+    public RadioButton absoluteTimeRadio;
     @FXML
-    protected TableColumn<PropertyBean, String> valueColumn;
+    public ToggleGroup triggerToggle;
+    @FXML
+    public RadioButton relativeTimeRadio;
+    @FXML
+    public TextField relativeTimeText;
+    @FXML
+    public TextField externalIdText;
+    @FXML
+    public RadioButton eventDrivenRadio;
+    @FXML
+    public TextField eventPathText;
+    @FXML
+    public TextField protectionTimeText;
+    @FXML
+    public DatePicker absoluteDatePicker;
+    @FXML
+    public TextField absoluteTimeText;
 
-    private ActivityDescriptor descriptor;
-    private Supplier<List<ActivityRouteState>> routeSupplier;
+    private final SimpleBooleanProperty entriesValid = new SimpleBooleanProperty(false);
+
+    // TODO: add support for latest invocation time, external id specification, conflict strategy
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        accordion.setExpandedPane(accordion.getPanes().get(0));
-        routeChoiceBox.setCellFactory(new Callback<>() {
-            @Override
-            public ListCell<ActivityRouteState> call(ListView<ActivityRouteState> p) {
-                return new ListCell<>() {
-                    @Override
-                    protected void updateItem(ActivityRouteState item, boolean empty) {
-                        super.updateItem(item, empty);
-                        setText(item == null ? "" : item.getRoute());
-                        if (item == null || empty) {
-                            setGraphic(null);
-                        } else {
-                            Circle c = new Circle();
-                            c.setRadius(8);
-                            switch (item.getAvailability()) {
-                                case AVAILABLE:
-                                    c.setFill(Paint.valueOf("#00FF00"));
-                                break;
-                                case UNAVAILABLE:
-                                    c.setFill(Paint.valueOf("#FF0000"));
-                                break;
-                                case UNKNOWN:
-                                    c.setFill(Paint.valueOf("#a9a9a9"));
-                                break;
-                            }
-                            setGraphic(c);
-                        }
-                    }
-                };
+        relativeTimeText.disableProperty().bind(relativeTimeRadio.selectedProperty().not());
+        externalIdText.disableProperty().bind(relativeTimeRadio.selectedProperty().not());
+        eventPathText.disableProperty().bind(eventDrivenRadio.selectedProperty().not());
+        protectionTimeText.disableProperty().bind(eventDrivenRadio.selectedProperty().not());
+        absoluteDatePicker.disableProperty().bind(absoluteTimeRadio.selectedProperty().not());
+        absoluteTimeText.disableProperty().bind(absoluteTimeRadio.selectedProperty().not());
+
+        sourceText.textProperty().addListener(o -> validate());
+        resourcesText.textProperty().addListener(o -> validate());
+        ChangeListener<Boolean> changeListener = (o, oldVal, newVal) -> {
+            if (newVal) {
+                validate();
             }
-        });
-        routeChoiceBox.getSelectionModel().selectedItemProperty().addListener(o -> {
-            routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
-                    (forceToggleSwitch.isSelected() || routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE));
-        });
-        forceToggleSwitch.selectedProperty().addListener((obj, oldV, newV) -> {
-            routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
-                    (forceToggleSwitch.isSelected() || routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE));
-        });
+        };
+        absoluteTimeRadio.selectedProperty().addListener(changeListener);
+        relativeTimeRadio.selectedProperty().addListener(changeListener);
+        eventDrivenRadio.selectedProperty().addListener(changeListener);
+        absoluteDatePicker.valueProperty().addListener(o -> validate());
+        externalIdText.textProperty().addListener(o -> validate());
+        relativeTimeText.textProperty().addListener(o -> validate());
+        eventPathText.textProperty().addListener(o -> validate());
+        protectionTimeText.textProperty().addListener(o -> validate());
+        absoluteTimeText.textProperty().addListener(o -> validate());
+
     }
 
-    private void initialiseArgumentTable(ActivityRequest currentRequest) {
-        argumentTableManager = new ActivityArgumentTableManager(descriptor, currentRequest);
-        TreeTableView<?> table = argumentTableManager.getTable();
-        table.setPrefHeight(400);
-        argumentVBox.getChildren().add(table);
-    }
-
-    private void initialisePropertyTable() {
-        propertiesTableView.setEditable(true);
-        propertiesTableView.getSelectionModel().cellSelectionEnabledProperty().set(true);
-        keyColumn.setEditable(true);
-        valueColumn.setEditable(true);
-        keyColumn.setCellValueFactory(o -> o.getValue().keyProperty());
-        valueColumn.setCellValueFactory(o -> o.getValue().valueProperty());
-        keyColumn.setCellFactory(TextFieldTableCell.forTableColumn());
-        valueColumn.setCellFactory(TextFieldTableCell.forTableColumn());
-
-        keyColumn.setOnEditCommit(event -> {
-            final String value = event.getNewValue() != null ? event.getNewValue()
-                    : event.getOldValue();
-            event.getTableView().getItems()
-                    .get(event.getTablePosition().getRow())
-                    .keyProperty().set(value);
-        });
-        valueColumn.setOnEditCommit(event -> {
-            final String value = event.getNewValue() != null ? event.getNewValue()
-                    : event.getOldValue();
-            event.getTableView().getItems()
-                    .get(event.getTablePosition().getRow())
-                    .valueProperty().set(value);
-        });
-        propertiesTableView.setOnKeyPressed(event -> {
-            if (event.getCode().isLetterKey() || event.getCode().isDigitKey()) {
-                propertiesTableView.edit(propertiesTableView.getFocusModel().getFocusedCell().getRow(), (TableColumn<PropertyBean, Object>) propertiesTableView.getFocusModel().getFocusedCell().getTableColumn());
-            } else if (event.getCode() == KeyCode.RIGHT
-                    || event.getCode() == KeyCode.TAB) {
-                propertiesTableView.getSelectionModel().selectNext();
-                event.consume();
-            } else if (event.getCode() == KeyCode.LEFT) {
-                propertiesTableView.getSelectionModel().selectPrevious();
-                event.consume();
-            }
-        });
-    }
-
-    public void initialiseActivityDialog(ActivityDescriptor descriptor, ActivityRequest currentRequest, Supplier<List<ActivityRouteState>> routesWithAvailabilitySupplier) {
-        this.descriptor = descriptor;
-        this.routeSupplier = routesWithAvailabilitySupplier;
-
-        activityLabel.setText(descriptor.getPath().asString());
-        typeLabel.setText(descriptor.getActivityType());
-        descriptionLabel.setText(descriptor.getDescription());
-        // Set the routes
-        refreshRoutes(descriptor, currentRequest);
-
-        initialiseArgumentTable(currentRequest);
-
-        initialisePropertyTable();
-
-        // Set the properties
-        for(Pair<String, String> property : descriptor.getProperties()) {
-            if(currentRequest != null && !currentRequest.getProperties().containsKey(property.getFirst())) {
-                // This property was removed
-                continue;
-            }
-            PropertyBean pb = new PropertyBean(property);
-            propertiesTableView.getItems().add(pb);
-            if(currentRequest != null && currentRequest.getProperties().containsKey(property.getFirst())) {
-                // This property was updated (potentially)
-                pb.valueProperty().set(currentRequest.getProperties().get(property.getFirst()));
-            }
+    public void setRequest(SchedulingRequest request) {
+        resourcesText.setText(formatResources(request.getResources()));
+        sourceText.setText(request.getSource());
+        if(request.getTrigger() instanceof AbsoluteTimeSchedulingTrigger) {
+            AbsoluteTimeSchedulingTrigger tr = (AbsoluteTimeSchedulingTrigger) request.getTrigger();
+            absoluteDatePicker.setValue(LocalDate.ofInstant(tr.getReleaseTime(), ZoneId.of("UTC")));
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+                    .withZone(ZoneId.of("UTC"));
+            absoluteTimeText.setText(formatter.format(tr.getReleaseTime()));
+        } else if(request.getTrigger() instanceof RelativeTimeSchedulingTrigger) {
+            RelativeTimeSchedulingTrigger tr = (RelativeTimeSchedulingTrigger) request.getTrigger();
+            // TODO: support multiple predecessors
+            // TODO: add delay time to API
+        } else if(request.getTrigger() instanceof EventBasedSchedulingTrigger) {
+            eventPathText.setText(findEvent(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent()));
+            protectionTimeText.setText(String.valueOf (((EventBasedSchedulingTrigger) request.getTrigger()).getProtectionTime() / 1000));
         }
-        // Add properties that were added before
-        addMissingPropertiesFrom(currentRequest);
     }
 
-    private void refreshRoutes(ActivityDescriptor descriptor, ActivityRequest currentRequest) {
-        ReatmetricUI.threadPool(getClass()).execute(() -> {
-            final List<ActivityRouteState> routesWithAvailability = this.routeSupplier.get();
-            Platform.runLater(() -> {
-                initialiseRouteCombo(descriptor, currentRequest, routesWithAvailability);
-            });
-        });
+    private String findEvent(int eventId) {
+        // TODO: support event lookup int -> string
+        return null;
     }
 
-    private void initialiseRouteCombo(ActivityDescriptor descriptor, ActivityRequest currentRequest, List<ActivityRouteState> routesWithAvailability) {
-        // If you have a route already selected, remember it
-        ActivityRouteState selected = routeChoiceBox.getSelectionModel().getSelectedItem();
-
-        routeChoiceBox.getItems().remove(0, routeChoiceBox.getItems().size());
-        Map<String, Integer> route2position = new HashMap<>();
-        int i = 0;
-        for(ActivityRouteState route : routesWithAvailability) {
-            routeChoiceBox.getItems().add(route);
-            route2position.put(route.getRoute(), i++);
+    private String formatResources(Set<String> resources) {
+        StringBuilder sb = new StringBuilder("");
+        for(String s : resources) {
+            sb.append(s).append(",");
         }
-        // Set the selected route or default
-        if(currentRequest != null) {
-            Integer position = route2position.getOrDefault(currentRequest.getRoute(), 0);
-            if(position != null) {
-                routeChoiceBox.getSelectionModel().select(position);
-            }
-        } else if(descriptor != null && descriptor.getDefaultRoute() != null) {
-            Integer position = route2position.getOrDefault(descriptor.getDefaultRoute(), 0);
-            if (position != null) {
-                routeChoiceBox.getSelectionModel().select(position);
-            }
-        } else if(selected != null) {
-            routeChoiceBox.getSelectionModel().select(selected);
+        if(sb.length() > 0) {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        return sb.toString();
+    }
+
+    private void validate() {
+        boolean errorFound = false;
+        if (sourceText.getText().isBlank()) {
+            setError(sourceText, true);
+            errorFound = true;
         } else {
-            // Check if you can select the first available route
-            for(ActivityRouteState ars : routesWithAvailability) {
-                if(ars.getAvailability() == ActivityRouteAvailability.AVAILABLE) {
-                    Integer position = route2position.getOrDefault(ars.getRoute(), 0);
-                    routeChoiceBox.getSelectionModel().select(position);
-                }
+            setError(sourceText, false);
+        }
+        if (resourcesText.getText().isBlank() || getResources() == null) {
+            setError(resourcesText, true);
+            errorFound = true;
+        } else {
+            setError(resourcesText, false);
+        }
+        if(absoluteTimeRadio.isSelected()) {
+            if(absoluteDatePicker.getValue() == null) {
+                setError(absoluteDatePicker, true);
+                errorFound = true;
+            } else {
+                setError(absoluteDatePicker, false);
+            }
+            if (absoluteTimeText.getText().isBlank() || getAbsoluteTimeText() == null) {
+                setError(absoluteTimeText, true);
+                errorFound = true;
+            } else {
+                setError(absoluteTimeText, false);
+            }
+        } else {
+            setError(absoluteDatePicker, false);
+            setError(absoluteTimeText, false);
+        }
+        if(relativeTimeRadio.isSelected()) {
+            if (relativeTimeText.getText().isBlank() || getRelativeTimeText() == null) {
+                setError(relativeTimeText, true);
+                errorFound = true;
+            } else {
+                setError(relativeTimeText, false);
+            }
+            if (externalIdText.getText().isBlank() || getExternalIdText() == null) {
+                setError(externalIdText, true);
+                errorFound = true;
+            } else {
+                setError(externalIdText, false);
+            }
+        } else {
+            setError(relativeTimeText, false);
+            setError(externalIdText, false);
+        }
+        if(eventDrivenRadio.isSelected()) {
+            if (eventPathText.getText().isBlank()) {
+                setError(eventPathText, true);
+                errorFound = true;
+            } else {
+                setError(eventPathText, false);
+            }
+            if (protectionTimeText.getText().isBlank() || getProtectionTimeText() == null) {
+                setError(protectionTimeText, true);
+                errorFound = true;
+            } else {
+                setError(protectionTimeText, false);
+            }
+        } else {
+            setError(eventPathText, false);
+            setError(protectionTimeText, false);
+        }
+
+        entriesValid.set(!errorFound);
+    }
+
+    public Integer getProtectionTimeText() {
+        try {
+            return Integer.parseInt(protectionTimeText.getText());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public Long getExternalIdText() {
+        try {
+            return Long.parseLong(externalIdText.getText());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public Integer getRelativeTimeText() {
+        try {
+            return Integer.parseInt(relativeTimeText.getText());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public LocalTime getAbsoluteTimeText() {
+        try {
+            return LocalTime.parse(absoluteTimeText.getText());
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    public Set<String> getResources() {
+        String[] spl = resourcesText.getText().split(",", -1);
+        String[] toReturn = new String[spl.length];
+        for(int i = 0; i < spl.length; ++i) {
+            toReturn[i] = spl[i].trim();
+            if(toReturn[i].indexOf(' ') != -1 || toReturn[i].isBlank()) { // Spaces are not allowed, empty string resources are not allowed
+                return null;
             }
         }
+        return new LinkedHashSet<>(Arrays.asList(toReturn));
     }
 
-    public void bindOkButton(Button okButton) {
-        okButton.disableProperty().bind(Bindings.or(routeChoiceBoxValid.not(), argumentTableManager.argumentTableValidProperty().not()));
-    }
-
-    private void addMissingPropertiesFrom(ActivityRequest currentRequest) {
-        if(currentRequest == null) {
-            return;
-        }
-        Set<String> propertyKeySet = propertiesTableView.getItems().stream().map(o -> o.valueProperty().get()).collect(Collectors.toUnmodifiableSet());
-        for(Map.Entry<String, String> prop : currentRequest.getProperties().entrySet()) {
-            if(!propertyKeySet.contains(prop.getKey())) {
-                PropertyBean pb = new PropertyBean(Pair.of(prop.getKey(), prop.getValue()));
-                propertiesTableView.getItems().add(pb);
-            }
+    private void setError(Node node, boolean error) {
+        if(error) {
+            node.setStyle("-fx-background-color: red;");
+        } else {
+            node.setStyle("");
         }
     }
 
-    public String getPath() {
-        return this.descriptor.getPath().asString();
+    public SimpleBooleanProperty entriesValidProperty() {
+        return entriesValid;
     }
-
-    public ActivityRequest buildRequest() {
-        Map<String, String> propertyMap = new LinkedHashMap<>();
-        for(PropertyBean pb : propertiesTableView.getItems()) {
-            propertyMap.put(pb.keyProperty().get(), pb.valueProperty().get());
-        }
-        return new ActivityRequest(descriptor.getExternalId(), descriptor.getPath(), argumentTableManager.buildArgumentList(), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
-    }
-
-    @FXML
-    public void addPropertyClicked(ActionEvent actionEvent) {
-        propertiesTableView.getItems().add(new PropertyBean(Pair.of("property-key","property-value")));
-    }
-
-    @FXML
-    public void removePropertyClicked(ActionEvent actionEvent) {
-        if(propertiesTableView.getSelectionModel().getSelectedItem() != null) {
-            propertiesTableView.getItems().remove(propertiesTableView.getSelectionModel().getSelectedItem());
-        }
-    }
-
-    @FXML
-    public void refreshRouteClicked(ActionEvent actionEvent) {
-        refreshRoutes(null, null);
-    }
-
 }

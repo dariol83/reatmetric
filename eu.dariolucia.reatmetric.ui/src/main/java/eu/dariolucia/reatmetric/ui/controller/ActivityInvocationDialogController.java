@@ -25,6 +25,7 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.ActivityArgumentTableManager;
 import eu.dariolucia.reatmetric.ui.utils.PropertyBean;
 import javafx.application.Platform;
+import javafx.beans.InvalidationListener;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.ActionEvent;
@@ -78,6 +79,8 @@ public class ActivityInvocationDialogController implements Initializable {
     private ActivityDescriptor descriptor;
     private Supplier<List<ActivityRouteState>> routeSupplier;
 
+    private InvalidationListener registeredRouteListener;
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         accordion.setExpandedPane(accordion.getPanes().get(0));
@@ -111,14 +114,22 @@ public class ActivityInvocationDialogController implements Initializable {
                 };
             }
         });
-        routeChoiceBox.getSelectionModel().selectedItemProperty().addListener(o -> {
+        registeredRouteListener = o -> {
             routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
                     (forceToggleSwitch.isSelected() || routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE));
-        });
+        };
+        routeChoiceBox.getSelectionModel().selectedItemProperty().addListener(registeredRouteListener);
         forceToggleSwitch.selectedProperty().addListener((obj, oldV, newV) -> {
             routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
                     (forceToggleSwitch.isSelected() || routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE));
         });
+    }
+
+    public void hideRouteControls() {
+        this.forceToggleSwitch.setVisible(false);
+        this.refreshButton.setVisible(false);
+        this.routeChoiceBox.getSelectionModel().selectedItemProperty().removeListener(registeredRouteListener);
+        this.routeChoiceBoxValid.set(true);
     }
 
     private void initialiseArgumentTable(ActivityRequest currentRequest) {
