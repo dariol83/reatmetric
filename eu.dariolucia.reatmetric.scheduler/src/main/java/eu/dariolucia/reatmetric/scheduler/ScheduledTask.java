@@ -140,9 +140,21 @@ public class ScheduledTask {
                 };
                 timer.schedule(timingHandler, new Date(((AbsoluteTimeSchedulingTrigger) request.getTrigger()).getReleaseTime().toEpochMilli()));
             } else if(request.getTrigger() instanceof RelativeTimeSchedulingTrigger) {
-                // Do nothing unless the task shall actually start: if no ID is in the scheduler map, it can start
+                // Do nothing unless the task shall actually start: if no ID is in the scheduler map, it can start at the given delay, if set
                 if(scheduler.areAllCompleted(((RelativeTimeSchedulingTrigger) request.getTrigger()).getPredecessors())) {
-                    runTask(false);
+                    if(((RelativeTimeSchedulingTrigger) request.getTrigger()).getDelayTime() <= 0) {
+                        runTask(false);
+                    } else {
+                        timingHandler = new TimerTask() {
+                            @Override
+                            public void run() {
+                                if(this == timingHandler) {
+                                    runTask(false);
+                                }
+                            }
+                        };
+                        timer.schedule(timingHandler, ((RelativeTimeSchedulingTrigger) request.getTrigger()).getDelayTime() * 1000);
+                    }
                 }
             } else if(request.getTrigger() instanceof EventBasedSchedulingTrigger) {
                 scheduler.updateEventFilter(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent(),  false);

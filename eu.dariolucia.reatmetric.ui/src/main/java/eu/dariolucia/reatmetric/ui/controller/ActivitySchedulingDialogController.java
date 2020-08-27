@@ -40,7 +40,6 @@ import java.util.*;
 
 public class ActivitySchedulingDialogController implements Initializable {
 
-
     @FXML
     public TextField sourceText;
     @FXML
@@ -68,7 +67,7 @@ public class ActivitySchedulingDialogController implements Initializable {
 
     private final SimpleBooleanProperty entriesValid = new SimpleBooleanProperty(false);
 
-    // TODO: add support for latest invocation time, external id specification, conflict strategy
+    // TODO: add support for latest invocation time, external id specification, conflict strategy, expected duration
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -109,8 +108,7 @@ public class ActivitySchedulingDialogController implements Initializable {
             absoluteTimeText.setText(formatter.format(tr.getReleaseTime()));
         } else if(request.getTrigger() instanceof RelativeTimeSchedulingTrigger) {
             RelativeTimeSchedulingTrigger tr = (RelativeTimeSchedulingTrigger) request.getTrigger();
-            // TODO: support multiple predecessors
-            // TODO: add delay time to API
+            // TODO: support multiple predecessors in UI
         } else if(request.getTrigger() instanceof EventBasedSchedulingTrigger) {
             eventPathText.setText(findEvent(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent()));
             protectionTimeText.setText(String.valueOf (((EventBasedSchedulingTrigger) request.getTrigger()).getProtectionTime() / 1000));

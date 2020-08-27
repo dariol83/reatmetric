@@ -365,6 +365,7 @@ public class Scheduler implements IScheduler {
             return Pair.of(trigger.getReleaseTime(), duration);
         } else if (sr.getTrigger() instanceof RelativeTimeSchedulingTrigger) {
             Instant triggerTime = computePredecessorsLatestEndTime(((RelativeTimeSchedulingTrigger) sr.getTrigger()).getPredecessors());
+            triggerTime = triggerTime.plusSeconds(((RelativeTimeSchedulingTrigger) sr.getTrigger()).getDelayTime());
             Duration duration = sr.getExpectedDuration();
             return Pair.of(triggerTime, duration);
         } else {
@@ -372,15 +373,28 @@ public class Scheduler implements IScheduler {
         }
     }
 
-    private Instant computePredecessorsLatestEndTime(List<IUniqueId> predecessors) {
-        Instant latestEndTime = null;
-        for (IUniqueId id : predecessors) {
-            ScheduledTask task = id2scheduledTask.get(id);
+    private Instant computePredecessorsLatestEndTime(List<Long> predecessors) {
+        Instant latestEndTime = Instant.now();
+        for (Long id : predecessors) {
+            ScheduledTask task = lookUpScheduledTaskByExternalId(id);
+            if(task == null) {
+                // No task, continue
+                continue;
+            }
             if (latestEndTime == null || task.getCurrentData().getEndTime().isAfter(latestEndTime)) {
                 latestEndTime = task.getCurrentData().getEndTime();
             }
         }
         return latestEndTime;
+    }
+
+    private ScheduledTask lookUpScheduledTaskByExternalId(long externalId) {
+        for(ScheduledTask st : id2scheduledTask.values()) {
+            if(st.getRequest().getExternalId() == externalId) {
+                return st;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -604,9 +618,10 @@ public class Scheduler implements IScheduler {
     /**
      * To be called from the dispatcher thread.
      */
-    boolean areAllCompleted(List<IUniqueId> predecessors) {
-        for (IUniqueId id : predecessors) {
-            if (id2scheduledTask.containsKey(id)) {
+    boolean areAllCompleted(List<Long> predecessors) {
+        for (Long id : predecessors) {
+            ScheduledTask st = lookUpScheduledTaskByExternalId(id);
+            if(st != null) {
                 return false;
             }
         }
