@@ -34,10 +34,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.ResourceBundle;
-import java.util.Set;
+import java.util.*;
 
 public class ActivitySchedulingDialogController implements Initializable {
 
@@ -122,7 +119,7 @@ public class ActivitySchedulingDialogController implements Initializable {
     }
 
     public void setRequest(SchedulingRequest request) {
-        resourcesText.setText(formatResources(request.getResources()));
+        resourcesText.setText(formatToString(request.getResources()));
         sourceText.setText(request.getSource());
         if(request.getTrigger() instanceof AbsoluteTimeSchedulingTrigger) {
             AbsoluteTimeSchedulingTrigger tr = (AbsoluteTimeSchedulingTrigger) request.getTrigger();
@@ -130,29 +127,33 @@ public class ActivitySchedulingDialogController implements Initializable {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
                     .withZone(ZoneId.of("UTC"));
             absoluteTimeText.setText(formatter.format(tr.getReleaseTime()));
+            absoluteTimeRadio.setSelected(true);
         } else if(request.getTrigger() instanceof RelativeTimeSchedulingTrigger) {
             RelativeTimeSchedulingTrigger tr = (RelativeTimeSchedulingTrigger) request.getTrigger();
-            // TODO: support multiple predecessors in UI
+            externalIdText.setText(formatToString(tr.getPredecessors()));
+            relativeTimeText.setText(String.valueOf(tr.getDelayTime()));
+            relativeTimeRadio.setSelected(true);
         } else if(request.getTrigger() instanceof EventBasedSchedulingTrigger) {
             eventPathText.setText(findEvent(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent()));
             protectionTimeText.setText(String.valueOf (((EventBasedSchedulingTrigger) request.getTrigger()).getProtectionTime() / 1000));
+            eventDrivenRadio.setSelected(true);
         }
     }
 
-    private String findEvent(int eventId) {
-        // TODO: support event lookup int -> string
-        return null;
-    }
-
-    private String formatResources(Set<String> resources) {
+    private String formatToString(Collection<?> data) {
         StringBuilder sb = new StringBuilder("");
-        for(String s : resources) {
+        for(Object s : data) {
             sb.append(s).append(",");
         }
         if(sb.length() > 0) {
             sb.deleteCharAt(sb.length() - 1);
         }
         return sb.toString();
+    }
+
+    private String findEvent(int eventId) {
+        // TODO: support event lookup int -> string
+        return null;
     }
 
     private void validate() {

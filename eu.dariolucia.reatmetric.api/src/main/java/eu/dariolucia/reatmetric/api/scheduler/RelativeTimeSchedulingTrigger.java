@@ -19,6 +19,9 @@ public class RelativeTimeSchedulingTrigger extends AbstractSchedulingTrigger {
     }
 
     public RelativeTimeSchedulingTrigger(List<Long> predecessors, int delayTime) {
+        if(delayTime < 0) {
+            throw new IllegalArgumentException("Delay time is less than 0");
+        }
         this.predecessors = List.copyOf(predecessors);
         this.delayTime = delayTime;
     }
