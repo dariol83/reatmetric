@@ -29,6 +29,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 
 import java.net.URL;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -121,6 +122,18 @@ public class ActivitySchedulingDialogController implements Initializable {
     public void setRequest(SchedulingRequest request) {
         resourcesText.setText(formatToString(request.getResources()));
         sourceText.setText(request.getSource());
+        taskExternalIdText.setText(String.valueOf(request.getExternalId()));
+        expectedDurationText.setText(String.valueOf(request.getExpectedDuration().toNanos()));
+        conflictChoice.getSelectionModel().select(request.getConflictStrategy().ordinal());
+        if(request.getLatestInvocationTime() != null) {
+            latestExecutionCheckbox.setSelected(true);
+            latestExecutionDatePicker.setValue(LocalDate.ofInstant(request.getLatestInvocationTime(), ZoneId.of("UTC")));
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+                    .withZone(ZoneId.of("UTC"));
+            latestExecutionTimeText.setText(formatter.format(request.getLatestInvocationTime()));
+        } else {
+            latestExecutionCheckbox.setSelected(false);
+        }
         if(request.getTrigger() instanceof AbsoluteTimeSchedulingTrigger) {
             AbsoluteTimeSchedulingTrigger tr = (AbsoluteTimeSchedulingTrigger) request.getTrigger();
             absoluteDatePicker.setValue(LocalDate.ofInstant(tr.getReleaseTime(), ZoneId.of("UTC")));
@@ -283,9 +296,9 @@ public class ActivitySchedulingDialogController implements Initializable {
         return new LinkedHashSet<>(Arrays.asList(toReturn));
     }
 
-    public Integer getExpectedDuration() {
+    public Duration getExpectedDuration() {
         try {
-            return Integer.parseInt(expectedDurationText.getText());
+            return Duration.ofSeconds(Integer.parseInt(expectedDurationText.getText()));
         } catch (NumberFormatException e) {
             return null;
         }
