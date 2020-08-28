@@ -1,6 +1,9 @@
 package eu.dariolucia.reatmetric.api.scheduler;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * This class allows the scheduling of an activity invocation to start after the completion of all
@@ -10,19 +13,19 @@ import java.util.List;
  */
 public class RelativeTimeSchedulingTrigger extends AbstractSchedulingTrigger {
 
-    private final List<Long> predecessors;
+    private final Set<Long> predecessors;
 
     private final int delayTime;
 
-    public RelativeTimeSchedulingTrigger(List<Long> predecessors) {
+    public RelativeTimeSchedulingTrigger(Set<Long> predecessors) {
         this(predecessors, 0);
     }
 
-    public RelativeTimeSchedulingTrigger(List<Long> predecessors, int delayTime) {
+    public RelativeTimeSchedulingTrigger(Set<Long> predecessors, int delayTime) {
         if(delayTime < 0) {
             throw new IllegalArgumentException("Delay time is less than 0");
         }
-        this.predecessors = List.copyOf(predecessors);
+        this.predecessors = Collections.unmodifiableSet(new LinkedHashSet<>(predecessors));
         this.delayTime = delayTime;
     }
 
@@ -30,7 +33,7 @@ public class RelativeTimeSchedulingTrigger extends AbstractSchedulingTrigger {
         return delayTime;
     }
 
-    public List<Long> getPredecessors() {
+    public Set<Long> getPredecessors() {
         return predecessors;
     }
 

@@ -52,6 +52,8 @@ import java.util.logging.Logger;
  * This driver provides the capability to execute automation and automation procedures written in Javascript.
  * <p>
  * The driver provides a simple API to scripts under execution, to easily access archived and processing data.
+ *
+ * TODO: implement support for Groovy and Python scripts ...
  */
 public class AutomationDriver implements IDriver, IActivityHandler {
 

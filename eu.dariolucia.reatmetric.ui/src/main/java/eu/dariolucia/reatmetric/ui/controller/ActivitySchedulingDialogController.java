@@ -16,11 +16,12 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.scheduler.AbsoluteTimeSchedulingTrigger;
-import eu.dariolucia.reatmetric.api.scheduler.ConflictStrategy;
-import eu.dariolucia.reatmetric.api.scheduler.EventBasedSchedulingTrigger;
-import eu.dariolucia.reatmetric.api.scheduler.RelativeTimeSchedulingTrigger;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
+import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
@@ -29,10 +30,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 
 import java.net.URL;
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -154,7 +152,7 @@ public class ActivitySchedulingDialogController implements Initializable {
     }
 
     private String formatToString(Collection<?> data) {
-        StringBuilder sb = new StringBuilder("");
+        StringBuilder sb = new StringBuilder();
         for(Object s : data) {
             sb.append(s).append(",");
         }
@@ -165,8 +163,26 @@ public class ActivitySchedulingDialogController implements Initializable {
     }
 
     private String findEvent(int eventId) {
-        // TODO: support event lookup int -> string
-        return null;
+        try {
+            SystemEntityPath path = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getPathOf(eventId);
+            if(path != null) {
+                return path.asString();
+            } else {
+                return "";
+            }
+        } catch (ReatmetricException e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    private int findEvent(String eventPath) {
+        try {
+            return ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getExternalIdOf(SystemEntityPath.fromString(eventPath));
+        } catch (ReatmetricException e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
 
     private void validate() {
@@ -350,5 +366,26 @@ public class ActivitySchedulingDialogController implements Initializable {
 
     public SimpleBooleanProperty entriesValidProperty() {
         return entriesValid;
+    }
+
+    public SchedulingRequest buildRequest(ActivityRequest request) {
+        String source = sourceText.getText();
+        Set<String> resources = getResources();
+        Instant lastExecTime = LocalDateTime.of(this.latestExecutionDatePicker.getValue(), getLatestExecutionTime()).toInstant(ZoneOffset.UTC);
+        Duration duration = getExpectedDuration();
+        return new SchedulingRequest(request, resources, source, getTaskExternalId(), buildTrigger(), lastExecTime, ConflictStrategy.values()[conflictChoice.getSelectionModel().getSelectedIndex()], duration);
+    }
+
+    private AbstractSchedulingTrigger buildTrigger() {
+        if(absoluteTimeRadio.isSelected()) {
+            Instant execTime = LocalDateTime.of(this.absoluteDatePicker.getValue(), getAbsoluteTime()).toInstant(ZoneOffset.UTC);
+            return new AbsoluteTimeSchedulingTrigger(execTime);
+        } else if(relativeTimeRadio.isSelected()) {
+            return new RelativeTimeSchedulingTrigger(getRelativeTriggerExternalIds(), getRelativeTime());
+        } else if(eventDrivenRadio.isSelected()) {
+            return new EventBasedSchedulingTrigger(findEvent(eventPathText.getText()), getProtectionTime());
+        } else {
+            throw new IllegalStateException("None of the supported triggers can be derived");
+        }
     }
 }

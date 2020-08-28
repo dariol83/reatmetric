@@ -373,7 +373,7 @@ public class Scheduler implements IScheduler {
         }
     }
 
-    private Instant computePredecessorsLatestEndTime(List<Long> predecessors) {
+    private Instant computePredecessorsLatestEndTime(Set<Long> predecessors) {
         Instant latestEndTime = Instant.now();
         for (Long id : predecessors) {
             ScheduledTask task = lookUpScheduledTaskByExternalId(id);
@@ -618,7 +618,7 @@ public class Scheduler implements IScheduler {
     /**
      * To be called from the dispatcher thread.
      */
-    boolean areAllCompleted(List<Long> predecessors) {
+    boolean areAllCompleted(Set<Long> predecessors) {
         for (Long id : predecessors) {
             ScheduledTask st = lookUpScheduledTaskByExternalId(id);
             if(st != null) {

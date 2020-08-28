@@ -81,6 +81,8 @@ public class ActivityInvocationDialogController implements Initializable {
 
     private InvalidationListener registeredRouteListener;
 
+    private final SimpleBooleanProperty entriesValid = new SimpleBooleanProperty(false);
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         accordion.setExpandedPane(accordion.getPanes().get(0));
@@ -123,6 +125,7 @@ public class ActivityInvocationDialogController implements Initializable {
             routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
                     (forceToggleSwitch.isSelected() || routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE));
         });
+        entriesValid.bind(Bindings.and(routeChoiceBoxValid, argumentTableManager.argumentTableValidProperty()));
     }
 
     public void hideRouteControls() {
@@ -253,7 +256,11 @@ public class ActivityInvocationDialogController implements Initializable {
     }
 
     public void bindOkButton(Button okButton) {
-        okButton.disableProperty().bind(Bindings.or(routeChoiceBoxValid.not(), argumentTableManager.argumentTableValidProperty().not()));
+        okButton.disableProperty().bind(entriesValid.not());
+    }
+
+    public SimpleBooleanProperty entriesValidProperty() {
+        return entriesValid;
     }
 
     private void addMissingPropertiesFrom(ActivityRequest currentRequest) {

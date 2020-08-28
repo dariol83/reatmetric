@@ -27,9 +27,12 @@ import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
+import eu.dariolucia.reatmetric.api.scheduler.CreationConflictStrategy;
+import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -493,12 +496,12 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
 
                 Tab scheduleTab = new Tab("Schedule Information");
                 scheduleTab.setContent(scheduleDialogPair.getFirst());
-                Tab activityTab = new Tab("Activity");
+                Tab activityTab = new Tab("Activity Execution");
                 activityTab.setContent(activityDialogPair.getFirst());
-                TabPane innerTabPane = new TabPane(scheduleTab, activityTab);
+                TabPane innerTabPane = new TabPane(activityTab, scheduleTab);
                 d.getDialogPane().setContent(innerTabPane);
                 Button ok = (Button) d.getDialogPane().lookupButton(ButtonType.OK);
-                activityDialogPair.getSecond().bindOkButton(ok);
+                ok.disableProperty().bind(Bindings.or(activityDialogPair.getSecond().entriesValidProperty().not(), scheduleDialogPair.getSecond().entriesValidProperty().not()));
                 Optional<ButtonType> result = d.showAndWait();
                 if(result.isPresent() && result.get().equals(ButtonType.OK)) {
                     scheduleActivity(activityDialogPair.getSecond(), scheduleDialogPair.getSecond());
@@ -509,8 +512,21 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
     }
 
-    private void scheduleActivity(ActivityInvocationDialogController second, ActivitySchedulingDialogController second1) {
-        // TODO
+    private void scheduleActivity(ActivityInvocationDialogController actExec, ActivitySchedulingDialogController actSched) {
+        ActivityRequest request = actExec.buildRequest();
+        SchedulingRequest schedulingRequest = actSched.buildRequest(request);
+        boolean confirm = DialogUtils.confirm("Request scheduling of activity", actExec.getPath(), "Do you want to dispatch the scheduling request to the scheduler?");
+        if(confirm) {
+            // Store activity request in activity invocation cache, to be used to initialise the same activity invocation in the future
+            activityRequestMap.put(actExec.getPath(), request);
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                try {
+                    ReatmetricUI.selectedSystem().getSystem().getScheduler().schedule(schedulingRequest, CreationConflictStrategy.ADD_ANYWAY);
+                } catch (ReatmetricException e) {
+                    LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
+                }
+            });
+        }
     }
 
     @FXML
