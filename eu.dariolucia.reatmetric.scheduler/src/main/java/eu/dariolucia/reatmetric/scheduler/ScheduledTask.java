@@ -429,4 +429,8 @@ public class ScheduledTask {
                 '}';
     }
 
+    public boolean isRelatedTo(long externalId) {
+        return request.getTrigger() instanceof RelativeTimeSchedulingTrigger &&
+                ((RelativeTimeSchedulingTrigger) request.getTrigger()).getPredecessors().contains(externalId);
+    }
 }

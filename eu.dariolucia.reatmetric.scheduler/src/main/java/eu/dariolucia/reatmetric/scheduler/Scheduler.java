@@ -533,7 +533,23 @@ public class Scheduler implements IScheduler {
             // update or remove in the archive
             ScheduledActivityData sad = st.getCurrentData();
             storeAndDistribute(sad);
+            // Update relative trigger of relative-time scheduled tasks
+            updateRelativeTimeTriggers(st.getRequest().getExternalId());
         }
+    }
+
+    private void updateRelativeTimeTriggers(long externalId) {
+        dispatcher.submit(() -> {
+            for(ScheduledTask st :id2scheduledTask.values()) {
+                if(st.getCurrentData().getState() == SchedulingState.SCHEDULED && st.isRelatedTo(externalId)) {
+                    try {
+                        st.updateTrigger();
+                    } catch (SchedulingException e) {
+                        LOG.log(Level.SEVERE, "Re-evaluation of trigger for scheduled activity " + st.getId() + " failed: " + e.getMessage(), e);
+                    }
+                }
+            }
+        });
     }
 
     @Override
