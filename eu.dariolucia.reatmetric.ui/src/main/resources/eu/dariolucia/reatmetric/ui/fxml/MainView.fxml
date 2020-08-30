@@ -274,6 +274,15 @@
             </Label>
             <Pane prefHeight="1.0" prefWidth="24.0" HBox.hgrow="ALWAYS" />
             <ProgressBar fx:id="globalProgress" prefWidth="100.0" progress="0" visible="false" />
+             <Label fx:id="timeLbl" prefHeight="17.0" prefWidth="120.0" HBox.hgrow="ALWAYS">
+                 <font>
+                     <Font size="11.0" />
+                 </font>
+                 <style>
+                     -fx-alignment: BASELINE_LEFT;
+                     -fx-font-weight: bold;
+                 </style>
+             </Label>
              <Button fx:id="debugButton" mnemonicParsing="false" prefHeight="16.0" prefWidth="16.0" onAction="#debugAction">
                  <graphic>
                      <ImageView pickOnBounds="true" preserveRatio="true">

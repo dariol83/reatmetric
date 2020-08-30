@@ -125,7 +125,6 @@ public class ActivityInvocationDialogController implements Initializable {
             routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
                     (forceToggleSwitch.isSelected() || routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE));
         });
-        entriesValid.bind(Bindings.and(routeChoiceBoxValid, argumentTableManager.argumentTableValidProperty()));
     }
 
     public void hideRouteControls() {
@@ -209,6 +208,8 @@ public class ActivityInvocationDialogController implements Initializable {
         }
         // Add properties that were added before
         addMissingPropertiesFrom(currentRequest);
+
+        entriesValid.bind(Bindings.and(routeChoiceBoxValid, argumentTableManager.argumentTableValidProperty()));
     }
 
     private void refreshRoutes(ActivityDescriptor descriptor, ActivityRequest currentRequest) {

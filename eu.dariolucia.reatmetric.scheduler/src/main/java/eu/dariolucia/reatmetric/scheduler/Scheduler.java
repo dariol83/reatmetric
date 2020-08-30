@@ -164,7 +164,7 @@ public class Scheduler implements IScheduler {
             // RUNNING -> UNKNOWN
             // WAITING -> ABORTED
             try {
-                List<ScheduledActivityData> scheduledItems = archive.retrieve(Instant.now(),
+                List<ScheduledActivityData> scheduledItems = archive.retrieve(Instant.ofEpochSecond(3600*24*365*1000L),
                         new ScheduledActivityDataFilter(null, null, null, null,
                                 Arrays.asList(SchedulingState.SCHEDULED, SchedulingState.WAITING, SchedulingState.RUNNING), null),
                         Instant.now().minusSeconds(36 * 3600));

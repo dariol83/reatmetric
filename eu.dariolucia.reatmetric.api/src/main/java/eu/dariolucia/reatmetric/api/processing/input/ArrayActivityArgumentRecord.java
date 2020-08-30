@@ -16,12 +16,13 @@
 
 package eu.dariolucia.reatmetric.api.processing.input;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * This class represents a record in a {@link ArrayActivityArgument}. This is basically a single instantiation of the defined group.
  */
-public class ArrayActivityArgumentRecord {
+public class ArrayActivityArgumentRecord implements Serializable {
 
     private final List<AbstractActivityArgument> elements;
 

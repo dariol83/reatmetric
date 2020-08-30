@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.persist.services;
 
+import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
@@ -69,7 +70,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         if(item.getLatestInvocationTime() != null) {
             storeStatement.setTimestamp(10, toTimestamp(item.getLatestInvocationTime()));
         } else {
-            storeStatement.setNull(10, Types.BLOB);
+            storeStatement.setNull(10, Types.TIMESTAMP);
         }
         storeStatement.setTimestamp(11, toTimestamp(item.getStartTime()));
         storeStatement.setInt(12, (int) item.getDuration().toSeconds());
@@ -81,7 +82,6 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         } else {
             storeStatement.setBlob(15, toInputstream(item.getExtension()));
         }
-
 
         storeStatement.setLong(16, item.getInternalId().asLong());
         storeStatement.setTimestamp(17, toTimestamp(item.getGenerationTime()));
@@ -99,7 +99,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         if(item.getLatestInvocationTime() != null) {
             storeStatement.setTimestamp(25, toTimestamp(item.getLatestInvocationTime()));
         } else {
-            storeStatement.setNull(25, Types.BLOB);
+            storeStatement.setNull(25, Types.TIMESTAMP);
         }
         storeStatement.setTimestamp(26, toTimestamp(item.getStartTime()));
         storeStatement.setInt(27, (int) item.getDuration().toSeconds());
@@ -170,11 +170,11 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
                 query.append("AND State IN (").append(toEnumFilterListString(filter.getSchedulingStateList())).append(") ");
             }
             if(filter.getResourceList() != null && !filter.getResourceList().isEmpty()) {
-                List<String> reses = new ArrayList<>(filter.getResourceList());
+                List<String> resourcesList = new ArrayList<>(filter.getResourceList());
                 query.append("AND (");
-                for(int i = 0; i < reses.size(); ++i) {
-                    query.append("Resources LIKE '").append("% ").append(reses.get(i)).append(" %'"); // TODO check if there is a contains function
-                    if(i != reses.size() - 1) {
+                for(int i = 0; i < resourcesList.size(); ++i) {
+                    query.append("Resources LIKE '").append("% ").append(resourcesList.get(i)).append(" %'"); // TODO check if there is a contains function
+                    if(i != resourcesList.size() - 1) {
                         query.append(" OR ");
                     }
                 }
@@ -203,9 +203,9 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         String source = rs.getString(7);
         long extId = rs.getLong(8);
         AbstractSchedulingTrigger trigger = (AbstractSchedulingTrigger) toObject(rs.getBlob(9));
-        Timestamp latestInvocTime = rs.getTimestamp(10);
+        Timestamp latestInvokeTime = rs.getTimestamp(10);
         if(rs.wasNull()) {
-            latestInvocTime = null;
+            latestInvokeTime = null;
         }
         Timestamp startTime = rs.getTimestamp(11);
 
@@ -219,7 +219,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
             extension = toObject(extensionBlob);
         }
         return new ScheduledActivityData(new LongUniqueId(uniqueId), toInstant(genTime), request,
-                actOcc == null ? null : new LongUniqueId(actOcc), resources, source, extId, trigger, toInstant(latestInvocTime), toInstant(startTime), Duration.ofSeconds(duration), conflictStrategy, state, extension);
+                actOcc == null ? null : new LongUniqueId(actOcc), resources, source, extId, trigger, toInstant(latestInvokeTime), toInstant(startTime), Duration.ofSeconds(duration), conflictStrategy, state, extension);
     }
 
     private Set<String> parseResources(String string) {
@@ -241,6 +241,83 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         return toReturn;
     }
 
+
+    @Override
+    public synchronized List<ScheduledActivityData> retrieve(Instant time, ScheduledActivityDataFilter filter, Instant maxLookBackTime) throws ArchiveException {
+        checkDisposed();
+        try {
+            return doRetrieve(retrieveConnection, time, filter, maxLookBackTime);
+        } catch (SQLException e) {
+            throw new ArchiveException(e);
+        }
+    }
+
+    private List<ScheduledActivityData> doRetrieve(Connection connection, Instant time, ScheduledActivityDataFilter filter, Instant maxLookBackTime) throws SQLException {
+        if(time.isBefore(MINIMUM_TIME)) {
+            time = MINIMUM_TIME;
+        } else if(time.isAfter(MAXIMUM_TIME)) {
+            time = MAXIMUM_TIME;
+        }
+        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,ConflictStrategy,State,AdditionalData " +
+                "FROM SCHEDULED_ACTIVITY_DATA_TABLE " +
+                "WHERE ");
+        // add time info
+        query.append("GenerationTime >= '").append(toTimestamp(maxLookBackTime).toString()).append("' AND GenerationTime <= '").append(toTimestamp(time).toString()).append("' ");
+        // process filter
+        if(filter != null && !filter.isClear()) {
+            if(filter.getParentPath() != null) {
+                query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+            }
+            if(filter.getActivityPathList() != null && !filter.getActivityPathList().isEmpty()) {
+                query.append("AND Path IN (").append(toFilterListString(filter.getActivityPathList(), SystemEntityPath::asString, "'")).append(") ");
+            }
+            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
+                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
+            }
+            if(filter.getSchedulingStateList() != null && !filter.getSchedulingStateList().isEmpty()) {
+                query.append("AND State IN (").append(toEnumFilterListString(filter.getSchedulingStateList())).append(") ");
+            }
+            if(filter.getResourceList() != null && !filter.getResourceList().isEmpty()) {
+                List<String> resourcesList = new ArrayList<>(filter.getResourceList());
+                query.append("AND (");
+                for(int i = 0; i < resourcesList.size(); ++i) {
+                    query.append("Resources LIKE '").append("% ").append(resourcesList.get(i)).append(" %'"); // TODO check if there is a contains function
+                    if(i != resourcesList.size() - 1) {
+                        query.append(" OR ");
+                    }
+                }
+                query.append(")");
+            }
+        }
+        // order by and limit
+        query.append("ORDER BY GenerationTime ASC, UniqueId ASC");
+
+        String finalQuery = query.toString();
+        List<ScheduledActivityData> result = new LinkedList<>();
+        try (Statement prepStmt = connection.createStatement()) {
+            if(LOG.isLoggable(Level.FINEST)) {
+                LOG.finest(this + " - retrieve statement: " + finalQuery);
+            }
+            try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
+                while (rs.next()) {
+                    try {
+                        ScheduledActivityData object = mapToItem(rs, filter);
+                        result.add(object);
+                    } catch (IOException e) {
+                        throw new SQLException(e);
+                    }
+                }
+            } finally {
+                connection.commit();
+            }
+        }
+        return result;
+    }
+
+
     @Override
     protected String getLastIdQuery() {
         return LAST_ID_QUERY;
@@ -253,7 +330,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
 
     @Override
     protected List<String> getPurgeQuery(Instant referenceTime, RetrievalDirection direction) {
-        return Arrays.asList(
+        return Collections.singletonList(
                 "DELETE FROM SCHEDULED_ACTIVITY_DATA_TABLE WHERE GenerationTime " + (direction == RetrievalDirection.TO_FUTURE ? ">" : "<") + "'" + toTimestamp(referenceTime) + "'"
         );
     }
@@ -286,11 +363,11 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
                 query.append("AND State IN (").append(toEnumFilterListString(filter.getSchedulingStateList())).append(") ");
             }
             if(filter.getResourceList() != null && !filter.getResourceList().isEmpty()) {
-                List<String> reses = new ArrayList<>(filter.getResourceList());
+                List<String> resourcesList = new ArrayList<>(filter.getResourceList());
                 query.append("AND (");
-                for(int i = 0; i < reses.size(); ++i) {
-                    query.append("Resources LIKE '").append("% ").append(reses.get(i)).append(" %'"); // TODO check if there is a contains function
-                    if(i != reses.size() - 1) {
+                for(int i = 0; i < resourcesList.size(); ++i) {
+                    query.append("Resources LIKE '").append("% ").append(resourcesList.get(i)).append(" %'"); // TODO check if there is a contains function
+                    if(i != resourcesList.size() - 1) {
                         query.append(" OR ");
                     }
                 }

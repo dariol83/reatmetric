@@ -16,7 +16,9 @@
 
 package eu.dariolucia.reatmetric.api.processing.input;
 
-public abstract class AbstractActivityArgument {
+import java.io.Serializable;
+
+public abstract class AbstractActivityArgument implements Serializable {
 
     private final String name;
 

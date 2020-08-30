@@ -371,7 +371,7 @@ public class ActivitySchedulingDialogController implements Initializable {
     public SchedulingRequest buildRequest(ActivityRequest request) {
         String source = sourceText.getText();
         Set<String> resources = getResources();
-        Instant lastExecTime = LocalDateTime.of(this.latestExecutionDatePicker.getValue(), getLatestExecutionTime()).toInstant(ZoneOffset.UTC);
+        Instant lastExecTime = this.latestExecutionCheckbox.isSelected() ? LocalDateTime.of(this.latestExecutionDatePicker.getValue(), getLatestExecutionTime()).toInstant(ZoneOffset.UTC) : null;
         Duration duration = getExpectedDuration();
         return new SchedulingRequest(request, resources, source, getTaskExternalId(), buildTrigger(), lastExecTime, ConflictStrategy.values()[conflictChoice.getSelectionModel().getSelectedIndex()], duration);
     }

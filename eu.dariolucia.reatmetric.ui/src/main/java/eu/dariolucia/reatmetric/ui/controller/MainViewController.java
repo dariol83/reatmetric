@@ -22,6 +22,8 @@ import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import eu.dariolucia.reatmetric.ui.plugin.ReatmetricPluginInspector;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
+import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -54,6 +56,9 @@ import org.controlsfx.control.PopOver;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.Instant;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
@@ -83,6 +88,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     private final ReatmetricPluginInspector serviceInspector = new ReatmetricPluginInspector();
 
+    @FXML
+    public Label timeLbl;
     @FXML
     private Accordion sideAccordion;
     @FXML
@@ -388,6 +395,16 @@ public class MainViewController implements Initializable, IReatmetricServiceList
                 })
         );
         alarmFlashTimeline.setCycleCount(Animation.INDEFINITE);
+
+        // digital clock, update 1 per second.
+        final Timeline digitalTime = new Timeline(
+            new KeyFrame(Duration.seconds(0),
+                    actionEvent -> timeLbl.setText(InstantCellFactory.DATE_TIME_FORMATTER_SECONDS.format(Instant.now()))
+            ),
+            new KeyFrame(Duration.seconds(1))
+        );
+        digitalTime.setCycleCount(Animation.INDEFINITE);
+        digitalTime.play();
     }
 
     @Override
