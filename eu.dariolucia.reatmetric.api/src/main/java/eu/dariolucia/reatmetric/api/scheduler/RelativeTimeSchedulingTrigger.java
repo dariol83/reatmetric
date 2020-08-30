@@ -39,9 +39,8 @@ public class RelativeTimeSchedulingTrigger extends AbstractSchedulingTrigger {
 
     @Override
     public String toString() {
-        return "RelativeTimeSchedulingTrigger{" +
-                "predecessors=" + predecessors +
-                ", delayTime=" + delayTime +
-                "} " + super.toString();
+        return "[relative-time " +
+                "predecessors " + predecessors +
+                ", delay-time " + delayTime + " s]";
     }
 }

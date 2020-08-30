@@ -403,7 +403,7 @@ public class ScheduledTask {
             }
             this.currentData = buildUpdatedSchedulingActivityData(currentData.getStartTime(),
                     this.activityId,
-                    SchedulingState.ABORTED);
+                    SchedulingState.REMOVED);
         } else {
             // if not any of the two above, the activity is already over, so do not do anything
             if(LOG.isLoggable(Level.FINE)) {

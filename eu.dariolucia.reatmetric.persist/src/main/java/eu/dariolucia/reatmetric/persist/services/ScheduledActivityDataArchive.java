@@ -143,7 +143,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
 
     @Override
     protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, ScheduledActivityDataFilter filter) {
-        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,ConflictStrategy,State,AdditionalData " +
+        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,Duration,ConflictStrategy,State,AdditionalData " +
                 "FROM SCHEDULED_ACTIVITY_DATA_TABLE " +
                 "WHERE ");
         // add time info
@@ -258,7 +258,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         } else if(time.isAfter(MAXIMUM_TIME)) {
             time = MAXIMUM_TIME;
         }
-        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,ConflictStrategy,State,AdditionalData " +
+        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,Duration,ConflictStrategy,State,AdditionalData " +
                 "FROM SCHEDULED_ACTIVITY_DATA_TABLE " +
                 "WHERE ");
         // add time info

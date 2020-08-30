@@ -29,10 +29,12 @@ import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.utils.TableViewUtil;
 import javafx.application.Platform;
+import javafx.beans.Observable;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
@@ -142,8 +144,10 @@ public class SchedulerViewController extends AbstractDisplayController implement
     // Temporary object queue
     private DataProcessingDelegator<ScheduledActivityData> delegator;
 
-    private Map<IUniqueId, ScheduledActivityOccurrenceDataWrapper> activityMap = new HashMap<>();
+    private final Map<IUniqueId, ScheduledActivityOccurrenceDataWrapper> activityMap = new HashMap<>();
     private FilteredList<ScheduledActivityOccurrenceDataWrapper> filteredList;
+    private ObservableList<ScheduledActivityOccurrenceDataWrapper> originalList;
+    private SortedList<ScheduledActivityOccurrenceDataWrapper> sortedList;
 
     @Override
     protected Window retrieveWindow() {
@@ -255,9 +259,11 @@ public class SchedulerViewController extends AbstractDisplayController implement
             }
         });
 
-        this.filteredList = new FilteredList<>(FXCollections.observableArrayList(), o -> true);
-        SortedList<ScheduledActivityOccurrenceDataWrapper> slist = new SortedList<>(filteredList);
-        this.dataItemTableView.setItems(slist);
+        this.originalList = FXCollections.observableList(FXCollections.observableArrayList(),
+                data -> new Observable[] { data.startTimeProperty(), data.endTimeProperty(), data.durationProperty(), data.stateProperty(), data.nameProperty(), data.resourcesProperty(), data.triggerProperty() });
+        this.filteredList = new FilteredList<>(this.originalList, o -> true);
+        this.sortedList = new SortedList<>(filteredList, Comparator.naturalOrder());
+        this.dataItemTableView.setItems(sortedList);
 
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
     }
@@ -324,7 +330,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     protected void clearTable() {
-        dataItemTableView.getItems().clear();
+        originalList.clear();
         activityMap.clear();
         dataItemTableView.layout();
         dataItemTableView.refresh();
@@ -336,7 +342,12 @@ public class SchedulerViewController extends AbstractDisplayController implement
         if (wrapper == null) {
             wrapper = new ScheduledActivityOccurrenceDataWrapper(aod, aod.getRequest().getPath());
             activityMap.put(aod.getInternalId(), wrapper);
-            dataItemTableView.getItems().add(wrapper);
+            originalList.add(wrapper);
+        } else if(aod.getState() == SchedulingState.REMOVED) {
+            // Remove the wrapper from the table and map and return
+            activityMap.remove(aod.getInternalId());
+            originalList.remove(wrapper);
+            return;
         }
         update(wrapper, aod);
     }
@@ -536,6 +547,12 @@ public class SchedulerViewController extends AbstractDisplayController implement
         ReatmetricUI.selectedSystem().getSystem().getScheduler().unsubscribe((ISchedulerSubscriber) this);
     }
 
+    @Override
+    public void dispose() {
+        stopSubscription();
+        super.dispose();
+    }
+
     protected void updateSelectTime() {
         if (this.selectTimeBtn == null) {
             return;
@@ -659,7 +676,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         if (!confirm) {
             return;
         }
-        this.dataItemTableView.getItems().removeIf(o -> o.stateProperty().get() != SchedulingState.RUNNING && o.stateProperty().get() != SchedulingState.WAITING && o.stateProperty().get() != SchedulingState.SCHEDULED);
+        originalList.removeIf(o -> o.stateProperty().get() != SchedulingState.RUNNING && o.stateProperty().get() != SchedulingState.WAITING && o.stateProperty().get() != SchedulingState.SCHEDULED);
         event.consume();
     }
 
@@ -692,7 +709,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         });
     }
 
-    public static class ScheduledActivityOccurrenceDataWrapper {
+    public static class ScheduledActivityOccurrenceDataWrapper implements Comparable<ScheduledActivityOccurrenceDataWrapper> {
 
         private final SystemEntityPath path;
         private final SimpleObjectProperty<ScheduledActivityData> property = new SimpleObjectProperty<>();
@@ -761,6 +778,16 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
         public SimpleStringProperty sourceProperty() {
             return source;
+        }
+
+        @Override
+        public int compareTo(ScheduledActivityOccurrenceDataWrapper o) {
+            // Compare by time and, in case equal, compare by uniqueId
+            int result = startTime.get().compareTo(o.startTime.get());
+            if(result == 0) {
+                result = (int) (property.get().getInternalId().asLong() - o.get().getInternalId().asLong());
+            }
+            return result;
         }
     }
 

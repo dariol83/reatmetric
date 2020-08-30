@@ -499,7 +499,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
                     if (LOG.isLoggable(Level.FINER)) {
                         LOG.finer(this + " - delete statement: " + query);
                     }
-                    prepStmt.executeQuery(query);
+                    prepStmt.execute(query);
                 } finally {
                     storeConnection.commit();
                 }
@@ -525,7 +525,7 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
                     if (LOG.isLoggable(Level.FINER)) {
                         LOG.finer(this + " - delete statement: " + query);
                     }
-                    prepStmt.executeQuery(query);
+                    prepStmt.execute(query);
                 } finally {
                     storeConnection.commit();
                 }

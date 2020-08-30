@@ -109,4 +109,22 @@ public final class ScheduledActivityData extends AbstractDataItem {
     public Instant getEndTime() {
         return startTime.plus(duration);
     }
+
+    @Override
+    public String toString() {
+        return "ScheduledActivityData{" +
+                "request=" + request +
+                ", activityOccurrence=" + activityOccurrence +
+                ", resources=" + resources +
+                ", source='" + source + '\'' +
+                ", externalId=" + externalId +
+                ", trigger=" + trigger +
+                ", latestInvocationTime=" + latestInvocationTime +
+                ", startTime=" + startTime +
+                ", duration=" + duration +
+                ", conflictStrategy=" + conflictStrategy +
+                ", state=" + state +
+                ", endTime=" + getEndTime() +
+                "} " + super.toString();
+    }
 }

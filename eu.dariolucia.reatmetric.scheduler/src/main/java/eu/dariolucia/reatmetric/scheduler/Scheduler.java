@@ -56,7 +56,7 @@ public class Scheduler implements IScheduler {
 
     private final List<ISchedulerSubscriber> schedulerSubscribers = new CopyOnWriteArrayList<>();
 
-    private final Map<IScheduledActivityDataSubscriber, ScheduledActivityDataFilter> subscriberIndex = new ConcurrentHashMap<>();
+    private final Map<IScheduledActivityDataSubscriber, ScheduledActivityDataFilter> subscriberIndex = new LinkedHashMap<>();
 
     private final AtomicLong sequencer = new AtomicLong(0);
 
@@ -129,6 +129,7 @@ public class Scheduler implements IScheduler {
 
     @Override
     public void dispose() {
+        LOG.info("Disposing scheduler");
         dispatcher.submit(this::cleanUp);
         dispatcher.shutdown();
         try {
@@ -136,12 +137,15 @@ public class Scheduler implements IScheduler {
         } catch (InterruptedException e) {
             // Nothing to do
         }
+        if (LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Scheduler disposed");
+        }
     }
 
     private void cleanUp() {
         // Unsubscribe to processing model
         this.activityService.unsubscribe(activitySubscriber);
-        if(currentEventFilter != null) {
+        if (currentEventFilter != null) {
             eventService.unsubscribe(eventSubscriber);
             currentEventFilter = null;
         }
@@ -158,25 +162,25 @@ public class Scheduler implements IScheduler {
         // Start disabled (depending on system property? - to be defined)
         disable();
         // Initialise from archive
-        if(archive != null) {
+        if (archive != null) {
             // Retrieve all scheduled activities with state RUNNING, WAITING, SCHEDULED
             // Transition the RUNNING and WAITING activities in:
             // RUNNING -> UNKNOWN
             // WAITING -> ABORTED
             try {
-                List<ScheduledActivityData> scheduledItems = archive.retrieve(Instant.ofEpochSecond(3600*24*365*1000L),
+                List<ScheduledActivityData> scheduledItems = archive.retrieve(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L),
                         new ScheduledActivityDataFilter(null, null, null, null,
                                 Arrays.asList(SchedulingState.SCHEDULED, SchedulingState.WAITING, SchedulingState.RUNNING), null),
                         Instant.now().minusSeconds(36 * 3600));
 
-                for(ScheduledActivityData item : scheduledItems) {
-                    if(item.getState() == SchedulingState.SCHEDULED) {
+                for (ScheduledActivityData item : scheduledItems) {
+                    if (item.getState() == SchedulingState.SCHEDULED) {
                         // Create ScheduledTask
                         ScheduledTask st = new ScheduledTask(this, timer, dispatcher, item);
                         id2scheduledTask.put(st.getId(), st);
                         // Prepare execution event depending on trigger (absolute, relative, event)
                         st.updateTrigger();
-                    } else if(item.getState() == SchedulingState.RUNNING) {
+                    } else if (item.getState() == SchedulingState.RUNNING) {
                         storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
                                 item.getGenerationTime(),
                                 item.getRequest(),
@@ -191,7 +195,7 @@ public class Scheduler implements IScheduler {
                                 item.getConflictStrategy(),
                                 SchedulingState.UNKNOWN,
                                 item.getExtension()));
-                    } else if(item.getState() == SchedulingState.WAITING) {
+                    } else if (item.getState() == SchedulingState.WAITING) {
                         storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
                                 item.getGenerationTime(),
                                 item.getRequest(),
@@ -218,7 +222,7 @@ public class Scheduler implements IScheduler {
     public void subscribe(ISchedulerSubscriber subscriber) {
         dispatcher.submit(() -> {
             schedulerSubscribers.add(subscriber);
-            subscriber.schedulerEnablementChanged(isEnabled());
+            notifier.submit(() -> subscriber.schedulerEnablementChanged(isEnabled()));
         });
     }
 
@@ -240,9 +244,17 @@ public class Scheduler implements IScheduler {
     }
 
     private void setEnable(boolean isEnabled) {
-        if(enabled != isEnabled) {
+        if (enabled != isEnabled) {
             enabled = isEnabled;
-            notifier.submit(() -> schedulerSubscribers.forEach(o -> o.schedulerEnablementChanged(enabled)));
+            for (ISchedulerSubscriber ss : schedulerSubscribers) {
+                notifier.submit(() -> {
+                    try {
+                        ss.schedulerEnablementChanged(enabled);
+                    } catch (Exception e) {
+                        unsubscribe(ss);
+                    }
+                });
+            }
         }
         LOG.log(Level.INFO, "Scheduler " + (enabled ? "enabled" : "disabled"));
     }
@@ -254,9 +266,11 @@ public class Scheduler implements IScheduler {
 
     @Override
     public ScheduledActivityData schedule(SchedulingRequest request, CreationConflictStrategy conflictStrategy) throws SchedulingException {
+        LOG.info("Request to schedule activity " + request.getRequest().getPath() + " (" + request.getExternalId() + ") with trigger " + request.getTrigger() + " received");
         try {
             return dispatcher.submit(() -> scheduleTask(request, conflictStrategy, null)).get();
         } catch (InterruptedException | ExecutionException e) {
+            LOG.log(Level.SEVERE, "Scheduling request for activity " + request.getRequest().getPath() + " (" + request.getExternalId() + ") encountered a problem: " + e.getMessage(), e);
             throw new SchedulingException(e);
         }
     }
@@ -268,9 +282,9 @@ public class Scheduler implements IScheduler {
     /**
      * To be called from the dispatcher thread.
      *
-     * @param request the request to schedule
+     * @param request          the request to schedule
      * @param conflictStrategy the strategy resolution at creation time
-     * @param originalId id to use, can be null
+     * @param originalId       id to use, can be null
      * @return the state of the created scheduled task or null if no task is created due to {@link CreationConflictStrategy#SKIP_NEW}
      * @throws SchedulingException if the operation is aborted due to {@link CreationConflictStrategy#ABORT}
      */
@@ -312,6 +326,9 @@ public class Scheduler implements IScheduler {
     }
 
     private void storeAndDistribute(ScheduledActivityData data) {
+        if (LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Distributing and storing " + data);
+        }
         if (this.archive != null) {
             try {
                 if (data.getState() != SchedulingState.REMOVED) {
@@ -327,7 +344,7 @@ public class Scheduler implements IScheduler {
             IScheduledActivityDataSubscriber sub = entry.getKey();
             ScheduledActivityDataFilter filter = entry.getValue();
             notifier.submit(() -> {
-                if (filter.test(data)) {
+                if (filter == null || filter.test(data)) {
                     sub.dataItemsReceived(Collections.singletonList(data));
                 }
             });
@@ -377,7 +394,7 @@ public class Scheduler implements IScheduler {
         Instant latestEndTime = Instant.now();
         for (Long id : predecessors) {
             ScheduledTask task = lookUpScheduledTaskByExternalId(id);
-            if(task == null) {
+            if (task == null) {
                 // No task, continue
                 continue;
             }
@@ -389,8 +406,8 @@ public class Scheduler implements IScheduler {
     }
 
     private ScheduledTask lookUpScheduledTaskByExternalId(long externalId) {
-        for(ScheduledTask st : id2scheduledTask.values()) {
-            if(st.getRequest().getExternalId() == externalId) {
+        for (ScheduledTask st : id2scheduledTask.values()) {
+            if (st.getRequest().getExternalId() == externalId) {
                 return st;
             }
         }
@@ -399,16 +416,17 @@ public class Scheduler implements IScheduler {
 
     @Override
     public List<ScheduledActivityData> schedule(List<SchedulingRequest> requests, CreationConflictStrategy conflictStrategy) throws SchedulingException {
+        LOG.info("Request to schedule " + requests.size() + " activities received");
         try {
             return dispatcher.submit(() -> {
                 List<ScheduledActivityData> toReturn = new LinkedList<>();
                 List<ScheduledTask> conflictingTasks = computeConflicts(requests);
-                if(!conflictingTasks.isEmpty() && conflictStrategy == CreationConflictStrategy.ABORT) {
+                if (!conflictingTasks.isEmpty() && conflictStrategy == CreationConflictStrategy.ABORT) {
                     throw new SchedulingException("Conflict detected with provided scheduling requests: " + conflictingTasks);
                 } else {
-                    for(SchedulingRequest sr : requests) {
+                    for (SchedulingRequest sr : requests) {
                         ScheduledActivityData data = scheduleTask(sr, conflictStrategy, null);
-                        if(data != null) {
+                        if (data != null) {
                             toReturn.add(data);
                         }
                     }
@@ -416,6 +434,7 @@ public class Scheduler implements IScheduler {
                 return toReturn;
             }).get();
         } catch (InterruptedException | ExecutionException e) {
+            LOG.log(Level.SEVERE, "Scheduling request for activities encountered a problem: " + e.getMessage(), e);
             throw new SchedulingException(e);
         }
     }
@@ -423,35 +442,41 @@ public class Scheduler implements IScheduler {
     @Override
     public List<ScheduledActivityData> getCurrentScheduledActivities() throws SchedulingException {
         try {
-            return dispatcher.submit(() -> id2scheduledTask.values().stream().map(ScheduledTask::getCurrentData).sorted((o1, o2) -> {
-                int compareResult = o1.getStartTime().compareTo(o2.getStartTime());
-                if (compareResult == 0) {
-                    return (int) (o1.getInternalId().asLong() - o2.getInternalId().asLong());
-                } else {
-                    return compareResult;
-                }
-            }).collect(Collectors.toList())).get();
+            return dispatcher.submit(this::internalGetCurrentScheduledActivities).get();
         } catch (InterruptedException | ExecutionException e) {
+            LOG.log(Level.SEVERE, "Schedule state retrieval request encountered a problem: " + e.getMessage(), e);
             throw new SchedulingException(e);
         }
     }
 
+    private List<ScheduledActivityData> internalGetCurrentScheduledActivities() {
+        return id2scheduledTask.values().stream().map(ScheduledTask::getCurrentData).sorted((o1, o2) -> {
+            int compareResult = o1.getStartTime().compareTo(o2.getStartTime());
+            if (compareResult == 0) {
+                return (int) (o1.getInternalId().asLong() - o2.getInternalId().asLong());
+            } else {
+                return compareResult;
+            }
+        }).collect(Collectors.toList());
+    }
+
     @Override
     public ScheduledActivityData update(IUniqueId originalId, SchedulingRequest newRequest, CreationConflictStrategy conflictStrategy) throws SchedulingException {
+        LOG.info("Request to update scheduled activity " + originalId + " with new request for activity " + newRequest.getRequest().getPath() + " (" + newRequest.getExternalId() + ") with trigger " + newRequest.getTrigger() + " received");
         try {
             return dispatcher.submit(() -> {
                 ScheduledTask st = id2scheduledTask.get(originalId);
-                if(st == null) {
+                if (st == null) {
                     throw new SchedulingException("Task " + originalId + " not found, cannot update");
                 }
-                if(st.getCurrentData().getState() != SchedulingState.SCHEDULED) {
+                if (st.getCurrentData().getState() != SchedulingState.SCHEDULED) {
                     throw new SchedulingException("Task " + originalId + " not in scheduled state, cannot update");
                 }
                 // Get the conflicting tasks of the new request
                 List<ScheduledTask> conflicts = computeConflicts(Collections.singletonList(newRequest));
                 // Remove self
                 conflicts.remove(st);
-                if(!conflicts.isEmpty() && conflictStrategy == CreationConflictStrategy.ABORT) {
+                if (!conflicts.isEmpty() && conflictStrategy == CreationConflictStrategy.ABORT) {
                     throw new SchedulingException("Conflict detected with provided scheduling requests: " + conflicts);
                 } else {
                     removeTask(originalId);
@@ -459,26 +484,30 @@ public class Scheduler implements IScheduler {
                 }
             }).get();
         } catch (InterruptedException | ExecutionException e) {
+            LOG.log(Level.SEVERE, "Scheduling update request for activity " + originalId + " encountered a problem: " + e.getMessage(), e);
             throw new SchedulingException(e);
         }
     }
 
     @Override
     public void remove(IUniqueId scheduledId) throws SchedulingException {
+        LOG.info("Request to remove scheduled activity " + scheduledId + " received");
         try {
             dispatcher.submit(() -> removeTask(scheduledId)).get();
         } catch (InterruptedException | ExecutionException e) {
+            LOG.log(Level.SEVERE, "Scheduling remove request for activity " + scheduledId + " encountered a problem: " + e.getMessage(), e);
             throw new SchedulingException(e);
         }
     }
 
     @Override
     public void remove(ScheduledActivityDataFilter filter) throws SchedulingException {
+        LOG.info("Request to remove scheduled activities with filter " + filter + " received");
         try {
             dispatcher.submit(() -> {
                 Set<IUniqueId> toRemove = new HashSet<>();
                 for (Map.Entry<IUniqueId, ScheduledTask> entry : id2scheduledTask.entrySet()) {
-                    if (filter.test(entry.getValue().getCurrentData())) {
+                    if (filter == null || filter.test(entry.getValue().getCurrentData())) {
                         toRemove.add(entry.getKey());
                     }
                 }
@@ -496,7 +525,7 @@ public class Scheduler implements IScheduler {
      *
      * @param scheduledId the scheduled task to remove
      */
-    public void removeTask(IUniqueId scheduledId) {
+    void removeTask(IUniqueId scheduledId) {
         // remove from the current internal set
         ScheduledTask st = id2scheduledTask.remove(scheduledId);
         if (st != null) {
@@ -516,7 +545,7 @@ public class Scheduler implements IScheduler {
                 List<ScheduledTask> tasks = retrieveTasksFrom(startTime, endTime);
                 // Now, check if there is one task belonging to source, that is not SCHEDULED. If so, abort with exception.
                 Optional<ScheduledTask> runningTask = tasks.stream().filter(o -> o.getCurrentData().getSource().equals(source)).filter(o -> !o.getCurrentData().getState().equals(SchedulingState.SCHEDULED)).findFirst();
-                if(runningTask.isPresent()) {
+                if (runningTask.isPresent()) {
                     throw new SchedulingException("Task " + runningTask.get().getId() + " already in state " + runningTask.get().getCurrentData().getState() + ", cannot replace the schedule period");
                 }
                 // If you are here, there is no scheduled task from the provided source that started, so they can be all removed. Let's check for conflicts.
@@ -524,20 +553,20 @@ public class Scheduler implements IScheduler {
                 // Remove the tasks of this source, they will go away
                 conflictingTasks.removeIf(o -> o.getCurrentData().getSource().equals(source));
                 // Final check
-                if(!conflictingTasks.isEmpty() && conflictStrategy == CreationConflictStrategy.ABORT) {
+                if (!conflictingTasks.isEmpty() && conflictStrategy == CreationConflictStrategy.ABORT) {
                     throw new SchedulingException("Conflict detected with provided scheduling requests: " + conflictingTasks);
                 }
                 // OK, at this stage the import can be handled.
                 // Remove the tasks from source
-                for(ScheduledTask st : tasks) {
-                    if(st.getCurrentData().getSource().equals(source)) {
+                for (ScheduledTask st : tasks) {
+                    if (st.getCurrentData().getSource().equals(source)) {
                         removeTask(st.getId());
                     }
                 }
                 // Add new tasks
-                for(SchedulingRequest sr : requests) {
+                for (SchedulingRequest sr : requests) {
                     ScheduledActivityData data = scheduleTask(sr, conflictStrategy, null);
-                    if(data != null) {
+                    if (data != null) {
                         toReturn.add(data);
                     }
                 }
@@ -567,6 +596,8 @@ public class Scheduler implements IScheduler {
     public void subscribe(IScheduledActivityDataSubscriber subscriber, ScheduledActivityDataFilter filter) {
         dispatcher.submit(() -> {
             this.subscriberIndex.put(subscriber, filter);
+            List<ScheduledActivityData> data = internalGetCurrentScheduledActivities().stream().filter(o -> filter == null || filter.isClear() || filter.test(o)).collect(Collectors.toList());
+            subscriber.dataItemsReceived(data);
         });
     }
 
@@ -601,12 +632,12 @@ public class Scheduler implements IScheduler {
      * To be called from the dispatcher thread.
      */
     void updateEventFilter(Integer newEvent, boolean remove) {
-        if(remove) {
+        if (remove) {
             subscribedEvents.remove(newEvent);
         } else {
             subscribedEvents.add(newEvent);
         }
-        if(subscribedEvents.isEmpty()) {
+        if (subscribedEvents.isEmpty()) {
             currentEventFilter = null;
             eventService.unsubscribe(eventSubscriber);
         } else {
@@ -621,7 +652,7 @@ public class Scheduler implements IScheduler {
     boolean areAllCompleted(Set<Long> predecessors) {
         for (Long id : predecessors) {
             ScheduledTask st = lookUpScheduledTaskByExternalId(id);
-            if(st != null) {
+            if (st != null) {
                 return false;
             }
         }
@@ -632,7 +663,7 @@ public class Scheduler implements IScheduler {
      * To be called from the dispatcher thread.
      */
     boolean registerResources(Set<String> resources) {
-        if(Collections.disjoint(this.currentlyUsedResources, resources)) {
+        if (Collections.disjoint(this.currentlyUsedResources, resources)) {
             this.currentlyUsedResources.addAll(resources);
             return true;
         } else {
@@ -653,8 +684,8 @@ public class Scheduler implements IScheduler {
     void releaseResources(Set<String> resources) {
         this.currentlyUsedResources.removeAll(resources);
         // Check waiting tasks
-        for(ScheduledTask st : id2scheduledTask.values()) {
-            if(st.getCurrentData().getState() == SchedulingState.WAITING) {
+        for (ScheduledTask st : id2scheduledTask.values()) {
+            if (st.getCurrentData().getState() == SchedulingState.WAITING) {
                 st.evaluateRun();
             }
         }
@@ -684,7 +715,7 @@ public class Scheduler implements IScheduler {
      * To be called from the dispatcher thread.
      */
     void eventUpdate(List<EventData> dataItems) {
-        for(EventData ed : dataItems) {
+        for (EventData ed : dataItems) {
             for (ScheduledTask st : id2scheduledTask.values()) {
                 st.newEventOccurrence(ed);
             }
@@ -695,9 +726,9 @@ public class Scheduler implements IScheduler {
      * To be called from the dispatcher thread.
      */
     void activityUpdate(List<ActivityOccurrenceData> dataItems) {
-        for(ActivityOccurrenceData aod : dataItems) {
+        for (ActivityOccurrenceData aod : dataItems) {
             ScheduledTask st = activityId2scheduledTask.get(aod.getInternalId());
-            if(st != null) {
+            if (st != null) {
                 st.activityStatusUpdate(aod);
             }
         }
