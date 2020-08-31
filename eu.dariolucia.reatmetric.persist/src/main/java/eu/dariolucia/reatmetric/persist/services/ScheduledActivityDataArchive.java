@@ -173,7 +173,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
                 List<String> resourcesList = new ArrayList<>(filter.getResourceList());
                 query.append("AND (");
                 for(int i = 0; i < resourcesList.size(); ++i) {
-                    query.append("Resources LIKE '").append("% ").append(resourcesList.get(i)).append(" %'"); // TODO check if there is a contains function
+                    query.append("Resources LIKE '").append("% ").append(resourcesList.get(i)).append(" %'");
                     if(i != resourcesList.size() - 1) {
                         query.append(" OR ");
                     }
@@ -284,7 +284,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
                 List<String> resourcesList = new ArrayList<>(filter.getResourceList());
                 query.append("AND (");
                 for(int i = 0; i < resourcesList.size(); ++i) {
-                    query.append("Resources LIKE '").append("% ").append(resourcesList.get(i)).append(" %'"); // TODO check if there is a contains function
+                    query.append("Resources LIKE '").append("% ").append(resourcesList.get(i)).append(" %'");
                     if(i != resourcesList.size() - 1) {
                         query.append(" OR ");
                     }
@@ -344,7 +344,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
     protected String getRemoveQuery(ScheduledActivityDataFilter filter) {
         StringBuilder query = new StringBuilder("DELETE " +
                 "FROM SCHEDULED_ACTIVITY_DATA_TABLE " +
-                "WHERE TRUE "); // TODO check if it works
+                "WHERE TRUE "); // Use to simplify the cascade of conditions
         // process filter
         if(filter != null && !filter.isClear()) {
             if(filter.getParentPath() != null) {
@@ -366,7 +366,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
                 List<String> resourcesList = new ArrayList<>(filter.getResourceList());
                 query.append("AND (");
                 for(int i = 0; i < resourcesList.size(); ++i) {
-                    query.append("Resources LIKE '").append("% ").append(resourcesList.get(i)).append(" %'"); // TODO check if there is a contains function
+                    query.append("Resources LIKE '").append("% ").append(resourcesList.get(i)).append(" %'");
                     if(i != resourcesList.size() - 1) {
                         query.append(" OR ");
                     }

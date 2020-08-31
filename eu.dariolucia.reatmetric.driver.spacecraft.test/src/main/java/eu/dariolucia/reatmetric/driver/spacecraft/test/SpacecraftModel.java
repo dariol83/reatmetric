@@ -186,7 +186,6 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 lastSampleGenerationTime = genTime;
                 double numPacketsPerSecond = (numPackets / (millis/1000.0));
                 double numFramesPerSecond = (numFrames / (millis/1000.0));
-                // FIXME: Decomment once investigation finished
                 System.out.println("Frames per second: " + (int) numFramesPerSecond + ", packets per second: " + numPacketsPerSecond);
             }
         }

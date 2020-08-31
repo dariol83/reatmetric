@@ -100,7 +100,7 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         Thread t = new Thread(r, "TM Packet Processing - Decoder");
         t.setDaemon(true);
         return t;
-    }); // TODO: make it configurable
+    });
     private final ExecutorService notifierService = Executors.newFixedThreadPool(1, (r) -> {
         Thread t = new Thread(r, "TM Packet Processing - Notifier");
         t.setDaemon(true);
