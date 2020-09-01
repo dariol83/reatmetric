@@ -18,18 +18,23 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
+import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.*;
+import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
-import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
-import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
-import eu.dariolucia.reatmetric.ui.utils.TableViewUtil;
+import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
 import javafx.beans.Observable;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -41,12 +46,15 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
 import javafx.scene.paint.Color;
+import javafx.stage.Modality;
 import javafx.stage.Popup;
 import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 
 import java.io.IOException;
 import java.net.URL;
@@ -55,6 +63,9 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * FXML Controller class
@@ -62,6 +73,8 @@ import java.util.function.Predicate;
  * @author dario
  */
 public class SchedulerViewController extends AbstractDisplayController implements IScheduledActivityDataSubscriber, ISchedulerSubscriber {
+
+    private static final Logger LOG = Logger.getLogger(SchedulerViewController.class.getName());
 
     protected static final int MAX_ENTRIES = 1000;
 
@@ -111,6 +124,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
     protected TableView<ScheduledActivityOccurrenceDataWrapper> dataItemTableView;
 
     @FXML
+    private TableColumn<ScheduledActivityOccurrenceDataWrapper, String> extIdCol;
+    @FXML
     private TableColumn<ScheduledActivityOccurrenceDataWrapper, String> nameCol;
     @FXML
     private TableColumn<ScheduledActivityOccurrenceDataWrapper, SchedulingState> stateCol;
@@ -128,6 +143,11 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private TableColumn<ScheduledActivityOccurrenceDataWrapper, Duration> durationCol;
     @FXML
     private TableColumn<ScheduledActivityOccurrenceDataWrapper, String> parentCol;
+
+    @FXML
+    public MenuItem editScheduledMenuItem;
+    @FXML
+    public MenuItem deleteScheduledMenuItem;
 
     // Popup selector for date/time
     protected final Popup dateTimePopup = new Popup();
@@ -203,6 +223,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             e.printStackTrace();
         }
 
+        this.extIdCol.setCellValueFactory(o -> o.getValue().externalIdProperty());
         this.nameCol.setCellValueFactory(o -> o.getValue().nameProperty());
         this.stateCol.setCellValueFactory(o -> o.getValue().stateProperty());
         this.sourceCol.setCellValueFactory(o -> o.getValue().sourceProperty());
@@ -680,6 +701,74 @@ public class SchedulerViewController extends AbstractDisplayController implement
         event.consume();
     }
 
+    @FXML
+    public void onModifyMenuItem(ActionEvent actionEvent) {
+        ScheduledActivityOccurrenceDataWrapper selected = this.dataItemTableView.getSelectionModel().getSelectedItem();
+        if(selected == null) {
+            return;
+        }
+        try {
+            // If the activity is in SCHEDULED
+            if (selected.get().getState() == SchedulingState.SCHEDULED) {
+                // Get the descriptor
+                AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.get().getRequest().getId());
+                // Get the route list
+                Supplier<List<ActivityRouteState>> routeList = () -> {
+                    try {
+                        return ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ActivityDescriptor) descriptor).getActivityType());
+                    } catch (ReatmetricException e) {
+                        LOG.log(Level.WARNING, "Cannot retrieve the list of routes for activity type " + ((ActivityDescriptor) descriptor).getActivityType() + ": " + e.getMessage(), e);
+                        return Collections.emptyList();
+                    }
+                };
+                Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityInvocationDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, selected.get().getRequest(), routeList);
+                activityDialogPair.getSecond().hideRouteControls();
+                Pair<Node, ActivitySchedulingDialogController> scheduleDialogPair = ActivityInvocationDialogUtil.createActivitySchedulingDialog(buildRequestFromData(selected.get())); // To select the resources, scheduling source, triggering condition
+                // Create the popup
+                Dialog<ButtonType> d = new Dialog<>();
+                d.setTitle("Schedule activity " + descriptor.getPath().getLastPathElement());
+                d.initModality(Modality.APPLICATION_MODAL);
+                d.initOwner(dataItemTableView.getScene().getWindow());
+                d.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
+
+                Tab scheduleTab = new Tab("Schedule Information");
+                scheduleTab.setContent(scheduleDialogPair.getFirst());
+                Tab activityTab = new Tab("Activity Execution");
+                activityTab.setContent(activityDialogPair.getFirst());
+                TabPane innerTabPane = new TabPane(activityTab, scheduleTab);
+                d.getDialogPane().setContent(innerTabPane);
+                Button ok = (Button) d.getDialogPane().lookupButton(ButtonType.OK);
+                ok.disableProperty().bind(Bindings.or(activityDialogPair.getSecond().entriesValidProperty().not(), scheduleDialogPair.getSecond().entriesValidProperty().not()));
+                Optional<ButtonType> result = d.showAndWait();
+                if(result.isPresent() && result.get().equals(ButtonType.OK)) {
+                    updateScheduleActivity(selected.get().getInternalId(), activityDialogPair.getSecond(), scheduleDialogPair.getSecond());
+                }
+            }
+        } catch (IOException | ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
+        }
+    }
+
+    private SchedulingRequest buildRequestFromData(ScheduledActivityData scheduledActivityData) {
+        return new SchedulingRequest(scheduledActivityData.getRequest(), scheduledActivityData.getResources(), scheduledActivityData.getSource(), scheduledActivityData.getExternalId(), scheduledActivityData.getTrigger(), scheduledActivityData.getLatestInvocationTime(), scheduledActivityData.getConflictStrategy(), scheduledActivityData.getDuration());
+    }
+
+    private void updateScheduleActivity(IUniqueId originalId, ActivityInvocationDialogController actExec, ActivitySchedulingDialogController actScheduling) {
+        ActivityRequest request = actExec.buildRequest();
+        SchedulingRequest schedulingRequest = actScheduling.buildRequest(request);
+        CreationConflictStrategy creationStrategy = actScheduling.getCreationStrategy();
+        boolean confirm = DialogUtils.confirm("Update scheduled activity", actExec.getPath(), "Do you want to update the scheduling request " + originalId + "?");
+        if(confirm) {
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                try {
+                    ReatmetricUI.selectedSystem().getSystem().getScheduler().update(originalId, schedulingRequest, creationStrategy);
+                } catch (ReatmetricException e) {
+                    LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
+                }
+            });
+        }
+    }
+
     @Override
     public void dataItemsReceived(List<ScheduledActivityData> dataItems) {
         Platform.runLater(() -> delegator.delegate(dataItems));
@@ -709,6 +798,12 @@ public class SchedulerViewController extends AbstractDisplayController implement
         });
     }
 
+    @FXML
+    public void menuAboutToShow(WindowEvent windowEvent) {
+        deleteScheduledMenuItem.setVisible(!dataItemTableView.getSelectionModel().getSelectedItems().isEmpty());
+        editScheduledMenuItem.setVisible(dataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
+    }
+
     public static class ScheduledActivityOccurrenceDataWrapper implements Comparable<ScheduledActivityOccurrenceDataWrapper> {
 
         private final SystemEntityPath path;
@@ -718,6 +813,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         private final SimpleObjectProperty<Instant> startTime = new SimpleObjectProperty<>();
         private final SimpleObjectProperty<Instant> endTime = new SimpleObjectProperty<>();
         private final SimpleStringProperty resources = new SimpleStringProperty();
+        private final SimpleStringProperty externalId = new SimpleStringProperty();
         private final SimpleStringProperty source = new SimpleStringProperty();
         private final SimpleStringProperty trigger = new SimpleStringProperty();
         private final SimpleObjectProperty<SchedulingState> state = new SimpleObjectProperty<>();
@@ -737,6 +833,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             trigger.set(data.getTrigger().toString());
             state.set(data.getState());
             duration.set(data.getDuration());
+            externalId.set(String.valueOf(data.getExternalId()));
             name.set(data.getRequest().getPath().getLastPathElement());
         }
 
@@ -770,6 +867,10 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
         public SimpleStringProperty nameProperty() {
             return name;
+        }
+
+        public SimpleStringProperty externalIdProperty() {
+            return externalId;
         }
 
         public SystemEntityPath getPath() {

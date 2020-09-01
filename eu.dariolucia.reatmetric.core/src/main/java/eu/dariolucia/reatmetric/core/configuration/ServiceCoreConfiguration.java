@@ -65,6 +65,9 @@ public class ServiceCoreConfiguration {
     })
     private AbstractInitialisationConfiguration initialisation;
 
+    @XmlElement(name = "scheduler-enabled")
+    private boolean schedulerEnabled = true;
+
     @XmlElement(name = "driver", required = true)
     private List<DriverConfiguration> drivers = new LinkedList<>();
 
@@ -122,5 +125,13 @@ public class ServiceCoreConfiguration {
 
     public void setInitialisation(AbstractInitialisationConfiguration initialisation) {
         this.initialisation = initialisation;
+    }
+
+    public boolean isSchedulerEnabled() {
+        return schedulerEnabled;
+    }
+
+    public void setSchedulerEnabled(boolean schedulerEnabled) {
+        this.schedulerEnabled = schedulerEnabled;
     }
 }

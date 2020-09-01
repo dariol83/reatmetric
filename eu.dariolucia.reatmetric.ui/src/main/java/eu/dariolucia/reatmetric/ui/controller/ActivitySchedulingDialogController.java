@@ -74,13 +74,18 @@ public class ActivitySchedulingDialogController implements Initializable {
     public TextField latestExecutionTimeText;
     @FXML
     public ChoiceBox<ConflictStrategy> conflictChoice;
+    @FXML
+    public ChoiceBox<CreationConflictStrategy> creationChoice;
 
     private final SimpleBooleanProperty entriesValid = new SimpleBooleanProperty(false);
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         conflictChoice.getItems().addAll(ConflictStrategy.values());
-        conflictChoice.getSelectionModel().select(0); // Select WAIT
+        conflictChoice.getSelectionModel().select(ConflictStrategy.WAIT.ordinal()); // Select WAIT
+
+        creationChoice.getItems().addAll(CreationConflictStrategy.values());
+        creationChoice.getSelectionModel().select(CreationConflictStrategy.ADD_ANYWAY.ordinal()); // Select WAIT
 
         relativeTimeText.disableProperty().bind(relativeTimeRadio.selectedProperty().not());
         externalIdText.disableProperty().bind(relativeTimeRadio.selectedProperty().not());
@@ -117,11 +122,11 @@ public class ActivitySchedulingDialogController implements Initializable {
         validate();
     }
 
-    public void setRequest(SchedulingRequest request) {
+    public void initialiseSchedulingRequest(SchedulingRequest request) {
         resourcesText.setText(formatToString(request.getResources()));
         sourceText.setText(request.getSource());
         taskExternalIdText.setText(String.valueOf(request.getExternalId()));
-        expectedDurationText.setText(String.valueOf(request.getExpectedDuration().toNanos()));
+        expectedDurationText.setText(String.valueOf(request.getExpectedDuration().toSeconds()));
         conflictChoice.getSelectionModel().select(request.getConflictStrategy().ordinal());
         if(request.getLatestInvocationTime() != null) {
             latestExecutionCheckbox.setSelected(true);
@@ -149,6 +154,7 @@ public class ActivitySchedulingDialogController implements Initializable {
             protectionTimeText.setText(String.valueOf (((EventBasedSchedulingTrigger) request.getTrigger()).getProtectionTime() / 1000));
             eventDrivenRadio.setSelected(true);
         }
+        validate();
     }
 
     private String formatToString(Collection<?> data) {
@@ -376,6 +382,10 @@ public class ActivitySchedulingDialogController implements Initializable {
         return new SchedulingRequest(request, resources, source, getTaskExternalId(), buildTrigger(), lastExecTime, ConflictStrategy.values()[conflictChoice.getSelectionModel().getSelectedIndex()], duration);
     }
 
+    public CreationConflictStrategy getCreationStrategy() {
+        return creationChoice.getSelectionModel().getSelectedItem();
+    }
+
     private AbstractSchedulingTrigger buildTrigger() {
         if(absoluteTimeRadio.isSelected()) {
             Instant execTime = LocalDateTime.of(this.absoluteDatePicker.getValue(), getAbsoluteTime()).toInstant(ZoneOffset.UTC);
@@ -386,6 +396,12 @@ public class ActivitySchedulingDialogController implements Initializable {
             return new EventBasedSchedulingTrigger(findEvent(eventPathText.getText()), getProtectionTime());
         } else {
             throw new IllegalStateException("None of the supported triggers can be derived");
+        }
+    }
+
+    public void setDuration(Duration expectedDuration) {
+        if(expectedDuration != null) {
+            expectedDurationText.setText(String.valueOf(expectedDuration.toSeconds()));
         }
     }
 }

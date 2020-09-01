@@ -127,7 +127,7 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         ServiceLoader<ISchedulerFactory> scheduleLoader = ServiceLoader.load(ISchedulerFactory.class);
         if(scheduleLoader.findFirst().isPresent()) {
             scheduler = scheduleLoader.findFirst().get().buildScheduler(archive, processingModelManager, processingModelManager.getEventDataMonitorService(), processingModelManager.getActivityOccurrenceDataMonitorService());
-            scheduler.initialise();
+            scheduler.initialise(configuration.isSchedulerEnabled());
         } else {
             LOG.warning("Scheduler implementation not found");
         }

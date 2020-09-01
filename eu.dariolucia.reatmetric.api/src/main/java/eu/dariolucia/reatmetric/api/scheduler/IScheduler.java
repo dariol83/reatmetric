@@ -13,7 +13,7 @@ import java.util.List;
  */
 public interface IScheduler extends IScheduledActivityDataProvisionService {
 
-    void initialise() throws SchedulingException;
+    void initialise(boolean schedulerEnabled) throws SchedulingException;
 
     /**
      * Subscribe the provided subscriber to the scheduler, to know the current scheduler state.

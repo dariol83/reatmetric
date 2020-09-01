@@ -39,13 +39,14 @@
        <HBox spacing="8.0" VBox.vgrow="NEVER">
            <children>
                <Label prefWidth="150.0" text="Resources" />
-            <TextField fx:id="resourcesText" prefWidth="200.0" promptText="Comma-separated resource names" />
+               <TextField fx:id="resourcesText" prefWidth="200.0" promptText="Comma-separated resource names" />
            </children>
        </HBox>
       <HBox spacing="8.0" VBox.vgrow="NEVER">
          <children>
             <Label prefWidth="150.0" text="Expected Duration" />
             <TextField fx:id="expectedDurationText" prefWidth="200.0" promptText="In seconds" />
+            <Label text="seconds" />
          </children>
       </HBox>
       <HBox spacing="8.0" VBox.vgrow="NEVER">
@@ -65,6 +66,12 @@
          <children>
             <Label prefWidth="150.0" text="Conflict Strategy" />
             <ChoiceBox fx:id="conflictChoice" prefWidth="200.0" />
+         </children>
+      </HBox>
+      <HBox spacing="8.0" VBox.vgrow="NEVER">
+         <children>
+            <Label prefWidth="150.0" text="Creation Strategy" />
+            <ChoiceBox fx:id="creationChoice" prefWidth="200.0" />
          </children>
       </HBox>
       <Separator prefWidth="200.0" />

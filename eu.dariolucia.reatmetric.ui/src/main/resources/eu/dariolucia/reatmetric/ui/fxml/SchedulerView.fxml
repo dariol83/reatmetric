@@ -83,10 +83,11 @@
         </ToolBar>
         <TableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
           <columns>
+            <TableColumn fx:id="extIdCol" editable="false" prefWidth="90.0" text="External ID" />
             <TableColumn fx:id="nameCol" editable="false" prefWidth="130.0" text="Name" />
-            <TableColumn fx:id="stateCol" editable="false" prefWidth="100.0" text="State" />
-            <TableColumn fx:id="startTimeCol" editable="false" prefWidth="200.0" text="Start Time" />
-            <TableColumn fx:id="endTimeCol" editable="false" prefWidth="200.0" text="End Time" />
+            <TableColumn fx:id="stateCol" editable="false" prefWidth="90.0" text="State" />
+            <TableColumn fx:id="startTimeCol" editable="false" prefWidth="190.0" text="Start Time" />
+            <TableColumn fx:id="endTimeCol" editable="false" prefWidth="190.0" text="End Time" />
             <TableColumn fx:id="sourceCol" editable="false" prefWidth="100.0" text="Source" />
             <TableColumn fx:id="triggerCol" editable="false" prefWidth="100.0" text="Trigger" />
             <TableColumn fx:id="resourcesCol" editable="false" prefWidth="100.0" text="Resources" />
@@ -94,9 +95,10 @@
             <TableColumn fx:id="parentCol" editable="false" prefWidth="130.0" text="Parent" />
           </columns>
           <contextMenu>
-              <ContextMenu>
+              <ContextMenu onShowing="#menuAboutToShow">
                 <items>
-                    <MenuItem mnemonicParsing="false" onAction="#onRemoveMenuItem" text="Remove scheduled items(s)" />
+                    <MenuItem fx:id="editScheduledMenuItem" mnemonicParsing="false" onAction="#onModifyMenuItem" text="Edit scheduled item..." />
+                    <MenuItem fx:id="deleteScheduledMenuItem" mnemonicParsing="false" onAction="#onRemoveMenuItem" text="Remove scheduled items(s)" />
                 </items>
               </ContextMenu>
            </contextMenu>

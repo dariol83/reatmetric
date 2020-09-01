@@ -63,12 +63,12 @@ public class Scheduler implements IScheduler {
     /**
      * A timer that reports events into the eventQueue, based on time-based, absolute constraints.
      */
-    private final Timer timer = new Timer("ReatMetric Scheduler Timer", true);
+    private final Timer timer = new Timer("Reatmetric Scheduler Timer", true);
     /**
      * The dispatcher thread.
      */
     private final ExecutorService dispatcher = Executors.newSingleThreadExecutor((r) -> {
-        Thread t = new Thread(r, "ReatMetric Scheduler Dispatcher Thread");
+        Thread t = new Thread(r, "Reatmetric Scheduler Dispatcher Thread");
         t.setDaemon(true);
         return t;
     });
@@ -76,7 +76,7 @@ public class Scheduler implements IScheduler {
      * The notifier thread.
      */
     private final ExecutorService notifier = Executors.newSingleThreadExecutor((r) -> {
-        Thread t = new Thread(r, "ReatMetric Scheduler Notifier Thread");
+        Thread t = new Thread(r, "Reatmetric Scheduler Notifier Thread");
         t.setDaemon(true);
         return t;
     });
@@ -155,66 +155,75 @@ public class Scheduler implements IScheduler {
     }
 
     @Override
-    public void initialise() throws SchedulingException {
+    public void initialise(boolean schedulerEnabled) {
         if (LOG.isLoggable(Level.FINE)) {
             LOG.fine("initialise() invoked");
         }
-        // Start disabled (depending on system property? - to be defined)
-        disable();
+        // Start disabled or enabled
+        if(schedulerEnabled) {
+            enable();
+        } else {
+            disable();
+        }
+
         // Initialise from archive
         if (archive != null) {
-            // Retrieve all scheduled activities with state RUNNING, WAITING, SCHEDULED
-            // Transition the RUNNING and WAITING activities in:
-            // RUNNING -> UNKNOWN
-            // WAITING -> ABORTED
-            try {
-                List<ScheduledActivityData> scheduledItems = archive.retrieve(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L),
-                        new ScheduledActivityDataFilter(null, null, null, null,
-                                Arrays.asList(SchedulingState.SCHEDULED, SchedulingState.WAITING, SchedulingState.RUNNING), null),
-                        Instant.now().minusSeconds(36 * 3600));
+            dispatcher.submit(this::initFromArchive);
+        }
+    }
 
-                for (ScheduledActivityData item : scheduledItems) {
-                    if (item.getState() == SchedulingState.SCHEDULED) {
-                        // Create ScheduledTask
-                        ScheduledTask st = new ScheduledTask(this, timer, dispatcher, item);
-                        id2scheduledTask.put(st.getId(), st);
-                        // Prepare execution event depending on trigger (absolute, relative, event)
-                        st.updateTrigger();
-                    } else if (item.getState() == SchedulingState.RUNNING) {
-                        storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
-                                item.getGenerationTime(),
-                                item.getRequest(),
-                                item.getActivityOccurrence(),
-                                item.getResources(),
-                                item.getSource(),
-                                item.getExternalId(),
-                                item.getTrigger(),
-                                item.getLatestInvocationTime(),
-                                item.getStartTime(),
-                                item.getDuration(),
-                                item.getConflictStrategy(),
-                                SchedulingState.UNKNOWN,
-                                item.getExtension()));
-                    } else if (item.getState() == SchedulingState.WAITING) {
-                        storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
-                                item.getGenerationTime(),
-                                item.getRequest(),
-                                item.getActivityOccurrence(),
-                                item.getResources(),
-                                item.getSource(),
-                                item.getExternalId(),
-                                item.getTrigger(),
-                                item.getLatestInvocationTime(),
-                                item.getStartTime(),
-                                item.getDuration(),
-                                item.getConflictStrategy(),
-                                SchedulingState.ABORTED,
-                                item.getExtension()));
-                    }
+    private void initFromArchive() {
+        // Retrieve all scheduled activities with state RUNNING, WAITING, SCHEDULED
+        // Transition the RUNNING and WAITING activities in:
+        // RUNNING -> UNKNOWN
+        // WAITING -> ABORTED
+        try {
+            List<ScheduledActivityData> scheduledItems = archive.retrieve(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L),
+                    new ScheduledActivityDataFilter(null, null, null, null,
+                            Arrays.asList(SchedulingState.SCHEDULED, SchedulingState.WAITING, SchedulingState.RUNNING), null),
+                    Instant.now().minusSeconds(36 * 3600));
+
+            for (ScheduledActivityData item : scheduledItems) {
+                if (item.getState() == SchedulingState.SCHEDULED) {
+                    // Create ScheduledTask
+                    ScheduledTask st = new ScheduledTask(this, timer, dispatcher, item);
+                    id2scheduledTask.put(st.getId(), st);
+                    // Prepare execution event depending on trigger (absolute, relative, event)
+                    st.updateTrigger();
+                } else if (item.getState() == SchedulingState.RUNNING) {
+                    storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
+                            item.getGenerationTime(),
+                            item.getRequest(),
+                            item.getActivityOccurrence(),
+                            item.getResources(),
+                            item.getSource(),
+                            item.getExternalId(),
+                            item.getTrigger(),
+                            item.getLatestInvocationTime(),
+                            item.getStartTime(),
+                            item.getDuration(),
+                            item.getConflictStrategy(),
+                            SchedulingState.UNKNOWN,
+                            item.getExtension()));
+                } else if (item.getState() == SchedulingState.WAITING) {
+                    storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
+                            item.getGenerationTime(),
+                            item.getRequest(),
+                            item.getActivityOccurrence(),
+                            item.getResources(),
+                            item.getSource(),
+                            item.getExternalId(),
+                            item.getTrigger(),
+                            item.getLatestInvocationTime(),
+                            item.getStartTime(),
+                            item.getDuration(),
+                            item.getConflictStrategy(),
+                            SchedulingState.ABORTED,
+                            item.getExtension()));
                 }
-            } catch (ArchiveException e) {
-                LOG.log(Level.SEVERE, "Cannot restore scheduler state from archive: " + e.getMessage(), e);
             }
+        } catch (ArchiveException | SchedulingException e) {
+            LOG.log(Level.SEVERE, "Cannot restore scheduler state from archive: " + e.getMessage(), e);
         }
     }
 
@@ -481,6 +490,10 @@ public class Scheduler implements IScheduler {
                 } else {
                     removeTask(originalId);
                     return scheduleTask(newRequest, conflictStrategy, originalId);
+                    // TODO: it could be that the duration or the start time changed. The set of scheduled items with trigger
+                    //  relative time, potentially affected by this update, must be re-evaluated in terms of state (start time). This
+                    //  can ripple through other scheduled activities: in order to avoid infinite loops in case of cycles, remember already
+                    //  updated tasks, and do not reprocess them.
                 }
             }).get();
         } catch (InterruptedException | ExecutionException e) {

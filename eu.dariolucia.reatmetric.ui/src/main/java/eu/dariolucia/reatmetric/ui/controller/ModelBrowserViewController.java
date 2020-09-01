@@ -486,7 +486,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 };
                 Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityInvocationDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, activityRequestMap.get(descriptor.getPath().asString()), routeList);
                 activityDialogPair.getSecond().hideRouteControls();
-                Pair<Node, ActivitySchedulingDialogController> scheduleDialogPair = ActivityInvocationDialogUtil.createActivitySchedulingDialog(); // To select the resources, scheduling source, triggering condition
+                Pair<Node, ActivitySchedulingDialogController> scheduleDialogPair = ActivityInvocationDialogUtil.createActivitySchedulingDialog(((ActivityDescriptor) descriptor).getExpectedDuration()); // To select the resources, scheduling source, triggering condition
                 // Create the popup
                 Dialog<ButtonType> d = new Dialog<>();
                 d.setTitle("Schedule activity " + descriptor.getPath().getLastPathElement());
@@ -515,13 +515,14 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private void scheduleActivity(ActivityInvocationDialogController actExec, ActivitySchedulingDialogController actSched) {
         ActivityRequest request = actExec.buildRequest();
         SchedulingRequest schedulingRequest = actSched.buildRequest(request);
+        CreationConflictStrategy creationStrategy = actSched.getCreationStrategy();
         boolean confirm = DialogUtils.confirm("Request scheduling of activity", actExec.getPath(), "Do you want to dispatch the scheduling request to the scheduler?");
         if(confirm) {
             // Store activity request in activity invocation cache, to be used to initialise the same activity invocation in the future
             activityRequestMap.put(actExec.getPath(), request);
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
-                    ReatmetricUI.selectedSystem().getSystem().getScheduler().schedule(schedulingRequest, CreationConflictStrategy.ADD_ANYWAY);
+                    ReatmetricUI.selectedSystem().getSystem().getScheduler().schedule(schedulingRequest, creationStrategy);
                 } catch (ReatmetricException e) {
                     LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
                 }
