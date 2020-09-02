@@ -46,7 +46,7 @@ public class ScheduledTask {
     private final ExecutorService dispatcher;
     private final IUniqueId taskId;
 
-    private SchedulingRequest request;
+    private final SchedulingRequest request;
     private ScheduledActivityData currentData;
 
     /**
@@ -118,7 +118,7 @@ public class ScheduledTask {
     /**
      * To be called from the dispatcher thread.
      */
-    public void updateTrigger() throws SchedulingException {
+    public void armTrigger() throws SchedulingException {
         if(currentData == null) {
             initialiseCurrentData();
         }
@@ -432,5 +432,18 @@ public class ScheduledTask {
     public boolean isRelatedTo(long externalId) {
         return request.getTrigger() instanceof RelativeTimeSchedulingTrigger &&
                 ((RelativeTimeSchedulingTrigger) request.getTrigger()).getPredecessors().contains(externalId);
+    }
+
+    public boolean updateStartTime() {
+        Pair<Instant, Duration> timeWindow = scheduler.computeTimeInformation(this.request);
+        if(!timeWindow.getFirst().equals(getCurrentData().getStartTime())) {
+            this.currentData = buildUpdatedSchedulingActivityData(timeWindow.getFirst(),
+                    this.activityId,
+                    SchedulingState.SCHEDULED);
+            scheduler.notifyTask(this);
+            return true;
+        } else {
+            return false;
+        }
     }
 }

@@ -189,7 +189,7 @@ public class Scheduler implements IScheduler {
                     ScheduledTask st = new ScheduledTask(this, timer, dispatcher, item);
                     id2scheduledTask.put(st.getId(), st);
                     // Prepare execution event depending on trigger (absolute, relative, event)
-                    st.updateTrigger();
+                    st.armTrigger();
                 } else if (item.getState() == SchedulingState.RUNNING) {
                     storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
                             item.getGenerationTime(),
@@ -298,11 +298,20 @@ public class Scheduler implements IScheduler {
      * @throws SchedulingException if the operation is aborted due to {@link CreationConflictStrategy#ABORT}
      */
     private ScheduledActivityData scheduleTask(SchedulingRequest request, CreationConflictStrategy conflictStrategy, IUniqueId originalId) throws SchedulingException {
+        // Check if an external ID exists already
+        for(ScheduledTask st : id2scheduledTask.values()) {
+            if(st.getCurrentData().getExternalId() == request.getExternalId()) {
+                throw new SchedulingException("Supplied external ID is already assigned to one scheduled activity: " + request.getExternalId());
+            }
+        }
         // Check if the creation conflict strategy allows for the scheduling
         List<ScheduledTask> conflictingTasks = computeConflicts(Collections.singletonList(request));
         if (conflictingTasks.isEmpty() || conflictStrategy == CreationConflictStrategy.ADD_ANYWAY) {
             // Add the request as-is
-            return addTask(request, originalId);
+            ScheduledActivityData toReturn = addTask(request, originalId);
+            // Update scheduled relative-time activities
+            updateRelativeTimeStartTime(toReturn.getExternalId());
+            return toReturn;
         } else {
             // There is a conflict
             if (conflictStrategy == CreationConflictStrategy.ABORT) {
@@ -314,9 +323,42 @@ public class Scheduler implements IScheduler {
             } else if (conflictStrategy == CreationConflictStrategy.REMOVE_PREVIOUS) {
                 // Remove the conflicting tasks and add the new task
                 removeTasks(conflictingTasks);
-                return addTask(request, originalId);
+                ScheduledActivityData toReturn = addTask(request, originalId);
+                updateRelativeTimeStartTime(toReturn.getExternalId());
+                return toReturn;
             } else {
                 throw new IllegalArgumentException("CreationConflictStrategy " + conflictStrategy + " not handled, software bug");
+            }
+        }
+    }
+
+    /**
+     * To be called in the dispatcher thread.
+     *
+     * @param externalId the modified task external ID
+     */
+    private void updateRelativeTimeStartTime(long externalId) {
+        Set<IUniqueId> alreadyProcessedTasks = new HashSet<>();
+        Queue<ScheduledTask> updatedTasks = new LinkedList<>();
+        ScheduledTask toStart = lookUpScheduledTaskByExternalId(externalId);
+        updatedTasks.add(toStart);
+        while(!updatedTasks.isEmpty()) {
+            ScheduledTask toCheck = updatedTasks.poll();
+            if(alreadyProcessedTasks.contains(toCheck.getId())) {
+                continue;
+            }
+            alreadyProcessedTasks.add(toCheck.getId());
+            // Now check
+            for(ScheduledTask task : id2scheduledTask.values()) {
+                if(task.getCurrentData().getState() == SchedulingState.SCHEDULED && task.getCurrentData().getTrigger() instanceof RelativeTimeSchedulingTrigger) {
+                    if(((RelativeTimeSchedulingTrigger) task.getCurrentData().getTrigger()).getPredecessors().contains(toCheck.getCurrentData().getExternalId())) {
+                        // Task potentially affected, start time to be recomputed
+                        boolean updated = task.updateStartTime();
+                        if(updated) {
+                            updatedTasks.add(task);
+                        }
+                    }
+                }
             }
         }
     }
@@ -326,7 +368,7 @@ public class Scheduler implements IScheduler {
         ScheduledTask st = new ScheduledTask(this, timer, dispatcher, request, originalId);
         id2scheduledTask.put(st.getId(), st);
         // Prepare execution event depending on trigger (absolute, relative, event)
-        st.updateTrigger();
+        st.armTrigger();
         // Store and distribute
         ScheduledActivityData data = st.getCurrentData();
         storeAndDistribute(data);
@@ -433,6 +475,16 @@ public class Scheduler implements IScheduler {
                 if (!conflictingTasks.isEmpty() && conflictStrategy == CreationConflictStrategy.ABORT) {
                     throw new SchedulingException("Conflict detected with provided scheduling requests: " + conflictingTasks);
                 } else {
+                    // Check if an external ID exists already
+                    Set<Long> toBeAdded = requests.stream().map(SchedulingRequest::getExternalId).collect(Collectors.toSet());
+                    if(toBeAdded.size() != requests.size()) {
+                        throw new SchedulingException("One supplied external ID is duplicated in the request");
+                    }
+                    for(ScheduledTask st : id2scheduledTask.values()) {
+                        if(toBeAdded.contains(st.getCurrentData().getExternalId())) {
+                            throw new SchedulingException("Supplied external ID is already assigned to one scheduled activity: " + st.getCurrentData().getExternalId());
+                        }
+                    }
                     for (SchedulingRequest sr : requests) {
                         ScheduledActivityData data = scheduleTask(sr, conflictStrategy, null);
                         if (data != null) {
@@ -490,10 +542,6 @@ public class Scheduler implements IScheduler {
                 } else {
                     removeTask(originalId);
                     return scheduleTask(newRequest, conflictStrategy, originalId);
-                    // TODO: it could be that the duration or the start time changed. The set of scheduled items with trigger
-                    //  relative time, potentially affected by this update, must be re-evaluated in terms of state (start time). This
-                    //  can ripple through other scheduled activities: in order to avoid infinite loops in case of cycles, remember already
-                    //  updated tasks, and do not reprocess them.
                 }
             }).get();
         } catch (InterruptedException | ExecutionException e) {
@@ -547,16 +595,16 @@ public class Scheduler implements IScheduler {
             ScheduledActivityData sad = st.getCurrentData();
             storeAndDistribute(sad);
             // Update relative trigger of relative-time scheduled tasks
-            updateRelativeTimeTriggers(st.getRequest().getExternalId());
+            reEvaluateRelativeTimeTriggers(st.getRequest().getExternalId());
         }
     }
 
-    private void updateRelativeTimeTriggers(long externalId) {
+    private void reEvaluateRelativeTimeTriggers(long externalId) {
         dispatcher.submit(() -> {
             for(ScheduledTask st :id2scheduledTask.values()) {
                 if(st.getCurrentData().getState() == SchedulingState.SCHEDULED && st.isRelatedTo(externalId)) {
                     try {
-                        st.updateTrigger();
+                        st.armTrigger();
                     } catch (SchedulingException e) {
                         LOG.log(Level.SEVERE, "Re-evaluation of trigger for scheduled activity " + st.getId() + " failed: " + e.getMessage(), e);
                     }
