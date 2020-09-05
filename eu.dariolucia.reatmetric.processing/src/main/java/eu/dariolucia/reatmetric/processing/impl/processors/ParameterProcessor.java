@@ -425,6 +425,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             } catch(ValidityException e) {
                 LOG.log(Level.SEVERE, "Error when computing validity of parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
                 return Validity.ERROR;
+            } catch(Exception e) {
+                LOG.log(Level.SEVERE, "Unexpected error when computing validity of parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);
+                return Validity.ERROR;
             }
         }
     }

@@ -20,16 +20,19 @@ import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEntityBinding;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEventBinding;
 import eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding;
+import groovy.lang.Binding;
+import groovy.lang.GroovyShell;
+import groovy.lang.Script;
+import org.codehaus.groovy.control.CompilationFailedException;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 
-import javax.script.Bindings;
-import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,12 +50,21 @@ public class ExpressionDefinition {
     @XmlElement(name="symbol")
     private List<SymbolDefinition> symbols = new LinkedList<>();
 
+    @XmlAttribute(name="dialect")
+    private ExpressionDialect dialect = ExpressionDialect.JS;
+
     public ExpressionDefinition() {
     }
 
     public ExpressionDefinition(String expression, List<SymbolDefinition> symbols) {
         this.expression = expression;
         this.symbols = symbols;
+    }
+
+    public ExpressionDefinition(String expression, List<SymbolDefinition> symbols, ExpressionDialect dialect) {
+        this.expression = expression;
+        this.symbols = symbols;
+        this.dialect = dialect;
     }
 
     public String getExpression() {
@@ -71,20 +83,43 @@ public class ExpressionDefinition {
         this.symbols = symbols;
     }
 
+    public ExpressionDialect getDialect() {
+        return dialect;
+    }
+
+    public void setDialect(ExpressionDialect dialect) {
+        this.dialect = dialect;
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Transient state, runtime methods
     // ----------------------------------------------------------------------------------------------------------------
 
-    private transient Source compiledScript;
-    private transient boolean canBeCompiled = true;
-    private transient Bindings bindings;
-    private transient ScriptEngine engine;
-
     public Object execute(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
-        try (Engine engine = Engine.create()) {
-            Source source = Source.create("js", expression);
+        switch(dialect) {
+            case JS: return executeJs(resolver, additionalBindings);
+            case GROOVY: return executeGroovy(resolver, additionalBindings);
+            case PYTHON: return executePython(resolver, additionalBindings);
+            default:
+                throw new ScriptException("Dialect not supported: " + dialect);
+        }
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Javascript support via GraalVM.js (slow at the moment, buggy if caching of Engine and Source is done)
+    // https://github.com/graalvm/graaljs/issues/268
+    // ----------------------------------------------------------------------------------------------------------------
+
+    // TODO: if the jsEngine and the jsSource are cached, then you have memory leak
+    // private transient Source jsSource;
+    // private transient Engine jsEngine;
+
+    private Object executeJs(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
+        try (Engine jsEngine = Engine.create()) {
+            Source jsSource = Source.create("js", expression);
             try (Context context = Context.newBuilder()
-                    .engine(engine)
+                    .engine(jsEngine)
+                    .allowAllAccess(true)
                     .build()) {
                 Value bindings = context.getBindings("js");
                 // Update the bindings
@@ -96,9 +131,48 @@ public class ExpressionDefinition {
                         bindings.putMember(entry.getKey(), entry.getValue());
                     }
                 }
-                Value returnValue = context.eval(source);
+                Value returnValue = context.eval(jsSource);
                 return returnValue.as(Object.class);
             }
+        }
+    }
+
+    private Object executePython(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
+        throw new ScriptException("Python not supported yet");
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------
+    // Groovy support
+    // ----------------------------------------------------------------------------------------------------------------
+
+    private transient GroovyShell groovyShell;
+    private transient Binding groovyBinding;
+    private transient Script groovyScript;
+
+    private Object executeGroovy(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
+        try {
+            if (groovyShell == null) {
+                groovyBinding = new Binding();
+                groovyShell = new GroovyShell();
+                groovyScript = groovyShell.parse(expression);
+                groovyScript.setBinding(groovyBinding);
+            }
+        } catch (CompilationFailedException e) {
+            throw new ScriptException(e);
+        }
+        // Update the bindings
+        for(SymbolDefinition sd : symbols) {
+            groovyBinding.setProperty(sd.getName(), toBindingProperty(sd.getBinding(), resolver.resolve(sd.getReference())));
+        }
+        if(additionalBindings != null) {
+            for(Map.Entry<String, Object> entry : additionalBindings.entrySet()) {
+                groovyBinding.setProperty(entry.getKey(), entry.getValue());
+            }
+        }
+        try {
+            return groovyScript.run();
+        } catch (Exception e) {
+            throw new ScriptException(e);
         }
     }
 

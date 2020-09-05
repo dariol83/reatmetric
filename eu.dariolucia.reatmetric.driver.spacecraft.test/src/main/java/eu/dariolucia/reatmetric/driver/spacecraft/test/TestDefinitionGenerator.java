@@ -864,7 +864,7 @@ public class TestDefinitionGenerator {
         pd.getParameterDefinitions().add(pr5);
 
         ParameterProcessingDefinition pr6 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.REAL, ValueTypeEnum.REAL);
-        pr6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)))));
+        pr6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)), ExpressionDialect.GROOVY)));
         pd.getParameterDefinitions().add(pr6);
 
         ParameterProcessingDefinition pr7 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.REAL, ValueTypeEnum.REAL);
@@ -885,7 +885,7 @@ public class TestDefinitionGenerator {
         pd.getParameterDefinitions().add(pr9);
 
         ParameterProcessingDefinition pr10 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.REAL, ValueTypeEnum.REAL);
-        pr10.setCalibrations(Collections.singletonList(new ExpressionCalibration(new ExpressionDefinition("if (input > 20.0) 1; else 0;", new ArrayList<>()))));
+        pr10.setCalibrations(Collections.singletonList(new ExpressionCalibration(new ExpressionDefinition("if (input > 20.0) 1; else 0;", new ArrayList<>(), ExpressionDialect.GROOVY))));
         pd.getParameterDefinitions().add(pr10);
 
         counter += 10;
@@ -910,7 +910,7 @@ public class TestDefinitionGenerator {
         pd.getParameterDefinitions().add(pstr5);
 
         ParameterProcessingDefinition pstr6 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.CHARACTER_STRING, ValueTypeEnum.CHARACTER_STRING);
-        pstr6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)))));
+        pstr6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)), ExpressionDialect.GROOVY)));
         pd.getParameterDefinitions().add(pstr6);
 
         ParameterProcessingDefinition pstr7 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.CHARACTER_STRING, ValueTypeEnum.CHARACTER_STRING);
@@ -947,7 +947,7 @@ public class TestDefinitionGenerator {
         pd.getParameterDefinitions().add(pocts5);
 
         ParameterProcessingDefinition pocts6 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.OCTET_STRING, ValueTypeEnum.OCTET_STRING);
-        pocts6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)))));
+        pocts6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)), ExpressionDialect.GROOVY)));
         pd.getParameterDefinitions().add(pocts6);
 
         ParameterProcessingDefinition pocts7 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.OCTET_STRING, ValueTypeEnum.OCTET_STRING);
@@ -984,7 +984,7 @@ public class TestDefinitionGenerator {
         pd.getParameterDefinitions().add(pbits5);
 
         ParameterProcessingDefinition pbits6 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.BIT_STRING, ValueTypeEnum.BIT_STRING);
-        pbits6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)))));
+        pbits6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)), ExpressionDialect.GROOVY)));
         pd.getParameterDefinitions().add(pbits6);
 
         ParameterProcessingDefinition pbits7 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.BIT_STRING, ValueTypeEnum.BIT_STRING);
@@ -1020,7 +1020,7 @@ public class TestDefinitionGenerator {
         pd.getParameterDefinitions().add(pabt5);
 
         ParameterProcessingDefinition pabt6 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.ABSOLUTE_TIME, ValueTypeEnum.ABSOLUTE_TIME);
-        pabt6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)))));
+        pabt6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)), ExpressionDialect.GROOVY)));
         pd.getParameterDefinitions().add(pabt6);
 
         ParameterProcessingDefinition pabt7 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.ABSOLUTE_TIME, ValueTypeEnum.ABSOLUTE_TIME);
@@ -1040,17 +1040,18 @@ public class TestDefinitionGenerator {
 
         // Synthetic
         ParameterProcessingDefinition ps1 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.ENUMERATED, ValueTypeEnum.CHARACTER_STRING);
-        ps1.setExpression(new ExpressionDefinition("function eval() { \n" +
+        ps1.setExpression(new ExpressionDefinition("def eval() { \n" +
                 "  if(" + extractName(pe4.getLocation()) + " == \"PRESENT\") return 0; else return 1; \n" +
                 "} \n" +
                 "eval();", Arrays.asList(
                 new SymbolDefinition(extractName(pe4.getLocation()), pe4.getId(), PropertyBinding.ENG_VALUE)
-        )));
+        ), ExpressionDialect.GROOVY));
         ps1.setCalibrations(generateTextualCalibration("PRESENT_SET", "PRESENT_NOT_SET"));
         pd.getParameterDefinitions().add(ps1);
 
         ParameterProcessingDefinition ps2 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.REAL, ValueTypeEnum.REAL);
-        ps2.setExpression(new ExpressionDefinition("function eval() { \n" +
+        ps2.setExpression(new ExpressionDefinition("def eval() { \n" +
+                "  if(" + extractName(pr4.getLocation()) + " == null || " + extractName(pr5.getLocation()) + " == null) { return -1.0; } \n" +
                 "  if(" + extractName(pe4.getLocation()) + " == \"PRESENT\") return " + extractName(pr4.getLocation()) + "; else return " + extractName(pr4.getLocation())
                 + " + " + extractName(pr5.getLocation()) + "; \n" +
                 "} \n" +
@@ -1058,11 +1059,12 @@ public class TestDefinitionGenerator {
                 new SymbolDefinition(extractName(pe4.getLocation()), pe4.getId(), PropertyBinding.ENG_VALUE),
                 new SymbolDefinition(extractName(pr4.getLocation()), pr4.getId(), PropertyBinding.ENG_VALUE),
                 new SymbolDefinition(extractName(pr5.getLocation()), pr5.getId(), PropertyBinding.ENG_VALUE)
-        )));
+        ), ExpressionDialect.GROOVY));
         pd.getParameterDefinitions().add(ps2);
 
         ParameterProcessingDefinition ps3 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.REAL, ValueTypeEnum.REAL);
-        ps3.setExpression(new ExpressionDefinition("function eval() { \n" +
+        ps3.setExpression(new ExpressionDefinition("def eval() { \n" +
+                "  if(" + extractName(pr3.getLocation()) + " == null || " + extractName(pr4.getLocation()) + " == null || " + extractName(pr5.getLocation()) + " == null) { return -1.0; } \n" +
                 "  if(" + extractName(pr3.getLocation()) + " < 1400.0) return " + extractName(pr4.getLocation()) + "; else return " + extractName(pr4.getLocation())
                 + " + " + extractName(pr5.getLocation()) + "; \n" +
                 "} \n" +
@@ -1070,28 +1072,28 @@ public class TestDefinitionGenerator {
                 new SymbolDefinition(extractName(pr3.getLocation()), pr3.getId(), PropertyBinding.ENG_VALUE),
                 new SymbolDefinition(extractName(pr4.getLocation()), pr4.getId(), PropertyBinding.ENG_VALUE),
                 new SymbolDefinition(extractName(pr5.getLocation()), pr5.getId(), PropertyBinding.ENG_VALUE)
-        )));
+        ), ExpressionDialect.GROOVY));
         pd.getParameterDefinitions().add(ps3);
 
         ParameterProcessingDefinition ps4 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.ENUMERATED, ValueTypeEnum.CHARACTER_STRING);
-        ps4.setExpression(new ExpressionDefinition("function eval() { \n" +
+        ps4.setExpression(new ExpressionDefinition("def eval() { \n" +
                 "  if(" + extractName(pe4.getLocation()) + " != \"PRESENT\") return 2; else if(" + extractName(pui9.getLocation()) + " != 10) return 1; else return 0;\n" +
                 "} \n" +
                 "eval();", Arrays.asList(
                 new SymbolDefinition(extractName(pe4.getLocation()), pe4.getId(), PropertyBinding.ENG_VALUE),
                 new SymbolDefinition(extractName(pui9.getLocation()), pui9.getId(), PropertyBinding.ENG_VALUE)
-        )));
+        ), ExpressionDialect.GROOVY));
         ps4.setCalibrations(generateTextualCalibration("A", "B", "C"));
         pd.getParameterDefinitions().add(ps4);
 
         // Synthetic
         ParameterProcessingDefinition ps5 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.CHARACTER_STRING, ValueTypeEnum.CHARACTER_STRING);
-        ps5.setExpression(new ExpressionDefinition("function eval() { \n" +
+        ps5.setExpression(new ExpressionDefinition("def eval() { \n" +
                 "  return " + extractName(pe4.getLocation()) + " + \"_TEST\"; \n" +
                 "} \n" +
                 "eval();", Arrays.asList(
                 new SymbolDefinition(extractName(pe4.getLocation()), pe4.getId(), PropertyBinding.SOURCE_VALUE)
-        )));
+        ), ExpressionDialect.GROOVY));
         pd.getParameterDefinitions().add(ps5);
     }
 
