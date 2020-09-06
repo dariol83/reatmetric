@@ -35,7 +35,7 @@
     </parameters>
     <events>
         <event id="#2001" location="ROOT.EVT.EVT1" description="Event 1" severity="WARN" type="ONBOARD"/>
-        <event id="#2002" location="ROOT.EVT.EVT2" description="Event 2" severity="ALARM" type="ONBOARD" inhibitionPeriod="3000" />
+        <event id="#2002" location="ROOT.EVT.EVT2" description="Event 2" severity="ALARM" type="ONBOARD" inhibition_period="3000" />
         <event id="#2003" location="ROOT.EVT.EVT3" description="Event 3" severity="INFO" type="ONGROUND"/>
         <event id="#2004" location="ROOT.EVT.EVT4" description="Event 4" severity="WARN" type="ONGROUND"/>
         <event id="#2005" location="ROOT.EVT.EVT5" description="Event 5" severity="ALARM" type="ONGROUND"/>

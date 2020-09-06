@@ -32,8 +32,11 @@ public class EventProcessingDefinition extends AbstractProcessingDefinition {
     /**
      * Inhibition period in milliseconds
      */
-    @XmlAttribute
+    @XmlAttribute(name = "inhibition_period")
     private int inhibitionPeriod = 0;
+
+    @XmlAttribute(name = "log_enabled")
+    private boolean logEnabled = true;
 
     @XmlElement(name = "condition")
     private ExpressionDefinition condition;
@@ -74,5 +77,13 @@ public class EventProcessingDefinition extends AbstractProcessingDefinition {
 
     public void setCondition(ExpressionDefinition condition) {
         this.condition = condition;
+    }
+
+    public boolean isLogEnabled() {
+        return logEnabled;
+    }
+
+    public void setLogEnabled(boolean logEnabled) {
+        this.logEnabled = logEnabled;
     }
 }
