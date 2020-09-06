@@ -769,7 +769,7 @@ public class TestDefinitionGenerator {
         pd.getParameterDefinitions().add(psi5);
 
         ParameterProcessingDefinition psi6 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.SIGNED_INTEGER, ValueTypeEnum.SIGNED_INTEGER);
-        psi6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)))));
+        psi6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)), ExpressionDialect.GROOVY)));
         pd.getParameterDefinitions().add(psi6);
 
         ParameterProcessingDefinition psi7 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.SIGNED_INTEGER, ValueTypeEnum.SIGNED_INTEGER);
@@ -816,7 +816,7 @@ public class TestDefinitionGenerator {
         pd.getParameterDefinitions().add(pui5);
 
         ParameterProcessingDefinition pui6 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.UNSIGNED_INTEGER, ValueTypeEnum.UNSIGNED_INTEGER);
-        pui6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)))));
+        pui6.setValidity(new ValidityCondition(new ExpressionDefinition(extractName(pe1.getLocation()) + " == \"ON\"", Arrays.asList(new SymbolDefinition(extractName(pe1.getLocation()), pe1.getId(), PropertyBinding.ENG_VALUE)), ExpressionDialect.GROOVY)));
         pd.getParameterDefinitions().add(pui6);
 
         ParameterProcessingDefinition pui7 = buildParameterProcessingDefinition(prefix, counter++, ValueTypeEnum.UNSIGNED_INTEGER, ValueTypeEnum.UNSIGNED_INTEGER);

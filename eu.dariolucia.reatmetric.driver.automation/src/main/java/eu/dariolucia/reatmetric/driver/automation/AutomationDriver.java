@@ -207,7 +207,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
 
     @Override
     public void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException {
-        // TODO: record running scripts in a map, find way to tell GraalVM to abort execution/evaluation (if possible), execution stage shall be reported as FATAL
+        // TODO: record running scripts in a map, find way to tell the executor to abort execution/evaluation (if possible), execution stage shall be reported as FATAL
     }
 
     private void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
@@ -274,7 +274,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
 
     @Override
     public List<DebugInformation> currentDebugInfo() {
-        // TODO: implement if needed
+        // Not needed
         return Collections.emptyList();
     }
 }

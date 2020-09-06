@@ -76,6 +76,11 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 buildDefaultState();
             }
         }
+        // Check if it is a synthetic parameter and if it has to start disabled
+        if(definition.getExpression() != null && !processor.getDefinitions().isSyntheticParameterProcessingEnabled()) {
+            this.entityStatus = Status.DISABLED;
+            this.systemEntityBuilder.setStatus(entityStatus);
+        }
         // Initialise the entity state
         this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
         this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));

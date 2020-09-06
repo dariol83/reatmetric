@@ -276,6 +276,10 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         }
     }
 
+    public ProcessingDefinition getDefinitions() {
+        return this.processingDefinition;
+    }
+
     @Override
     public void injectParameters(List<ParameterSample> sampleList) {
         // Build the list of operations to be performed
@@ -549,6 +553,5 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     public IEntityBinding resolve(int systemEntityId) {
         return graphModel.getBinding(systemEntityId);
     }
-
 
 }

@@ -38,6 +38,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import java.lang.ref.SoftReference;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -117,32 +118,18 @@ public class ExpressionDefinition {
     // TODO: if the jsEngine and the jsSource are cached, then you have memory leak
     // private transient Source jsSource;
     // private transient Engine jsEngine;
+    private transient volatile SoftReference<GraalVmJsCache> jsCache = new SoftReference<>(null);
 
     private Object executeJs(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
-        try (Engine jsEngine = Engine.create()) {
+        GraalVmJsCache cached = jsCache.get();
+        if(cached == null) {
+            // It was gone
+            Engine jsEngine = Engine.create();
             Source jsSource = Source.create("js", expression);
-            // if(jsEngine == null) {
-            //     jsEngine = Engine.create();
-            //     jsSource = Source.create("js", expression);
-            // }
-            try (Context context = Context.newBuilder()
-                    .engine(jsEngine)
-                    .allowAllAccess(true)
-                    .build()) {
-                Value bindings = context.getBindings("js");
-                // Update the bindings
-                for(SymbolDefinition sd : symbols) {
-                    bindings.putMember(sd.getName(), toBindingProperty(sd.getBinding(), resolver.resolve(sd.getReference())));
-                }
-                if(additionalBindings != null) {
-                    for(Map.Entry<String, Object> entry : additionalBindings.entrySet()) {
-                        bindings.putMember(entry.getKey(), entry.getValue());
-                    }
-                }
-                Value returnValue = context.eval(jsSource);
-                return returnValue.as(Object.class);
-            }
+            cached = new GraalVmJsCache(jsEngine, jsSource);
+            jsCache = new SoftReference<>(cached);
         }
+        return cached.process(resolver, additionalBindings, symbols);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -223,7 +210,7 @@ public class ExpressionDefinition {
         }
     }
 
-    private Object toBindingProperty(PropertyBinding binding, IEntityBinding resolve) throws ScriptException {
+    private static Object toBindingProperty(PropertyBinding binding, IEntityBinding resolve) throws ScriptException {
         switch (binding) {
             case OBJECT: return resolve;
             case PATH: return resolve.path();
@@ -278,5 +265,51 @@ public class ExpressionDefinition {
                 throw new ScriptException("Cannot resolve property binding " + binding + " against object of type " + resolve.getClass());
         }
         throw new ScriptException("Cannot resolve property binding " + binding + " against object of type " + resolve.getClass());
+    }
+
+    private static class GraalVmJsCache {
+        private final Engine engine;
+        private final Source source;
+
+        public GraalVmJsCache(Engine engine, Source source) {
+            this.engine = engine;
+            this.source = source;
+        }
+
+        public Engine getEngine() {
+            return engine;
+        }
+
+        public Source getSource() {
+            return source;
+        }
+
+        public synchronized Object process(IBindingResolver resolver, Map<String, Object> additionalBindings, List<SymbolDefinition> symbols) throws ScriptException {
+            try (Context context = Context.newBuilder()
+                    .engine(engine)
+                    .allowAllAccess(true)
+                    .build()) {
+                Value bindings = context.getBindings("js");
+                // Update the bindings
+                for(SymbolDefinition sd : symbols) {
+                    bindings.putMember(sd.getName(), toBindingProperty(sd.getBinding(), resolver.resolve(sd.getReference())));
+                }
+                if(additionalBindings != null) {
+                    for(Map.Entry<String, Object> entry : additionalBindings.entrySet()) {
+                        bindings.putMember(entry.getKey(), entry.getValue());
+                    }
+                }
+                Value returnValue = context.eval(source);
+                return returnValue.as(Object.class);
+            }
+        }
+
+        // I know, it is deprecated, if you suggest a better -working- approach with Cleaner, I will be happy to implement it here and give you credits
+        @Override
+        protected synchronized void finalize() throws Throwable {
+            engine.close(true);
+            System.out.println("GraalVmJsCache finalised");
+            super.finalize();
+        }
     }
 }

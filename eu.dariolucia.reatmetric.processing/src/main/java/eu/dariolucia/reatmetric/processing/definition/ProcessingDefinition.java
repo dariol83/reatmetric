@@ -73,12 +73,16 @@ public class ProcessingDefinition {
                 aggregated.getParameterDefinitions().addAll(eachDef.getParameterDefinitions());
                 aggregated.getEventDefinitions().addAll(eachDef.getEventDefinitions());
                 aggregated.getActivityDefinitions().addAll(eachDef.getActivityDefinitions());
+                aggregated.setSyntheticParameterProcessingEnabled(aggregated.isSyntheticParameterProcessingEnabled() && eachDef.isSyntheticParameterProcessingEnabled());
             } catch(IOException | JAXBException e) {
                 LOG.log(Level.WARNING, "Cannot read definitions at " + def.getAbsolutePath(), e);
             }
         }
         return aggregated;
     }
+
+    @XmlAttribute(name = "synthetic_parameter_processing_enabled")
+    private boolean syntheticParameterProcessingEnabled = true;
 
     @XmlElementWrapper(name = "parameters")
     @XmlElement(name = "parameter")
@@ -124,5 +128,13 @@ public class ProcessingDefinition {
     public ProcessingDefinition setActivityDefinitions(List<ActivityProcessingDefinition> activityDefinitions) {
         this.activityDefinitions = activityDefinitions;
         return this;
+    }
+
+    public boolean isSyntheticParameterProcessingEnabled() {
+        return syntheticParameterProcessingEnabled;
+    }
+
+    public void setSyntheticParameterProcessingEnabled(boolean syntheticParameterProcessingEnabled) {
+        this.syntheticParameterProcessingEnabled = syntheticParameterProcessingEnabled;
     }
 }
