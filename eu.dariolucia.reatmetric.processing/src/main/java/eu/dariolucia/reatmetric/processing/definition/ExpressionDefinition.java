@@ -308,7 +308,6 @@ public class ExpressionDefinition {
         @Override
         protected synchronized void finalize() throws Throwable {
             engine.close(true);
-            System.out.println("GraalVmJsCache finalised");
             super.finalize();
         }
     }

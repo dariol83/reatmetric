@@ -20,6 +20,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
@@ -34,18 +35,14 @@ import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.automation.common.Constants;
 import eu.dariolucia.reatmetric.driver.automation.definition.AutomationConfiguration;
-import eu.dariolucia.reatmetric.driver.automation.internal.ScriptExecutionManager;
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.Engine;
-import org.graalvm.polyglot.Value;
+import eu.dariolucia.reatmetric.driver.automation.internal.GroovyExecutor;
+import eu.dariolucia.reatmetric.driver.automation.internal.IScriptExecutor;
+import eu.dariolucia.reatmetric.driver.automation.internal.JavascriptExecutor;
 
-import javax.script.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -56,13 +53,14 @@ import java.util.logging.Logger;
  * <p>
  * The driver provides a simple API to scripts under execution, to easily access archived and processing data.
  *
- * TODO: implement support for Groovy and Python scripts ...
+ * TODO: implement support for Python scripts ...
  */
 public class AutomationDriver implements IDriver, IActivityHandler {
 
     private static final Logger LOG = Logger.getLogger(AutomationDriver.class.getName());
+
     private static final String CONFIGURATION_FILE = "configuration.xml";
-    public static final String EXECUTION_STAGE = "Execution";
+    private static final String EXECUTION_STAGE = "Execution";
 
     private volatile SystemStatus status = SystemStatus.UNKNOWN;
 
@@ -73,10 +71,16 @@ public class AutomationDriver implements IDriver, IActivityHandler {
     private volatile IDriverListener subscriber;
     private volatile AutomationConfiguration configuration;
 
+    // API file contents
     private volatile String jsApiData;
+    private volatile String groovyApiData;
 
     // For activity execution
     private volatile ExecutorService executor;
+
+    // For activity abortion (done under lock)
+    private final Map<Pair<Integer, IUniqueId>, IScriptExecutor> runningExecutors = new HashMap<>();
+    private final Set<Pair<Integer, IUniqueId>> pendingAborts = new HashSet<>();
 
     public AutomationDriver() {
         //
@@ -97,6 +101,8 @@ public class AutomationDriver implements IDriver, IActivityHandler {
             });
             InputStream is = this.getClass().getClassLoader().getResourceAsStream(Constants.API_JS_RESOURCE_FILE);
             jsApiData = readContents(is);
+            is = this.getClass().getClassLoader().getResourceAsStream(Constants.API_GROOVY_RESOURCE_FILE);
+            groovyApiData = readContents(is);
 
             this.running = true;
             // Inform that everything is fine
@@ -110,7 +116,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
     private String readContents(InputStream is) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
         StringBuilder sb = new StringBuilder();
-        String read = null;
+        String read;
         while ((read = br.readLine()) != null) {
             sb.append(read).append((char) 10);
         }
@@ -162,8 +168,13 @@ public class AutomationDriver implements IDriver, IActivityHandler {
     }
 
     @Override
-    public void dispose() {
+    public synchronized void dispose() {
         running = false;
+        for(IScriptExecutor executor : runningExecutors.values()) {
+            executor.abort();
+        }
+        runningExecutors.clear();
+        pendingAborts.clear();
         // Clean up omitted... it should be done
     }
 
@@ -191,6 +202,9 @@ public class AutomationDriver implements IDriver, IActivityHandler {
 
     @Override
     public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        if(!running) {
+            throw new ActivityHandlingException("Driver not running");
+        }
         if (!activityInvocation.getType().equals(Constants.T_SCRIPT_TYPE)) {
             throw new ActivityHandlingException("Type " + activityInvocation.getType() + " not supported");
         }
@@ -206,8 +220,15 @@ public class AutomationDriver implements IDriver, IActivityHandler {
     }
 
     @Override
-    public void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException {
-        // TODO: record running scripts in a map, find way to tell the executor to abort execution/evaluation (if possible), execution stage shall be reported as FATAL
+    public synchronized void abortActivity(int activityId, IUniqueId activityOccurrenceId) {
+        // abort execution/evaluation (if possible), execution stage shall be reported as FATAL
+        Pair<Integer, IUniqueId> key = Pair.of(activityId, activityOccurrenceId);
+        IScriptExecutor exec = runningExecutors.get(key);
+        if(exec == null) {
+            pendingAborts.add(key);
+        } else {
+            exec.abort();
+        }
     }
 
     private void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
@@ -225,51 +246,49 @@ public class AutomationDriver implements IDriver, IActivityHandler {
                 throw new FileNotFoundException("File " + f.getAbsolutePath() + " does not exist");
             }
             String contents = Files.readString(f.toPath());
-            Object result = null;
-            if(f.getName().endsWith(Constants.JS_EXTENSION)) {
-                // Run automation and retrieve result
-                result = executeJs(contents, activityInvocation, fileName);
-            } else {
-                throw new ActivityHandlingException("Script type of " + f.getName() + " not supported: extension not recognized");
-            }
+            Object result;
+            IScriptExecutor exec = buildScriptExecutor(activityInvocation, fileName, contents);
+            // Execute the script and retrieve result
+            registerExecution(activityInvocation, exec);
+            result = exec.execute();
+            deregisterExecution(activityInvocation);
             // Report final state
             announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, result, ActivityOccurrenceState.VERIFICATION);
         } catch (Exception e) {
+            deregisterExecution(activityInvocation);
             LOG.log(Level.SEVERE, "Execution of procedure " + activityInvocation.getActivityOccurrenceId() + " failed: " + e.getMessage(), e);
             announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, null, ActivityOccurrenceState.EXECUTION);
         }
     }
 
-    protected static void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, Object result, ActivityOccurrenceState nextState) {
-        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, genTime, reportState, nextState, result));
+    private IScriptExecutor buildScriptExecutor(ActivityInvocation activityInvocation, String fileName, String contents) throws ActivityHandlingException {
+        if(fileName.endsWith(Constants.JS_EXTENSION)) {
+            return new JavascriptExecutor(this.context, this.jsApiData, contents, activityInvocation, fileName);
+        } else if(fileName.endsWith(Constants.GROOVY_EXTENSION)) {
+            return new GroovyExecutor(this.context, this.groovyApiData, contents, activityInvocation, fileName);
+        } else {
+            throw new ActivityHandlingException("Script type of " + fileName + " not supported: extension not recognized");
+        }
     }
 
-    public Object executeJs(String file, IActivityHandler.ActivityInvocation invocation, String fileName) throws ScriptException {
-        try {
-            try (Engine jsEngine = Engine.create()) {
-                try (Context context = Context.newBuilder()
-                        .engine(jsEngine)
-                        .allowAllAccess(true)
-                        .build()) {
-                    Value bindings = context.getBindings("js");
-                    for (Map.Entry<String, Object> entry : invocation.getArguments().entrySet()) {
-                        if (!entry.getKey().equals(Constants.ARGUMENT_FILE_NAME)) {
-                            bindings.putMember(entry.getKey(), entry.getValue());
-                        }
-                    }
-                    // Add API functions
-                    ScriptExecutionManager manager = new ScriptExecutionManager(this.context, invocation, fileName);
-                    bindings.putMember(Constants.BINDING_SCRIPT_MANAGER, manager);
-                    context.eval("js", jsApiData);
-                    return context.eval("js", file);
-                }
-            }
-        } catch (Exception e) {
-            throw new ScriptException(e);
-        } catch (Error e) {
-            LOG.log(Level.SEVERE, "Unexpected error when executing script " + fileName + ": " + e.getMessage(), e);
-            throw new ScriptException(e.getMessage());
+    private synchronized void deregisterExecution(ActivityInvocation activityInvocation) {
+        Pair<Integer, IUniqueId> key = Pair.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId());
+        pendingAborts.remove(key);
+        runningExecutors.remove(key);
+    }
+
+    private synchronized void registerExecution(ActivityInvocation activityInvocation, IScriptExecutor exec) throws IllegalStateException {
+        Pair<Integer, IUniqueId> key = Pair.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId());
+        if(pendingAborts.contains(key)) {
+            throw new IllegalStateException("Activity ID " + key.getSecond() + " pending abort: execution aborted");
+        } else {
+            pendingAborts.add(key);
+            runningExecutors.put(key, exec);
         }
+    }
+
+    protected static void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, Object result, ActivityOccurrenceState nextState) {
+        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, genTime, reportState, nextState, result));
     }
 
     @Override

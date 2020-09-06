@@ -26,11 +26,13 @@ public class Constants {
     // Bindings
     public static final String BINDING_SCRIPT_MANAGER = "_scriptManager";
 
-    // API resource js file
+    // API resource files
     public static final String API_JS_RESOURCE_FILE = "init.js";
+    public static final String API_GROOVY_RESOURCE_FILE = "init.groovy";
 
-    // Supported js extension
+    // Supported extensions
     public static final String JS_EXTENSION = "js";
+    public static final String GROOVY_EXTENSION = "groovy";
 
     // Automation engine route
     public static final String AUTOMATION_ROUTE = "Automation Engine";

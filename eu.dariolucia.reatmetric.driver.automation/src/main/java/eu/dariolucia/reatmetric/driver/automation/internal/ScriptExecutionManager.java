@@ -46,11 +46,23 @@ public class ScriptExecutionManager {
     private final IServiceCoreContext context;
     private final IActivityHandler.ActivityInvocation activityInvocation;
     private final String fileName;
+    private volatile boolean aborted = false;
 
     public ScriptExecutionManager(IServiceCoreContext context, IActivityHandler.ActivityInvocation activityInvocation, String fileName) {
         this.context = context;
         this.activityInvocation = activityInvocation;
         this.fileName = fileName;
+    }
+
+    public synchronized void _abort() {
+        this.aborted = true;
+        notifyAll();
+    }
+
+    private void checkAborted() {
+        if(aborted) {
+            throw new IllegalStateException("Script aborted");
+        }
     }
 
     public void info(String message) {
@@ -66,6 +78,7 @@ public class ScriptExecutionManager {
     }
 
     public ParameterData parameter(String paramPath) {
+        checkAborted();
         ParameterDataFilter pdf = new ParameterDataFilter(null, Collections.singletonList(SystemEntityPath.fromString(paramPath)), null, null, null, null);
         List<AbstractDataItem> values = context.getProcessingModel().get(pdf);
         if(values.isEmpty()) {
@@ -76,6 +89,7 @@ public class ScriptExecutionManager {
     }
 
     public EventData event(String eventPath) {
+        checkAborted();
         EventDataFilter edf = new EventDataFilter(null, Collections.singletonList(SystemEntityPath.fromString(eventPath)), null, null, null, null, null);
         List<AbstractDataItem> values = context.getProcessingModel().get(edf);
         if(values.isEmpty()) {
@@ -86,6 +100,7 @@ public class ScriptExecutionManager {
     }
 
     public SystemEntity systemEntity(String path) {
+        checkAborted();
         try {
             return context.getServiceFactory().getSystemModelMonitorService().getSystemEntityAt(SystemEntityPath.fromString(path));
         } catch (ReatmetricException e) {
@@ -95,6 +110,7 @@ public class ScriptExecutionManager {
     }
 
     public void enable(String path) {
+        checkAborted();
         try {
             context.getServiceFactory().getSystemModelMonitorService().enable(SystemEntityPath.fromString(path));
         } catch (ReatmetricException e) {
@@ -103,6 +119,7 @@ public class ScriptExecutionManager {
     }
 
     public void disable(String path) {
+        checkAborted();
         try {
             context.getServiceFactory().getSystemModelMonitorService().disable(SystemEntityPath.fromString(path));
         } catch (ReatmetricException e) {
@@ -112,6 +129,7 @@ public class ScriptExecutionManager {
 
 
     public boolean set(String paramPath, Object value) {
+        checkAborted();
         Instant now = Instant.now();
         try {
             int id = context.getProcessingModel().getExternalIdOf(SystemEntityPath.fromString(paramPath));
@@ -125,6 +143,7 @@ public class ScriptExecutionManager {
     }
 
     public boolean raise(String eventPath, String qualifier, Object report) {
+        checkAborted();
         Instant now = Instant.now();
         try {
             int id = context.getProcessingModel().getExternalIdOf(SystemEntityPath.fromString(eventPath));
@@ -138,6 +157,7 @@ public class ScriptExecutionManager {
     }
 
     public ActivityInvocationBuilder prepareActivity(String activityPath) {
+        checkAborted();
         try {
             return new ActivityInvocationBuilder(activityPath);
         } catch (ReatmetricException e) {
@@ -147,6 +167,7 @@ public class ScriptExecutionManager {
     }
 
     public TransportConnectionStatus connectorStatus(String connectorName) {
+        checkAborted();
         try {
             return context.getServiceFactory().getTransportConnectors().stream().filter(o -> o.getName().equals(connectorName)).map(ITransportConnector::getConnectionStatus).findFirst().orElse(null);
         } catch (ReatmetricException e) {
@@ -156,6 +177,7 @@ public class ScriptExecutionManager {
     }
 
     public boolean startConnector(String connectorName) {
+        checkAborted();
         try {
             for(ITransportConnector c : context.getServiceFactory().getTransportConnectors()) {
                 if(c.getName().equals(connectorName)) {
@@ -171,6 +193,7 @@ public class ScriptExecutionManager {
     }
 
     public boolean stopConnector(String connectorName) {
+        checkAborted();
         try {
             for(ITransportConnector c : context.getServiceFactory().getTransportConnectors()) {
                 if(c.getName().equals(connectorName)) {
@@ -186,6 +209,7 @@ public class ScriptExecutionManager {
     }
 
     public boolean abortConnector(String connectorName) {
+        checkAborted();
         try {
             for(ITransportConnector c : context.getServiceFactory().getTransportConnectors()) {
                 if(c.getName().equals(connectorName)) {
@@ -201,6 +225,7 @@ public class ScriptExecutionManager {
     }
 
     public boolean initConnector(String connectorName, String[] keys, Object[] values) {
+        checkAborted();
         if(keys.length != values.length) {
             LOG.log(Level.SEVERE, "Cannot initialise transport connector " + connectorName + " from automation " + fileName + ": lists of keys-values differ in size");
             return false;
@@ -224,6 +249,7 @@ public class ScriptExecutionManager {
     }
 
     private void logMessage(String message, Severity severity) {
+        checkAborted();
         try {
             context.getOperationalMessageBroker().distribute("Script", message, fileName, severity, null, true);
         } catch (ReatmetricException e) {
@@ -247,26 +273,31 @@ public class ScriptExecutionManager {
         }
 
         public ActivityInvocationBuilder withRoute(String route) {
+            checkAborted();
             this.requestBuilder.withRoute(route);
             return this;
         }
 
         public ActivityInvocationBuilder withProperty(String k, String v) {
+            checkAborted();
             this.requestBuilder.withProperty(k, v);
             return this;
         }
 
         public ActivityInvocationBuilder withArgument(String k, Object value, boolean engineering) {
+            checkAborted();
             this.requestBuilder.withArgument(new PlainActivityArgument(k, engineering ? null : value, engineering ? value : null, engineering));
             return this;
         }
 
         public ActivityInvocationBuilder withArgument(AbstractActivityArgument arg) {
+            checkAborted();
             this.requestBuilder.withArgument(arg);
             return this;
         }
 
         public ActivityInvocationResult execute() {
+            checkAborted();
             ActivityRequest request = this.requestBuilder.build();
             ActivityInvocationResult result = new ActivityInvocationResult(request);
             result.invoke();
@@ -274,10 +305,12 @@ public class ScriptExecutionManager {
         }
 
         public boolean executeAndWait() {
+            checkAborted();
             return execute().waitForCompletion();
         }
 
         public boolean executeAndWait(int timeoutSeconds) {
+            checkAborted();
             return execute().waitForCompletion(timeoutSeconds);
         }
     }
@@ -324,6 +357,7 @@ public class ScriptExecutionManager {
         }
 
         public boolean waitForCompletion(int timeoutSeconds) {
+            checkAborted();
             if(invocationFailed) {
                 return false;
             }
@@ -333,6 +367,7 @@ public class ScriptExecutionManager {
             synchronized (this) {
                 while(true) {
                     while (dataToProcess.isEmpty()) {
+                        checkAborted();
                         try {
                             wait(1000, 0);
                         } catch (InterruptedException e) {
@@ -365,6 +400,7 @@ public class ScriptExecutionManager {
         }
 
         public boolean waitForCompletion() {
+            checkAborted();
             return waitForCompletion(0);
         }
 
@@ -377,6 +413,7 @@ public class ScriptExecutionManager {
         }
 
         public ActivityReportState currentStatus() {
+            checkAborted();
             if(invocationFailed) {
                 return ActivityReportState.FAIL;
             }
