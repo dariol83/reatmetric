@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -63,7 +64,7 @@ public class RangeEnumCalibration extends CalibrationDefinition {
     // ----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver, ValueTypeEnum expectedOutput) throws CalibrationException {
         // If the valueToCalibrate can become an integer number somehow, then calibrate, otherwise error
         Number valueToUse = (Number) valueToCalibrate;
         if(valueToCalibrate == null) {

@@ -56,6 +56,11 @@
             <version>${groovy.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.python</groupId>
+            <artifactId>jython-slim</artifactId>
+            <version>${jython.version}</version>
+        </dependency>
+        <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.api</artifactId>
             <version>${project.parent.version}</version>

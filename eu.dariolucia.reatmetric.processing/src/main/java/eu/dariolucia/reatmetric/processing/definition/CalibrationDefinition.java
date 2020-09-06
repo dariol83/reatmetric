@@ -20,6 +20,7 @@ import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import eu.dariolucia.reatmetric.api.value.ValueException;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import org.graalvm.polyglot.Value;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -40,7 +41,7 @@ public abstract class CalibrationDefinition {
         this.applicability = applicability;
     }
 
-    public abstract Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException;
+    public abstract Object calibrate(Object valueToCalibrate, IBindingResolver resolver, ValueTypeEnum expectedOutput) throws CalibrationException;
 
     protected final double convertToDouble(Object valueToCheck) throws CalibrationException {
         if(valueToCheck instanceof Number) {
@@ -70,7 +71,7 @@ public abstract class CalibrationDefinition {
             for(CalibrationDefinition cd : definitions) {
                 try {
                     if (cd.getApplicability() == null || cd.getApplicability().execute(resolver)) {
-                        result = cd.calibrate(inputValue, resolver);
+                        result = cd.calibrate(inputValue, resolver, outputType);
                         calibrated = true;
                         break;
                     }
@@ -94,7 +95,7 @@ public abstract class CalibrationDefinition {
         Object result = inputValue;
         // Otherwise, calibrate it
         if(definition != null) {
-            result = definition.calibrate(inputValue, resolver);
+            result = definition.calibrate(inputValue, resolver, outputType);
         }
         return sanitize(outputType, result);
     }

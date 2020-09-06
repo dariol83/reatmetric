@@ -208,7 +208,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                         // Use the latest generation time
                         generationTime = latestGenerationTime;
                         try {
-                            sourceValue = definition.getExpression().execute(processor, null);
+                            sourceValue = definition.getExpression().execute(processor, null, definition.getRawType());
                             sourceValue = ValueUtil.convert(sourceValue, definition.getRawType());
                         } catch (Exception e) {
                             LOG.log(Level.SEVERE, "Error when computing value of parameter " + definition.getId() + " (" + definition.getLocation() + "): " + e.getMessage(), e);

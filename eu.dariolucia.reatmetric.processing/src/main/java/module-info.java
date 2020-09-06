@@ -22,10 +22,14 @@ open module eu.dariolucia.reatmetric.processing {
     requires java.scripting;
 
     requires eu.dariolucia.reatmetric.api;
+
     requires org.graalvm.sdk;
     requires org.graalvm.js.scriptengine;
     requires org.graalvm.js;
+
     requires org.codehaus.groovy;
+
+    requires jython.slim;
 
     exports eu.dariolucia.reatmetric.processing.extension;
     exports eu.dariolucia.reatmetric.processing.definition;

@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -104,7 +105,7 @@ public class LogCalibration extends CalibrationDefinition{
     }
 
     @Override
-    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver, ValueTypeEnum expectedOutput) throws CalibrationException {
         double val = convertToDouble(valueToCalibrate);
         return 1/(a0 + a1*Math.log(val) + a2*Math.pow(Math.log(val), 2) + a3*Math.pow(Math.log(val), 3) + a4*Math.pow(Math.log(val), 4) + a5*Math.pow(Math.log(val), 5));
     }

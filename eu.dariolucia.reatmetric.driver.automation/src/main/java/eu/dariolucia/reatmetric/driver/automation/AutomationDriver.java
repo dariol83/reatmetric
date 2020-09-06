@@ -35,6 +35,9 @@ import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.automation.common.Constants;
 import eu.dariolucia.reatmetric.driver.automation.definition.AutomationConfiguration;
 import eu.dariolucia.reatmetric.driver.automation.internal.ScriptExecutionManager;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.Value;
 
 import javax.script.*;
 import java.io.*;
@@ -70,7 +73,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
     private volatile IDriverListener subscriber;
     private volatile AutomationConfiguration configuration;
 
-    private volatile String apiData;
+    private volatile String jsApiData;
 
     // For activity execution
     private volatile ExecutorService executor;
@@ -92,14 +95,8 @@ public class AutomationDriver implements IDriver, IActivityHandler {
                 toReturn.setDaemon(true);
                 return toReturn;
             });
-            InputStream is = this.getClass().getClassLoader().getResourceAsStream(Constants.API_RESOURCE_FILE);
-            BufferedReader br = new BufferedReader(new InputStreamReader(is));
-            StringBuilder sb = new StringBuilder();
-            String read = null;
-            while ((read = br.readLine()) != null) {
-                sb.append(read).append((char) 10);
-            }
-            apiData = sb.toString();
+            InputStream is = this.getClass().getClassLoader().getResourceAsStream(Constants.API_JS_RESOURCE_FILE);
+            jsApiData = readContents(is);
 
             this.running = true;
             // Inform that everything is fine
@@ -108,6 +105,16 @@ public class AutomationDriver implements IDriver, IActivityHandler {
             updateStatus(SystemStatus.ALARM);
             throw new DriverException(e);
         }
+    }
+
+    private String readContents(InputStream is) throws IOException {
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+        String read = null;
+        while ((read = br.readLine()) != null) {
+            sb.append(read).append((char) 10);
+        }
+        return sb.toString();
     }
 
     private void updateStatus(SystemStatus s) {
@@ -218,8 +225,13 @@ public class AutomationDriver implements IDriver, IActivityHandler {
                 throw new FileNotFoundException("File " + f.getAbsolutePath() + " does not exist");
             }
             String contents = Files.readString(f.toPath());
-            // Run automation and retrieve result
-            Object result = execute(contents, activityInvocation, fileName);
+            Object result = null;
+            if(f.getName().endsWith(Constants.JS_EXTENSION)) {
+                // Run automation and retrieve result
+                result = executeJs(contents, activityInvocation, fileName);
+            } else {
+                throw new ActivityHandlingException("Script type of " + f.getName() + " not supported: extension not recognized");
+            }
             // Report final state
             announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, result, ActivityOccurrenceState.VERIFICATION);
         } catch (Exception e) {
@@ -232,27 +244,32 @@ public class AutomationDriver implements IDriver, IActivityHandler {
         model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, genTime, reportState, nextState, result));
     }
 
-    public Object execute(String file, IActivityHandler.ActivityInvocation invocation, String fileName) throws ScriptException {
-        // TODO: replace with GraalVM proper way
-        ScriptEngine engine = new ScriptEngineManager().getEngineByName("graal.js");
-        Bindings bindings = engine.getBindings(ScriptContext.ENGINE_SCOPE);
-        bindings.put("polyglot.js.allowAllAccess", true);
-        bindings.put("polyglot.js.allowHostAccess", true);
-
-        // Do not compile, just run
-
-        // Prepare the bindings (arguments)
-        for (Map.Entry<String, Object> entry : invocation.getArguments().entrySet()) {
-            if (!entry.getKey().equals(Constants.ARGUMENT_FILE_NAME)) {
-                bindings.put(entry.getKey(), entry.getValue());
+    public Object executeJs(String file, IActivityHandler.ActivityInvocation invocation, String fileName) throws ScriptException {
+        try {
+            try (Engine jsEngine = Engine.create()) {
+                try (Context context = Context.newBuilder()
+                        .engine(jsEngine)
+                        .allowAllAccess(true)
+                        .build()) {
+                    Value bindings = context.getBindings("js");
+                    for (Map.Entry<String, Object> entry : invocation.getArguments().entrySet()) {
+                        if (!entry.getKey().equals(Constants.ARGUMENT_FILE_NAME)) {
+                            bindings.putMember(entry.getKey(), entry.getValue());
+                        }
+                    }
+                    // Add API functions
+                    ScriptExecutionManager manager = new ScriptExecutionManager(this.context, invocation, fileName);
+                    bindings.putMember(Constants.BINDING_SCRIPT_MANAGER, manager);
+                    context.eval("js", jsApiData);
+                    return context.eval("js", file);
+                }
             }
+        } catch (Exception e) {
+            throw new ScriptException(e);
+        } catch (Error e) {
+            LOG.log(Level.SEVERE, "Unexpected error when executing script " + fileName + ": " + e.getMessage(), e);
+            throw new ScriptException(e.getMessage());
         }
-        // Add API functions
-        ScriptExecutionManager manager = new ScriptExecutionManager(context, invocation, fileName);
-        bindings.put(Constants.BINDING_SCRIPT_MANAGER, manager);
-        engine.eval(apiData);
-        // Evaluate the automation
-        return engine.eval(file, bindings);
     }
 
     @Override

@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
 import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -48,9 +49,9 @@ public class ExpressionCalibration extends CalibrationDefinition {
     }
 
     @Override
-    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver, ValueTypeEnum expectedOutput) throws CalibrationException {
         try {
-            return definition.execute(resolver, Collections.singletonMap(INPUT_BINDING, valueToCalibrate));
+            return definition.execute(resolver, Collections.singletonMap(INPUT_BINDING, valueToCalibrate), expectedOutput);
         } catch (ScriptException e) {
             throw new CalibrationException("Cannot calibrate value " + valueToCalibrate + " using expression", e);
         } catch (Exception e) {

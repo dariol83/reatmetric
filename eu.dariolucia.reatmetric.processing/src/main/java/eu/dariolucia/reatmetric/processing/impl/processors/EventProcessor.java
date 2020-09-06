@@ -29,6 +29,7 @@ import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEventBinding;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.processing.definition.EventProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.EventDataBuilder;
@@ -112,7 +113,7 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                 sourceList = Collections.singletonList(getPath().asString());
                 boolean triggered;
                 try {
-                    triggered = (Boolean) definition.getCondition().execute(processor, null);
+                    triggered = (Boolean) definition.getCondition().execute(processor, null, ValueTypeEnum.BOOLEAN);
                     mustBeRaised = triggered && !conditionTriggerState; // raise the event if it must be raised and it is not already reported from previous evaluation
                     conditionTriggerState = triggered;
                     // No need to set more

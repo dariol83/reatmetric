@@ -27,8 +27,13 @@ public class Constants {
     public static final String BINDING_SCRIPT_MANAGER = "_scriptManager";
 
     // API resource js file
-    public static final String API_RESOURCE_FILE = "init.js";
+    public static final String API_JS_RESOURCE_FILE = "init.js";
+
+    // Supported js extension
+    public static final String JS_EXTENSION = "js";
 
     // Automation engine route
     public static final String AUTOMATION_ROUTE = "Automation Engine";
+
+
 }

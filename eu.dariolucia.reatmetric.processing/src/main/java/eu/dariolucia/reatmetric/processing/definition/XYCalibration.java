@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -66,7 +67,7 @@ public class XYCalibration extends CalibrationDefinition {
     private transient List<XYSegment> segments = new ArrayList<>();
 
     @Override
-    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver, ValueTypeEnum expectedOutput) throws CalibrationException {
         if(segments.isEmpty()) {
             for(int i = 0; i < points.size() - 1; ++i) {
                 segments.add(new XYSegment(

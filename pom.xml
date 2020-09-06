@@ -65,6 +65,7 @@
         <jdbc.version>19.3.0.0</jdbc.version>
         <graalvm.version>20.2.0</graalvm.version>
         <groovy.version>2.5.13</groovy.version>
+        <jython.version>2.7.2</jython.version>
         <ccsds.version>0.3.3</ccsds.version>
         <controlsfx.version>11.0.1</controlsfx.version>
         <!-- Maven plugin versions -->

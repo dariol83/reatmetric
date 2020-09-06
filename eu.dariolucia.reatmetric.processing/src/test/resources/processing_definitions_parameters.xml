@@ -171,7 +171,7 @@
             </validity>
         </parameter>
 
-        <!-- Expression with binding properties -->
+        <!-- JS Expression with binding properties -->
         <parameter id="#1030" location="ROOT.EXPTEST.BASE" description="Base parameter" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
             <calib_poly a1="2" />
             <checks>
@@ -246,6 +246,43 @@
                 <point x="20" y="0" />
             </calib_xy>
         </parameter>
+
+        <!-- Groovy Expression with binding properties -->
+        <parameter id="#1100" location="ROOT.EXPTESTGRY.BASE" description="Base groovy parameter" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <calib_poly a1="2" />
+            <checks>
+                <expected name="EXPCHK1" type="SIGNED_INTEGER">
+                    <value>10</value>
+                    <value>20</value>
+                    <value>30</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#1101" location="ROOT.EXPTESTGRY.EXP1" description="Parameter with groovy expression 1" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <synthetic dialect="GROOVY">
+                <expression>SOURCEVAL == 30 ? 100 : -20</expression>
+                <symbol name="SOURCEVAL" reference="#1100" binding="SOURCE_VALUE" />
+            </synthetic>
+        </parameter>
+
+        <!-- Python Expression with binding properties -->
+        <parameter id="#1200" location="ROOT.EXPTESTPY.BASE" description="Base python parameter" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <calib_poly a1="2" />
+            <checks>
+                <expected name="EXPCHK1" type="SIGNED_INTEGER">
+                    <value>10</value>
+                    <value>20</value>
+                    <value>30</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#1201" location="ROOT.EXPTESTPY.EXP1" description="Parameter with python expression 1" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <synthetic dialect="PYTHON">
+                <expression>100 if SOURCEVAL == 30 else -20</expression>
+                <symbol name="SOURCEVAL" reference="#1200" binding="SOURCE_VALUE" />
+            </synthetic>
+        </parameter>
+
 
     </parameters>
 </ns1:processing>

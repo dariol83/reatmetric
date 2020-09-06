@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.processing.extension.ICalibrationExtension;
 import eu.dariolucia.reatmetric.processing.extension.internal.ExtensionRegistry;
 
@@ -70,7 +71,7 @@ public class ExternalCalibration extends CalibrationDefinition {
     private transient ICalibrationExtension externalCalibration = null;
 
     @Override
-    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver, ValueTypeEnum expectedOutput) throws CalibrationException {
         // Initialise the properties
         if(!properties.isEmpty() && key2values.isEmpty()) {
             properties.forEach(o -> key2values.put(o.getKey(), o.getValue()));
@@ -82,6 +83,6 @@ public class ExternalCalibration extends CalibrationDefinition {
                 throw new CalibrationException("External calibration function " + function + " not found");
             }
         }
-        return externalCalibration.calibrate(valueToCalibrate, key2values, resolver);
+        return externalCalibration.calibrate(valueToCalibrate, key2values, resolver, expectedOutput);
     }
 }

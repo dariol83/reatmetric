@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.extension.internal;
 
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.processing.extension.ICalibrationExtension;
 
 import java.util.Map;
@@ -29,7 +30,7 @@ public class IdentityCalibration implements ICalibrationExtension {
     }
 
     @Override
-    public Object calibrate(Object valueToCalibrate, Map<String, String> properties, IBindingResolver resolver) {
+    public Object calibrate(Object valueToCalibrate, Map<String, String> properties, IBindingResolver resolver, ValueTypeEnum expectedOutput) {
         return valueToCalibrate;
     }
 }

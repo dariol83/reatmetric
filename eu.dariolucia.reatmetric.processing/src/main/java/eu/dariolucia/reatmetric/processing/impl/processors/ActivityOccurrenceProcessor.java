@@ -25,6 +25,7 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.ActivityOccurrenceUpdateOperation;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
@@ -215,7 +216,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
             // If an expression is specified, run the expression now as verification (if in the correct state)
             if (parent.getDefinition().getVerification() != null) {
                 try {
-                    Boolean verificationResult = (Boolean) parent.getDefinition().getVerification().execute(parent.processor, Map.of(SELF_BINDING, this));
+                    Boolean verificationResult = (Boolean) parent.getDefinition().getVerification().execute(parent.processor, Map.of(SELF_BINDING, this), ValueTypeEnum.BOOLEAN);
                     if (verificationResult) {
                         if (LOG.isLoggable(Level.INFO)) {
                             LOG.log(Level.INFO, String.format("Verification of activity occurrence %s of activity %s completed", occurrenceId, parent.getPath()));
@@ -352,7 +353,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         // If currentState is VERIFICATION, check expression: if OK, then announce ActivityOccurrenceReport OK and move to COMPLETION
         if (currentState == ActivityOccurrenceState.VERIFICATION) {
             try {
-                Boolean verificationResult = (Boolean) parent.getDefinition().getVerification().execute(parent.processor, Map.of(SELF_BINDING, this));
+                Boolean verificationResult = (Boolean) parent.getDefinition().getVerification().execute(parent.processor, Map.of(SELF_BINDING, this), ValueTypeEnum.BOOLEAN);
                 if (verificationResult) {
                     if (LOG.isLoggable(Level.INFO)) {
                         LOG.log(Level.INFO, String.format("Verification of activity occurrence %s of activity %s completed", occurrenceId, parent.getPath()));

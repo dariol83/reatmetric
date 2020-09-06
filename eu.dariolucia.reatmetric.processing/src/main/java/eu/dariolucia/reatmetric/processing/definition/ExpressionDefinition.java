@@ -20,6 +20,7 @@ import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEntityBinding;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEventBinding;
 import eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;
@@ -28,6 +29,9 @@ import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.python.core.PyCode;
+import org.python.core.PyObject;
+import org.python.util.PythonInterpreter;
 
 import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -95,11 +99,11 @@ public class ExpressionDefinition {
     // Transient state, runtime methods
     // ----------------------------------------------------------------------------------------------------------------
 
-    public Object execute(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
+    public Object execute(IBindingResolver resolver, Map<String, Object> additionalBindings, ValueTypeEnum expectedReturnValueType) throws ScriptException {
         switch(dialect) {
             case JS: return executeJs(resolver, additionalBindings);
             case GROOVY: return executeGroovy(resolver, additionalBindings);
-            case PYTHON: return executePython(resolver, additionalBindings);
+            case PYTHON: return executePython(resolver, additionalBindings, expectedReturnValueType);
             default:
                 throw new ScriptException("Dialect not supported: " + dialect);
         }
@@ -117,6 +121,10 @@ public class ExpressionDefinition {
     private Object executeJs(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
         try (Engine jsEngine = Engine.create()) {
             Source jsSource = Source.create("js", expression);
+            // if(jsEngine == null) {
+            //     jsEngine = Engine.create();
+            //     jsSource = Source.create("js", expression);
+            // }
             try (Context context = Context.newBuilder()
                     .engine(jsEngine)
                     .allowAllAccess(true)
@@ -137,8 +145,47 @@ public class ExpressionDefinition {
         }
     }
 
-    private Object executePython(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
-        throw new ScriptException("Python not supported yet");
+    // ----------------------------------------------------------------------------------------------------------------
+    // Python support
+    // ----------------------------------------------------------------------------------------------------------------
+
+    private transient PythonInterpreter pythonEngine;
+    private transient PyCode pythonCode;
+
+    private Object executePython(IBindingResolver resolver, Map<String, Object> additionalBindings, ValueTypeEnum expectedReturnValueType) throws ScriptException {
+        // One engine per expression, to avoid concurrent access: might not be wise from a memory POV...
+        if(pythonEngine == null) {
+            pythonEngine = new PythonInterpreter();
+            pythonCode = pythonEngine.compile(expression);
+        }
+        // Update the bindings
+        for(SymbolDefinition sd : symbols) {
+            pythonEngine.set(sd.getName(), toBindingProperty(sd.getBinding(), resolver.resolve(sd.getReference())));
+        }
+        if(additionalBindings != null) {
+            for(Map.Entry<String, Object> add : additionalBindings.entrySet()) {
+                pythonEngine.set(add.getKey(), add.getValue());
+            }
+        }
+        // Evaluate the script
+        PyObject obj = pythonEngine.eval(pythonCode);
+        if(obj != null) {
+            return fromPythonObject(obj, expectedReturnValueType);
+        } else {
+            return null;
+        }
+    }
+
+    private Object fromPythonObject(PyObject obj, ValueTypeEnum expectedReturnValueType) throws ScriptException {
+        switch(expectedReturnValueType) {
+            case BOOLEAN: return obj.asInt() != 0;
+            case ENUMERATED: return obj.asInt();
+            case REAL: return obj.asDouble();
+            case UNSIGNED_INTEGER:
+            case SIGNED_INTEGER: return obj.asLong();
+            case CHARACTER_STRING: return obj.asString();
+            default: throw new ScriptException("Return type " + expectedReturnValueType + " not supported for python expressions");
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------

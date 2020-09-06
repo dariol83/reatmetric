@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
 import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -62,7 +63,7 @@ public class ValidityCondition {
     public boolean execute(IBindingResolver resolver) throws ValidityException {
         if(condition != null) {
             try {
-                Object o = this.condition.execute(resolver, null);
+                Object o = this.condition.execute(resolver, null, ValueTypeEnum.BOOLEAN);
                 if(!(o instanceof Boolean)) {
                     throw new ValidityException("Error while evaluating validity condition: expression returned a non-boolean value");
                 }

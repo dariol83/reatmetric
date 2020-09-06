@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -67,7 +68,7 @@ public class EnumCalibration extends CalibrationDefinition {
     private transient Map<Long, String> point2values = new HashMap<>();
 
     @Override
-    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver) throws CalibrationException {
+    public Object calibrate(Object valueToCalibrate, IBindingResolver resolver, ValueTypeEnum expectedOutput) throws CalibrationException {
         // If the valueToCalibrate can become an integer number somehow, then calibrate, otherwise error
         long valueToUse = convertToLong(valueToCalibrate);
         if(point2values.isEmpty()) {

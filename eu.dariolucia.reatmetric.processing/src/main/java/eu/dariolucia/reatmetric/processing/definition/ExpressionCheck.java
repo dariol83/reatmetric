@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
 import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
@@ -57,7 +58,7 @@ public class ExpressionCheck extends CheckDefinition{
         // Check
         boolean violated;
         try {
-            violated = (Boolean) definition.execute(resolver, Collections.singletonMap(INPUT_BINDING, currentValue));
+            violated = (Boolean) definition.execute(resolver, Collections.singletonMap(INPUT_BINDING, currentValue), ValueTypeEnum.BOOLEAN);
         } catch (ScriptException e) {
             throw new CheckException("Cannot check value " + currentValue + " using expression", e);
         } catch (ClassCastException e) {
