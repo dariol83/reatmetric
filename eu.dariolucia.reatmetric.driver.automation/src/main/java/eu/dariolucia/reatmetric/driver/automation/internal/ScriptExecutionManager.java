@@ -142,6 +142,10 @@ public class ScriptExecutionManager {
         }
     }
 
+    public boolean raiseEvent(String eventPath, String qualifier, Object report) {
+        return raise(eventPath, qualifier, report);
+    }
+
     public boolean raise(String eventPath, String qualifier, Object report) {
         checkAborted();
         Instant now = Instant.now();
