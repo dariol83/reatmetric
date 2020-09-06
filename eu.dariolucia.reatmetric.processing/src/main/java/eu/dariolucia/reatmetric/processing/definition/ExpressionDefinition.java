@@ -42,12 +42,11 @@ import java.lang.ref.SoftReference;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ExpressionDefinition {
 
-    private static final Logger LOG = Logger.getLogger(ExpressionDefinition.class.getName());
+    public final static String PYTHON_RESULT_NAME = "_result";
 
     @XmlElement(name="expression", required = true)
     private String expression;
@@ -111,13 +110,10 @@ public class ExpressionDefinition {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Javascript support via GraalVM.js (slow at the moment, buggy if caching of Engine and Source is done)
-    // https://github.com/graalvm/graaljs/issues/268
+    // Javascript support via GraalVM.js (slow at the moment, buggy if caching of Engine and Source is done).
+    // SoftReference need to overcome bug: https://github.com/graalvm/graaljs/issues/268
     // ----------------------------------------------------------------------------------------------------------------
 
-    // TODO: if the jsEngine and the jsSource are cached, then you have memory leak
-    // private transient Source jsSource;
-    // private transient Engine jsEngine;
     private transient volatile SoftReference<GraalVmJsCache> jsCache = new SoftReference<>(null);
 
     private Object executeJs(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
@@ -133,7 +129,8 @@ public class ExpressionDefinition {
     }
 
     // ----------------------------------------------------------------------------------------------------------------
-    // Python support
+    // Python support: python support for expression is provided only for simple statements and it is slow.
+    // It is deprecated.
     // ----------------------------------------------------------------------------------------------------------------
 
     private transient PythonInterpreter pythonEngine;
@@ -157,21 +154,20 @@ public class ExpressionDefinition {
         // Evaluate the script
         PyObject obj = pythonEngine.eval(pythonCode);
         if(obj != null) {
-            return fromPythonObject(obj, expectedReturnValueType);
+            Object returnObj = obj.__tojava__(Object.class);
+            if(returnObj == null) {
+                // Thanks to https://stackoverflow.com/questions/1887320/get-data-back-from-jython-scripts-using-jsr-223
+                obj = pythonEngine.get(PYTHON_RESULT_NAME);
+                if(obj != null) {
+                    return obj.__tojava__(Object.class);
+                } else {
+                    return null;
+                }
+            } else {
+                return returnObj;
+            }
         } else {
             return null;
-        }
-    }
-
-    private Object fromPythonObject(PyObject obj, ValueTypeEnum expectedReturnValueType) throws ScriptException {
-        switch(expectedReturnValueType) {
-            case BOOLEAN: return obj.asInt() != 0;
-            case ENUMERATED: return obj.asInt();
-            case REAL: return obj.asDouble();
-            case UNSIGNED_INTEGER:
-            case SIGNED_INTEGER: return obj.asLong();
-            case CHARACTER_STRING: return obj.asString();
-            default: throw new ScriptException("Return type " + expectedReturnValueType + " not supported for python expressions");
         }
     }
 

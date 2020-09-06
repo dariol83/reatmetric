@@ -38,6 +38,7 @@ import eu.dariolucia.reatmetric.driver.automation.definition.AutomationConfigura
 import eu.dariolucia.reatmetric.driver.automation.internal.GroovyExecutor;
 import eu.dariolucia.reatmetric.driver.automation.internal.IScriptExecutor;
 import eu.dariolucia.reatmetric.driver.automation.internal.JavascriptExecutor;
+import eu.dariolucia.reatmetric.driver.automation.internal.PythonExecutor;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -49,11 +50,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * This driver provides the capability to execute automation and automation procedures written in Javascript.
+ * This driver provides the capability to execute automation and automation procedures written in Javascript, Groovy or
+ * Python.
  * <p>
  * The driver provides a simple API to scripts under execution, to easily access archived and processing data.
- *
- * TODO: implement support for Python scripts ...
+ * <p>
+ * As limitation related to the Python language, Python scripts will not return any value.
  */
 public class AutomationDriver implements IDriver, IActivityHandler {
 
@@ -74,6 +76,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
     // API file contents
     private volatile String jsApiData;
     private volatile String groovyApiData;
+    private volatile String pythonApiData;
 
     // For activity execution
     private volatile ExecutorService executor;
@@ -103,6 +106,8 @@ public class AutomationDriver implements IDriver, IActivityHandler {
             jsApiData = readContents(is);
             is = this.getClass().getClassLoader().getResourceAsStream(Constants.API_GROOVY_RESOURCE_FILE);
             groovyApiData = readContents(is);
+            is = this.getClass().getClassLoader().getResourceAsStream(Constants.API_PYTHON_RESOURCE_FILE);
+            pythonApiData = readContents(is);
 
             this.running = true;
             // Inform that everything is fine
@@ -266,6 +271,8 @@ public class AutomationDriver implements IDriver, IActivityHandler {
             return new JavascriptExecutor(this.context, this.jsApiData, contents, activityInvocation, fileName);
         } else if(fileName.endsWith(Constants.GROOVY_EXTENSION)) {
             return new GroovyExecutor(this.context, this.groovyApiData, contents, activityInvocation, fileName);
+        } else if(fileName.endsWith(Constants.PYTHON_EXTENSION)) {
+            return new PythonExecutor(this.context, this.pythonApiData, contents, activityInvocation, fileName);
         } else {
             throw new ActivityHandlingException("Script type of " + fileName + " not supported: extension not recognized");
         }

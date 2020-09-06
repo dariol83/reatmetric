@@ -86,7 +86,12 @@ public class JavascriptExecutor implements IScriptExecutor {
                 if(aborted) {
                     throw new IllegalStateException("Script " + fileName + " aborted");
                 }
-                return context.eval("js", this.contents);
+                Value returnValue = context.eval("js", this.contents);
+                if(returnValue != null) {
+                    return returnValue.as(Object.class);
+                } else {
+                    return null;
+                }
             }
         } catch (Exception e) {
             throw new ScriptException(e);
@@ -106,7 +111,6 @@ public class JavascriptExecutor implements IScriptExecutor {
         ScriptExecutionManager theManager = manager;
         if(theManager != null) {
             theManager._abort();
-            theManager = null;
         }
         Engine toAbort = jsEngine;
         if(toAbort != null) {

@@ -1,15 +1,15 @@
 ## Automation API
 
 ### Script structure
-A script must be a sequence of Javascript statements, which will be executed when the script is evaluated by the script engine. The
-statements shall not be placed into a function wrapper, even though Javascript functions can be specified at the beginning of the 
+A script must be a sequence of Javascript/Groovy/Python statements, which will be executed when the script is evaluated by the script engine. The
+statements shall not be placed into a function wrapper, even though Javascript/Groovy/Python functions can be specified at the beginning of the 
 script file.
 
-Reserved API function names as well as the variable names 'FILENAME' and '_scriptManager' are reserved and shall not be used as 
+API function names as well as the variable names 'FILENAME' and '_scriptManager' are reserved and shall not be used as 
 declared variable names. 
 
 ### Declaration of arguments
-Script arguments do not need declaration: the automation engine binds all the activity arguments to equivalent Javascript 
+Script arguments do not need declaration: the automation engine binds all the activity arguments to equivalent language 
 symbols. The only argument which is not mapped is the argument named "FILENAME", which is the reserved argument name to
 map to the specific script file inside the script directory. 
 
@@ -36,19 +36,27 @@ Return the current state (as EventData) of the specified event. Can return null 
 
 Inject the source value of the specified parameter. Return true if the function call to the processing model went OK, false in case of injection exception.
 
-`raise(String eventPath):boolean;`
+Javascript/Groovy: `raise(String eventPath):boolean;` 
+
+Python: `raise_event(String eventPath):boolean;`
 
 Raise the specified event. Return true if the function call to the processing model went OK, false in case of injection exception.
 
-`raise(String eventPath, String qualifier):boolean;`
+Javascript/Groovy: `raise(String eventPath, String qualifier):boolean;`  
+
+Python: `raise_event(String eventPath, String qualifier):boolean;`
 
 Raise the specified event with the attached qualifier. Return true if the function call to the processing model went OK, false in case of injection exception.
 
-`raise(String eventPath, String qualifier, Object report):boolean;`
+Javascript/Groovy: `raise(String eventPath, String qualifier, Object report):boolean;` 
+
+Python: `raise_event(String eventPath, String qualifier, Object report):boolean;`
 
 Raise the specified event with the attached qualifier and report. Return true if the function call to the processing model went OK, false in case of injection exception.
 
-`prepareActivity(String activityPath):ActivityInvocationBuilder;`
+Javascript/Groovy: `prepareActivity(String activityPath):ActivityInvocationBuilder;` 
+
+Python: `prepare_activity(String activityPath):ActivityInvocationBuilder;`
 
 Prepare the invocation of an activity. Return an object that can be used to customise the activity execution and invoke it subsequently. Can return null if no such activity can be located in the processing model..
 
@@ -102,7 +110,10 @@ Return the current status (as ActivityReportState) of the activity execution.
 
 ### How to return a value
 
-It is enough to evaluate the variable as last instruction at the end of the script. For instance, if the script uses the variable
+For Javascript and Groovy it is enough to evaluate the variable as last instruction at the end of the script. For instance, if the script uses the variable
 `theResult` and the value must be reported, it is enough to declare, at the end of the script:
 
 `theResult;`
+
+For Python, the special variable name `_result` shall be used to report the return value, since Python does not return a value using the last evaluated
+expression.

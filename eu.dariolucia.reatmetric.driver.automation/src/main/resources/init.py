@@ -1,7 +1,6 @@
 def info(message):
     _scriptManager.info(message)
 
-
 def warning(message):
     _scriptManager.warning(message)
 

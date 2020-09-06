@@ -16,6 +16,8 @@
 
 package eu.dariolucia.reatmetric.driver.automation.common;
 
+import eu.dariolucia.reatmetric.processing.definition.ExpressionDefinition;
+
 public class Constants {
     // Activity Type
     public static final String T_SCRIPT_TYPE = "SCRIPT";
@@ -29,13 +31,16 @@ public class Constants {
     // API resource files
     public static final String API_JS_RESOURCE_FILE = "init.js";
     public static final String API_GROOVY_RESOURCE_FILE = "init.groovy";
+    public static final String API_PYTHON_RESOURCE_FILE = "init.py";
 
     // Supported extensions
     public static final String JS_EXTENSION = "js";
     public static final String GROOVY_EXTENSION = "groovy";
+    public static final String PYTHON_EXTENSION = "py";
 
     // Automation engine route
     public static final String AUTOMATION_ROUTE = "Automation Engine";
 
-
+    // Python result object name
+    public static final String PYTHON_RESULT_NAME = ExpressionDefinition.PYTHON_RESULT_NAME;
 }

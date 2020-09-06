@@ -19,63 +19,76 @@ package eu.dariolucia.reatmetric.driver.automation.internal;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.automation.common.Constants;
-import groovy.lang.Binding;
-import groovy.lang.GroovyShell;
-import groovy.lang.Script;
+import org.python.core.PyCode;
+import org.python.core.PyObject;
+import org.python.util.PythonInterpreter;
 
 import javax.script.ScriptException;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class GroovyExecutor implements IScriptExecutor {
+public class PythonExecutor implements IScriptExecutor {
 
-    private static final Logger LOG = Logger.getLogger(GroovyExecutor.class.getName());
+    private static final Logger LOG = Logger.getLogger(PythonExecutor.class.getName());
 
     private final String contents;
     private final IActivityHandler.ActivityInvocation invocation;
     private final String fileName;
     private final IServiceCoreContext context;
-    private final String groovyApiData;
+    private final String pythonApiData;
 
-    private volatile GroovyShell groovyShell;
-    private volatile Binding groovyBinding;
-    private volatile Script groovyScript;
+    private volatile PythonInterpreter pythonEngine;
     private volatile boolean aborted;
     private volatile ScriptExecutionManager manager;
 
-    public GroovyExecutor(IServiceCoreContext context, String initData, String contents, IActivityHandler.ActivityInvocation activityInvocation, String fileName) {
+    public PythonExecutor(IServiceCoreContext context, String initData, String contents, IActivityHandler.ActivityInvocation activityInvocation, String fileName) {
         this.contents = contents;
         this.invocation = activityInvocation;
         this.fileName = fileName;
         this.context = context;
-        this.groovyApiData = initData;
+        this.pythonApiData = initData;
     }
 
     @Override
     public Object execute() throws ScriptException {
+        PyCode pythonCode;
         try {
             if(aborted) {
                 throw new IllegalStateException("Script " + fileName + " aborted");
             }
-            groovyShell = new GroovyShell();
-            groovyBinding = new Binding();
-            groovyScript = groovyShell.parse(groovyApiData + "\n\n" + contents);
-            groovyScript.setBinding(groovyBinding);
+            pythonEngine = new PythonInterpreter();
+            pythonCode = pythonEngine.compile(pythonApiData + "\n\n" + contents);
             if(aborted) {
                 throw new IllegalStateException("Script " + fileName + " aborted");
             }
             for (Map.Entry<String, Object> entry : invocation.getArguments().entrySet()) {
                 if (!entry.getKey().equals(Constants.ARGUMENT_FILE_NAME)) {
-                    groovyBinding.setProperty(entry.getKey(), entry.getValue());
+                    pythonEngine.set(entry.getKey(), entry.getValue());
                 }
             }
             manager = new ScriptExecutionManager(this.context, invocation, fileName);
-            groovyBinding.setProperty(Constants.BINDING_SCRIPT_MANAGER, manager);
+            pythonEngine.set(Constants.BINDING_SCRIPT_MANAGER, manager);
             if(aborted) {
                 throw new IllegalStateException("Script " + fileName + " aborted");
             }
-            return groovyScript.run();
+            PyObject obj = pythonEngine.eval(pythonCode);
+            if(obj != null) {
+                Object returnObj = obj.__tojava__(Object.class);
+                if(returnObj == null) {
+                    // Thanks to https://stackoverflow.com/questions/1887320/get-data-back-from-jython-scripts-using-jsr-223
+                    obj = pythonEngine.get(Constants.PYTHON_RESULT_NAME);
+                    if(obj != null) {
+                        return obj.__tojava__(Object.class);
+                    } else {
+                        return null;
+                    }
+                } else {
+                    return returnObj;
+                }
+            } else {
+                return null;
+            }
         } catch (Exception e) {
             throw new ScriptException(e);
         } catch (Error e) {
@@ -83,9 +96,12 @@ public class GroovyExecutor implements IScriptExecutor {
             throw new ScriptException(e.getMessage());
         } finally {
             manager = null;
-            groovyShell = null;
-            groovyScript = null;
-            groovyBinding = null;
+            PythonInterpreter toClose = pythonEngine;
+            if(toClose != null) {
+                toClose.close();
+            }
+            pythonEngine = null;
+            pythonCode = null;
         }
     }
 
@@ -96,8 +112,9 @@ public class GroovyExecutor implements IScriptExecutor {
         if(theManager != null) {
             theManager._abort();
         }
-        groovyShell = null;
-        groovyScript = null;
-        groovyBinding = null;
+        PythonInterpreter toClose = pythonEngine;
+        if(toClose != null) {
+            toClose.close();
+        }
     }
 }
