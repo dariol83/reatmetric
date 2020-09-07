@@ -49,8 +49,25 @@ public class Turbine extends StationEquipment {
 
     @Override
     public boolean doExecute(byte[] command) {
-        // TODO: implement
-        return false;
+        ByteBuffer bb = ByteBuffer.wrap(command);
+        byte firstByte = bb.get();
+        int commandId = bb.getInt();
+        int commandTag = bb.getInt();
+        if (commandId == 0) { // Operate on input
+            int switchOn = bb.getInt();
+            input = switchOn == 1;
+            return true;
+        } else if (commandId == 1) { // Operate on status
+            int switchOn = bb.getInt();
+            boolean oldStatus = status;
+            status = switchOn == 1;
+            if(oldStatus != status) {
+                generateEvent(0); // Status changed event
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -59,8 +76,7 @@ public class Turbine extends StationEquipment {
         byte firstByte = bb.get();
         int commandId = bb.getInt();
         int commandTag = bb.getInt();
-        // TODO: implement command Id checking
-        return Pair.of(commandTag, true);
+        return Pair.of(commandTag, commandId == 0 || commandId == 1);
     }
 
     @Override
@@ -70,9 +86,12 @@ public class Turbine extends StationEquipment {
 
     @Override
     protected void computeNewState() {
-        if(status && input) {
+        if (status && input) {
             output = 100 + 200 * (Math.random() - 0.5);
             rpm = output * 2;
+            if(rpm > 350) {
+                generateEvent(1);
+            }
         } else {
             output = 0.0;
             rpm = 0.0;

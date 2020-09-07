@@ -41,7 +41,7 @@ public class Switch extends StationEquipment {
     @Override
     public boolean doExecute(byte[] command) {
         ByteBuffer bb = ByteBuffer.wrap(command);
-        byte firstByte = bb.get();
+        byte firstByte = bb.get(); // Equipment
         int commandId = bb.getInt();
         int commandTag = bb.getInt();
         if(commandId == 0) { // Change switch position

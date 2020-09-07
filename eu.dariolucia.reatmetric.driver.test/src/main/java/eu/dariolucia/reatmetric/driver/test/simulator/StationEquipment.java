@@ -59,6 +59,23 @@ public abstract class StationEquipment {
         }
     }
 
+    public void generateEvent(int code) {
+        try {
+            ByteArrayOutputStream bs = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(bs);
+            byte firstByte = getEquipmentId();
+            firstByte <<= 4;
+            firstByte |= 0x01;
+            dos.write(firstByte);
+            dos.writeLong(System.currentTimeMillis());
+            dos.writeInt(code);
+            dos.close();
+            notifyPacket(bs.toByteArray());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void execute(byte[] command) {
         Pair<Integer, Boolean> cmd = accept(command);
         notifyCommandAccepted(cmd);
@@ -66,7 +83,7 @@ public abstract class StationEquipment {
             scheduler.execute(() ->  {
                 notifyCommandReport(cmd.getFirst(), 0x03, true);
                 boolean result = doExecute(command);
-                notifyCommandReport(cmd.getFirst(), 0x04, true);
+                notifyCommandReport(cmd.getFirst(), 0x04, result);
             });
         }
     }

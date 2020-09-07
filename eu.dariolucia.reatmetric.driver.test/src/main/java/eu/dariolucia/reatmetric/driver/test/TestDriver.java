@@ -28,6 +28,7 @@ import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
+import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
@@ -42,6 +43,7 @@ import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
+import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -157,8 +159,22 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         subscriber.driverStatusUpdate(this.name, SystemStatus.NOMINAL);
     }
 
-    private void eventReceived(List<RawData> rawData) {
-        // TODO
+    private void eventReceived(List<RawData> rawDatas) {
+        for(RawData rawData : rawDatas) {
+            // Construct event id (equipment id * 100 + 70 + code) and raise it
+            ByteBuffer bb = ByteBuffer.wrap(rawData.getContents());
+            // Equipment id * 100
+            int equipmentId = Byte.toUnsignedInt(bb.get()) >>> 4;
+            equipmentId *= 100;
+            equipmentId += 70;
+            // Timestamp
+            long genTime = bb.getLong();
+            // Data
+            int code = bb.getInt();
+            equipmentId += code;
+            //
+            this.context.getProcessingModel().raiseEvent(EventOccurrence.of(equipmentId, Instant.ofEpochMilli(genTime), Instant.now(), null, null, code, TestDriver.STATION_ROUTE, TestDriver.STATION_SOURCE, null));
+        }
     }
 
     @Override

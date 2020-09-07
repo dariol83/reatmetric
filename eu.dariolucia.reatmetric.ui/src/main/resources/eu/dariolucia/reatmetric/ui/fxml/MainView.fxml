@@ -35,6 +35,7 @@
 
 <?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.Cursor?>
+<?import javafx.scene.control.Separator?>
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="900.0" prefWidth="1700.0" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.MainViewController">
    <children>
       <HBox alignment="CENTER_LEFT" prefHeight="64.0" prefWidth="200.0" style="-fx-background-color: #191970">
@@ -266,15 +267,17 @@
       <ToolBar prefHeight="24.0">
          <items>
             <Circle fx:id="nominalCrl" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" />
-
+            <Separator orientation="VERTICAL" />
             <Label fx:id="statusLbl" prefHeight="17.0" prefWidth="700.0" HBox.hgrow="ALWAYS">
                <font>
                   <Font size="11.0" />
                </font>
             </Label>
             <Pane prefHeight="1.0" prefWidth="24.0" HBox.hgrow="ALWAYS" />
-            <ProgressBar fx:id="globalProgress" prefWidth="100.0" progress="0" visible="false" />
-             <Label fx:id="timeLbl" prefHeight="17.0" prefWidth="120.0" HBox.hgrow="ALWAYS">
+             <Separator orientation="VERTICAL" />
+             <ProgressBar fx:id="globalProgress" prefWidth="100.0" progress="0" visible="false" />
+             <Separator orientation="VERTICAL" />
+             <Label fx:id="timeLbl" prefHeight="17.0" HBox.hgrow="ALWAYS" text="0000-00-00 00:00:00">
                  <font>
                      <Font size="11.0" />
                  </font>
@@ -283,6 +286,7 @@
                      -fx-font-weight: bold;
                  </style>
              </Label>
+             <Separator orientation="VERTICAL" />
              <Button fx:id="debugButton" mnemonicParsing="false" prefHeight="16.0" prefWidth="16.0" onAction="#debugAction">
                  <graphic>
                      <ImageView pickOnBounds="true" preserveRatio="true">
