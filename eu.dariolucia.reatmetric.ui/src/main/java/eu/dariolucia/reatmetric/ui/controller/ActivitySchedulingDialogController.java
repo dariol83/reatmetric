@@ -291,7 +291,7 @@ public class ActivitySchedulingDialogController implements Initializable {
 
     public Integer getProtectionTime() {
         try {
-            return Integer.parseInt(protectionTimeText.getText());
+            return Integer.parseInt(protectionTimeText.getText()) * 1000;
         } catch (NumberFormatException e) {
             return null;
         }

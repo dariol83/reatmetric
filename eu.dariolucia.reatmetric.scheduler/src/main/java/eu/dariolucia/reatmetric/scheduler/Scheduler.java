@@ -413,7 +413,11 @@ public class Scheduler implements IScheduler {
         List<ScheduledTask> toReturn = new LinkedList<>();
         // For each request, check if there are conflicts
         for (SchedulingRequest sr : requests) {
-            Pair<Instant, Duration> timeInfo = computeTimeInformation(sr);
+            if(sr.getTrigger() instanceof EventBasedSchedulingTrigger) {
+                // No conflict by definition
+                continue;
+            }
+            Pair<Instant, Duration> timeInfo = computeTimeInformation(false, sr);
             for (ScheduledTask task : this.id2scheduledTask.values()) {
                 if (task.conflictsWith(sr, timeInfo) && !conflictingIds.contains(task.getCurrentData().getInternalId())) {
                     toReturn.add(task);
@@ -424,9 +428,13 @@ public class Scheduler implements IScheduler {
         return toReturn;
     }
 
-    public Pair<Instant, Duration> computeTimeInformation(SchedulingRequest sr) {
+    public Pair<Instant, Duration> computeTimeInformation(boolean isInitRequest, SchedulingRequest sr) {
         if (sr.getTrigger() instanceof EventBasedSchedulingTrigger) {
-            return Pair.of(sr.getLatestInvocationTime(), sr.getExpectedDuration());
+            if(isInitRequest) {
+                return Pair.of(Instant.now(), sr.getExpectedDuration());
+            } else {
+                throw new IllegalArgumentException("Event-based trigger cannot have a refreshed start time");
+            }
         } else if (sr.getTrigger() instanceof AbsoluteTimeSchedulingTrigger) {
             AbsoluteTimeSchedulingTrigger trigger = (AbsoluteTimeSchedulingTrigger) sr.getTrigger();
             Duration duration = sr.getExpectedDuration();

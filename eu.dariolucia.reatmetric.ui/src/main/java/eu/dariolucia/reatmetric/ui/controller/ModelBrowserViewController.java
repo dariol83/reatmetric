@@ -41,6 +41,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
@@ -201,6 +202,17 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
         if(se != null) {
             expandItem(se, false);
+        }
+    }
+
+    @FXML
+    public void copyPathToClipboardItemAction(ActionEvent actionEvent) {
+        TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
+        if(se != null) {
+            final Clipboard clipboard = Clipboard.getSystemClipboard();
+            final ClipboardContent content = new ClipboardContent();
+            content.putString(se.getValue().getPath().asString());
+            clipboard.setContent(content);
         }
     }
 
@@ -643,4 +655,5 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             });
         }
     }
+
 }

@@ -60,8 +60,39 @@ public class GenericPowerSupply extends StationEquipment {
 
     @Override
     public boolean doExecute(byte[] command) {
-        // TODO: implement
-        return false;
+        ByteBuffer bb = ByteBuffer.wrap(command);
+        byte firstByte = bb.get();
+        int commandId = bb.getInt();
+        int commandTag = bb.getInt();
+        if (commandId == 0) { // Operate on output
+            int switchOn = bb.getInt();
+            output = switchOn == 1;
+            return true;
+        } else if (commandId == 1) { // Operate on status
+            int switchOn = bb.getInt();
+            boolean oldStatus = status;
+            status = switchOn == 1;
+            if(oldStatus != status) {
+                generateEvent(0); // Status changed event
+            }
+            return true;
+        } else if (commandId == 2) { // Operate on status and output
+            status = false;
+            output = false;
+            generateEvent(1); // Emergency switch
+            return true;
+        } else if (commandId == 3) { // Operate on protection
+            // Artificial wait
+            try {
+                Thread.sleep(4000);
+            } catch (InterruptedException e) {
+                //
+            }
+            protection = bb.getInt();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -70,8 +101,7 @@ public class GenericPowerSupply extends StationEquipment {
         byte firstByte = bb.get();
         int commandId = bb.getInt();
         int commandTag = bb.getInt();
-        // TODO: implement command Id checking
-        return Pair.of(commandTag, true);
+        return Pair.of(commandTag, commandId == 0 || commandId == 1 || commandId == 2 || commandId == 3);
     }
 
     @Override

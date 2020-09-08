@@ -538,6 +538,13 @@
     </parameters>
 
     <events>
+        <event id="#170" location="STATION.POWERSUPPLY.STATUS_EVENT" description="Status event of powersupply unit changed" severity="INFO" type="POWERSUPPLY_EVENT"/>
+        <event id="#171" location="STATION.POWERSUPPLY.EMERGENCY_SHUTDOWN" description="Event from emergency shutdown of powersupply unit" severity="ALARM" type="POWERSUPPLY_EVENT"/>
+        <event id="#270" location="STATION.DIESEL_GEN1.STATUS_EVENT" description="Status event of generator 1 unit changed" severity="INFO" type="GENERATOR_EVENT"/>
+        <event id="#271" location="STATION.DIESEL_GEN1.EMERGENCY_SHUTDOWN" description="Event from emergency shutdown of generator 1 unit" severity="ALARM" type="GENERATOR_EVENT"/>
+        <event id="#370" location="STATION.DIESEL_GEN2.STATUS_EVENT" description="Status event of generator 2 unit changed" severity="INFO" type="GENERATOR_EVENT"/>
+        <event id="#371" location="STATION.DIESEL_GEN2.EMERGENCY_SHUTDOWN" description="Event from emergency shutdown of generator 2 unit" severity="ALARM" type="GENERATOR_EVENT"/>
+
         <event id="#970" location="STATION.TURBINE.STATUS_EVENT" description="Status event of turbine unit changed" severity="INFO" type="TURBINE_EVENT"/>
         <event id="#971" location="STATION.TURBINE.RPM_BOOST" description="Event from RPM turbine unit" severity="WARN" type="TURBINE_EVENT"/>
         <event id="#2001" location="STATION.THERMAL.PROTECTION_UNIT_A" description="Thermal Protection on Unit A" severity="WARN" type="THERMAL_EVT"/>
@@ -545,6 +552,163 @@
     </events>
 
     <activities>
+        <activity id="#150" location="STATION.POWERSUPPLY.SET_OUTPUT" description="Command the output to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#151" location="STATION.POWERSUPPLY.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#152" location="STATION.POWERSUPPLY.SHUTDOWN" description="Shutdown the power supply" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+        </activity>
+        <activity id="#153" location="STATION.POWERSUPPLY.SET_PROTECTION" description="Command the protection to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                    <point x="BYPASS" y="2" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+        <activity id="#250" location="STATION.DIESEL_GEN1.SET_OUTPUT" description="Command the output to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#251" location="STATION.DIESEL_GEN1.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#252" location="STATION.DIESEL_GEN1.SHUTDOWN" description="Shutdown the generator 1" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+        </activity>
+        <activity id="#253" location="STATION.DIESEL_GEN1.SET_PROTECTION" description="Command the protection to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                    <point x="BYPASS" y="2" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+        <activity id="#350" location="STATION.DIESEL_GEN2.SET_OUTPUT" description="Command the output to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#351" location="STATION.DIESEL_GEN2.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#352" location="STATION.DIESEL_GEN2.SHUTDOWN" description="Shutdown the generator 2" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+        </activity>
+        <activity id="#353" location="STATION.DIESEL_GEN2.SET_PROTECTION" description="Command the protection to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                    <point x="BYPASS" y="2" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+
         <activity id="#550" location="STATION.SWITCH.SW_CMD_POSITION" description="Command the switch to the desired position" type="STATION CMD">
             <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
                 <default_fixed type="RAW" value="5" />

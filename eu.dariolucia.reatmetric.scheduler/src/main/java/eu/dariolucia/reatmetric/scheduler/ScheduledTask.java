@@ -170,7 +170,7 @@ public class ScheduledTask {
      * To be called from the dispatcher thread.
      */
     private void initialiseCurrentData() {
-        Pair<Instant, Duration> timeWindow = scheduler.computeTimeInformation(this.request);
+        Pair<Instant, Duration> timeWindow = scheduler.computeTimeInformation(true, this.request);
         this.currentData = new ScheduledActivityData(this.taskId, timeWindow.getFirst(), this.request.getRequest(), null, this.request.getResources(), this.request.getSource(), this.request.getExternalId(), this.request.getTrigger(), this.request.getLatestInvocationTime(),
                 timeWindow.getFirst(), timeWindow.getSecond(), this.request.getConflictStrategy(), SchedulingState.SCHEDULED, null);
     }
@@ -435,13 +435,18 @@ public class ScheduledTask {
     }
 
     public boolean updateStartTime() {
-        Pair<Instant, Duration> timeWindow = scheduler.computeTimeInformation(this.request);
-        if(!timeWindow.getFirst().equals(getCurrentData().getStartTime())) {
-            this.currentData = buildUpdatedSchedulingActivityData(timeWindow.getFirst(),
-                    this.activityId,
-                    SchedulingState.SCHEDULED);
-            scheduler.notifyTask(this);
-            return true;
+        // This method can be called only for relative time triggers
+        if(this.currentData.getTrigger() instanceof RelativeTimeSchedulingTrigger) {
+            Pair<Instant, Duration> timeWindow = scheduler.computeTimeInformation(false, this.request);
+            if (!timeWindow.getFirst().equals(getCurrentData().getStartTime())) {
+                this.currentData = buildUpdatedSchedulingActivityData(timeWindow.getFirst(),
+                        this.activityId,
+                        SchedulingState.SCHEDULED);
+                scheduler.notifyTask(this);
+                return true;
+            } else {
+                return false;
+            }
         } else {
             return false;
         }

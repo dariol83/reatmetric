@@ -33,6 +33,6 @@ public class EventBasedSchedulingTrigger extends AbstractSchedulingTrigger {
     public String toString() {
         return "[event " + event +
                 ", protection-time " + protectionTime +
-                " ms]" + super.toString();
+                " ms]";
     }
 }
