@@ -17,7 +17,7 @@ public final class SchedulingRequest extends AbstractInputDataItem {
 
     private final String source;
 
-    private final long externalId;
+    private final String externalId;
 
     private final AbstractSchedulingTrigger trigger;
 
@@ -27,7 +27,7 @@ public final class SchedulingRequest extends AbstractInputDataItem {
 
     private final Duration expectedDuration;
 
-    public SchedulingRequest(ActivityRequest request, Set<String> resources, String source, long externalId, AbstractSchedulingTrigger trigger, Instant latestInvocationTime, ConflictStrategy conflictStrategy, Duration expectedDuration) {
+    public SchedulingRequest(ActivityRequest request, Set<String> resources, String source, String externalId, AbstractSchedulingTrigger trigger, Instant latestInvocationTime, ConflictStrategy conflictStrategy, Duration expectedDuration) {
         if(expectedDuration == null) {
             throw new NullPointerException("Expected duration must be provided");
         }
@@ -53,7 +53,7 @@ public final class SchedulingRequest extends AbstractInputDataItem {
         return source;
     }
 
-    public long getExternalId() {
+    public String getExternalId() {
         return externalId;
     }
 

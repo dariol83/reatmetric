@@ -16,6 +16,9 @@
 
 package eu.dariolucia.reatmetric.driver.test.simulator;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,7 +59,7 @@ public class StationSimulator {
         scheduler.execute(() -> {
             ByteBuffer bb = ByteBuffer.wrap(data);
             byte firstByte = bb.get();
-            int eqId = firstByte >>> 4;
+            int eqId = (firstByte >>> 4) & 0x0F;
             forward(data, eqId);
         });
     }
@@ -65,6 +68,8 @@ public class StationSimulator {
         StationEquipment se = equipments.get(equipmentId);
         if(se != null) {
             se.execute(data);
+        } else {
+            // TODO: implement dummy equipment that always reject commands
         }
     }
 }

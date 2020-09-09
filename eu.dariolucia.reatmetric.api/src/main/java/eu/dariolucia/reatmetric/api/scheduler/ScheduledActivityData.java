@@ -19,7 +19,7 @@ public final class ScheduledActivityData extends AbstractDataItem {
 
     private final String source;
 
-    private final long externalId;
+    private final String externalId;
 
     private final AbstractSchedulingTrigger trigger;
 
@@ -32,7 +32,7 @@ public final class ScheduledActivityData extends AbstractDataItem {
 
     private final SchedulingState state;
 
-    public ScheduledActivityData(IUniqueId internalId, Instant generationTime, ActivityRequest request, IUniqueId activityOccurrence, Collection<String> resources, String source, long externalId, AbstractSchedulingTrigger trigger, Instant latestInvocationTime, Instant startTime, Duration duration, ConflictStrategy conflictStrategy, SchedulingState state, Object extension) {
+    public ScheduledActivityData(IUniqueId internalId, Instant generationTime, ActivityRequest request, IUniqueId activityOccurrence, Collection<String> resources, String source, String externalId, AbstractSchedulingTrigger trigger, Instant latestInvocationTime, Instant startTime, Duration duration, ConflictStrategy conflictStrategy, SchedulingState state, Object extension) {
         super(internalId, generationTime, extension);
         if(resources == null) {
             throw new NullPointerException("Resources cannot be null");
@@ -73,7 +73,7 @@ public final class ScheduledActivityData extends AbstractDataItem {
         return source;
     }
 
-    public long getExternalId() {
+    public String getExternalId() {
         return externalId;
     }
 

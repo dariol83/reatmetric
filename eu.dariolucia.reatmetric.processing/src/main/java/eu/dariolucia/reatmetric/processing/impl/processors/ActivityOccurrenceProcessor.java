@@ -91,6 +91,9 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
      * @return the list of state changes at the end of the dispatching
      */
     public List<AbstractDataItem> dispatch() {
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer("dispatch() - About to dispatch activity occurrence " + getOccurrenceId());
+        }
         // Clear temporary list
         temporaryDataItemList.clear();
         // Set the initial state and generate the report for the creation of the activity occurrence (start of the lifecycle)
@@ -122,6 +125,9 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
      * @return the list of state changes at the end of the creation
      */
     public List<AbstractDataItem> create(ActivityProgress progress) {
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer("create() - About to create activity occurrence " + getOccurrenceId() + " from progress: " + progress);
+        }
         // Clear temporary list
         temporaryDataItemList.clear();
         // Set the initial state and generate the report for the creation of the activity occurrence (start of the lifecycle)
@@ -144,6 +150,9 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     private void generateReport(String name, Instant generationTime, Instant executionTime, ActivityOccurrenceState announcedState, ActivityReportState reportState, Object result, ActivityOccurrenceState nextState) {
         // Create the report
         ActivityOccurrenceReport report = new ActivityOccurrenceReport(new LongUniqueId(parent.processor.getNextId(ActivityOccurrenceReport.class)), generationTime, null, name, announcedState, executionTime, reportState, nextState, result);
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer("Generating report for activity occurrence " + getOccurrenceId() + ": " + report);
+        }
         // Add the report to the list
         reports.add(report);
         // Set the current state: prevent going back
@@ -168,6 +177,9 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     }
 
     public List<AbstractDataItem> progress(ActivityProgress progress) {
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer("progress() - About to process progress of activity occurrence " + getOccurrenceId() + ": " + progress);
+        }
         if (currentState == ActivityOccurrenceState.COMPLETED) {
             // Activity occurrence in its final state, update discarded
             if (LOG.isLoggable(Level.WARNING)) {
@@ -251,6 +263,12 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         }
         // Verify timeout completions: this can generate an additional ActivityOccurrenceData object
         verifyTimeout();
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer("Returning list after processing progress: " + progress);
+            for(ActivityOccurrenceData aod : temporaryDataItemList) {
+                LOG.finer("Last report for element is: " + aod.getProgressReports().get(aod.getProgressReports().size() - 1));
+            }
+        }
         // Return list
         return List.copyOf(temporaryDataItemList);
     }
@@ -313,6 +331,9 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     }
 
     public List<AbstractDataItem> purge() {
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer("purge() - About to purge activity occurrence " + getOccurrenceId());
+        }
         if (currentState == ActivityOccurrenceState.COMPLETED) {
             // Activity occurrence in its final state, purge discarded
             if (LOG.isLoggable(Level.WARNING)) {
@@ -331,6 +352,9 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     }
 
     public void abort()  {
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer("abort() - About to abort activity occurrence " + getOccurrenceId());
+        }
         if (currentState == ActivityOccurrenceState.COMPLETED) {
             // Activity occurrence in its final state, abort discarded
             if (LOG.isLoggable(Level.WARNING)) {
@@ -346,6 +370,9 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     }
 
     public List<AbstractDataItem> evaluate() {
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer("evaluate() - About to re-evaluate activity occurrence " + getOccurrenceId());
+        }
         // Clear temporary list
         temporaryDataItemList.clear();
         // If currentTimeoutState is applicable, currentTimeoutTask is pending and it is expired, generate ActivityOccurrenceReport accordingly

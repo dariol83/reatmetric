@@ -125,7 +125,7 @@ CREATE TABLE SCHEDULED_ACTIVITY_DATA_TABLE (
    ActivityOccurrence BIGINT,
    Resources VARCHAR(1024) NOT NULL,
    Source VARCHAR(32) NOT NULL,
-   ExternalId BIGINT NOT NULL,
+   ExternalId VARCHAR(32) NOT NULL,
    Trigger BLOB NOT NULL,
    LatestInvocationTime TIMESTAMP,
    StartTime TIMESTAMP NOT NULL,

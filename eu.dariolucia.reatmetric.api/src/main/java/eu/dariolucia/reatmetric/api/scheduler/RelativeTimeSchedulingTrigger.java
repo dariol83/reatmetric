@@ -13,15 +13,15 @@ import java.util.Set;
  */
 public class RelativeTimeSchedulingTrigger extends AbstractSchedulingTrigger {
 
-    private final Set<Long> predecessors;
+    private final Set<String> predecessors;
 
     private final int delayTime;
 
-    public RelativeTimeSchedulingTrigger(Set<Long> predecessors) {
+    public RelativeTimeSchedulingTrigger(Set<String> predecessors) {
         this(predecessors, 0);
     }
 
-    public RelativeTimeSchedulingTrigger(Set<Long> predecessors, int delayTime) {
+    public RelativeTimeSchedulingTrigger(Set<String> predecessors, int delayTime) {
         if(delayTime < 0) {
             throw new IllegalArgumentException("Delay time is less than 0");
         }
@@ -33,7 +33,7 @@ public class RelativeTimeSchedulingTrigger extends AbstractSchedulingTrigger {
         return delayTime;
     }
 
-    public Set<Long> getPredecessors() {
+    public Set<String> getPredecessors() {
         return predecessors;
     }
 

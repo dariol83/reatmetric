@@ -29,6 +29,8 @@ import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Timer;
@@ -40,6 +42,7 @@ import java.util.logging.Logger;
 public class ScheduledTask {
 
     private static final Logger LOG = Logger.getLogger(ScheduledTask.class.getName());
+    private final DateTimeFormatter DATE_TIME_FORMATTER_SECONDS = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.of("UTC"));
 
     private final Scheduler scheduler;
     private final Timer timer;
@@ -202,7 +205,7 @@ public class ScheduledTask {
      * @param now time to start
      */
     private SchedulingRequest generateImmediateRequest(Instant now) {
-        return new SchedulingRequest(request.getRequest(), request.getResources(), request.getSource(), request.getExternalId(),
+        return new SchedulingRequest(request.getRequest(), request.getResources(), request.getSource(), request.getExternalId() + "-" + DATE_TIME_FORMATTER_SECONDS.format(Instant.now()),
                 new AbsoluteTimeSchedulingTrigger(now), request.getLatestInvocationTime(), request.getConflictStrategy(), request.getExpectedDuration());
     }
 
@@ -429,7 +432,7 @@ public class ScheduledTask {
                 '}';
     }
 
-    public boolean isRelatedTo(long externalId) {
+    public boolean isRelatedTo(String externalId) {
         return request.getTrigger() instanceof RelativeTimeSchedulingTrigger &&
                 ((RelativeTimeSchedulingTrigger) request.getTrigger()).getPredecessors().contains(externalId);
     }

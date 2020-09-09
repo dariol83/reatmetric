@@ -454,7 +454,16 @@ public class ValueUtil {
     }
 
     public static int compare(Object o1, Object o2) {
-        return ((Comparable) o1).compareTo(o2);
+        // Null always less than anything else
+        if(o1 == null && o2 == null) {
+            return 0;
+        } else if(o1 == null) {
+            return -1;
+        } else if(o2 == null) {
+            return 1;
+        } else {
+            return ((Comparable) o1).compareTo(o2);
+        }
     }
 
     public static Object convert(Object result, ValueTypeEnum type) throws ValueException {

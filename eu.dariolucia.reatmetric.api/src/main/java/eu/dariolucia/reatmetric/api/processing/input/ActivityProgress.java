@@ -93,4 +93,19 @@ public final class ActivityProgress extends AbstractInputDataItem {
     public Object getResult() {
         return result;
     }
+
+    @Override
+    public String toString() {
+        return "ActivityProgress{" +
+                "activityId=" + activityId +
+                ", occurrenceId=" + occurrenceId +
+                ", name='" + name + '\'' +
+                ", generationTime=" + generationTime +
+                ", state=" + state +
+                ", executionTime=" + executionTime +
+                ", status=" + status +
+                ", nextState=" + nextState +
+                ", result=" + result +
+                "}";
+    }
 }

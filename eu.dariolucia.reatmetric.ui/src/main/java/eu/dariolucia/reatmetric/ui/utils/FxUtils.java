@@ -16,7 +16,6 @@
 
 package eu.dariolucia.reatmetric.ui.utils;
 
-import eu.dariolucia.reatmetric.ui.controller.ConnectorStatusWidgetController;
 import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;

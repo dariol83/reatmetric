@@ -89,7 +89,7 @@ public class Turbine extends StationEquipment {
         if (status && input) {
             output = 100 + 200 * (Math.random() - 0.5);
             rpm = output * 2;
-            if(rpm > 390) {
+            if(rpm > 320) {
                 generateEvent(1);
             }
         } else {

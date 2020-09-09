@@ -337,7 +337,7 @@ public class Scheduler implements IScheduler {
      *
      * @param externalId the modified task external ID
      */
-    private void updateRelativeTimeStartTime(long externalId) {
+    private void updateRelativeTimeStartTime(String externalId) {
         Set<IUniqueId> alreadyProcessedTasks = new HashSet<>();
         Queue<ScheduledTask> updatedTasks = new LinkedList<>();
         ScheduledTask toStart = lookUpScheduledTaskByExternalId(externalId);
@@ -449,9 +449,9 @@ public class Scheduler implements IScheduler {
         }
     }
 
-    private Instant computePredecessorsLatestEndTime(Set<Long> predecessors) {
+    private Instant computePredecessorsLatestEndTime(Set<String> predecessors) {
         Instant latestEndTime = Instant.now();
-        for (Long id : predecessors) {
+        for (String id : predecessors) {
             ScheduledTask task = lookUpScheduledTaskByExternalId(id);
             if (task == null) {
                 // No task, continue
@@ -464,9 +464,9 @@ public class Scheduler implements IScheduler {
         return latestEndTime;
     }
 
-    private ScheduledTask lookUpScheduledTaskByExternalId(long externalId) {
+    private ScheduledTask lookUpScheduledTaskByExternalId(String externalId) {
         for (ScheduledTask st : id2scheduledTask.values()) {
-            if (st.getRequest().getExternalId() == externalId) {
+            if (st.getRequest().getExternalId().equals(externalId)) {
                 return st;
             }
         }
@@ -484,7 +484,7 @@ public class Scheduler implements IScheduler {
                     throw new SchedulingException("Conflict detected with provided scheduling requests: " + conflictingTasks);
                 } else {
                     // Check if an external ID exists already
-                    Set<Long> toBeAdded = requests.stream().map(SchedulingRequest::getExternalId).collect(Collectors.toSet());
+                    Set<String> toBeAdded = requests.stream().map(SchedulingRequest::getExternalId).collect(Collectors.toSet());
                     if(toBeAdded.size() != requests.size()) {
                         throw new SchedulingException("One supplied external ID is duplicated in the request");
                     }
@@ -607,7 +607,7 @@ public class Scheduler implements IScheduler {
         }
     }
 
-    private void reEvaluateRelativeTimeTriggers(long externalId) {
+    private void reEvaluateRelativeTimeTriggers(String externalId) {
         dispatcher.submit(() -> {
             for(ScheduledTask st :id2scheduledTask.values()) {
                 if(st.getCurrentData().getState() == SchedulingState.SCHEDULED && st.isRelatedTo(externalId)) {
@@ -734,8 +734,8 @@ public class Scheduler implements IScheduler {
     /**
      * To be called from the dispatcher thread.
      */
-    boolean areAllCompleted(Set<Long> predecessors) {
-        for (Long id : predecessors) {
+    boolean areAllCompleted(Set<String> predecessors) {
+        for (String id : predecessors) {
             ScheduledTask st = lookUpScheduledTaskByExternalId(id);
             if (st != null) {
                 return false;

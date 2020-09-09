@@ -76,14 +76,22 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
                 }
                 setItemPropertiesToStatement(occurrenceStoreStatement, aod);
                 occurrenceStoreStatement.addBatch();
+                if(LOG.isLoggable(Level.FINER)) {
+                    LOG.finer("Storing activity occurrence data: " + aod);
+                }
             }
-            // Then, add only the last progress report.
+            // Then, add only the 'last' progress report: this strategy assumes that the reports have an increasing IUniqueId,
+            // which is not necessarily the case. But we cannot add/replace everything everytime (even though this is not telemetry,
+            // we should avoid it.
             if(!aod.getProgressReports().isEmpty()) {
                 ActivityOccurrenceReport reportToStore = aod.getProgressReports().get(aod.getProgressReports().size() - 1);
                 if (reportStoreStatement == null) {
                     reportStoreStatement = createReportStoreStatement(connection);
                 }
                 setItemPropertiesToReportStatement(reportStoreStatement, aod, reportToStore);
+                if(LOG.isLoggable(Level.FINER)) {
+                    LOG.finer("Storing activity occurrence report for activity " + aod.getInternalId() + ": " + aod);
+                }
                 reportStoreStatement.addBatch();
             }
         }

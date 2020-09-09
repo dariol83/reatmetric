@@ -125,7 +125,7 @@ public class ActivitySchedulingDialogController implements Initializable {
     public void initialiseSchedulingRequest(SchedulingRequest request) {
         resourcesText.setText(formatToString(request.getResources()));
         sourceText.setText(request.getSource());
-        taskExternalIdText.setText(String.valueOf(request.getExternalId()));
+        taskExternalIdText.setText(request.getExternalId());
         expectedDurationText.setText(String.valueOf(request.getExpectedDuration().toSeconds()));
         conflictChoice.getSelectionModel().select(request.getConflictStrategy().ordinal());
         if(request.getLatestInvocationTime() != null) {
@@ -297,25 +297,17 @@ public class ActivitySchedulingDialogController implements Initializable {
         }
     }
 
-    public Long getTaskExternalId() {
+    public String getTaskExternalId() {
         try {
-            return Long.parseLong(taskExternalIdText.getText());
+            return taskExternalIdText.getText();
         } catch (NumberFormatException e) {
             return null;
         }
     }
 
-    public Set<Long> getRelativeTriggerExternalIds() {
+    public Set<String> getRelativeTriggerExternalIds() {
         String[] spl = externalIdText.getText().split(",", -1);
-        Long[] toReturn = new Long[spl.length];
-        for(int i = 0; i < spl.length; ++i) {
-            try {
-                toReturn[i] = Long.parseLong(spl[i].trim());
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
-        return new LinkedHashSet<>(Arrays.asList(toReturn));
+        return new LinkedHashSet<>(Arrays.asList(spl));
     }
 
     public Duration getExpectedDuration() {

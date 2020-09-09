@@ -16,34 +16,47 @@
 
 package eu.dariolucia.reatmetric.processing.impl;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class WorkingSet {
 
-    private final Set<Integer> workingSet = new HashSet<>();
+    private static final Logger LOG = Logger.getLogger(WorkingSet.class.getName());
 
-    public boolean overlaps(Set<Integer> ids) {
-        synchronized (workingSet) {
-            return workingSet.stream().anyMatch(ids::contains);
-        }
-    }
+    private final Set<Integer> workingSet = new HashSet<>();
 
     public void add(Set<Integer> ids) {
         synchronized (workingSet) {
-            if(overlaps(ids)) {
+            while(!Collections.disjoint(workingSet, ids)) {
                 try {
+                    if(LOG.isLoggable(Level.FINER)) {
+                        LOG.finer("[Working set] Overlap of " + ids + " against " + workingSet + ": waiting...");
+                    }
                     workingSet.wait();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    // Nothing to report here, just return
+                    if(LOG.isLoggable(Level.FINE)) {
+                        LOG.fine("[Working set] thread interrupted - returning...");
+                    }
+                    return;
                 }
             }
+            if(LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("[Working set] Adding " + ids);
+            }
             workingSet.addAll(ids);
+            workingSet.notifyAll();
         }
     }
 
     public void remove(Set<Integer> ids) {
         synchronized (workingSet) {
+            if(LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("[Working set] Removing " + ids);
+            }
             workingSet.removeAll(ids);
             workingSet.notifyAll();
         }

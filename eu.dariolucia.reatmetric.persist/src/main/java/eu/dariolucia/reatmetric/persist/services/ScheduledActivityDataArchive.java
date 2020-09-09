@@ -65,7 +65,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         String resources = formatResources(item.getResources());
         storeStatement.setString(6, resources);
         storeStatement.setString(7, item.getSource());
-        storeStatement.setLong(8, item.getExternalId());
+        storeStatement.setString(8, item.getExternalId());
         storeStatement.setBlob(9, toInputstream(item.getTrigger()));
         if(item.getLatestInvocationTime() != null) {
             storeStatement.setTimestamp(10, toTimestamp(item.getLatestInvocationTime()));
@@ -94,7 +94,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         }
         storeStatement.setString(21, resources);
         storeStatement.setString(22, item.getSource());
-        storeStatement.setLong(23, item.getExternalId());
+        storeStatement.setString(23, item.getExternalId());
         storeStatement.setBlob(24, toInputstream(item.getTrigger()));
         if(item.getLatestInvocationTime() != null) {
             storeStatement.setTimestamp(25, toTimestamp(item.getLatestInvocationTime()));
@@ -201,7 +201,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         }
         Set<String> resources = parseResources(rs.getString(6));
         String source = rs.getString(7);
-        long extId = rs.getLong(8);
+        String extId = rs.getString(8);
         AbstractSchedulingTrigger trigger = (AbstractSchedulingTrigger) toObject(rs.getBlob(9));
         Timestamp latestInvokeTime = rs.getTimestamp(10);
         if(rs.wasNull()) {
