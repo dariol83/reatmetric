@@ -29,6 +29,7 @@ import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
+import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
@@ -51,6 +52,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -66,7 +68,7 @@ import java.util.logging.Logger;
  *     <li>1 byte - 4 MSB: equipment ID</li>
  *     <li>1 byte - 4 LSB: 0: parameters - 1: event - 2: command ack - 3: command start - 4: command completed</li>
  *     <li>8 bytes: timestamp - milliseconds from Java epoch</li>
- *     <li>the rest: definition of the equipment specific monitoring format (depends on type and number of parameters)</li>
+ *     <li>the rest: definition of the equipment specific monitoring format (depends on type and number of parameters). For events it is a 32 bits integer with the event code</li>
  * </ul>
  *
  * A command is a byte array with the following format:
@@ -79,6 +81,7 @@ import java.util.logging.Logger;
  *      <li>4 bytes: second argument or 0xFFFFFFFF - in case of parameter set, this contains the value of the parameter (0/1 for booleans of int value or MSB for longs or double)</li>
  *      <li>4 bytes: third argument or 0xFFFFFFFF - in case of parameter set, this contains the value of the parameter (LSB for longs or doubles) </li>
  * </ul>
+ *
  *
  * The raw data is produced by a simulated model, and provided to the connector, which distributes the data inside the
  * ReatMetric system.
@@ -104,7 +107,6 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
     public static final String TRANSMISSION_STAGE = "Transmission";
 
     private volatile String name;
-    private volatile boolean running;
     private volatile IServiceCoreContext context;
     private volatile IProcessingModel model;
     private volatile ProcessingDefinition definitions;
@@ -125,6 +127,12 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
 
     // Command verifier
     private CommandVerifier verifier;
+
+    //
+    private IRawDataSubscriber rawDataSubscriber;
+
+    // Event counter, for debug demonstration
+    private final AtomicLong eventCounter = new AtomicLong(0);
 
     // Connector
     private volatile StationTransportConnector connector;
@@ -148,18 +156,19 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         this.connector.prepare(); // Now it is ready
         // Since this object is performing the event raising function, it registers to the broker to receive
         // notification of received events
-        this.context.getRawDataBroker().subscribe(this::eventReceived, null, new RawDataFilter(true, null, null, Arrays.asList(STATION_EVENT), null, Collections.singletonList(Quality.GOOD)), null);
+        this.rawDataSubscriber = this::eventReceived;
+        this.context.getRawDataBroker().subscribe(this.rawDataSubscriber, null, new RawDataFilter(true, null, null, Arrays.asList(STATION_EVENT), null, Collections.singletonList(Quality.GOOD)), null);
         // Decoder
         this.decoder = new MonitoringDecoder(context.getProcessingModel(), context.getRawDataBroker());
         // CommandVerifier
-        this.verifier = new CommandVerifier(context.getProcessingModel(), context.getRawDataBroker());
+        this.verifier = new CommandVerifier(this, context.getRawDataBroker());
 
-        this.running = true;
         // Inform that everything is fine
         subscriber.driverStatusUpdate(this.name, SystemStatus.NOMINAL);
     }
 
     private void eventReceived(List<RawData> rawDatas) {
+        this.eventCounter.addAndGet(rawDatas.size());
         for(RawData rawData : rawDatas) {
             // Construct event id (equipment id * 100 + 70 + code) and raise it
             ByteBuffer bb = ByteBuffer.wrap(rawData.getContents());
@@ -215,12 +224,13 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
 
     @Override
     public void dispose() {
-        running = false;
         try {
             connector.abort();
         } catch (TransportException e) {
             e.printStackTrace();
         }
+        executor.shutdown();
+        verifier.shutdown();
         // Clean up omitted... it should be done
     }
 
@@ -286,16 +296,19 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
             storeRawData(activityInvocation.getActivityOccurrenceId(), activityInvocation.getPath(), activityInvocation.getGenerationTime(), activityInvocation.getRoute(), activityInvocation.getType(), activityInvocation.getSource(), encodedCommand.getSecond());
             synchronized (this) {
                 // Record verification
-                announce(activityInvocation, model, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+                announce(activityInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                 verifier.recordCommandVerification(encodedCommand.getFirst(), activityInvocation);
                 // Transmission
                 connector.send(encodedCommand.getSecond());
-                announce(activityInvocation, model, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
+                // No exception means that the activity transmission is done and the activity is pending acceptance and execution
+                announce(activityInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION);
             }
         } catch(Exception e) {
             LOG.log(Level.SEVERE, "Transmission of activity " + activityInvocation.getActivityOccurrenceId() + " failed: " + e.getMessage(), e);
-            announce(activityInvocation, model, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
-            verifier.removeCommandVerification(encodedCommand.getFirst());
+            announce(activityInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
+            if(encodedCommand != null) {
+                verifier.removeCommandVerification(encodedCommand.getFirst());
+            }
         }
     }
 
@@ -305,11 +318,11 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         context.getRawDataBroker().distribute(Collections.singletonList(rd), true);
     }
 
-    protected static void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState) {
+    public synchronized void announce(IActivityHandler.ActivityInvocation invocation, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState) {
         model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, null, reportState, occState, null));
     }
 
-    protected static void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, ActivityOccurrenceState nextOccState, Instant executionTime, Object result) {
+    public synchronized void announce(IActivityHandler.ActivityInvocation invocation, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, ActivityOccurrenceState nextOccState, Instant executionTime, Object result) {
         model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, executionTime, reportState, nextOccState, result));
     }
 
@@ -338,7 +351,6 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
 
     @Override
     public List<DebugInformation> currentDebugInfo() {
-        // TODO: implement if needed
-        return Collections.emptyList();
+        return Collections.singletonList(DebugInformation.of("Test Driver", "Received events", this.eventCounter.get(), null, null));
     }
 }

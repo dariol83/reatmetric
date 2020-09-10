@@ -19,7 +19,6 @@ package eu.dariolucia.reatmetric.driver.test;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
-import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
@@ -40,28 +39,32 @@ public class CommandVerifier implements IRawDataSubscriber {
     private static final Logger LOG = Logger.getLogger(CommandVerifier.class.getName());
 
     private final Map<Integer, IActivityHandler.ActivityInvocation> commandTag2activityInvocation = new HashMap<>();
-    private final IProcessingModel model;
+    private final TestDriver driver;
+    private final IRawDataBroker broker;
 
-    public CommandVerifier(IProcessingModel model, IRawDataBroker broker) {
-        this.model = model;
+    public CommandVerifier(TestDriver driver, IRawDataBroker broker) {
+        this.driver = driver;
         // Since this object is performing the command verification function, it registers to the broker to receive
         // notification of received command acks
-        broker.subscribe(this, null, new RawDataFilter(true, null, null, Collections.singletonList(TestDriver.STATION_ACK), null, Collections.singletonList(Quality.GOOD)), null);
+        this.broker = broker;
+        this.broker.subscribe(this, null, new RawDataFilter(true, null, null, Collections.singletonList(TestDriver.STATION_ACK), null, Collections.singletonList(Quality.GOOD)), null);
     }
 
     public synchronized void removeCommandVerification(int cmdTag) {
         this.commandTag2activityInvocation.remove(cmdTag);
     }
 
-    public synchronized void recordCommandVerification(int cmdTag, IActivityHandler.ActivityInvocation activityInvocation) {
-        this.commandTag2activityInvocation.put(cmdTag, activityInvocation);
+    public void recordCommandVerification(int cmdTag, IActivityHandler.ActivityInvocation activityInvocation) {
+        synchronized (this) {
+            this.commandTag2activityInvocation.put(cmdTag, activityInvocation);
+        }
         // Announce all expected execution stages
-        TestDriver.announce(activityInvocation, model, Instant.now(), TestDriver.ACCEPTANCE_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
-        TestDriver.announce(activityInvocation, model, Instant.now(), TestDriver.EXECUTION_START_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
-        TestDriver.announce(activityInvocation, model, Instant.now(), TestDriver.EXECUTION_COMPLETED_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
+        this.driver.announce(activityInvocation, Instant.now(), TestDriver.ACCEPTANCE_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
+        this.driver.announce(activityInvocation, Instant.now(), TestDriver.EXECUTION_START_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
+        this.driver.announce(activityInvocation, Instant.now(), TestDriver.EXECUTION_COMPLETED_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
     }
 
-    private synchronized void processCommandAck(RawData rd) {
+    private void processCommandAck(RawData rd) {
         ByteBuffer bb = ByteBuffer.wrap(rd.getContents());
         // Read the tag
         byte firstByte = bb.get();
@@ -69,18 +72,20 @@ public class CommandVerifier implements IRawDataSubscriber {
         long timestamp = bb.getLong();
         int commandId = bb.getInt();
         boolean ok = bb.get() == 1;
-
-        IActivityHandler.ActivityInvocation inv = commandTag2activityInvocation.get(commandId);
+        IActivityHandler.ActivityInvocation inv;
+        synchronized (this) {
+            inv = commandTag2activityInvocation.get(commandId);
+        }
         if(inv != null) {
             switch (firstByte) {
                 case 2: // Acceptance
-                    TestDriver.announce(inv, model, Instant.ofEpochMilli(timestamp), TestDriver.ACCEPTANCE_STAGE, ok ? ActivityReportState.OK : ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION);
+                    this.driver.announce(inv, Instant.ofEpochMilli(timestamp), TestDriver.ACCEPTANCE_STAGE, ok ? ActivityReportState.OK : ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION);
                     break;
                 case 3: // Start
-                    TestDriver.announce(inv, model, Instant.ofEpochMilli(timestamp), TestDriver.EXECUTION_START_STAGE, ok ? ActivityReportState.OK : ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, ActivityOccurrenceState.EXECUTION, Instant.now(), null);
+                    this.driver.announce(inv, Instant.ofEpochMilli(timestamp), TestDriver.EXECUTION_START_STAGE, ok ? ActivityReportState.OK : ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, ActivityOccurrenceState.EXECUTION, Instant.now(), null);
                     break;
                 case 4: // Completion
-                    TestDriver.announce(inv, model, Instant.ofEpochMilli(timestamp), TestDriver.EXECUTION_COMPLETED_STAGE, ok ? ActivityReportState.OK : ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, ActivityOccurrenceState.VERIFICATION, null, null);
+                    this.driver.announce(inv, Instant.ofEpochMilli(timestamp), TestDriver.EXECUTION_COMPLETED_STAGE, ok ? ActivityReportState.OK : ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, ActivityOccurrenceState.VERIFICATION, null, null);
                     break;
             }
         } else {
@@ -93,5 +98,9 @@ public class CommandVerifier implements IRawDataSubscriber {
         for(RawData rd : messages) {
             processCommandAck(rd);
         }
+    }
+
+    public void shutdown() {
+        this.broker.unsubscribe(this);
     }
 }
