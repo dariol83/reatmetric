@@ -18,11 +18,11 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import eu.dariolucia.reatmetric.ui.plugin.ReatmetricPluginInspector;
-import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -57,8 +57,6 @@ import org.controlsfx.control.PopOver;
 import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
@@ -105,7 +103,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private Circle nominalCrl;
 
     @FXML
-    private Button debugButton;
     private final PopOver debugPopOver = new PopOver();
 
     @FXML
@@ -122,6 +119,9 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     @FXML
     private Button infoButton;
 	private final PopOver infoPopOver = new PopOver();
+
+	@FXML
+    private Button detachButton;
 
     private final PopOver messagePopOver = new PopOver();
     private AckMessageDialogController ackMessageController;
@@ -175,6 +175,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
                 ctrl.dispose();
             }
         });
+        // Set the view and ctrl as user data in the tab
+        t.setUserData(Pair.of(view, ctrl));
         // Add detachable menu entry
         registerDetachableTab(t, view, ctrl);
         viewTabPane.getSelectionModel().select(t);
@@ -187,28 +189,32 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         MenuItem detachMenuItem = new MenuItem("Detach");
         t.getContextMenu().getItems().add(detachMenuItem);
         detachMenuItem.setOnAction(event -> {
-            // Create a detached scene parent
-            Stage stage = new Stage();
-            t.setContent(null);
-            t.setOnCloseRequest(null);
-            this.viewTabPane.getTabs().remove(t);
-            // this.tab2contents.remove(t); // if removed, there will be no forwards of system status change
-            Scene scene = new Scene((Parent) view, view.getLayoutBounds().getWidth(), view.getLayoutBounds().getHeight());
-            scene.getStylesheets().add(CSS_URL.toExternalForm());
-
-            stage.setScene(scene);
-            stage.setTitle(t.getText());
-
-            Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
-            stage.getIcons().add(icon);
-            ctrl.setDetached(stage);
-            stage.setOnCloseRequest(ev -> {
-                ctrl.dispose();
-                stage.close();
-            });
-
-            stage.show();
+            detachTab(t, view, ctrl);
         });
+    }
+
+    private void detachTab(Tab t, Node view, AbstractDisplayController ctrl) {
+        // Create a detached scene parent
+        Stage stage = new Stage();
+        t.setContent(null);
+        t.setOnCloseRequest(null);
+        this.viewTabPane.getTabs().remove(t);
+        // this.tab2contents.remove(t); // if removed, there will be no forwards of system status change
+        Scene scene = new Scene((Parent) view, view.getLayoutBounds().getWidth(), view.getLayoutBounds().getHeight());
+        scene.getStylesheets().add(CSS_URL.toExternalForm());
+
+        stage.setScene(scene);
+        stage.setTitle(t.getText());
+
+        Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
+        stage.getIcons().add(icon);
+        ctrl.setDetached(stage);
+        stage.setOnCloseRequest(ev -> {
+            ctrl.dispose();
+            stage.close();
+        });
+
+        stage.show();
     }
 
     private Image getNodeImg(Node viewButton) {
@@ -324,15 +330,15 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	}
 
     @FXML
-    public void debugAction(ActionEvent actionEvent) {
+    public void debugAction(Event actionEvent) {
         try {
             Parent root = FXMLLoader.load(getClass().getClassLoader()
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/DebugDialog.fxml"));
 
             debugPopOver.setContentNode(root);
-            debugPopOver.setArrowLocation(PopOver.ArrowLocation.BOTTOM_RIGHT);
+            debugPopOver.setArrowLocation(PopOver.ArrowLocation.BOTTOM_LEFT);
             debugPopOver.setTitle("Debug Information");
-            debugPopOver.show(debugButton);
+            debugPopOver.show(nominalCrl);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -398,7 +404,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
             Parent root = loader.load();
             ackMessageController = loader.getController();
             messagePopOver.setContentNode(root);
-            messagePopOver.setArrowLocation(PopOver.ArrowLocation.TOP_LEFT);
+            messagePopOver.setArrowLocation(PopOver.ArrowLocation.BOTTOM_LEFT);
             messagePopOver.setTitle("Messages for acknowledgement");
         } catch (IOException e) {
             e.printStackTrace();
@@ -424,6 +430,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         );
         digitalTime.setCycleCount(Animation.INDEFINITE);
         digitalTime.play();
+
+        // detach button visible/invisible depending on tab selection
+        detachButton.setVisible(false);
+        viewTabPane.getSelectionModel().selectedItemProperty().addListener((tabPane) -> detachButton.setVisible(!viewTabPane.getSelectionModel().isEmpty()));
     }
 
     @Override
@@ -547,4 +557,12 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         });
     }
 
+    @FXML
+    public void detachMouseClicked(ActionEvent e) {
+        Tab toDetach = viewTabPane.getSelectionModel().getSelectedItem();
+        if(toDetach != null) {
+            Pair<Node, AbstractDisplayController> data = (Pair<Node, AbstractDisplayController>) toDetach.getUserData();
+            detachTab(toDetach, data.getFirst(), data.getSecond());
+        }
+    }
 }

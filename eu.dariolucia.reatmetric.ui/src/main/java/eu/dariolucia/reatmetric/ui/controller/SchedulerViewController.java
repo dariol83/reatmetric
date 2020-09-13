@@ -63,9 +63,12 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * FXML Controller class
+ *
+ * TODO: fix retrieval, use time based (1 minute, 15 minutes stepping)
  *
  * @author dario
  */
@@ -74,6 +77,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private static final Logger LOG = Logger.getLogger(SchedulerViewController.class.getName());
 
     protected static final int MAX_ENTRIES = 1000;
+    public static final int INITISALIATION_SECONDS_IN_PAST = 7200;
 
     // Pane control
     @FXML
@@ -268,7 +272,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             // Load the controller hide with select
             this.dateTimePickerController.setActionAfterSelection(() -> {
                 this.dateTimePopup.hide();
-                moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, MAX_ENTRIES * 2, this.dataItemFilterController.getSelectedFilter());
+                moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, MAX_ENTRIES * 2, this.dataItemFilterController.getSelectedFilter(), false);
             });
         } catch (IOException e) {
             e.printStackTrace();
@@ -396,7 +400,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             } else {
                 markFilterActivated();
             }
-            moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, MAX_ENTRIES, selectedFilter);
+            moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, MAX_ENTRIES, selectedFilter, false);
         }
     }
 
@@ -496,7 +500,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     protected void liveToggleSelected(ActionEvent e) {
         if (this.liveTgl.isSelected()) {
             clearTable();
-            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, MAX_ENTRIES, this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, MAX_ENTRIES, this.dataItemFilterController.getSelectedFilter(), true);
             startSubscription();
         } else {
             stopSubscription();
@@ -508,7 +512,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     @FXML
     protected void goToStart(ActionEvent e) {
         if (isProcessingAvailable()) {
-            moveToTime(Instant.EPOCH, RetrievalDirection.TO_FUTURE, 1, this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.EPOCH, RetrievalDirection.TO_FUTURE, 1, this.dataItemFilterController.getSelectedFilter(), false);
         }
         e.consume();
     }
@@ -532,7 +536,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     @FXML
     protected void goToEnd(ActionEvent e) {
         if (isProcessingAvailable()) {
-            moveToTime(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L), RetrievalDirection.TO_PAST, MAX_ENTRIES * 2, this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L), RetrievalDirection.TO_PAST, MAX_ENTRIES * 2, this.dataItemFilterController.getSelectedFilter(), false);
         }
         e.consume();
     }
@@ -604,7 +608,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         e.consume();
     }
 
-    protected void moveToTime(Instant selectedTime, RetrievalDirection direction, int n, ScheduledActivityDataFilter currentFilter) {
+    protected void moveToTime(Instant selectedTime, RetrievalDirection direction, int n, ScheduledActivityDataFilter currentFilter, boolean initialisation) {
         if (this.selectTimeBtn != null) {
             this.selectTimeBtn.setText(formatTime(selectedTime));
         }
@@ -613,7 +617,12 @@ public class SchedulerViewController extends AbstractDisplayController implement
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 List<ScheduledActivityData> messages = doRetrieve(selectedTime, n, direction, currentFilter);
-                addDataItems(messages, true);
+                if(initialisation) {
+                    Instant limit = selectedTime.minusSeconds(INITISALIATION_SECONDS_IN_PAST);
+                    addDataItems(messages.stream().filter(o -> o.getStartTime().isAfter(limit)).collect(Collectors.toList()), true);
+                } else {
+                    addDataItems(messages, true);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -792,7 +801,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         // Start subscription if there
         if (this.liveTgl == null || this.liveTgl.isSelected()) {
             clearTable();
-            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, MAX_ENTRIES, this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, MAX_ENTRIES, this.dataItemFilterController.getSelectedFilter(), true);
             startSubscription();
         }
     }
