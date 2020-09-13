@@ -33,6 +33,8 @@
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.layout.Pane?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.Tab?>
 <TitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Scheduler" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.SchedulerViewController">
     <content>
     <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1">
@@ -81,28 +83,69 @@
                <ToggleButton fx:id="enableTgl" mnemonicParsing="false" onAction="#enableToggleSelected" prefHeight="25.0" prefWidth="91.0" text="Enable" />
            </items>
         </ToolBar>
-        <TableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
-          <columns>
-            <TableColumn fx:id="extIdCol" editable="false" prefWidth="90.0" text="External ID" />
-            <TableColumn fx:id="nameCol" editable="false" prefWidth="130.0" text="Name" />
-            <TableColumn fx:id="stateCol" editable="false" prefWidth="90.0" text="State" />
-            <TableColumn fx:id="startTimeCol" editable="false" prefWidth="190.0" text="Start Time" />
-            <TableColumn fx:id="endTimeCol" editable="false" prefWidth="190.0" text="End Time" />
-            <TableColumn fx:id="sourceCol" editable="false" prefWidth="100.0" text="Source" />
-            <TableColumn fx:id="triggerCol" editable="false" prefWidth="100.0" text="Trigger" />
-            <TableColumn fx:id="resourcesCol" editable="false" prefWidth="100.0" text="Resources" />
-            <TableColumn fx:id="durationCol" editable="false" prefWidth="100.0" text="Duration" />
-            <TableColumn fx:id="parentCol" editable="false" prefWidth="130.0" text="Parent" />
-          </columns>
-          <contextMenu>
-              <ContextMenu onShowing="#menuAboutToShow">
-                <items>
-                    <MenuItem fx:id="editScheduledMenuItem" mnemonicParsing="false" onAction="#onModifyMenuItem" text="Edit scheduled item..." />
-                    <MenuItem fx:id="deleteScheduledMenuItem" mnemonicParsing="false" onAction="#onRemoveMenuItem" text="Remove scheduled items(s)" />
-                </items>
-              </ContextMenu>
-           </contextMenu>
-        </TableView>
+        <TabPane VBox.vgrow="ALWAYS">
+            <tabs>
+                <Tab text="Schedule View" closable="false">
+                    <graphic>
+                        <ImageView pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/clock.svg.png" />
+                            </image>
+                        </ImageView>
+                    </graphic>
+                    <TableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="extIdCol" editable="false" prefWidth="90.0" text="External ID" />
+                            <TableColumn fx:id="nameCol" editable="false" prefWidth="130.0" text="Name" />
+                            <TableColumn fx:id="stateCol" editable="false" prefWidth="90.0" text="State" />
+                            <TableColumn fx:id="startTimeCol" editable="false" prefWidth="190.0" text="Start Time" />
+                            <TableColumn fx:id="endTimeCol" editable="false" prefWidth="190.0" text="End Time" />
+                            <TableColumn fx:id="sourceCol" editable="false" prefWidth="100.0" text="Source" />
+                            <TableColumn fx:id="triggerCol" editable="false" prefWidth="100.0" text="Trigger" />
+                            <TableColumn fx:id="resourcesCol" editable="false" prefWidth="100.0" text="Resources" />
+                            <TableColumn fx:id="durationCol" editable="false" prefWidth="100.0" text="Duration" />
+                            <TableColumn fx:id="parentCol" editable="false" prefWidth="130.0" text="Parent" />
+                        </columns>
+                        <contextMenu>
+                            <ContextMenu onShowing="#menuAboutToShow">
+                                <items>
+                                    <MenuItem fx:id="editScheduledMenuItem" mnemonicParsing="false" onAction="#onModifyMenuItem" text="Edit scheduled item..." />
+                                    <MenuItem fx:id="deleteScheduledMenuItem" mnemonicParsing="false" onAction="#onRemoveMenuItem" text="Remove scheduled items(s)" />
+                                </items>
+                            </ContextMenu>
+                        </contextMenu>
+                    </TableView>
+                </Tab>
+                <Tab text="Event Triggers" closable="false">
+                    <graphic>
+                        <ImageView pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/thunder.svg.png" />
+                            </image>
+                        </ImageView>
+                    </graphic>
+                    <TableView fx:id="eventDataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="eventExtIdCol" editable="false" prefWidth="90.0" text="External ID" />
+                            <TableColumn fx:id="eventNameCol" editable="false" prefWidth="130.0" text="Name" />
+                            <TableColumn fx:id="eventSourceCol" editable="false" prefWidth="100.0" text="Source" />
+                            <TableColumn fx:id="eventTriggerCol" editable="false" prefWidth="100.0" text="Trigger" />
+                            <TableColumn fx:id="eventResourcesCol" editable="false" prefWidth="100.0" text="Resources" />
+                            <TableColumn fx:id="eventDurationCol" editable="false" prefWidth="100.0" text="Duration" />
+                            <TableColumn fx:id="eventParentCol" editable="false" prefWidth="130.0" text="Parent" />
+                        </columns>
+                        <contextMenu>
+                            <ContextMenu onShowing="#menuAboutToShow">
+                                <items>
+                                    <MenuItem fx:id="eventEditScheduledMenuItem" mnemonicParsing="false" onAction="#onEventModifyMenuItem" text="Edit scheduled item..." />
+                                    <MenuItem fx:id="eventDeleteScheduledMenuItem" mnemonicParsing="false" onAction="#onEventRemoveMenuItem" text="Remove scheduled items(s)" />
+                                </items>
+                            </ContextMenu>
+                        </contextMenu>
+                    </TableView>
+                </Tab>
+            </tabs>
+        </TabPane>
      </children>
      <padding>
         <Insets top="0.01" />

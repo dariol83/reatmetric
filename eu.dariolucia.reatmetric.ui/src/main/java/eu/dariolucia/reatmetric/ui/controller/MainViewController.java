@@ -80,6 +80,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     private static final String VIEW_LOCATION = "viewLocation";
     private static final String VIEW_NAME = "viewName";
+    private static final String VIEW_IMAGE = "viewImage";
 
     private static final URL CSS_URL = MainViewController.class.getClassLoader().getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
 
@@ -162,6 +163,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         final AbstractDisplayController ctrl = loader.getController();
 
         Tab t = new Tab(getNodeText(viewButton), view);
+        Image img = getNodeImg(viewButton);
+        if(img != null) {
+            t.setGraphic(new ImageView(img));
+        }
         t.setId(perspectiveId);
         viewTabPane.getTabs().add(t);
         // Add stop on tab close for any type of subscription in the controller
@@ -204,6 +209,20 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
             stage.show();
         });
+    }
+
+    private Image getNodeImg(Node viewButton) {
+        if (viewButton.getProperties().get(VIEW_IMAGE) != null) {
+            String imageLocation = viewButton.getProperties().get(VIEW_IMAGE).toString();
+            try {
+                return new Image(getClass().getResourceAsStream(imageLocation));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
 
     private String getNodeText(Node viewButton) {

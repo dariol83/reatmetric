@@ -283,7 +283,7 @@ public class ExpressionDefinition {
         public synchronized Object process(IBindingResolver resolver, Map<String, Object> additionalBindings, List<SymbolDefinition> symbols) throws ScriptException {
             try (Context context = Context.newBuilder()
                     .engine(engine)
-                    .allowAllAccess(true) // TODO: Do not use this and use a static HostAccess, as per comment in https://github.com/graalvm/graaljs/issues/121#issuecomment-690179954
+                    .allowAllAccess(true)
                     .build()) {
                 Value bindings = context.getBindings("js");
                 // Update the bindings
