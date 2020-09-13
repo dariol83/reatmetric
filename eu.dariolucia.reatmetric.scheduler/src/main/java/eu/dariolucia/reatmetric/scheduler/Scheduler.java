@@ -178,52 +178,67 @@ public class Scheduler implements IScheduler {
         // RUNNING -> UNKNOWN
         // WAITING -> ABORTED
         try {
+            // This part retrieves everything but not the event-based scheduled activities, for which the generation time is set
+            // to EPOCH.
             List<ScheduledActivityData> scheduledItems = archive.retrieve(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L),
                     new ScheduledActivityDataFilter(null, null, null, null,
                             Arrays.asList(SchedulingState.SCHEDULED, SchedulingState.WAITING, SchedulingState.RUNNING), null),
                     Instant.now().minusSeconds(36 * 3600));
 
-            for (ScheduledActivityData item : scheduledItems) {
-                if (item.getState() == SchedulingState.SCHEDULED) {
-                    // Create ScheduledTask
-                    ScheduledTask st = new ScheduledTask(this, timer, dispatcher, item);
-                    id2scheduledTask.put(st.getId(), st);
-                    // Prepare execution event depending on trigger (absolute, relative, event)
-                    st.armTrigger();
-                } else if (item.getState() == SchedulingState.RUNNING) {
-                    storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
-                            item.getGenerationTime(),
-                            item.getRequest(),
-                            item.getActivityOccurrence(),
-                            item.getResources(),
-                            item.getSource(),
-                            item.getExternalId(),
-                            item.getTrigger(),
-                            item.getLatestInvocationTime(),
-                            item.getStartTime(),
-                            item.getDuration(),
-                            item.getConflictStrategy(),
-                            SchedulingState.UNKNOWN,
-                            item.getExtension()));
-                } else if (item.getState() == SchedulingState.WAITING) {
-                    storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
-                            item.getGenerationTime(),
-                            item.getRequest(),
-                            item.getActivityOccurrence(),
-                            item.getResources(),
-                            item.getSource(),
-                            item.getExternalId(),
-                            item.getTrigger(),
-                            item.getLatestInvocationTime(),
-                            item.getStartTime(),
-                            item.getDuration(),
-                            item.getConflictStrategy(),
-                            SchedulingState.ABORTED,
-                            item.getExtension()));
-                }
-            }
+            restoreActivitiesFromList(scheduledItems);
+
+            // Now it is the time of the event-based activities
+            scheduledItems = archive.retrieve(Instant.EPOCH,
+                    new ScheduledActivityDataFilter(null, null, null, null,
+                            Collections.singletonList(SchedulingState.SCHEDULED), null),
+                    Instant.EPOCH);
+
+            restoreActivitiesFromList(scheduledItems);
+
         } catch (ArchiveException | SchedulingException e) {
             LOG.log(Level.SEVERE, "Cannot restore scheduler state from archive: " + e.getMessage(), e);
+        }
+    }
+
+    private void restoreActivitiesFromList(List<ScheduledActivityData> scheduledItems) throws SchedulingException {
+        for (ScheduledActivityData item : scheduledItems) {
+            if (item.getState() == SchedulingState.SCHEDULED) {
+                // Create ScheduledTask
+                ScheduledTask st = new ScheduledTask(this, timer, dispatcher, item);
+                id2scheduledTask.put(st.getId(), st);
+                // Prepare execution event depending on trigger (absolute, relative, event)
+                st.armTrigger();
+            } else if (item.getState() == SchedulingState.RUNNING) {
+                storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
+                        item.getGenerationTime(),
+                        item.getRequest(),
+                        item.getActivityOccurrence(),
+                        item.getResources(),
+                        item.getSource(),
+                        item.getExternalId(),
+                        item.getTrigger(),
+                        item.getLatestInvocationTime(),
+                        item.getStartTime(),
+                        item.getDuration(),
+                        item.getConflictStrategy(),
+                        SchedulingState.UNKNOWN,
+                        item.getExtension()));
+            } else if (item.getState() == SchedulingState.WAITING) {
+                storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
+                        item.getGenerationTime(),
+                        item.getRequest(),
+                        item.getActivityOccurrence(),
+                        item.getResources(),
+                        item.getSource(),
+                        item.getExternalId(),
+                        item.getTrigger(),
+                        item.getLatestInvocationTime(),
+                        item.getStartTime(),
+                        item.getDuration(),
+                        item.getConflictStrategy(),
+                        SchedulingState.ABORTED,
+                        item.getExtension()));
+            }
         }
     }
 
@@ -431,7 +446,7 @@ public class Scheduler implements IScheduler {
     public Pair<Instant, Duration> computeTimeInformation(boolean isInitRequest, SchedulingRequest sr) {
         if (sr.getTrigger() instanceof EventBasedSchedulingTrigger) {
             if(isInitRequest) {
-                return Pair.of(Instant.now(), sr.getExpectedDuration());
+                return Pair.of(Instant.EPOCH, sr.getExpectedDuration());
             } else {
                 throw new IllegalArgumentException("Event-based trigger cannot have a refreshed start time");
             }

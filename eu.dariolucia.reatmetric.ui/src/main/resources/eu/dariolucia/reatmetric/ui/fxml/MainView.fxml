@@ -293,7 +293,7 @@
             <Circle fx:id="nominalCrl" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" onMouseClicked="#debugAction"
                 style="-fx-cursor: hand;" />
             <Separator orientation="VERTICAL" />
-             <Label fx:id="systemLbl" onMouseClicked="#systemLabelAction" alignment="CENTER" disable="true" prefHeight="24.0" prefWidth="200.0" style="-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a; -fx-background-radius: 5px; -fx-border-radius= 5 5 5 5;" text="---" >
+             <Label fx:id="systemLbl" onMouseClicked="#systemLabelAction" alignment="CENTER" disable="true" prefHeight="24.0" prefWidth="200.0" style="-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;" text="---" >
                  <cursor>
                      <Cursor fx:constant="HAND" />
                  </cursor>

@@ -70,7 +70,7 @@
                       </ImageView>
                   </graphic>
               </Button>
-               <Button fx:id="removeBtn" mnemonicParsing="false" onAction="#removeButtonSelected">
+               <Button fx:id="removeBtn" mnemonicParsing="false" onAction="#removeCompletedActivitiesButtonSelected">
                    <graphic>
                        <ImageView pickOnBounds="true" preserveRatio="true">
                            <image>

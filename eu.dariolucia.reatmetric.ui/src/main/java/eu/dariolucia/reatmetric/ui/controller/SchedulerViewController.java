@@ -68,7 +68,8 @@ import java.util.stream.Collectors;
 /**
  * FXML Controller class
  *
- * TODO: fix retrieval, use time based (1 minute, 15 minutes stepping)
+ * TODO: when not live, editing/removal should be blocked (no menu)
+ * TODO: when in live, check at each tick and remove items older than 2 hours
  *
  * @author dario
  */
@@ -174,7 +175,6 @@ public class SchedulerViewController extends AbstractDisplayController implement
     @FXML
     public MenuItem eventDeleteScheduledMenuItem;
 
-
     // Popup selector for date/time
     protected final Popup dateTimePopup = new Popup();
 
@@ -272,7 +272,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             // Load the controller hide with select
             this.dateTimePickerController.setActionAfterSelection(() -> {
                 this.dateTimePopup.hide();
-                moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, MAX_ENTRIES * 2, this.dataItemFilterController.getSelectedFilter(), false);
+                moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_FUTURE, MAX_ENTRIES * 2, this.dataItemFilterController.getSelectedFilter(), false);
             });
         } catch (IOException e) {
             e.printStackTrace();
@@ -433,6 +433,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     protected void clearTable() {
         timeScheduledActivityList.clear();
+        eventDataItemTableView.getItems().clear();
         activityMap.clear();
         dataItemTableView.layout();
         dataItemTableView.refresh();
@@ -509,10 +510,25 @@ public class SchedulerViewController extends AbstractDisplayController implement
         e.consume();
     }
 
+    private void clearTimeBasedActivities() {
+        for(ScheduledActivityOccurrenceDataWrapper saod : timeScheduledActivityList) {
+            activityMap.remove(saod.get().getInternalId());
+        }
+        timeScheduledActivityList.clear();
+    }
+
+    private int getNumVisibleRow() {
+        double h = this.dataItemTableView.getHeight();
+        h -= 30; // Header
+        return (int) (h / this.dataItemTableView.getFixedCellSize()) + 1;
+    }
+
     @FXML
     protected void goToStart(ActionEvent e) {
         if (isProcessingAvailable()) {
-            moveToTime(Instant.EPOCH, RetrievalDirection.TO_FUTURE, 1, this.dataItemFilterController.getSelectedFilter(), false);
+            // Yes, it is weird, this is to avoid retrieving event-based activities
+            clearTimeBasedActivities();
+            moveToTime(Instant.EPOCH.plusSeconds(3600), RetrievalDirection.TO_FUTURE, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter(), false);
         }
         e.consume();
     }
@@ -528,7 +544,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     @FXML
     protected void goBackFast(ActionEvent e) {
         if (isProcessingAvailable()) {
-            fetchRecords(MAX_ENTRIES, RetrievalDirection.TO_PAST);
+            fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_PAST);
         }
         e.consume();
     }
@@ -536,7 +552,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
     @FXML
     protected void goToEnd(ActionEvent e) {
         if (isProcessingAvailable()) {
-            moveToTime(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L), RetrievalDirection.TO_PAST, MAX_ENTRIES * 2, this.dataItemFilterController.getSelectedFilter(), false);
+            clearTimeBasedActivities();
+            moveToTime(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter(), false);
         }
         e.consume();
     }
@@ -552,23 +569,28 @@ public class SchedulerViewController extends AbstractDisplayController implement
     @FXML
     protected void goForwardFast(ActionEvent e) {
         if (isProcessingAvailable()) {
-            fetchRecords(MAX_ENTRIES, RetrievalDirection.TO_FUTURE);
+            fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_FUTURE);
         }
         e.consume();
     }
 
     protected void fetchRecords(int n, RetrievalDirection direction) {
-        if (dataItemTableView.getItems().isEmpty()) {
-            return;
-        }
-        // Get the first message in the table
-        ScheduledActivityOccurrenceDataWrapper om = direction == RetrievalDirection.TO_FUTURE ? getFirst() : getLast();
+        // Get the first item in the table: if looking in the past, use the first item, if looking in the future, use the last item
+        ScheduledActivityOccurrenceDataWrapper om = direction == RetrievalDirection.TO_FUTURE ? getLast() : getFirst();
+        // No message: use the current time
+
         // Retrieve the next one and add it on top
         markProgressBusy();
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<ScheduledActivityData> messages = doRetrieve(om.get(), n, direction, this.dataItemFilterController.getSelectedFilter());
-                addDataItems(messages, false);
+                // Complication coming from the fact that event-based events should not appear in historical retrieves: if you spot one, keep going
+                if(om != null) {
+                    List<ScheduledActivityData> messages = doRetrieve(om.get(), n, direction, this.dataItemFilterController.getSelectedFilter());
+                    addDataItems(messages, false);
+                } else {
+                    List<ScheduledActivityData> messages = doRetrieve(Instant.now(), n, direction, this.dataItemFilterController.getSelectedFilter());
+                    addDataItems(messages, false);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -587,10 +609,16 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     private ScheduledActivityOccurrenceDataWrapper getFirst() {
+        if(this.dataItemTableView.getItems().isEmpty()) {
+            return null;
+        }
         return this.dataItemTableView.getItems().get(0);
     }
 
     private ScheduledActivityOccurrenceDataWrapper getLast() {
+        if(this.dataItemTableView.getItems().isEmpty()) {
+            return null;
+        }
         return this.dataItemTableView.getItems().get(this.dataItemTableView.getItems().size() - 1);
     }
 
@@ -621,7 +649,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
                     Instant limit = selectedTime.minusSeconds(INITISALIATION_SECONDS_IN_PAST);
                     addDataItems(messages.stream().filter(o -> o.getStartTime().isAfter(limit)).collect(Collectors.toList()), true);
                 } else {
-                    addDataItems(messages, true);
+                    addDataItems(messages, this.liveTgl.isSelected());
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -747,14 +775,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
             this.dateTimePickerController.setSelectedTime(now);
         } else {
             Instant latest = null;
-            for (ScheduledActivityOccurrenceDataWrapper item : activityMap.values()) {
-                if (latest == null) {
-                    latest = item.startTimeProperty().get();
-                } else {
-                    if (latest.isBefore(item.startTimeProperty().get())) {
-                        latest = item.startTimeProperty().get();
-                    }
-                }
+            if(!this.dataItemTableView.getItems().isEmpty()) {
+                latest = this.dataItemTableView.getItems().get(0).startTimeProperty().get();
             }
             if (latest == null) {
                 this.selectTimeBtn.setText("---");
@@ -865,13 +887,17 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     @FXML
-    public void removeButtonSelected(ActionEvent event) {
+    public void removeCompletedActivitiesButtonSelected(ActionEvent event) {
         boolean confirm = DialogUtils.confirm("Remove terminated activity occurrences", null, "If you continue, the display will be cleared from the currently displayed terminated activity occurrences. " +
                 "Do you want to continue?");
         if (!confirm) {
             return;
         }
+        List<ScheduledActivityOccurrenceDataWrapper> toBeRemoved = timeScheduledActivityList.stream().filter(o -> o.stateProperty().get() != SchedulingState.RUNNING && o.stateProperty().get() != SchedulingState.WAITING && o.stateProperty().get() != SchedulingState.SCHEDULED).collect(Collectors.toList());
         timeScheduledActivityList.removeIf(o -> o.stateProperty().get() != SchedulingState.RUNNING && o.stateProperty().get() != SchedulingState.WAITING && o.stateProperty().get() != SchedulingState.SCHEDULED);
+        for(ScheduledActivityOccurrenceDataWrapper aodw : toBeRemoved) {
+            activityMap.remove(aodw.get().getInternalId());
+        }
         event.consume();
     }
 
