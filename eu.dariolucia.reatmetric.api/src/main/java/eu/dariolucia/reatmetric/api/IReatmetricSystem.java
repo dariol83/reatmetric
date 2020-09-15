@@ -39,6 +39,8 @@ import java.util.function.Consumer;
 
 /**
  *
+ * TODO: introduce factory or registry mechanism to lookup this interface in order to allow multi-system connection support from the MMI
+ *
  * @author dario
  */
 public interface IReatmetricSystem extends IDebugInfoProvider {
