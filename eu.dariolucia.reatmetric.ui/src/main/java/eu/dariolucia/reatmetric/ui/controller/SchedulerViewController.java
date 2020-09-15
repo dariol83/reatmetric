@@ -68,14 +68,13 @@ import java.util.stream.Collectors;
 /**
  * FXML Controller class
  *
- *
  * @author dario
  */
 public class SchedulerViewController extends AbstractDisplayController implements IScheduledActivityDataSubscriber, ISchedulerSubscriber {
 
     private static final Logger LOG = Logger.getLogger(SchedulerViewController.class.getName());
 
-    protected static final int MAX_ENTRIES = 1000;
+    private static final int MAX_ENTRIES = 1000;
     private static final int INITIALIZATION_SECONDS_IN_PAST = 7200;
 
     // Pane control
