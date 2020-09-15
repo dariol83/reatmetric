@@ -56,6 +56,7 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
+// TODO refactor to introduce a ServiceRegistry with a single system, based on sysproperty init
 public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, IDriverListener {
 
     private static final Logger LOG = Logger.getLogger(ServiceCoreImpl.class.getName());
