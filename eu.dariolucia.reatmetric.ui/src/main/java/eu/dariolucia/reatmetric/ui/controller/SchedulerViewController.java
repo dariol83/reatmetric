@@ -68,8 +68,6 @@ import java.util.stream.Collectors;
 /**
  * FXML Controller class
  *
- * TODO: when not live, editing/removal should be blocked (no menu)
- * TODO: when in live, check at each tick and remove items older than 2 hours
  *
  * @author dario
  */
@@ -78,7 +76,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private static final Logger LOG = Logger.getLogger(SchedulerViewController.class.getName());
 
     protected static final int MAX_ENTRIES = 1000;
-    public static final int INITISALIATION_SECONDS_IN_PAST = 7200;
+    private static final int INITIALIZATION_SECONDS_IN_PAST = 7200;
 
     // Pane control
     @FXML
@@ -227,7 +225,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         this.timeScheduledActivityList = FXCollections.observableList(FXCollections.observableArrayList(),
                 data -> new Observable[] { data.setLineProperty(), data.startTimeProperty(), data.endTimeProperty(), data.durationProperty(), data.stateProperty(), data.nameProperty(), data.resourcesProperty(), data.triggerProperty() });
         this.filteredList = new FilteredList<>(this.timeScheduledActivityList, o -> true);
-        this.sortedList = new SortedList<>(filteredList, Comparator.naturalOrder());
+        this.sortedList = new SortedList<>(filteredList, Comparator.reverseOrder());
         this.dataItemTableView.setItems(sortedList);
 
         // Event triggers
@@ -575,8 +573,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     protected void fetchRecords(int n, RetrievalDirection direction) {
-        // Get the first item in the table: if looking in the past, use the first item, if looking in the future, use the last item
-        ScheduledActivityOccurrenceDataWrapper om = direction == RetrievalDirection.TO_FUTURE ? getLast() : getFirst();
+        // Get the first item in the table: if looking in the past, use the last item, if looking in the future, use the first item
+        ScheduledActivityOccurrenceDataWrapper om = direction == RetrievalDirection.TO_FUTURE ? getFirst() : getLast();
         // No message: use the current time
 
         // Retrieve the next one and add it on top
@@ -584,13 +582,13 @@ public class SchedulerViewController extends AbstractDisplayController implement
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 // Complication coming from the fact that event-based events should not appear in historical retrieves: if you spot one, keep going
+                List<ScheduledActivityData> messages;
                 if(om != null) {
-                    List<ScheduledActivityData> messages = doRetrieve(om.get(), n, direction, this.dataItemFilterController.getSelectedFilter());
-                    addDataItems(messages, false);
+                    messages = doRetrieve(om.get(), n, direction, this.dataItemFilterController.getSelectedFilter());
                 } else {
-                    List<ScheduledActivityData> messages = doRetrieve(Instant.now(), n, direction, this.dataItemFilterController.getSelectedFilter());
-                    addDataItems(messages, false);
+                    messages = doRetrieve(Instant.now(), n, direction, this.dataItemFilterController.getSelectedFilter());
                 }
+                addDataItems(messages, false);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -646,7 +644,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             try {
                 List<ScheduledActivityData> messages = doRetrieve(selectedTime, n, direction, currentFilter);
                 if(initialisation) {
-                    Instant limit = selectedTime.minusSeconds(INITISALIATION_SECONDS_IN_PAST);
+                    Instant limit = selectedTime.minusSeconds(INITIALIZATION_SECONDS_IN_PAST);
                     addDataItems(messages.stream().filter(o -> o.getStartTime().isAfter(limit)).collect(Collectors.toList()), true);
                 } else {
                     addDataItems(messages, this.liveTgl.isSelected());
@@ -674,6 +672,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     protected final void startSubscription() {
+        this.eventDataItemTableView.setDisable(false);
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             this.delegator.resume();
             try {
@@ -701,13 +700,29 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private void refreshTimeBasedState() {
         // Update the button time
         updateSelectTime();
+        // Remove old entries
+        removeOldEntries();
         // Update next to be executed line in time-based schedule table to show a greenish background
         updateToBeExecutedLine(Instant.now(), true);
     }
 
+    private void removeOldEntries() {
+        Instant limit = Instant.now().minusSeconds(INITIALIZATION_SECONDS_IN_PAST);
+        int start = this.sortedList.size() - 1;
+        while(start >= 0) {
+            if(this.sortedList.get(start).get().getStartTime().isBefore(limit)) {
+                this.timeScheduledActivityList.remove(this.sortedList.get(start));
+                --start;
+            } else {
+                return;
+            }
+        }
+    }
+
     private void updateToBeExecutedLine(Instant timeToMark, boolean mark) {
         boolean found = false;
-        for(ScheduledActivityOccurrenceDataWrapper wraps : sortedList) {
+        for (int i = sortedList.size(); i-- > 0; ) {
+            ScheduledActivityOccurrenceDataWrapper wraps = sortedList.get(i);
             if(!mark) {
                 wraps.setLineProperty().set(false);
             } else {
@@ -738,6 +753,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             this.secondTicker = null;
         }
         updateToBeExecutedLine(null, false);
+        this.eventDataItemTableView.setDisable(true);
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 doServiceUnsubscribe();
@@ -1010,8 +1026,13 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     @FXML
     public void menuAboutToShow(WindowEvent windowEvent) {
-        deleteScheduledMenuItem.setVisible(!dataItemTableView.getSelectionModel().getSelectedItems().isEmpty());
-        editScheduledMenuItem.setVisible(dataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
+        deleteScheduledMenuItem.setVisible(this.liveTgl.isSelected() && !dataItemTableView.getSelectionModel().getSelectedItems().isEmpty());
+        editScheduledMenuItem.setVisible(this.liveTgl.isSelected() && dataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
+        eventDeleteScheduledMenuItem.setVisible(this.liveTgl.isSelected() && !dataItemTableView.getSelectionModel().getSelectedItems().isEmpty());
+        eventEditScheduledMenuItem.setVisible(this.liveTgl.isSelected() && dataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
+        if(!this.liveTgl.isSelected()) {
+            windowEvent.consume();
+        }
     }
 
     public static class ScheduledActivityOccurrenceDataWrapper implements Comparable<ScheduledActivityOccurrenceDataWrapper> {
