@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.IReatmetricRegister;
 
 open module eu.dariolucia.reatmetric.ui {
 
@@ -33,5 +33,5 @@ open module eu.dariolucia.reatmetric.ui {
 
     exports eu.dariolucia.reatmetric.ui;
 
-    uses IReatmetricSystem;
+    uses IReatmetricRegister;
 }

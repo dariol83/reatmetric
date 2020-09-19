@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
+import eu.dariolucia.reatmetric.api.IReatmetricRegister;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.core.ReatmetricRegisterImpl;
+import eu.dariolucia.reatmetric.core.ReatmetricSystemImpl;
 
 open module eu.dariolucia.reatmetric.core {
     requires java.logging;
@@ -32,5 +35,5 @@ open module eu.dariolucia.reatmetric.core {
     uses eu.dariolucia.reatmetric.api.processing.IProcessingModelFactory;
     uses eu.dariolucia.reatmetric.api.scheduler.ISchedulerFactory;
 
-    provides IReatmetricSystem with eu.dariolucia.reatmetric.core.ServiceCoreImpl;
+    provides IReatmetricRegister with ReatmetricRegisterImpl;
 }

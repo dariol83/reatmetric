@@ -26,6 +26,12 @@ import java.util.List;
  */
 public interface IReatmetricRegister {
 
+    /**
+     * Return the list of systems that are available through this registry.
+     *
+     * @return the list of {@link IReatmetricSystem} systems
+     * @throws ReatmetricException in case of problems fulfilling the request
+     */
     List<IReatmetricSystem> availableSystems() throws ReatmetricException;
 
 }

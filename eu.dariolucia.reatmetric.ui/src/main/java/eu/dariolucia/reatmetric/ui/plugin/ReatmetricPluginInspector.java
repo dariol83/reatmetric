@@ -17,9 +17,13 @@
 
 package eu.dariolucia.reatmetric.ui.plugin;
 
+import eu.dariolucia.reatmetric.api.IReatmetricRegister;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -27,16 +31,26 @@ import java.util.*;
  */
 public class ReatmetricPluginInspector {
 
+    private static final Logger LOG = Logger.getLogger(ReatmetricPluginInspector.class.getName());
+
     private final Map<String, IReatmetricSystem> serviceFactories = new TreeMap<>();
 
     public synchronized List<String> getAvailableSystems() {
         if(this.serviceFactories.isEmpty()) {
-            ServiceLoader<IReatmetricSystem> loader
-                    = ServiceLoader.load(IReatmetricSystem.class);
-            for (IReatmetricSystem cp : loader) {
-                String system = cp.getName();
-                if (system != null) {
-                    this.serviceFactories.put(system, cp);
+            ServiceLoader<IReatmetricRegister> loader
+                    = ServiceLoader.load(IReatmetricRegister.class);
+            for (IReatmetricRegister reg : loader) {
+                List<IReatmetricSystem> systems = null;
+                try {
+                    systems = reg.availableSystems();
+                    for(IReatmetricSystem cp : systems) {
+                        String system = cp.getName();
+                        if (system != null) {
+                            this.serviceFactories.put(system, cp);
+                        }
+                    }
+                } catch (ReatmetricException e) {
+                    LOG.log(Level.SEVERE, "Cannot load systems from registry " + reg + ": " + e.getMessage(), e);
                 }
             }
         }

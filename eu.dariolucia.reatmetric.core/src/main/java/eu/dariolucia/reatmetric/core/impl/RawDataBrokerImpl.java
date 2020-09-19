@@ -22,7 +22,7 @@ import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.*;
-import eu.dariolucia.reatmetric.core.ServiceCoreImpl;
+import eu.dariolucia.reatmetric.core.ReatmetricSystemImpl;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 
 import java.time.Instant;
@@ -41,14 +41,14 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
 
     private static final Logger LOG = Logger.getLogger(RawDataBrokerImpl.class.getName());
 
-    private final ServiceCoreImpl core;
+    private final ReatmetricSystemImpl core;
     private final IRawDataArchive archive;
     private final AtomicLong sequencer;
 
     private final List<RawDataSubscriptionManager> subscribers = new CopyOnWriteArrayList<>();
     private final Map<IRawDataSubscriber, RawDataSubscriptionManager> subscriberIndex = new ConcurrentHashMap<>();
 
-    public RawDataBrokerImpl(ServiceCoreImpl core, IRawDataArchive archive) throws ArchiveException {
+    public RawDataBrokerImpl(ReatmetricSystemImpl core, IRawDataArchive archive) throws ArchiveException {
         this.core = core;
         this.archive = archive;
         this.sequencer = new AtomicLong();

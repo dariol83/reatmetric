@@ -56,11 +56,12 @@ import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
-// TODO refactor to introduce a ServiceRegistry with a single system, based on sysproperty init
-public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, IDriverListener {
+/**
+ * Reference ReatMetric system implementation.
+ */
+public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreContext, IDriverListener {
 
-    private static final Logger LOG = Logger.getLogger(ServiceCoreImpl.class.getName());
-    private static final String INIT_FILE_KEY = "reatmetric.core.config"; // Absolute location of the configuration file, to configure the core instance
+    private static final Logger LOG = Logger.getLogger(ReatmetricSystemImpl.class.getName());
 
     private final List<IDriver> drivers = new ArrayList<>();
     private final List<ITransportConnector> transportConnectors = new ArrayList<>();
@@ -79,18 +80,18 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
 
     private volatile boolean initialised = false;
 
-    public ServiceCoreImpl() {
+    public ReatmetricSystemImpl(String initString) throws ReatmetricException {
         try {
-            String configurationFileLocation = System.getProperty(INIT_FILE_KEY);
-            configuration = ServiceCoreConfiguration.load(new FileInputStream(configurationFileLocation));
+            configuration = ServiceCoreConfiguration.load(new FileInputStream(initString));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new ReatmetricException(e);
         }
     }
 
     @Override
     public void initialise(Consumer<SystemStatus> consumer) throws ReatmetricException {
         LOG.info("Reatmetric Core System initialisation");
+
         statusSubscriber = consumer;
         // Prepare the logging facility
         if(configuration.getLogPropertyFile() != null) {
@@ -128,7 +129,6 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
         ServiceLoader<ISchedulerFactory> scheduleLoader = ServiceLoader.load(ISchedulerFactory.class);
         if(scheduleLoader.findFirst().isPresent()) {
             scheduler = scheduleLoader.findFirst().get().buildScheduler(archive, processingModelManager, processingModelManager.getEventDataMonitorService(), processingModelManager.getActivityOccurrenceDataMonitorService());
-            scheduler.initialise(configuration.isSchedulerEnabled());
         } else {
             LOG.warning("Scheduler implementation not found");
         }
@@ -149,6 +149,10 @@ public class ServiceCoreImpl implements IReatmetricSystem, IServiceCoreContext, 
             } else {
                 LOG.severe("Driver " + dc.getName() + " not found in the service registry");
             }
+        }
+        // Initialise scheduler now
+        if(scheduler != null) {
+            scheduler.initialise(configuration.isSchedulerEnabled());
         }
         // Derive system status
         deriveSystemStatus();
