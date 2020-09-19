@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import eu.dariolucia.reatmetric.api.IReatmetricRegister;
 
 open module eu.dariolucia.reatmetric.ui {
 
@@ -30,8 +29,9 @@ open module eu.dariolucia.reatmetric.ui {
     requires org.controlsfx.controls;
 
     requires eu.dariolucia.reatmetric.api;
+    requires java.rmi;
 
     exports eu.dariolucia.reatmetric.ui;
 
-    uses IReatmetricRegister;
+    uses eu.dariolucia.reatmetric.api.IReatmetricRegister;
 }

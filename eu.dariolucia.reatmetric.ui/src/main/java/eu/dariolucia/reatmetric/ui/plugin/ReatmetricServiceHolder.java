@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+import java.rmi.RemoteException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
@@ -36,7 +37,7 @@ public class ReatmetricServiceHolder {
 
     private volatile IReatmetricSystem system;
     
-    private final List<IReatmetricServiceListener> listeners = new CopyOnWriteArrayList<IReatmetricServiceListener>();
+    private final List<IReatmetricServiceListener> listeners = new CopyOnWriteArrayList<>();
     
     public synchronized void setSystem(IReatmetricSystem system) {
         this.listeners.forEach(IReatmetricServiceListener::startGlobalOperationProgress);
@@ -47,8 +48,8 @@ public class ReatmetricServiceHolder {
                 // Given the amount of concurrency, wait some time before disposing the system... I know, not the best.
                 Thread.sleep(1000);
                 oldSystem.dispose();
-            } catch (ReatmetricException | InterruptedException e) {
-                LOG.log(Level.WARNING, "Exception while disposing system " + oldSystem.getName() + ": " + e.getMessage(), e);
+            } catch (ReatmetricException | InterruptedException | RemoteException e) {
+                LOG.log(Level.WARNING, "Exception while disposing system: " + e.getMessage(), e);
             }
         }
         this.system = system;
@@ -57,8 +58,8 @@ public class ReatmetricServiceHolder {
             try {
                 this.system.initialise(this::statusUpdateFunction);
                 this.listeners.forEach(o -> o.systemConnected(this.system));
-            } catch (ReatmetricException e) {
-                LOG.log(Level.SEVERE, "Exception while initialising system " + this.system.getName() + ": " + e.getMessage(), e);
+            } catch (ReatmetricException | RemoteException e) {
+                LOG.log(Level.SEVERE, "Exception while initialising system: " + e.getMessage(), e);
                 statusUpdateFunction(SystemStatus.ALARM);
                 this.listeners.forEach(o -> o.systemDisconnected(this.system));
             }

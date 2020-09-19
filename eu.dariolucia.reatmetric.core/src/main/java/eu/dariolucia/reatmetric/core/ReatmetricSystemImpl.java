@@ -50,6 +50,7 @@ import eu.dariolucia.reatmetric.core.impl.RawDataBrokerImpl;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -69,7 +70,7 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
     private final Map<Pair<String, String>, IRawDataRenderer> renderers = new HashMap<>();
     private final ServiceCoreConfiguration configuration;
 
-    private volatile SystemStatus systemStatus = SystemStatus.UNKNOWN;
+    private volatile SystemStatus systemStatus = SystemStatus.NOT_INITED;
 
     private IArchive archive;
     private IScheduler scheduler;
@@ -159,6 +160,11 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
         initialised = true;
         // Done and ready to go
         LOG.info("Reatmetric Core System loaded with status " + systemStatus);
+    }
+
+    @Override
+    public SystemStatus getStatus() {
+        return systemStatus;
     }
 
     private void registerRawDataRenderers(List<IRawDataRenderer> rawDataRenderers) {

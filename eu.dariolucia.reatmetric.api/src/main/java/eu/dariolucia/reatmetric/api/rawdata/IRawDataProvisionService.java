@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.common.IDataItemProvisionService;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+import java.rmi.RemoteException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -30,8 +31,8 @@ import java.util.Map;
  */
 public interface IRawDataProvisionService extends IDataItemProvisionService<IRawDataSubscriber, RawDataFilter, RawData> {
 
-    RawData getRawDataContents(IUniqueId uniqueId) throws ReatmetricException;
+    RawData getRawDataContents(IUniqueId uniqueId) throws ReatmetricException, RemoteException;
 
-    LinkedHashMap<String, String> getRenderedInformation(RawData rawData) throws ReatmetricException;
+    LinkedHashMap<String, String> getRenderedInformation(RawData rawData) throws ReatmetricException, RemoteException;
 
 }

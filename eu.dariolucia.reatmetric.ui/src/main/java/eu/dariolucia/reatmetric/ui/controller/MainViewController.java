@@ -56,6 +56,7 @@ import org.controlsfx.control.PopOver;
 
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -456,9 +457,13 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     public void systemConnected(IReatmetricSystem system) {
         Platform.runLater(() -> {
             enableMainViewItems();
-            this.systemLbl.setText(system.getName());
-            ReatmetricUI.setStatusLabel("System " + system.getName() + " connected");
             registerAcknowledgeMonitor();
+            try {
+                this.systemLbl.setText(system.getName());
+                ReatmetricUI.setStatusLabel("System " + system.getName() + " connected");
+            } catch (RemoteException e) {
+                LOG.log(Level.SEVERE, "Error on system connected: " + e.getMessage(), e);
+            }
         });
     }
 
@@ -470,8 +475,12 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     public void systemDisconnected(IReatmetricSystem system) {
         Platform.runLater(() -> {
             disableMainViewItems();
-            ReatmetricUI.setStatusLabel("System " + system.getName() + " disconnected");
             deregisterAcknowledgeMonitor();
+            try {
+                ReatmetricUI.setStatusLabel("System " + system.getName() + " disconnected");
+            } catch (RemoteException e) {
+                LOG.log(Level.SEVERE, "Error on system connected: " + e.getMessage(), e);
+            }
         });
     }
 

@@ -43,6 +43,7 @@ import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
@@ -551,13 +552,21 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     private List<ActivityOccurrenceData> doRetrieve(ActivityOccurrenceData activityOccurrenceData, int n, RetrievalDirection direction, ActivityOccurrenceDataFilter selectedFilter) throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().retrieve(activityOccurrenceData, n, direction,
-                selectedFilter);
+        try {
+            return ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().retrieve(activityOccurrenceData, n, direction,
+                    selectedFilter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     private List<ActivityOccurrenceData> doRetrieve(Instant time, int n, RetrievalDirection direction, ActivityOccurrenceDataFilter selectedFilter) throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().retrieve(time, n, direction,
-                selectedFilter);
+        try {
+            return ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().retrieve(time, n, direction,
+                    selectedFilter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     private ActivityOccurrenceDataWrapper getFirst() {
@@ -601,13 +610,23 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
     private void restoreColumnConfiguration() {
         if (this.system != null) {
-            TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+            try {
+                TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+            } catch (RemoteException e) {
+                // Nothing to do
+                e.printStackTrace();
+            }
         }
     }
 
     private void persistColumnConfiguration() {
         if (this.system != null) {
-            TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+            try {
+                TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+            } catch (RemoteException e) {
+                // Nothing to do
+                e.printStackTrace();
+            }
         }
     }
 
@@ -638,11 +657,19 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     protected void doServiceSubscribe(ActivityOccurrenceDataFilter selectedFilter) throws ReatmetricException {
-        ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().subscribe(this, selectedFilter);
+        try {
+            ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().subscribe(this, selectedFilter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     protected void doServiceUnsubscribe() throws ReatmetricException {
-        ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().unsubscribe(this);
+        try {
+            ReatmetricUI.selectedSystem().getSystem().getActivityOccurrenceDataMonitorService().unsubscribe(this);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     protected void updateSelectTime() {
@@ -752,7 +779,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().purgeActivities(purgeList);
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | RemoteException e) {
                 e.printStackTrace();
             }
         });

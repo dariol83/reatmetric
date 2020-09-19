@@ -48,7 +48,7 @@ public class EventDataAccessManager extends AbstractAccessManager<EventData, Eve
         if(filter == null) {
             filter = new EventDataFilter(null, null, null, null, null, null, null);
         }
-        return new EventDataAccessSubscriber(subscriber, filter, model);
+        return new EventDataAccessSubscriber(this, subscriber, filter, model);
     }
 
     @Override

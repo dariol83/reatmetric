@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.core.impl.managers;
 import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -34,15 +35,17 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
     private final BlockingQueue<T> queue;
     private final Thread managerThread;
     private final IProcessingModel model;
+    private final AbstractAccessManager<T, K, J> manager;
     private volatile K filter;
 
     private volatile boolean running;
 
-    public AbstractAccessSubscriber(J subscriber, K filter, IProcessingModel model) {
+    public AbstractAccessSubscriber(AbstractAccessManager<T, K, J> manager, J subscriber, K filter, IProcessingModel model) {
         this.subscriber = subscriber;
         this.filter = filter;
         this.model = model;
         this.queue = new LinkedBlockingQueue<>();
+        this.manager = manager;
         running = true;
         managerThread = new Thread(this::runDistribution);
         managerThread.setName(getName() + " - " + subscriber + " subscription thread");
@@ -67,7 +70,13 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
                     lastDelivered.put(computeId(pd), computeUniqueCounter(pd));
                 }
                 // Deliver
-                subscriber.dataItemsReceived(initialItems);
+                try {
+                    subscriber.dataItemsReceived(initialItems);
+                } catch (RemoteException e) {
+                    LOG.log(Level.SEVERE, "Remote exception when notifying subscriber, terminating...", e);
+                    manager.unsubscribe(subscriber);
+                    return;
+                }
                 initialiseFromModel = false;
                 firstInitialisation = true;
             }
@@ -115,7 +124,13 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
                 firstInitialisation = false;
             }
             // Distribute the elements
-            subscriber.dataItemsReceived(toDistribute);
+            try {
+                subscriber.dataItemsReceived(toDistribute);
+            } catch (RemoteException e) {
+                LOG.log(Level.SEVERE, "Remote exception when notifying subscriber, terminating...", e);
+                manager.unsubscribe(subscriber);
+                return;
+            }
 
             // XXX: to be evaluated if a reset of the subscription (i.e. with retrieval from model) is needed. So far this is enabled.
             if(theFilter != filter) {

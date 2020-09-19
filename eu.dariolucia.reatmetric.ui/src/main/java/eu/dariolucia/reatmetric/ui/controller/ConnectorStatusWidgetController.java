@@ -33,6 +33,7 @@ import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.util.ResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -67,6 +68,8 @@ public class ConnectorStatusWidgetController implements Initializable {
 
     private TransportStatus lastStatus;
 
+    private String name = "";
+
     public void updateStatus(TransportStatus status) {
         // Assume already in the UI thread
         lastStatus = status;
@@ -81,12 +84,19 @@ public class ConnectorStatusWidgetController implements Initializable {
 
     public void setConnector(ITransportConnector connector) {
         this.connector = connector;
-        nameLbl.setText(connector.getName());
-        updateStatusCircle(connector.getConnectionStatus());
+        TransportConnectionStatus status = TransportConnectionStatus.NOT_INIT;
+        try {
+            this.name = connector.getName();
+            status = connector.getConnectionStatus();
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Transport connector cannot be accessed due to remote exception", e);
+        }
+        nameLbl.setText(this.name);
+        updateStatusCircle(status);
         updateAlarmLabel(AlarmState.UNKNOWN);
         updateRateLabel(txLabel, 0);
         updateRateLabel(rxLabel, 0);
-        updateStatusButton(connector.getConnectionStatus());
+        updateStatusButton(status);
     }
 
     private void updateStatusButton(TransportConnectionStatus status) {
@@ -178,43 +188,53 @@ public class ConnectorStatusWidgetController implements Initializable {
         abortImg.setImage(ACTION_ABORT_IMG);
     }
 
+    @FXML
     public void initButtonClicked(MouseEvent mouseEvent) {
         // Init now
-        if(!connector.getSupportedProperties().isEmpty()) {
-            // Only init
-            TransportConnectorInitDialog.openWizard(connector, initImg, false);
-        } else {
-            TransportConnectorInitDialog.openWizardNoElements(connector, initImg);
+        try {
+            if(!connector.getSupportedProperties().isEmpty()) {
+                // Only init
+                TransportConnectorInitDialog.openWizard(connector, initImg, false);
+            } else {
+                TransportConnectorInitDialog.openWizardNoElements(connector, initImg);
+            }
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot initialise connector " + this.name + " due to remote exception: " + e.getMessage(), e);
         }
     }
 
+    @FXML
     public void startStopButtonClicked(MouseEvent mouseEvent) {
-        if(!connector.isInitialised() && !connector.getSupportedProperties().isEmpty()) {
-            // Init and connect now
-            TransportConnectorInitDialog.openWizard(connector, startStopImg, true);
-        } else if(lastStatus == null || lastStatus.getStatus() == TransportConnectionStatus.NOT_INIT
-                || lastStatus.getStatus() == TransportConnectionStatus.IDLE
-                || lastStatus.getStatus() == TransportConnectionStatus.ERROR
-                || lastStatus.getStatus() == TransportConnectionStatus.ABORTED) {
-            ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
-                try {
-                    if(!connector.isInitialised()) {
-                        // If you are here, it means there are really no properties, so initialise first
-                        connector.initialise(connector.getCurrentProperties());
+        try {
+            if(!connector.isInitialised() && !connector.getSupportedProperties().isEmpty()) {
+                // Init and connect now
+                TransportConnectorInitDialog.openWizard(connector, startStopImg, true);
+            } else if(lastStatus == null || lastStatus.getStatus() == TransportConnectionStatus.NOT_INIT
+                    || lastStatus.getStatus() == TransportConnectionStatus.IDLE
+                    || lastStatus.getStatus() == TransportConnectionStatus.ERROR
+                    || lastStatus.getStatus() == TransportConnectionStatus.ABORTED) {
+                ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
+                    try {
+                        if(!connector.isInitialised()) {
+                            // If you are here, it means there are really no properties, so initialise first
+                            connector.initialise(connector.getCurrentProperties());
+                        }
+                        connector.connect();
+                    } catch (TransportException | RemoteException e) {
+                        LOG.log(Level.WARNING, "Cannot open connection from " + this.name + ": " + e.getMessage(), e);
                     }
-                    connector.connect();
-                } catch (TransportException e) {
-                    LOG.log(Level.WARNING, "Cannot open connection from " + connector.getName() + ": " + e.getMessage(), e);
-                }
-            });
-        } else {
-            ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
-                try {
-                    connector.disconnect();
-                } catch (TransportException e) {
-                    LOG.log(Level.WARNING, "Cannot close connection of " + connector.getName() + ": " + e.getMessage(), e);
-                }
-            });
+                });
+            } else {
+                ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
+                    try {
+                        connector.disconnect();
+                    } catch (TransportException | RemoteException e) {
+                        LOG.log(Level.WARNING, "Cannot close connection of " + this.name + ": " + e.getMessage(), e);
+                    }
+                });
+            }
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot start/stop connector " + this.name + " due to remote exception: " + e.getMessage(), e);
         }
     }
 
@@ -222,8 +242,8 @@ public class ConnectorStatusWidgetController implements Initializable {
         ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
             try {
                 connector.abort();
-            } catch (TransportException e) {
-                LOG.log(Level.WARNING, "Cannot abort connection of " + connector.getName() + ": " + e.getMessage(), e);
+            } catch (TransportException | RemoteException e) {
+                LOG.log(Level.WARNING, "Cannot abort connection of " + this.name + ": " + e.getMessage(), e);
             }
         });
     }

@@ -2,6 +2,7 @@ open module eu.dariolucia.reatmetric.api {
     uses eu.dariolucia.reatmetric.api.value.IValueExtensionHandler;
 
     requires java.logging;
+    requires java.rmi;
 
     exports eu.dariolucia.reatmetric.api;
     exports eu.dariolucia.reatmetric.api.alarms;

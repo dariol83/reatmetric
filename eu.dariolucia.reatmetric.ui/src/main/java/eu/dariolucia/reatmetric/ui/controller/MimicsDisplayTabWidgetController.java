@@ -39,7 +39,6 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TabPane;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
@@ -49,6 +48,7 @@ import javafx.stage.Window;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
@@ -363,19 +363,35 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     }
 
     protected void doServiceSubscribe(ParameterDataFilter selectedFilter) throws ReatmetricException {
-        ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().subscribe(this, selectedFilter);
+        try {
+            ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().subscribe(this, selectedFilter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     protected void doServiceUnsubscribe() throws ReatmetricException {
-        ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().unsubscribe(this);
+        try {
+            ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().unsubscribe(this);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     protected List<ParameterData> doRetrieve(ParameterData om, int n, RetrievalDirection direction, ParameterDataFilter filter) throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(om, n, direction, filter);
+        try {
+            return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(om, n, direction, filter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
     
     protected List<ParameterData> doRetrieve(Instant selectedTime, ParameterDataFilter filter) throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(selectedTime, filter);
+        try {
+            return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(selectedTime, filter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     protected String doGetComponentId() {

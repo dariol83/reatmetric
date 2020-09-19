@@ -25,6 +25,7 @@ import eu.dariolucia.reatmetric.api.rawdata.*;
 import eu.dariolucia.reatmetric.core.ReatmetricSystemImpl;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
@@ -71,7 +72,7 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
     }
 
     @Override
-    public LinkedHashMap<String, String> getRenderedInformation(RawData rawData) throws ReatmetricException {
+    public LinkedHashMap<String, String> getRenderedInformation(RawData rawData) {
         return core.getRenderedInformation(rawData);
     }
 
@@ -120,7 +121,7 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
     public void subscribe(IRawDataSubscriber subscriber, Predicate<RawData> preFilter, RawDataFilter filter, Predicate<RawData> postFilter) {
         RawDataSubscriptionManager manager = subscriberIndex.get(subscriber);
         if(manager == null) {
-            manager = new RawDataSubscriptionManager(subscriber, preFilter, filter, postFilter);
+            manager = new RawDataSubscriptionManager(this, subscriber, preFilter, filter, postFilter);
             subscriberIndex.put(subscriber, manager);
             subscribers.add(manager);
         } else {
@@ -151,12 +152,14 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
         private final BlockingQueue<RawData> items;
 
         private final IRawDataSubscriber subscriber;
+        private final RawDataBrokerImpl broker;
         private Predicate<RawData> preFilter;
         private Predicate<RawData> filter;
         private Predicate<RawData> postFilter;
         private volatile boolean running = true;
 
-        public RawDataSubscriptionManager(IRawDataSubscriber subscriber, Predicate<RawData> preFilter, RawDataFilter filter, Predicate<RawData> postFilter) {
+        public RawDataSubscriptionManager(RawDataBrokerImpl broker, IRawDataSubscriber subscriber, Predicate<RawData> preFilter, RawDataFilter filter, Predicate<RawData> postFilter) {
+            this.broker = broker;
             this.subscriber = subscriber;
             this.preFilter = preFilter;
             this.filter = filter;
@@ -192,12 +195,20 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
                     this.notifyAll();
                 }
                 if(!toProcess.isEmpty()) {
-                    subscriber.dataItemsReceived(toProcess);
+                    try {
+                        subscriber.dataItemsReceived(toProcess);
+                    } catch (RemoteException e) {
+                        LOG.log(Level.SEVERE, "Cannot notify subscriber, terminating...", e);
+                        broker.unsubscribe(subscriber);
+                    }
                 }
             }
         }
 
         public void notifyItems(List<RawData> toDistribute) {
+            if(!running) {
+                return;
+            }
             List<RawData> toNotify = filterItems(toDistribute);
             if(!toNotify.isEmpty()) {
                 // Wait for space

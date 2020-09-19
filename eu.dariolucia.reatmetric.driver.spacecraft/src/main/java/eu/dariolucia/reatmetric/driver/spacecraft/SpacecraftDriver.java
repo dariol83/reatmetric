@@ -72,6 +72,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmDataLinkProcessor;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
@@ -530,17 +531,29 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         } else {
             for(ICltuConnector conn : cltuConnectors) {
                 if(conn.getSupportedRoutes().contains(route)) {
-                    return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
+                    try {
+                        return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
+                    } catch (RemoteException e) {
+                        LOG.log(Level.SEVERE, "Remote exception on CLTU connector for route availability of route " + route, e);
+                    }
                 }
             }
             for(ITcFrameConnector conn : tcFrameConnectors) {
                 if(conn.getSupportedRoutes().contains(route)) {
-                    return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
+                    try {
+                        return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
+                    } catch (RemoteException e) {
+                        LOG.log(Level.SEVERE, "Remote exception on TC frame connector for route availability of route " + route, e);
+                    }
                 }
             }
             for(ITcPacketConnector conn : tcPacketConnectors) {
                 if(conn.getSupportedRoutes().contains(route)) {
-                    return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
+                    try {
+                        return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
+                    } catch (RemoteException e) {
+                        LOG.log(Level.SEVERE, "Remote exception on TC packet connector for route availability of route " + route, e);
+                    }
                 }
             }
         }

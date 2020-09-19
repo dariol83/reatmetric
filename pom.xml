@@ -82,6 +82,8 @@
         <module>eu.dariolucia.reatmetric.api</module>
         <module>eu.dariolucia.reatmetric.processing</module>
         <module>eu.dariolucia.reatmetric.core</module>
+        <module>eu.dariolucia.reatmetric.remoting</module>
+        <module>eu.dariolucia.reatmetric.remoting.connector</module>
         <module>eu.dariolucia.reatmetric.persist</module>
         <module>eu.dariolucia.reatmetric.scheduler</module>
         <module>eu.dariolucia.reatmetric.driver.automation</module>

@@ -38,6 +38,7 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -166,26 +167,42 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
 
 	@Override
 	protected void doServiceSubscribe(EventDataFilter selectedFilter) throws ReatmetricException {
-		ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().subscribe(this, selectedFilter);
+		try {
+			ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().subscribe(this, selectedFilter);
+		} catch (RemoteException e) {
+			throw new ReatmetricException(e);
+		}
 	}
 
 	@Override
 	protected void doServiceUnsubscribe() throws ReatmetricException {
-		ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().unsubscribe(this);
+		try {
+			ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().unsubscribe(this);
+		} catch (RemoteException e) {
+			throw new ReatmetricException(e);
+		}
 	}
 
 	@Override
 	protected List<EventData> doRetrieve(EventData om, int n, RetrievalDirection direction, EventDataFilter filter)
 			throws ReatmetricException {
-		return ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().retrieve(om, n, direction,
-				filter);
+		try {
+			return ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().retrieve(om, n, direction,
+					filter);
+		} catch (RemoteException e) {
+			throw new ReatmetricException(e);
+		}
 	}
 
 	@Override
 	protected List<EventData> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction,
 			EventDataFilter filter) throws ReatmetricException {
-		return ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().retrieve(selectedTime, n,
-				direction, filter);
+		try {
+			return ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().retrieve(selectedTime, n,
+					direction, filter);
+		} catch (RemoteException e) {
+			throw new ReatmetricException(e);
+		}
 	}
 
 	@Override

@@ -39,6 +39,7 @@ import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -316,13 +317,23 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     
     private void restoreColumnConfiguration() {
         if(system != null) {
-            TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+            try {
+                TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+            } catch (RemoteException e) {
+                // Nothing
+                e.printStackTrace();
+            }
         }
     }
     
     private void persistColumnConfiguration(IReatmetricSystem system) {
         if(system != null) {
-            TableViewUtil.persistColumnConfiguration(system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+            try {
+                TableViewUtil.persistColumnConfiguration(system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
+            } catch (RemoteException e) {
+                // Nothing
+                e.printStackTrace();
+            }
         }
     }
 

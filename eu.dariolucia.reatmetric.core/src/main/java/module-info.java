@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.core.ReatmetricSystemImpl;
 
 open module eu.dariolucia.reatmetric.core {
     requires java.logging;
+    requires java.rmi;
     requires java.xml.bind;
 
     requires eu.dariolucia.reatmetric.api;

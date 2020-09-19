@@ -34,6 +34,7 @@ import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Level;
@@ -103,7 +104,7 @@ public class ScriptExecutionManager {
         checkAborted();
         try {
             return context.getServiceFactory().getSystemModelMonitorService().getSystemEntityAt(SystemEntityPath.fromString(path));
-        } catch (ReatmetricException e) {
+        } catch (ReatmetricException | RemoteException e) {
             LOG.log(Level.SEVERE, "Cannot fetch system entity " + path + " from automation " + fileName + ": " + e.getMessage(), e);
             return null;
         }
@@ -113,7 +114,7 @@ public class ScriptExecutionManager {
         checkAborted();
         try {
             context.getServiceFactory().getSystemModelMonitorService().enable(SystemEntityPath.fromString(path));
-        } catch (ReatmetricException e) {
+        } catch (ReatmetricException | RemoteException e) {
             LOG.log(Level.SEVERE, "Cannot enable system entity " + path + " from automation " + fileName + ": " + e.getMessage(), e);
         }
     }
@@ -122,7 +123,7 @@ public class ScriptExecutionManager {
         checkAborted();
         try {
             context.getServiceFactory().getSystemModelMonitorService().disable(SystemEntityPath.fromString(path));
-        } catch (ReatmetricException e) {
+        } catch (ReatmetricException | RemoteException e) {
             LOG.log(Level.SEVERE, "Cannot disable system entity " + path + " from automation " + fileName + ": " + e.getMessage(), e);
         }
     }
@@ -173,8 +174,27 @@ public class ScriptExecutionManager {
     public TransportConnectionStatus connectorStatus(String connectorName) {
         checkAborted();
         try {
-            return context.getServiceFactory().getTransportConnectors().stream().filter(o -> o.getName().equals(connectorName)).map(ITransportConnector::getConnectionStatus).findFirst().orElse(null);
-        } catch (ReatmetricException e) {
+            return context.getServiceFactory().getTransportConnectors().stream()
+                    .filter(o -> {
+                        try {
+                            return o.getName().equals(connectorName);
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                            return false;
+                        }
+                    })
+                    .map(o -> {
+                        try {
+                            return o.getConnectionStatus();
+                        } catch (RemoteException e) {
+                            e.printStackTrace();
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        } catch (ReatmetricException | RemoteException e) {
             LOG.log(Level.SEVERE, "Cannot retrieve status of transport connector " + connectorName + " from automation " + fileName + ": " + e.getMessage(), e);
             return null;
         }
@@ -190,7 +210,7 @@ public class ScriptExecutionManager {
                 }
             }
             return false;
-        } catch (ReatmetricException e) {
+        } catch (ReatmetricException | RemoteException e) {
             LOG.log(Level.SEVERE, "Cannot connect transport connector " + connectorName + " from automation " + fileName + ": " + e.getMessage(), e);
             return false;
         }
@@ -206,7 +226,7 @@ public class ScriptExecutionManager {
                 }
             }
             return false;
-        } catch (ReatmetricException e) {
+        } catch (ReatmetricException | RemoteException e) {
             LOG.log(Level.SEVERE, "Cannot disconnect transport connector " + connectorName + " from automation " + fileName + ": " + e.getMessage(), e);
             return false;
         }
@@ -222,7 +242,7 @@ public class ScriptExecutionManager {
                 }
             }
             return false;
-        } catch (ReatmetricException e) {
+        } catch (ReatmetricException | RemoteException e) {
             LOG.log(Level.SEVERE, "Cannot abort transport connector " + connectorName + " from automation " + fileName + ": " + e.getMessage(), e);
             return false;
         }
@@ -246,7 +266,7 @@ public class ScriptExecutionManager {
                 }
             }
             return false;
-        } catch (ReatmetricException e) {
+        } catch (ReatmetricException | RemoteException e) {
             LOG.log(Level.SEVERE, "Cannot initialise transport connector " + connectorName + " from automation " + fileName + ": " + e.getMessage(), e);
             return false;
         }
@@ -335,7 +355,7 @@ public class ScriptExecutionManager {
             try {
                 this.executionService = context.getServiceFactory().getActivityExecutionService();
                 this.dataProvisionService = context.getServiceFactory().getActivityOccurrenceDataMonitorService();
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | RemoteException e) {
                 LOG.log(Level.SEVERE, "Cannot obtain processing model services: " + e.getMessage(), e);
                 invocationFailed = true;
             }
@@ -349,14 +369,19 @@ public class ScriptExecutionManager {
             if(this.activityId != null) {
                 return;
             }
-            // Subscribe
-            dataProvisionService.subscribe(this, new ActivityOccurrenceDataFilter(null, null, null, null, null, null, Collections.singletonList(request.getId())));
-            // Invoke
             try {
+                // Subscribe
+                this.dataProvisionService.subscribe(this, new ActivityOccurrenceDataFilter(null, null, null, null, null, null, Collections.singletonList(request.getId())));
+                // Invoke
                 this.activityId = executionService.startActivity(request);
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | RemoteException e) {
+                LOG.log(Level.SEVERE, "Failed invocation of activity " + this.activityId + " from automation file " + fileName);
                 invocationFailed = true;
-                dataProvisionService.unsubscribe(this);
+                try {
+                    dataProvisionService.unsubscribe(this);
+                } catch (RemoteException remoteException) {
+                    remoteException.printStackTrace();
+                }
             }
         }
 
@@ -437,7 +462,11 @@ public class ScriptExecutionManager {
                     notifyAll();
                 }
                 if(aod.getInternalId().equals(this.activityId) && aod.getCurrentState() == ActivityOccurrenceState.COMPLETED) {
-                    dataProvisionService.unsubscribe(this);
+                    try {
+                        dataProvisionService.unsubscribe(this);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }

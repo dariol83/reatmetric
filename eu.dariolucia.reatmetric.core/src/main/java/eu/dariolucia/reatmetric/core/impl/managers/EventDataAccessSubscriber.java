@@ -24,8 +24,8 @@ import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 
 public class EventDataAccessSubscriber extends AbstractAccessSubscriber<EventData, EventDataFilter, IEventDataSubscriber> {
 
-    public EventDataAccessSubscriber(IEventDataSubscriber subscriber, EventDataFilter filter, IProcessingModel model) {
-        super(subscriber, filter, model);
+    public EventDataAccessSubscriber(EventDataAccessManager manager, IEventDataSubscriber subscriber, EventDataFilter filter, IProcessingModel model) {
+        super(manager, subscriber, filter, model);
     }
 
     @Override

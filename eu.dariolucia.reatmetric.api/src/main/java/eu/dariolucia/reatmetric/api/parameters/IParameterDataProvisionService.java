@@ -21,13 +21,15 @@ import eu.dariolucia.reatmetric.api.common.IDataItemStateProvisionService;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
+import java.rmi.RemoteException;
+
 /**
  *
  * @author dario
  */
 public interface IParameterDataProvisionService extends IDataItemStateProvisionService<IParameterDataSubscriber, ParameterDataFilter, ParameterData> {
 
-    ParameterDescriptor getDescriptor(SystemEntityPath path) throws ReatmetricException;
+    ParameterDescriptor getDescriptor(SystemEntityPath path) throws ReatmetricException, RemoteException;
 
-    ParameterDescriptor getDescriptor(int externalId) throws ReatmetricException;
+    ParameterDescriptor getDescriptor(int externalId) throws ReatmetricException, RemoteException;
 }

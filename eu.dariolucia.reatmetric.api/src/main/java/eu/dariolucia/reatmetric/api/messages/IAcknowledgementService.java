@@ -18,12 +18,14 @@ package eu.dariolucia.reatmetric.api.messages;
 
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.util.Collection;
 
 /**
  * This interface is used to request the acknowledgement of messages.
  */
-public interface IAcknowledgementService {
+public interface IAcknowledgementService extends Remote {
 
     /**
      * Acknowledge the provided message by the specified user.
@@ -31,7 +33,7 @@ public interface IAcknowledgementService {
      * @param message the message to acknowledge
      * @param user the user that acknowledged the message
      */
-    void acknowledgeMessage(AcknowledgedMessage message, String user) throws ReatmetricException;
+    void acknowledgeMessage(AcknowledgedMessage message, String user) throws ReatmetricException, RemoteException;
 
     /**
      * Acknowledge the provided messages by the specified user.
@@ -39,5 +41,5 @@ public interface IAcknowledgementService {
      * @param messages the messages to acknowledge
      * @param user the user that acknowledged the message
      */
-    void acknowledgeMessages(Collection<AcknowledgedMessage> messages, String user) throws ReatmetricException;
+    void acknowledgeMessages(Collection<AcknowledgedMessage> messages, String user) throws ReatmetricException, RemoteException;
 }

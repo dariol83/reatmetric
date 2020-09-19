@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.IReatmetricRegister;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,7 +41,7 @@ public class ReatmetricPluginInspector {
             ServiceLoader<IReatmetricRegister> loader
                     = ServiceLoader.load(IReatmetricRegister.class);
             for (IReatmetricRegister reg : loader) {
-                List<IReatmetricSystem> systems = null;
+                List<IReatmetricSystem> systems;
                 try {
                     systems = reg.availableSystems();
                     for(IReatmetricSystem cp : systems) {
@@ -49,7 +50,7 @@ public class ReatmetricPluginInspector {
                             this.serviceFactories.put(system, cp);
                         }
                     }
-                } catch (ReatmetricException e) {
+                } catch (ReatmetricException | RemoteException e) {
                     LOG.log(Level.SEVERE, "Cannot load systems from registry " + reg + ": " + e.getMessage(), e);
                 }
             }

@@ -48,6 +48,7 @@ import eu.dariolucia.reatmetric.core.impl.managers.EventDataAccessManager;
 import eu.dariolucia.reatmetric.core.impl.managers.ParameterDataAccessManager;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -117,32 +118,32 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
             alarmArchive = null;
         }
         // Aggregate all the definitions inside the definitionsLocation path
-        ProcessingDefinition defs = ProcessingDefinition.loadAll(definitionsLocation);
+        ProcessingDefinition definitions = ProcessingDefinition.loadAll(definitionsLocation);
         // Create the access services
         parameterDataAccessManager = new ParameterDataAccessManager(parameterArchive);
         alarmDataAccessManager = new AlarmParameterDataAccessManager(alarmArchive);
         eventDataAccessManager = new EventDataAccessManager(eventArchive);
         activityOccurrenceDataAccessManager = new ActivityOccurrenceDataAccessManager(activityArchive);
-        // If the processing model initialisation is needed, create the initialiser
-        ArchiveInitialiser initialiser = null;
+        // If the processing model initialisation is needed, create the initializer
+        ArchiveInitialiser initializer = null;
         if(initialisation != null) {
-            initialiser = new ArchiveInitialiser(archive, initialisation, defs);
+            initializer = new ArchiveInitialiser(archive, initialisation, definitions);
         }
         // Create the model
         ServiceLoader<IProcessingModelFactory> modelLoader = ServiceLoader.load(IProcessingModelFactory.class);
         if(modelLoader.findFirst().isPresent()) {
             IProcessingModelFactory modelFactory = modelLoader.findFirst().get();
-            processingModel = modelFactory.build(defs, this, initialUniqueCounters, initialiser);
+            processingModel = modelFactory.build(definitions, this, initialUniqueCounters, initializer);
             parameterDataAccessManager.setProcessingModel(processingModel);
             alarmDataAccessManager.setProcessingModel(processingModel);
             eventDataAccessManager.setProcessingModel(processingModel);
             activityOccurrenceDataAccessManager.setProcessingModel(processingModel);
-            if(initialiser != null) {
-                initialiser.dispose();
+            if(initializer != null) {
+                initializer.dispose();
             }
         } else {
-            if(initialiser != null) {
-                initialiser.dispose();
+            if(initializer != null) {
+                initializer.dispose();
             }
             throw new ReatmetricException("Archive location configured, but no archive factory deployed");
         }
@@ -199,7 +200,7 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
     @Override
     public void subscribe(ISystemModelSubscriber subscriber) {
         if(!subscribers.containsKey(subscriber)) {
-            subscribers.put(subscriber, new SystemModelSubscriberWrapper(subscriber));
+            subscribers.put(subscriber, new SystemModelSubscriberWrapper(this, subscriber));
         }
     }
 
@@ -317,8 +318,10 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
 
         private final ISystemModelSubscriber subscriber;
         private final ExecutorService dispatcher;
+        private final ProcessingModelManager manager;
 
-        public SystemModelSubscriberWrapper(ISystemModelSubscriber subscriber) {
+        public SystemModelSubscriberWrapper(ProcessingModelManager manager, ISystemModelSubscriber subscriber) {
+            this.manager = manager;
             this.subscriber = subscriber;
             this.dispatcher = Executors.newSingleThreadExecutor((r) -> {
                 Thread t = new Thread(r);
@@ -334,7 +337,12 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
             }
             List<SystemEntity> filtered = toDistribute.stream().filter((i) -> i.getClass().equals(SystemEntity.class)).map(o -> (SystemEntity) o).collect(Collectors.toList());
             if(!filtered.isEmpty()) {
-                subscriber.dataItemsReceived(filtered);
+                try {
+                    subscriber.dataItemsReceived(filtered);
+                } catch (RemoteException e) {
+                    LOG.log(Level.SEVERE, "Cannot notify subscriber, terminating...", e);
+                    manager.unsubscribe(subscriber);
+                }
             }
         }
 

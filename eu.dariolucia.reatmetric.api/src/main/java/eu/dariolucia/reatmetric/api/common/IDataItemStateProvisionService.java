@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.api.common;
 
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.List;
 
@@ -40,6 +41,6 @@ public interface IDataItemStateProvisionService<T extends IDataItemSubscriber<K>
      * @return the list of data items matching the filter, with their state at the specified time
      * @throws ReatmetricException if a problem arises with the retrieval operation
      */
-    List<K> retrieve(Instant time, R filter) throws ReatmetricException;
+    List<K> retrieve(Instant time, R filter) throws ReatmetricException, RemoteException;
     
 }

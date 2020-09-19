@@ -30,6 +30,7 @@ import javafx.scene.control.*;
 import javafx.scene.paint.Color;
 
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
@@ -98,7 +99,7 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
         if(this.system != null) {
             try {
                 this.system.getAcknowledgedMessageMonitorService().subscribe(this, new AcknowledgedMessageFilter(null, null));
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | RemoteException e) {
                 LOG.log(Level.SEVERE, "Subscription to AcknowledgedMessageMonitorService failed: " + e.getMessage() , e);
             }
         }
@@ -108,7 +109,7 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
         if(this.system != null) {
             try {
                 this.system.getAcknowledgedMessageMonitorService().unsubscribe(this);
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | RemoteException e) {
                 LOG.log(Level.SEVERE, "Unsubscription to AcknowledgedMessageMonitorService failed: " + e.getMessage() , e);
             }
         }
@@ -159,7 +160,7 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     system.getAcknowledgementService().acknowledgeMessages(selected, ReatmetricUI.username());
-                } catch (ReatmetricException e) {
+                } catch (ReatmetricException | RemoteException e) {
                     LOG.log(Level.SEVERE, "Acknowledgement failed: " + e.getMessage() , e);
                 }
             });

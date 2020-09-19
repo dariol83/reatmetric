@@ -20,7 +20,6 @@ import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.events.EventDescriptor;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 
@@ -47,7 +46,7 @@ public class ActivityOccurrenceDataAccessManager extends AbstractAccessManager<A
         if(filter == null) {
             filter = new ActivityOccurrenceDataFilter(null, null, null, null, null, null, null);
         }
-        return new ActivityOccurrenceDataAccessSubscriber(subscriber, filter, model);
+        return new ActivityOccurrenceDataAccessSubscriber(this, subscriber, filter, model);
     }
 
     @Override

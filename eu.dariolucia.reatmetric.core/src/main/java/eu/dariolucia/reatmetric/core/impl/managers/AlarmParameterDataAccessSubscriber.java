@@ -27,8 +27,8 @@ import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 
 public class AlarmParameterDataAccessSubscriber extends AbstractAccessSubscriber<AlarmParameterData, AlarmParameterDataFilter, IAlarmParameterDataSubscriber> {
 
-    public AlarmParameterDataAccessSubscriber(IAlarmParameterDataSubscriber subscriber, AlarmParameterDataFilter filter, IProcessingModel model) {
-        super(subscriber, filter, model);
+    public AlarmParameterDataAccessSubscriber(AlarmParameterDataAccessManager manager, IAlarmParameterDataSubscriber subscriber, AlarmParameterDataFilter filter, IProcessingModel model) {
+        super(manager, subscriber, filter, model);
     }
 
     @Override

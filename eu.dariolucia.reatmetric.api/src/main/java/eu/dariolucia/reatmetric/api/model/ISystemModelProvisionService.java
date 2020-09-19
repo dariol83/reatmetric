@@ -21,36 +21,38 @@ import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.util.List;
 
 /**
  *
  * @author dario
  */
-public interface ISystemModelProvisionService {
+public interface ISystemModelProvisionService extends Remote {
 
-    void subscribe(ISystemModelSubscriber subscriber);
+    void subscribe(ISystemModelSubscriber subscriber) throws RemoteException;
     
-    void unsubscribe(ISystemModelSubscriber subscriber);
+    void unsubscribe(ISystemModelSubscriber subscriber) throws RemoteException;
     
-    SystemEntity getRoot() throws ReatmetricException;
+    SystemEntity getRoot() throws ReatmetricException, RemoteException;
     
-    List<SystemEntity> getContainedEntities(SystemEntityPath se) throws ReatmetricException;
+    List<SystemEntity> getContainedEntities(SystemEntityPath se) throws ReatmetricException, RemoteException;
     
-    SystemEntity getSystemEntityAt(SystemEntityPath path) throws ReatmetricException;
+    SystemEntity getSystemEntityAt(SystemEntityPath path) throws ReatmetricException, RemoteException;
 
-    SystemEntity getSystemEntityOf(int externalId) throws ReatmetricException;
+    SystemEntity getSystemEntityOf(int externalId) throws ReatmetricException, RemoteException;
 
-    int getExternalIdOf(SystemEntityPath path) throws ReatmetricException;
+    int getExternalIdOf(SystemEntityPath path) throws ReatmetricException, RemoteException;
 
-    SystemEntityPath getPathOf(int externalId) throws ReatmetricException;
+    SystemEntityPath getPathOf(int externalId) throws ReatmetricException, RemoteException;
 
-    void enable(SystemEntityPath path) throws ReatmetricException;
+    void enable(SystemEntityPath path) throws ReatmetricException, RemoteException;
 
-    void disable(SystemEntityPath path) throws ReatmetricException;
+    void disable(SystemEntityPath path) throws ReatmetricException, RemoteException;
 
-    AbstractSystemEntityDescriptor getDescriptorOf(int id) throws ReatmetricException;
+    AbstractSystemEntityDescriptor getDescriptorOf(int id) throws ReatmetricException, RemoteException;
 
-    AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ReatmetricException;
+    AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ReatmetricException, RemoteException;
 
 }

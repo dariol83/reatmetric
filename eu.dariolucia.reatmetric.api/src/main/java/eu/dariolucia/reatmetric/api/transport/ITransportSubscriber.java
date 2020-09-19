@@ -16,10 +16,13 @@
 
 package eu.dariolucia.reatmetric.api.transport;
 
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
 /**
  * This interface allows reception of status updates from registered {@link ITransportConnector} objects.
  */
-public interface ITransportSubscriber {
+public interface ITransportSubscriber extends Remote {
 
     /**
      * Method called when the internal status of the transport connector changed.
@@ -27,6 +30,6 @@ public interface ITransportSubscriber {
      * @param connector the source of the status update
      * @param status the new status
      */
-    void status(ITransportConnector connector, TransportStatus status);
+    void status(ITransportConnector connector, TransportStatus status) throws RemoteException;
 
 }

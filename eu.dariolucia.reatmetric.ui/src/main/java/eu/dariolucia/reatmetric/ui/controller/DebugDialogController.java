@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -34,6 +35,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.TextAlignment;
 
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.util.*;
 
 public class DebugDialogController implements Initializable {
@@ -68,13 +70,17 @@ public class DebugDialogController implements Initializable {
     private void sample() {
         IReatmetricSystem system = ReatmetricUI.selectedSystem().getSystem();
         if(system != null) {
-            List<DebugInformation> info = system.currentDebugInfo();
-            if(info == null || info.isEmpty()) {
+            List<DebugInformation> info = null;
+            try {
+                info = system.currentDebugInfo();
+            } catch (ReatmetricException | RemoteException e) {
+                // For this interface, even if we cannot communicate, we do nothing
+            }
+            List<DebugInformation> info_f = info;
+            if(info_f == null || info_f.isEmpty()) {
                 setEmptyDebugInformation();
             } else {
-                Platform.runLater(() -> {
-                    updateData(info);
-                });
+                Platform.runLater(() -> updateData(info_f));
             }
         } else {
             setEmptyDebugInformation();
@@ -128,7 +134,7 @@ public class DebugDialogController implements Initializable {
 
     private void addControl(DebugInformation di) {
         Pair<String, String> key = Pair.of(di.getElement(), di.getName());
-        Control ctr = null;
+        Control ctr;
         HBox inner = new HBox();
         inner.setSpacing(4);
         Label nameLbl = new Label(di.getName());

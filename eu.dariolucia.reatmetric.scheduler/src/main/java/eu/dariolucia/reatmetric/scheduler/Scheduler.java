@@ -36,6 +36,7 @@ import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.exceptions.SchedulingException;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 
+import java.rmi.RemoteException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -99,8 +100,20 @@ public class Scheduler implements IScheduler {
 
     private volatile boolean enabled;
 
-    private final IActivityOccurrenceDataSubscriber activitySubscriber = dataItems -> dispatcher.submit(() -> activityUpdate(dataItems));
-    private final IEventDataSubscriber eventSubscriber = dataItems -> dispatcher.submit(() -> eventUpdate(dataItems));
+    private final IActivityOccurrenceDataSubscriber activitySubscriber = new IActivityOccurrenceDataSubscriber() {
+        @Override
+        public void dataItemsReceived(List<ActivityOccurrenceData> dataItems) {
+            dispatcher.submit(() -> activityUpdate(dataItems));
+        }
+    };
+
+    private final IEventDataSubscriber eventSubscriber = new IEventDataSubscriber() {
+        @Override
+        public void dataItemsReceived(List<EventData> dataItems) {
+            dispatcher.submit(() -> eventUpdate(dataItems));
+        }
+    };
+
     private EventDataFilter currentEventFilter = null;
 
     public Scheduler(IArchive archive, IActivityExecutionService activityExecutor, IEventDataProvisionService eventMonService, IActivityOccurrenceDataProvisionService activityMonService) {
@@ -124,7 +137,11 @@ public class Scheduler implements IScheduler {
             this.sequencer.set(lastStoredUniqueId.asLong());
         }
         // Subscribe to get info about all activities
-        this.activityService.subscribe(activitySubscriber, null);
+        try {
+            this.activityService.subscribe(activitySubscriber, null);
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Activity Service remote exception: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -144,9 +161,17 @@ public class Scheduler implements IScheduler {
 
     private void cleanUp() {
         // Unsubscribe to processing model
-        this.activityService.unsubscribe(activitySubscriber);
+        try {
+            this.activityService.unsubscribe(activitySubscriber);
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Activity Service remote exception: " + e.getMessage(), e);
+        }
         if (currentEventFilter != null) {
-            eventService.unsubscribe(eventSubscriber);
+            try {
+                eventService.unsubscribe(eventSubscriber);
+            } catch (RemoteException e) {
+                LOG.log(Level.SEVERE, "Event Service remote exception: " + e.getMessage(), e);
+            }
             currentEventFilter = null;
         }
         // Clear subscriptions
@@ -246,7 +271,14 @@ public class Scheduler implements IScheduler {
     public void subscribe(ISchedulerSubscriber subscriber) {
         dispatcher.submit(() -> {
             schedulerSubscribers.add(subscriber);
-            notifier.submit(() -> subscriber.schedulerEnablementChanged(isEnabled()));
+            notifier.submit(() -> {
+                try {
+                    subscriber.schedulerEnablementChanged(isEnabled());
+                } catch (RemoteException e) {
+                    LOG.log(Level.SEVERE, "Subscriber remote exception, dropping it");
+                    unsubscribe(subscriber);
+                }
+            });
         });
     }
 
@@ -315,7 +347,7 @@ public class Scheduler implements IScheduler {
     private ScheduledActivityData scheduleTask(SchedulingRequest request, CreationConflictStrategy conflictStrategy, IUniqueId originalId) throws SchedulingException {
         // Check if an external ID exists already
         for(ScheduledTask st : id2scheduledTask.values()) {
-            if(st.getCurrentData().getExternalId() == request.getExternalId()) {
+            if(Objects.equals(st.getCurrentData().getExternalId(),request.getExternalId())) {
                 throw new SchedulingException("Supplied external ID is already assigned to one scheduled activity: " + request.getExternalId());
             }
         }
@@ -411,7 +443,12 @@ public class Scheduler implements IScheduler {
             ScheduledActivityDataFilter filter = entry.getValue();
             notifier.submit(() -> {
                 if (filter == null || filter.test(data)) {
-                    sub.dataItemsReceived(Collections.singletonList(data));
+                    try {
+                        sub.dataItemsReceived(Collections.singletonList(data));
+                    } catch (RemoteException e) {
+                        LOG.log(Level.SEVERE, "Error when notifying activity data subscriber, dropping it", e);
+                        unsubscribe(sub);
+                    }
                 }
             });
         }
@@ -697,7 +734,12 @@ public class Scheduler implements IScheduler {
         dispatcher.submit(() -> {
             this.subscriberIndex.put(subscriber, filter);
             List<ScheduledActivityData> data = internalGetCurrentScheduledActivities().stream().filter(o -> filter == null || filter.isClear() || filter.test(o)).collect(Collectors.toList());
-            subscriber.dataItemsReceived(data);
+            try {
+                subscriber.dataItemsReceived(data);
+            } catch (RemoteException e) {
+                LOG.log(Level.SEVERE, "Remote exception when notifying scheduled data subscriber, dropping it", e);
+                unsubscribe(subscriber);
+            }
         });
     }
 
@@ -739,10 +781,18 @@ public class Scheduler implements IScheduler {
         }
         if (subscribedEvents.isEmpty()) {
             currentEventFilter = null;
-            eventService.unsubscribe(eventSubscriber);
+            try {
+                eventService.unsubscribe(eventSubscriber);
+            } catch (RemoteException e) {
+                LOG.log(Level.SEVERE, "Remote exception on event service unsubscribe", e);
+            }
         } else {
             currentEventFilter = new EventDataFilter(null, null, null, null, null, null, subscribedEvents);
-            eventService.subscribe(eventSubscriber, currentEventFilter);
+            try {
+                eventService.subscribe(eventSubscriber, currentEventFilter);
+            } catch (RemoteException e) {
+                LOG.log(Level.SEVERE, "Remote exception on event service subscription", e);
+            }
         }
     }
 
@@ -775,7 +825,11 @@ public class Scheduler implements IScheduler {
      * To be called from the dispatcher thread.
      */
     IUniqueId startActivity(ActivityRequest request) throws ReatmetricException {
-        return executionService.startActivity(request);
+        try {
+            return executionService.startActivity(request);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     /**
@@ -854,7 +908,7 @@ public class Scheduler implements IScheduler {
     void abortActivity(int activityId, IUniqueId activityOccurrenceId) {
         try {
             this.executionService.abortActivity(activityId, activityOccurrenceId);
-        } catch (ReatmetricException e) {
+        } catch (ReatmetricException | RemoteException e) {
             LOG.log(Level.SEVERE, "Cannot abort activity occurrence " + activityOccurrenceId + ": " + e.getMessage(), e);
         }
     }

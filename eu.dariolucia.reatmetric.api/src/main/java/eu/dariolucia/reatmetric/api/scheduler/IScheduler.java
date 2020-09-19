@@ -4,6 +4,7 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.scheduler.exceptions.SchedulingException;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.List;
 
@@ -20,24 +21,24 @@ public interface IScheduler extends IScheduledActivityDataProvisionService {
      *
      * @param subscriber the subscriber
      */
-    void subscribe(ISchedulerSubscriber subscriber);
+    void subscribe(ISchedulerSubscriber subscriber) throws RemoteException;
 
     /**
      * Unsubscribe the provided subscriber.
      *
      * @param subscriber the subscriber
      */
-    void unsubscribe(ISchedulerSubscriber subscriber);
+    void unsubscribe(ISchedulerSubscriber subscriber) throws RemoteException;
 
-    void enable() throws SchedulingException;
+    void enable() throws SchedulingException, RemoteException;
 
-    void disable() throws SchedulingException;
+    void disable() throws SchedulingException, RemoteException;
 
-    boolean isEnabled() throws SchedulingException;
+    boolean isEnabled() throws SchedulingException, RemoteException;
 
-    ScheduledActivityData schedule(SchedulingRequest request, CreationConflictStrategy conflictStrategy) throws SchedulingException;
+    ScheduledActivityData schedule(SchedulingRequest request, CreationConflictStrategy conflictStrategy) throws SchedulingException, RemoteException;
 
-    List<ScheduledActivityData> schedule(List<SchedulingRequest> request, CreationConflictStrategy conflictStrategy) throws SchedulingException;
+    List<ScheduledActivityData> schedule(List<SchedulingRequest> request, CreationConflictStrategy conflictStrategy) throws SchedulingException, RemoteException;
 
     /**
      * Return the list of the activities currently in the state {@link SchedulingState#SCHEDULED}.
@@ -45,7 +46,7 @@ public interface IScheduler extends IScheduledActivityDataProvisionService {
      * @return the list of the activities currently in the state {@link SchedulingState#SCHEDULED}
      * @throws SchedulingException in case of issues when executing the method
      */
-    List<ScheduledActivityData> getCurrentScheduledActivities() throws SchedulingException;
+    List<ScheduledActivityData> getCurrentScheduledActivities() throws SchedulingException, RemoteException;
 
     /**
      * Update the scheduled activity indicated by originalId with the new data coming from the provided {@link SchedulingRequest}.
@@ -59,11 +60,11 @@ public interface IScheduler extends IScheduledActivityDataProvisionService {
      * @throws SchedulingException in case the conflict strategy does not allow proper resolution or in case the scheduled activity is not
      * in the expected state
      */
-    ScheduledActivityData update(IUniqueId originalId, SchedulingRequest newRequest, CreationConflictStrategy conflictStrategy) throws SchedulingException;
+    ScheduledActivityData update(IUniqueId originalId, SchedulingRequest newRequest, CreationConflictStrategy conflictStrategy) throws SchedulingException, RemoteException;
 
-    void remove(IUniqueId scheduledId) throws SchedulingException;
+    void remove(IUniqueId scheduledId) throws SchedulingException, RemoteException;
 
-    void remove(ScheduledActivityDataFilter filter) throws SchedulingException;
+    void remove(ScheduledActivityDataFilter filter) throws SchedulingException, RemoteException;
 
     /**
      * This operation removes all the scheduled activities between startTime and endTime belonging to the provided scheduling source,
@@ -87,7 +88,7 @@ public interface IScheduler extends IScheduledActivityDataProvisionService {
      * @return the list of scheduled operations
      * @throws SchedulingException in case of already running activities in the defined time interval for the requesting source
      */
-    List<ScheduledActivityData> load(Instant startTime, Instant endTime, List<SchedulingRequest> requests, String source, CreationConflictStrategy conflictStrategy) throws SchedulingException;
+    List<ScheduledActivityData> load(Instant startTime, Instant endTime, List<SchedulingRequest> requests, String source, CreationConflictStrategy conflictStrategy) throws SchedulingException, RemoteException;
 
     /**
      * Dispose the scheduler. Pending tasks will not be modified, to allow resume (if the archiving is enabled).

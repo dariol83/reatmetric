@@ -32,6 +32,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Level;
@@ -71,7 +72,7 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
                 // Dispatch a new activity
                 try {
                     dispatch(targetTime, linkedTracker);
-                } catch (ReatmetricException e) {
+                } catch (ReatmetricException | RemoteException e) {
                     LOG.log(Level.SEVERE, "Error while dispatching 11,4 command for activity " + tcTracker.getInvocation().getPath() + " (" + tcTracker.getInvocation().getActivityOccurrenceId() + "): " + e.getMessage(), e);
                     linkedTracker.terminate(TcPhase.FAILED, phaseTime, false);
                 }
@@ -108,7 +109,7 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
         }
     }
 
-    private void dispatch(Instant targetTime, LinkedTcTracker originalCommand) throws ReatmetricException {
+    private void dispatch(Instant targetTime, LinkedTcTracker originalCommand) throws ReatmetricException, RemoteException {
         SystemEntityPath activity = SystemEntityPath.fromString(configuration().getActivityPath());
         ActivityDescriptor descriptor = context().getServiceFactory().getActivityOccurrenceDataMonitorService().getDescriptor(activity);
         // Derive the various arguments you need: sub-schedule-id (opt.), if array or not, first time ABSOLUTE_TIME of array is execution time, last field OCTET_STRING of array is the command

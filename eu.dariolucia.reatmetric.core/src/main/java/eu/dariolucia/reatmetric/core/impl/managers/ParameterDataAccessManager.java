@@ -46,7 +46,7 @@ public class ParameterDataAccessManager extends AbstractAccessManager<ParameterD
         if(filter == null) {
             filter = new ParameterDataFilter(null, null, null, null, null, null);
         }
-        return new ParameterDataAccessSubscriber(subscriber, filter, model);
+        return new ParameterDataAccessSubscriber(this, subscriber, filter, model);
     }
 
     @Override

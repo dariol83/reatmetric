@@ -21,13 +21,15 @@ import eu.dariolucia.reatmetric.api.common.IDataItemStateProvisionService;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
+import java.rmi.RemoteException;
+
 /**
  * This interface is a specialisation of the {@link IDataItemStateProvisionService}, for activity occurrences. In addition, it provides
  * descriptors for the specified activity.
  */
 public interface IActivityOccurrenceDataProvisionService extends IDataItemStateProvisionService<IActivityOccurrenceDataSubscriber, ActivityOccurrenceDataFilter, ActivityOccurrenceData> {
 
-    ActivityDescriptor getDescriptor(SystemEntityPath path) throws ReatmetricException;
+    ActivityDescriptor getDescriptor(SystemEntityPath path) throws ReatmetricException, RemoteException;
 
-    ActivityDescriptor getDescriptor(int externalId) throws ReatmetricException;
+    ActivityDescriptor getDescriptor(int externalId) throws ReatmetricException, RemoteException;
 }

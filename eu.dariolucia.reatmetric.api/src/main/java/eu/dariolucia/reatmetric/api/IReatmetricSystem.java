@@ -20,6 +20,7 @@ package eu.dariolucia.reatmetric.api;
 import eu.dariolucia.reatmetric.api.activity.IActivityExecutionService;
 import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
+import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.IDebugInfoProvider;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
@@ -34,43 +35,49 @@ import eu.dariolucia.reatmetric.api.scheduler.IScheduledActivityDataProvisionSer
 import eu.dariolucia.reatmetric.api.scheduler.IScheduler;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
  * Main interface of a ReatMetric system implementation
  */
-public interface IReatmetricSystem extends IDebugInfoProvider {
+public interface IReatmetricSystem extends Remote {
 
-    void initialise(Consumer<SystemStatus> statusUpdateSubscriber) throws ReatmetricException;
+    void initialise(Consumer<SystemStatus> statusUpdateSubscriber) throws ReatmetricException, RemoteException;
 
-    void dispose() throws ReatmetricException;
+    SystemStatus getStatus() throws RemoteException;
 
-    String getName();
+    void dispose() throws ReatmetricException, RemoteException;
+
+    String getName() throws RemoteException;
     
-    IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException;
+    IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException, RemoteException;
 
-    IAcknowledgedMessageProvisionService getAcknowledgedMessageMonitorService() throws ReatmetricException;
+    IAcknowledgedMessageProvisionService getAcknowledgedMessageMonitorService() throws ReatmetricException, RemoteException;
 
-    IAcknowledgementService getAcknowledgementService() throws ReatmetricException;
+    IAcknowledgementService getAcknowledgementService() throws ReatmetricException, RemoteException;
 
-    IRawDataProvisionService getRawDataMonitorService() throws ReatmetricException;
+    IRawDataProvisionService getRawDataMonitorService() throws ReatmetricException, RemoteException;
     
-    IParameterDataProvisionService getParameterDataMonitorService() throws ReatmetricException;
+    IParameterDataProvisionService getParameterDataMonitorService() throws ReatmetricException, RemoteException;
     
-    ISystemModelProvisionService getSystemModelMonitorService() throws ReatmetricException;
+    ISystemModelProvisionService getSystemModelMonitorService() throws ReatmetricException, RemoteException;
     
-    IEventDataProvisionService getEventDataMonitorService() throws ReatmetricException;
+    IEventDataProvisionService getEventDataMonitorService() throws ReatmetricException, RemoteException;
     
-    IAlarmParameterDataProvisionService getAlarmParameterDataMonitorService() throws ReatmetricException;
+    IAlarmParameterDataProvisionService getAlarmParameterDataMonitorService() throws ReatmetricException, RemoteException;
 
-    IActivityOccurrenceDataProvisionService getActivityOccurrenceDataMonitorService() throws ReatmetricException;
+    IActivityOccurrenceDataProvisionService getActivityOccurrenceDataMonitorService() throws ReatmetricException, RemoteException;
 
-    IActivityExecutionService getActivityExecutionService() throws ReatmetricException;
+    IActivityExecutionService getActivityExecutionService() throws ReatmetricException, RemoteException;
 
-    IScheduler getScheduler() throws ReatmetricException;
+    IScheduler getScheduler() throws ReatmetricException, RemoteException;
 
-    IScheduledActivityDataProvisionService getScheduledActivityDataMonitorService() throws ReatmetricException;
+    IScheduledActivityDataProvisionService getScheduledActivityDataMonitorService() throws ReatmetricException, RemoteException;
 
-    List<ITransportConnector> getTransportConnectors() throws ReatmetricException;
+    List<ITransportConnector> getTransportConnectors() throws ReatmetricException, RemoteException;
+
+    List<DebugInformation> currentDebugInfo() throws ReatmetricException, RemoteException;
 }

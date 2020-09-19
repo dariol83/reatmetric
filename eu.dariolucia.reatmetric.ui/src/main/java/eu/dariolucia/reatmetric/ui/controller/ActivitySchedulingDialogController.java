@@ -30,6 +30,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -176,7 +177,7 @@ public class ActivitySchedulingDialogController implements Initializable {
             } else {
                 return "";
             }
-        } catch (ReatmetricException e) {
+        } catch (ReatmetricException | RemoteException e) {
             e.printStackTrace();
             return "";
         }
@@ -185,7 +186,7 @@ public class ActivitySchedulingDialogController implements Initializable {
     private int findEvent(String eventPath) {
         try {
             return ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getExternalIdOf(SystemEntityPath.fromString(eventPath));
-        } catch (ReatmetricException e) {
+        } catch (ReatmetricException | RemoteException e) {
             e.printStackTrace();
             return -1;
         }

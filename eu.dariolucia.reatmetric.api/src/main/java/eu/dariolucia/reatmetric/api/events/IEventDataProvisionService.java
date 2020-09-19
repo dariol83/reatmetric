@@ -21,13 +21,15 @@ import eu.dariolucia.reatmetric.api.common.IDataItemProvisionService;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
+import java.rmi.RemoteException;
+
 /**
  * This interface is a specialisation of the {@link IDataItemProvisionService}, for event occurrences. In addition, it provides
  * descriptors for the specified event.
  */
 public interface IEventDataProvisionService extends IDataItemProvisionService<IEventDataSubscriber, EventDataFilter, EventData> {
 
-    EventDescriptor getDescriptor(SystemEntityPath path) throws ReatmetricException;
+    EventDescriptor getDescriptor(SystemEntityPath path) throws ReatmetricException, RemoteException;
 
-    EventDescriptor getDescriptor(int externalId) throws ReatmetricException;
+    EventDescriptor getDescriptor(int externalId) throws ReatmetricException, RemoteException;
 }

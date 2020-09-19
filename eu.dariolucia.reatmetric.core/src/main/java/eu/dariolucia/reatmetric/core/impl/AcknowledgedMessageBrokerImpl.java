@@ -23,6 +23,7 @@ import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.*;
 
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
@@ -70,7 +71,7 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
     public synchronized void subscribe(IAcknowledgedMessageSubscriber subscriber, AcknowledgedMessageFilter filter) {
         AcknowledgedMessageSubscriptionManager manager = subscriberIndex.get(subscriber);
         if(manager == null) {
-            manager = new AcknowledgedMessageSubscriptionManager(subscriber, filter, false, new ArrayList<AcknowledgedMessage>(unacknowledgedMessages.values()));
+            manager = new AcknowledgedMessageSubscriptionManager(this, subscriber, filter, false, new ArrayList<>(unacknowledgedMessages.values()));
             subscriberIndex.put(subscriber, manager);
             subscribers.add(manager);
         } else {
@@ -164,10 +165,10 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
         List<AcknowledgedMessage> toStore = new LinkedList<>();
         synchronized (this) {
             for (AcknowledgedMessage am : messages) {
-                AcknowledgedMessage toBeAcked = unacknowledgedMessages.remove(am.getInternalId());
-                if (toBeAcked != null) {
-                    toBeAcked = toBeAcked.ack(user);
-                    toStore.add(toBeAcked);
+                AcknowledgedMessage toBeAcknowledged = unacknowledgedMessages.remove(am.getInternalId());
+                if (toBeAcknowledged != null) {
+                    toBeAcknowledged = toBeAcknowledged.ack(user);
+                    toStore.add(toBeAcknowledged);
                 }
             }
         }
@@ -188,8 +189,10 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
         private final IAcknowledgedMessageSubscriber subscriber;
         private final boolean timely;
         private volatile Predicate<AcknowledgedMessage> filter;
+        private final AcknowledgedMessageBrokerImpl broker;
 
-        public AcknowledgedMessageSubscriptionManager(IAcknowledgedMessageSubscriber subscriber, AcknowledgedMessageFilter filter, boolean timely, List<AcknowledgedMessage> initialMessages) {
+        public AcknowledgedMessageSubscriptionManager(AcknowledgedMessageBrokerImpl broker, IAcknowledgedMessageSubscriber subscriber, AcknowledgedMessageFilter filter, boolean timely, List<AcknowledgedMessage> initialMessages) {
+            this.broker = broker;
             this.subscriber = subscriber;
             this.filter = filter == null ? IDENTITY_FILTER : filter;
             this.timely = timely;
@@ -219,13 +222,22 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
                 // Now filter the items and then inform the subscriber
                 List<AcknowledgedMessage> toNotify = filterItems(drainer);
                 if(!toNotify.isEmpty()) {
-                    subscriber.dataItemsReceived(toNotify);
+                    try {
+                        subscriber.dataItemsReceived(toNotify);
+                    } catch (RemoteException e) {
+                        LOG.log(Level.SEVERE, "Cannot notify subscriber, terminating...", e);
+                        broker.unsubscribe(subscriber);
+                    }
                 }
                 drainer.clear();
             }
         }
 
         public void notifyItems(List<AcknowledgedMessage> messages) {
+            if(dispatcher.isShutdown()) {
+                // Ignore
+                return;
+            }
             synchronized (queue) {
                 if (timely && !queue.isEmpty() && messages.size() > queue.remainingCapacity()) {
                     queue.clear();

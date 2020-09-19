@@ -23,12 +23,14 @@ import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.util.List;
 
 /**
  * This interface is used to request the execution of activities to the processing model.
  */
-public interface IActivityExecutionService {
+public interface IActivityExecutionService extends Remote {
 
     /**
      * Request the execution of the specified activity. An activity occurrence created by this method is forwarded
@@ -39,7 +41,7 @@ public interface IActivityExecutionService {
      * @return the ID of the activity occurrence created by this request
      * @throws ReatmetricException in case of problems during the creation of the activity occurrence
      */
-    IUniqueId startActivity(ActivityRequest request) throws ReatmetricException;
+    IUniqueId startActivity(ActivityRequest request) throws ReatmetricException, RemoteException;
 
     /**
      * Register an existing activity occurrence in the processing model. This method is used to report the existence
@@ -51,7 +53,7 @@ public interface IActivityExecutionService {
      * @return the ID of the activity occurrence as created in the processing model
      * @throws ReatmetricException in case of problems during the creation of the activity occurrence
      */
-    IUniqueId createActivity(ActivityRequest request, ActivityProgress currentProgress) throws ReatmetricException;
+    IUniqueId createActivity(ActivityRequest request, ActivityProgress currentProgress) throws ReatmetricException, RemoteException;
 
     /**
      * Purge the provided list of activity occurrences. The list is composed as a list of pairs: first value is the
@@ -61,21 +63,21 @@ public interface IActivityExecutionService {
      * @param activityOccurrenceIds the list of {@link Pair} identifying the activity occurrences to purge
      * @throws ReatmetricException in case of problems purging the provided list of activity occurrences
      */
-    void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) throws ReatmetricException;
+    void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) throws ReatmetricException, RemoteException;
 
     /**
      * Retrieve the list of all defined activity routes in the system and return them together with the current availability state.
      *
      * @return the availability state
      */
-    List<ActivityRouteState> getRouteAvailability() throws ReatmetricException;
+    List<ActivityRouteState> getRouteAvailability() throws ReatmetricException, RemoteException;
 
     /**
      * Retrieve the list of defined activity routes in the system for the provided type and return them together with the current availability state.
      *
      * @return the availability state
      */
-    List<ActivityRouteState> getRouteAvailability(String type) throws ReatmetricException;
+    List<ActivityRouteState> getRouteAvailability(String type) throws ReatmetricException, RemoteException;
 
     /**
      * Request the setting of the specified parameter to the specified value. The request is ultimately mapped to an activity,
@@ -85,7 +87,7 @@ public interface IActivityExecutionService {
      * @return the {@link IUniqueId} of the activity occurrence linked to the set operation
      * @throws ReatmetricException in case of problems during the creation of the activity occurrence
      */
-    IUniqueId setParameterValue(SetParameterRequest request) throws ReatmetricException;
+    IUniqueId setParameterValue(SetParameterRequest request) throws ReatmetricException, RemoteException;
 
     /**
      * Request the abortion of an activity occurrence. Whether an activity occurrence can be aborted depends on the
@@ -95,5 +97,5 @@ public interface IActivityExecutionService {
      * @param activityOccurrenceId the activity occurrence to abort
      * @throws ReatmetricException in case of problems during the activity abort
      */
-    void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ReatmetricException;
+    void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ReatmetricException, RemoteException;
 }

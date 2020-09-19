@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.*;
 import eu.dariolucia.reatmetric.core.api.IOperationalMessageBroker;
 
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -76,7 +77,7 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
     public void subscribe(IOperationalMessageSubscriber subscriber, OperationalMessageFilter filter) {
         OperationalMessageSubscriptionManager manager = subscriberIndex.get(subscriber);
         if(manager == null) {
-            manager = new OperationalMessageSubscriptionManager(subscriber, filter, false);
+            manager = new OperationalMessageSubscriptionManager(this, subscriber, filter, false);
             subscriberIndex.put(subscriber, manager);
             subscribers.add(manager);
         } else {
@@ -196,8 +197,10 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
         private final IOperationalMessageSubscriber subscriber;
         private final boolean timely;
         private volatile Predicate<OperationalMessage> filter;
+        private final OperationalMessageBrokerImpl broker;
 
-        public OperationalMessageSubscriptionManager(IOperationalMessageSubscriber subscriber, OperationalMessageFilter filter, boolean timely) {
+        public OperationalMessageSubscriptionManager(OperationalMessageBrokerImpl broker, IOperationalMessageSubscriber subscriber, OperationalMessageFilter filter, boolean timely) {
+            this.broker = broker;
             this.subscriber = subscriber;
             this.filter = filter == null ? IDENTITY_FILTER : filter;
             this.timely = timely;
@@ -226,13 +229,21 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
                 // Now filter the items and then inform the subscriber
                 List<OperationalMessage> toNotify = filterItems(drainer);
                 if(!toNotify.isEmpty()) {
-                    subscriber.dataItemsReceived(toNotify);
+                    try {
+                        subscriber.dataItemsReceived(toNotify);
+                    } catch (RemoteException e) {
+                        LOG.log(Level.SEVERE, "Cannot notify subscriber, terminating...", e);
+                        broker.unsubscribe(subscriber);
+                    }
                 }
                 drainer.clear();
             }
         }
 
         public void notifyItems(List<OperationalMessage> messages) {
+            if(this.dispatcher.isShutdown()) {
+                return;
+            }
             synchronized (queue) {
                 if (timely && !queue.isEmpty() && messages.size() > queue.remainingCapacity()) {
                     queue.clear();

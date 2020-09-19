@@ -17,18 +17,20 @@
 
 package eu.dariolucia.reatmetric.api.common;
 
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.util.List;
 
 /**
  * This interface is the parent interface of the data item type-specific subscription interfaces.
  */
-public interface IDataItemSubscriber<T extends UniqueItem> {
+public interface IDataItemSubscriber<T extends UniqueItem> extends Remote {
 
     /**
      * Inform the subscriber the given list of data items is available according to the specified filter at subscription time.
      *
      * @param dataItems the new available data items
      */
-    void dataItemsReceived(List<T> dataItems);
+    void dataItemsReceived(List<T> dataItems) throws RemoteException;
     
 }

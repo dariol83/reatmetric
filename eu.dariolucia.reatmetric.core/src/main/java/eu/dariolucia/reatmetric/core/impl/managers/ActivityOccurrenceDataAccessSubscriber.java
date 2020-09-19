@@ -29,8 +29,8 @@ public class ActivityOccurrenceDataAccessSubscriber extends AbstractAccessSubscr
 
     private static final IUniqueId INVALID_ID = new LongUniqueId(0xFFFFFFFFFFFFFFFFL);
 
-    public ActivityOccurrenceDataAccessSubscriber(IActivityOccurrenceDataSubscriber subscriber, ActivityOccurrenceDataFilter filter, IProcessingModel model) {
-        super(subscriber, filter, model);
+    public ActivityOccurrenceDataAccessSubscriber(ActivityOccurrenceDataAccessManager manager, IActivityOccurrenceDataSubscriber subscriber, ActivityOccurrenceDataFilter filter, IProcessingModel model) {
+        super(manager, subscriber, filter, model);
     }
 
     @Override

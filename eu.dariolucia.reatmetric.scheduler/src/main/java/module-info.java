@@ -1,6 +1,7 @@
 open module eu.dariolucia.reatmetric.scheduler {
 
     requires java.logging;
+    requires java.rmi;
     requires eu.dariolucia.reatmetric.api;
 
     exports eu.dariolucia.reatmetric.scheduler;

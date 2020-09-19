@@ -25,6 +25,10 @@ public enum SystemStatus {
      */
     UNKNOWN,
     /**
+     * The system is not initialised
+     */
+    NOT_INITED,
+    /**
      * The status of the system is nominal and works as expected
      */
     NOMINAL,

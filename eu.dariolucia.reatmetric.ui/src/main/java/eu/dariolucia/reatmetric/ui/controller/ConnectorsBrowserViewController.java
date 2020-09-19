@@ -34,6 +34,7 @@ import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -57,7 +58,7 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
     @FXML
     private ScrollPane scrollpane;
 
-    private Map<ITransportConnector, ConnectorStatusWidgetController> connector2controller = new ConcurrentHashMap<>();
+    private final Map<ITransportConnector, ConnectorStatusWidgetController> connector2controller = new ConcurrentHashMap<>();
 
     @Override
     protected Window retrieveWindow() {
@@ -79,7 +80,11 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
     protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
         this.displayTitledPane.setDisable(true);
         // Clear the list view
-        clearConnectorsModel();
+        try {
+            clearConnectorsModel();
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Remote exception when clearing connectors", e);
+        }
     }
 
     @Override
@@ -89,17 +94,21 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
     }
 
     private void startSubscription() {
-        clearConnectorsModel();
+        try {
+            clearConnectorsModel();
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Remote exception when clearing connectors", e);
+        }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 buildConnectorsModel();
-            } catch (ReatmetricException e) {
-                LOG.log(Level.SEVERE, "Cannot retrieve sle connectors: " + e.getMessage(), e);
+            } catch (ReatmetricException | RemoteException e) {
+                LOG.log(Level.SEVERE, "Cannot retrieve connectors: " + e.getMessage(), e);
             }
         });
     }
 
-    private void clearConnectorsModel() {
+    private void clearConnectorsModel() throws RemoteException {
         // First lock
         for(ITransportConnector connector : this.connector2controller.keySet()) {
             connector.deregister(this);
@@ -110,22 +119,26 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
         this.vbox.layout();
     }
 
-    private void buildConnectorsModel() throws ReatmetricException {
+    private void buildConnectorsModel() throws ReatmetricException, RemoteException {
         final List<ITransportConnector> connectors = ReatmetricUI.selectedSystem().getSystem().getTransportConnectors();
         Platform.runLater(() -> {
             for(ITransportConnector tc : connectors) {
-                ConnectorStatusWidgetController controller = buildConnectorController(tc);
+                ConnectorStatusWidgetController controller = buildConnectorController();
                 if(controller != null) {
                     connector2controller.put(tc, controller);
                     controller.setConnector(tc);
-                    tc.register(this);
+                    try {
+                        tc.register(this);
+                    } catch (RemoteException e) {
+                        LOG.log(Level.SEVERE, "Remote exception when registering to connector", e);
+                    }
                 }
             }
             vbox.layout();
         });
     }
 
-    private ConnectorStatusWidgetController buildConnectorController(ITransportConnector tc) {
+    private ConnectorStatusWidgetController buildConnectorController() {
         try {
             URL paneUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/ConnectorStatusWidget.fxml");
             FXMLLoader loader = new FXMLLoader(paneUrl);

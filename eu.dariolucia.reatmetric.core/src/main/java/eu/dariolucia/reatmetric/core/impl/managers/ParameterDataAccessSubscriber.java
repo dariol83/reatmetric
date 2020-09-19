@@ -24,8 +24,8 @@ import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 
 public class ParameterDataAccessSubscriber extends AbstractAccessSubscriber<ParameterData, ParameterDataFilter, IParameterDataSubscriber> {
 
-    public ParameterDataAccessSubscriber(IParameterDataSubscriber subscriber, ParameterDataFilter filter, IProcessingModel model) {
-        super(subscriber, filter, model);
+    public ParameterDataAccessSubscriber(ParameterDataAccessManager manager, IParameterDataSubscriber subscriber, ParameterDataFilter filter, IProcessingModel model) {
+        super(manager, subscriber, filter, model);
     }
 
     @Override

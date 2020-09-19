@@ -41,6 +41,6 @@ public class AlarmParameterDataAccessManager extends AbstractAccessManager<Alarm
         if(filter == null) {
             filter = new AlarmParameterDataFilter(null, null, null, null);
         }
-        return new AlarmParameterDataAccessSubscriber(subscriber, filter, model);
+        return new AlarmParameterDataAccessSubscriber(this, subscriber, filter, model);
     }
 }

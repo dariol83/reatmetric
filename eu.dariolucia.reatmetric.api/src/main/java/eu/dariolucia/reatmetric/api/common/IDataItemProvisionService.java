@@ -19,6 +19,8 @@ package eu.dariolucia.reatmetric.api.common;
 
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.List;
 
@@ -35,7 +37,7 @@ import java.util.List;
  * @param <R> filter type
  * @param <K> item type
  */
-public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R extends AbstractDataItemFilter<K>, K extends AbstractDataItem> {
+public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R extends AbstractDataItemFilter<K>, K extends AbstractDataItem> extends Remote {
 
     /**
      * Subscribe to the provision service, to receive live updates matching the provider filter. If the filter is null,
@@ -44,14 +46,14 @@ public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R e
      * @param subscriber the callback interface, cannot be null
      * @param filter the filter object, can be null
      */
-    void subscribe(T subscriber, R filter);
+    void subscribe(T subscriber, R filter) throws RemoteException;
 
     /**
      * Unsubscribe the callback interface from the provision service.
      *
      * @param subscriber the callback interface to unsubscribe, cannot be null
      */
-    void unsubscribe(T subscriber);
+    void unsubscribe(T subscriber) throws RemoteException;
 
     /**
      * Retrieve [numRecords] {@link AbstractDataItem} objects, starting from generation time [startTime] in the direction
@@ -67,7 +69,7 @@ public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R e
      * @return the retrieved objects
      * @throws ReatmetricException if a problem arises with the retrieval operation
      */
-    List<K> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException;
+    List<K> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException, RemoteException;
 
     /**
      * Retrieve [numRecords] {@link AbstractDataItem} objects, starting from the specified object [startItem] in the direction
@@ -83,6 +85,6 @@ public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R e
      * @return the retrieved objects
      * @throws ReatmetricException if a problem arises with the retrieval operation
      */
-    List<K> retrieve(K startItem, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException;
+    List<K> retrieve(K startItem, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException, RemoteException;
 
 }

@@ -2,6 +2,7 @@ open module eu.dariolucia.reatmetric.driver.automation {
     requires java.logging;
     requires java.xml.bind;
     requires java.scripting;
+    requires java.rmi;
 
     requires org.graalvm.sdk;
     requires org.graalvm.js.scriptengine;
