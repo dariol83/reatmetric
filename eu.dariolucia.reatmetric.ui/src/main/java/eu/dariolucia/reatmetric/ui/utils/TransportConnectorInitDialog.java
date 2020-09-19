@@ -35,6 +35,7 @@ import javafx.scene.layout.*;
 import org.controlsfx.control.PopOver;
 import org.controlsfx.control.ToggleSwitch;
 
+import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -60,11 +61,18 @@ public class TransportConnectorInitDialog {
     private BooleanProperty canFinish = new SimpleBooleanProperty(false);
     private ConnectorPropertyPage page;
     private final ITransportConnector connector;
+    private String name;
     private final boolean connectOnPositiveInitialise;
     private final Node hook;
 
     private TransportConnectorInitDialog(ITransportConnector connector, Node hook, boolean connectOnPositiveInitialise) {
         this.connector = connector;
+        try {
+            this.name = connector.getName();
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot access transport connector", e);
+            this.name = "<UNKNOWN>";
+        }
         this.hook = hook;
         this.connectOnPositiveInitialise = connectOnPositiveInitialise;
         // Connector properties
@@ -88,14 +96,14 @@ public class TransportConnectorInitDialog {
         popOver.setContentNode(box);
     }
 
-    public static void openWizardNoElements(ITransportConnector connector, Node hook) {
+    public static void openWizardNoElements(Node hook) {
         popOver.setAutoHide(true);
         popOver.setDetachable(false);
         popOver.setHideOnEscape(true);
         popOver.hide();
         VBox box = new VBox();
         box.setPadding(new Insets(8));
-        Label l = new Label("Transport connector " + connector.getName() + " does not have any configuration runtime property");
+        Label l = new Label("Transport connector does not have any configuration runtime property");
         l.setPrefWidth(300);
         l.setWrapText(true);
         l.setPrefHeight(50);
@@ -111,7 +119,7 @@ public class TransportConnectorInitDialog {
 
     private void initialiseConnector(ActionEvent event) {
         if (!canFinish.get()) {
-            throw new IllegalStateException("Cannot complete the initialisation for connector " + connector.getName() + ": not valid entries");
+            throw new IllegalStateException("Cannot complete the initialisation for connector " + name + ": not valid entries");
         }
         Map<String, Object> configuration = page.buildConfiguration();
         ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
@@ -124,8 +132,8 @@ public class TransportConnectorInitDialog {
 					popOver.setOnCloseRequest(null);
 					popOver.hide();
 				});
-            } catch (TransportException e) {
-                LOG.log(Level.SEVERE, "Failing to initialise " + (connectOnPositiveInitialise ? "and activate " : "") + "connector " + connector.getName() + ": " + e.getMessage(), e);
+            } catch (TransportException | RemoteException e) {
+                LOG.log(Level.SEVERE, "Failing to initialise " + (connectOnPositiveInitialise ? "and activate " : "") + "connector " + name + ": " + e.getMessage(), e);
                 // Nasty workaround on this design - deselect if you fail
 				if(connectOnPositiveInitialise) {
 					Platform.runLater(() -> {
@@ -166,10 +174,14 @@ public class TransportConnectorInitDialog {
 
         private void initPageWith(ITransportConnector connector) {
             if (connector != null) {
-                Map<String, Pair<String, ValueTypeEnum>> currentDescriptor = connector.getSupportedProperties();
-                Map<String, Object> values = connector.getCurrentProperties();
-                for (Map.Entry<String, Pair<String, ValueTypeEnum>> cpd : currentDescriptor.entrySet()) {
-                    addPropertyItem(cpd.getKey(), cpd.getValue().getFirst(), cpd.getValue().getSecond(), values.get(cpd.getKey()));
+                try {
+                    Map<String, Pair<String, ValueTypeEnum>> currentDescriptor = connector.getSupportedProperties();
+                    Map<String, Object> values = connector.getCurrentProperties();
+                    for (Map.Entry<String, Pair<String, ValueTypeEnum>> cpd : currentDescriptor.entrySet()) {
+                        addPropertyItem(cpd.getKey(), cpd.getValue().getFirst(), cpd.getValue().getSecond(), values.get(cpd.getKey()));
+                    }
+                } catch (RemoteException e) {
+                    LOG.log(Level.SEVERE, "Cannot access transport connector " + name, e);
                 }
             }
             validate();

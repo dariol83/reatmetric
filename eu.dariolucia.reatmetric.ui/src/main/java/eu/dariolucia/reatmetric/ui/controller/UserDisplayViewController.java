@@ -35,6 +35,7 @@ import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -125,7 +126,13 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		saveTabMenuItem.setOnAction(event -> {
 			// Traditional way to get the response value.
 			Optional<String> result = DialogUtils.input(t.getText(), "Save Chart Preset", "Chart Preset", "Please provide the name of the preset:");
-			result.ifPresent(s -> this.presetManager.save(system.getName(), user, s, doGetComponentId(), ctrl.getChartDescription()));
+			result.ifPresent(s -> {
+				try {
+					this.presetManager.save(system.getName(), user, s, doGetComponentId(), ctrl.getChartDescription());
+				} catch (RemoteException e) {
+					LOG.log(Level.SEVERE, "Cannot save preset, system not responding", e);
+				}
+			});
 		});
 		// Tab detaching
 		SeparatorMenuItem sep = new SeparatorMenuItem();
@@ -179,13 +186,21 @@ public class UserDisplayViewController extends AbstractDisplayController {
 	}
 
 	private void onShowingPresetMenu(Event contextMenuEvent) {
+		String name;
+		try {
+			name = system.getName();
+		} catch (RemoteException e) {
+			LOG.log(Level.SEVERE, "Cannot show presets, erro contacting system", e);
+			return;
+		}
+
 		this.loadBtn.getItems().remove(0, this.loadBtn.getItems().size());
-		List<String> presets = this.presetManager.getAvailablePresets(system.getName(), user, doGetComponentId());
+		List<String> presets = this.presetManager.getAvailablePresets(name, user, doGetComponentId());
 		for(String preset : presets) {
 			final String fpreset = preset;
 			MenuItem mi = new MenuItem(preset);
 			mi.setOnAction((event) -> {
-				Properties p = this.presetManager.load(system.getName(), user, fpreset, doGetComponentId());
+				Properties p = this.presetManager.load(name, user, fpreset, doGetComponentId());
 				if(p != null) {
 					try {
 						addChartTabFromPreset(fpreset, p);

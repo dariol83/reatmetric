@@ -519,24 +519,6 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     @Override
     protected Control doBuildNodeForPrinting() {
         return TableViewUtil.buildNodeForPrinting(this.dataItemTableView);
-        /*
-        List<?> items = new ArrayList<>(this.dataItemTableView.getItems());
-        TableView<?> cloned = new TableView<>(FXCollections.observableArrayList(items));
-        double width = 0;
-        double height = this.dataItemTableView.getItems().size() * 24 + 30;
-        for(TableColumn tc : this.dataItemTableView.getColumns()) {
-            TableColumn newTc = new TableColumn();
-            newTc.setText(tc.getText());
-            newTc.setCellFactory(tc.getCellFactory());
-            newTc.setCellValueFactory(tc.getCellValueFactory());
-            newTc.setPrefWidth(tc.getWidth());
-            width += tc.getWidth();
-            cloned.getColumns().add(newTc);
-        }
-        cloned.setPrefWidth(width);
-        cloned.setPrefHeight(height);
-        return cloned;
-        */
     }
     
     protected V getCurrentFilter() {

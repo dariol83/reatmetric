@@ -30,8 +30,8 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.controller.UserDisplayTabWidgetController;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import javafx.application.Platform;
-import javafx.stage.Stage;
 
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -125,7 +125,7 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
             try {
                 ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().subscribe(this.parameterSubscriber, currentParameterFilter);
                 ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().subscribe(this.eventSubscriber, currentEventFilter);
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | RemoteException e) {
                 e.printStackTrace();
             }
         });
@@ -157,7 +157,7 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
                 if(service != null && service.getEventDataMonitorService() != null) {
                     ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().unsubscribe(this.eventSubscriber);
                 }
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | RemoteException e) {
                 e.printStackTrace();
             }
         });

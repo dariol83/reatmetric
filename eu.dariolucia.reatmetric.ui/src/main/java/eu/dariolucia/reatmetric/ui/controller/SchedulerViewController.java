@@ -55,6 +55,7 @@ import javafx.stage.WindowEvent;
 
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -596,13 +597,21 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     private List<ScheduledActivityData> doRetrieve(ScheduledActivityData activityOccurrenceData, int n, RetrievalDirection direction, ScheduledActivityDataFilter selectedFilter) throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getScheduler().retrieve(activityOccurrenceData, n, direction,
-                selectedFilter);
+        try {
+            return ReatmetricUI.selectedSystem().getSystem().getScheduler().retrieve(activityOccurrenceData, n, direction,
+                    selectedFilter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     private List<ScheduledActivityData> doRetrieve(Instant time, int n, RetrievalDirection direction, ScheduledActivityDataFilter selectedFilter) throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getScheduler().retrieve(time, n, direction,
-                selectedFilter);
+        try {
+            return ReatmetricUI.selectedSystem().getSystem().getScheduler().retrieve(time, n, direction,
+                    selectedFilter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     private ScheduledActivityOccurrenceDataWrapper getFirst() {
@@ -657,16 +666,29 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     private void restoreColumnConfiguration() {
         if (this.system != null) {
-            TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
-            TableViewUtil.restoreColumnConfiguration(this.system.getName(), this.user, doGetComponentId() + "_event", this.eventDataItemTableView);
-
+            String name = null;
+            try {
+                name = this.system.getName();
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                return;
+            }
+            TableViewUtil.restoreColumnConfiguration(name, this.user, doGetComponentId(), this.dataItemTableView);
+            TableViewUtil.restoreColumnConfiguration(name, this.user, doGetComponentId() + "_event", this.eventDataItemTableView);
         }
     }
 
     private void persistColumnConfiguration() {
         if (this.system != null) {
-            TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId(), this.dataItemTableView);
-            TableViewUtil.persistColumnConfiguration(this.system.getName(), this.user, doGetComponentId() + "_event", this.eventDataItemTableView);
+            String name = null;
+            try {
+                name = this.system.getName();
+            } catch (RemoteException e) {
+                e.printStackTrace();
+                return;
+            }
+            TableViewUtil.persistColumnConfiguration(name, this.user, doGetComponentId(), this.dataItemTableView);
+            TableViewUtil.persistColumnConfiguration(name, this.user, doGetComponentId() + "_event", this.eventDataItemTableView);
         }
     }
 
@@ -764,13 +786,21 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     protected void doServiceSubscribe(ScheduledActivityDataFilter selectedFilter) throws ReatmetricException {
-        ReatmetricUI.selectedSystem().getSystem().getScheduler().subscribe(this, selectedFilter);
-        ReatmetricUI.selectedSystem().getSystem().getScheduler().subscribe(this);
+        try {
+            ReatmetricUI.selectedSystem().getSystem().getScheduler().subscribe(this, selectedFilter);
+            ReatmetricUI.selectedSystem().getSystem().getScheduler().subscribe(this);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     protected void doServiceUnsubscribe() throws ReatmetricException {
-        ReatmetricUI.selectedSystem().getSystem().getScheduler().unsubscribe((IScheduledActivityDataSubscriber) this);
-        ReatmetricUI.selectedSystem().getSystem().getScheduler().unsubscribe((ISchedulerSubscriber) this);
+        try {
+            ReatmetricUI.selectedSystem().getSystem().getScheduler().unsubscribe((IScheduledActivityDataSubscriber) this);
+            ReatmetricUI.selectedSystem().getSystem().getScheduler().unsubscribe((ISchedulerSubscriber) this);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     @Override
@@ -893,8 +923,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
             for (IUniqueId i : purgeList) {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getScheduler().remove(i);
-                } catch (ReatmetricException e) {
-                    e.printStackTrace();
+                } catch (ReatmetricException | RemoteException e) {
+                    LOG.log(Level.SEVERE, "Error when removing scheduled ID " + i, e);
                 }
             }
         });
@@ -941,7 +971,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
                 Supplier<List<ActivityRouteState>> routeList = () -> {
                     try {
                         return ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ActivityDescriptor) descriptor).getActivityType());
-                    } catch (ReatmetricException e) {
+                    } catch (ReatmetricException | RemoteException e) {
                         LOG.log(Level.WARNING, "Cannot retrieve the list of routes for activity type " + ((ActivityDescriptor) descriptor).getActivityType() + ": " + e.getMessage(), e);
                         return Collections.emptyList();
                     }
@@ -987,7 +1017,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getScheduler().update(originalId, schedulingRequest, creationStrategy);
-                } catch (ReatmetricException e) {
+                } catch (ReatmetricException | RemoteException e) {
                     LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
                 }
             });
@@ -1017,7 +1047,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
                 } else {
                     ReatmetricUI.selectedSystem().getSystem().getScheduler().disable();
                 }
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | RemoteException e) {
                 e.printStackTrace();
             }
         });

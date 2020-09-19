@@ -34,6 +34,7 @@ import javafx.stage.Window;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -163,13 +164,21 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
     }
 
     private void onShowingPresetMenu(Event contextMenuEvent) {
+        String name;
+        try {
+            name = system.getName();
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot contact system", e);
+            return;
+        }
+
         this.loadBtn.getItems().remove(0, this.loadBtn.getItems().size());
-        List<String> presets = getAvailablePresets(system.getName(), user);
+        List<String> presets = getAvailablePresets(name, user);
         for (String preset : presets) {
             final String fpreset = preset;
             MenuItem mi = new MenuItem(preset);
             mi.setOnAction((event) -> {
-                File p = new File(presetStorageLocation + File.separator + system.getName() + File.separator + user + File.separator + doGetComponentId() + File.separator + fpreset + ".svg");
+                File p = new File(presetStorageLocation + File.separator + name + File.separator + user + File.separator + doGetComponentId() + File.separator + fpreset + ".svg");
                 if (p.exists()) {
                     try {
                         addMimicsTabFromPreset(fpreset, p);

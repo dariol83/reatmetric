@@ -53,6 +53,7 @@ import org.controlsfx.control.textfield.CustomTextField;
 
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -168,7 +169,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().enable(se.getValue().getPath());
-                } catch (ReatmetricException e) {
+                } catch (ReatmetricException | RemoteException e) {
                     LOG.log(Level.SEVERE, "Problem while enabling system entity " + se.getValue().getPath() + ": " + e.getMessage(), e);
                 }
             });
@@ -182,7 +183,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().disable(se.getValue().getPath());
-                } catch (ReatmetricException e) {
+                } catch (ReatmetricException | RemoteException e) {
                     LOG.log(Level.SEVERE, "Problem while disabling system entity " + se.getValue().getPath() + ": " + e.getMessage(), e);
                 }
             });
@@ -234,9 +235,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         clearButton.setStyle("-fx-cursor: hand");
         clearButton.setOnMouseClicked(this::filterClearButtonPressed);
         this.filterText.setRight(clearButton);
-        filterText.textProperty().addListener((obs, oldValue, newValue) -> {
-            updatePredicate(newValue);
-        });
+        filterText.textProperty().addListener((obs, oldValue, newValue) -> updatePredicate(newValue));
 
         this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getName()));
         this.nameCol.setCellFactory(column -> new TreeTableCell<>() {
@@ -345,7 +344,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 buildTreeModel();
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | RemoteException e) {
                 LOG.log(Level.SEVERE, "Problem while building tree model: " + e.getMessage(), e);
             }
         });
@@ -370,7 +369,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         this.delegator.delegate(objects);
     }
 
-    private void buildTreeModel() throws ReatmetricException {
+    private void buildTreeModel() throws ReatmetricException, RemoteException {
         // First lock
         this.mapLock.lock();
         try {
@@ -491,7 +490,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 Supplier<List<ActivityRouteState>> routeList = () -> {
                     try {
                         return ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ActivityDescriptor) descriptor).getActivityType());
-                    } catch (ReatmetricException e) {
+                    } catch (ReatmetricException | RemoteException e) {
                         LOG.log(Level.WARNING, "Cannot retrieve the list of routes for activity type " + ((ActivityDescriptor) descriptor).getActivityType() + ": " + e.getMessage(), e);
                         return Collections.emptyList();
                     }
@@ -535,7 +534,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getScheduler().schedule(schedulingRequest, creationStrategy);
-                } catch (ReatmetricException e) {
+                } catch (ReatmetricException | RemoteException e) {
                     LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
                 }
             });
@@ -556,7 +555,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 Supplier<List<ActivityRouteState>> routeList = () -> {
                     try {
                         return ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ActivityDescriptor) descriptor).getActivityType());
-                    } catch (ReatmetricException e) {
+                    } catch (ReatmetricException | RemoteException e) {
                         LOG.log(Level.WARNING, "Cannot retrieve the list of routes for activity type " + ((ActivityDescriptor) descriptor).getActivityType() + ": " + e.getMessage(), e);
                         return Collections.emptyList();
                     }
@@ -590,7 +589,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().startActivity(request);
-                } catch (ReatmetricException e) {
+                } catch (ReatmetricException | RemoteException e) {
                     LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
                 }
             });
@@ -614,7 +613,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     Supplier<List<ActivityRouteState>> routeList = () -> {
                         try {
                             return ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ParameterDescriptor) descriptor).getSetterType());
-                        } catch (ReatmetricException e) {
+                        } catch (ReatmetricException | RemoteException e) {
                             LOG.log(Level.WARNING, "Cannot retrieve the list of routes for activity type " + ((ParameterDescriptor) descriptor).getSetterType() + ": " + e.getMessage(), e);
                             return Collections.emptyList();
                         }
@@ -649,7 +648,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().setParameterValue(request);
-                } catch (ReatmetricException e) {
+                } catch (ReatmetricException | RemoteException e) {
                     LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
                 }
             });

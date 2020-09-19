@@ -28,6 +28,8 @@ import eu.dariolucia.reatmetric.ui.controller.ParameterDisplayTabWidgetControlle
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import javafx.application.Platform;
 
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -92,7 +94,7 @@ public class ParameterDisplayCoordinator implements IReatmetricServiceListener {
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().subscribe(this.parameterSubscriber, currentParameterFilter);
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | RemoteException e) {
                 e.printStackTrace();
             }
         });
@@ -113,7 +115,7 @@ public class ParameterDisplayCoordinator implements IReatmetricServiceListener {
                 if(service != null && service.getParameterDataMonitorService() != null) {
                     ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().unsubscribe(this.parameterSubscriber);
                 }
-            } catch (ReatmetricException e) {
+            } catch (ReatmetricException | RemoteException e) {
                 e.printStackTrace();
             }
         });

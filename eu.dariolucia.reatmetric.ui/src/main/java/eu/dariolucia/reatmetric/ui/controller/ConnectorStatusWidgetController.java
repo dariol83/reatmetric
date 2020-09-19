@@ -196,7 +196,7 @@ public class ConnectorStatusWidgetController implements Initializable {
                 // Only init
                 TransportConnectorInitDialog.openWizard(connector, initImg, false);
             } else {
-                TransportConnectorInitDialog.openWizardNoElements(connector, initImg);
+                TransportConnectorInitDialog.openWizardNoElements(initImg);
             }
         } catch (RemoteException e) {
             LOG.log(Level.SEVERE, "Cannot initialise connector " + this.name + " due to remote exception: " + e.getMessage(), e);

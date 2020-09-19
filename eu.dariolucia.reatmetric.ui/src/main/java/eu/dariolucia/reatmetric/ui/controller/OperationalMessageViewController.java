@@ -32,6 +32,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.paint.Color;
 
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.List;
 import java.util.ResourceBundle;
@@ -97,22 +98,38 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
 
     @Override
     protected void doServiceSubscribe(OperationalMessageFilter selectedFilter) throws ReatmetricException {
-        ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().subscribe(this, selectedFilter);
+        try {
+            ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().subscribe(this, selectedFilter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     @Override
     protected void doServiceUnsubscribe() throws ReatmetricException {
-        ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().unsubscribe(this);
+        try {
+            ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().unsubscribe(this);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     @Override
     protected List<OperationalMessage> doRetrieve(OperationalMessage om, int n, RetrievalDirection direction, OperationalMessageFilter filter) throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().retrieve(om, n, direction, filter);
+        try {
+            return ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().retrieve(om, n, direction, filter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     @Override
     protected List<OperationalMessage> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, OperationalMessageFilter filter) throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().retrieve(selectedTime, n, direction, filter);
+        try {
+            return ReatmetricUI.selectedSystem().getSystem().getOperationalMessageMonitorService().retrieve(selectedTime, n, direction, filter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     @Override

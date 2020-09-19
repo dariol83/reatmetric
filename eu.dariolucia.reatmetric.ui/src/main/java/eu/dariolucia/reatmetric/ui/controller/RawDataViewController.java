@@ -40,6 +40,7 @@ import javafx.stage.Popup;
 
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -110,7 +111,7 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
                         this.dataInspectionPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
                         this.dataInspectionPopup.show(this.displayTitledPane.getScene().getWindow());
                     });
-                } catch(ReatmetricException e) {
+                } catch(ReatmetricException | RemoteException e) {
                     ReatmetricUI.setStatusLabel("Retrieve of raw data contents failed: " + selectedRawData.getName());
                 }
             });
@@ -175,22 +176,38 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
 
     @Override
     protected void doServiceSubscribe(RawDataFilter selectedFilter) throws ReatmetricException {
-        ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().subscribe(this, selectedFilter);
+        try {
+            ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().subscribe(this, selectedFilter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     @Override
     protected void doServiceUnsubscribe() throws ReatmetricException {
-        ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().unsubscribe(this);
+        try {
+            ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().unsubscribe(this);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     @Override
     protected List<RawData> doRetrieve(RawData om, int n, RetrievalDirection direction, RawDataFilter filter) throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().retrieve(om, n, direction, filter);
+        try {
+            return ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().retrieve(om, n, direction, filter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     @Override
     protected List<RawData> doRetrieve(Instant selectedTime, int n, RetrievalDirection direction, RawDataFilter filter) throws ReatmetricException {
-        return ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().retrieve(selectedTime, n, direction, filter);
+        try {
+            return ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().retrieve(selectedTime, n, direction, filter);
+        } catch (RemoteException e) {
+            throw new ReatmetricException(e);
+        }
     }
 
     @Override

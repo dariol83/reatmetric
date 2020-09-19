@@ -92,6 +92,7 @@
         <module>eu.dariolucia.reatmetric.driver.test</module>
         <module>eu.dariolucia.reatmetric.ui</module>
         <module>eu.dariolucia.reatmetric.ui.test</module>
+        <module>eu.dariolucia.reatmetric.ui.spacecraft</module>
     </modules>
 
     <build>
