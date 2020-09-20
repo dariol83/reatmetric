@@ -27,9 +27,8 @@ public interface ITransportSubscriber extends Remote {
     /**
      * Method called when the internal status of the transport connector changed.
      *
-     * @param connector the source of the status update
      * @param status the new status
      */
-    void status(ITransportConnector connector, TransportStatus status) throws RemoteException;
+    void status(TransportStatus status) throws RemoteException;
 
 }

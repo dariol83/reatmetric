@@ -61,7 +61,7 @@ public class SystemModelProvisionServiceProxy implements ISystemModelProvisionSe
         try {
             UnicastRemoteObject.unexportObject(activeObject, true);
         } catch (NoSuchObjectException e) {
-            e.printStackTrace();
+            // Ignore
         }
     }
 
@@ -126,8 +126,9 @@ public class SystemModelProvisionServiceProxy implements ISystemModelProvisionSe
             try {
                 UnicastRemoteObject.unexportObject(r, true);
             } catch (NoSuchObjectException e) {
-                e.printStackTrace();
+                // Ignore
             }
         }
+        subscriber2remote.clear();
     }
 }

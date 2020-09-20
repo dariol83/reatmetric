@@ -190,13 +190,17 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
 
     @Override
     public void register(ITransportSubscriber listener) {
-        LOG.fine("New subscriber received: " + listener);
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.fine("New subscriber received: " + listener);
+        }
         this.subscribers.add(listener);
     }
 
     @Override
     public void deregister(ITransportSubscriber listener) {
-        LOG.fine("Subscriber to remove: " + listener);
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Subscriber to remove: " + listener);
+        }
         this.subscribers.remove(listener);
     }
 
@@ -212,11 +216,17 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
     protected abstract void doDispose();
 
     private void notifySubscribers() {
+        TransportStatus status = new TransportStatus(name, connectionStatus, lastTxRate, lastRxRate, lastAlarmState);
         this.subscribers.forEach((s) -> {
             try {
-                s.status(this, new TransportStatus(name, connectionStatus, lastTxRate, lastRxRate, lastAlarmState));
+                if(LOG.isLoggable(Level.FINER)) {
+                    LOG.finer("Sending update to subscriber " + s + ": " + status);
+                }
+                s.status(status);
             } catch(Exception e) {
                 LOG.log(Level.WARNING, getName() + ": cannot notify subscriber " + s + ": " + e.getMessage(), e);
+                // Protect the class, unregister
+                deregister(s);
             }
         });
     }

@@ -153,7 +153,11 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
         }
         // Initialise scheduler now
         if(scheduler != null) {
-            scheduler.initialise(configuration.isSchedulerEnabled());
+            try {
+                scheduler.initialise(configuration.isSchedulerEnabled());
+            } catch (RemoteException e) {
+                // Ignore for this method
+            }
         }
         // Derive system status
         deriveSystemStatus();
@@ -198,7 +202,11 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
             d.dispose();
         }
         if(scheduler != null) {
-            scheduler.dispose();
+            try {
+                scheduler.dispose();
+            } catch (RemoteException e) {
+                // Ignore for this method
+            }
             scheduler = null;
         }
         if(processingModelManager != null) {

@@ -34,15 +34,14 @@ import eu.dariolucia.reatmetric.api.scheduler.IScheduledActivityDataProvisionSer
 import eu.dariolucia.reatmetric.api.scheduler.IScheduler;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 
-import java.rmi.AlreadyBoundException;
-import java.rmi.NoSuchObjectException;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
+import java.rmi.*;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -56,6 +55,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     private final IReatmetricSystem system;
     private final int port;
     private final String name;
+
+    private final Map<Object, Remote> exportedObjects = new ConcurrentHashMap<>();
 
     private Registry registry;
     private IReatmetricSystem activatedObject;
@@ -91,12 +92,15 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
         if (activatedObject != null) {
             throw new IllegalStateException("Object already activated");
         }
-        LOG.info("Activating ReatMetric Remoting on port " + this.port + " with name " + this.name);
+
         if (this.registry == null) {
             if (this.port == 0) {
                 throw new IllegalStateException("Port not specified, cannot create registry");
             }
+            LOG.info("Activating ReatMetric Remoting on port " + this.port + " with name " + this.name);
             this.registry = LocateRegistry.createRegistry(this.port);
+        } else {
+            LOG.info("Activating ReatMetric Remoting on registry " + registry + " with name " + this.name);
         }
         this.activatedObject = (IReatmetricSystem) UnicastRemoteObject.exportObject(this, 0);
         this.registry.bind(this.name, this.activatedObject);
@@ -232,14 +236,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
             }
         }
         remoteTransportConnectorList = null;
-    }
 
-    public IReatmetricSystem getSystem() {
-        return system;
-    }
-
-    public int getPort() {
-        return port;
+        exportedObjects.clear();
     }
 
     public String getName() {
@@ -265,10 +263,19 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
         throw new ReatmetricException("Not allowed to be called from remote");
     }
 
+    protected <T extends Remote> Remote exportObject(T instance) throws RemoteException {
+        Remote remote = exportedObjects.get(instance);
+        if(remote == null) {
+            remote = UnicastRemoteObject.exportObject(instance, 0);
+            exportedObjects.put(instance, remote);
+        }
+        return remote;
+    }
+
     @Override
     public synchronized IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException, RemoteException {
         if (remoteOperationalMessageProvisionService == null) {
-            remoteOperationalMessageProvisionService = (IOperationalMessageProvisionService) UnicastRemoteObject.exportObject(system.getOperationalMessageMonitorService(), 0);
+            remoteOperationalMessageProvisionService = (IOperationalMessageProvisionService) exportObject(system.getOperationalMessageMonitorService());
         }
         return remoteOperationalMessageProvisionService;
     }
@@ -276,7 +283,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public synchronized IAcknowledgedMessageProvisionService getAcknowledgedMessageMonitorService() throws ReatmetricException, RemoteException {
         if (remoteAcknowledgedMessageProvisionService == null) {
-            remoteAcknowledgedMessageProvisionService = (IAcknowledgedMessageProvisionService) UnicastRemoteObject.exportObject(system.getAcknowledgedMessageMonitorService(), 0);
+            remoteAcknowledgedMessageProvisionService = (IAcknowledgedMessageProvisionService) exportObject(system.getAcknowledgedMessageMonitorService());
         }
         return remoteAcknowledgedMessageProvisionService;
     }
@@ -284,7 +291,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public synchronized IAcknowledgementService getAcknowledgementService() throws ReatmetricException, RemoteException {
         if (remoteAcknowledgementService == null) {
-            remoteAcknowledgementService = (IAcknowledgementService) UnicastRemoteObject.exportObject(system.getAcknowledgementService(), 0);
+            remoteAcknowledgementService = (IAcknowledgementService) exportObject(system.getAcknowledgementService());
         }
         return remoteAcknowledgementService;
     }
@@ -292,7 +299,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public synchronized IRawDataProvisionService getRawDataMonitorService() throws ReatmetricException, RemoteException {
         if (remoteRawDataProvisionService == null) {
-            remoteRawDataProvisionService = (IRawDataProvisionService) UnicastRemoteObject.exportObject(system.getRawDataMonitorService(), 0);
+            remoteRawDataProvisionService = (IRawDataProvisionService) exportObject(system.getRawDataMonitorService());
         }
         return remoteRawDataProvisionService;
     }
@@ -300,7 +307,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public synchronized IParameterDataProvisionService getParameterDataMonitorService() throws ReatmetricException, RemoteException {
         if (remoteParameterDataProvisionService == null) {
-            remoteParameterDataProvisionService = (IParameterDataProvisionService) UnicastRemoteObject.exportObject(system.getParameterDataMonitorService(), 0);
+            remoteParameterDataProvisionService = (IParameterDataProvisionService) exportObject(system.getParameterDataMonitorService());
         }
         return remoteParameterDataProvisionService;
     }
@@ -308,7 +315,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public synchronized ISystemModelProvisionService getSystemModelMonitorService() throws ReatmetricException, RemoteException {
         if (remoteSystemModelProvisionService == null) {
-            remoteSystemModelProvisionService = (ISystemModelProvisionService) UnicastRemoteObject.exportObject(system.getSystemModelMonitorService(), 0);
+            remoteSystemModelProvisionService = (ISystemModelProvisionService) exportObject(system.getSystemModelMonitorService());
         }
         return remoteSystemModelProvisionService;
     }
@@ -316,7 +323,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public synchronized IEventDataProvisionService getEventDataMonitorService() throws ReatmetricException, RemoteException {
         if (remoteEventDataProvisionService == null) {
-            remoteEventDataProvisionService = (IEventDataProvisionService) UnicastRemoteObject.exportObject(system.getEventDataMonitorService(), 0);
+            remoteEventDataProvisionService = (IEventDataProvisionService) exportObject(system.getEventDataMonitorService());
         }
         return remoteEventDataProvisionService;
     }
@@ -324,7 +331,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public synchronized IAlarmParameterDataProvisionService getAlarmParameterDataMonitorService() throws ReatmetricException, RemoteException {
         if (remoteAlarmParameterDataProvisionService == null) {
-            remoteAlarmParameterDataProvisionService = (IAlarmParameterDataProvisionService) UnicastRemoteObject.exportObject(system.getAlarmParameterDataMonitorService(), 0);
+            remoteAlarmParameterDataProvisionService = (IAlarmParameterDataProvisionService) exportObject(system.getAlarmParameterDataMonitorService());
         }
         return remoteAlarmParameterDataProvisionService;
     }
@@ -332,7 +339,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public synchronized IActivityOccurrenceDataProvisionService getActivityOccurrenceDataMonitorService() throws ReatmetricException, RemoteException {
         if (remoteActivityOccurrenceDataProvisionService == null) {
-            remoteActivityOccurrenceDataProvisionService = (IActivityOccurrenceDataProvisionService) UnicastRemoteObject.exportObject(system.getActivityOccurrenceDataMonitorService(), 0);
+            remoteActivityOccurrenceDataProvisionService = (IActivityOccurrenceDataProvisionService) exportObject(system.getActivityOccurrenceDataMonitorService());
         }
         return remoteActivityOccurrenceDataProvisionService;
     }
@@ -340,7 +347,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public synchronized IActivityExecutionService getActivityExecutionService() throws ReatmetricException, RemoteException {
         if (remoteActivityExecutionService == null) {
-            remoteActivityExecutionService = (IActivityExecutionService) UnicastRemoteObject.exportObject(system.getActivityExecutionService(), 0);
+            remoteActivityExecutionService = (IActivityExecutionService) exportObject(system.getActivityExecutionService());
         }
         return remoteActivityExecutionService;
     }
@@ -348,9 +355,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public synchronized IScheduler getScheduler() throws ReatmetricException, RemoteException {
         if (remoteScheduler == null) {
-            remoteScheduler = (IScheduler) UnicastRemoteObject.exportObject(system.getScheduler(), 0);
-            // The same object can be used as IScheduledActivityDataProvisionService
-            remoteScheduledActivityDataProvisionService = remoteScheduler;
+            remoteScheduler = (IScheduler) exportObject(system.getScheduler());
         }
         return remoteScheduler;
     }
@@ -358,11 +363,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public synchronized IScheduledActivityDataProvisionService getScheduledActivityDataMonitorService() throws ReatmetricException, RemoteException {
         if (remoteScheduledActivityDataProvisionService == null) {
-            remoteScheduledActivityDataProvisionService = (IScheduledActivityDataProvisionService) UnicastRemoteObject.exportObject(system.getScheduledActivityDataMonitorService(), 0);
-            // Check if the same object can be used as IScheduler
-            if (remoteScheduledActivityDataProvisionService instanceof IScheduler) {
-                remoteScheduler = (IScheduler) remoteScheduledActivityDataProvisionService;
-            }
+            remoteScheduledActivityDataProvisionService = (IScheduledActivityDataProvisionService) exportObject(system.getScheduledActivityDataMonitorService());
         }
         return remoteScheduledActivityDataProvisionService;
     }
@@ -372,7 +373,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
         if (remoteTransportConnectorList == null) {
             remoteTransportConnectorList = new ArrayList<>();
             for (ITransportConnector tc : system.getTransportConnectors()) {
-                ITransportConnector remoted = (ITransportConnector) UnicastRemoteObject.exportObject(tc, 0);
+                ITransportConnector remoted = (ITransportConnector) exportObject(tc);
                 remoteTransportConnectorList.add(remoted);
             }
         }

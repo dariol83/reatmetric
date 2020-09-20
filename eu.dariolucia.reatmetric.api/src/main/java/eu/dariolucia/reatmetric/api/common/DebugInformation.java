@@ -16,10 +16,12 @@
 
 package eu.dariolucia.reatmetric.api.common;
 
+import java.io.Serializable;
+
 /**
  * This class provides debug information of a specific aspect of the component/driver/system.
  */
-public final class DebugInformation {
+public final class DebugInformation implements Serializable {
 
     public static DebugInformation of(String element, String name, Object measure, Object maximum, String unit) {
         return new DebugInformation(element, name, measure, maximum, unit);

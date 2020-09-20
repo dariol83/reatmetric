@@ -20,6 +20,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
+import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
@@ -29,8 +30,12 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class TransportConnectorProxy implements ITransportConnector {
+
+    private static final Logger LOG = Logger.getLogger(TransportConnectorProxy.class.getName());
 
     private final ITransportConnector delegate;
 
@@ -117,6 +122,9 @@ public class TransportConnectorProxy implements ITransportConnector {
 
     @Override
     public void register(ITransportSubscriber subscriber) throws RemoteException {
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Registering subscriber " + subscriber + " to connector " + getName());
+        }
         Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
             activeObject = UnicastRemoteObject.exportObject(subscriber, 0);
@@ -127,6 +135,9 @@ public class TransportConnectorProxy implements ITransportConnector {
 
     @Override
     public void deregister(ITransportSubscriber subscriber) throws RemoteException {
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Deregistering subscriber " + subscriber + " to connector " + getName());
+        }
         Remote activeObject = subscriber2remote.remove(subscriber);
         if(activeObject == null) {
             return;
@@ -150,8 +161,9 @@ public class TransportConnectorProxy implements ITransportConnector {
             try {
                 UnicastRemoteObject.unexportObject(r, true);
             } catch (NoSuchObjectException e) {
-                e.printStackTrace();
+                // Ignore
             }
         }
+        subscriber2remote.clear();
     }
 }

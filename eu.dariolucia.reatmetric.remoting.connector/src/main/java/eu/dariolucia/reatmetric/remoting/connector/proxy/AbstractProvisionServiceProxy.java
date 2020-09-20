@@ -27,8 +27,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public abstract class AbstractProvisionServiceProxy<T extends AbstractDataItem, K extends AbstractDataItemFilter<T>, U extends IDataItemSubscriber<T>, V extends IDataItemProvisionService<U, K, T>> implements IDataItemProvisionService<U, K, T> {
+
+    private static final Logger LOG = Logger.getLogger(AbstractProvisionServiceProxy.class.getName());
 
     protected final V delegate;
 
@@ -40,9 +44,15 @@ public abstract class AbstractProvisionServiceProxy<T extends AbstractDataItem, 
 
     @Override
     public void subscribe(U subscriber, K filter) throws RemoteException {
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Registering subscriber " + subscriber + " to proxy " + getClass().getSimpleName());
+        }
         Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
             activeObject = UnicastRemoteObject.exportObject(subscriber, 0);
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.fine("Subscriber active object " + activeObject + " for " + subscriber + " to proxy " + getClass().getSimpleName() + " activated");
+            }
             subscriber2remote.put(subscriber, activeObject);
         }
         delegate.subscribe((U) activeObject, filter);
@@ -50,15 +60,21 @@ public abstract class AbstractProvisionServiceProxy<T extends AbstractDataItem, 
 
     @Override
     public void unsubscribe(U subscriber) throws RemoteException {
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Unregistering subscriber " + subscriber + " from proxy " + getClass().getSimpleName());
+        }
         Remote activeObject = subscriber2remote.remove(subscriber);
         if(activeObject == null) {
             return;
         }
         delegate.unsubscribe((U) activeObject);
         try {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.fine("Deactivating subscriber active object " + activeObject + " for " + subscriber + " in proxy " + getClass().getSimpleName());
+            }
             UnicastRemoteObject.unexportObject(activeObject, true);
         } catch (NoSuchObjectException e) {
-            e.printStackTrace();
+            // Ignore
         }
     }
 
@@ -74,17 +90,24 @@ public abstract class AbstractProvisionServiceProxy<T extends AbstractDataItem, 
 
     public void terminate() {
         // Unsubscribe all remotes
-        for(Remote r : subscriber2remote.values()) {
-            try {
-                delegate.unsubscribe((U) r);
-            } catch (RemoteException e) {
-                e.printStackTrace();
+        for(Map.Entry<U, Remote> entry : subscriber2remote.entrySet()) {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.fine("Terminating subscriber " + entry.getKey() + " from proxy " + getClass().getSimpleName());
             }
             try {
-                UnicastRemoteObject.unexportObject(r, true);
+                delegate.unsubscribe((U) entry.getValue());
+            } catch (RemoteException e) {
+                LOG.log(Level.WARNING, "Cannot unsubscribe " + entry.getKey() + " in proxy " + getClass().getSimpleName(), e);
+            }
+            try {
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.fine("Terminating subscriber active object " + entry.getValue() + " for " + entry.getKey() + " in proxy " + getClass().getSimpleName());
+                }
+                UnicastRemoteObject.unexportObject(entry.getValue(), true);
             } catch (NoSuchObjectException e) {
-                e.printStackTrace();
+                // Ignore
             }
         }
+        subscriber2remote.clear();
     }
 }

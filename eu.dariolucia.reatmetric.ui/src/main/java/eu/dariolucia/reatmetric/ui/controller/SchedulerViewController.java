@@ -71,7 +71,7 @@ import java.util.stream.Collectors;
  *
  * @author dario
  */
-public class SchedulerViewController extends AbstractDisplayController implements IScheduledActivityDataSubscriber, ISchedulerSubscriber {
+public class SchedulerViewController extends AbstractDisplayController implements IScheduledActivityDataSubscriber {
 
     private static final Logger LOG = Logger.getLogger(SchedulerViewController.class.getName());
 
@@ -197,6 +197,13 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     private Timer timer = new Timer("Reatmetric UI - Scheduler time tracker");
     private volatile TimerTask secondTicker;
+
+    private final ISchedulerSubscriber scheduleSubscriber = new ISchedulerSubscriber() {
+        @Override
+        public void schedulerEnablementChanged(boolean enabled) {
+            internalSchedulerEnablementChanged(enabled);
+        }
+    };
 
     @Override
     protected Window retrieveWindow() {
@@ -788,7 +795,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     protected void doServiceSubscribe(ScheduledActivityDataFilter selectedFilter) throws ReatmetricException {
         try {
             ReatmetricUI.selectedSystem().getSystem().getScheduler().subscribe(this, selectedFilter);
-            ReatmetricUI.selectedSystem().getSystem().getScheduler().subscribe(this);
+            ReatmetricUI.selectedSystem().getSystem().getScheduler().subscribe(scheduleSubscriber);
         } catch (RemoteException e) {
             throw new ReatmetricException(e);
         }
@@ -797,7 +804,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     protected void doServiceUnsubscribe() throws ReatmetricException {
         try {
             ReatmetricUI.selectedSystem().getSystem().getScheduler().unsubscribe((IScheduledActivityDataSubscriber) this);
-            ReatmetricUI.selectedSystem().getSystem().getScheduler().unsubscribe((ISchedulerSubscriber) this);
+            ReatmetricUI.selectedSystem().getSystem().getScheduler().unsubscribe(scheduleSubscriber);
         } catch (RemoteException e) {
             throw new ReatmetricException(e);
         }
@@ -1029,8 +1036,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         Platform.runLater(() -> delegator.delegate(dataItems));
     }
 
-    @Override
-    public void schedulerEnablementChanged(boolean enabled) {
+    public void internalSchedulerEnablementChanged(boolean enabled) {
         Platform.runLater(() -> {
             enableTgl.setSelected(enabled);
             enableTgl.setText(enabled ? "Disable" : "Enable");

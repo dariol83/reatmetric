@@ -526,6 +526,12 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     @Override
+    public void dispose() {
+        stopSubscription();
+        super.dispose();
+    }
+
+    @Override
     protected Window retrieveWindow() {
         return displayTitledPane.getScene().getWindow();
     }

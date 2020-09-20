@@ -16,12 +16,14 @@
 
 package eu.dariolucia.reatmetric.api.activity;
 
+import java.io.Serializable;
+
 /**
  * The descriptor of an activity argument.
  *
  * Objects of this class are immutable.
  */
-public class AbstractActivityArgumentDescriptor {
+public class AbstractActivityArgumentDescriptor implements Serializable {
 
     private final String name;
     private final String description;

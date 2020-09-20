@@ -58,7 +58,8 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
     @FXML
     private ScrollPane scrollpane;
 
-    private final Map<ITransportConnector, ConnectorStatusWidgetController> connector2controller = new ConcurrentHashMap<>();
+    private final Map<String, ConnectorStatusWidgetController> connector2controller = new ConcurrentHashMap<>();
+    private final Map<String, ITransportConnector> name2connector = new ConcurrentHashMap<>();
 
     @Override
     protected Window retrieveWindow() {
@@ -110,9 +111,10 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
 
     private void clearConnectorsModel() throws RemoteException {
         // First lock
-        for(ITransportConnector connector : this.connector2controller.keySet()) {
-            connector.deregister(this);
+        for(Map.Entry<String, ITransportConnector> entry : this.name2connector.entrySet()) {
+            entry.getValue().deregister(this);
         }
+        this.name2connector.clear();
         this.connector2controller.clear();
         this.vbox.getChildren().removeAll(this.vbox.getChildren());
         this.vbox.getChildren().clear();
@@ -125,9 +127,10 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
             for(ITransportConnector tc : connectors) {
                 ConnectorStatusWidgetController controller = buildConnectorController();
                 if(controller != null) {
-                    connector2controller.put(tc, controller);
-                    controller.setConnector(tc);
                     try {
+                        connector2controller.put(tc.getName(), controller);
+                        name2connector.put(tc.getName(), tc);
+                        controller.setConnector(tc);
                         tc.register(this);
                     } catch (RemoteException e) {
                         LOG.log(Level.SEVERE, "Remote exception when registering to connector", e);
@@ -153,9 +156,9 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
     }
 
     @Override
-    public void status(ITransportConnector connector, TransportStatus status) {
+    public void status(TransportStatus status) {
         Platform.runLater(() -> {
-            ConnectorStatusWidgetController controller = connector2controller.get(connector);
+            ConnectorStatusWidgetController controller = connector2controller.get(status.getName());
             if(controller != null) {
                 controller.updateStatus(status);
             }

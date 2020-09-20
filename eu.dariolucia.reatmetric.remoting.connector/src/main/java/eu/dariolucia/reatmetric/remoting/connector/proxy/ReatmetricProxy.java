@@ -78,6 +78,8 @@ public class ReatmetricProxy implements IReatmetricSystem {
         } catch (NotBoundException e) {
             throw new ReatmetricException(e);
         }
+        SystemStatus status = this.delegate.getStatus();
+        statusUpdateSubscriber.accept(status);
     }
 
     @Override
