@@ -113,15 +113,15 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
         LOG.info("Deactivating ReatMetric Remoting on port " + this.port + " with name " + this.name);
         try {
             this.registry.unbind(this.name);
-            UnicastRemoteObject.unexportObject(this.activatedObject, true);
+            UnicastRemoteObject.unexportObject(this, true);
         } finally {
             this.activatedObject = null;
         }
         // Deactivate remoted objects
         if (remoteOperationalMessageProvisionService != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteOperationalMessageProvisionService, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getOperationalMessageMonitorService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
@@ -129,8 +129,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
         if (remoteAcknowledgedMessageProvisionService != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteAcknowledgedMessageProvisionService, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getAcknowledgedMessageMonitorService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
@@ -138,8 +138,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
         if (remoteAcknowledgementService != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteAcknowledgementService, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getAcknowledgementService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
@@ -147,8 +147,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
         if (remoteRawDataProvisionService != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteRawDataProvisionService, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getRawDataMonitorService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
@@ -156,8 +156,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
         if (remoteParameterDataProvisionService != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteParameterDataProvisionService, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getParameterDataMonitorService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
@@ -165,8 +165,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
         if (remoteSystemModelProvisionService != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteSystemModelProvisionService, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getSystemModelMonitorService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
@@ -174,8 +174,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
         if (remoteEventDataProvisionService != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteEventDataProvisionService, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getEventDataMonitorService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
@@ -183,8 +183,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
         if (remoteAlarmParameterDataProvisionService != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteAlarmParameterDataProvisionService, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getAlarmParameterDataMonitorService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
@@ -192,8 +192,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
         if (remoteActivityOccurrenceDataProvisionService != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteActivityOccurrenceDataProvisionService, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getActivityOccurrenceDataMonitorService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
@@ -201,8 +201,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
         if (remoteActivityExecutionService != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteActivityExecutionService, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getActivityExecutionService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
@@ -210,8 +210,8 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
         if (remoteScheduler != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteScheduler, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getScheduler(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
@@ -219,20 +219,24 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
         if (remoteScheduledActivityDataProvisionService != null) {
             try {
-                UnicastRemoteObject.unexportObject(remoteScheduledActivityDataProvisionService, true);
-            } catch (NoSuchObjectException e) {
+                UnicastRemoteObject.unexportObject(system.getScheduledActivityDataMonitorService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
                 // Ignore
             }
         }
         remoteScheduledActivityDataProvisionService = null;
 
         if (remoteTransportConnectorList != null) {
-            for (ITransportConnector tc : remoteTransportConnectorList) {
-                try {
-                    UnicastRemoteObject.unexportObject(tc, true);
-                } catch (NoSuchObjectException e) {
-                    // Ignore
+            try {
+                for (ITransportConnector tc : system.getTransportConnectors()) {
+                    try {
+                        UnicastRemoteObject.unexportObject(tc, true);
+                    } catch (NoSuchObjectException e) {
+                        // Ignore
+                    }
                 }
+            } catch (ReatmetricException e) {
+                // Ignore
             }
         }
         remoteTransportConnectorList = null;
@@ -265,7 +269,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
     protected <T extends Remote> Remote exportObject(T instance) throws RemoteException {
         Remote remote = exportedObjects.get(instance);
-        if(remote == null) {
+        if (remote == null) {
             remote = UnicastRemoteObject.exportObject(instance, 0);
             exportedObjects.put(instance, remote);
         }
@@ -383,5 +387,9 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     @Override
     public List<DebugInformation> currentDebugInfo() throws ReatmetricException, RemoteException {
         return system.currentDebugInfo();
+    }
+
+    public IReatmetricSystem getSystem() {
+        return system;
     }
 }

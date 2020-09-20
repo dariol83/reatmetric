@@ -86,10 +86,15 @@ public class ReatmetricRemotingServer {
 
     public static void shutdown() {
         LOG.log(Level.INFO, "Shutting down remote systems");
-        for (ReatmetricSystemRemoting REMOTED_SYSTEM : REMOTED_SYSTEMS) {
+        for (ReatmetricSystemRemoting remotedSystem : REMOTED_SYSTEMS) {
             try {
-                REMOTED_SYSTEM.deactivate();
+                remotedSystem.deactivate();
             } catch (RemoteException | NotBoundException e) {
+                e.printStackTrace();
+            }
+            try {
+                remotedSystem.getSystem().dispose();
+            } catch (ReatmetricException | RemoteException e) {
                 e.printStackTrace();
             }
         }
