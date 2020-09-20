@@ -56,6 +56,8 @@ import java.util.function.Consumer;
 /**
  * FXML Controller class
  *
+ * TODO: implement breadcrumb for mimics drill down
+ *
  * @author dario
  */
 public class MimicsDisplayTabWidgetController extends AbstractDisplayController implements IParameterDataSubscriber {

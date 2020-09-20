@@ -69,193 +69,217 @@
             </Button>
          </children>
       </HBox>
-        <SplitPane fx:id="mainSplitter" dividerPositions="0.2" prefHeight="160.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+      <HBox VBox.vgrow="ALWAYS">
+       <children>
+           <VBox fx:id="buttonBox" prefWidth="64.0" maxWidth="64.0" VBox.vgrow="ALWAYS" HBox.hgrow="NEVER">
+               <children>
+                   <Button mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" maxWidth="64.0" onAction="#viewAction" disable="true">
+                       <style>
+                           -fx-alignment: BASELINE_LEFT;
+                           -fx-font-size: 14pt;
+                           -fx-font-weight: bold;
+                       </style>
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/ghost-org-square.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Monitoring AND" />
+                       </tooltip>
+                       <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ParameterDisplayView.fxml"
+                                   viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/ghost-org-square.svg.png"
+                                   viewName="Monitoring AND"/>
+                   </Button>
+                   <Button mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" maxWidth="64.0" onAction="#viewAction" disable="true">
+                       <style>
+                           -fx-alignment: BASELINE_LEFT;
+                           -fx-font-size: 14pt;
+                           -fx-font-weight: bold;
+                       </style>
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/ordered-list.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Parameter View" />
+                       </tooltip>
+                       <properties
+                               viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ParameterDataLogView.fxml"
+                               viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/ordered-list.svg.png"
+                               viewName="Parameter View"/>
+                   </Button>
+                   <Button mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" maxWidth="64.0" onAction="#viewAction" disable="true">
+                       <style>
+                           -fx-alignment: BASELINE_LEFT;
+                           -fx-font-size: 14pt;
+                           -fx-font-weight: bold;
+                       </style>
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/thunder.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Event View" />
+                       </tooltip>
+                       <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/EventDataView.fxml"
+                                   viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/thunder.svg.png"
+                                   viewName="Event View"/>
+                   </Button>
+                   <Button mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" maxWidth="64.0" onAction="#viewAction" disable="true">
+                       <style>
+                           -fx-alignment: BASELINE_LEFT;
+                           -fx-font-size: 14pt;
+                           -fx-font-weight: bold;
+                       </style>
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/cogs.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Activity Verification View" />
+                       </tooltip>
+                       <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ActivityDataView.fxml"
+                                   viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/cogs.svg.png"
+                                   viewName="Activity Verification View"/>
+                   </Button>
+                   <Button mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" maxWidth="64.0" onAction="#viewAction" disable="true">
+                       <style>
+                           -fx-alignment: BASELINE_LEFT;
+                           -fx-font-size: 14pt;
+                           -fx-font-weight: bold;
+                       </style>
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/alert.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Alarm View" />
+                       </tooltip>
+                       <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/AlarmParameterDataView.fxml"
+                                   viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/alert.svg.png"
+                                   viewName="Alarm View"/>
+                   </Button>
+                   <Button mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" maxWidth="64.0" onAction="#viewAction" disable="true">
+                       <style>
+                           -fx-alignment: BASELINE_LEFT;
+                           -fx-font-size: 14pt;
+                           -fx-font-weight: bold;
+                       </style>
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/search-folder.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Raw Data Inspector" />
+                       </tooltip>
+                       <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/RawDataView.fxml"
+                                   viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/search-folder.svg.png"
+                                   viewName="Raw Data Inspector"/>
+                   </Button>
+                   <Button mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" maxWidth="64.0" onAction="#viewAction" disable="true">
+                       <style>
+                           -fx-alignment: BASELINE_LEFT;
+                           -fx-font-size: 14pt;
+                           -fx-font-weight: bold;
+                       </style>
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/signal.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Charts" />
+                       </tooltip>
+                       <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/UserDisplayView.fxml"
+                                   viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/signal.svg.png"
+                                   viewName="Charts"/>
+                   </Button>
+                   <Button mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" maxWidth="64.0" onAction="#viewAction" disable="true">
+                       <style>
+                           -fx-alignment: BASELINE_LEFT;
+                           -fx-font-size: 14pt;
+                           -fx-font-weight: bold;
+                       </style>
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/sitemap.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Mimics" />
+                       </tooltip>
+                       <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/MimicsDisplayView.fxml"
+                                   viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/sitemap.svg.png"
+                                   viewName="Mimics"/>
+                   </Button>
+                   <Button mnemonicParsing="false" prefHeight="64.0" maxWidth="64.0" onAction="#viewAction" disable="true">
+                       <style>
+                           -fx-alignment: BASELINE_LEFT;
+                           -fx-font-size: 14pt;
+                           -fx-font-weight: bold;
+                       </style>
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/messages.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Operational Messages" />
+                       </tooltip>
+                       <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/OperationalMessageView.fxml"
+                                   viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/messages.svg.png"
+                                   viewName="Operational Messages"/>
+                   </Button>
+                   <Button mnemonicParsing="false" prefHeight="64.0" maxWidth="64.0" onAction="#viewAction" disable="true">
+                       <style>
+                           -fx-alignment: BASELINE_LEFT;
+                           -fx-font-size: 14pt;
+                           -fx-font-weight: bold;
+                       </style>
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true">
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/chronometer.svg.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Scheduler" />
+                       </tooltip>
+                       <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/SchedulerView.fxml"
+                                   viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/chronometer.svg.png"
+                                   viewName="Scheduler"/>
+                   </Button>
+               </children>
+           </VBox>
+           <SplitPane fx:id="mainSplitter" dividerPositions="0.2" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
           <items>
             <Accordion fx:id="sideAccordion" minWidth="0.0">
               <panes>
-                <TitledPane animated="false" minWidth="0.0" text="Views">
-                     <content>
-                        <ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="200.0" prefWidth="200.0">
-                           <content>
-                              <VBox fx:id="buttonBox" prefHeight="200.0" prefWidth="100.0">
-                                 <children>
-                                     <Button text="Monitoring AND" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
-                                         <style>
-                                             -fx-alignment: BASELINE_LEFT;
-                                             -fx-font-size: 14pt;
-                                             -fx-font-weight: bold;
-                                         </style>
-                                         <graphic>
-                                             <ImageView pickOnBounds="true" preserveRatio="true">
-                                                 <image>
-                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/ghost-org-square.svg.png" />
-                                                 </image>
-                                             </ImageView>
-                                         </graphic>
-                                        <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ParameterDisplayView.fxml"
-                                                    viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/ghost-org-square.svg.png"
-                                                    viewName="Monitoring AND"/>
-                                     </Button>
-                                     <Button text="Parameter View" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
-                                         <style>
-                                             -fx-alignment: BASELINE_LEFT;
-                                             -fx-font-size: 14pt;
-                                             -fx-font-weight: bold;
-                                         </style>
-                                         <graphic>
-                                             <ImageView pickOnBounds="true" preserveRatio="true">
-                                                 <image>
-                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/ordered-list.svg.png" />
-                                                 </image>
-                                             </ImageView>
-                                         </graphic>
-                                         <properties
-                                                 viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ParameterDataLogView.fxml"
-                                                 viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/ordered-list.svg.png"
-                                                 viewName="Parameter View"/>
-                                     </Button>
-                                     <Button text="Event View" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
-                                         <style>
-                                             -fx-alignment: BASELINE_LEFT;
-                                             -fx-font-size: 14pt;
-                                             -fx-font-weight: bold;
-                                         </style>
-                                         <graphic>
-                                             <ImageView pickOnBounds="true" preserveRatio="true">
-                                                 <image>
-                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/thunder.svg.png" />
-                                                 </image>
-                                             </ImageView>
-                                         </graphic>
-                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/EventDataView.fxml"
-                                                     viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/thunder.svg.png"
-                                                     viewName="Event View"/>
-                                     </Button>
-                                     <Button text="Activity Verification View" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
-                                         <style>
-                                             -fx-alignment: BASELINE_LEFT;
-                                             -fx-font-size: 14pt;
-                                             -fx-font-weight: bold;
-                                         </style>
-                                         <graphic>
-                                             <ImageView pickOnBounds="true" preserveRatio="true">
-                                                 <image>
-                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/cogs.svg.png" />
-                                                 </image>
-                                             </ImageView>
-                                         </graphic>
-                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ActivityDataView.fxml"
-                                                     viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/cogs.svg.png"
-                                                     viewName="Activity Verification View"/>
-                                     </Button>
-                                     <Button text="Alarm View" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
-                                         <style>
-                                             -fx-alignment: BASELINE_LEFT;
-                                             -fx-font-size: 14pt;
-                                             -fx-font-weight: bold;
-                                         </style>
-                                         <graphic>
-                                             <ImageView pickOnBounds="true" preserveRatio="true">
-                                                 <image>
-                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/alert.svg.png" />
-                                                 </image>
-                                             </ImageView>
-                                         </graphic>
-                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/AlarmParameterDataView.fxml"
-                                                     viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/alert.svg.png"
-                                                     viewName="Alarm View"/>
-                                     </Button>
-                                     <Button text="Raw Data Inspector" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
-                                         <style>
-                                             -fx-alignment: BASELINE_LEFT;
-                                             -fx-font-size: 14pt;
-                                             -fx-font-weight: bold;
-                                         </style>
-                                         <graphic>
-                                             <ImageView pickOnBounds="true" preserveRatio="true">
-                                                 <image>
-                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/search-folder.svg.png" />
-                                                 </image>
-                                             </ImageView>
-                                         </graphic>
-                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/RawDataView.fxml"
-                                                     viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/search-folder.svg.png"
-                                                     viewName="Raw Data Inspector"/>
-                                     </Button>
-                                     <Button text="Charts" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
-                                         <style>
-                                             -fx-alignment: BASELINE_LEFT;
-                                             -fx-font-size: 14pt;
-                                             -fx-font-weight: bold;
-                                         </style>
-                                         <graphic>
-                                             <ImageView pickOnBounds="true" preserveRatio="true">
-                                                 <image>
-                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/signal.svg.png" />
-                                                 </image>
-                                             </ImageView>
-                                         </graphic>
-                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/UserDisplayView.fxml"
-                                                     viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/signal.svg.png"
-                                                     viewName="Charts"/>
-                                     </Button>
-                                     <Button text="Mimics" mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" onAction="#viewAction" disable="true">
-                                         <style>
-                                             -fx-alignment: BASELINE_LEFT;
-                                             -fx-font-size: 14pt;
-                                             -fx-font-weight: bold;
-                                         </style>
-                                         <graphic>
-                                             <ImageView pickOnBounds="true" preserveRatio="true">
-                                                 <image>
-                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/sitemap.svg.png" />
-                                                 </image>
-                                             </ImageView>
-                                         </graphic>
-                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/MimicsDisplayView.fxml"
-                                                     viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/sitemap.svg.png"
-                                                     viewName="Mimics"/>
-                                     </Button>
-                                     <Button text="Operational Messages" mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
-                                         <style>
-                                             -fx-alignment: BASELINE_LEFT;
-                                             -fx-font-size: 14pt;
-                                             -fx-font-weight: bold;
-                                         </style>
-                                         <graphic>
-                                             <ImageView pickOnBounds="true" preserveRatio="true">
-                                                 <image>
-                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/messages.svg.png" />
-                                                 </image>
-                                             </ImageView>
-                                         </graphic>
-                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/OperationalMessageView.fxml"
-                                                     viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/messages.svg.png"
-                                                     viewName="Operational Messages"/>
-                                     </Button>
-                                     <Button text="Scheduler" mnemonicParsing="false" prefHeight="64.0" onAction="#viewAction" disable="true">
-                                         <style>
-                                             -fx-alignment: BASELINE_LEFT;
-                                             -fx-font-size: 14pt;
-                                             -fx-font-weight: bold;
-                                         </style>
-                                         <graphic>
-                                             <ImageView pickOnBounds="true" preserveRatio="true">
-                                                 <image>
-                                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/48px/chronometer.svg.png" />
-                                                 </image>
-                                             </ImageView>
-                                         </graphic>
-                                         <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/SchedulerView.fxml"
-                                                     viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/chronometer.svg.png"
-                                                     viewName="Scheduler"/>
-                                     </Button>
-                                 </children>
-                              </VBox>
-                           </content>
-                        </ScrollPane>
-                     </content>
-                </TitledPane>
                 <TitledPane animated="false" minWidth="0.0" text="Processing Model" >
                     <fx:include source="ModelBrowserView.fxml" />
                 </TitledPane>
@@ -288,7 +312,9 @@
               </AnchorPane>
           </items>
         </SplitPane>
-      <ToolBar prefHeight="24.0">
+       </children>
+      </HBox>
+       <ToolBar prefHeight="24.0">
          <items>
             <Circle fx:id="nominalCrl" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE" onMouseClicked="#debugAction"
                 style="-fx-cursor: hand;" />
