@@ -32,6 +32,7 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
+import netscape.javascript.JSObject;
 import org.w3c.dom.Document;
 
 import java.io.File;
@@ -47,6 +48,8 @@ public class MimicsSvgViewController implements Initializable {
     private static final Image REAL_SIZE_IMG = new Image(MimicsSvgViewController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/qr-code.svg.png"));
     private static final Image MINUS_ZOOM_IMG = new Image(MimicsSvgViewController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/minus-circle.svg.png"));
     private static final Image PLUS_ZOOM_IMG = new Image(MimicsSvgViewController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/plus-circle.svg.png"));
+
+    private static final String REATMETRIC_JS_BINDING = "reatmetric";
 
     @FXML
     public ImageView realSizeImage;
@@ -71,6 +74,8 @@ public class MimicsSvgViewController implements Initializable {
     private boolean measuresInited = false;
     private double svgHeight;
     private double svgWidth;
+
+    private final JSBinding jsbinding = new JSBinding();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -157,11 +162,19 @@ public class MimicsSvgViewController implements Initializable {
         String url = svgFile.toURI().toString();
         engine.getLoadWorker().stateProperty().addListener((observable, oldState, newState) -> {
             if (newState == Worker.State.SUCCEEDED) {
+                // Prepare mimics DOM bindings
                 prepareMimics(notifier);
+                // Subscribe action hooks
+                addActionHooks(engine);
             }
         });
         engine.load(url);
         loaded = true;
+    }
+
+    private void addActionHooks(WebEngine engine) {
+        JSObject win = (JSObject) engine.executeScript("window");
+        win.setMember(REATMETRIC_JS_BINDING, jsbinding);
     }
 
     private void prepareMimics(final Consumer<Set<String>> notifier) {
@@ -199,5 +212,26 @@ public class MimicsSvgViewController implements Initializable {
         v.setFitWidth(webView.getWidth());
         v.setFitHeight(webView.getHeight());
         return v;
+    }
+
+    public class JSBinding {
+
+        public void and(String name) {
+            // Request the opening of the AND from the name
+            MainViewController.instance().openPerspective("Monitoring AND");
+        }
+
+        public void chart(String name) {
+            // Request the opening of the chart from the name
+            MainViewController.instance().openPerspective("Charts");
+        }
+
+        public void mimics(String name) {
+            // Request the opening of the mimics from the name in the same window + breadcrumb
+        }
+
+        public void exec(String path) {
+            // Request the execution of the activity identified by path
+        }
     }
 }

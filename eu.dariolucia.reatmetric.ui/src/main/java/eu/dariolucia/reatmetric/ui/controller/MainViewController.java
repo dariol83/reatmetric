@@ -69,6 +69,7 @@ import java.util.logging.Logger;
 public class MainViewController implements Initializable, IReatmetricServiceListener {
 
     private static final Logger LOG = Logger.getLogger(MainViewController.class.getName());
+
     public static final String WARNING_COLOR = "#CCAA00";
     public static final String ALARM_COLOR = "#CC0000";
     public static final String NOMINAL_COLOR = "#00FF15";
@@ -85,6 +86,12 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     private static final String SYSTEM_LABEL_CSS_STYLE_NOALARM = "-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;";
     private static final String SYSTEM_LABEL_CSS_STYLE_ALARM = "-fx-border-color: black; -fx-background-color: #c60000; -fx-text-fill: #FFFFFF;";
+
+    private static volatile MainViewController INSTANCE = null;
+
+    public static MainViewController instance() {
+        return INSTANCE;
+    }
 
     private final ReatmetricPluginInspector serviceInspector = new ReatmetricPluginInspector();
 
@@ -128,14 +135,26 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private AckMessageDialogController ackMessageController;
     private Timeline alarmFlashTimeline;
 
+    public AbstractDisplayController openPerspective(String viewName) {
+        for(Node n : buttonBox.getChildren()) {
+            if(n instanceof Button &&
+                    n.getProperties().get(VIEW_NAME) != null &&
+                    n.getProperties().get(VIEW_NAME).equals(viewName)) {
+                // Found
+                return activatePerspective(n);
+            }
+        }
+        return null;
+    }
+
     @FXML
     private void viewAction(Event event) {
         activatePerspective((Node) event.getSource());
     }
 
-    private void activatePerspective(Node viewButton) {
+    private AbstractDisplayController activatePerspective(Node viewButton) {
         if (viewButton.getProperties().get(VIEW_LOCATION) == null) {
-            return;
+            return null;
         }
         // If a tab is already created, select it
         Tab found = null;
@@ -147,16 +166,18 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         }
         if (found != null) {
             viewTabPane.getSelectionModel().select(found);
+            return ((Pair<Node, AbstractDisplayController>) found.getUserData()).getSecond();
         } else {
             try {
-                createView(viewButton);
+                return createView(viewButton);
             } catch (IOException e) {
                 LOG.log(Level.SEVERE, "Cannot load view: " + viewButton.getProperties().get(VIEW_LOCATION) + ": " + e.getMessage(), e);
+                return null;
             }
         }
     }
 
-    private void createView(Node viewButton) throws IOException {
+    private AbstractDisplayController createView(Node viewButton) throws IOException {
         String perspectiveId = viewButton.getProperties().get(VIEW_LOCATION).toString();
         URL viewUrl = getClass().getResource(perspectiveId);
         FXMLLoader loader = new FXMLLoader(viewUrl);
@@ -181,6 +202,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         // Add detachable menu entry
         registerDetachableTab(t, view, ctrl);
         viewTabPane.getSelectionModel().select(t);
+
+        return ctrl;
     }
 
     private void registerDetachableTab(Tab t, Node view, AbstractDisplayController ctrl) {
@@ -370,6 +393,9 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        // Set the instance
+        INSTANCE = this;
+
         // Set tabpane image
         viewTabPane.setStyle("-fx-background-image: url(\"/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-128px.png\"); -fx-background-repeat: no-repeat; -fx-background-position: center;");
 

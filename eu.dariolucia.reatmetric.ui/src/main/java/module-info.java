@@ -19,6 +19,7 @@ open module eu.dariolucia.reatmetric.ui {
 
     requires java.logging;
     requires java.desktop;
+    requires jdk.jsobject;
 
     requires javafx.graphics;
     requires javafx.fxml;
