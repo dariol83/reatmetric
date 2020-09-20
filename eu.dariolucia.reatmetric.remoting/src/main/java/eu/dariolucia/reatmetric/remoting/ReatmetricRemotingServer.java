@@ -22,12 +22,13 @@ import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
 import java.rmi.AlreadyBoundException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,6 +39,7 @@ import java.util.logging.Logger;
 public class ReatmetricRemotingServer {
 
     private static final Logger LOG = Logger.getLogger(ReatmetricSystemRemoting.class.getName());
+    private static final List<ReatmetricSystemRemoting> REMOTED_SYSTEMS = new CopyOnWriteArrayList<>();
 
     public static void main(String[] args) throws RemoteException {
         if(args.length != 1) {
@@ -48,13 +50,12 @@ public class ReatmetricRemotingServer {
 
         LOG.info("ReatMetric Remoting Server launched, creating registry on port " + port);
         Registry registry = LocateRegistry.createRegistry(port);
-        List<ReatmetricSystemRemoting> remotedSystems = new ArrayList<>();
 
         LOG.info("Loading systems...");
         ServiceLoader<IReatmetricRegister> loader
                 = ServiceLoader.load(IReatmetricRegister.class);
         for (IReatmetricRegister reg : loader) {
-            List<IReatmetricSystem> systems = null;
+            List<IReatmetricSystem> systems;
             try {
                 systems = reg.availableSystems();
                 for(IReatmetricSystem cp : systems) {
@@ -65,7 +66,7 @@ public class ReatmetricRemotingServer {
                         cp.initialise(ReatmetricRemotingServer::logSystemStatus);
                         ReatmetricSystemRemoting remoting = new ReatmetricSystemRemoting(registry, system, cp);
                         remoting.activate();
-                        remotedSystems.add(remoting);
+                        REMOTED_SYSTEMS.add(remoting);
                         LOG.info("System " + system + " registered");
                     } catch (ReatmetricException | AlreadyBoundException | RemoteException e) {
                         LOG.log(Level.SEVERE, "Cannot load system " + system + " from registry " + reg + ": " + e.getMessage(), e);
@@ -75,9 +76,22 @@ public class ReatmetricRemotingServer {
                 LOG.log(Level.SEVERE, "Cannot load systems from registry " + reg + ": " + e.getMessage(), e);
             }
         }
+
+        Runtime.getRuntime().addShutdownHook(new Thread(ReatmetricRemotingServer::shutdown));
     }
 
     private static void logSystemStatus(SystemStatus systemStatus) {
         LOG.info("Status: " + systemStatus);
+    }
+
+    public static void shutdown() {
+        LOG.log(Level.INFO, "Shutting down remote systems");
+        for (ReatmetricSystemRemoting REMOTED_SYSTEM : REMOTED_SYSTEMS) {
+            try {
+                REMOTED_SYSTEM.deactivate();
+            } catch (RemoteException | NotBoundException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

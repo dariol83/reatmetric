@@ -18,10 +18,12 @@ package eu.dariolucia.reatmetric.api.transport;
 
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 
+import java.io.Serializable;
+
 /**
  * This immutable class is used to deliver updates in the status of {@link ITransportConnector} objects.
  */
-public final class TransportStatus {
+public final class TransportStatus implements Serializable {
 
     private final String name;
     private final TransportConnectionStatus status;

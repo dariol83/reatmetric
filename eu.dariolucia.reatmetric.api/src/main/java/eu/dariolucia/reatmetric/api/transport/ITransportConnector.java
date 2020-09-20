@@ -63,7 +63,7 @@ public interface ITransportConnector extends Remote {
      *
      * Not supposed to be remoted.
      */
-    void prepare();
+    void prepare() throws RemoteException;
 
     /**
      * Return the initialisation status.
@@ -107,7 +107,7 @@ public interface ITransportConnector extends Remote {
      *
      * Not supposed to be remoted.
      */
-    void dispose();
+    void dispose() throws RemoteException;
 
     /**
      * Return the map of properties that this connector support, for dynamic initialisation. The map contains, as key,

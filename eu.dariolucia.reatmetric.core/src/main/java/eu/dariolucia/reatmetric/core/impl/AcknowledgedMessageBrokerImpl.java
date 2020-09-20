@@ -33,7 +33,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvisionService, IAcknowledgementService {
+public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvisionService {
 
     private static final Logger LOG = Logger.getLogger(AcknowledgedMessageBrokerImpl.class.getName());
 
@@ -45,6 +45,8 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
 
     private final Map<IUniqueId, AcknowledgedMessage> unacknowledgedMessages = new LinkedHashMap<>();
 
+    private final AcknowledgementServiceImpl acknowledgementMessageService;
+
     public AcknowledgedMessageBrokerImpl(IAcknowledgedMessageArchive archive) throws ArchiveException {
         this.archive = archive;
         this.sequencer = new AtomicLong();
@@ -54,6 +56,7 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
         } else {
             this.sequencer.set(lastStoredUniqueId.asLong());
         }
+        this.acknowledgementMessageService = new AcknowledgementServiceImpl(this);
     }
 
     public void initialise() throws ArchiveException {
@@ -155,13 +158,13 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
         return new LongUniqueId(sequencer.incrementAndGet());
     }
 
-    @Override
-    public void acknowledgeMessage(AcknowledgedMessage message, String user) throws ReatmetricException{
-        acknowledgeMessages(Collections.singletonList(message), user);
+    // Internal method for the AcknowledgementServiceImpl
+    void internalAcknowledgeMessage(AcknowledgedMessage message, String user) throws ReatmetricException{
+        internalAcknowledgeMessages(Collections.singletonList(message), user);
     }
 
-    @Override
-    public void acknowledgeMessages(Collection<AcknowledgedMessage> messages, String user) throws ReatmetricException {
+    // Internal method for the AcknowledgementServiceImpl
+    void internalAcknowledgeMessages(Collection<AcknowledgedMessage> messages, String user) throws ReatmetricException {
         List<AcknowledgedMessage> toStore = new LinkedList<>();
         synchronized (this) {
             for (AcknowledgedMessage am : messages) {
@@ -174,6 +177,10 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
         }
         // Now store and notify
         storeAndNotify(toStore);
+    }
+
+    public IAcknowledgementService getAcknowledgementService() {
+        return acknowledgementMessageService;
     }
 
     private static class AcknowledgedMessageSubscriptionManager {

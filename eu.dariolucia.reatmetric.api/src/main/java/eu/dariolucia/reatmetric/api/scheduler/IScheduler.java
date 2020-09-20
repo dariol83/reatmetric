@@ -14,7 +14,7 @@ import java.util.List;
  */
 public interface IScheduler extends IScheduledActivityDataProvisionService {
 
-    void initialise(boolean schedulerEnabled) throws SchedulingException;
+    void initialise(boolean schedulerEnabled) throws SchedulingException, RemoteException;
 
     /**
      * Subscribe the provided subscriber to the scheduler, to know the current scheduler state.
@@ -93,5 +93,5 @@ public interface IScheduler extends IScheduledActivityDataProvisionService {
     /**
      * Dispose the scheduler. Pending tasks will not be modified, to allow resume (if the archiving is enabled).
      */
-    void dispose();
+    void dispose() throws RemoteException;
 }

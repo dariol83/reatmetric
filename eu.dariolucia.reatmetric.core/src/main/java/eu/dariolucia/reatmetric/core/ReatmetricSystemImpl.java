@@ -283,7 +283,7 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
 
     @Override
     public IAcknowledgementService getAcknowledgementService() {
-        return messageBroker.getAcknowledgedMessageBroker();
+        return messageBroker.getAcknowledgedMessageBroker().getAcknowledgementService();
     }
 
     @Override

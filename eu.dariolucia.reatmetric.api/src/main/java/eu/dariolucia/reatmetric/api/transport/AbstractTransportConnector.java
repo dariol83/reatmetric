@@ -190,11 +190,13 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
 
     @Override
     public void register(ITransportSubscriber listener) {
+        LOG.fine("New subscriber received: " + listener);
         this.subscribers.add(listener);
     }
 
     @Override
     public void deregister(ITransportSubscriber listener) {
+        LOG.fine("Subscriber to remove: " + listener);
         this.subscribers.remove(listener);
     }
 
