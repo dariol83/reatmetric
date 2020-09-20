@@ -20,6 +20,7 @@ import eu.dariolucia.reatmetric.api.IReatmetricRegister;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.remoting.connector.configuration.ConnectorConfiguration;
 import eu.dariolucia.reatmetric.remoting.connector.configuration.RemotingConnectorConfiguration;
+import eu.dariolucia.reatmetric.remoting.connector.proxy.ReatmetricProxy;
 
 import javax.xml.bind.JAXBException;
 import java.io.FileInputStream;

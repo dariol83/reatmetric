@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.api.activity;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -23,7 +24,7 @@ import java.util.Objects;
  *
  * This object is immutable.
  */
-public class ActivityRouteState {
+public class ActivityRouteState implements Serializable {
 
     private final String route;
     private final ActivityRouteAvailability availability;
