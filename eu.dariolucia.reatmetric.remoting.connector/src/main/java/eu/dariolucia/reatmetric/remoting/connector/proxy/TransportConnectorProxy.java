@@ -20,7 +20,6 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
-import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
@@ -142,24 +141,27 @@ public class TransportConnectorProxy implements ITransportConnector {
         if(activeObject == null) {
             return;
         }
-        delegate.deregister((ITransportSubscriber) activeObject);
         try {
-            UnicastRemoteObject.unexportObject(activeObject, true);
-        } catch (NoSuchObjectException e) {
-            e.printStackTrace();
+            delegate.deregister((ITransportSubscriber) activeObject);
+        } finally {
+            try {
+                UnicastRemoteObject.unexportObject(subscriber, true);
+            } catch (NoSuchObjectException e) {
+                e.printStackTrace();
+            }
         }
     }
 
     public void terminate() {
         // Unsubscribe all remotes
-        for(Remote r : subscriber2remote.values()) {
+        for(Map.Entry<ITransportSubscriber, Remote> entry : subscriber2remote.entrySet()) {
             try {
-                delegate.deregister((ITransportSubscriber) r);
+                delegate.deregister((ITransportSubscriber) entry.getValue());
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
             try {
-                UnicastRemoteObject.unexportObject(r, true);
+                UnicastRemoteObject.unexportObject(entry.getKey(), true);
             } catch (NoSuchObjectException e) {
                 // Ignore
             }

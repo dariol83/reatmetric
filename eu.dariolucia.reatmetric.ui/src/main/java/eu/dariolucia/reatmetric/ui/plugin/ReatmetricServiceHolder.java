@@ -23,6 +23,8 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
 import java.rmi.RemoteException;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,9 +40,15 @@ public class ReatmetricServiceHolder {
     private volatile IReatmetricSystem system;
     
     private final List<IReatmetricServiceListener> listeners = new CopyOnWriteArrayList<>();
+
+    private final Timer aliveTimer = new Timer("ReatMetric UI System Alive Checker", true);
+    private volatile TimerTask aliveChecker;
     
     public synchronized void setSystem(IReatmetricSystem system) {
         this.listeners.forEach(IReatmetricServiceListener::startGlobalOperationProgress);
+        // Stop time checker
+        stopTimer();
+        // If there is an old system, dispose it
         IReatmetricSystem oldSystem = this.system;
         if(oldSystem != null) {
             this.listeners.forEach(o -> o.systemDisconnected(oldSystem));
@@ -58,6 +66,8 @@ public class ReatmetricServiceHolder {
             try {
                 this.system.initialise(this::statusUpdateFunction);
                 this.listeners.forEach(o -> o.systemConnected(this.system));
+                // Start time checker
+                startTimer();
             } catch (ReatmetricException | RemoteException e) {
                 LOG.log(Level.SEVERE, "Exception while initialising system: " + e.getMessage(), e);
                 statusUpdateFunction(SystemStatus.ALARM);
@@ -65,6 +75,34 @@ public class ReatmetricServiceHolder {
             }
         }
         this.listeners.forEach(IReatmetricServiceListener::stopGlobalOperationProgress);
+    }
+
+    private synchronized void startTimer() {
+        if(aliveChecker == null) {
+            aliveChecker = new TimerTask() {
+                @Override
+                public void run() {
+                    IReatmetricSystem theSystem = system;
+                    if(theSystem != null && aliveChecker == this) {
+                        try {
+                            theSystem.getStatus();
+                        } catch (RemoteException e) {
+                            // System is disconnected
+                            LOG.log(Level.SEVERE, "System disconnected");
+                            setSystem(null);
+                        }
+                    }
+                }
+            };
+            aliveTimer.schedule(aliveChecker, 1000, 2000);
+        }
+    }
+
+    private synchronized void stopTimer() {
+        if(aliveChecker != null) {
+            aliveChecker.cancel();
+            aliveChecker = null;
+        }
     }
 
     private void statusUpdateFunction(SystemStatus systemStatus) {

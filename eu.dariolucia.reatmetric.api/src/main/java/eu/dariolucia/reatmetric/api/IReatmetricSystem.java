@@ -43,7 +43,6 @@ import java.util.function.Consumer;
 /**
  * Main interface of a ReatMetric system implementation
  *
- * TODO: add ping method as server disconnection detection
  * TODO: add additional field in operational message to indicate the element in the model (external ID) associated to a message.
  *   In this way, warning and alarm messages can be linked to the object and allow acknowledgement from the hierarchical model.
  *   To achieve this, use the parameter object of the LogRecord.

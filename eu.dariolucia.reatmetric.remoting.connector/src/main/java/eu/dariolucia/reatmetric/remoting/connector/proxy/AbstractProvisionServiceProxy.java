@@ -67,14 +67,17 @@ public abstract class AbstractProvisionServiceProxy<T extends AbstractDataItem, 
         if(activeObject == null) {
             return;
         }
-        delegate.unsubscribe((U) activeObject);
         try {
-            if(LOG.isLoggable(Level.FINE)) {
-                LOG.fine("Deactivating subscriber active object " + activeObject + " for " + subscriber + " in proxy " + getClass().getSimpleName());
+            delegate.unsubscribe((U) activeObject);
+        } finally {
+            try {
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.fine("Deactivating subscriber active object " + activeObject + " for " + subscriber + " in proxy " + getClass().getSimpleName());
+                }
+                UnicastRemoteObject.unexportObject(activeObject, true);
+            } catch (NoSuchObjectException e) {
+                // Ignore
             }
-            UnicastRemoteObject.unexportObject(activeObject, true);
-        } catch (NoSuchObjectException e) {
-            // Ignore
         }
     }
 
@@ -96,16 +99,17 @@ public abstract class AbstractProvisionServiceProxy<T extends AbstractDataItem, 
             }
             try {
                 delegate.unsubscribe((U) entry.getValue());
-            } catch (RemoteException e) {
+            } catch (Exception e) {
                 LOG.log(Level.WARNING, "Cannot unsubscribe " + entry.getKey() + " in proxy " + getClass().getSimpleName(), e);
-            }
-            try {
-                if(LOG.isLoggable(Level.FINE)) {
-                    LOG.fine("Terminating subscriber active object " + entry.getValue() + " for " + entry.getKey() + " in proxy " + getClass().getSimpleName());
+            } finally {
+                try {
+                    if (LOG.isLoggable(Level.FINE)) {
+                        LOG.fine("Terminating subscriber active object " + entry.getValue() + " for " + entry.getKey() + " in proxy " + getClass().getSimpleName());
+                    }
+                    UnicastRemoteObject.unexportObject(entry.getKey(), true);
+                } catch (NoSuchObjectException e) {
+                    // Ignore
                 }
-                UnicastRemoteObject.unexportObject(entry.getValue(), true);
-            } catch (NoSuchObjectException e) {
-                // Ignore
             }
         }
         subscriber2remote.clear();

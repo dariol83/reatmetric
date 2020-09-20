@@ -53,15 +53,18 @@ public class SystemModelProvisionServiceProxy implements ISystemModelProvisionSe
 
     @Override
     public void unsubscribe(ISystemModelSubscriber subscriber) throws RemoteException {
-        Remote activeObject = subscriber2remote.remove(subscriber);
+        Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
             return;
         }
-        delegate.unsubscribe((ISystemModelSubscriber) activeObject);
         try {
-            UnicastRemoteObject.unexportObject(activeObject, true);
-        } catch (NoSuchObjectException e) {
-            // Ignore
+            delegate.unsubscribe((ISystemModelSubscriber) activeObject);
+        } finally {
+            try {
+                UnicastRemoteObject.unexportObject(subscriber, true);
+            } catch (NoSuchObjectException e) {
+                // Ignore
+            }
         }
     }
 
@@ -117,16 +120,17 @@ public class SystemModelProvisionServiceProxy implements ISystemModelProvisionSe
 
     public void terminate() {
         // Unsubscribe all remotes
-        for(Remote r : subscriber2remote.values()) {
+        for(Map.Entry<ISystemModelSubscriber, Remote> entry : subscriber2remote.entrySet()) {
             try {
-                delegate.unsubscribe((ISystemModelSubscriber) r);
-            } catch (RemoteException e) {
+                delegate.unsubscribe((ISystemModelSubscriber) entry.getValue());
+            } catch (Exception e) {
                 e.printStackTrace();
-            }
-            try {
-                UnicastRemoteObject.unexportObject(r, true);
-            } catch (NoSuchObjectException e) {
-                // Ignore
+            } finally {
+                try {
+                    UnicastRemoteObject.unexportObject(entry.getKey(), true);
+                } catch (NoSuchObjectException e) {
+                    // Ignore
+                }
             }
         }
         subscriber2remote.clear();

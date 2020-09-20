@@ -70,14 +70,17 @@ public class SchedulerProxy extends AbstractStateProvisionServiceProxy<Scheduled
         if(activeObject == null) {
             return;
         }
-        delegate.unsubscribe((ISchedulerSubscriber) activeObject);
         try {
-            if(LOG.isLoggable(Level.FINE)) {
-                LOG.fine("Deactivating subscriber active object " + activeObject + " for " + subscriber + " in proxy " + getClass().getSimpleName());
+            delegate.unsubscribe((ISchedulerSubscriber) activeObject);
+        } finally {
+            try {
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.fine("Deactivating subscriber active object " + activeObject + " for " + subscriber + " in proxy " + getClass().getSimpleName());
+                }
+                UnicastRemoteObject.unexportObject(activeObject, true);
+            } catch (NoSuchObjectException e) {
+                // Ignore
             }
-            UnicastRemoteObject.unexportObject(activeObject, true);
-        } catch (NoSuchObjectException e) {
-            // Ignore
         }
     }
 
@@ -129,22 +132,23 @@ public class SchedulerProxy extends AbstractStateProvisionServiceProxy<Scheduled
     @Override
     public void terminate() {
         // Unsubscribe all remotes
-        for(Remote r : scheduleSubscriber2remote.values()) {
+        for(Map.Entry<ISchedulerSubscriber, Remote> entry : scheduleSubscriber2remote.entrySet()) {
             if(LOG.isLoggable(Level.FINE)) {
-                LOG.fine("Terminating subscriber active object " + r + " from proxy " + getClass().getSimpleName());
+                LOG.fine("Terminating subscriber active object " + entry.getKey() + " from proxy " + getClass().getSimpleName());
             }
             try {
-                delegate.unsubscribe((ISchedulerSubscriber) r);
-            } catch (RemoteException e) {
+                delegate.unsubscribe((ISchedulerSubscriber) entry.getValue());
+            } catch (Exception e) {
                 e.printStackTrace();
-            }
-            try {
-                if(LOG.isLoggable(Level.FINE)) {
-                    LOG.fine("Terminating subscriber active object " + r + " in proxy " + getClass().getSimpleName());
+            } finally {
+                try {
+                    if (LOG.isLoggable(Level.FINE)) {
+                        LOG.fine("Terminating subscriber active object " + entry.getKey() + " in proxy " + getClass().getSimpleName());
+                    }
+                    UnicastRemoteObject.unexportObject(entry.getKey(), true);
+                } catch (NoSuchObjectException e) {
+                    // Ignore
                 }
-                UnicastRemoteObject.unexportObject(r, true);
-            } catch (NoSuchObjectException e) {
-                // Ignore
             }
         }
         scheduleSubscriber2remote.clear();
