@@ -51,7 +51,8 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
 
     private static final Logger LOG = Logger.getLogger(MimicsDisplayViewController.class.getName());
 
-    private static final String presetStorageLocation = System.getProperty("user.home") + File.separator + ReatmetricUI.APPLICATION_NAME + File.separator + "presets";
+    public static final String PRESET_STORAGE_LOCATION = System.getProperty("user.home") + File.separator + ReatmetricUI.APPLICATION_NAME + File.separator + "presets";
+    public static final String COMPONENT_ID = "MimicsDisplayView";
 
     // Pane control
     @FXML
@@ -78,7 +79,7 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
     }
 
     protected String doGetComponentId() {
-        return "MimicsDisplayView";
+        return COMPONENT_ID;
     }
 
     private MimicsDisplayTabWidgetController createNewTab(String tabText) throws IOException {
@@ -178,28 +179,34 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
             final String fpreset = preset;
             MenuItem mi = new MenuItem(preset);
             mi.setOnAction((event) -> {
-                File p = new File(presetStorageLocation + File.separator + name + File.separator + user + File.separator + doGetComponentId() + File.separator + fpreset + ".svg");
-                if (p.exists()) {
-                    try {
-                        addMimicsTabFromPreset(fpreset, p);
-                    } catch (IOException e) {
-                        LOG.log(Level.WARNING, "Cannot initialise mimics tab preset " + preset + ": " + e.getMessage(), e);
-                    }
+                if(!selectTab(fpreset)) {
+                    loadPreset(name, fpreset);
                 }
             });
             this.loadBtn.getItems().add(mi);
         }
     }
 
+    private void loadPreset(String name, String fpreset) {
+        File p = new File(PRESET_STORAGE_LOCATION + File.separator + name + File.separator + user + File.separator + doGetComponentId() + File.separator + fpreset + ".svg");
+        if (p.exists()) {
+            try {
+                addMimicsTabFromPreset(fpreset, p);
+            } catch (IOException e) {
+                LOG.log(Level.WARNING, "Cannot initialise mimics tab preset " + fpreset + ": " + e.getMessage(), e);
+            }
+        }
+    }
+
     public List<String> getAvailablePresets(String system, String user) {
-        File folder = new File(presetStorageLocation + File.separator + system + File.separator + user + File.separator + doGetComponentId());
+        File folder = new File(PRESET_STORAGE_LOCATION + File.separator + system + File.separator + user + File.separator + doGetComponentId());
         if (!folder.exists()) {
             return Collections.emptyList();
         }
         List<String> presets = new LinkedList<>();
         for (File f : folder.listFiles()) {
             if (f.getName().endsWith("svg")) {
-                presets.add(f.getName().substring(0, f.getName().length() - "svg".length() - 1));
+                presets.add(f.getName().substring(0, f.getName().length() - ".svg".length()));
             }
         }
         return presets;
@@ -213,5 +220,35 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         Platform.runLater(() -> {
             t.loadPreset(svgFile);
         });
+    }
+
+    public void open(String preset) {
+        // Ugly but necessary
+        Platform.runLater(() -> {
+            ReatmetricUI.threadPool(getClass()).submit(() -> {
+                String name;
+                try {
+                    name = system.getName();
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
+                    return;
+                }
+                Platform.runLater(() -> {
+                    if(!selectTab(preset)) {
+                        loadPreset(name, preset);
+                    }
+                });
+            });
+        });
+    }
+
+    private boolean selectTab(String preset) {
+        for(Tab t : tabPane.getTabs()) {
+            if(t.getText().equals(preset)) {
+                tabPane.getSelectionModel().select(t);
+                return true;
+            }
+        }
+        return false;
     }
 }

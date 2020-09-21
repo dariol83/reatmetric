@@ -1,12 +1,14 @@
 package eu.dariolucia.reatmetric.api.scheduler;
 
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+
 /**
  * This class allows the scheduling of an activity invocation to after the completion of all
  * the referenced scheduled activities.
  */
 public class EventBasedSchedulingTrigger extends AbstractSchedulingTrigger {
 
-    private final int event;
+    private final SystemEntityPath event;
 
     /**
      * The protection time in ms: a new activity occurrence is released only if a new occurrence of the
@@ -16,12 +18,12 @@ public class EventBasedSchedulingTrigger extends AbstractSchedulingTrigger {
      */
     private final int protectionTime;
 
-    public EventBasedSchedulingTrigger(int event, int protectionTime) {
+    public EventBasedSchedulingTrigger(SystemEntityPath event, int protectionTime) {
         this.event = event;
         this.protectionTime = protectionTime;
     }
 
-    public int getEvent() {
+    public SystemEntityPath getEvent() {
         return event;
     }
 

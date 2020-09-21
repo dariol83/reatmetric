@@ -281,7 +281,7 @@
             <Accordion fx:id="sideAccordion" minWidth="0.0">
               <panes>
                 <TitledPane animated="false" minWidth="0.0" text="Processing Model" >
-                    <fx:include source="ModelBrowserView.fxml" />
+                    <fx:include fx:id="model" source="ModelBrowserView.fxml" />
                 </TitledPane>
                 <TitledPane animated="false" minWidth="0.0" text="Connectors" >
                     <fx:include source="ConnectorsBrowserView.fxml" />

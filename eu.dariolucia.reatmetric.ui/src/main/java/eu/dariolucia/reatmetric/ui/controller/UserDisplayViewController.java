@@ -190,7 +190,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		try {
 			name = system.getName();
 		} catch (RemoteException e) {
-			LOG.log(Level.SEVERE, "Cannot show presets, erro contacting system", e);
+			LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
 			return;
 		}
 
@@ -200,16 +200,22 @@ public class UserDisplayViewController extends AbstractDisplayController {
 			final String fpreset = preset;
 			MenuItem mi = new MenuItem(preset);
 			mi.setOnAction((event) -> {
-				Properties p = this.presetManager.load(name, user, fpreset, doGetComponentId());
-				if(p != null) {
-					try {
-						addChartTabFromPreset(fpreset, p);
-					} catch (IOException e) {
-						LOG.log(Level.WARNING, "Cannot initialise chart tab preset " + preset + ": " + e.getMessage(), e);
-					}
+				if(!selectTab(fpreset)) {
+					loadPreset(name, fpreset);
 				}
 			});
 			this.loadBtn.getItems().add(mi);
+		}
+	}
+
+	private void loadPreset(String name, String fpreset) {
+		Properties p = this.presetManager.load(name, user, fpreset, doGetComponentId());
+		if(p != null) {
+			try {
+				addChartTabFromPreset(fpreset, p);
+			} catch (IOException e) {
+				LOG.log(Level.WARNING, "Cannot initialise chart tab preset " + fpreset + ": " + e.getMessage(), e);
+			}
 		}
 	}
 
@@ -219,5 +225,35 @@ public class UserDisplayViewController extends AbstractDisplayController {
 		// to allow the layouting of the tab and the correct definition of the parent elements,
 		// hence avoiding a null pointer exception
 		Platform.runLater(() -> t.loadPreset(p));
+	}
+
+	public void open(String preset) {
+		// Ugly but necessary
+		Platform.runLater(() -> {
+			ReatmetricUI.threadPool(getClass()).submit(() -> {
+				String name;
+				try {
+					name = system.getName();
+				} catch (Exception e) {
+					LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
+					return;
+				}
+				Platform.runLater(() -> {
+					if(!selectTab(preset)) {
+						loadPreset(name, preset);
+					}
+				});
+			});
+		});
+	}
+
+	private boolean selectTab(String preset) {
+		for(Tab t : tabPane.getTabs()) {
+			if(t.getText().equals(preset)) {
+				tabPane.getSelectionModel().select(t);
+				return true;
+			}
+		}
+		return false;
 	}
 }

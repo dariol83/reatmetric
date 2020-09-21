@@ -129,7 +129,7 @@
                             <TableColumn fx:id="eventExtIdCol" editable="false" prefWidth="90.0" text="External ID" />
                             <TableColumn fx:id="eventNameCol" editable="false" prefWidth="130.0" text="Name" />
                             <TableColumn fx:id="eventSourceCol" editable="false" prefWidth="100.0" text="Source" />
-                            <TableColumn fx:id="eventTriggerCol" editable="false" prefWidth="100.0" text="Trigger" />
+                            <TableColumn fx:id="eventTriggerCol" editable="false" prefWidth="250.0" text="Trigger" />
                             <TableColumn fx:id="eventResourcesCol" editable="false" prefWidth="100.0" text="Resources" />
                             <TableColumn fx:id="eventDurationCol" editable="false" prefWidth="100.0" text="Duration" />
                             <TableColumn fx:id="eventParentCol" editable="false" prefWidth="130.0" text="Parent" />

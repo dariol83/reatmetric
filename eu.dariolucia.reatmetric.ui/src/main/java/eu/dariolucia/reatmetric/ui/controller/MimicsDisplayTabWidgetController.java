@@ -56,8 +56,6 @@ import java.util.function.Consumer;
 /**
  * FXML Controller class
  *
- * TODO: implement breadcrumb for mimics drill down
- *
  * @author dario
  */
 public class MimicsDisplayTabWidgetController extends AbstractDisplayController implements IParameterDataSubscriber {
@@ -151,6 +149,22 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         }
 
         MimicsDisplayCoordinator.instance().register(this);
+    }
+
+    private File locateFile(String preset) {
+        String name;
+        try {
+            name = system.getName();
+        } catch (RemoteException e) {
+            return null;
+        }
+
+        File p = new File(MimicsDisplayViewController.PRESET_STORAGE_LOCATION + File.separator + name + File.separator + user + File.separator + MimicsDisplayViewController.COMPONENT_ID + File.separator + preset + ".svg");
+        if(p.exists()) {
+            return p;
+        } else {
+            return null;
+        }
     }
 
     protected Consumer<List<ParameterData>> buildIncomingDataDelegatorAction() {

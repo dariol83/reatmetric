@@ -87,9 +87,9 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private static final String SYSTEM_LABEL_CSS_STYLE_NOALARM = "-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;";
     private static final String SYSTEM_LABEL_CSS_STYLE_ALARM = "-fx-border-color: black; -fx-background-color: #c60000; -fx-text-fill: #FFFFFF;";
 
-    private static volatile MainViewController INSTANCE = null;
+    private static volatile MainViewController.Facade INSTANCE = null;
 
-    public static MainViewController instance() {
+    public static MainViewController.Facade instance() {
         return INSTANCE;
     }
 
@@ -130,6 +130,9 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
 	@FXML
     private Button detachButton;
+
+	@FXML
+    private ModelBrowserViewController modelController;
 
     private final PopOver messagePopOver = new PopOver();
     private AckMessageDialogController ackMessageController;
@@ -354,7 +357,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 	}
 
     @FXML
-    public void debugAction(Event actionEvent) {
+    private void debugAction(Event actionEvent) {
         try {
             Parent root = FXMLLoader.load(getClass().getClassLoader()
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/DebugDialog.fxml"));
@@ -369,7 +372,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
 	@FXML
-    public void aboutAction(ActionEvent actionEvent) {
+    private void aboutAction(ActionEvent actionEvent) {
         try {
             Parent root = FXMLLoader.load(getClass().getClassLoader()
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/AboutDialog.fxml"));
@@ -385,7 +388,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
     @FXML
-    public void systemLabelAction(MouseEvent actionEvent) {
+    private void systemLabelAction(MouseEvent actionEvent) {
         if(ReatmetricUI.selectedSystem().getSystem() != null) {
             messagePopOver.show(systemLbl);
         }
@@ -394,7 +397,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         // Set the instance
-        INSTANCE = this;
+        INSTANCE = new Facade();
 
         // Set tabpane image
         viewTabPane.setStyle("-fx-background-image: url(\"/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-128px.png\"); -fx-background-repeat: no-repeat; -fx-background-position: center;");
@@ -573,7 +576,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         this.systemLbl.setDisable(false);
     }
 
-    public void updateStatusIndicator(SystemStatus state) {
+    private void updateStatusIndicator(SystemStatus state) {
         Platform.runLater(() -> {
             switch (state) {
                 case ALARM:
@@ -593,11 +596,22 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
     @FXML
-    public void detachMouseClicked(ActionEvent e) {
+    private void detachMouseClicked(ActionEvent e) {
         Tab toDetach = viewTabPane.getSelectionModel().getSelectedItem();
         if(toDetach != null) {
             Pair<Node, AbstractDisplayController> data = (Pair<Node, AbstractDisplayController>) toDetach.getUserData();
             detachTab(toDetach, data.getFirst(), data.getSecond());
+        }
+    }
+
+    public class Facade {
+
+        public AbstractDisplayController openPerspective(String name) {
+            return MainViewController.this.openPerspective(name);
+        }
+
+        public ModelBrowserViewController getModelController() {
+            return modelController;
         }
     }
 }

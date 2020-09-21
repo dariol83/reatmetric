@@ -66,7 +66,7 @@ import java.util.logging.Logger;
  *
  * @author dario
  */
-public class ModelBrowserViewController extends AbstractDisplayController implements ISystemModelSubscriber {
+public class ModelBrowserViewController extends AbstractDisplayController {
 
     private static final Logger LOG = Logger.getLogger(ModelBrowserViewController.class.getName());
 
@@ -95,7 +95,9 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private final Lock mapLock = new ReentrantLock();
     private final Map<SystemEntityPath, FilterableTreeItem<SystemEntity>> path2item = new TreeMap<>();
     private SystemEntity root = null;
-    
+
+    private ISystemModelSubscriber subscriber = ModelBrowserViewController.this::dataItemsReceived;
+
     // Temporary message queue
     private DataProcessingDelegator<SystemEntity> delegator;
 
@@ -132,7 +134,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private SeparatorMenuItem setParameterSeparator;
 
     @FXML
-    public void filterClearButtonPressed(Event e) {
+    private void filterClearButtonPressed(Event e) {
         this.filterText.clear();
     }
     
@@ -207,7 +209,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     }
 
     @FXML
-    public void copyPathToClipboardItemAction(ActionEvent actionEvent) {
+    private void copyPathToClipboardItemAction(ActionEvent actionEvent) {
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
         if(se != null) {
             final Clipboard clipboard = Clipboard.getSystemClipboard();
@@ -364,8 +366,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         this.modelTree.refresh();
     }
 
-    @Override
-    public void dataItemsReceived(List<SystemEntity> objects) {
+    private void dataItemsReceived(List<SystemEntity> objects) {
         this.delegator.delegate(objects);
     }
 
@@ -374,9 +375,9 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         this.mapLock.lock();
         try {
             // Unsubscribe if any
-            ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().unsubscribe(this);
+            ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().unsubscribe(subscriber);
             // Subscribe to updates
-            ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().subscribe(this);
+            ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().subscribe(subscriber);
 
             // Get the root node
             this.root = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getRoot();
@@ -453,7 +454,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     }
 
     @FXML
-    public void menuAboutToShow(WindowEvent windowEvent) {
+    private void menuAboutToShow(WindowEvent windowEvent) {
         TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
         if(selected == null || selected.getValue() == null) {
             return;
@@ -547,9 +548,30 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         if(selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.ACTIVITY) {
             return;
         }
+        SystemEntity toExecute = selected.getValue();
+        executeActivity(toExecute);
+    }
+
+    public void requestActivity(String activityPath) {
+        FilterableTreeItem<SystemEntity> item = path2item.get(SystemEntityPath.fromString(activityPath));
+        if(item != null) {
+            executeActivity(item.getValue());
+        }
+    }
+
+    public SystemEntity getSystemEntity(String path) {
+        FilterableTreeItem<SystemEntity> item = path2item.get(SystemEntityPath.fromString(path));
+        if(item != null) {
+            return item.getValue();
+        } else {
+            return null;
+        }
+    }
+
+    private void executeActivity(SystemEntity toExecute) {
         try {
             // Get the descriptor
-            AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getValue().getExternalId());
+            AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(toExecute.getExternalId());
             if (descriptor instanceof ActivityDescriptor) {
                 // Get the route list
                 Supplier<List<ActivityRouteState>> routeList = () -> {
@@ -597,7 +619,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     }
 
     @FXML
-    public void setParameterAction(ActionEvent actionEvent) {
+    private void setParameterAction(ActionEvent actionEvent) {
         TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
         if(selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.PARAMETER) {
             return;
@@ -655,4 +677,14 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
     }
 
+    @Override
+    public void dispose() {
+        // Unsubscribe if any
+        try {
+            ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().unsubscribe(subscriber);
+        } catch (RemoteException | ReatmetricException e) {
+            e.printStackTrace();
+        }
+        super.dispose();
+    }
 }

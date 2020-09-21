@@ -31,6 +31,7 @@ import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
 import eu.dariolucia.reatmetric.api.events.IEventDataSubscriber;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.exceptions.SchedulingException;
@@ -96,7 +97,7 @@ public class Scheduler implements IScheduler {
     /**
      * For event-based activities.
      */
-    private final List<Integer> subscribedEvents = new LinkedList<>();
+    private final List<SystemEntityPath> subscribedEvents = new LinkedList<>();
 
     private volatile boolean enabled;
 
@@ -773,7 +774,7 @@ public class Scheduler implements IScheduler {
     /**
      * To be called from the dispatcher thread.
      */
-    void updateEventFilter(Integer newEvent, boolean remove) {
+    void updateEventFilter(SystemEntityPath newEvent, boolean remove) {
         if (remove) {
             subscribedEvents.remove(newEvent);
         } else {
@@ -787,7 +788,7 @@ public class Scheduler implements IScheduler {
                 LOG.log(Level.SEVERE, "Remote exception on event service unsubscribe", e);
             }
         } else {
-            currentEventFilter = new EventDataFilter(null, null, null, null, null, null, subscribedEvents);
+            currentEventFilter = new EventDataFilter(null, subscribedEvents, null, null, null, null, null);
             try {
                 eventService.subscribe(eventSubscriber, currentEventFilter);
             } catch (RemoteException e) {

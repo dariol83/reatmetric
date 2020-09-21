@@ -207,7 +207,11 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             if (provider.isPresent()) {
                 ICltuConnector connector = provider.get().get();
                 connector.configure(this.name, this.configuration, this.context, dc.getConfiguration());
-                connector.prepare();
+                try {
+                    connector.prepare();
+                } catch (RemoteException e) {
+                    // Cannot happen
+                }
                 cltuConnectors.add(connector);
             } else {
                 LOG.log(Level.WARNING, "External CLTU connector for class " + dc.getType() + " and configuration " + dc.getConfiguration() + " not found");
@@ -218,7 +222,11 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             if (provider.isPresent()) {
                 ITcFrameConnector connector = provider.get().get();
                 connector.configure(this.name, this.configuration, this.context, dc.getConfiguration());
-                connector.prepare();
+                try {
+                    connector.prepare();
+                } catch (RemoteException e) {
+                    // Cannot happen
+                }
                 tcFrameConnectors.add(connector);
             } else {
                 LOG.log(Level.WARNING, "External TC frame connector for class " + dc.getType() + " and configuration " + dc.getConfiguration() + " not found");
@@ -229,7 +237,11 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             if (provider.isPresent()) {
                 ITcPacketConnector connector = provider.get().get();
                 connector.configure(this.name, this.configuration, this.context, this.serviceBroker, this.packetIdentifier, dc.getConfiguration());
-                connector.prepare();
+                try {
+                    connector.prepare();
+                } catch (RemoteException e) {
+                    // Cannot happen
+                }
                 tcPacketConnectors.add(connector);
             } else {
                 LOG.log(Level.WARNING, "External TC packet connector for class " + dc.getType() + " and configuration " + dc.getConfiguration() + " not found");

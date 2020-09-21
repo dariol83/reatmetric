@@ -187,13 +187,16 @@ public class MimicsSvgViewController implements Initializable {
         });
     }
 
-    private Set<String> prepareMimicsEngine(Document svgDom) {
+    private synchronized Set<String> prepareMimicsEngine(Document svgDom) {
+        if(svgMimicsEngine != null) {
+            svgMimicsEngine.dispose();
+        }
         svgMimicsEngine = new SvgMimicsEngine(svgDom);
         svgMimicsEngine.initialise();
         return svgMimicsEngine.getParameters();
     }
 
-    public void refresh(Map<SystemEntityPath, ParameterData> updatedItems) {
+    public synchronized void refresh(Map<SystemEntityPath, ParameterData> updatedItems) {
         if(svgMimicsEngine != null) {
             svgMimicsEngine.refresh(updatedItems);
         }
@@ -218,20 +221,31 @@ public class MimicsSvgViewController implements Initializable {
 
         public void and(String name) {
             // Request the opening of the AND from the name
-            MainViewController.instance().openPerspective("Monitoring AND");
+            ParameterDisplayViewController controller = (ParameterDisplayViewController) MainViewController.instance().openPerspective("Monitoring AND");
+            if(controller != null) {
+                controller.open(name);
+            }
         }
 
         public void chart(String name) {
             // Request the opening of the chart from the name
-            MainViewController.instance().openPerspective("Charts");
+            UserDisplayViewController controller = (UserDisplayViewController) MainViewController.instance().openPerspective("Charts");
+            if(controller != null) {
+                controller.open(name);
+            }
         }
 
         public void mimics(String name) {
-            // Request the opening of the mimics from the name in the same window + breadcrumb
+            // Request the opening of the mimics from the name
+            MimicsDisplayViewController controller = (MimicsDisplayViewController) MainViewController.instance().openPerspective("Mimics");
+            if(controller != null) {
+                controller.open(name);
+            }
         }
 
         public void exec(String path) {
             // Request the execution of the activity identified by path
+            MainViewController.instance().getModelController().requestActivity(path);
         }
     }
 }

@@ -16,12 +16,10 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
-import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
@@ -30,7 +28,6 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 
 import java.net.URL;
-import java.rmi.RemoteException;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -151,7 +148,7 @@ public class ActivitySchedulingDialogController implements Initializable {
             relativeTimeText.setText(String.valueOf(tr.getDelayTime()));
             relativeTimeRadio.setSelected(true);
         } else if(request.getTrigger() instanceof EventBasedSchedulingTrigger) {
-            eventPathText.setText(findEvent(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent()));
+            eventPathText.setText(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent().asString());
             protectionTimeText.setText(String.valueOf (((EventBasedSchedulingTrigger) request.getTrigger()).getProtectionTime() / 1000));
             eventDrivenRadio.setSelected(true);
         }
@@ -167,29 +164,6 @@ public class ActivitySchedulingDialogController implements Initializable {
             sb.deleteCharAt(sb.length() - 1);
         }
         return sb.toString();
-    }
-
-    private String findEvent(int eventId) {
-        try {
-            SystemEntityPath path = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getPathOf(eventId);
-            if(path != null) {
-                return path.asString();
-            } else {
-                return "";
-            }
-        } catch (ReatmetricException | RemoteException e) {
-            e.printStackTrace();
-            return "";
-        }
-    }
-
-    private int findEvent(String eventPath) {
-        try {
-            return ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getExternalIdOf(SystemEntityPath.fromString(eventPath));
-        } catch (ReatmetricException | RemoteException e) {
-            e.printStackTrace();
-            return -1;
-        }
     }
 
     private void validate() {
@@ -386,7 +360,7 @@ public class ActivitySchedulingDialogController implements Initializable {
         } else if(relativeTimeRadio.isSelected()) {
             return new RelativeTimeSchedulingTrigger(getRelativeTriggerExternalIds(), getRelativeTime());
         } else if(eventDrivenRadio.isSelected()) {
-            return new EventBasedSchedulingTrigger(findEvent(eventPathText.getText()), getProtectionTime());
+            return new EventBasedSchedulingTrigger(SystemEntityPath.fromString(eventPathText.getText()), getProtectionTime());
         } else {
             throw new IllegalStateException("None of the supported triggers can be derived");
         }

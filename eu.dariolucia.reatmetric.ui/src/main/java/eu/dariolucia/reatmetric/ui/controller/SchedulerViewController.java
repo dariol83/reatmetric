@@ -1063,8 +1063,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
     public void menuAboutToShow(WindowEvent windowEvent) {
         deleteScheduledMenuItem.setVisible(this.liveTgl.isSelected() && !dataItemTableView.getSelectionModel().getSelectedItems().isEmpty());
         editScheduledMenuItem.setVisible(this.liveTgl.isSelected() && dataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
-        eventDeleteScheduledMenuItem.setVisible(this.liveTgl.isSelected() && !dataItemTableView.getSelectionModel().getSelectedItems().isEmpty());
-        eventEditScheduledMenuItem.setVisible(this.liveTgl.isSelected() && dataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
+        eventDeleteScheduledMenuItem.setVisible(this.liveTgl.isSelected() && !eventDataItemTableView.getSelectionModel().getSelectedItems().isEmpty());
+        eventEditScheduledMenuItem.setVisible(this.liveTgl.isSelected() && eventDataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
         if(!this.liveTgl.isSelected()) {
             windowEvent.consume();
         }
