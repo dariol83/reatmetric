@@ -61,7 +61,7 @@ class AcknowledgedMessageArchiveTest {
             IOperationalMessageArchive messageArchive = archive.getArchive(IOperationalMessageArchive.class);
             Instant t = Instant.now();
             // store one item
-            OperationalMessage toStore = new OperationalMessage(new LongUniqueId(0), t, "msgId1", "Text message", "Source1", Severity.ALARM, new Object[0]);
+            OperationalMessage toStore = new OperationalMessage(new LongUniqueId(0), t, "msgId1", "Text message", "Source1", Severity.ALARM, null, new Object[0]);
             messageArchive.store(toStore);
 
             IAcknowledgedMessageArchive ackArchive = archive.getArchive(IAcknowledgedMessageArchive.class);

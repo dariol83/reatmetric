@@ -63,7 +63,7 @@ class OperationalMessageArchiveTest {
             IOperationalMessageArchive messageArchive = archive.getArchive(IOperationalMessageArchive.class);
             Instant t = Instant.now();
             // store one item
-            messageArchive.store(new OperationalMessage(new LongUniqueId(0), t, "msgId1", "Text message", "Source1", Severity.ALARM, new Object[0]));
+            messageArchive.store(new OperationalMessage(new LongUniqueId(0), t, "msgId1", "Text message", "Source1", Severity.ALARM, null, new Object[0]));
             Thread.sleep(2000);
             // retrieve: expected 1 item
             List<OperationalMessage> messages = messageArchive.retrieve(t.minusMillis(200), 10, RetrievalDirection.TO_FUTURE, null);
@@ -72,7 +72,7 @@ class OperationalMessageArchiveTest {
             assertEquals("Text message", messages.get(0).getMessage());
             assertEquals(Severity.ALARM, messages.get(0).getSeverity());
             // store one item
-            messageArchive.store(new OperationalMessage(new LongUniqueId(1), t, "msgId2", "Text message", "Source2", Severity.INFO, new Object[] { "test", 13, Instant.ofEpochMilli(1000)}));
+            messageArchive.store(new OperationalMessage(new LongUniqueId(1), t, "msgId2", "Text message", "Source2", Severity.INFO, 123, new Object[] { "test", 13, Instant.ofEpochMilli(1000)}));
             Thread.sleep(2000);
             // retrieve: expected 2 items
             messages = messageArchive.retrieve(t.minusMillis(200), 10, RetrievalDirection.TO_FUTURE, null);
@@ -97,7 +97,7 @@ class OperationalMessageArchiveTest {
             // last ID: expected 1
             assertEquals(1, messageArchive.retrieveLastId().asLong());
             // store one item
-            messageArchive.store(new OperationalMessage(new LongUniqueId(2), t.plusSeconds(1), "msgId3", "Text message", "Source2", Severity.ALARM, new Object[] { "test", 13, Instant.ofEpochMilli(1000)}));
+            messageArchive.store(new OperationalMessage(new LongUniqueId(2), t.plusSeconds(1), "msgId3", "Text message", "Source2", Severity.ALARM, null, new Object[] { "test", 13, Instant.ofEpochMilli(1000)}));
             Thread.sleep(2000);
             // retrieve: expected 3 items
             messages = messageArchive.retrieve(Instant.now(), 10, RetrievalDirection.TO_PAST, null);
@@ -107,9 +107,9 @@ class OperationalMessageArchiveTest {
             // store three items
             t = Instant.now().minusMillis(500);
             List<OperationalMessage> toStore = Arrays.asList(
-                    new OperationalMessage(new LongUniqueId(3), t, "msgId3", "Text message", "Source2", Severity.ALARM, new Object[] { }),
-                    new OperationalMessage(new LongUniqueId(4), t, "msgId4", "Text message special", "Source2", Severity.WARN, new Object[] { }),
-                    new OperationalMessage(new LongUniqueId(5), t, "msgId1", "Text message", "Source2", Severity.INFO, new Object[] { })
+                    new OperationalMessage(new LongUniqueId(3), t, "msgId3", "Text message", "Source2", Severity.ALARM, null, new Object[] { }),
+                    new OperationalMessage(new LongUniqueId(4), t, "msgId4", "Text message special", "Source2", Severity.WARN, null, new Object[] { }),
+                    new OperationalMessage(new LongUniqueId(5), t, "msgId1", "Text message", "Source2", Severity.INFO, null, new Object[] { })
             );
             messageArchive.store(toStore);
             Thread.sleep(2000);

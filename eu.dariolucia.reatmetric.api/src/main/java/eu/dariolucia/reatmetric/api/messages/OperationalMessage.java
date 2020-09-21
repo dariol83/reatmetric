@@ -43,12 +43,15 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
 
     private final Severity severity;
 
-    public OperationalMessage(IUniqueId internalId, Instant generationTime, String id, String message, String source, Severity severity, Object extension) {
+    private final Integer linkedEntityId;
+
+    public OperationalMessage(IUniqueId internalId, Instant generationTime, String id, String message, String source, Severity severity, Integer linkedEntityId, Object extension) {
         super(internalId, generationTime, extension);
         this.id = id;
         this.message = message;
         this.source = source;
         this.severity = severity;
+        this.linkedEntityId = linkedEntityId;
     }
 
     public String getId() {
@@ -67,6 +70,10 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
         return severity;
     }
 
+    public Integer getLinkedEntityId() {
+        return linkedEntityId;
+    }
+
     @Override
     public String toString() {
         return "OperationalMessage{" +
@@ -74,6 +81,7 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
                 ", message='" + message + '\'' +
                 ", source='" + source + '\'' +
                 ", severity=" + severity +
+                ", linkedEntityId=" + linkedEntityId +
                 ", generationTime=" + generationTime +
                 ", internalId=" + internalId +
                 '}';

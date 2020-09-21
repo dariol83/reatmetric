@@ -291,6 +291,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 this.alarmBuilder.setCurrentValue(this.state.getAlarmState(), this.state.getEngValue(), this.state.getGenerationTime(), this.state.getReceptionTime());
                 if(this.alarmBuilder.isChangedSinceLastBuild()) {
                     alarmData = this.alarmBuilder.build(new LongUniqueId(processor.getNextId(AlarmParameterData.class)));
+                    // Generate alarm message
+                    generateAlarmMessage(alarmData);
                     if(LOG.isLoggable(Level.FINER)) {
                         LOG.log(Level.FINER, "Alarm Parameter Data generated: " + alarmData);
                     }
@@ -316,6 +318,23 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         activateTriggers(newValue, previousValue, wasInAlarm, stateChanged);
         // Return the list
         return generatedStates;
+    }
+
+    private void generateAlarmMessage(AlarmParameterData alarmData) {
+        AlarmState state = alarmData.getCurrentAlarmState();
+        switch (state) {
+            case ALARM:
+            case ERROR:
+            {
+                LOG.log(Level.SEVERE, "Parameter " + getPath() + " in alarm, value " + alarmData.getCurrentValue(), new Object[] {getPath().asString(), getSystemEntityId()});
+            }
+            break;
+            case WARNING:
+            {
+                LOG.log(Level.WARNING, "Parameter " + getPath() + " in alarm, value " + alarmData.getCurrentValue(), new Object[] {getPath().asString(), getSystemEntityId()});
+            }
+            break;
+        }
     }
 
     private void computeSystemEntityState(boolean stateChanged, List<AbstractDataItem> generatedStates) {

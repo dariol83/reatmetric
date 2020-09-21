@@ -42,7 +42,7 @@ public class AcknowledgedMessageArchive extends AbstractDataItemArchive<Acknowle
             "WHEN NOT MATCHED THEN INSERT (UniqueId,GenerationTime,MessageId,State,UserName,AcknowledgementTime,AdditionalData) VALUES (?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM ACK_MESSAGE_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
     private static final String RETRIEVE_BY_ID_QUERY = "SELECT a.UniqueId, a.GenerationTime, a.State, a.UserName, a.AcknowledgementTime, a.AdditionalData, " +
-            "b.UniqueId, b.GenerationTime, b.Id, b.Text, b.Source, b.Severity, b.AdditionalData " +
+            "b.UniqueId, b.GenerationTime, b.Id, b.Text, b.Source, b.Severity, b.LinkedEntityId, b.AdditionalData " +
             "FROM ACK_MESSAGE_TABLE as a JOIN OPERATIONAL_MESSAGE_TABLE as b " +
             "ON (a.MessageId = b.UniqueId) " +
             "WHERE a.UniqueId=?";
@@ -104,7 +104,7 @@ public class AcknowledgedMessageArchive extends AbstractDataItemArchive<Acknowle
     @Override
     protected String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, AcknowledgedMessageFilter filter) {
         StringBuilder query = new StringBuilder("SELECT a.UniqueId, a.GenerationTime, a.State, a.UserName, a.AcknowledgementTime, a.AdditionalData, " +
-                "b.UniqueId, b.GenerationTime, b.Id, b.Text, b.Source, b.Severity, b.AdditionalData " +
+                "b.UniqueId, b.GenerationTime, b.Id, b.Text, b.Source, b.Severity, b.LinkedEntityId, b.AdditionalData " +
                 "FROM ACK_MESSAGE_TABLE as a JOIN OPERATIONAL_MESSAGE_TABLE as b " +
                 "ON (a.MessageId = b.UniqueId) " +
                 "WHERE a.");
@@ -131,7 +131,7 @@ public class AcknowledgedMessageArchive extends AbstractDataItemArchive<Acknowle
     @Override
     protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, AcknowledgedMessageFilter filter) {
         StringBuilder query = new StringBuilder("SELECT a.UniqueId, a.GenerationTime, a.State, a.UserName, a.AcknowledgementTime, a.AdditionalData, " +
-                "b.UniqueId, b.GenerationTime, b.Id, b.Text, b.Source, b.Severity, b.AdditionalData " +
+                "b.UniqueId, b.GenerationTime, b.Id, b.Text, b.Source, b.Severity, b.LinkedEntityId, b.AdditionalData " +
                 "FROM ACK_MESSAGE_TABLE as a JOIN OPERATIONAL_MESSAGE_TABLE as b " +
                 "ON (a.MessageId = b.UniqueId) " +
                 "WHERE a.");

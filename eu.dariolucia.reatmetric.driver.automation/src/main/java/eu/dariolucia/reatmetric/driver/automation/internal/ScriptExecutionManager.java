@@ -275,7 +275,7 @@ public class ScriptExecutionManager {
     private void logMessage(String message, Severity severity) {
         checkAborted();
         try {
-            context.getOperationalMessageBroker().distribute("Script", message, fileName, severity, null, true);
+            context.getOperationalMessageBroker().distribute("Script", message, fileName, severity, null, null, true);
         } catch (ReatmetricException e) {
             LOG.log(Level.SEVERE, "logMessage exception from automation " + fileName + ": " + e.getMessage(), e);
         }

@@ -38,9 +38,9 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
 
     private static final Logger LOG = Logger.getLogger(OperationalMessageArchive.class.getName());
 
-    private static final String STORE_STATEMENT = "INSERT INTO OPERATIONAL_MESSAGE_TABLE(UniqueId,GenerationTime,Id,Text,Source,Severity,AdditionalData) VALUES (?,?,?,?,?,?,?)";
+    private static final String STORE_STATEMENT = "INSERT INTO OPERATIONAL_MESSAGE_TABLE(UniqueId,GenerationTime,Id,Text,Source,Severity,LinkedEntityId,AdditionalData) VALUES (?,?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM OPERATIONAL_MESSAGE_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
-    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,Id,Text,Source,Severity,AdditionalData FROM OPERATIONAL_MESSAGE_TABLE WHERE UniqueId=?";
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,Id,Text,Source,Severity,LinkedEntityId,AdditionalData FROM OPERATIONAL_MESSAGE_TABLE WHERE UniqueId=?";
     private static final String LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM OPERATIONAL_MESSAGE_TABLE";
 
     public OperationalMessageArchive(Archive controller) throws SQLException {
@@ -55,11 +55,16 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
         storeStatement.setString(4, item.getMessage().length() > 255 ? item.getMessage().substring(0,255) : item.getMessage());
         storeStatement.setString(5, item.getSource());
         storeStatement.setShort(6, (short) item.getSeverity().ordinal());
+        if(item.getLinkedEntityId() == null) {
+            storeStatement.setNull(7, Types.INTEGER);
+        } else {
+            storeStatement.setInt(7, item.getLinkedEntityId());
+        }
         Object extension = item.getExtension();
         if(extension == null) {
-            storeStatement.setNull(7, Types.BLOB);
+            storeStatement.setNull(8, Types.BLOB);
         } else {
-            storeStatement.setBlob(7, toInputstream(item.getExtension()));
+            storeStatement.setBlob(8, toInputstream(item.getExtension()));
         }
     }
 
@@ -146,12 +151,16 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
         String messageText = rs.getString(offset + 4);
         String messageSource = rs.getString(offset + 5);
         Severity severity = Severity.values()[rs.getShort(offset + 6)];
-        Blob extensionBlob = rs.getBlob(offset + 7);
+        Integer linkedEntityId = rs.getInt(offset + 7);
+        if(rs.wasNull()) {
+            linkedEntityId = null;
+        }
+        Blob extensionBlob = rs.getBlob(offset + 8);
         Object extension = null;
         if(extensionBlob != null && !rs.wasNull()) {
             extension = toObject(extensionBlob);
         }
-        return new OperationalMessage(new LongUniqueId(uniqueId), toInstant(genTime), messageId, messageText, messageSource, severity, extension);
+        return new OperationalMessage(new LongUniqueId(uniqueId), toInstant(genTime), messageId, messageText, messageSource, severity, linkedEntityId, extension);
     }
 
     @Override

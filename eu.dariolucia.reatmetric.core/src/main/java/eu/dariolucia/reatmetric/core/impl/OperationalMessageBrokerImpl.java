@@ -26,10 +26,7 @@ import eu.dariolucia.reatmetric.core.api.IOperationalMessageBroker;
 
 import java.rmi.RemoteException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
@@ -147,7 +144,22 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
         } else if(record.getLevel().intValue() >= Level.WARNING.intValue()) {
             messageSeverity = Severity.WARN;
         }
-        OperationalMessage om = new OperationalMessage(idToAssign, record.getInstant(), REATMETRIC_ID, record.getMessage(), shortenLoggerName(record.getLoggerName()), messageSeverity, null);
+        // Check for parameters - Source
+        String source;
+        if(record.getParameters() != null && record.getParameters().length > 0 && record.getParameters()[0] != null) {
+            // Source override
+            source = Objects.toString(record.getParameters()[0]);
+        } else {
+            source = shortenLoggerName(record.getLoggerName());
+        }
+        // Check for parameters - Linked Entity ID
+        Integer entityId = null;
+        if(record.getParameters() != null && record.getParameters().length > 1 && record.getParameters()[1] instanceof Integer) {
+            // Entity
+            entityId = (Integer) record.getParameters()[1];
+        }
+
+        OperationalMessage om = new OperationalMessage(idToAssign, record.getInstant(), REATMETRIC_ID, record.getMessage(), source, messageSeverity, entityId,null);
         try {
             distribute(Collections.singletonList(om), true);
         } catch (ReatmetricException e) {
@@ -177,9 +189,9 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
     }
 
     @Override
-    public OperationalMessage distribute(String id, String message, String source, Severity severity, Object[] additionalFields, boolean store) throws ReatmetricException {
+    public OperationalMessage distribute(String id, String message, String source, Severity severity, Object[] additionalFields, Integer linkedId, boolean store) throws ReatmetricException {
         IUniqueId idToAssign = nextOperationalMessageId();
-        OperationalMessage om = new OperationalMessage(idToAssign, Instant.now(), id, message, source, severity, additionalFields);
+        OperationalMessage om = new OperationalMessage(idToAssign, Instant.now(), id, message, source, severity, linkedId, additionalFields);
         distribute(Collections.singletonList(om), store);
         return om;
     }

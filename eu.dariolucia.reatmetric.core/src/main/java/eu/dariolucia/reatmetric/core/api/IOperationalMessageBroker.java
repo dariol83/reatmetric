@@ -22,6 +22,6 @@ import eu.dariolucia.reatmetric.api.messages.Severity;
 
 public interface IOperationalMessageBroker {
 
-    OperationalMessage distribute(String id, String message, String source, Severity severity, Object[] additionalFields, boolean store) throws ReatmetricException;
+    OperationalMessage distribute(String id, String message, String source, Severity severity, Object[] additionalFields, Integer linkedEntityId, boolean store) throws ReatmetricException;
 
 }

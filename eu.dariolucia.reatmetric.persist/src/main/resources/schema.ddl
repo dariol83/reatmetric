@@ -5,6 +5,7 @@ CREATE TABLE OPERATIONAL_MESSAGE_TABLE (
    Text VARCHAR(255) NOT NULL,
    Source VARCHAR(32),
    Severity SMALLINT NOT NULL,
+   LinkedEntityId INT,
    AdditionalData BLOB,
    PRIMARY KEY (UniqueId)
 )

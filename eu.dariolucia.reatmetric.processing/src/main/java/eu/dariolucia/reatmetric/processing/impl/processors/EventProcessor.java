@@ -53,7 +53,7 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     private boolean conditionTriggerState = false;
 
     private boolean internallyTriggered = false;
-    private List<String> internalSource = new LinkedList<>(); // nulls allowed
+    private final List<String> internalSource = new LinkedList<>(); // nulls allowed
 
     private Instant lastReportedEventTime = null;
 
@@ -170,16 +170,20 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                     generatedStates.add(this.state);
                     // Log the event if log is not suppressed
                     if(definition.isLogEnabled()) {
+                        String logSource = this.state.getSource();
+                        if(logSource == null) {
+                            logSource = getPath().asString();
+                        }
                         switch (definition.getSeverity()) {
                             case ALARM:
                             case ERROR:
-                                LOG.log(Level.SEVERE, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
+                                LOG.log(Level.SEVERE, "Event " + getPath() + " raised: " + getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
                                 break;
                             case WARN:
-                                LOG.log(Level.WARNING, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
+                                LOG.log(Level.WARNING, "Event " + getPath() + " raised: " + getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
                                 break;
                             case INFO:
-                                LOG.log(Level.INFO, "Event " + getPath() + " raised: " + getDefinition().getDescription() + " - Source: " + this.state.getSource());
+                                LOG.log(Level.INFO, "Event " + getPath() + " raised: " + getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
                                 break;
                         }
                     }
