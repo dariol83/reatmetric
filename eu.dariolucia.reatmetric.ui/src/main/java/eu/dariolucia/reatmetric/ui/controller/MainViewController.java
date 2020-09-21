@@ -101,6 +101,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private Accordion sideAccordion;
     @FXML
     private SplitPane mainSplitter;
+    @FXML
+    private ImageView bannerImage;
 
     @FXML
     private TabPane viewTabPane;
@@ -124,8 +126,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private Button connectButton;
 	private final PopOver connectPopOver = new PopOver();
 
-    @FXML
-    private Button infoButton;
 	private final PopOver infoPopOver = new PopOver();
 
 	@FXML
@@ -372,7 +372,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
 	@FXML
-    private void aboutAction(ActionEvent actionEvent) {
+    private void aboutAction(Event actionEvent) {
         try {
             Parent root = FXMLLoader.load(getClass().getClassLoader()
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/AboutDialog.fxml"));
@@ -381,7 +381,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 			infoPopOver.setArrowLocation(PopOver.ArrowLocation.RIGHT_TOP);
 			infoPopOver.setDetachable(false);
 			infoPopOver.setTitle("About ReatMetric...");
-			infoPopOver.show(infoButton);
+			infoPopOver.show(bannerImage);
         } catch (IOException e) {
             e.printStackTrace();
         }

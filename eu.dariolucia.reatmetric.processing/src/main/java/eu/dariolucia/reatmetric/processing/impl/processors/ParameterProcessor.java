@@ -59,6 +59,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     private final ParameterDescriptor descriptor;
 
+    private volatile AlarmState latestGeneratedAlarmSeverityMessage;
+
     public ParameterProcessor(ParameterProcessingDefinition definition, ProcessingModelImpl processor) {
         super(definition, processor, SystemEntityType.PARAMETER);
         this.builder = new ParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
@@ -291,8 +293,6 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 this.alarmBuilder.setCurrentValue(this.state.getAlarmState(), this.state.getEngValue(), this.state.getGenerationTime(), this.state.getReceptionTime());
                 if(this.alarmBuilder.isChangedSinceLastBuild()) {
                     alarmData = this.alarmBuilder.build(new LongUniqueId(processor.getNextId(AlarmParameterData.class)));
-                    // Generate alarm message
-                    generateAlarmMessage(alarmData);
                     if(LOG.isLoggable(Level.FINER)) {
                         LOG.log(Level.FINER, "Alarm Parameter Data generated: " + alarmData);
                     }
@@ -310,9 +310,12 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         if(alarmData != null) {
             generatedStates.add(alarmData);
             currentAlarmData = alarmData;
+            // Generate alarm message
+            generateAlarmMessage(alarmData);
         } else {
             // Remove the alarm data
             currentAlarmData = null;
+            latestGeneratedAlarmSeverityMessage = null;
         }
         // At this stage, check the triggers and, for each of them, derive the correct behaviour
         activateTriggers(newValue, previousValue, wasInAlarm, stateChanged);
@@ -321,7 +324,13 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     private void generateAlarmMessage(AlarmParameterData alarmData) {
+        // Generation of alarm messages is performed only if the generated alarm data is different in terms of severity
+        // from the one generated before, or if the parameter moved back into its nominal state in the meantime
         AlarmState state = alarmData.getCurrentAlarmState();
+        if(latestGeneratedAlarmSeverityMessage != null && latestGeneratedAlarmSeverityMessage == state) {
+            return;
+        }
+        latestGeneratedAlarmSeverityMessage = state;
         switch (state) {
             case ALARM:
             case ERROR:
