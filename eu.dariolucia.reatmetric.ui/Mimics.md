@@ -173,4 +173,26 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation 
 stops.
 
-Allowed expression values: `<rotation time in milliseconds> <rotation center x> <rotation center y>` or `none` to disable the rotation. 
+Allowed expression values: `<rotation time in milliseconds> <rotation center x> <rotation center y>` or `none` to disable the rotation.
+
+### Actions
+
+Actions can be linked to SVG elements by means of the `onclick` attribute. In addition to the standard javascript functions,
+ReatMetric mimics can use the following functions.
+In order to indicate the presence of a clickable action, it is suggested to also use the attribute `cursor=pointer`.
+
+#### reatmetric.and('name')
+
+Open the specified AND.
+
+#### reatmetric.chart('name')
+
+Open the specified chart.
+
+#### reatmetric.mimics('name')
+
+Open the specified mimics.
+
+#### reatmetric.exec('path')
+
+Open the dialog window to request the execution of the specified activity.
