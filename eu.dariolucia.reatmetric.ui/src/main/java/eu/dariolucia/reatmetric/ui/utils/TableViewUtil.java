@@ -19,15 +19,16 @@ package eu.dariolucia.reatmetric.ui.utils;
 
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import javafx.collections.FXCollections;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.stage.Stage;
 
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
- * @author dario
+ * Utility class for table and tree views.
  */
 public class TableViewUtil {
 
@@ -175,7 +176,7 @@ public class TableViewUtil {
         List<?> items = new ArrayList<>(table.getItems());
         TableView<?> cloned = new TableView<>(FXCollections.observableArrayList(items));
         double width = 0;
-        double height = table.getItems().size() * 24 + 30;
+        double height = table.getItems().size() * 36 + 30;
         for(TableColumn tc : table.getColumns()) {
             TableColumn newTc = new TableColumn();
             newTc.setText(tc.getText());
@@ -185,14 +186,27 @@ public class TableViewUtil {
             width += tc.getWidth();
             cloned.getColumns().add(newTc);
         }
+        width += 20; // margin
         cloned.setPrefWidth(width);
         cloned.setPrefHeight(height);
+
+        Stage theStage = new Stage();
+        Scene theScene = new Scene(cloned);
+        theStage.setScene(theScene);
+        theStage.setWidth(width);
+        theStage.setHeight(height);
+        cloned.layout();
+        theStage.toBack();
+        theStage.show();
+        theStage.toBack();
+        theStage.hide();
+
         return cloned;
     }
 
     public static Control buildNodeForPrinting(TreeTableView<?> table) {
-        TreeItem<?> root = clone(table.getRoot());
-        TreeTableView<?> cloned = new TreeTableView<>(root);
+        TreeItem root = clone(table.getRoot());
+        TreeTableView cloned = new TreeTableView<>();
         double width = 0;
         for(TreeTableColumn tc : table.getColumns()) {
             TreeTableColumn newTc = new TreeTableColumn();
@@ -204,6 +218,17 @@ public class TableViewUtil {
             cloned.getColumns().add(newTc);
         }
         cloned.setPrefWidth(width);
+        cloned.setShowRoot(false);
+        cloned.setRoot(root);
+
+        Stage theStage = new Stage();
+        Scene theScene = new Scene(cloned);
+        theStage.setScene(theScene);
+        cloned.layout();
+        theStage.toBack();
+        theStage.show();
+        theStage.hide();
+
         return cloned;
     }
 

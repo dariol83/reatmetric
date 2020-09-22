@@ -28,13 +28,18 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.print.*;
 import javafx.scene.Node;
+import javafx.scene.SnapshotParameters;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
 import javafx.scene.transform.Scale;
+import javafx.scene.transform.Transform;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import java.net.URL;
 import java.time.Instant;
 import java.util.ResourceBundle;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -67,17 +72,27 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     protected void printButtonSelected(ActionEvent e) {
         final Node n = doBuildNodeForPrinting();
         if (n != null) {
-            ReatmetricUI.threadPool(getClass()).execute(() -> {
+            Platform.runLater(() -> { // Needed to allow the stage to show up and layout the element
                 Printer printer = Printer.getDefaultPrinter();
                 PageLayout pageLayout = printer.createPageLayout(Paper.A4, PageOrientation.PORTRAIT, Printer.MarginType.HARDWARE_MINIMUM);
                 PrinterJob job = PrinterJob.createPrinterJob();
 
-                double scaleX = pageLayout.getPrintableWidth() / n.getBoundsInLocal().getWidth(); // getPrefWidth();
-                Scale scale = new Scale(scaleX, scaleX); // Homogeneus scale, assuming width larger than height ... 
-                n.getTransforms().add(scale);
+                double scaleX = pageLayout.getPrintableWidth() / n.getBoundsInLocal().getWidth();
+                Scale scale = new Scale(scaleX, scaleX); // Homogeneus scale, assuming width larger than height ...
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.log(Level.FINE, "Printing scale is " + scale);
+                }
+                SnapshotParameters parameters = new SnapshotParameters();
+                // parameters.setTransform(scale);
+                parameters.setTransform(Transform.scale(4, 4));
 
+                final WritableImage snapshot = new WritableImage((int) (n.getBoundsInLocal().getWidth() * 4), (int) (n.getBoundsInLocal().getHeight() * 4));
+                n.snapshot(parameters, snapshot);
+                // n.getTransforms().add(scale);
+                ImageView view = new ImageView(snapshot);
+                view.getTransforms().add(new Scale(scaleX / 4, scaleX / 4));
                 if (job != null && job.showPrintDialog(retrieveWindow())) {
-                    boolean success = job.printPage(pageLayout, n);
+                    boolean success = job.printPage(pageLayout, view);
                     if (success) {
                         ReatmetricUI.setStatusLabel("Job printed successfully");
                         job.endJob();
