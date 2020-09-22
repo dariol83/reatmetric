@@ -165,6 +165,9 @@ public class MonitoringDecoder implements IRawDataSubscriber {
             if(dataTypes[i] == Double.class) {
                 toReturn.put(names[i], Pair.of(equipmentId + i, (int) bb.getDouble()));
             }
+            if(dataTypes[i] == Integer.class) {
+                toReturn.put(names[i], Pair.of(equipmentId + i, bb.getInt()));
+            }
         }
         return toReturn;
     }
