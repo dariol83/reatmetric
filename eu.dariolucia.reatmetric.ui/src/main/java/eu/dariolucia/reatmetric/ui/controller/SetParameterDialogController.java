@@ -107,13 +107,13 @@ public class SetParameterDialogController implements Initializable {
                             switch (item.getAvailability()) {
                                 case AVAILABLE:
                                     c.setFill(Paint.valueOf("#00FF00"));
-                                break;
+                                    break;
                                 case UNAVAILABLE:
                                     c.setFill(Paint.valueOf("#FF0000"));
-                                break;
+                                    break;
                                 case UNKNOWN:
                                     c.setFill(Paint.valueOf("#a9a9a9"));
-                                break;
+                                    break;
                             }
                             setGraphic(c);
                         }
@@ -199,27 +199,27 @@ public class SetParameterDialogController implements Initializable {
         routeChoiceBox.getItems().remove(0, routeChoiceBox.getItems().size());
         Map<String, Integer> route2position = new HashMap<>();
         int i = 0;
-        for(ActivityRouteState route : routesWithAvailability) {
+        for (ActivityRouteState route : routesWithAvailability) {
             routeChoiceBox.getItems().add(route);
             route2position.put(route.getRoute(), i++);
         }
         // Set the selected route or default
-        if(currentRequest != null) {
+        if (currentRequest != null) {
             Integer position = route2position.getOrDefault(currentRequest.getRoute(), 0);
-            if(position != null) {
+            if (position != null) {
                 routeChoiceBox.getSelectionModel().select(position);
             }
-        } else if(descriptor != null && descriptor.getSetterDefaultRoute() != null) {
+        } else if (descriptor != null && descriptor.getSetterDefaultRoute() != null) {
             Integer position = route2position.getOrDefault(descriptor.getSetterDefaultRoute(), 0);
             if (position != null) {
                 routeChoiceBox.getSelectionModel().select(position);
             }
-        } else if(selected != null) {
+        } else if (selected != null) {
             routeChoiceBox.getSelectionModel().select(selected);
         } else {
             // Check if you can select the first available route
-            for(ActivityRouteState ars : routesWithAvailability) {
-                if(ars.getAvailability() == ActivityRouteAvailability.AVAILABLE) {
+            for (ActivityRouteState ars : routesWithAvailability) {
+                if (ars.getAvailability() == ActivityRouteAvailability.AVAILABLE) {
                     Integer position = route2position.getOrDefault(ars.getRoute(), 0);
                     routeChoiceBox.getSelectionModel().select(position);
                 }
@@ -283,7 +283,7 @@ public class SetParameterDialogController implements Initializable {
         rawValueControl.disableProperty().bind(rawSelection.selectedProperty().not());
         engValueControl.disableProperty().bind(engSelection.selectedProperty().not());
 
-        if(input != null) {
+        if (input != null) {
             rawSelection.setSelected(!input.isEngineeringUsed());
             engSelection.setSelected(input.isEngineeringUsed());
         } else {
@@ -295,11 +295,11 @@ public class SetParameterDialogController implements Initializable {
     private Object buildValueObject() {
         Control control = engSelection.isSelected() ? engValueControl : rawValueControl;
         ValueTypeEnum type = engSelection.isSelected() ? descriptor.getEngineeringDataType() : descriptor.getRawDataType();
-        if(control instanceof TextField) {
+        if (control instanceof TextField) {
             return ValueUtil.parse(type, ((TextField) control).getText());
-        } else if(control instanceof ToggleSwitch) {
+        } else if (control instanceof ToggleSwitch) {
             return ((ToggleSwitch) control).isSelected();
-        } else if(control instanceof ComboBox) {
+        } else if (control instanceof ComboBox) {
             return ((ComboBox<?>) control).getSelectionModel().getSelectedItem();
         } else {
             return null;
@@ -312,7 +312,7 @@ public class SetParameterDialogController implements Initializable {
 
     public SetParameterRequest buildRequest() {
         Map<String, String> propertyMap = new LinkedHashMap<>();
-        for(PropertyBean pb : propertiesTableView.getItems()) {
+        for (PropertyBean pb : propertiesTableView.getItems()) {
             propertyMap.put(pb.keyProperty().get(), pb.valueProperty().get());
         }
         return new SetParameterRequest(descriptor.getExternalId(), engSelection.isSelected(), buildValueObject(), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
@@ -320,12 +320,12 @@ public class SetParameterDialogController implements Initializable {
 
     @FXML
     public void addPropertyClicked(ActionEvent actionEvent) {
-        propertiesTableView.getItems().add(new PropertyBean(Pair.of("property-key","property-value")));
+        propertiesTableView.getItems().add(new PropertyBean(Pair.of("property-key", "property-value")));
     }
 
     @FXML
     public void removePropertyClicked(ActionEvent actionEvent) {
-        if(propertiesTableView.getSelectionModel().getSelectedItem() != null) {
+        if (propertiesTableView.getSelectionModel().getSelectedItem() != null) {
             propertiesTableView.getItems().remove(propertiesTableView.getSelectionModel().getSelectedItem());
         }
     }

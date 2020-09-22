@@ -17,12 +17,13 @@
 
 package eu.dariolucia.reatmetric.ui.controller;
 
-import java.net.URL;
-import java.util.ResourceBundle;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
+
+import java.net.URL;
+import java.util.ResourceBundle;
 
 /**
  * FXML Controller class
@@ -33,10 +34,10 @@ public class NullPerspectiveController implements Initializable {
 
     @FXML
     private ImageView nullPerspectiveBgImage;
-    
+
     @FXML
     private BorderPane nullPerspective;
-    
+
     /**
      * Initializes the controller class.
      */
@@ -44,6 +45,6 @@ public class NullPerspectiveController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         this.nullPerspectiveBgImage.fitWidthProperty().bind(this.nullPerspective.widthProperty());
         this.nullPerspectiveBgImage.fitHeightProperty().bind(this.nullPerspective.heightProperty());
-    }    
-    
+    }
+
 }

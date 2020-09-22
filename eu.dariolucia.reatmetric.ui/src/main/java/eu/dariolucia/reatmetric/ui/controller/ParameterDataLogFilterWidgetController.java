@@ -62,12 +62,12 @@ public class ParameterDataLogFilterWidgetController implements Initializable, IF
     private TextField parameterPathText;
     @FXML
     private Button selectBtn;
-    
+
     private Runnable actionAfterSelection;
-    
+
     // The result of the selection
     private ParameterDataFilter selectedFilter = null;
-    
+
     /**
      * Initializes the controller class.
      */
@@ -78,14 +78,14 @@ public class ParameterDataLogFilterWidgetController implements Initializable, IF
         this.pathText.disableProperty().bind(this.pathCheckbox.selectedProperty().not());
         this.routeText.disableProperty().bind(this.routeCheckbox.selectedProperty().not());
         this.parameterPathText.disableProperty().bind(this.parameterPathCheckbox.selectedProperty().not());
-        
+
         this.validityList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         this.validityList.getItems().addAll(Arrays.asList(Validity.values()));
 
         this.alarmList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         this.alarmList.getItems().addAll(Arrays.asList(AlarmState.values()));
-    }  
-    
+    }
+
     @FXML
     private void selectButtonPressed(ActionEvent e) {
         this.selectedFilter = deriveFromWidgets();
@@ -93,12 +93,12 @@ public class ParameterDataLogFilterWidgetController implements Initializable, IF
             this.actionAfterSelection.run();
         }
     }
-  
+
     @Override
     public void setActionAfterSelection(Runnable r) {
         this.actionAfterSelection = r;
     }
-    
+
     @Override
     public void setSelectedFilter(ParameterDataFilter t) {
         this.selectedFilter = t;
@@ -109,7 +109,7 @@ public class ParameterDataLogFilterWidgetController implements Initializable, IF
     public ParameterDataFilter getSelectedFilter() {
         return this.selectedFilter;
     }
-    
+
     private void updateWidgets() {
         if(this.selectedFilter == null) {
             this.validityCheckbox.setSelected(false);
@@ -167,7 +167,7 @@ public class ParameterDataLogFilterWidgetController implements Initializable, IF
             return null;
         }
     }
-    
+
     private List<Validity> deriveSelectedValidity() {
         if(this.validityCheckbox.isSelected()) {
             return new LinkedList<>(this.validityList.getSelectionModel().getSelectedItems());

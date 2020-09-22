@@ -195,7 +195,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     private ObservableList<ScheduledActivityOccurrenceDataWrapper> eventTriggeredActivityList;
 
-    private Timer timer = new Timer("Reatmetric UI - Scheduler time tracker");
+    private final Timer timer = new Timer("Reatmetric UI - Scheduler time tracker");
     private volatile TimerTask secondTicker;
 
     private final ISchedulerSubscriber scheduleSubscriber = new ISchedulerSubscriber() {
@@ -230,14 +230,14 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
         // Timed activities
         this.timeScheduledActivityList = FXCollections.observableList(FXCollections.observableArrayList(),
-                data -> new Observable[] { data.setLineProperty(), data.startTimeProperty(), data.endTimeProperty(), data.durationProperty(), data.stateProperty(), data.nameProperty(), data.resourcesProperty(), data.triggerProperty() });
+                data -> new Observable[]{data.setLineProperty(), data.startTimeProperty(), data.endTimeProperty(), data.durationProperty(), data.stateProperty(), data.nameProperty(), data.resourcesProperty(), data.triggerProperty()});
         this.filteredList = new FilteredList<>(this.timeScheduledActivityList, o -> true);
         this.sortedList = new SortedList<>(filteredList, Comparator.reverseOrder());
         this.dataItemTableView.setItems(sortedList);
 
         // Event triggers
         this.eventTriggeredActivityList = FXCollections.observableList(FXCollections.observableArrayList(),
-                data -> new Observable[] { data.startTimeProperty(), data.endTimeProperty(), data.durationProperty(), data.stateProperty(), data.nameProperty(), data.resourcesProperty(), data.triggerProperty(), data.eventTriggerProperty() });
+                data -> new Observable[]{data.startTimeProperty(), data.endTimeProperty(), data.durationProperty(), data.stateProperty(), data.nameProperty(), data.resourcesProperty(), data.triggerProperty(), data.eventTriggerProperty()});
         this.eventDataItemTableView.setItems(eventTriggeredActivityList);
 
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
@@ -359,7 +359,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         this.dataItemTableView.setRowFactory(tv -> new TableRow<>() {
             @Override
             public void updateItem(ScheduledActivityOccurrenceDataWrapper item, boolean empty) {
-                super.updateItem(item, empty) ;
+                super.updateItem(item, empty);
                 if (item == null) {
                     setStyle("");
                 } else if (item.setLineProperty().get()) {
@@ -429,7 +429,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
                     refreshLine |= createOrUpdate(aod);
                 }
                 updateSelectTime();
-                if(refreshLine) {
+                if (refreshLine) {
                     updateToBeExecutedLine(Instant.now(), true);
                 }
             }
@@ -451,16 +451,16 @@ public class SchedulerViewController extends AbstractDisplayController implement
         if (wrapper == null) {
             wrapper = new ScheduledActivityOccurrenceDataWrapper(aod, aod.getRequest().getPath());
             activityMap.put(aod.getInternalId(), wrapper);
-            if(aod.getTrigger() instanceof EventBasedSchedulingTrigger) {
+            if (aod.getTrigger() instanceof EventBasedSchedulingTrigger) {
                 eventDataItemTableView.getItems().add(wrapper);
             } else {
                 timeScheduledActivityList.add(wrapper);
             }
             refreshTime = true;
-        } else if(aod.getState() == SchedulingState.REMOVED) {
+        } else if (aod.getState() == SchedulingState.REMOVED) {
             // Remove the wrapper from the table and map and return
             activityMap.remove(aod.getInternalId());
-            if(aod.getTrigger() instanceof EventBasedSchedulingTrigger) {
+            if (aod.getTrigger() instanceof EventBasedSchedulingTrigger) {
                 eventDataItemTableView.getItems().remove(wrapper);
             } else {
                 timeScheduledActivityList.remove(wrapper);
@@ -473,12 +473,12 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     private void update(ScheduledActivityOccurrenceDataWrapper wrapper, ScheduledActivityData aod) {
         AbstractSchedulingTrigger oldtrigger = wrapper.get().getTrigger();
-        if(oldtrigger instanceof EventBasedSchedulingTrigger && !(aod.getTrigger() instanceof EventBasedSchedulingTrigger)) {
+        if (oldtrigger instanceof EventBasedSchedulingTrigger && !(aod.getTrigger() instanceof EventBasedSchedulingTrigger)) {
             // From event to time based
             eventDataItemTableView.getItems().remove(wrapper);
             wrapper.set(aod);
             timeScheduledActivityList.add(wrapper);
-        } else if(!(oldtrigger instanceof EventBasedSchedulingTrigger) && aod.getTrigger() instanceof EventBasedSchedulingTrigger) {
+        } else if (!(oldtrigger instanceof EventBasedSchedulingTrigger) && aod.getTrigger() instanceof EventBasedSchedulingTrigger) {
             // From time based to event
             timeScheduledActivityList.remove(wrapper);
             wrapper.set(aod);
@@ -516,7 +516,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     private void clearTimeBasedActivities() {
-        for(ScheduledActivityOccurrenceDataWrapper saod : timeScheduledActivityList) {
+        for (ScheduledActivityOccurrenceDataWrapper saod : timeScheduledActivityList) {
             activityMap.remove(saod.get().getInternalId());
         }
         timeScheduledActivityList.clear();
@@ -590,7 +590,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             try {
                 // Complication coming from the fact that event-based events should not appear in historical retrieves: if you spot one, keep going
                 List<ScheduledActivityData> messages;
-                if(om != null) {
+                if (om != null) {
                     messages = doRetrieve(om.get(), n, direction, this.dataItemFilterController.getSelectedFilter());
                 } else {
                     messages = doRetrieve(Instant.now(), n, direction, this.dataItemFilterController.getSelectedFilter());
@@ -622,14 +622,14 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     private ScheduledActivityOccurrenceDataWrapper getFirst() {
-        if(this.dataItemTableView.getItems().isEmpty()) {
+        if (this.dataItemTableView.getItems().isEmpty()) {
             return null;
         }
         return this.dataItemTableView.getItems().get(0);
     }
 
     private ScheduledActivityOccurrenceDataWrapper getLast() {
-        if(this.dataItemTableView.getItems().isEmpty()) {
+        if (this.dataItemTableView.getItems().isEmpty()) {
             return null;
         }
         return this.dataItemTableView.getItems().get(this.dataItemTableView.getItems().size() - 1);
@@ -658,7 +658,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
                 List<ScheduledActivityData> messages = doRetrieve(selectedTime, n, direction, currentFilter);
-                if(initialisation) {
+                if (initialisation) {
                     Instant limit = selectedTime.minusSeconds(INITIALIZATION_SECONDS_IN_PAST);
                     addDataItems(messages.stream().filter(o -> o.getStartTime().isAfter(limit)).collect(Collectors.toList()), true);
                 } else {
@@ -709,7 +709,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
                 e.printStackTrace();
             }
         });
-        if(this.secondTicker == null) {
+        if (this.secondTicker == null) {
             this.secondTicker = new TimerTask() {
                 @Override
                 public void run() {
@@ -737,8 +737,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private void removeOldEntries() {
         Instant limit = Instant.now().minusSeconds(INITIALIZATION_SECONDS_IN_PAST);
         int start = this.sortedList.size() - 1;
-        while(start >= 0) {
-            if(this.sortedList.get(start).get().getStartTime().isBefore(limit)) {
+        while (start >= 0) {
+            if (this.sortedList.get(start).get().getStartTime().isBefore(limit)) {
                 this.timeScheduledActivityList.remove(this.sortedList.get(start));
                 --start;
             } else {
@@ -751,7 +751,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         boolean found = false;
         for (int i = sortedList.size(); i-- > 0; ) {
             ScheduledActivityOccurrenceDataWrapper wraps = sortedList.get(i);
-            if(!mark) {
+            if (!mark) {
                 wraps.setLineProperty().set(false);
             } else {
                 if (wraps.get().getTrigger() instanceof EventBasedSchedulingTrigger) {
@@ -776,7 +776,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     protected final void stopSubscription() {
-        if(this.secondTicker != null) {
+        if (this.secondTicker != null) {
             this.secondTicker.cancel();
             this.secondTicker = null;
         }
@@ -803,7 +803,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     protected void doServiceUnsubscribe() throws ReatmetricException {
         try {
-            ReatmetricUI.selectedSystem().getSystem().getScheduler().unsubscribe((IScheduledActivityDataSubscriber) this);
+            ReatmetricUI.selectedSystem().getSystem().getScheduler().unsubscribe(this);
             ReatmetricUI.selectedSystem().getSystem().getScheduler().unsubscribe(scheduleSubscriber);
         } catch (RemoteException e) {
             throw new ReatmetricException(e);
@@ -827,7 +827,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             this.dateTimePickerController.setSelectedTime(now);
         } else {
             Instant latest = null;
-            if(!this.dataItemTableView.getItems().isEmpty()) {
+            if (!this.dataItemTableView.getItems().isEmpty()) {
                 latest = this.dataItemTableView.getItems().get(0).startTimeProperty().get();
             }
             if (latest == null) {
@@ -947,7 +947,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         }
         List<ScheduledActivityOccurrenceDataWrapper> toBeRemoved = timeScheduledActivityList.stream().filter(o -> o.stateProperty().get() != SchedulingState.RUNNING && o.stateProperty().get() != SchedulingState.WAITING && o.stateProperty().get() != SchedulingState.SCHEDULED).collect(Collectors.toList());
         timeScheduledActivityList.removeIf(o -> o.stateProperty().get() != SchedulingState.RUNNING && o.stateProperty().get() != SchedulingState.WAITING && o.stateProperty().get() != SchedulingState.SCHEDULED);
-        for(ScheduledActivityOccurrenceDataWrapper aodw : toBeRemoved) {
+        for (ScheduledActivityOccurrenceDataWrapper aodw : toBeRemoved) {
             activityMap.remove(aodw.get().getInternalId());
         }
         event.consume();
@@ -966,7 +966,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     private void modifyScheduledActivity(ScheduledActivityOccurrenceDataWrapper selected) {
-        if(selected == null) {
+        if (selected == null) {
             return;
         }
         try {
@@ -1002,7 +1002,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
                 Button ok = (Button) d.getDialogPane().lookupButton(ButtonType.OK);
                 ok.disableProperty().bind(Bindings.or(activityDialogPair.getSecond().entriesValidProperty().not(), scheduleDialogPair.getSecond().entriesValidProperty().not()));
                 Optional<ButtonType> result = d.showAndWait();
-                if(result.isPresent() && result.get().equals(ButtonType.OK)) {
+                if (result.isPresent() && result.get().equals(ButtonType.OK)) {
                     updateScheduleActivity(selected.get().getInternalId(), activityDialogPair.getSecond(), scheduleDialogPair.getSecond());
                 }
             }
@@ -1020,7 +1020,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         SchedulingRequest schedulingRequest = actScheduling.buildRequest(request);
         CreationConflictStrategy creationStrategy = actScheduling.getCreationStrategy();
         boolean confirm = DialogUtils.confirm("Update scheduled activity", actExec.getPath(), "Do you want to update the scheduling request " + originalId + "?");
-        if(confirm) {
+        if (confirm) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getScheduler().update(originalId, schedulingRequest, creationStrategy);
@@ -1065,7 +1065,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         editScheduledMenuItem.setVisible(this.liveTgl.isSelected() && dataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
         eventDeleteScheduledMenuItem.setVisible(this.liveTgl.isSelected() && !eventDataItemTableView.getSelectionModel().getSelectedItems().isEmpty());
         eventEditScheduledMenuItem.setVisible(this.liveTgl.isSelected() && eventDataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
-        if(!this.liveTgl.isSelected()) {
+        if (!this.liveTgl.isSelected()) {
             windowEvent.consume();
         }
     }
@@ -1104,7 +1104,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             duration.set(data.getDuration());
             externalId.set(String.valueOf(data.getExternalId()));
             name.set(data.getRequest().getPath().getLastPathElement());
-            if(data.getTrigger() instanceof EventBasedSchedulingTrigger) {
+            if (data.getTrigger() instanceof EventBasedSchedulingTrigger) {
                 eventTrigger.set(String.valueOf(((EventBasedSchedulingTrigger) data.getTrigger()).getEvent()));
             } else {
                 eventTrigger.set("");
@@ -1167,7 +1167,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         public int compareTo(ScheduledActivityOccurrenceDataWrapper o) {
             // Compare by time and, in case equal, compare by uniqueId
             int result = startTime.get().compareTo(o.startTime.get());
-            if(result == 0) {
+            if (result == 0) {
                 result = (int) (property.get().getInternalId().asLong() - o.get().getInternalId().asLong());
             }
             return result;

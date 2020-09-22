@@ -63,15 +63,15 @@ public class ActivityDataFilterWidgetController implements Initializable, IFilte
     private CheckBox typeCheckbox;
     @FXML
     private TextField typeText;
-    
+
     @FXML
     private Button selectBtn;
-    
+
     private Runnable actionAfterSelection;
-    
+
     // The result of the selection
     private ActivityOccurrenceDataFilter selectedFilter = null;
-    
+
     /**
      * Initializes the controller class.
      */
@@ -83,11 +83,11 @@ public class ActivityDataFilterWidgetController implements Initializable, IFilte
         this.pathText.disableProperty().bind(this.pathCheckbox.selectedProperty().not());
         this.typeText.disableProperty().bind(this.typeCheckbox.selectedProperty().not());
         this.routeText.disableProperty().bind(this.routeCheckbox.selectedProperty().not());
-        
+
         this.stateList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         this.stateList.getItems().addAll(Arrays.asList(ActivityOccurrenceState.values()));
-    }  
-    
+    }
+
     @FXML
     private void selectButtonPressed(ActionEvent e) {
         this.selectedFilter = deriveFromWidgets();
@@ -95,12 +95,12 @@ public class ActivityDataFilterWidgetController implements Initializable, IFilte
             this.actionAfterSelection.run();
         }
     }
-  
+
     @Override
     public void setActionAfterSelection(Runnable r) {
         this.actionAfterSelection = r;
     }
-    
+
     @Override
     public void setSelectedFilter(ActivityOccurrenceDataFilter t) {
         this.selectedFilter = t;
@@ -111,7 +111,7 @@ public class ActivityDataFilterWidgetController implements Initializable, IFilte
     public ActivityOccurrenceDataFilter getSelectedFilter() {
         return this.selectedFilter;
     }
-    
+
     private void updateWidgets() {
         if(this.selectedFilter == null) {
             this.stateCheckbox.setSelected(false);
@@ -133,7 +133,7 @@ public class ActivityDataFilterWidgetController implements Initializable, IFilte
             this.pathCheckbox.setSelected(this.selectedFilter.getParentPath() != null);
             this.routeCheckbox.setSelected(this.selectedFilter.getRouteList() != null);
             this.typeCheckbox.setSelected(this.selectedFilter.getTypeList() != null);
-             
+
             this.sourceText.setText(IFilterController.toStringList(this.selectedFilter.getSourceList()));
             this.activityPathText.setText(IFilterController.toStringList(this.selectedFilter.getActivityPathList()));
             this.routeText.setText(IFilterController.toStringList(this.selectedFilter.getRouteList()));
@@ -171,7 +171,7 @@ public class ActivityDataFilterWidgetController implements Initializable, IFilte
             return null;
         }
     }
-    
+
     private List<String> deriveSelectedType() {
         if(this.typeCheckbox.isSelected()) {
             return new LinkedList<>(Arrays.asList(this.typeText.getText().split(",")));
@@ -179,7 +179,7 @@ public class ActivityDataFilterWidgetController implements Initializable, IFilte
             return null;
         }
     }
-        
+
     private List<String> deriveSelectedRoute() {
         if(this.routeCheckbox.isSelected()) {
             return new LinkedList<>(Arrays.asList(this.routeText.getText().split(",")));
@@ -187,7 +187,7 @@ public class ActivityDataFilterWidgetController implements Initializable, IFilte
             return null;
         }
     }
-    
+
     private List<ActivityOccurrenceState> deriveSelectedState() {
         if(this.stateCheckbox.isSelected()) {
             return new LinkedList<>(this.stateList.getSelectionModel().getSelectedItems());

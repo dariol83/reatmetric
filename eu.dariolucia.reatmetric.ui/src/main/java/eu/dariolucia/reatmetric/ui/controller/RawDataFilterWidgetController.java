@@ -19,19 +19,16 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.*;
+
 import java.net.URL;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
-import javafx.event.ActionEvent;
-import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ListView;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.TextField;
 
 /**
  * FXML Controller class
@@ -60,15 +57,15 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
     private CheckBox typeCheckbox;
     @FXML
     private TextField typeText;
-    
+
     @FXML
     private Button selectBtn;
-    
+
     private Runnable actionAfterSelection;
-    
+
     // The result of the selection
     private RawDataFilter selectedFilter = null;
-    
+
     /**
      * Initializes the controller class.
      */
@@ -79,24 +76,24 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
         this.nameText.disableProperty().bind(this.nameCheckbox.selectedProperty().not());
         this.typeText.disableProperty().bind(this.typeCheckbox.selectedProperty().not());
         this.routeText.disableProperty().bind(this.routeCheckbox.selectedProperty().not());
-        
+
         this.qualityList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         this.qualityList.getItems().addAll(Arrays.asList(Quality.values()));
-    }  
-    
+    }
+
     @FXML
     private void selectButtonPressed(ActionEvent e) {
         this.selectedFilter = deriveFromWidgets();
-        if(this.actionAfterSelection != null) {
+        if (this.actionAfterSelection != null) {
             this.actionAfterSelection.run();
         }
     }
-  
+
     @Override
     public void setActionAfterSelection(Runnable r) {
         this.actionAfterSelection = r;
     }
-    
+
     @Override
     public void setSelectedFilter(RawDataFilter t) {
         this.selectedFilter = t;
@@ -107,9 +104,9 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
     public RawDataFilter getSelectedFilter() {
         return this.selectedFilter;
     }
-    
+
     private void updateWidgets() {
-        if(this.selectedFilter == null) {
+        if (this.selectedFilter == null) {
             this.qualityCheckbox.setSelected(false);
             this.sourceCheckbox.setSelected(false);
             this.nameCheckbox.setSelected(false);
@@ -126,14 +123,14 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
             this.nameCheckbox.setSelected(this.selectedFilter.getNameContains() != null);
             this.routeCheckbox.setSelected(this.selectedFilter.getRouteList() != null);
             this.typeCheckbox.setSelected(this.selectedFilter.getTypeList() != null);
-             
+
             this.sourceText.setText(IFilterController.toStringList(this.selectedFilter.getSourceList()));
             this.routeText.setText(IFilterController.toStringList(this.selectedFilter.getRouteList()));
             this.typeText.setText(IFilterController.toStringList(this.selectedFilter.getTypeList()));
             this.nameText.setText(this.selectedFilter.getNameContains() != null ? this.selectedFilter.getNameContains() : "");
             this.qualityList.getSelectionModel().clearSelection();
-            if(this.selectedFilter.getQualityList() != null) {    
-            	this.selectedFilter.getQualityList().stream().forEach((s) -> this.qualityList.getSelectionModel().select(s));
+            if (this.selectedFilter.getQualityList() != null) {
+                this.selectedFilter.getQualityList().stream().forEach((s) -> this.qualityList.getSelectionModel().select(s));
             }
         }
     }
@@ -148,7 +145,7 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
     }
 
     private List<String> deriveSelectedSource() {
-        if(this.sourceCheckbox.isSelected()) {
+        if (this.sourceCheckbox.isSelected()) {
             List<String> toReturn = new LinkedList<>();
             toReturn.addAll(Arrays.asList(this.sourceText.getText().split(",")));
             return toReturn;
@@ -156,9 +153,9 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
             return null;
         }
     }
-    
+
     private List<String> deriveSelectedType() {
-        if(this.typeCheckbox.isSelected()) {
+        if (this.typeCheckbox.isSelected()) {
             List<String> toReturn = new LinkedList<>();
             toReturn.addAll(Arrays.asList(this.typeText.getText().split(",")));
             return toReturn;
@@ -166,9 +163,9 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
             return null;
         }
     }
-        
+
     private List<String> deriveSelectedRoute() {
-        if(this.routeCheckbox.isSelected()) {
+        if (this.routeCheckbox.isSelected()) {
             List<String> toReturn = new LinkedList<>();
             toReturn.addAll(Arrays.asList(this.routeText.getText().split(",")));
             return toReturn;
@@ -176,9 +173,9 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
             return null;
         }
     }
-    
+
     private List<Quality> deriveSelectedQuality() {
-        if(this.qualityCheckbox.isSelected()) {
+        if (this.qualityCheckbox.isSelected()) {
             List<Quality> toReturn = new LinkedList<>();
             toReturn.addAll(this.qualityList.getSelectionModel().getSelectedItems());
             return toReturn;
@@ -188,7 +185,7 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
     }
 
     private String deriveRegExpName() {
-        if(this.nameCheckbox.isSelected()) {
+        if (this.nameCheckbox.isSelected()) {
             return this.nameText.getText();
         } else {
             return null;

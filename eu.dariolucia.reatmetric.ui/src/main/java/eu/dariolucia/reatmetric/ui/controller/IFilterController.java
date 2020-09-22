@@ -22,27 +22,26 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import java.util.Set;
 
 /**
- *
  * @author dario
  */
 public interface IFilterController<T extends AbstractDataItemFilter> {
-    
+
     void setActionAfterSelection(Runnable r);
-    
+
     void setSelectedFilter(T filter);
-    
+
     T getSelectedFilter();
-    
+
     static String toStringList(Set<?> sourceList) {
-        if(sourceList == null) {
+        if (sourceList == null) {
             return "";
         }
-        
+
         StringBuilder sb = new StringBuilder();
         sourceList.forEach((o) -> {
             sb.append(o.toString()).append(",");
         });
-        if(sb.length() > 0) {
+        if (sb.length() > 0) {
             sb.deleteCharAt(sb.length() - 1);
         }
         return sb.toString();

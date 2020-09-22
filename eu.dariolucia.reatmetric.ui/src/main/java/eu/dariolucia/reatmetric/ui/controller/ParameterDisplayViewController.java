@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.ui.utils.PresetStorageManager;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -36,10 +37,7 @@ import javafx.stage.Window;
 import java.io.IOException;
 import java.net.URL;
 import java.rmi.RemoteException;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -64,6 +62,9 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 	@FXML
 	protected MenuButton loadBtn;
 
+	// Avoid dialog when closing tabs due to parent close
+	private boolean parentAboutToClose = false;
+
 	// Preset manager
 	private final PresetStorageManager presetManager = new PresetStorageManager();
 
@@ -82,7 +83,22 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 	protected String doGetComponentId() {
         return "ParameterDataView";
     }
-    
+
+	@Override
+	public void dispose() {
+		parentAboutToClose = true;
+		for(Tab tab : new ArrayList<>(tabPane.getTabs())) { // Avoid concurrent modification exceptions
+			EventHandler<Event> handler = tab.getOnClosed();
+			if (null != handler) {
+				handler.handle(new Event(Tab.TAB_CLOSE_REQUEST_EVENT));
+			} else {
+				tab.getTabPane().getTabs().remove(tab);
+			}
+		}
+		// Go up
+		super.dispose();
+	}
+
 	@FXML
 	protected void newButtonSelected(ActionEvent e) throws IOException {
 		createNewTab("Display");
@@ -100,7 +116,7 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 		t.setContent(widget);
 		t.setClosable(true);
 		t.setOnCloseRequest(event -> {
-			if(DialogUtils.confirm("Close AND tab", "About to close AND tab " + t.getText(), "Do you want to close AND tab " + t.getText() + "? Unsaved AND updates will be lost!")) {
+			if(parentAboutToClose || DialogUtils.confirm("Close AND tab", "About to close AND tab " + t.getText(), "Do you want to close AND tab " + t.getText() + "? Unsaved AND updates will be lost!")) {
 				this.tabPane.getTabs().remove(t);
 				ctrl.dispose();
 			} else {

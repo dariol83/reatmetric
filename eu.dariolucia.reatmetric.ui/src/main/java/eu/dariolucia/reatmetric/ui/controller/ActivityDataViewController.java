@@ -135,8 +135,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     // Temporary object queue
     private DataProcessingDelegator<ActivityOccurrenceData> delegator;
 
-    private Map<IUniqueId, TreeItem<ActivityOccurrenceDataWrapper>> activityMap = new HashMap<>();
-    private Map<IUniqueId, Map<String, TreeItem<ActivityOccurrenceDataWrapper>>> activityProgressMap = new HashMap<>();
+    private final Map<IUniqueId, TreeItem<ActivityOccurrenceDataWrapper>> activityMap = new HashMap<>();
+    private final Map<IUniqueId, Map<String, TreeItem<ActivityOccurrenceDataWrapper>>> activityProgressMap = new HashMap<>();
 
     @Override
     protected Window retrieveWindow() {
@@ -291,13 +291,13 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     protected void applyFilter(ActivityOccurrenceDataFilter selectedFilter) {
         this.dataItemFilterController.setSelectedFilter(selectedFilter);
         // Apply the filter on the current table
-        if(selectedFilter != null && !selectedFilter.isClear()) {
+        if (selectedFilter != null && !selectedFilter.isClear()) {
             ((FilterableTreeItem<ActivityOccurrenceDataWrapper>) dataItemTableView.getRoot()).predicateProperty().setValue(new FilterWrapper(selectedFilter));
         } else {
             ((FilterableTreeItem<ActivityOccurrenceDataWrapper>) dataItemTableView.getRoot()).predicateProperty().setValue(p -> true);
         }
-        if(this.liveTgl == null || this.liveTgl.isSelected()) {
-            if(selectedFilter == null || selectedFilter.isClear()) {
+        if (this.liveTgl == null || this.liveTgl.isSelected()) {
+            if (selectedFilter == null || selectedFilter.isClear()) {
                 ReatmetricUI.threadPool(getClass()).execute(() -> {
                     try {
                         doServiceSubscribe(selectedFilter);
@@ -317,7 +317,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                 });
             }
         } else {
-            if(selectedFilter == null || selectedFilter.isClear()) {
+            if (selectedFilter == null || selectedFilter.isClear()) {
                 markFilterDeactivated();
             } else {
                 markFilterActivated();
@@ -351,7 +351,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         // }
         Platform.runLater(() -> {
             if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
-                for(ActivityOccurrenceData aod : messages) {
+                for (ActivityOccurrenceData aod : messages) {
                     createOrUpdate(aod, true);
                 }
                 if (!fromLive) {
@@ -374,7 +374,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                 if (toRemoveTop > 0) {
                     removeActivities(0, toRemoveTop);
                 }
-                for(ActivityOccurrenceData aod : messages) {
+                for (ActivityOccurrenceData aod : messages) {
                     createOrUpdate(aod, false);
                 }
                 this.dataItemTableView.scrollTo(0);
@@ -385,7 +385,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     protected void clearTable() {
-        ((FilterableTreeItem<ActivityOccurrenceDataWrapper>)dataItemTableView.getRoot()).getSourceChildren().clear();
+        ((FilterableTreeItem<ActivityOccurrenceDataWrapper>) dataItemTableView.getRoot()).getSourceChildren().clear();
         activityProgressMap.clear();
         activityMap.clear();
         dataItemTableView.layout();
@@ -395,8 +395,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
     private void removeExceedingEntries(boolean newAddedOnTop) {
         int toRemove = dataItemTableView.getRoot().getChildren().size() - MAX_ENTRIES;
-        if(toRemove > 0) {
-            if(newAddedOnTop) {
+        if (toRemove > 0) {
+            if (newAddedOnTop) {
                 // Remove from the bottom, also from the maps
                 removeActivities(dataItemTableView.getRoot().getChildren().size() - toRemove, dataItemTableView.getRoot().getChildren().size());
             } else {
@@ -409,10 +409,10 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     private void removeActivities(int from, int to) {
         // Collect the FilteredTreeItem to remove
         Set<TreeItem<ActivityOccurrenceDataWrapper>> toRemove = new HashSet<>();
-        for(int i = from; i < to; ++i) {
+        for (int i = from; i < to; ++i) {
             toRemove.add(removeActivityAtPosition(i));
         }
-        ((FilterableTreeItem<ActivityOccurrenceDataWrapper>)dataItemTableView.getRoot()).getSourceChildren().removeAll(toRemove);
+        ((FilterableTreeItem<ActivityOccurrenceDataWrapper>) dataItemTableView.getRoot()).getSourceChildren().removeAll(toRemove);
     }
 
     private TreeItem<ActivityOccurrenceDataWrapper> removeActivityAtPosition(int i) {
@@ -424,13 +424,13 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
     private void createOrUpdate(ActivityOccurrenceData aod, boolean addOnTop) {
         TreeItem<ActivityOccurrenceDataWrapper> wrapper = activityMap.get(aod.getInternalId());
-        if(wrapper == null) {
+        if (wrapper == null) {
             wrapper = new TreeItem<>(new ActivityOccurrenceDataWrapper(aod, aod.getPath()));
             activityMap.put(aod.getInternalId(), wrapper);
-            if(addOnTop) {
-                ((FilterableTreeItem<ActivityOccurrenceDataWrapper>)dataItemTableView.getRoot()).getSourceChildren().add(0, wrapper);
+            if (addOnTop) {
+                ((FilterableTreeItem<ActivityOccurrenceDataWrapper>) dataItemTableView.getRoot()).getSourceChildren().add(0, wrapper);
             } else {
-                ((FilterableTreeItem<ActivityOccurrenceDataWrapper>)dataItemTableView.getRoot()).getSourceChildren().add(wrapper);
+                ((FilterableTreeItem<ActivityOccurrenceDataWrapper>) dataItemTableView.getRoot()).getSourceChildren().add(wrapper);
             }
         }
         update(wrapper, aod);
@@ -440,14 +440,14 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         wrapper.getValue().set(aod);
         // Progress now
         Map<String, TreeItem<ActivityOccurrenceDataWrapper>> progresses = activityProgressMap.computeIfAbsent(aod.getInternalId(), k -> new LinkedHashMap<>());
-        for(ActivityOccurrenceReport rep : aod.getProgressReports()) {
+        for (ActivityOccurrenceReport rep : aod.getProgressReports()) {
             TreeItem<ActivityOccurrenceDataWrapper> reportWrapper = progresses.get(rep.getName());
-            if(reportWrapper == null) {
+            if (reportWrapper == null) {
                 reportWrapper = new TreeItem<>(new ActivityOccurrenceDataWrapper(rep, aod.getPath()));
                 progresses.put(rep.getName(), reportWrapper);
                 wrapper.getChildren().add(reportWrapper);
             }
-            if(reportWrapper.getValue().isReportToUpdate(rep)) {
+            if (reportWrapper.getValue().isReportToUpdate(rep)) {
                 reportWrapper.getValue().set(rep);
             }
         }
@@ -507,7 +507,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @FXML
     protected void goToEnd(ActionEvent e) {
         if (isProcessingAvailable()) {
-            moveToTime(Instant.ofEpochSecond(3600*24*365*1000L), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
         }
         e.consume();
     }
@@ -529,7 +529,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     protected void fetchRecords(int n, RetrievalDirection direction) {
-        if(dataItemTableView.getRoot().getChildren().isEmpty()) {
+        if (dataItemTableView.getRoot().getChildren().isEmpty()) {
             return;
         }
         // Get the first message in the table
@@ -592,7 +592,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     protected void moveToTime(Instant selectedTime, RetrievalDirection direction, int n, ActivityOccurrenceDataFilter currentFilter) {
-        if(this.selectTimeBtn != null) {
+        if (this.selectTimeBtn != null) {
             this.selectTimeBtn.setText(formatTime(selectedTime));
         }
 
@@ -673,7 +673,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     protected void updateSelectTime() {
-        if(this.selectTimeBtn == null) {
+        if (this.selectTimeBtn == null) {
             return;
         }
         // Take the first item from the table and use the generation time as value of the text
@@ -681,16 +681,16 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             this.selectTimeBtn.setText("---");
         } else {
             Instant latest = null;
-            for(TreeItem<ActivityOccurrenceDataWrapper> item : activityMap.values()) {
-                if(latest == null) {
+            for (TreeItem<ActivityOccurrenceDataWrapper> item : activityMap.values()) {
+                if (latest == null) {
                     latest = item.getValue().generationTimeProperty().get();
                 } else {
-                    if(latest.isBefore(item.getValue().generationTimeProperty().get())) {
+                    if (latest.isBefore(item.getValue().generationTimeProperty().get())) {
                         latest = item.getValue().generationTimeProperty().get();
                     }
                 }
             }
-            if(latest == null) {
+            if (latest == null) {
                 this.selectTimeBtn.setText("---");
                 this.dateTimePickerController.setSelectedTime(null);
             } else {
@@ -769,12 +769,12 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         List<TreeItem<ActivityOccurrenceDataWrapper>> selected = this.dataItemTableView.getSelectionModel().getSelectedItems();
         boolean confirm = DialogUtils.confirm("Purge activity occurrences", null, "If you continue, the monitoring of the selected occurrences will stop and the occurrences will be removed " +
                 "from the processing model. Do you want to purge the selected occurrences?");
-        if(!confirm) {
+        if (!confirm) {
             return;
         }
         final List<Pair<Integer, IUniqueId>> purgeList = new LinkedList<>();
-        for(TreeItem<ActivityOccurrenceDataWrapper> item : selected) {
-            purgeList.add(Pair.of(((ActivityOccurrenceData)item.getValue().get()).getExternalId(), ((ActivityOccurrenceData)item.getValue().get()).getInternalId()));
+        for (TreeItem<ActivityOccurrenceDataWrapper> item : selected) {
+            purgeList.add(Pair.of(((ActivityOccurrenceData) item.getValue().get()).getExternalId(), ((ActivityOccurrenceData) item.getValue().get()).getInternalId()));
         }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
@@ -790,7 +790,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     public void removeButtonSelected(ActionEvent event) {
         boolean confirm = DialogUtils.confirm("Remove activity occurrences", null, "If you continue, the display will be cleared from the currently displayed activity occurrences. " +
                 "Do you want to continue?");
-        if(!confirm) {
+        if (!confirm) {
             return;
         }
         this.dataItemTableView.getRoot().getChildren().remove(0, this.dataItemTableView.getRoot().getChildren().size());
@@ -924,9 +924,9 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         }
 
         public String getParentPathAsString() {
-            if(path != null) {
+            if (path != null) {
                 SystemEntityPath parent = path.getParent();
-                if(parent != null) {
+                if (parent != null) {
                     return parent.asString();
                 } else {
                     return "";
@@ -937,15 +937,15 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         }
 
         public boolean isReportToUpdate(ActivityOccurrenceReport rep) {
-            if(get() instanceof ActivityOccurrenceReport) {
+            if (get() instanceof ActivityOccurrenceReport) {
                 ActivityOccurrenceReport current = (ActivityOccurrenceReport) get();
-                if(current.getStatus() == ActivityReportState.PENDING || current.getStatus() == ActivityReportState.EXPECTED) {
+                if (current.getStatus() == ActivityReportState.PENDING || current.getStatus() == ActivityReportState.EXPECTED) {
                     // If you have an update here, you replace it
                     return true;
-                } else if(current.getGenerationTime().isBefore(rep.getGenerationTime())) {
+                } else if (current.getGenerationTime().isBefore(rep.getGenerationTime())) {
                     // If the report is newer, you replace it
                     return true;
-                } else if(current.getGenerationTime().equals(rep.getGenerationTime())) {
+                } else if (current.getGenerationTime().equals(rep.getGenerationTime())) {
                     // If the report has the same time... depends on the state
                     return rep.getStatus().compareTo(current.getStatus()) > 0;
                 } else {
@@ -958,7 +958,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         }
 
         public IUniqueId getUniqueId() {
-            if(get() instanceof ActivityOccurrenceData) {
+            if (get() instanceof ActivityOccurrenceData) {
                 return ((ActivityOccurrenceData) get()).getInternalId();
             } else {
                 return null;
@@ -976,7 +976,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
         @Override
         public boolean test(ActivityOccurrenceDataWrapper activityOccurrenceDataWrapper) {
-            if(activityOccurrenceDataWrapper.get() instanceof ActivityOccurrenceReport) {
+            if (activityOccurrenceDataWrapper.get() instanceof ActivityOccurrenceReport) {
                 return true;
             } else {
                 return filter.test((ActivityOccurrenceData) activityOccurrenceDataWrapper.get());

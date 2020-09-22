@@ -58,12 +58,12 @@ public class SchedulerFilterWidgetController implements Initializable, IFilterCo
 
     @FXML
     private Button selectBtn;
-    
+
     private Runnable actionAfterSelection;
-    
+
     // The result of the selection
     private ScheduledActivityDataFilter selectedFilter = null;
-    
+
     /**
      * Initializes the controller class.
      */
@@ -73,11 +73,11 @@ public class SchedulerFilterWidgetController implements Initializable, IFilterCo
         this.sourceText.disableProperty().bind(this.sourceCheckbox.selectedProperty().not());
         this.activityPathText.disableProperty().bind(this.activityPathCheckbox.selectedProperty().not());
         this.resourcesText.disableProperty().bind(this.resourcesCheckbox.selectedProperty().not());
-        
+
         this.stateList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         this.stateList.getItems().addAll(Arrays.asList(SchedulingState.values()));
-    }  
-    
+    }
+
     @FXML
     private void selectButtonPressed(ActionEvent e) {
         this.selectedFilter = deriveFromWidgets();
@@ -85,12 +85,12 @@ public class SchedulerFilterWidgetController implements Initializable, IFilterCo
             this.actionAfterSelection.run();
         }
     }
-  
+
     @Override
     public void setActionAfterSelection(Runnable r) {
         this.actionAfterSelection = r;
     }
-    
+
     @Override
     public void setSelectedFilter(ScheduledActivityDataFilter t) {
         this.selectedFilter = t;
@@ -101,7 +101,7 @@ public class SchedulerFilterWidgetController implements Initializable, IFilterCo
     public ScheduledActivityDataFilter getSelectedFilter() {
         return this.selectedFilter;
     }
-    
+
     private void updateWidgets() {
         if(this.selectedFilter == null) {
             this.stateCheckbox.setSelected(false);
@@ -159,7 +159,7 @@ public class SchedulerFilterWidgetController implements Initializable, IFilterCo
             return null;
         }
     }
-    
+
     private List<SchedulingState> deriveSelectedState() {
         if(this.stateCheckbox.isSelected()) {
             return new LinkedList<>(this.stateList.getSelectionModel().getSelectedItems());

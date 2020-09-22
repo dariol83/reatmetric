@@ -28,9 +28,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.print.*;
 import javafx.scene.Node;
-import javafx.scene.control.Control;
-import javafx.scene.paint.Paint;
-import javafx.scene.shape.Circle;
 import javafx.scene.transform.Scale;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -38,6 +35,7 @@ import javafx.stage.Window;
 import java.net.URL;
 import java.time.Instant;
 import java.util.ResourceBundle;
+import java.util.logging.Logger;
 
 /**
  * FXML Controller class
@@ -45,6 +43,8 @@ import java.util.ResourceBundle;
  * @author dario
  */
 public abstract class AbstractDisplayController implements Initializable, IReatmetricServiceListener {
+
+    private static final Logger LOG = Logger.getLogger(AbstractDisplayController.class.getName());
 
     // Info
     protected IReatmetricSystem system = null;
@@ -66,16 +66,16 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     @FXML
     protected void printButtonSelected(ActionEvent e) {
         final Node n = doBuildNodeForPrinting();
-        if(n != null) {
+        if (n != null) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 Printer printer = Printer.getDefaultPrinter();
                 PageLayout pageLayout = printer.createPageLayout(Paper.A4, PageOrientation.PORTRAIT, Printer.MarginType.HARDWARE_MINIMUM);
                 PrinterJob job = PrinterJob.createPrinterJob();
-                
+
                 double scaleX = pageLayout.getPrintableWidth() / n.getBoundsInLocal().getWidth(); // getPrefWidth();
                 Scale scale = new Scale(scaleX, scaleX); // Homogeneus scale, assuming width larger than height ... 
                 n.getTransforms().add(scale);
-                
+
                 if (job != null && job.showPrintDialog(retrieveWindow())) {
                     boolean success = job.printPage(pageLayout, n);
                     if (success) {
@@ -92,6 +92,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     }
 
     public void dispose() {
+        LOG.fine("Disposing controller " + getClass().getSimpleName() + " - " + toString());
         systemDisconnected(null);
         ReatmetricUI.selectedSystem().removeSubscriber(this);
     }
@@ -138,7 +139,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     }
 
     protected static String formatTime(Instant time) {
-        if(time == null) {
+        if (time == null) {
             return "---";
         } else {
             return InstantCellFactory.DATE_TIME_FORMATTER.format(time);

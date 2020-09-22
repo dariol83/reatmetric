@@ -710,8 +710,9 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
 
     @Override
     public void dispose() {
-        super.dispose();
+        stopSubscription();
         ParameterDisplayCoordinator.instance().deregister(this);
+        super.dispose();
     }
 
     public Properties getParameterDisplayDescription() {

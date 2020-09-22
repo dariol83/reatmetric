@@ -159,7 +159,21 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         }
         checkDisposed();
         checkStorageQueueFull(items.size());
-        storageQueue.addAll(items);
+        // It can happen that items has more elements than the storageQueue. So we do an incremental mass storage.
+        if(items.size() < storageQueue.remainingCapacity()) {
+            // Optimisation: add the items straight
+            storageQueue.addAll(items);
+        } else {
+            // Start splitting
+            int cycles = (int) Math.ceil(items.size() / (double) STORAGE_QUEUE_FLUSH_LIMIT);
+            for(int i = 0; i < cycles; ++i) {
+                int start = i * STORAGE_QUEUE_FLUSH_LIMIT;
+                int end = i == (cycles - 1) ? items.size() : STORAGE_QUEUE_FLUSH_LIMIT * (i + 1);
+                storageQueue.addAll(items.subList(start, end));
+                // Force storage
+                checkStorageQueueFull(MAX_STORAGE_QUEUE);
+            }
+        }
     }
 
     public void store(T item) throws ArchiveException {

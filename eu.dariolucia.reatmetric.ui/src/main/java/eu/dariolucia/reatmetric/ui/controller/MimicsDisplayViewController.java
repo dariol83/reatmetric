@@ -22,6 +22,7 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import javafx.application.Platform;
 import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -35,10 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.rmi.RemoteException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -66,6 +64,9 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
 
     private URL cssUrl;
 
+    // Avoid dialog when closing tabs due to parent close
+    private boolean parentAboutToClose = false;
+
     @Override
     protected Window retrieveWindow() {
         return displayTitledPane.getScene().getWindow();
@@ -76,6 +77,21 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         this.loadBtn.setOnShowing(this::onShowingPresetMenu);
         this.cssUrl = getClass().getClassLoader()
                 .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
+    }
+
+    @Override
+    public void dispose() {
+        parentAboutToClose = true;
+        for (Tab tab : new ArrayList<>(tabPane.getTabs())) { // Avoid concurrent modification exceptions
+            EventHandler<Event> handler = tab.getOnCloseRequest();
+            if (null != handler) {
+                handler.handle(new Event(Tab.TAB_CLOSE_REQUEST_EVENT));
+            } else {
+                tab.getTabPane().getTabs().remove(tab);
+            }
+        }
+        // Go up
+        super.dispose();
     }
 
     protected String doGetComponentId() {
@@ -94,7 +110,7 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         t.setContent(mimicsDisplayWidget);
         t.setClosable(true);
         t.setOnCloseRequest(event -> {
-            if (DialogUtils.confirm("Close mimics tab", "About to close mimics tab " + t.getText(), "Do you want to close mimics tab " + t.getText() + "?")) {
+            if (parentAboutToClose || DialogUtils.confirm("Close mimics tab", "About to close mimics tab " + t.getText(), "Do you want to close mimics tab " + t.getText() + "?")) {
                 this.tabPane.getTabs().remove(t);
                 ctrl.dispose();
             } else {
@@ -146,7 +162,6 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         });
 
         return ctrl;
-
     }
 
     @Override
@@ -179,7 +194,7 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
             final String fpreset = preset;
             MenuItem mi = new MenuItem(preset);
             mi.setOnAction((event) -> {
-                if(!selectTab(fpreset)) {
+                if (!selectTab(fpreset)) {
                     loadPreset(name, fpreset);
                 }
             });
@@ -234,7 +249,7 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
                     return;
                 }
                 Platform.runLater(() -> {
-                    if(!selectTab(preset)) {
+                    if (!selectTab(preset)) {
                         loadPreset(name, preset);
                     }
                 });
@@ -243,8 +258,8 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
     }
 
     private boolean selectTab(String preset) {
-        for(Tab t : tabPane.getTabs()) {
-            if(t.getText().equals(preset)) {
+        for (Tab t : tabPane.getTabs()) {
+            if (t.getText().equals(preset)) {
                 tabPane.getSelectionModel().select(t);
                 return true;
             }

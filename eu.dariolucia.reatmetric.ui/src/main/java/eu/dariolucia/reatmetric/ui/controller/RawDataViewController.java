@@ -79,13 +79,13 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
     @FXML
     private void inspectItemAction(ActionEvent event) {
         final RawData selectedRawData = this.dataItemTableView.getSelectionModel().getSelectedItem();
-        if(selectedRawData != null) {
+        if (selectedRawData != null) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     RawData rd = selectedRawData;
                     // Data
                     byte[] data = null;
-                    if(rd.isContentsSet()) {
+                    if (rd.isContentsSet()) {
                         data = rd.getContents();
                     } else {
                         rd = ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().getRawDataContents(rd.getInternalId());
@@ -96,7 +96,7 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
                     final byte[] fdata = data;
                     // Rendered item
                     LinkedHashMap<String, String> formatData = cache.get(selectedRawData.getInternalId());
-                    if(formatData == null) {
+                    if (formatData == null) {
                         formatData = ReatmetricUI.selectedSystem().getSystem().getRawDataMonitorService().getRenderedInformation(rd);
                         cache.put(selectedRawData.getInternalId(), formatData);
                     }
@@ -106,21 +106,21 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
                     Platform.runLater(() -> {
                         this.dataInspectionController.setData(name + " - Gen. Time " + genTime, fdata, fformatData);
                         // Bounds b = this.dataItemTableView.localToScreen(this.dataItemTableView.getBoundsInLocal());
-                        this.dataInspectionPopup.setX(((MenuItem)event.getSource()).getParentPopup().getAnchorX());
-                        this.dataInspectionPopup.setY(((MenuItem)event.getSource()).getParentPopup().getAnchorY());
+                        this.dataInspectionPopup.setX(((MenuItem) event.getSource()).getParentPopup().getAnchorX());
+                        this.dataInspectionPopup.setY(((MenuItem) event.getSource()).getParentPopup().getAnchorY());
                         this.dataInspectionPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
                         this.dataInspectionPopup.show(this.displayTitledPane.getScene().getWindow());
                     });
-                } catch(ReatmetricException | RemoteException e) {
+                } catch (ReatmetricException | RemoteException e) {
                     ReatmetricUI.setStatusLabel("Retrieve of raw data contents failed: " + selectedRawData.getName());
                 }
             });
         }
     }
-    
+
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
-        super.doInitialize(url, rb); 
+        super.doInitialize(url, rb);
         this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getName()));
         this.typeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getType()));
         this.routeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getRoute()));
@@ -154,10 +154,10 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
                 }
             }
         });
-        
+
         this.dataInspectionPopup.setAutoHide(true);
         this.dataInspectionPopup.setHideOnEscape(true);
-        
+
         try {
             URL rawDataDetailsUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/RawDataDetailsWidget.fxml");
             FXMLLoader loader = new FXMLLoader(rawDataDetailsUrl);

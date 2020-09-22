@@ -84,14 +84,14 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     // Pane control
     @FXML
     private TitledPane displayTitledPane;
-    
+
     @FXML
     private CustomTextField filterText;
-    @FXML    
+    @FXML
     private TreeTableView<SystemEntity> modelTree;
-    @FXML    
+    @FXML
     private TreeTableColumn<SystemEntity, String> nameCol;
-    @FXML    
+    @FXML
     private TreeTableColumn<SystemEntity, Status> statusCol;
 
     // ****************************************************************************
@@ -152,21 +152,21 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     private void filterClearButtonPressed(Event e) {
         this.filterText.clear();
     }
-    
+
     @FXML
     protected void onDragDetected(Event e) {
         /* drag was detected, start a drag-and-drop gesture*/
         /* allow any transfer mode */
         Dragboard db = this.modelTree.startDragAndDrop(TransferMode.ANY);
-        
+
         final TreeItem<SystemEntity> selectedItem = this.modelTree.getSelectionModel().getSelectedItem();
-        if(selectedItem != null && selectedItem.getValue() != null) {
+        if (selectedItem != null && selectedItem.getValue() != null) {
             SystemEntity item = selectedItem.getValue();
             ClipboardContent content = new ClipboardContent();
-            if(item.getType() == SystemEntityType.CONTAINER) {
+            if (item.getType() == SystemEntityType.CONTAINER) {
                 List<SystemEntity> list = new ArrayList<>();
                 list.add(item);
-                for(TreeItem<SystemEntity> child : selectedItem.getChildren()) {
+                for (TreeItem<SystemEntity> child : selectedItem.getChildren()) {
                     list.add(child.getValue());
                 }
                 content.put(SystemEntityDataFormats.CONTAINER, list);
@@ -175,14 +175,14 @@ public class ModelBrowserViewController extends AbstractDisplayController {
             }
             db.setContent(content);
         }
-        
+
         e.consume();
     }
 
     @FXML
     private void enableItemAction(ActionEvent event) {
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
-        if(se != null && se.getValue().getStatus() != Status.ENABLED) {
+        if (se != null && se.getValue().getStatus() != Status.ENABLED) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().enable(se.getValue().getPath());
@@ -196,7 +196,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     @FXML
     private void disableItemAction(ActionEvent event) {
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
-        if(se != null && se.getValue().getStatus() != Status.DISABLED) {
+        if (se != null && se.getValue().getStatus() != Status.DISABLED) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().disable(se.getValue().getPath());
@@ -210,7 +210,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     @FXML
     private void expandItemAction(ActionEvent event) {
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
-        if(se != null) {
+        if (se != null) {
             expandItem(se, true);
         }
     }
@@ -218,7 +218,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     @FXML
     private void collapseItemAction(ActionEvent event) {
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
-        if(se != null) {
+        if (se != null) {
             expandItem(se, false);
         }
     }
@@ -226,7 +226,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     @FXML
     private void copyPathToClipboardItemAction(ActionEvent actionEvent) {
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
-        if(se != null) {
+        if (se != null) {
             final Clipboard clipboard = Clipboard.getSystemClipboard();
             final ClipboardContent content = new ClipboardContent();
             content.putString(se.getValue().getPath().asString());
@@ -236,7 +236,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
 
     private void expandItem(TreeItem<SystemEntity> item, boolean expand) {
         item.expandedProperty().set(expand);
-        for(TreeItem<SystemEntity> child : item.getChildren()) {
+        for (TreeItem<SystemEntity> child : item.getChildren()) {
             expandItem(child, expand);
         }
     }
@@ -282,17 +282,17 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                             setGraphic(null);
                             break;
                     }
-                    if(defaultTextColor == null) {
+                    if (defaultTextColor == null) {
                         defaultTextColor = getTextFill();
                     }
-                    if(defaultFont == null) {
+                    if (defaultFont == null) {
                         defaultFont = getFont();
                     }
-                    if(fontNotAcked == null) {
+                    if (fontNotAcked == null) {
                         fontNotAcked = Font.font(defaultFont.getName(), FontWeight.EXTRA_BOLD, defaultFont.getSize());
                     }
                     AckAlarmStatus status = alarmStatusMap.get(entity.getExternalId()).get();
-                    switch(status) {
+                    switch (status) {
                         case ALARM_NOT_ACKED:
                             setFont(fontNotAcked);
                             setTextFill(Color.RED);
@@ -311,9 +311,9 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                             break;
                         case NOMINAL:
                             setFont(defaultFont);
-                            if(entity.getAlarmState() == AlarmState.UNKNOWN) {
+                            if (entity.getAlarmState() == AlarmState.UNKNOWN) {
                                 setTextFill(Color.GRAY);
-                            } else if(entity.getAlarmState() == AlarmState.VIOLATED) {
+                            } else if (entity.getAlarmState() == AlarmState.VIOLATED) {
                                 setTextFill(Color.LIMEGREEN);
                             } else {
                                 setTextFill(defaultTextColor);
@@ -321,9 +321,9 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                             break;
                         case NOMINAL_NOT_ACKED:
                             setFont(fontNotAcked);
-                            if(entity.getAlarmState() == AlarmState.UNKNOWN) {
+                            if (entity.getAlarmState() == AlarmState.UNKNOWN) {
                                 setTextFill(Color.GRAY);
-                            } else if(entity.getAlarmState() == AlarmState.VIOLATED) {
+                            } else if (entity.getAlarmState() == AlarmState.VIOLATED) {
                                 setTextFill(Color.LIMEGREEN);
                             } else {
                                 setTextFill(defaultTextColor);
@@ -380,10 +380,10 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     }
 
     private void updatePredicate(String newValue) {
-        if(modelTree.getRoot() == null) {
+        if (modelTree.getRoot() == null) {
             return;
         }
-        if(newValue.isBlank()) {
+        if (newValue.isBlank()) {
             ((FilterableTreeItem<SystemEntity>) modelTree.getRoot()).predicateProperty().setValue(p -> true);
         } else {
             ((FilterableTreeItem<SystemEntity>) modelTree.getRoot()).predicateProperty().setValue(p -> p.getPath().asString().contains(newValue));
@@ -453,22 +453,22 @@ public class ModelBrowserViewController extends AbstractDisplayController {
             List<TreeItem<SystemEntity>> leaves = new LinkedList<>();
             Queue<SystemEntity> constructionQueue = new LinkedList<>();
             constructionQueue.add(this.root);
-            while(!constructionQueue.isEmpty()) {
+            while (!constructionQueue.isEmpty()) {
                 SystemEntity toProcess = constructionQueue.poll();
-                if(!this.path2item.containsKey(toProcess.getPath())) {
+                if (!this.path2item.containsKey(toProcess.getPath())) {
                     TreeItem<SystemEntity> theItem = addOrUpdateItemToTree(toProcess);
-                    if(toProcess.getType() == SystemEntityType.CONTAINER) {
+                    if (toProcess.getType() == SystemEntityType.CONTAINER) {
                         List<SystemEntity> children = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getContainedEntities(toProcess.getPath());
                         if (children != null) {
                             constructionQueue.addAll(children);
                         }
-                    } else if(toProcess.getType() == SystemEntityType.EVENT || toProcess.getType() == SystemEntityType.PARAMETER) {
+                    } else if (toProcess.getType() == SystemEntityType.EVENT || toProcess.getType() == SystemEntityType.PARAMETER) {
                         leaves.add(theItem);
                     }
                 }
             }
             // Now you can update the alarm status of tree
-            for(TreeItem<SystemEntity> item : leaves) {
+            for (TreeItem<SystemEntity> item : leaves) {
                 updateAlarmStatus(item);
             }
             // Now you can ask the UI thread to set the root in the viewer
@@ -485,7 +485,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     private TreeItem<SystemEntity> addOrUpdateItemToTree(SystemEntity toAdd) {
         // If there is already an item in the map, update the item
         FilterableTreeItem<SystemEntity> item = this.path2item.get(toAdd.getPath());
-        if(item == null) {
+        if (item == null) {
             // Create the item
             item = new FilterableTreeItem<>(toAdd);
             // Add it to the map
@@ -498,11 +498,11 @@ public class ModelBrowserViewController extends AbstractDisplayController {
         } else {
             // Replace the system element, if the internal ID is more recent
             SystemEntity currentState = item.getValue();
-            if(currentState.getInternalId().asLong() < toAdd.getInternalId().asLong()) {
+            if (currentState.getInternalId().asLong() < toAdd.getInternalId().asLong()) {
                 item.setValue(toAdd);
             }
             // Update the alarm status of the branch, if this is a leave
-            if(item.isLeaf()) {
+            if (item.isLeaf()) {
                 updateAlarmStatus(item);
             }
         }
@@ -514,21 +514,21 @@ public class ModelBrowserViewController extends AbstractDisplayController {
         AckAlarmStatus derivedStatus = AckAlarmStatus.deriveStatus(item.getValue().getAlarmState(), MainViewController.instance().isPendingAcknowledgement(item.getValue().getExternalId()));
         // Get the property
         SimpleObjectProperty<AckAlarmStatus> alarmProperty = this.alarmStatusMap.get(item.getValue().getExternalId());
-        if(derivedStatus != alarmProperty.get()) {
+        if (derivedStatus != alarmProperty.get()) {
             // Then we set the new status and we recompute the branch status
             alarmProperty.set(derivedStatus);
             TreeItem<SystemEntity> parent = item.getParent();
-            while(parent != null) {
+            while (parent != null) {
                 // Get the parent current alarm status
                 SimpleObjectProperty<AckAlarmStatus> parentAlarmProperty = this.alarmStatusMap.get(parent.getValue().getExternalId());
-                if(parentAlarmProperty.get() == derivedStatus) {
+                if (parentAlarmProperty.get() == derivedStatus) {
                     // If the status of the parent is the same of the child, we can stop here
                     return;
                 }
                 // The status is different, so we need to compute the status of the parent, taking into account the status of the
                 // direct leaves
                 AckAlarmStatus newParentStatus = deriveAlarmStatusFromLeaves(parent);
-                if(parentAlarmProperty.get() == newParentStatus) {
+                if (parentAlarmProperty.get() == newParentStatus) {
                     // If the status of the parent as derived is the same of the previous, we can stop here
                     return;
                 } else {
@@ -545,7 +545,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
 
     private AckAlarmStatus deriveAlarmStatusFromLeaves(TreeItem<SystemEntity> parent) {
         AckAlarmStatus result = AckAlarmStatus.NOMINAL;
-        for(TreeItem<SystemEntity> child : parent.getChildren()) {
+        for (TreeItem<SystemEntity> child : parent.getChildren()) {
             SimpleObjectProperty<AckAlarmStatus> childAlarmProp = this.alarmStatusMap.get(child.getValue().getExternalId());
             result = AckAlarmStatus.merge(result, childAlarmProp.get());
         }
@@ -554,12 +554,12 @@ public class ModelBrowserViewController extends AbstractDisplayController {
 
     private void addToParent(TreeItem<SystemEntity> item) {
         SystemEntityPath parentPath = item.getValue().getPath().getParent();
-        if(parentPath == null) {
+        if (parentPath == null) {
             // This is the root, do not do anything
             return;
         }
         FilterableTreeItem<SystemEntity> parent = this.path2item.get(parentPath);
-        if(parent == null) {
+        if (parent == null) {
             LOG.log(Level.WARNING, "Parent entity at path " + parentPath + " while adding " + item.getValue().getPath() + " not found: object skipped");
         } else {
             parent.getSourceChildren().add(item);
@@ -582,7 +582,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     @FXML
     private void menuAboutToShow(WindowEvent windowEvent) {
         TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
-        if(selected == null || selected.getValue() == null) {
+        if (selected == null || selected.getValue() == null) {
             return;
         }
         // Expand/collapse behaviour
@@ -606,7 +606,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     @FXML
     private void scheduleActivityAction(ActionEvent actionEvent) {
         TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
-        if(selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.ACTIVITY) {
+        if (selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.ACTIVITY) {
             return;
         }
         try {
@@ -641,7 +641,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                 Button ok = (Button) d.getDialogPane().lookupButton(ButtonType.OK);
                 ok.disableProperty().bind(Bindings.or(activityDialogPair.getSecond().entriesValidProperty().not(), scheduleDialogPair.getSecond().entriesValidProperty().not()));
                 Optional<ButtonType> result = d.showAndWait();
-                if(result.isPresent() && result.get().equals(ButtonType.OK)) {
+                if (result.isPresent() && result.get().equals(ButtonType.OK)) {
                     scheduleActivity(activityDialogPair.getSecond(), scheduleDialogPair.getSecond());
                 }
             }
@@ -655,7 +655,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
         SchedulingRequest schedulingRequest = actSched.buildRequest(request);
         CreationConflictStrategy creationStrategy = actSched.getCreationStrategy();
         boolean confirm = DialogUtils.confirm("Request scheduling of activity", actExec.getPath(), "Do you want to dispatch the scheduling request to the scheduler?");
-        if(confirm) {
+        if (confirm) {
             // Store activity request in activity invocation cache, to be used to initialise the same activity invocation in the future
             activityRequestMap.put(actExec.getPath(), request);
             ReatmetricUI.threadPool(getClass()).execute(() -> {
@@ -671,7 +671,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     @FXML
     private void executeActivityAction(ActionEvent actionEvent) {
         TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
-        if(selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.ACTIVITY) {
+        if (selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.ACTIVITY) {
             return;
         }
         SystemEntity toExecute = selected.getValue();
@@ -680,14 +680,14 @@ public class ModelBrowserViewController extends AbstractDisplayController {
 
     public void requestActivity(String activityPath) {
         FilterableTreeItem<SystemEntity> item = path2item.get(SystemEntityPath.fromString(activityPath));
-        if(item != null) {
+        if (item != null) {
             executeActivity(item.getValue());
         }
     }
 
     public SystemEntity getSystemEntity(String path) {
         FilterableTreeItem<SystemEntity> item = path2item.get(SystemEntityPath.fromString(path));
-        if(item != null) {
+        if (item != null) {
             return item.getValue();
         } else {
             return null;
@@ -719,7 +719,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                 Button ok = (Button) d.getDialogPane().lookupButton(ButtonType.OK);
                 activityDialogPair.getSecond().bindOkButton(ok);
                 Optional<ButtonType> result = d.showAndWait();
-                if(result.isPresent() && result.get().equals(ButtonType.OK)) {
+                if (result.isPresent() && result.get().equals(ButtonType.OK)) {
                     runActivity(activityDialogPair.getSecond());
                 }
             }
@@ -731,7 +731,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     private void runActivity(ActivityInvocationDialogController activityInvocationDialogController) {
         ActivityRequest request = activityInvocationDialogController.buildRequest();
         boolean confirm = DialogUtils.confirm("Request execution of activity", activityInvocationDialogController.getPath(), "Do you want to dispatch the execution request to the processing model?");
-        if(confirm) {
+        if (confirm) {
             // Store activity request in activity invocation cache, to be used to initialise the same activity invocation in the future
             activityRequestMap.put(activityInvocationDialogController.getPath(), request);
             ReatmetricUI.threadPool(getClass()).execute(() -> {
@@ -747,14 +747,14 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     @FXML
     private void setParameterAction(ActionEvent actionEvent) {
         TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
-        if(selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.PARAMETER) {
+        if (selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.PARAMETER) {
             return;
         }
         try {
             // Get the descriptor
             AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getValue().getExternalId());
             if (descriptor instanceof ParameterDescriptor) {
-                if(!((ParameterDescriptor) descriptor).isSettable()) {
+                if (!((ParameterDescriptor) descriptor).isSettable()) {
                     DialogUtils.alert("Set parameter " + descriptor.getPath().getLastPathElement(), null, "Selected parameter " + descriptor.getPath().getLastPathElement() + " cannot be set");
                 } else {
                     // Get the route list (from the setter type -> activity type)
@@ -777,7 +777,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                     Button ok = (Button) d.getDialogPane().lookupButton(ButtonType.OK);
                     parameterSetPair.getSecond().bindOkButton(ok);
                     Optional<ButtonType> result = d.showAndWait();
-                    if(result.isPresent() && result.get().equals(ButtonType.OK)) {
+                    if (result.isPresent() && result.get().equals(ButtonType.OK)) {
                         setParameter(parameterSetPair.getSecond());
                     }
                 }
@@ -790,7 +790,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     private void setParameter(SetParameterDialogController setParameterDialogController) {
         SetParameterRequest request = setParameterDialogController.buildRequest();
         boolean confirm = DialogUtils.confirm("Request parameter set", setParameterDialogController.getPath(), "Do you want to dispatch the set request to the processing model?");
-        if(confirm) {
+        if (confirm) {
             // Store set request in set invocation cache, to be used to initialise the same set invocation in the future
             setParameterRequestMap.put(setParameterDialogController.getPath(), request);
             ReatmetricUI.threadPool(getClass()).execute(() -> {
@@ -817,21 +817,21 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     public void informAcknowledgementStatus(Set<Integer> ackStatusCleared, Set<Integer> ackStatusActive) {
         Platform.runLater(() -> {
             // The cleared ones must be updated
-            for(Integer i : ackStatusCleared) {
+            for (Integer i : ackStatusCleared) {
                 SystemEntityPath path = this.id2path.get(i);
-                if(path != null) {
+                if (path != null) {
                     TreeItem<SystemEntity> entityTreeItem = this.path2item.get(path);
-                    if(entityTreeItem != null) {
+                    if (entityTreeItem != null) {
                         addOrUpdateItemToTree(entityTreeItem.getValue());
                     }
                 }
             }
             // The active ones as well (even though should not be needed...)
-            for(Integer i : ackStatusActive) {
+            for (Integer i : ackStatusActive) {
                 SystemEntityPath path = this.id2path.get(i);
-                if(path != null) {
+                if (path != null) {
                     TreeItem<SystemEntity> entityTreeItem = this.path2item.get(path);
-                    if(entityTreeItem != null) {
+                    if (entityTreeItem != null) {
                         addOrUpdateItemToTree(entityTreeItem.getValue());
                     }
                 }

@@ -192,7 +192,7 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
             t.setDaemon(true);
             return t;
         }); // OK to use, only 1 job, separate queue
-        private final BlockingQueue<AcknowledgedMessage> queue = new ArrayBlockingQueue<>(1000);
+        private final BlockingQueue<AcknowledgedMessage> queue = new LinkedBlockingQueue<>();
         private final IAcknowledgedMessageSubscriber subscriber;
         private final boolean timely;
         private volatile Predicate<AcknowledgedMessage> filter;
@@ -204,7 +204,7 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
             this.filter = filter == null ? IDENTITY_FILTER : filter;
             this.timely = timely;
             this.queue.addAll(initialMessages);
-            dispatcher.submit(this::processQueue);
+            this.dispatcher.submit(this::processQueue);
         }
 
         private void processQueue() {

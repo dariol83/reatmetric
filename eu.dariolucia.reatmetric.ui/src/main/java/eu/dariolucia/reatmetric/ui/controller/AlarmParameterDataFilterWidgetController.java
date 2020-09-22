@@ -46,7 +46,7 @@ public class AlarmParameterDataFilterWidgetController implements Initializable, 
     private CheckBox alarmStateCheckbox;
     @FXML
     private ListView<AlarmState> alarmStateList;
-    
+
     @FXML
     private CheckBox pathCheckbox;
     @FXML
@@ -54,12 +54,12 @@ public class AlarmParameterDataFilterWidgetController implements Initializable, 
 
     @FXML
     private Button selectBtn;
-    
+
     private Runnable actionAfterSelection;
-    
+
     // The result of the selection
     private AlarmParameterDataFilter selectedFilter = null;
-    
+
     /**
      * Initializes the controller class.
      */
@@ -67,11 +67,11 @@ public class AlarmParameterDataFilterWidgetController implements Initializable, 
     public void initialize(URL url, ResourceBundle rb) {
         this.alarmStateList.disableProperty().bind(this.alarmStateCheckbox.selectedProperty().not());
         this.pathText.disableProperty().bind(this.pathCheckbox.selectedProperty().not());
-        
+
         this.alarmStateList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         this.alarmStateList.getItems().addAll(Arrays.asList(AlarmState.values()));
-    }  
-    
+    }
+
     @FXML
     private void selectButtonPressed(ActionEvent e) {
         this.selectedFilter = deriveFromWidgets();
@@ -79,12 +79,12 @@ public class AlarmParameterDataFilterWidgetController implements Initializable, 
             this.actionAfterSelection.run();
         }
     }
-  
+
     @Override
     public void setActionAfterSelection(Runnable r) {
         this.actionAfterSelection = r;
     }
-    
+
     @Override
     public void setSelectedFilter(AlarmParameterDataFilter t) {
         this.selectedFilter = t;
@@ -95,7 +95,7 @@ public class AlarmParameterDataFilterWidgetController implements Initializable, 
     public AlarmParameterDataFilter getSelectedFilter() {
         return this.selectedFilter;
     }
-    
+
     private void updateWidgets() {
         if(this.selectedFilter == null) {
             this.alarmStateCheckbox.setSelected(false);

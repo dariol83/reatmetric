@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.ui.utils.PresetStorageManager;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -36,10 +37,7 @@ import javafx.stage.Window;
 import java.io.IOException;
 import java.net.URL;
 import java.rmi.RemoteException;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,210 +48,228 @@ import java.util.logging.Logger;
  */
 public class UserDisplayViewController extends AbstractDisplayController {
 
-	private static final Logger LOG = Logger.getLogger(UserDisplayViewController.class.getName());
+    private static final Logger LOG = Logger.getLogger(UserDisplayViewController.class.getName());
 
-	private URL cssUrl;
+    private URL cssUrl;
 
-	// Pane control
-	@FXML
-	protected TitledPane displayTitledPane;
+    // Pane control
+    @FXML
+    protected TitledPane displayTitledPane;
 
-	@FXML
-	protected TabPane tabPane;
+    @FXML
+    protected TabPane tabPane;
 
-	@FXML
-	protected MenuButton loadBtn;
+    @FXML
+    protected MenuButton loadBtn;
 
-	// Preset manager
-	private final PresetStorageManager presetManager = new PresetStorageManager();
+    // Preset manager
+    private final PresetStorageManager presetManager = new PresetStorageManager();
 
-	@Override
-	protected Window retrieveWindow() {
-		return displayTitledPane.getScene().getWindow();
-	}
+    // Avoid dialog when closing tabs due to parent close
+    private boolean parentAboutToClose = false;
 
-	@Override
-	public final void doInitialize(URL url, ResourceBundle rb) {
-		this.loadBtn.setOnShowing(this::onShowingPresetMenu);
-		this.cssUrl = getClass().getClassLoader()
-				.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
-	}
+    @Override
+    protected Window retrieveWindow() {
+        return displayTitledPane.getScene().getWindow();
+    }
 
-	protected String doGetComponentId() {
+    @Override
+    public final void doInitialize(URL url, ResourceBundle rb) {
+        this.loadBtn.setOnShowing(this::onShowingPresetMenu);
+        this.cssUrl = getClass().getClassLoader()
+                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
+    }
+
+    protected String doGetComponentId() {
         return "ChartDisplayView";
     }
-    
-	@FXML
-	protected void newButtonSelected(ActionEvent e) throws IOException {
-		createNewTab("Display");
-	}
 
-	private UserDisplayTabWidgetController createNewTab(String tabText) throws IOException {
-		Tab t = new Tab(tabText);
+    @Override
+    public void dispose() {
+        parentAboutToClose = true;
+        for (Tab tab : new ArrayList<>(tabPane.getTabs())) { // Avoid concurrent modification exceptions
+            EventHandler<Event> handler = tab.getOnClosed();
+            if (null != handler) {
+                handler.handle(new Event(Tab.TAB_CLOSE_REQUEST_EVENT));
+            } else {
+                tab.getTabPane().getTabs().remove(tab);
+            }
+        }
+        // Go up
+        super.dispose();
+    }
 
-		URL userDisplayWidgetUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/UserDisplayTabWidget.fxml");
-		FXMLLoader loader = new FXMLLoader(userDisplayWidgetUrl);
-		final VBox userDisplayWidget = loader.load();
-		final UserDisplayTabWidgetController ctrl = loader.getController();
+    @FXML
+    protected void newButtonSelected(ActionEvent e) throws IOException {
+        createNewTab("Display");
+    }
 
-		userDisplayWidget.prefWidthProperty().bind(this.tabPane.widthProperty());
-		// userDisplayWidget.prefHeightProperty().bind(t.heightProperty()); // this creates problems with the height
-		t.setContent(userDisplayWidget);
-		t.setClosable(true);
-		t.setOnCloseRequest(event -> {
-			if(DialogUtils.confirm("Close chart tab", "About to close chart tab " + t.getText(), "Do you want to close chart tab " + t.getText() + "? Unsaved chart updates will be lost!")) {
-				this.tabPane.getTabs().remove(t);
-				ctrl.dispose();
-			} else {
-				event.consume();
-			}
-		});
-		this.tabPane.getTabs().add(t);
-		this.tabPane.getParent().layout();
-		this.tabPane.getSelectionModel().select(t);
-		ctrl.startSubscription();
+    private UserDisplayTabWidgetController createNewTab(String tabText) throws IOException {
+        Tab t = new Tab(tabText);
 
-		t.setContextMenu(new ContextMenu());
-		MenuItem renameTabMenuItem = new MenuItem("Rename...");
-		t.getContextMenu().getItems().add(renameTabMenuItem);
-		renameTabMenuItem.setOnAction(event -> {
-			// Traditional way to get the response value.
-			Optional<String> result = DialogUtils.input(t.getText(), "Rename Tab", "Change name of the chart tab", "Please provide the name of the chart tab:");
-			result.ifPresent(t::setText);
-		});
-		MenuItem saveTabMenuItem = new MenuItem("Save chart preset...");
-		t.getContextMenu().getItems().add(saveTabMenuItem);
-		saveTabMenuItem.setOnAction(event -> {
-			// Traditional way to get the response value.
-			Optional<String> result = DialogUtils.input(t.getText(), "Save Chart Preset", "Chart Preset", "Please provide the name of the preset:");
-			result.ifPresent(s -> {
-				try {
-					this.presetManager.save(system.getName(), user, s, doGetComponentId(), ctrl.getChartDescription());
-				} catch (RemoteException e) {
-					LOG.log(Level.SEVERE, "Cannot save preset, system not responding", e);
-				}
-			});
-		});
-		// Tab detaching
-		SeparatorMenuItem sep = new SeparatorMenuItem();
-		t.getContextMenu().getItems().add(sep);
-		MenuItem detachMenuItem = new MenuItem("Detach");
-		t.getContextMenu().getItems().add(detachMenuItem);
-		detachMenuItem.setOnAction(event -> {
-			// Create a detached scene parent
-			Stage stage = new Stage();
-			t.setContent(null);
-			t.setOnCloseRequest(null);
-			this.tabPane.getTabs().remove(t);
-			// this.tab2contents.remove(t); // if removed, there will be no forwards of system status change
-			Scene scene = new Scene(userDisplayWidget, 800, 600);
-			scene.getStylesheets().add(cssUrl.toExternalForm());
+        URL userDisplayWidgetUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/UserDisplayTabWidget.fxml");
+        FXMLLoader loader = new FXMLLoader(userDisplayWidgetUrl);
+        final VBox userDisplayWidget = loader.load();
+        final UserDisplayTabWidgetController ctrl = loader.getController();
 
-			stage.setScene(scene);
-			stage.setTitle(t.getText());
+        userDisplayWidget.prefWidthProperty().bind(this.tabPane.widthProperty());
+        // userDisplayWidget.prefHeightProperty().bind(t.heightProperty()); // this creates problems with the height
+        t.setContent(userDisplayWidget);
+        t.setClosable(true);
+        t.setOnCloseRequest(event -> {
+            if (parentAboutToClose || DialogUtils.confirm("Close chart tab", "About to close chart tab " + t.getText(), "Do you want to close chart tab " + t.getText() + "? Unsaved chart updates will be lost!")) {
+                this.tabPane.getTabs().remove(t);
+                ctrl.dispose();
+            } else {
+                event.consume();
+            }
+        });
+        this.tabPane.getTabs().add(t);
+        this.tabPane.getParent().layout();
+        this.tabPane.getSelectionModel().select(t);
+        ctrl.startSubscription();
 
-			Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
-			stage.getIcons().add(icon);
-			ctrl.setIndependentStage(stage);
-			stage.setOnCloseRequest(ev -> {
-				if(DialogUtils.confirm("Close chart", "About to close chart " + stage.getTitle(), "Do you want to close chart " + stage.getTitle() + "? Unsaved chart updates will be lost!")) {
-					ctrl.dispose();
-					stage.close();
-				} else {
-					ev.consume();
-				}
-			});
+        t.setContextMenu(new ContextMenu());
+        MenuItem renameTabMenuItem = new MenuItem("Rename...");
+        t.getContextMenu().getItems().add(renameTabMenuItem);
+        renameTabMenuItem.setOnAction(event -> {
+            // Traditional way to get the response value.
+            Optional<String> result = DialogUtils.input(t.getText(), "Rename Tab", "Change name of the chart tab", "Please provide the name of the chart tab:");
+            result.ifPresent(t::setText);
+        });
+        MenuItem saveTabMenuItem = new MenuItem("Save chart preset...");
+        t.getContextMenu().getItems().add(saveTabMenuItem);
+        saveTabMenuItem.setOnAction(event -> {
+            // Traditional way to get the response value.
+            Optional<String> result = DialogUtils.input(t.getText(), "Save Chart Preset", "Chart Preset", "Please provide the name of the preset:");
+            result.ifPresent(s -> {
+                try {
+                    this.presetManager.save(system.getName(), user, s, doGetComponentId(), ctrl.getChartDescription());
+                } catch (RemoteException e) {
+                    LOG.log(Level.SEVERE, "Cannot save preset, system not responding", e);
+                }
+            });
+        });
+        // Tab detaching
+        SeparatorMenuItem sep = new SeparatorMenuItem();
+        t.getContextMenu().getItems().add(sep);
+        MenuItem detachMenuItem = new MenuItem("Detach");
+        t.getContextMenu().getItems().add(detachMenuItem);
+        detachMenuItem.setOnAction(event -> {
+            // Create a detached scene parent
+            Stage stage = new Stage();
+            t.setContent(null);
+            t.setOnCloseRequest(null);
+            this.tabPane.getTabs().remove(t);
+            // this.tab2contents.remove(t); // if removed, there will be no forwards of system status change
+            Scene scene = new Scene(userDisplayWidget, 800, 600);
+            scene.getStylesheets().add(cssUrl.toExternalForm());
 
-			stage.show();
-		});
+            stage.setScene(scene);
+            stage.setTitle(t.getText());
 
-		return ctrl;
-	}
+            Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
+            stage.getIcons().add(icon);
+            ctrl.setIndependentStage(stage);
+            stage.setOnCloseRequest(ev -> {
+                if (DialogUtils.confirm("Close chart", "About to close chart " + stage.getTitle(), "Do you want to close chart " + stage.getTitle() + "? Unsaved chart updates will be lost!")) {
+                    ctrl.dispose();
+                    stage.close();
+                } else {
+                    ev.consume();
+                }
+            });
 
-	@Override
-	protected Control doBuildNodeForPrinting() {
-		return null;
-	}
+            stage.show();
+        });
 
-	@Override
-	protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
-		this.displayTitledPane.setDisable(true);
-	}
+        return ctrl;
+    }
 
-	@Override
-	protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
-		this.displayTitledPane.setDisable(false);
-	}
+    @Override
+    protected Control doBuildNodeForPrinting() {
+        return null;
+    }
 
-	private void onShowingPresetMenu(Event contextMenuEvent) {
-		String name;
-		try {
-			name = system.getName();
-		} catch (RemoteException e) {
-			LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
-			return;
-		}
+    @Override
+    protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
+        this.displayTitledPane.setDisable(true);
+    }
 
-		this.loadBtn.getItems().remove(0, this.loadBtn.getItems().size());
-		List<String> presets = this.presetManager.getAvailablePresets(name, user, doGetComponentId());
-		for(String preset : presets) {
-			final String fpreset = preset;
-			MenuItem mi = new MenuItem(preset);
-			mi.setOnAction((event) -> {
-				if(!selectTab(fpreset)) {
-					loadPreset(name, fpreset);
-				}
-			});
-			this.loadBtn.getItems().add(mi);
-		}
-	}
+    @Override
+    protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
+        this.displayTitledPane.setDisable(false);
+    }
 
-	private void loadPreset(String name, String fpreset) {
-		Properties p = this.presetManager.load(name, user, fpreset, doGetComponentId());
-		if(p != null) {
-			try {
-				addChartTabFromPreset(fpreset, p);
-			} catch (IOException e) {
-				LOG.log(Level.WARNING, "Cannot initialise chart tab preset " + fpreset + ": " + e.getMessage(), e);
-			}
-		}
-	}
+    private void onShowingPresetMenu(Event contextMenuEvent) {
+        String name;
+        try {
+            name = system.getName();
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
+            return;
+        }
 
-	private void addChartTabFromPreset(String tabName, Properties p) throws IOException {
-		final UserDisplayTabWidgetController t = createNewTab(tabName);
-		// After adding the tab, you need to initialise it in a new round of the UI thread,
-		// to allow the layouting of the tab and the correct definition of the parent elements,
-		// hence avoiding a null pointer exception
-		Platform.runLater(() -> t.loadPreset(p));
-	}
+        this.loadBtn.getItems().remove(0, this.loadBtn.getItems().size());
+        List<String> presets = this.presetManager.getAvailablePresets(name, user, doGetComponentId());
+        for (String preset : presets) {
+            final String fpreset = preset;
+            MenuItem mi = new MenuItem(preset);
+            mi.setOnAction((event) -> {
+                if (!selectTab(fpreset)) {
+                    loadPreset(name, fpreset);
+                }
+            });
+            this.loadBtn.getItems().add(mi);
+        }
+    }
 
-	public void open(String preset) {
-		// Ugly but necessary
-		Platform.runLater(() -> {
-			ReatmetricUI.threadPool(getClass()).submit(() -> {
-				String name;
-				try {
-					name = system.getName();
-				} catch (Exception e) {
-					LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
-					return;
-				}
-				Platform.runLater(() -> {
-					if(!selectTab(preset)) {
-						loadPreset(name, preset);
-					}
-				});
-			});
-		});
-	}
+    private void loadPreset(String name, String fpreset) {
+        Properties p = this.presetManager.load(name, user, fpreset, doGetComponentId());
+        if (p != null) {
+            try {
+                addChartTabFromPreset(fpreset, p);
+            } catch (IOException e) {
+                LOG.log(Level.WARNING, "Cannot initialise chart tab preset " + fpreset + ": " + e.getMessage(), e);
+            }
+        }
+    }
 
-	private boolean selectTab(String preset) {
-		for(Tab t : tabPane.getTabs()) {
-			if(t.getText().equals(preset)) {
-				tabPane.getSelectionModel().select(t);
-				return true;
-			}
-		}
-		return false;
-	}
+    private void addChartTabFromPreset(String tabName, Properties p) throws IOException {
+        final UserDisplayTabWidgetController t = createNewTab(tabName);
+        // After adding the tab, you need to initialise it in a new round of the UI thread,
+        // to allow the layouting of the tab and the correct definition of the parent elements,
+        // hence avoiding a null pointer exception
+        Platform.runLater(() -> t.loadPreset(p));
+    }
+
+    public void open(String preset) {
+        // Ugly but necessary
+        Platform.runLater(() -> {
+            ReatmetricUI.threadPool(getClass()).submit(() -> {
+                String name;
+                try {
+                    name = system.getName();
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
+                    return;
+                }
+                Platform.runLater(() -> {
+                    if (!selectTab(preset)) {
+                        loadPreset(name, preset);
+                    }
+                });
+            });
+        });
+    }
+
+    private boolean selectTab(String preset) {
+        for (Tab t : tabPane.getTabs()) {
+            if (t.getText().equals(preset)) {
+                tabPane.getSelectionModel().select(t);
+                return true;
+            }
+        }
+        return false;
+    }
 }

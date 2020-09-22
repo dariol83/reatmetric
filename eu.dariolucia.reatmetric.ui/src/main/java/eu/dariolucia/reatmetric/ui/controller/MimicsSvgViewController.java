@@ -75,7 +75,7 @@ public class MimicsSvgViewController implements Initializable {
     private double svgHeight;
     private double svgWidth;
 
-    private final JSBinding jsbinding = new JSBinding();
+    private JSBinding jsbinding = new JSBinding();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -89,14 +89,14 @@ public class MimicsSvgViewController implements Initializable {
         plusZoomImage.setImage(PLUS_ZOOM_IMG);
 
         zoomSlider.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if(loaded) {
+            if (loaded) {
                 webView.setZoom(zoomSlider.getValue() / 100.0);
             }
         });
 
         // Once you load the SVG, retrieve its dimensions
         webView.getEngine().documentProperty().addListener((prop, oldDoc, newDoc) -> {
-            if(!measuresInited) {
+            if (!measuresInited) {
                 String heightText = webView.getEngine().executeScript(
                         "window.getComputedStyle(document.firstElementChild,null).height"
                 ).toString();
@@ -118,7 +118,7 @@ public class MimicsSvgViewController implements Initializable {
 
     @FXML
     public void fitToAreaClick(MouseEvent mouseEvent) {
-        if(!measuresInited) {
+        if (!measuresInited) {
             return;
         }
         // Real size
@@ -138,7 +138,7 @@ public class MimicsSvgViewController implements Initializable {
     public void minusZoomClick(MouseEvent mouseEvent) {
         double value = zoomSlider.getValue();
         value -= zoomSlider.getMinorTickCount();
-        if(value <= 0) {
+        if (value <= 0) {
             value = 0;
         }
         zoomSlider.setValue(value);
@@ -148,7 +148,7 @@ public class MimicsSvgViewController implements Initializable {
     public void plusZoomClick(MouseEvent mouseEvent) {
         double value = zoomSlider.getValue();
         value += zoomSlider.getMinorTickCount();
-        if(value >= zoomSlider.getMax()) {
+        if (value >= zoomSlider.getMax()) {
             value = zoomSlider.getMax();
         }
         zoomSlider.setValue(value);
@@ -188,7 +188,7 @@ public class MimicsSvgViewController implements Initializable {
     }
 
     private synchronized Set<String> prepareMimicsEngine(Document svgDom) {
-        if(svgMimicsEngine != null) {
+        if (svgMimicsEngine != null) {
             svgMimicsEngine.dispose();
         }
         svgMimicsEngine = new SvgMimicsEngine(svgDom);
@@ -197,14 +197,16 @@ public class MimicsSvgViewController implements Initializable {
     }
 
     public synchronized void refresh(Map<SystemEntityPath, ParameterData> updatedItems) {
-        if(svgMimicsEngine != null) {
+        if (svgMimicsEngine != null) {
             svgMimicsEngine.refresh(updatedItems);
         }
     }
 
     public void dispose() {
         webView.getEngine().load("<html><body></body></html>");
-        if(svgMimicsEngine != null) {
+        webView = null;
+        jsbinding = null;
+        if (svgMimicsEngine != null) {
             svgMimicsEngine.dispose();
         }
     }
@@ -222,7 +224,7 @@ public class MimicsSvgViewController implements Initializable {
         public void and(String name) {
             // Request the opening of the AND from the name
             ParameterDisplayViewController controller = (ParameterDisplayViewController) MainViewController.instance().openPerspective("Monitoring AND");
-            if(controller != null) {
+            if (controller != null) {
                 controller.open(name);
             }
         }
@@ -230,7 +232,7 @@ public class MimicsSvgViewController implements Initializable {
         public void chart(String name) {
             // Request the opening of the chart from the name
             UserDisplayViewController controller = (UserDisplayViewController) MainViewController.instance().openPerspective("Charts");
-            if(controller != null) {
+            if (controller != null) {
                 controller.open(name);
             }
         }
@@ -238,7 +240,7 @@ public class MimicsSvgViewController implements Initializable {
         public void mimics(String name) {
             // Request the opening of the mimics from the name
             MimicsDisplayViewController controller = (MimicsDisplayViewController) MainViewController.instance().openPerspective("Mimics");
-            if(controller != null) {
+            if (controller != null) {
                 controller.open(name);
             }
         }

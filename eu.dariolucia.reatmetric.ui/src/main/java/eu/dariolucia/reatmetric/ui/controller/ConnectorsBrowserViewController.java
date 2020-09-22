@@ -53,7 +53,7 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
     @FXML
     protected TitledPane displayTitledPane;
 
-    @FXML    
+    @FXML
     private VBox vbox;
     @FXML
     private ScrollPane scrollpane;

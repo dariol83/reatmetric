@@ -27,6 +27,7 @@ import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.controller.MimicsDisplayTabWidgetController;
 import eu.dariolucia.reatmetric.ui.controller.UserDisplayTabWidgetController;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import javafx.application.Platform;
@@ -211,5 +212,12 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
 
     public void deregister(UserDisplayTabWidgetController display) {
         this.registeredViews.remove(display);
+    }
+
+    public void dispose() {
+        for(UserDisplayTabWidgetController ctrl : registeredViews) {
+            ctrl.dispose();
+        }
+        registeredViews.clear();
     }
 }

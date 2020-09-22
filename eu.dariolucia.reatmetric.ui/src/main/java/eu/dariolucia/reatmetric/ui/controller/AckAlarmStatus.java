@@ -38,7 +38,7 @@ public enum AckAlarmStatus {
     }
 
     public static AckAlarmStatus deriveStatus(AlarmState alarmState, boolean pendingAcknowledgement) {
-        switch(alarmState) {
+        switch (alarmState) {
             case ERROR:
             case ALARM:
                 return pendingAcknowledgement ? ALARM_NOT_ACKED : ALARM_ACKED;

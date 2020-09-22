@@ -21,6 +21,9 @@ import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.ui.plugin.ReatmetricServiceHolder;
 import eu.dariolucia.reatmetric.ui.preferences.PreferencesManager;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
+import eu.dariolucia.reatmetric.ui.utils.MimicsDisplayCoordinator;
+import eu.dariolucia.reatmetric.ui.utils.ParameterDisplayCoordinator;
+import eu.dariolucia.reatmetric.ui.utils.UserDisplayCoordinator;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -34,14 +37,19 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author dario
  */
 public class ReatmetricUI extends Application {
-    
+
+    private static final Logger LOG = Logger.getLogger(ReatmetricUI.class.getName());
+
     public static final String APPLICATION_NAME = "ReatMetric UI";
     
     public static final String APPLICATION_VERSION = "0.1.0";
@@ -76,7 +84,15 @@ public class ReatmetricUI extends Application {
     private static void shutdownThreadPool() {
         synchronized (THREAD_POOL) {
             for(Map.Entry<Class<?>, ExecutorService> entry : THREAD_POOL.entrySet()) {
-                entry.getValue().shutdownNow();
+                entry.getValue().shutdown();
+            }
+            for(Map.Entry<Class<?>, ExecutorService> entry : THREAD_POOL.entrySet()) {
+                try {
+                    boolean terminated = entry.getValue().awaitTermination(1, TimeUnit.SECONDS);
+                    LOG.log(Level.FINE, "ThreadPool for class " + entry.getKey().getSimpleName() + " " + (terminated ? "terminated" : "NOT terminated"));
+                } catch (InterruptedException e) {
+                    // Ignore
+                }
             }
         }
     }
@@ -139,15 +155,27 @@ public class ReatmetricUI extends Application {
 
     public static void shutdown() {
         if (DialogUtils.confirm("Exit " + APPLICATION_NAME, "Exit " + APPLICATION_NAME, "Do you want to close " + APPLICATION_NAME + "?")) {
+            LOG.info("Reatmetric UI shutdown sequence");
+            LOG.info("Shutting down display coordinators");
+            UserDisplayCoordinator.instance().dispose();
+            ParameterDisplayCoordinator.instance().dispose();
+            MimicsDisplayCoordinator.instance().dispose();
+            LOG.info("Disconnection from system");
             ReatmetricUI.selectedSystem().setSystem(null);
+            LOG.info("System disconnection done");
             // Wait for completion
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            LOG.info("Shutting down UI thread pool");
             ReatmetricUI.shutdownThreadPool();
+            LOG.info("UI thread pool shut down, exiting JFX platform");
             Platform.exit();
+            LOG.info("Freeing up memory");
+            System.gc();
+            LOG.info("Reatmetric UI shutdown sequence completed. Have a nice day.");
             System.exit(0);
         }
     }

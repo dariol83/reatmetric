@@ -28,6 +28,7 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.controller.MimicsDisplayTabWidgetController;
+import eu.dariolucia.reatmetric.ui.controller.MimicsDisplayViewController;
 import eu.dariolucia.reatmetric.ui.controller.UserDisplayTabWidgetController;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import javafx.application.Platform;
@@ -38,7 +39,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * This class is used to have a single distribution thread for all the opened chart views.
+ * This class is used to have a single distribution thread for all the opened mimics views.
  */
 public class MimicsDisplayCoordinator implements IReatmetricServiceListener {
 
@@ -89,5 +90,12 @@ public class MimicsDisplayCoordinator implements IReatmetricServiceListener {
 
     public void deregister(MimicsDisplayTabWidgetController display) {
         this.registeredViews.remove(display);
+    }
+
+    public void dispose() {
+        for(MimicsDisplayTabWidgetController ctrl : registeredViews) {
+            ctrl.dispose();
+        }
+        registeredViews.clear();
     }
 }

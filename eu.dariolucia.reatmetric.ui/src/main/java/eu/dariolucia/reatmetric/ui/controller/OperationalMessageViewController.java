@@ -58,7 +58,7 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
         super.doInitialize(url, rb);
-        
+
         this.idCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getId()));
         this.severityCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getSeverity()));
         this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getGenerationTime()));

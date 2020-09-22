@@ -56,15 +56,15 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
     private CheckBox messageCheckbox;
     @FXML
     private TextField messageText;
-    
+
     @FXML
     private Button selectBtn;
-    
+
     private Runnable actionAfterSelection;
-    
+
     // The result of the selection
     private OperationalMessageFilter selectedFilter = null;
-    
+
     /**
      * Initializes the controller class.
      */
@@ -74,11 +74,11 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
         this.sourceText.disableProperty().bind(this.sourceCheckbox.selectedProperty().not());
         this.idText.disableProperty().bind(this.idCheckbox.selectedProperty().not());
         this.messageText.disableProperty().bind(this.messageCheckbox.selectedProperty().not());
-        
+
         this.severityList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         this.severityList.getItems().addAll(Arrays.asList(Severity.values()));
-    }  
-    
+    }
+
     @FXML
     private void selectButtonPressed(ActionEvent e) {
         this.selectedFilter = deriveFromWidgets();
@@ -86,12 +86,12 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
             this.actionAfterSelection.run();
         }
     }
-  
+
     @Override
     public void setActionAfterSelection(Runnable r) {
         this.actionAfterSelection = r;
     }
-    
+
     @Override
     public void setSelectedFilter(OperationalMessageFilter t) {
         this.selectedFilter = t;
@@ -102,7 +102,7 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
     public OperationalMessageFilter getSelectedFilter() {
         return this.selectedFilter;
     }
-    
+
     private void updateWidgets() {
         if(this.selectedFilter == null) {
             this.severityCheckbox.setSelected(false);
@@ -123,7 +123,7 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
             this.idText.setText(IFilterController.toStringList(this.selectedFilter.getIdList()));
             this.messageText.setText(this.selectedFilter.getMessageTextContains() != null ? this.selectedFilter.getMessageTextContains() : "");
             this.severityList.getSelectionModel().clearSelection();
-            if(this.selectedFilter.getSeverityList() != null) {    
+            if(this.selectedFilter.getSeverityList() != null) {
             	this.selectedFilter.getSeverityList().forEach((s) -> this.severityList.getSelectionModel().select(s));
             }
         }
@@ -156,7 +156,7 @@ public class OperationalMessageFilterWidgetController implements Initializable, 
             return null;
         }
     }
-    
+
     private List<Severity> deriveSelectedSeverity() {
         if(this.severityCheckbox.isSelected()) {
             List<Severity> toReturn = new LinkedList<>();

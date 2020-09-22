@@ -79,7 +79,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     protected Button goForwardOneBtn;
     @FXML
     protected Button selectTimeBtn;
-    
+
     // Print button
     @FXML
     protected Button printBtn;
@@ -93,7 +93,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
 
     // Time selector controller
     protected DateTimePickerWidgetController dateTimePickerController;
-    
+
     // Temporary object queue
     protected DataProcessingDelegator<ParameterData> delegator;
 
@@ -135,7 +135,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
         } catch (IOException e) {
             e.printStackTrace();
         }
-        
+
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
         // Initialise and add SVG viewer
         try {
@@ -237,7 +237,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
             markProgressReady();
         });
     }
-    
+
     @FXML
     protected void goToEnd(ActionEvent e) {
         if(!isProgressBusy()) {
@@ -251,7 +251,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
             fetchNextStateChange();
         }
     }
-    
+
     protected void fetchPreviousStateChange() {
         markProgressBusy();
         // Retrieve the parameter with the latest generation time
@@ -271,7 +271,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
             markProgressReady();
         });
     }
-    
+
     protected void moveToTime(Instant selectedTime) {
         this.selectTimeBtn.setText(formatTime(selectedTime));
         markProgressBusy();
@@ -300,7 +300,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     protected void informDataItemsReceived(List<ParameterData> objects) {
         this.delegator.delegate(objects);
     }
-    
+
     private void startSubscription() {
         ParameterDataFilter pdf = new ParameterDataFilter(null, new ArrayList<>(getCurrentPaths()),null,null ,null, null);
         ReatmetricUI.threadPool(getClass()).execute(() -> {
@@ -346,12 +346,12 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     private boolean isProgressBusy() {
         return this.progressIndicator.isVisible();
     }
-    
+
     @Override
     protected Node doBuildNodeForPrinting() {
         return mimicsManager.print();
     }
-    
+
     @Override
     protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
         this.liveTgl.setSelected(false);
@@ -401,7 +401,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
             throw new ReatmetricException(e);
         }
     }
-    
+
     protected List<ParameterData> doRetrieve(Instant selectedTime, ParameterDataFilter filter) throws ReatmetricException {
         try {
             return ReatmetricUI.selectedSystem().getSystem().getParameterDataMonitorService().retrieve(selectedTime, filter);
@@ -526,8 +526,9 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
 
     @Override
     public void dispose() {
-        super.dispose();
+        stopSubscription();
         this.mimicsManager.dispose();
         MimicsDisplayCoordinator.instance().deregister(this);
+        super.dispose();
     }
 }

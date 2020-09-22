@@ -53,7 +53,7 @@ public class DebugDialogController implements Initializable {
         vboxParent.setPadding(new Insets(4));
         // Subscribe to visibility
         vboxParent.visibleProperty().addListener(observable -> {
-            if(!vboxParent.isVisible()) {
+            if (!vboxParent.isVisible()) {
                 id2control.clear();
                 sampler.cancel();
             }
@@ -69,7 +69,7 @@ public class DebugDialogController implements Initializable {
 
     private void sample() {
         IReatmetricSystem system = ReatmetricUI.selectedSystem().getSystem();
-        if(system != null) {
+        if (system != null) {
             List<DebugInformation> info = null;
             try {
                 info = system.currentDebugInfo();
@@ -77,7 +77,7 @@ public class DebugDialogController implements Initializable {
                 // For this interface, even if we cannot communicate, we do nothing
             }
             List<DebugInformation> info_f = info;
-            if(info_f == null || info_f.isEmpty()) {
+            if (info_f == null || info_f.isEmpty()) {
                 setEmptyDebugInformation();
             } else {
                 Platform.runLater(() -> updateData(info_f));
@@ -98,7 +98,7 @@ public class DebugDialogController implements Initializable {
     }
 
     private void updateData(List<DebugInformation> info) {
-        if(id2control.isEmpty()) {
+        if (id2control.isEmpty()) {
             initControls(info);
         } else {
             updateControls(info);
@@ -106,16 +106,16 @@ public class DebugDialogController implements Initializable {
     }
 
     private void updateControls(List<DebugInformation> info) {
-        for(DebugInformation di : info) {
+        for (DebugInformation di : info) {
             Pair<String, String> key = Pair.of(di.getElement(), di.getName());
             Control ctr = id2control.get(key);
-            if(ctr != null) {
-                if(ctr instanceof ProgressBar) {
+            if (ctr != null) {
+                if (ctr instanceof ProgressBar) {
                     ProgressBar bar = (ProgressBar) ctr;
                     bar.setProgress(((Number) di.getMeasure()).doubleValue() / ((Number) di.getMaximum()).doubleValue());
                     bar.setTooltip(new Tooltip(di.getMeasure() + " / " + di.getMaximum()));
                 } else {
-                    ((Label)ctr).setText(Objects.toString(di.getMeasure(), ""));
+                    ((Label) ctr).setText(Objects.toString(di.getMeasure(), ""));
                 }
             }
         }
@@ -123,8 +123,8 @@ public class DebugDialogController implements Initializable {
 
     private void initControls(List<DebugInformation> info) {
         String previousElement = null;
-        for(DebugInformation di : info) {
-            if(!Objects.equals(previousElement, di.getElement())) {
+        for (DebugInformation di : info) {
+            if (!Objects.equals(previousElement, di.getElement())) {
                 addSeparator(di.getElement());
             }
             addControl(di);
@@ -142,7 +142,7 @@ public class DebugDialogController implements Initializable {
         nameLbl.setPrefHeight(16);
         inner.getChildren().add(nameLbl);
         // if the measure is a number and there is a maximum, then use progress bar
-        if(di.getMeasure() instanceof Number && di.getMaximum() != null) {
+        if (di.getMeasure() instanceof Number && di.getMaximum() != null) {
             ProgressBar bar = new ProgressBar();
             bar.setPrefHeight(16);
             bar.setPrefWidth(100);
@@ -159,7 +159,7 @@ public class DebugDialogController implements Initializable {
             ctr = label;
         }
         inner.getChildren().add(ctr);
-        if(di.getUnit() != null) {
+        if (di.getUnit() != null) {
             Label unitLabel = new Label(di.getUnit());
             unitLabel.setPrefWidth(120);
             unitLabel.setPrefHeight(16);

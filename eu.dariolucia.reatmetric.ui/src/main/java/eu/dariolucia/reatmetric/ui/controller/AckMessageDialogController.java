@@ -58,7 +58,7 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
     private volatile IReatmetricSystem system;
     private volatile Consumer<Boolean> handler;
 
-    private Set<Integer> pendingAcknowledgementSet = new HashSet<>();
+    private final Set<Integer> pendingAcknowledgementSet = new HashSet<>();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -99,26 +99,26 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
     public void activate(Consumer<Boolean> alarmPresentNotifier) {
         this.handler = alarmPresentNotifier;
         this.system = ReatmetricUI.selectedSystem().getSystem();
-        if(this.system != null) {
+        if (this.system != null) {
             try {
                 this.system.getAcknowledgedMessageMonitorService().subscribe(this, new AcknowledgedMessageFilter(null, null));
             } catch (ReatmetricException | RemoteException e) {
-                LOG.log(Level.SEVERE, "Subscription to AcknowledgedMessageMonitorService failed: " + e.getMessage() , e);
+                LOG.log(Level.SEVERE, "Subscription to AcknowledgedMessageMonitorService failed: " + e.getMessage(), e);
             }
         }
     }
 
     public void deactivate() {
-        if(this.system != null) {
+        if (this.system != null) {
             try {
                 this.system.getAcknowledgedMessageMonitorService().unsubscribe(this);
             } catch (ReatmetricException | RemoteException e) {
-                LOG.log(Level.SEVERE, "Unsubscription to AcknowledgedMessageMonitorService failed: " + e.getMessage() , e);
+                LOG.log(Level.SEVERE, "Unsubscription to AcknowledgedMessageMonitorService failed: " + e.getMessage(), e);
             }
         }
         this.ackMessageTableView.getItems().clear();
         this.ackMessageTableView.refresh();
-        if(this.handler != null) {
+        if (this.handler != null) {
             this.handler.accept(false);
         }
         this.handler = null;
@@ -129,8 +129,8 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
     public void dataItemsReceived(List<AcknowledgedMessage> dataItems) {
         Set<Long> messagesToRemove = new HashSet<>();
         List<AcknowledgedMessage> messagesToAdd = new LinkedList<>();
-        for(AcknowledgedMessage am : dataItems) {
-            if(am.getState() == AcknowledgementState.ACKNOWLEDGED) {
+        for (AcknowledgedMessage am : dataItems) {
+            if (am.getState() == AcknowledgementState.ACKNOWLEDGED) {
                 messagesToRemove.add(am.getInternalId().asLong());
             } else {
                 // New message for acknowledgement
@@ -142,13 +142,13 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
             List<AcknowledgedMessage> toRemoveActuals = new LinkedList<>();
             // I iterate on the whole list, so here I compute the messages pending ack
             pendingAcknowledgementSet.clear();
-            for(int i = 0; i < ackMessageTableView.getItems().size(); ++i) {
+            for (int i = 0; i < ackMessageTableView.getItems().size(); ++i) {
                 AcknowledgedMessage am = ackMessageTableView.getItems().get(i);
-                if(messagesToRemove.contains(am.getInternalId().asLong())) {
+                if (messagesToRemove.contains(am.getInternalId().asLong())) {
                     toRemoveActuals.add(am);
                 } else {
                     // Not to be removed, remember the ID
-                    if(am.getMessage().getLinkedEntityId() != null) {
+                    if (am.getMessage().getLinkedEntityId() != null) {
                         pendingAcknowledgementSet.add(am.getMessage().getLinkedEntityId());
                     }
                 }
@@ -162,7 +162,7 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
             // Finally update the table
             ackMessageTableView.getItems().removeAll(toRemoveActuals);
             ackMessageTableView.getItems().addAll(messagesToAdd);
-            if(this.handler != null) {
+            if (this.handler != null) {
                 this.handler.accept(!ackMessageTableView.getItems().isEmpty());
             }
         });
@@ -175,12 +175,12 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
     }
 
     private void ackMessages(List<AcknowledgedMessage> selected) {
-        if(!selected.isEmpty() && this.system != null) {
+        if (!selected.isEmpty() && this.system != null) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     system.getAcknowledgementService().acknowledgeMessages(selected, ReatmetricUI.username());
                 } catch (ReatmetricException | RemoteException e) {
-                    LOG.log(Level.SEVERE, "Acknowledgement failed: " + e.getMessage() , e);
+                    LOG.log(Level.SEVERE, "Acknowledgement failed: " + e.getMessage(), e);
                 }
             });
         }

@@ -124,14 +124,14 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     @FXML
     private Button connectButton;
-	private final PopOver connectPopOver = new PopOver();
+    private final PopOver connectPopOver = new PopOver();
 
-	private final PopOver infoPopOver = new PopOver();
+    private final PopOver infoPopOver = new PopOver();
 
-	@FXML
+    @FXML
     private Button detachButton;
 
-	@FXML
+    @FXML
     private ModelBrowserViewController modelController;
 
     private final PopOver messagePopOver = new PopOver();
@@ -139,8 +139,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private Timeline alarmFlashTimeline;
 
     public AbstractDisplayController openPerspective(String viewName) {
-        for(Node n : buttonBox.getChildren()) {
-            if(n instanceof Button &&
+        for (Node n : buttonBox.getChildren()) {
+            if (n instanceof Button &&
                     n.getProperties().get(VIEW_NAME) != null &&
                     n.getProperties().get(VIEW_NAME).equals(viewName)) {
                 // Found
@@ -189,14 +189,14 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
         Tab t = new Tab(getNodeText(viewButton), view);
         Image img = getNodeImg(viewButton);
-        if(img != null) {
+        if (img != null) {
             t.setGraphic(new ImageView(img));
         }
         t.setId(perspectiveId);
         viewTabPane.getTabs().add(t);
         // Add stop on tab close for any type of subscription in the controller
         t.setOnClosed(event -> {
-            if(!ctrl.isDetached()) {
+            if (!ctrl.isDetached()) {
                 ctrl.dispose();
             }
         });
@@ -210,7 +210,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
     private void registerDetachableTab(Tab t, Node view, AbstractDisplayController ctrl) {
-        if(t.getContextMenu() == null) {
+        if (t.getContextMenu() == null) {
             t.setContextMenu(new ContextMenu());
         }
         MenuItem detachMenuItem = new MenuItem("Detach");
@@ -269,92 +269,92 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     @FXML
     private void connectAction(ActionEvent event) {
         if (!ReatmetricUI.selectedSystem().isPresent()) {
-			showConnectPopOver();
-		} else {
-			showDisconnectPopOver();
-		}
+            showConnectPopOver();
+        } else {
+            showDisconnectPopOver();
+        }
     }
 
-	private void showDisconnectPopOver() {
-		VBox layoutBox = new VBox();
-		HBox systemBox = new HBox();
+    private void showDisconnectPopOver() {
+        VBox layoutBox = new VBox();
+        HBox systemBox = new HBox();
 
-		Label text = new Label("Confirm disconnection");
-		text.setFont(Font.font("Sans Serif", FontWeight.BOLD, FontPosture.REGULAR, 12));
-		layoutBox.getChildren().add(text);
-		layoutBox.getChildren().add(systemBox);
-		layoutBox.setSpacing(8);
-		systemBox.setSpacing(8);
-		Button connectToSystemButton = new Button("Disconnect");
-		systemBox.getChildren().addAll(connectToSystemButton);
-		layoutBox.setPadding(new Insets(8));
-		connectPopOver.setArrowLocation(PopOver.ArrowLocation.LEFT_TOP);
-		connectPopOver.setContentNode(layoutBox);
-		// Set the CSS
-		systemBox.getStylesheets().add(getClass().getClassLoader()
-				.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
-		// Set the callback
-		connectToSystemButton.setOnAction(actionEvent -> {
-			connectPopOver.hide();
-			ReatmetricUI.threadPool(getClass()).execute(() -> {
-				ReatmetricUI.selectedSystem().setSystem(null);
-			});
-		});
-		connectPopOver.show(connectButton);
-	}
+        Label text = new Label("Confirm disconnection");
+        text.setFont(Font.font("Sans Serif", FontWeight.BOLD, FontPosture.REGULAR, 12));
+        layoutBox.getChildren().add(text);
+        layoutBox.getChildren().add(systemBox);
+        layoutBox.setSpacing(8);
+        systemBox.setSpacing(8);
+        Button connectToSystemButton = new Button("Disconnect");
+        systemBox.getChildren().addAll(connectToSystemButton);
+        layoutBox.setPadding(new Insets(8));
+        connectPopOver.setArrowLocation(PopOver.ArrowLocation.LEFT_TOP);
+        connectPopOver.setContentNode(layoutBox);
+        // Set the CSS
+        systemBox.getStylesheets().add(getClass().getClassLoader()
+                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+        // Set the callback
+        connectToSystemButton.setOnAction(actionEvent -> {
+            connectPopOver.hide();
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                ReatmetricUI.selectedSystem().setSystem(null);
+            });
+        });
+        connectPopOver.show(connectButton);
+    }
 
-	private void showConnectPopOver() {
-		VBox layoutBox = new VBox();
-    	HBox systemBox = new HBox();
+    private void showConnectPopOver() {
+        VBox layoutBox = new VBox();
+        HBox systemBox = new HBox();
 
-    	Label text = new Label("Select system to connect");
-		text.setFont(Font.font("Sans Serif", FontWeight.BOLD, FontPosture.REGULAR, 12));
-		layoutBox.getChildren().add(text);
-		layoutBox.getChildren().add(systemBox);
-		layoutBox.setSpacing(8);
-		systemBox.setSpacing(8);
-		ComboBox<String> systemCombo = new ComboBox<>();
-		Button connectToSystemButton = new Button("Connect");
-		systemBox.getChildren().addAll(systemCombo, connectToSystemButton);
-		// First: let's retrieve the list of available systems and set them in the combo
-		List<String> systems = serviceInspector.getAvailableSystems();
-		systemCombo.setItems(FXCollections.observableList(systems));
-		// Select the first one if any
-		if (!systems.isEmpty()) {
-			systemCombo.setValue(systems.get(0));
-		} else {
-			// Disable the login button if there is no system
-			connectToSystemButton.setDisable(true);
-		}
-		layoutBox.setPadding(new Insets(8));
-		connectPopOver.setArrowLocation(PopOver.ArrowLocation.LEFT_TOP);
+        Label text = new Label("Select system to connect");
+        text.setFont(Font.font("Sans Serif", FontWeight.BOLD, FontPosture.REGULAR, 12));
+        layoutBox.getChildren().add(text);
+        layoutBox.getChildren().add(systemBox);
+        layoutBox.setSpacing(8);
+        systemBox.setSpacing(8);
+        ComboBox<String> systemCombo = new ComboBox<>();
+        Button connectToSystemButton = new Button("Connect");
+        systemBox.getChildren().addAll(systemCombo, connectToSystemButton);
+        // First: let's retrieve the list of available systems and set them in the combo
+        List<String> systems = serviceInspector.getAvailableSystems();
+        systemCombo.setItems(FXCollections.observableList(systems));
+        // Select the first one if any
+        if (!systems.isEmpty()) {
+            systemCombo.setValue(systems.get(0));
+        } else {
+            // Disable the login button if there is no system
+            connectToSystemButton.setDisable(true);
+        }
+        layoutBox.setPadding(new Insets(8));
+        connectPopOver.setArrowLocation(PopOver.ArrowLocation.LEFT_TOP);
         connectPopOver.setDetachable(false);
-		connectPopOver.setContentNode(layoutBox);
-		// Set the CSS
-		systemBox.getStylesheets().add(getClass().getClassLoader()
-				.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
-		// Set the callback
-		connectToSystemButton.setOnAction(actionEvent -> {
-			connectPopOver.hide();
-			// Avoid that the user clicks again on the menu item
-			this.connectButton.setDisable(true);
-			this.connectButton.setGraphic(new ProgressIndicator());
-			final String selectedSystem = systemCombo.getSelectionModel().getSelectedItem();
-			ReatmetricUI.threadPool(getClass()).execute(() -> {
-				try {
-					ReatmetricUI.selectedSystem().setSystem(this.serviceInspector.getSystem(selectedSystem));
-				} catch (Exception e) {
-					LOG.log(Level.SEVERE, "Error when connecting to system " + selectedSystem + ": " + e.getMessage(), e);
-					Platform.runLater(() -> {
-						this.connectButton.setDisable(false);
-						this.connectButton.setGraphic(new ImageView(CONNECT_IMAGE));
-					});
-				}
-			});
-		});
+        connectPopOver.setContentNode(layoutBox);
+        // Set the CSS
+        systemBox.getStylesheets().add(getClass().getClassLoader()
+                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+        // Set the callback
+        connectToSystemButton.setOnAction(actionEvent -> {
+            connectPopOver.hide();
+            // Avoid that the user clicks again on the menu item
+            this.connectButton.setDisable(true);
+            this.connectButton.setGraphic(new ProgressIndicator());
+            final String selectedSystem = systemCombo.getSelectionModel().getSelectedItem();
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                try {
+                    ReatmetricUI.selectedSystem().setSystem(this.serviceInspector.getSystem(selectedSystem));
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Error when connecting to system " + selectedSystem + ": " + e.getMessage(), e);
+                    Platform.runLater(() -> {
+                        this.connectButton.setDisable(false);
+                        this.connectButton.setGraphic(new ImageView(CONNECT_IMAGE));
+                    });
+                }
+            });
+        });
 
-		connectPopOver.show(connectButton);
-	}
+        connectPopOver.show(connectButton);
+    }
 
     @FXML
     private void debugAction(Event actionEvent) {
@@ -371,17 +371,17 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         }
     }
 
-	@FXML
+    @FXML
     private void aboutAction(Event actionEvent) {
         try {
             Parent root = FXMLLoader.load(getClass().getClassLoader()
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/AboutDialog.fxml"));
 
-			infoPopOver.setContentNode(root);
-			infoPopOver.setArrowLocation(PopOver.ArrowLocation.RIGHT_TOP);
-			infoPopOver.setDetachable(false);
-			infoPopOver.setTitle("About ReatMetric...");
-			infoPopOver.show(bannerImage);
+            infoPopOver.setContentNode(root);
+            infoPopOver.setArrowLocation(PopOver.ArrowLocation.RIGHT_TOP);
+            infoPopOver.setDetachable(false);
+            infoPopOver.setTitle("About ReatMetric...");
+            infoPopOver.show(bannerImage);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -389,7 +389,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     @FXML
     private void systemLabelAction(MouseEvent actionEvent) {
-        if(ReatmetricUI.selectedSystem().getSystem() != null) {
+        if (ReatmetricUI.selectedSystem().getSystem() != null) {
             messagePopOver.show(systemLbl);
         }
     }
@@ -453,10 +453,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
         // digital clock, update 1 per second.
         final Timeline digitalTime = new Timeline(
-            new KeyFrame(Duration.seconds(0),
-                    actionEvent -> timeLbl.setText(InstantCellFactory.DATE_TIME_FORMATTER_SECONDS.format(Instant.now()))
-            ),
-            new KeyFrame(Duration.seconds(1))
+                new KeyFrame(Duration.seconds(0),
+                        actionEvent -> timeLbl.setText(InstantCellFactory.DATE_TIME_FORMATTER_SECONDS.format(Instant.now()))
+                ),
+                new KeyFrame(Duration.seconds(1))
         );
         digitalTime.setCycleCount(Animation.INDEFINITE);
         digitalTime.play();
@@ -525,8 +525,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
     protected void signalAckStatusChanged(boolean inAlarm) {
-        if(inAlarm) {
-            if(alarmFlashTimeline.getStatus() != Animation.Status.RUNNING) {
+        if (inAlarm) {
+            if (alarmFlashTimeline.getStatus() != Animation.Status.RUNNING) {
                 alarmFlashTimeline.play();
             }
         } else {
@@ -598,7 +598,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     @FXML
     private void detachMouseClicked(ActionEvent e) {
         Tab toDetach = viewTabPane.getSelectionModel().getSelectedItem();
-        if(toDetach != null) {
+        if (toDetach != null) {
             Pair<Node, AbstractDisplayController> data = (Pair<Node, AbstractDisplayController>) toDetach.getUserData();
             detachTab(toDetach, data.getFirst(), data.getSecond());
         }
