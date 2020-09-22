@@ -19,6 +19,7 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
 <?import org.controlsfx.control.textfield.CustomTextField?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
@@ -28,7 +29,7 @@
          <children>
             <ToolBar maxWidth="1.7976931348623157E308" prefHeight="32.0">
                <items>
-                  <CustomTextField fx:id="filterText" maxWidth="1.7976931348623157E308" prefHeight="25.0" prefWidth="260.0">
+                  <CustomTextField fx:id="filterText" maxWidth="1.7976931348623157E308" prefHeight="25.0" minWidth="60.0" HBox.hgrow="ALWAYS">
                       <tooltip>
                           <Tooltip text="Text matching (contains)" />
                       </tooltip>
@@ -105,6 +106,16 @@
                                     <ImageView pickOnBounds="true" preserveRatio="true">
                                         <image>
                                             <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/star-f.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
+                            <SeparatorMenuItem fx:id="ackSeparator" />
+                            <MenuItem fx:id="ackMenuItem" mnemonicParsing="false" onAction="#ackAction" text="Acknowledge alarms" >
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/check.svg.png" />
                                         </image>
                                     </ImageView>
                                 </graphic>

@@ -80,7 +80,6 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     private final Image activityImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/debugt_obj.gif"));
     private final Image reportImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/file_obj.gif"));
 
-
     // Pane control
     @FXML
     private TitledPane displayTitledPane;
@@ -147,6 +146,10 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     private MenuItem setParameterMenuItem;
     @FXML
     private SeparatorMenuItem setParameterSeparator;
+    @FXML
+    private SeparatorMenuItem ackSeparator;
+    @FXML
+    private MenuItem ackMenuItem;
 
     @FXML
     private void filterClearButtonPressed(Event e) {
@@ -585,6 +588,9 @@ public class ModelBrowserViewController extends AbstractDisplayController {
         if (selected == null || selected.getValue() == null) {
             return;
         }
+
+        SystemEntityType type = selected.getValue().getType();
+
         // Expand/collapse behaviour
         boolean showExpandCollapse = !selected.isLeaf();
         collapseAllMenuItem.setVisible(showExpandCollapse);
@@ -592,15 +598,21 @@ public class ModelBrowserViewController extends AbstractDisplayController {
         expandCollapseSeparator.setVisible(showExpandCollapse);
 
         // Execute activity
-        boolean showActivity = selected.getValue().getType() == SystemEntityType.ACTIVITY;
+        boolean showActivity = type == SystemEntityType.ACTIVITY;
         executeActivitySeparator.setVisible(showActivity);
         executeActivityMenuItem.setVisible(showActivity);
         scheduleActivityMenuItem.setVisible(showActivity);
 
         // Set parameter: show also if not settable
-        boolean showSetParameter = selected.getValue().getType() == SystemEntityType.PARAMETER;
+        boolean showSetParameter = type == SystemEntityType.PARAMETER;
         setParameterMenuItem.setVisible(showSetParameter);
         setParameterSeparator.setVisible(showSetParameter);
+
+        // Ack alarms
+        boolean showAckAlarm = type == SystemEntityType.PARAMETER || type == SystemEntityType.EVENT || type == SystemEntityType.CONTAINER;
+        showAckAlarm &= alarmStatusMap.get(selected.getValue().getExternalId()).get().toBeAcked();
+        ackMenuItem.setVisible(showAckAlarm);
+        ackSeparator.setVisible(showAckAlarm);
     }
 
     @FXML
@@ -801,6 +813,33 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                 }
             });
         }
+    }
+
+    @FXML
+    private void ackAction(ActionEvent actionEvent) {
+        TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
+        if (selected == null || selected.getValue() == null) {
+            return;
+        }
+        // Forward the related set of entity IDs to the acknowledgement manager for acknowledgement
+        Set<Integer> wholeSubtree = navigateForAcknowledgement(selected);
+        MainViewController.instance().acknowledge(wholeSubtree);
+    }
+
+    private Set<Integer> navigateForAcknowledgement(TreeItem<SystemEntity> selected) {
+        Set<Integer> toReturn = new HashSet<>();
+        Queue<TreeItem<SystemEntity>> toProcess = new LinkedList<>();
+        toProcess.add(selected);
+        while(!toProcess.isEmpty()) {
+            TreeItem<SystemEntity> underCheck = toProcess.poll();
+            if(underCheck.getValue().getType() == SystemEntityType.PARAMETER || underCheck.getValue().getType() == SystemEntityType.EVENT) {
+                toReturn.add(underCheck.getValue().getExternalId());
+            } else if(underCheck.getValue().getType() == SystemEntityType.CONTAINER){
+                toReturn.add(underCheck.getValue().getExternalId());
+                toProcess.addAll(underCheck.getChildren());
+            }
+        }
+        return toReturn;
     }
 
     @Override

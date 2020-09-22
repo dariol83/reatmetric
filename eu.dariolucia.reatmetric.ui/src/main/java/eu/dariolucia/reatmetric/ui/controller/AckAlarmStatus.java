@@ -60,4 +60,8 @@ public enum AckAlarmStatus {
         AlarmState merged = result.state.ordinal() < ackAlarmStatus.state.ordinal() ? result.state : ackAlarmStatus.state;
         return deriveStatus(merged, !isAcked);
     }
+
+    public boolean toBeAcked() {
+        return !acked;
+    }
 }

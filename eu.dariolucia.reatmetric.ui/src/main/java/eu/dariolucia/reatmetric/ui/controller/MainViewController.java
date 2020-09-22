@@ -60,6 +60,7 @@ import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -616,6 +617,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
         public boolean isPendingAcknowledgement(int externalId) {
             return ackMessageController.isPendingAcknowledgement(externalId);
+        }
+
+        public void acknowledge(Set<Integer> toAcknowledge) {
+            ackMessageController.ackRecursive(toAcknowledge);
         }
     }
 }

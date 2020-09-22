@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.*;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.application.Platform;
@@ -194,5 +195,25 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
 
     public boolean isPendingAcknowledgement(int externalId) {
         return pendingAcknowledgementSet.contains(externalId);
+    }
+
+    public void ackRecursive(Set<Integer> externalIdsToAcknowledge) {
+        List<AcknowledgedMessage> toAckItems = new LinkedList<>();
+        // Iterate on the whole list
+        for (int i = 0; i < ackMessageTableView.getItems().size(); ++i) {
+            AcknowledgedMessage am = ackMessageTableView.getItems().get(i);
+            if (am.getMessage().getLinkedEntityId() != null && externalIdsToAcknowledge.contains(am.getMessage().getLinkedEntityId())) {
+                toAckItems.add(am);
+            }
+        }
+        if(!toAckItems.isEmpty()) {
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                try {
+                    system.getAcknowledgementService().acknowledgeMessages(toAckItems, ReatmetricUI.username());
+                } catch (ReatmetricException | RemoteException e) {
+                    LOG.log(Level.SEVERE, "Acknowledgement failed: " + e.getMessage(), e);
+                }
+            });
+        }
     }
 }
