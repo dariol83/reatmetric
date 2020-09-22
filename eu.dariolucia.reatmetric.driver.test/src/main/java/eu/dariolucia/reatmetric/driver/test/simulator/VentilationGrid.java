@@ -45,6 +45,7 @@ public class VentilationGrid extends StationEquipment {
 
     @Override
     protected void doWriteMonitoringState(DataOutputStream dos) throws IOException {
+        // TODO: add 2/3 parameters per fan, in order to have a second mimics with more parameters for this equipment
         dos.writeByte(status ? (byte) 1 : (byte) 0);
         dos.writeByte(input ? (byte) 1 : (byte) 0);
         dos.writeDouble(fan1);

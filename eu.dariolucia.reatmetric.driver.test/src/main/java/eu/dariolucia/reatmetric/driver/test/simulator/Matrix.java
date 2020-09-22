@@ -43,6 +43,7 @@ public class Matrix extends StationEquipment {
 
     @Override
     protected void doWriteMonitoringState(DataOutputStream dos) throws IOException {
+        // TODO: add 4/5 parameters, in order to have a second mimics with more parameters for this equipment
         dos.writeByte(status ? (byte) 1 : (byte) 0);
         dos.writeByte(input1 ? (byte) 1 : (byte) 0);
         dos.writeByte(input2 ? (byte) 1 : (byte) 0);

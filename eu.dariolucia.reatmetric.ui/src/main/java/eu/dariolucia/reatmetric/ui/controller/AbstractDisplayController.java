@@ -82,13 +82,15 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.log(Level.FINE, "Printing scale is " + scale);
                 }
+                /*
+                 * Scale-up idea from:
+                 * https://stackoverflow.com/questions/32288411/how-to-save-a-high-dpi-snapshot-of-a-javafx-canvas/32297827#32297827
+                 */
                 SnapshotParameters parameters = new SnapshotParameters();
-                // parameters.setTransform(scale);
                 parameters.setTransform(Transform.scale(4, 4));
 
                 final WritableImage snapshot = new WritableImage((int) (n.getBoundsInLocal().getWidth() * 4), (int) (n.getBoundsInLocal().getHeight() * 4));
                 n.snapshot(parameters, snapshot);
-                // n.getTransforms().add(scale);
                 ImageView view = new ImageView(snapshot);
                 view.getTransforms().add(new Scale(scaleX / 4, scaleX / 4));
                 if (job != null && job.showPrintDialog(retrieveWindow())) {
