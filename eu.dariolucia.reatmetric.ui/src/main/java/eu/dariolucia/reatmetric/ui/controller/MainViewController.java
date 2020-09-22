@@ -613,5 +613,9 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         public ModelBrowserViewController getModelController() {
             return modelController;
         }
+
+        public boolean isPendingAcknowledgement(int externalId) {
+            return ackMessageController.isPendingAcknowledgement(externalId);
+        }
     }
 }

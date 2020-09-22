@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class AckMessageDialogController implements Initializable, IAcknowledgedMessageSubscriber {
 
@@ -56,6 +57,8 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
     private TableView<AcknowledgedMessage> ackMessageTableView;
     private volatile IReatmetricSystem system;
     private volatile Consumer<Boolean> handler;
+
+    private Set<Integer> pendingAcknowledgementSet = new HashSet<>();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -130,17 +133,33 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
             if(am.getState() == AcknowledgementState.ACKNOWLEDGED) {
                 messagesToRemove.add(am.getInternalId().asLong());
             } else {
+                // New message for acknowledgement
                 messagesToAdd.add(am);
+
             }
         }
         Platform.runLater(() -> {
             List<AcknowledgedMessage> toRemoveActuals = new LinkedList<>();
+            // I iterate on the whole list, so here I compute the messages pending ack
+            pendingAcknowledgementSet.clear();
             for(int i = 0; i < ackMessageTableView.getItems().size(); ++i) {
                 AcknowledgedMessage am = ackMessageTableView.getItems().get(i);
                 if(messagesToRemove.contains(am.getInternalId().asLong())) {
                     toRemoveActuals.add(am);
+                } else {
+                    // Not to be removed, remember the ID
+                    if(am.getMessage().getLinkedEntityId() != null) {
+                        pendingAcknowledgementSet.add(am.getMessage().getLinkedEntityId());
+                    }
                 }
             }
+            // Add all the new ones
+            Set<Integer> finallyRemoved = toRemoveActuals.stream().map(o -> o.getMessage().getLinkedEntityId()).filter(Objects::nonNull).collect(Collectors.toSet());
+            pendingAcknowledgementSet.addAll(messagesToAdd.stream().map(o -> o.getMessage().getLinkedEntityId()).filter(Objects::nonNull).collect(Collectors.toSet()));
+            finallyRemoved.removeAll(pendingAcknowledgementSet);
+            // Inform the model browser of the current status
+            MainViewController.instance().getModelController().informAcknowledgementStatus(finallyRemoved, Collections.unmodifiableSet(pendingAcknowledgementSet));
+            // Finally update the table
             ackMessageTableView.getItems().removeAll(toRemoveActuals);
             ackMessageTableView.getItems().addAll(messagesToAdd);
             if(this.handler != null) {
@@ -171,5 +190,9 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
     public void ackAllButtonSelected(ActionEvent actionEvent) {
         List<AcknowledgedMessage> all = new ArrayList<>(this.ackMessageTableView.getItems());
         ackMessages(all);
+    }
+
+    public boolean isPendingAcknowledgement(int externalId) {
+        return pendingAcknowledgementSet.contains(externalId);
     }
 }

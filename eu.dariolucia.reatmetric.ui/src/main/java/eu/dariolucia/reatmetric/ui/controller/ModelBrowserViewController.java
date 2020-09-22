@@ -34,6 +34,7 @@ import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -46,6 +47,9 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
@@ -76,6 +80,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     private final Image activityImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/debugt_obj.gif"));
     private final Image reportImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/file_obj.gif"));
 
+
     // Pane control
     @FXML
     private TitledPane displayTitledPane;
@@ -94,12 +99,22 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     // ****************************************************************************
     private final Lock mapLock = new ReentrantLock();
     private final Map<SystemEntityPath, FilterableTreeItem<SystemEntity>> path2item = new TreeMap<>();
+    private final Map<Integer, SystemEntityPath> id2path = new HashMap<>();
     private SystemEntity root = null;
 
-    private ISystemModelSubscriber subscriber = ModelBrowserViewController.this::dataItemsReceived;
+    private Paint defaultTextColor = null;
+    private Font defaultFont = null;
+    private Font fontNotAcked = null;
+
+    private final ISystemModelSubscriber subscriber = ModelBrowserViewController.this::dataItemsReceived;
 
     // Temporary message queue
     private DataProcessingDelegator<SystemEntity> delegator;
+
+    // ****************************************************************************
+    // Ack-status related
+    // ****************************************************************************
+    private final Map<Integer, SimpleObjectProperty<AckAlarmStatus>> alarmStatusMap = new HashMap<>();
 
     // ****************************************************************************
     // Activity-execution related
@@ -246,7 +261,8 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                 super.updateItem(item, empty);
                 if (item != null && !empty && !isEmpty()) {
                     setText(item);
-                    switch (getTreeTableView().getTreeItem(getIndex()).getValue().getType()) {
+                    SystemEntity entity = getTreeTableView().getTreeItem(getIndex()).getValue();
+                    switch (entity.getType()) {
                         case CONTAINER:
                             setGraphic(new ImageView(containerImage));
                             break;
@@ -264,6 +280,58 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                             break;
                         default:
                             setGraphic(null);
+                            break;
+                    }
+                    if(defaultTextColor == null) {
+                        defaultTextColor = getTextFill();
+                    }
+                    if(defaultFont == null) {
+                        defaultFont = getFont();
+                    }
+                    if(fontNotAcked == null) {
+                        fontNotAcked = Font.font(defaultFont.getName(), FontWeight.EXTRA_BOLD, defaultFont.getSize());
+                    }
+                    AckAlarmStatus status = alarmStatusMap.get(entity.getExternalId()).get();
+                    switch(status) {
+                        case ALARM_NOT_ACKED:
+                            setFont(fontNotAcked);
+                            setTextFill(Color.RED);
+                            break;
+                        case ALARM_ACKED:
+                            setFont(defaultFont);
+                            setTextFill(Color.RED);
+                            break;
+                        case WARNING_NOT_ACKED:
+                            setFont(fontNotAcked);
+                            setTextFill(Color.ORANGE);
+                            break;
+                        case WARNING_ACKED:
+                            setFont(defaultFont);
+                            setTextFill(Color.ORANGE);
+                            break;
+                        case NOMINAL:
+                            setFont(defaultFont);
+                            if(entity.getAlarmState() == AlarmState.UNKNOWN) {
+                                setTextFill(Color.GRAY);
+                            } else if(entity.getAlarmState() == AlarmState.VIOLATED) {
+                                setTextFill(Color.LIMEGREEN);
+                            } else {
+                                setTextFill(defaultTextColor);
+                            }
+                            break;
+                        case NOMINAL_NOT_ACKED:
+                            setFont(fontNotAcked);
+                            if(entity.getAlarmState() == AlarmState.UNKNOWN) {
+                                setTextFill(Color.GRAY);
+                            } else if(entity.getAlarmState() == AlarmState.VIOLATED) {
+                                setTextFill(Color.LIMEGREEN);
+                            } else {
+                                setTextFill(defaultTextColor);
+                            }
+                            break;
+                        default:
+                            setTextFill(defaultTextColor);
+                            setFont(defaultFont);
                             break;
                     }
                 } else {
@@ -300,7 +368,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                 }
             }
         });
-        
+
         this.delegator = new DataProcessingDelegator<>("Model Browser Delegator", (a) -> {
             this.mapLock.lock();
             try {
@@ -358,6 +426,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
         try {
             this.root = null;
             this.path2item.clear();
+            this.alarmStatusMap.clear();
         } finally {
             this.mapLock.unlock();
         }
@@ -381,19 +450,26 @@ public class ModelBrowserViewController extends AbstractDisplayController {
 
             // Get the root node
             this.root = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getRoot();
+            List<TreeItem<SystemEntity>> leaves = new LinkedList<>();
             Queue<SystemEntity> constructionQueue = new LinkedList<>();
             constructionQueue.add(this.root);
             while(!constructionQueue.isEmpty()) {
                 SystemEntity toProcess = constructionQueue.poll();
                 if(!this.path2item.containsKey(toProcess.getPath())) {
-                    addOrUpdateItemToTree(toProcess);
+                    TreeItem<SystemEntity> theItem = addOrUpdateItemToTree(toProcess);
                     if(toProcess.getType() == SystemEntityType.CONTAINER) {
                         List<SystemEntity> children = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getContainedEntities(toProcess.getPath());
                         if (children != null) {
                             constructionQueue.addAll(children);
                         }
+                    } else if(toProcess.getType() == SystemEntityType.EVENT || toProcess.getType() == SystemEntityType.PARAMETER) {
+                        leaves.add(theItem);
                     }
                 }
+            }
+            // Now you can update the alarm status of tree
+            for(TreeItem<SystemEntity> item : leaves) {
+                updateAlarmStatus(item);
             }
             // Now you can ask the UI thread to set the root in the viewer
             Platform.runLater(() -> {
@@ -414,6 +490,9 @@ public class ModelBrowserViewController extends AbstractDisplayController {
             item = new FilterableTreeItem<>(toAdd);
             // Add it to the map
             this.path2item.put(toAdd.getPath(), item);
+            this.id2path.put(toAdd.getExternalId(), toAdd.getPath());
+            // Add it to the alarm status map - with nominal alarm status
+            this.alarmStatusMap.put(toAdd.getExternalId(), new SimpleObjectProperty<>(AckAlarmStatus.NOMINAL));
             // Add it to the parent tree item
             addToParent(item);
         } else {
@@ -422,8 +501,55 @@ public class ModelBrowserViewController extends AbstractDisplayController {
             if(currentState.getInternalId().asLong() < toAdd.getInternalId().asLong()) {
                 item.setValue(toAdd);
             }
+            // Update the alarm status of the branch, if this is a leave
+            if(item.isLeaf()) {
+                updateAlarmStatus(item);
+            }
         }
         return item;
+    }
+
+    private void updateAlarmStatus(TreeItem<SystemEntity> item) {
+        // Derive the status of the leave
+        AckAlarmStatus derivedStatus = AckAlarmStatus.deriveStatus(item.getValue().getAlarmState(), MainViewController.instance().isPendingAcknowledgement(item.getValue().getExternalId()));
+        // Get the property
+        SimpleObjectProperty<AckAlarmStatus> alarmProperty = this.alarmStatusMap.get(item.getValue().getExternalId());
+        if(derivedStatus != alarmProperty.get()) {
+            // Then we set the new status and we recompute the branch status
+            alarmProperty.set(derivedStatus);
+            TreeItem<SystemEntity> parent = item.getParent();
+            while(parent != null) {
+                // Get the parent current alarm status
+                SimpleObjectProperty<AckAlarmStatus> parentAlarmProperty = this.alarmStatusMap.get(parent.getValue().getExternalId());
+                if(parentAlarmProperty.get() == derivedStatus) {
+                    // If the status of the parent is the same of the child, we can stop here
+                    return;
+                }
+                // The status is different, so we need to compute the status of the parent, taking into account the status of the
+                // direct leaves
+                AckAlarmStatus newParentStatus = deriveAlarmStatusFromLeaves(parent);
+                if(parentAlarmProperty.get() == newParentStatus) {
+                    // If the status of the parent as derived is the same of the previous, we can stop here
+                    return;
+                } else {
+                    // Set the new status and move to the parent's parent
+                    parentAlarmProperty.set(newParentStatus);
+                    // Fire an event to indicate that this treeitem node effectively changed (even though, property-wise, this is not correct)
+                    TreeItem.TreeModificationEvent<SystemEntity> event = new TreeItem.TreeModificationEvent<>(TreeItem.valueChangedEvent(), parent);
+                    Event.fireEvent(parent, event);
+                    parent = parent.getParent();
+                }
+            }
+        }
+    }
+
+    private AckAlarmStatus deriveAlarmStatusFromLeaves(TreeItem<SystemEntity> parent) {
+        AckAlarmStatus result = AckAlarmStatus.NOMINAL;
+        for(TreeItem<SystemEntity> child : parent.getChildren()) {
+            SimpleObjectProperty<AckAlarmStatus> childAlarmProp = this.alarmStatusMap.get(child.getValue().getExternalId());
+            result = AckAlarmStatus.merge(result, childAlarmProp.get());
+        }
+        return result;
     }
 
     private void addToParent(TreeItem<SystemEntity> item) {
@@ -686,5 +812,30 @@ public class ModelBrowserViewController extends AbstractDisplayController {
             e.printStackTrace();
         }
         super.dispose();
+    }
+
+    public void informAcknowledgementStatus(Set<Integer> ackStatusCleared, Set<Integer> ackStatusActive) {
+        Platform.runLater(() -> {
+            // The cleared ones must be updated
+            for(Integer i : ackStatusCleared) {
+                SystemEntityPath path = this.id2path.get(i);
+                if(path != null) {
+                    TreeItem<SystemEntity> entityTreeItem = this.path2item.get(path);
+                    if(entityTreeItem != null) {
+                        addOrUpdateItemToTree(entityTreeItem.getValue());
+                    }
+                }
+            }
+            // The active ones as well (even though should not be needed...)
+            for(Integer i : ackStatusActive) {
+                SystemEntityPath path = this.id2path.get(i);
+                if(path != null) {
+                    TreeItem<SystemEntity> entityTreeItem = this.path2item.get(path);
+                    if(entityTreeItem != null) {
+                        addOrUpdateItemToTree(entityTreeItem.getValue());
+                    }
+                }
+            }
+        });
     }
 }

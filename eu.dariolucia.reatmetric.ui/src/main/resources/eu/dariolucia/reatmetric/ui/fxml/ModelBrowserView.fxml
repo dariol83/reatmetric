@@ -37,8 +37,8 @@
             </ToolBar>
             <TreeTableView fx:id="modelTree" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" onDragDetected="#onDragDetected" VBox.vgrow="ALWAYS">
               <columns>
-                <TreeTableColumn fx:id="nameCol" editable="false" prefWidth="230.0" sortable="false" text="System Entity" />
-                <TreeTableColumn fx:id="statusCol" editable="false" prefWidth="70.0" resizable="false" sortable="false" text="Status" />
+                <TreeTableColumn fx:id="nameCol" reorderable="false" editable="false" prefWidth="260.0" maxWidth="Infinity" sortable="false" text="System Entity" />
+                <TreeTableColumn fx:id="statusCol" reorderable="false" editable="false" prefWidth="70.0" resizable="false" sortable="false" text="Status" />
               </columns>
               <contextMenu>
                     <ContextMenu fx:id="contextMenu" onShowing="#menuAboutToShow">
