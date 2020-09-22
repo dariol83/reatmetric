@@ -27,7 +27,7 @@ import java.util.Collection;
  */
 public class AcknowledgementServiceImpl implements IAcknowledgementService {
 
-    private AcknowledgedMessageBrokerImpl broker;
+    private final AcknowledgedMessageBrokerImpl broker;
 
     public AcknowledgementServiceImpl(AcknowledgedMessageBrokerImpl acknowledgedMessageBroker) {
         this.broker = acknowledgedMessageBroker;

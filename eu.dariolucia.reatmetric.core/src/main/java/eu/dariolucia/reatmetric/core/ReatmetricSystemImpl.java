@@ -285,6 +285,11 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
     }
 
     @Override
+    public IOperationalMessageCollectorService getOperationalMessageCollectorService() throws ReatmetricException, RemoteException {
+        return messageBroker.getCollectorService();
+    }
+
+    @Override
     public IAcknowledgedMessageProvisionService getAcknowledgedMessageMonitorService() {
         return messageBroker.getAcknowledgedMessageBroker();
     }

@@ -26,6 +26,7 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
 import eu.dariolucia.reatmetric.api.messages.IAcknowledgedMessageProvisionService;
 import eu.dariolucia.reatmetric.api.messages.IAcknowledgementService;
+import eu.dariolucia.reatmetric.api.messages.IOperationalMessageCollectorService;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService;
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
@@ -56,6 +57,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
 
     // local cache
     private OperationalMessageProvisionServiceProxy operationalMessageProvisionServiceProxy;
+    private OperationalMessageCollectorServiceProxy operationalMessageCollectorServiceProxy;
     private AcknowledgedMessageProvisionServiceProxy acknowledgedMessageProvisionServiceProxy;
     private AcknowledgementServiceProxy acknowledgementServiceProxy;
     private RawDataProvisionServiceProxy rawDataProvisionServiceProxy;
@@ -93,6 +95,8 @@ public class ReatmetricProxy implements IReatmetricSystem {
             operationalMessageProvisionServiceProxy.terminate();
         }
         operationalMessageProvisionServiceProxy = null;
+
+        operationalMessageCollectorServiceProxy = null;
 
         if(acknowledgedMessageProvisionServiceProxy != null) {
             acknowledgedMessageProvisionServiceProxy.terminate();
@@ -156,6 +160,14 @@ public class ReatmetricProxy implements IReatmetricSystem {
             operationalMessageProvisionServiceProxy = new OperationalMessageProvisionServiceProxy(delegate.getOperationalMessageMonitorService());
         }
         return operationalMessageProvisionServiceProxy;
+    }
+
+    @Override
+    public synchronized IOperationalMessageCollectorService getOperationalMessageCollectorService() throws ReatmetricException, RemoteException {
+        if(operationalMessageCollectorServiceProxy == null) {
+            operationalMessageCollectorServiceProxy = new OperationalMessageCollectorServiceProxy(delegate.getOperationalMessageCollectorService());
+        }
+        return operationalMessageCollectorServiceProxy;
     }
 
     @Override

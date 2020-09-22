@@ -18,8 +18,7 @@
 package eu.dariolucia.reatmetric.api.messages;
 
 /**
- *
- * @author dario
+ * Severity type for operational messages.
  */
 public enum Severity {
     ALARM,
@@ -27,5 +26,6 @@ public enum Severity {
     WARN,
     INFO,
     NONE,
-    UNKNOWN
+    UNKNOWN,
+    CHAT
 }

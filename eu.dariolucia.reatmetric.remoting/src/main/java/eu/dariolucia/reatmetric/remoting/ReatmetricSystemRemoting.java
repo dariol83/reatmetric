@@ -26,6 +26,7 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
 import eu.dariolucia.reatmetric.api.messages.IAcknowledgedMessageProvisionService;
 import eu.dariolucia.reatmetric.api.messages.IAcknowledgementService;
+import eu.dariolucia.reatmetric.api.messages.IOperationalMessageCollectorService;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService;
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
@@ -62,6 +63,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     private IReatmetricSystem activatedObject;
 
     private IOperationalMessageProvisionService remoteOperationalMessageProvisionService;
+    private IOperationalMessageCollectorService remoteOperationalMessageCollectorService;
     private IAcknowledgedMessageProvisionService remoteAcknowledgedMessageProvisionService;
     private IAcknowledgementService remoteAcknowledgementService;
     private IRawDataProvisionService remoteRawDataProvisionService;
@@ -126,6 +128,15 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
             }
         }
         remoteOperationalMessageProvisionService = null;
+
+        if (remoteOperationalMessageCollectorService != null) {
+            try {
+                UnicastRemoteObject.unexportObject(system.getOperationalMessageCollectorService(), true);
+            } catch (NoSuchObjectException | ReatmetricException e) {
+                // Ignore
+            }
+        }
+        remoteOperationalMessageCollectorService = null;
 
         if (remoteAcknowledgedMessageProvisionService != null) {
             try {
@@ -282,6 +293,14 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
             remoteOperationalMessageProvisionService = (IOperationalMessageProvisionService) exportObject(system.getOperationalMessageMonitorService());
         }
         return remoteOperationalMessageProvisionService;
+    }
+
+    @Override
+    public synchronized IOperationalMessageCollectorService getOperationalMessageCollectorService() throws ReatmetricException, RemoteException {
+        if (remoteOperationalMessageCollectorService == null) {
+            remoteOperationalMessageCollectorService = (IOperationalMessageCollectorService) exportObject(system.getOperationalMessageCollectorService());
+        }
+        return remoteOperationalMessageCollectorService;
     }
 
     @Override

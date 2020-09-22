@@ -27,6 +27,7 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
 import eu.dariolucia.reatmetric.api.messages.IAcknowledgedMessageProvisionService;
 import eu.dariolucia.reatmetric.api.messages.IAcknowledgementService;
+import eu.dariolucia.reatmetric.api.messages.IOperationalMessageCollectorService;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageProvisionService;
 import eu.dariolucia.reatmetric.api.model.ISystemModelProvisionService;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
@@ -55,6 +56,8 @@ public interface IReatmetricSystem extends Remote {
     String getName() throws RemoteException;
     
     IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException, RemoteException;
+
+    IOperationalMessageCollectorService getOperationalMessageCollectorService() throws ReatmetricException, RemoteException;
 
     IAcknowledgedMessageProvisionService getAcknowledgedMessageMonitorService() throws ReatmetricException, RemoteException;
 

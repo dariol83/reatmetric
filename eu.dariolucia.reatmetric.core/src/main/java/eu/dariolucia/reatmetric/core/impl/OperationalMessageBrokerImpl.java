@@ -48,6 +48,7 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
     private final Map<IOperationalMessageSubscriber, OperationalMessageSubscriptionManager> subscriberIndex = new ConcurrentHashMap<>();
 
     private final AcknowledgedMessageBrokerImpl acknowledgedMessageBroker;
+    private final OperationalMessageCollectorServiceImpl collectorService;
 
     public OperationalMessageBrokerImpl(IOperationalMessageArchive archive, IAcknowledgedMessageArchive ackArchive) throws ArchiveException {
         this.archive = archive;
@@ -61,6 +62,8 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
         // Initialise ack messages
         this.acknowledgedMessageBroker = new AcknowledgedMessageBrokerImpl(ackArchive);
         this.acknowledgedMessageBroker.initialise();
+        // Initialise collector service
+        this.collectorService = new OperationalMessageCollectorServiceImpl(this);
         // Initialise logger handler
         setLevel(Level.INFO);
         Logger.getLogger("eu.dariolucia.reatmetric").addHandler(this);
@@ -189,11 +192,15 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
     }
 
     @Override
-    public OperationalMessage distribute(String id, String message, String source, Severity severity, Object[] additionalFields, Integer linkedId, boolean store) throws ReatmetricException {
+    public OperationalMessage distribute(String id, String message, String source, Severity severity, Object extension, Integer linkedId, boolean store) throws ReatmetricException {
         IUniqueId idToAssign = nextOperationalMessageId();
-        OperationalMessage om = new OperationalMessage(idToAssign, Instant.now(), id, message, source, severity, linkedId, additionalFields);
+        OperationalMessage om = new OperationalMessage(idToAssign, Instant.now(), id, message, source, severity, linkedId, extension);
         distribute(Collections.singletonList(om), store);
         return om;
+    }
+
+    public IOperationalMessageCollectorService getCollectorService() {
+        return collectorService;
     }
 
     private static class OperationalMessageSubscriptionManager {
