@@ -454,9 +454,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent root = loader.load();
             ackMessageController = loader.getController();
+            messagePopOver.setHeaderAlwaysVisible(true);
             messagePopOver.setContentNode(root);
             messagePopOver.setArrowLocation(PopOver.ArrowLocation.BOTTOM_LEFT);
-            messagePopOver.setTitle("Messages for acknowledgement");
+            messagePopOver.setTitle("Acknowledgements");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -478,9 +479,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
             FXMLLoader loader = new FXMLLoader(chatDialogUrl);
             Parent root = loader.load();
             chatMessageController = loader.getController();
+            chatPopOver.setHeaderAlwaysVisible(true);
             chatPopOver.setContentNode(root);
             chatPopOver.setArrowLocation(PopOver.ArrowLocation.BOTTOM_RIGHT);
-            chatPopOver.setTitle("Chat");
+            chatPopOver.setTitle("Live Chat Messages");
         } catch (IOException e) {
             e.printStackTrace();
         }
