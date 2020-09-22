@@ -251,6 +251,8 @@ public class ModelBrowserViewController extends AbstractDisplayController {
 
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
+        this.modelTree.setPlaceholder(new Label(""));
+
         ImageView clearButton = new ImageView(new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/clear_input.png")));
         clearButton.setStyle("-fx-cursor: hand");
         clearButton.setOnMouseClicked(this::filterClearButtonPressed);

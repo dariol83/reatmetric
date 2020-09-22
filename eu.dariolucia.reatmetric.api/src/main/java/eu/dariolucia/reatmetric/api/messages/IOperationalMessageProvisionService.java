@@ -24,5 +24,4 @@ import eu.dariolucia.reatmetric.api.common.IDataItemProvisionService;
  */
 public interface IOperationalMessageProvisionService extends IDataItemProvisionService<IOperationalMessageSubscriber, OperationalMessageFilter, OperationalMessage> {
 
-    // TODO add possibility to raise a message with a message request object: IOperationalMessageSender and input OperationalMessageRequest
 }

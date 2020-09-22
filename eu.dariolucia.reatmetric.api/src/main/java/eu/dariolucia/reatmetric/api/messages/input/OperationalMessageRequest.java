@@ -33,6 +33,10 @@ public final class OperationalMessageRequest extends AbstractInputDataItem {
 	 */
 	private static final long serialVersionUID = 1L;
 
+    public static OperationalMessageRequest of(String id, String message, String source, Severity severity, Integer linkedEntityId, Object extension) {
+        return new OperationalMessageRequest(id, message, source, severity, linkedEntityId, extension);
+    }
+
 	private final String id;
 
     private final String message;
@@ -45,7 +49,7 @@ public final class OperationalMessageRequest extends AbstractInputDataItem {
 
     private final Object extension;
 
-    public OperationalMessageRequest(String id, String message, String source, Severity severity, Integer linkedEntityId, Object extension) {
+    private OperationalMessageRequest(String id, String message, String source, Severity severity, Integer linkedEntityId, Object extension) {
         this.id = id;
         this.message = message;
         this.source = source;

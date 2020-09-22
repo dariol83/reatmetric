@@ -45,6 +45,9 @@
             <children>
                 <Button fx:id="connectButton" mnemonicParsing="false" prefHeight="56.0" prefWidth="64.0"
                         onAction="#connectAction">
+                    <tooltip>
+                        <Tooltip text="Connect/disconnect system"/>
+                    </tooltip>
                     <HBox.margin>
                         <Insets left="4.0"/>
                     </HBox.margin>
@@ -65,7 +68,7 @@
         </HBox>
         <HBox VBox.vgrow="ALWAYS">
             <children>
-                <SplitPane fx:id="mainSplitter" dividerPositions="0.2" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
+                <SplitPane fx:id="mainSplitter" dividerPositions="0.21" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
                     <items>
                         <Accordion fx:id="sideAccordion" minWidth="0.0">
                             <panes>
@@ -325,7 +328,7 @@
             <items>
                 <Circle fx:id="nominalCrl" fill="#003915" radius="8.0" stroke="WHITE" strokeType="INSIDE"
                         onMouseClicked="#debugAction"
-                        style="-fx-cursor: hand;"/>
+                        style="-fx-cursor: hand;" />
                 <Separator orientation="VERTICAL"/>
                 <Label fx:id="systemLbl" onMouseClicked="#systemLabelAction" alignment="CENTER" disable="true"
                        prefHeight="24.0" prefWidth="200.0"
@@ -334,6 +337,9 @@
                     <cursor>
                         <Cursor fx:constant="HAND"/>
                     </cursor>
+                    <tooltip>
+                        <Tooltip text="Open acknowledgement panel"/>
+                    </tooltip>
                 </Label>
                 <Separator orientation="VERTICAL"/>
                 <Label fx:id="statusLbl" prefHeight="17.0" VBox.vgrow="NEVER" HBox.hgrow="ALWAYS" text=" "
@@ -358,6 +364,20 @@
                         -fx-font-weight: bold;
                     </style>
                 </Label>
+                <Separator orientation="VERTICAL"/>
+                <Button fx:id="chatButton" onAction="#chatButtonAction" alignment="CENTER" disable="true"
+                       prefHeight="24.0" prefWidth="24.0">
+                    <graphic>
+                        <ImageView pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/message-alt-writing.svg.png"/>
+                            </image>
+                        </ImageView>
+                    </graphic>
+                    <tooltip>
+                        <Tooltip text="Open chat"/>
+                    </tooltip>
+                </Button>
             </items>
         </ToolBar>
     </children>

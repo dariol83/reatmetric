@@ -54,6 +54,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.controlsfx.control.PopOver;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.net.URL;
 import java.rmi.RemoteException;
@@ -87,6 +88,9 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     private static final String SYSTEM_LABEL_CSS_STYLE_NOALARM = "-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;";
     private static final String SYSTEM_LABEL_CSS_STYLE_ALARM = "-fx-border-color: black; -fx-background-color: #c60000; -fx-text-fill: #FFFFFF;";
+
+    private static final String CHAT_LABEL_CSS_STYLE_NOALARM = "";
+    private static final String CHAT_LABEL_CSS_STYLE_ALARM = "-fx-background-color: -fx-faint-focus-color";
 
     private static volatile MainViewController.Facade INSTANCE = null;
 
@@ -122,6 +126,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private Label statusLbl;
     @FXML
     private ProgressBar globalProgress;
+    @FXML
+    private Button chatButton;
 
     @FXML
     private Button connectButton;
@@ -138,6 +144,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private final PopOver messagePopOver = new PopOver();
     private AckMessageDialogController ackMessageController;
     private Timeline alarmFlashTimeline;
+
+    private final PopOver chatPopOver = new PopOver();
+    private ChatDialogController chatMessageController;
+    private Timeline chatFlashTimeline;
 
     public AbstractDisplayController openPerspective(String viewName) {
         for (Node n : buttonBox.getChildren()) {
@@ -395,6 +405,16 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         }
     }
 
+    @FXML
+    private void chatButtonAction(ActionEvent actionEvent) {
+        if (ReatmetricUI.selectedSystem().getSystem() != null) {
+            chatFlashTimeline.pause();
+            chatButton.setStyle(CHAT_LABEL_CSS_STYLE_NOALARM);
+            chatPopOver.show(chatButton);
+            chatMessageController.setFocus();
+        }
+    }
+
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         // Set the instance
@@ -441,7 +461,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
             e.printStackTrace();
         }
 
-        // Flashing timeline
+        // Flashing timeline for alarms
         alarmFlashTimeline = new Timeline(
                 new KeyFrame(Duration.seconds(0.5), e -> {
                     systemLbl.setStyle(SYSTEM_LABEL_CSS_STYLE_ALARM);
@@ -451,6 +471,30 @@ public class MainViewController implements Initializable, IReatmetricServiceList
                 })
         );
         alarmFlashTimeline.setCycleCount(Animation.INDEFINITE);
+
+        // Create chat table view
+        try {
+            URL chatDialogUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/ChatDialog.fxml");
+            FXMLLoader loader = new FXMLLoader(chatDialogUrl);
+            Parent root = loader.load();
+            chatMessageController = loader.getController();
+            chatPopOver.setContentNode(root);
+            chatPopOver.setArrowLocation(PopOver.ArrowLocation.BOTTOM_RIGHT);
+            chatPopOver.setTitle("Chat");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Flashing timeline for chat
+        chatFlashTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(0.5), e -> {
+                    chatButton.setStyle(CHAT_LABEL_CSS_STYLE_ALARM);
+                }),
+                new KeyFrame(Duration.seconds(1.0), e -> {
+                    chatButton.setStyle(CHAT_LABEL_CSS_STYLE_NOALARM);
+                })
+        );
+        chatFlashTimeline.setCycleCount(Animation.INDEFINITE);
 
         // digital clock, update 1 per second.
         final Timeline digitalTime = new Timeline(
@@ -488,6 +532,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         Platform.runLater(() -> {
             enableMainViewItems();
             registerAcknowledgeMonitor();
+            registerChatMonitor();
             try {
                 this.systemLbl.setText(system.getName());
                 ReatmetricUI.setStatusLabel("System " + system.getName() + " connected");
@@ -501,11 +546,16 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         ackMessageController.activate(this::signalAckStatusChanged);
     }
 
+    private void registerChatMonitor() {
+        chatMessageController.activate(this::signalChatStatusChanged);
+    }
+
     @Override
     public void systemDisconnected(IReatmetricSystem system) {
         Platform.runLater(() -> {
             disableMainViewItems();
             deregisterAcknowledgeMonitor();
+            deregisterChatMonitor();
             try {
                 ReatmetricUI.setStatusLabel("System " + system.getName() + " disconnected");
             } catch (RemoteException e) {
@@ -518,11 +568,21 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         ackMessageController.deactivate();
     }
 
+    private void deregisterChatMonitor() {
+        chatMessageController.deactivate();
+    }
+
     @Override
     public void systemStatusUpdate(SystemStatus status) {
         Platform.runLater(() -> {
             updateStatusIndicator(status);
         });
+    }
+
+    protected void signalChatStatusChanged(boolean inAlarm) {
+        if (chatFlashTimeline.getStatus() != Animation.Status.RUNNING && !chatPopOver.isShowing()) {
+            chatFlashTimeline.play();
+        }
     }
 
     protected void signalAckStatusChanged(boolean inAlarm) {
@@ -563,6 +623,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         // Disable the system label
         this.systemLbl.setText("---");
         this.systemLbl.setDisable(true);
+
+        this.chatButton.setDisable(true);
     }
 
     private void enableMainViewItems() {
@@ -575,6 +637,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
         // Enable the system label
         this.systemLbl.setDisable(false);
+
+        this.chatButton.setDisable(false);
     }
 
     private void updateStatusIndicator(SystemStatus state) {
