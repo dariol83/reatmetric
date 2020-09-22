@@ -120,8 +120,8 @@ public class MonitoringDecoder implements IRawDataSubscriber {
     }
 
     public LinkedHashMap<String, Pair<Integer, Object>> ventilationParamMap(RawData rawData) {
-        Class<?>[] dataTypes = { Byte.class, Byte.class, Double.class, Double.class, Double.class, Double.class };
-        String[] names = { "Status", "Input", "Fan1", "Fan2", "Fan3", "Fan4"};
+        Class<?>[] dataTypes = { Byte.class, Byte.class, Double.class, Double.class, Double.class, Double.class, Integer.class, Integer.class, Integer.class, Integer.class, Integer.class, Integer.class, Integer.class, Integer.class };
+        String[] names = { "Status", "Input", "Fan1", "Fan2", "Fan3", "Fan4", "Fan1 Status", "Fan1 Input", "Fan2 Status", "Fan2 Input", "Fan3 Status", "Fan3 Input", "Fan4 Status", "Fan4 Input"};
         return extract(rawData, names, dataTypes);
     }
 

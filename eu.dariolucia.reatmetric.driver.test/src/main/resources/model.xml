@@ -381,8 +381,95 @@
 				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="120"/>
             </checks>
 		</parameter>
-		
-		
+        <parameter id="#706" location="STATION.VENTILATION.VNT_FAN1_STATUS" description="Ventilation 1 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#707" location="STATION.VENTILATION.VNT_FAN1_INPUT" description="Ventilation 1 Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#708" location="STATION.VENTILATION.VNT_FAN2_STATUS" description="Ventilation 2 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#709" location="STATION.VENTILATION.VNT_FAN2_INPUT" description="Ventilation 2 Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#710" location="STATION.VENTILATION.VNT_FAN3_STATUS" description="Ventilation 3 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#711" location="STATION.VENTILATION.VNT_FAN3_INPUT" description="Ventilation 3 Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#712" location="STATION.VENTILATION.VNT_FAN4_STATUS" description="Ventilation 4 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#713" location="STATION.VENTILATION.VNT_FAN4_INPUT" description="Ventilation 4 Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+
 		<!-- Thermal Units -->
 		<parameter id="#800" location="STATION.THERMAL.THM_STATUS" description="Thermal Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">

@@ -31,6 +31,14 @@ public class VentilationGrid extends StationEquipment {
     private volatile double fan2;
     private volatile double fan3;
     private volatile double fan4;
+    private volatile int fan1status;
+    private volatile int fan1input;
+    private volatile int fan2status;
+    private volatile int fan2input;
+    private volatile int fan3status;
+    private volatile int fan3input;
+    private volatile int fan4status;
+    private volatile int fan4input;
 
     public VentilationGrid(ScheduledExecutorService scheduler) {
         super(scheduler);
@@ -41,17 +49,32 @@ public class VentilationGrid extends StationEquipment {
         fan2 = 0;
         fan3 = 0;
         fan4 = 0;
+        fan1status = 1;
+        fan1input = 1;
+        fan2status = 1;
+        fan2input = 1;
+        fan3status = 1;
+        fan3input = 1;
+        fan4status = 1;
+        fan4input = 1;
     }
 
     @Override
     protected void doWriteMonitoringState(DataOutputStream dos) throws IOException {
-        // TODO: add 2/3 parameters per fan, in order to have a second mimics with more parameters for this equipment
         dos.writeByte(status ? (byte) 1 : (byte) 0);
         dos.writeByte(input ? (byte) 1 : (byte) 0);
         dos.writeDouble(fan1);
         dos.writeDouble(fan2);
         dos.writeDouble(fan3);
         dos.writeDouble(fan4);
+        dos.writeInt(fan1status);
+        dos.writeInt(fan1input);
+        dos.writeInt(fan2status);
+        dos.writeInt(fan2input);
+        dos.writeInt(fan3status);
+        dos.writeInt(fan3input);
+        dos.writeInt(fan4status);
+        dos.writeInt(fan4input);
     }
 
     @Override
