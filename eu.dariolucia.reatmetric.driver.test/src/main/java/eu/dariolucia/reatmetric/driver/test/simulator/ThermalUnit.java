@@ -76,8 +76,30 @@ public class ThermalUnit extends StationEquipment {
 
     @Override
     public boolean doExecute(byte[] command) {
-        // TODO: implement
-        return false;
+        ByteBuffer bb = ByteBuffer.wrap(command);
+        byte firstByte = bb.get();
+        int commandId = bb.getInt();
+        int commandTag = bb.getInt();
+        if (commandId == 0) { // Operate on input
+            int switchOn = bb.getInt();
+            input = switchOn == 1;
+            return true;
+        } else if (commandId == 1) { // Operate on status
+            int switchOn = bb.getInt();
+            status = switchOn == 1;
+            return true;
+        } else if (commandId == 2) { // Operate on unit status
+            int fanId = bb.getInt();
+            int switchOn = bb.getInt();
+            switch(fanId) {
+                case 1: aStatus = switchOn; break;
+                case 2: bStatus = switchOn; break;
+                default: return false;
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -86,8 +108,7 @@ public class ThermalUnit extends StationEquipment {
         byte firstByte = bb.get();
         int commandId = bb.getInt();
         int commandTag = bb.getInt();
-        // TODO: implement command Id checking
-        return Pair.of(commandTag, true);
+        return Pair.of(commandTag, commandId == 0 || commandId == 1 || commandId == 2);
     }
 
     @Override
@@ -114,7 +135,7 @@ public class ThermalUnit extends StationEquipment {
                     aStatus = 1;
                 }
             }
-            if(aStatus > 0) {
+            if(bStatus > 0) {
                 bTemperature = bTemperature + 15 * (Math.random() - 0.2);
                 if(bProtection && bTemperature > 36) {
                     bOverride = 2;
@@ -130,7 +151,7 @@ public class ThermalUnit extends StationEquipment {
                     bStatus = 1;
                 }
             }
-            globalStatus = 1;
+            globalStatus = (aStatus > 0 || bStatus > 0) ? 1 : 0;
             if(aStatus == 0 || aStatus == 2 || bStatus == 0 || bStatus == 2) {
                 globalStatus = 2;
             }

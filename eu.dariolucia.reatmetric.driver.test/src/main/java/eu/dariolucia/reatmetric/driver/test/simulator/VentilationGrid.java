@@ -79,8 +79,40 @@ public class VentilationGrid extends StationEquipment {
 
     @Override
     public boolean doExecute(byte[] command) {
-        // TODO: implement
-        return false;
+        ByteBuffer bb = ByteBuffer.wrap(command);
+        byte firstByte = bb.get();
+        int commandId = bb.getInt();
+        int commandTag = bb.getInt();
+        if (commandId == 0) { // Operate on input
+            int switchOn = bb.getInt();
+            input = switchOn == 1;
+            return true;
+        } else if (commandId == 1) { // Operate on status
+            int switchOn = bb.getInt();
+            status = switchOn == 1;
+            return true;
+        } else if (commandId == 2) { // Operate on fan status
+            int fanId = bb.getInt();
+            int switchOn = bb.getInt();
+            switch(fanId) {
+                case 1: fan1status = switchOn; break;
+                case 2: fan2status = switchOn; break;
+                case 3: fan3status = switchOn; break;
+                case 4: fan4status = switchOn; break;
+                default: return false;
+            }
+            return true;
+        } else if (commandId == 3) { // Do nothing except waiting for n seconds
+            int n = bb.getInt();
+            try {
+                Thread.sleep(n * 1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -89,8 +121,7 @@ public class VentilationGrid extends StationEquipment {
         byte firstByte = bb.get();
         int commandId = bb.getInt();
         int commandTag = bb.getInt();
-        // TODO: implement command Id checking
-        return Pair.of(commandTag, true);
+        return Pair.of(commandTag, commandId == 0 || commandId == 1 || commandId == 2 || commandId == 3);
     }
 
     @Override
@@ -101,10 +132,10 @@ public class VentilationGrid extends StationEquipment {
     @Override
     protected void computeNewState() {
         if(status && input) {
-            fan1 = 220 + 60 * (Math.random() - 0.5);
-            fan2 = 220 + 60 * (Math.random() - 0.5);
-            fan3 = 220 + 60 * (Math.random() - 0.5);
-            fan4 = 220 + 60 * (Math.random() - 0.5);
+            fan1 = (fan1status == 1) ? 220 + 60 * (Math.random() - 0.5) : 0;
+            fan2 = (fan2status == 1) ? 220 + 60 * (Math.random() - 0.5) : 0;
+            fan3 = (fan3status == 1) ? 220 + 60 * (Math.random() - 0.5) : 0;
+            fan4 = (fan4status == 1) ? 220 + 60 * (Math.random() - 0.5) : 0;
         } else {
             fan1 = 0;
             fan2 = 0;

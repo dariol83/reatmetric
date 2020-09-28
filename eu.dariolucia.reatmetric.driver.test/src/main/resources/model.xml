@@ -840,108 +840,114 @@
             </argument>
         </activity>
 
-        <activity id="#11000" location="STATION.THERMAL.ACT1" description="Activity 1" type="STATION CMD">
-            <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
-            <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="mV">
-                <default_fixed type="RAW" value="43" />
+        <activity id="#750" location="STATION.VENTILATION.SET_INPUT" description="Command the input to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="7" />
             </argument>
-            <argument name="ARG3" raw_type="REAL" eng_type="REAL" eng_unit="mA" fixed="true">
-                <default_fixed type="RAW" value="12.4" />
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
             </argument>
-            <argument name="ARG4" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
-                <default_fixed type="ENGINEERING" value="OFF" />
-                <decalib_ienum default="100">
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
                     <point x="OFF" y="0" />
                     <point x="ON" y="1" />
-                    <point x="UNKNOWN" y="100" />
                 </decalib_ienum>
             </argument>
-            <property key="spacecraft-id" value="100" />
-            <property key="schedule-time" value="2007-12-03T10:15:30.00123Z" />
         </activity>
-        <activity id="#11001" location="STATION.THERMAL.ACT2" description="Activity 2" type="STATION CMD">
-            <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
-            <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="mV" >
-                <checks>
-                    <limit type="SIGNED_INTEGER" high="10000" low="800" />
-                </checks>
+        <activity id="#751" location="STATION.VENTILATION.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="7" />
             </argument>
-            <argument name="ARG3" raw_type="REAL" eng_type="REAL" eng_unit="mA" fixed="true">
-                <default_fixed type="RAW" value="12.4" />
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
             </argument>
-            <argument name="ARG4" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
-                <default_ref type="ENGINEERING" parameter="#101" targetValueType="RAW" />
-                <decalib_ienum default="1010">
-                    <point x="OFF" y="10" />
-                    <point x="ON" y="11" />
-                    <point x="UNKNOWN" y="1010" />
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
                 </decalib_ienum>
-                <checks>
-                    <expected name="EXP1" type="ENUMERATED">
-                        <value>10</value>
-                        <value>11</value>
-                    </expected>
-                </checks>
             </argument>
-            <property key="spacecraft-id" value="101" />
         </activity>
-        <activity id="#11002" location="STATION.THERMAL.ACT3" description="Activity 3" type="STATION CMD" verificationTimeout="5">
-            <argument name="ARG1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
-            <verification>
-                <expression>PARAM3.value() == self.argument("ARG1")</expression>
-                <symbol name="PARAM3" reference="#103" />
-            </verification>
-        </activity>
-        <activity id="#11003" location="STATION.THERMAL.ACT4" description="Activity 4" type="STATION CMD" transmissionTimeout="2" executionTimeout="3">
-            <argument name="ARG1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
-        </activity>
-        <activity id="#11004" location="STATION.THERMAL.ACT5" description="Activity 2" type="STATION CMD">
-            <argument name="ARG1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
-            <argument name="ARG2" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" />
-            <array name="ARR1" argument_expander="ARG2">
-                <argument name="ARG2_E1" raw_type="REAL" eng_type="REAL" eng_unit="mA" fixed="true">
-                    <default_fixed type="RAW" value="99.9" />
-                </argument>
-                <argument name="ARG2_E2" raw_type="REAL" eng_type="REAL" eng_unit="mA">
-                    <default_fixed type="RAW" value="1.4" />
-                </argument>
-                <argument name="ARG2_E3" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER">
-                </argument>
-                <array name="ARR2" argument_expander="ARG2_E3">
-                    <argument name="ARR2_E1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
-                        <default_ref type="ENGINEERING" parameter="#101" targetValueType="RAW" />
-                        <decalib_ienum default="1010">
-                            <point x="OFF" y="10" />
-                            <point x="ON" y="11" />
-                            <point x="UNKNOWN" y="1010" />
-                        </decalib_ienum>
-                        <checks>
-                            <expected name="EXP1" type="ENUMERATED">
-                                <value>10</value>
-                                <value>11</value>
-                            </expected>
-                        </checks>
-                    </argument>
-                </array>
-            </array>
-            <argument name="ARG3" raw_type="REAL" eng_type="REAL" eng_unit="mA" fixed="true">
-                <default_fixed type="RAW" value="12.4" />
+        <activity id="#753" location="STATION.VENTILATION.SET_FAN_STATUS" description="Command the fan status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="7" />
             </argument>
-            <argument name="ARG4" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
-                <default_ref type="ENGINEERING" parameter="#101" targetValueType="RAW" />
-                <decalib_ienum default="1010">
-                    <point x="OFF" y="10" />
-                    <point x="ON" y="11" />
-                    <point x="UNKNOWN" y="1010" />
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="0">
+                    <point x="FAN1" y="1" />
+                    <point x="FAN2" y="2" />
+                    <point x="FAN3" y="3" />
+                    <point x="FAN4" y="4" />
                 </decalib_ienum>
-                <checks>
-                    <expected name="EXP1" type="ENUMERATED">
-                        <value>10</value>
-                        <value>11</value>
-                    </expected>
-                </checks>
             </argument>
-            <property key="spacecraft-id" value="101" />
+            <argument name="ARG2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
         </activity>
+        <activity id="#752" location="STATION.VENTILATION.SELF_TEST" description="Start the self test" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="7" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="seconds" />
+        </activity>
+
+        <activity id="#850" location="STATION.THERMAL.SET_INPUT" description="Command the input to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="8" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#851" location="STATION.THERMAL.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="8" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#852" location="STATION.THERMAL.SET_UNIT_STATUS" description="Command the unit status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="8" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="0">
+                    <point x="UNITA" y="1" />
+                    <point x="UNITB" y="2" />
+                </decalib_ienum>
+            </argument>
+            <argument name="ARG2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
     </activities>
 </ns1:processing>
