@@ -27,7 +27,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>eu.dariolucia.reatmetric.ui.remoting</artifactId>
-    <name>REATMETRIC UI - Test</name>
+    <name>REATMETRIC UI - Remoting</name>
     <description>REATMETRIC JavaFX graphical interface - Remoting</description>
 
     <dependencies>
