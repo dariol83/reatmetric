@@ -16,7 +16,6 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
@@ -24,7 +23,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class RangeEnumCalibration extends CalibrationDefinition {

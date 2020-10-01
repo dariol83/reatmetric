@@ -30,6 +30,10 @@ public class Matrix extends StationEquipment {
     private volatile boolean input2;
     private volatile boolean output;
     private volatile int wiring;
+    private volatile int diagnostic1;
+    private volatile int diagnostic2;
+    private volatile int diagnostic3;
+    private volatile int diagnostic4;
 
     public Matrix(ScheduledExecutorService scheduler) {
         super(scheduler);
@@ -39,22 +43,54 @@ public class Matrix extends StationEquipment {
         input2 = false;
         output = true;
         wiring = 1;
+        diagnostic1 = (int) (Math.random() * 100);
+        diagnostic2 = (int) (Math.random() * 100);
+        diagnostic3 = (int) (Math.random() * 100);
+        diagnostic4 = (int) (Math.random() * 100);
     }
 
     @Override
     protected void doWriteMonitoringState(DataOutputStream dos) throws IOException {
-        // TODO: add 4/5 parameters, in order to have a second mimics with more parameters for this equipment
         dos.writeByte(status ? (byte) 1 : (byte) 0);
         dos.writeByte(input1 ? (byte) 1 : (byte) 0);
         dos.writeByte(input2 ? (byte) 1 : (byte) 0);
         dos.writeByte(output ? (byte) 1 : (byte) 0);
         dos.writeByte(wiring);
+        dos.writeByte(diagnostic1);
+        dos.writeByte(diagnostic2);
+        dos.writeByte(diagnostic3);
+        dos.writeByte(diagnostic4);
     }
 
     @Override
     public boolean doExecute(byte[] command) {
-        // TODO: implement
-        return false;
+        ByteBuffer bb = ByteBuffer.wrap(command);
+        byte firstByte = bb.get();
+        int commandId = bb.getInt();
+        int commandTag = bb.getInt();
+        if (commandId == 0) { // Operate on output
+            int switchOn = bb.getInt();
+            output = switchOn == 1;
+            return true;
+        } else if (commandId == 1) { // Operate on status
+            int switchOn = bb.getInt();
+            status = switchOn == 1;
+            return true;
+        } else if (commandId == 2) { // Operate on input status
+            int inputId = bb.getInt();
+            int switchOn = bb.getInt();
+            switch(inputId) {
+                case 1: input1 = switchOn == 1; break;
+                case 2: input2 = switchOn == 1; break;
+                default: return false;
+            }
+            return true;
+        } else if (commandId == 3) { // Operate on wiring
+            wiring = bb.getInt();
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -63,8 +99,7 @@ public class Matrix extends StationEquipment {
         byte firstByte = bb.get();
         int commandId = bb.getInt();
         int commandTag = bb.getInt();
-        // TODO: implement command Id checking
-        return Pair.of(commandTag, true);
+        return Pair.of(commandTag, commandId == 0 || commandId == 1 || commandId == 2 || commandId == 3);
     }
 
     @Override
@@ -74,6 +109,17 @@ public class Matrix extends StationEquipment {
 
     @Override
     protected void computeNewState() {
+        if(!status) {
+            diagnostic1 = -1;
+            diagnostic2 = -1;
+            diagnostic3 = -1;
+            diagnostic4 = -1;
+        } else {
+            diagnostic1 = (int) (Math.random() * 100);
+            diagnostic2 = (int) (Math.random() * 100);
+            diagnostic3 = (int) (Math.random() * 100);
+            diagnostic4 = (int) (Math.random() * 100);
+        }
         poll();
     }
 }

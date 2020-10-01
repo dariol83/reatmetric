@@ -84,8 +84,8 @@ public class MonitoringDecoder implements IRawDataSubscriber {
     }
 
     public LinkedHashMap<String, Pair<Integer, Object>> matrixParamMap(RawData rawData) {
-        Class<?>[] dataTypes = { Byte.class, Byte.class, Byte.class, Byte.class, Byte.class };
-        String[] names = { "Status", "Input1", "Input2", "Output", "Wiring"};
+        Class<?>[] dataTypes = { Byte.class, Byte.class, Byte.class, Byte.class, Byte.class, Byte.class, Byte.class, Byte.class, Byte.class };
+        String[] names = { "Status", "Input1", "Input2", "Output", "Wiring", "Diagnostics 1", "Diagnostics 2", "Diagnostics 3", "Diagnostics 4"};
         return extract(rawData, names, dataTypes);
     }
 
@@ -186,7 +186,7 @@ public class MonitoringDecoder implements IRawDataSubscriber {
         // Read the tag
         int eqId = Byte.toUnsignedInt(bb.get());
         eqId = eqId >>> 4;
-        monitoringMap.get((int) eqId).accept(rd);
+        monitoringMap.get(eqId).accept(rd);
     }
 
     public LinkedHashMap<String, String> render(RawData r) {
