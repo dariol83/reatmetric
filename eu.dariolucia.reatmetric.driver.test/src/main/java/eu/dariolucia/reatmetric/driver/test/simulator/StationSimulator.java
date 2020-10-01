@@ -16,9 +16,6 @@
 
 package eu.dariolucia.reatmetric.driver.test.simulator;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +26,8 @@ public class StationSimulator {
 
     private final ScheduledExecutorService scheduler;
     private final Map<Integer, StationEquipment> equipments = new HashMap<>();
+
+    private final RejectEquipment noEquipment;
 
     public StationSimulator() {
         scheduler = Executors.newScheduledThreadPool(1);
@@ -41,6 +40,8 @@ public class StationSimulator {
         equipments.put(7, new VentilationGrid(scheduler));
         equipments.put(8, new ThermalUnit(scheduler));
         equipments.put(9, new Turbine(scheduler));
+
+        noEquipment = new RejectEquipment(scheduler);
     }
 
     public void connect(IStationMonitor monitor) {
@@ -60,16 +61,18 @@ public class StationSimulator {
             ByteBuffer bb = ByteBuffer.wrap(data);
             byte firstByte = bb.get();
             int eqId = (firstByte >>> 4) & 0x0F;
-            forward(data, eqId);
+            int commandId = bb.getInt();
+            int commandTag = bb.getInt();
+            forward(data, eqId, commandTag);
         });
     }
 
-    private void forward(byte[] data, int equipmentId) {
+    private void forward(byte[] data, int equipmentId, int commandTag) {
         StationEquipment se = equipments.get(equipmentId);
         if(se != null) {
             se.execute(data);
         } else {
-            // TODO: implement dummy equipment that always reject commands
+            noEquipment.execute(data);
         }
     }
 }

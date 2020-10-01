@@ -157,7 +157,7 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         // Since this object is performing the event raising function, it registers to the broker to receive
         // notification of received events
         this.rawDataSubscriber = this::eventReceived;
-        this.context.getRawDataBroker().subscribe(this.rawDataSubscriber, null, new RawDataFilter(true, null, null, Arrays.asList(STATION_EVENT), null, Collections.singletonList(Quality.GOOD)), null);
+        this.context.getRawDataBroker().subscribe(this.rawDataSubscriber, null, new RawDataFilter(true, null, null, Collections.singletonList(STATION_EVENT), null, Collections.singletonList(Quality.GOOD)), null);
         // Decoder
         this.decoder = new MonitoringDecoder(context.getProcessingModel(), context.getRawDataBroker());
         // CommandVerifier
@@ -281,8 +281,8 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
     }
 
     @Override
-    public void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException {
-        // TODO: not implemented yet
+    public void abortActivity(int activityId, IUniqueId activityOccurrenceId) {
+        // Not implemented in this test driver
     }
 
     private boolean connectorReady() {

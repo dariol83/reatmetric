@@ -39,7 +39,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-// TODO add additional functions as needed
+// TODO add additional functions as needed, align documentation
 public class ScriptExecutionManager {
 
     private static final Logger LOG = Logger.getLogger(ScriptExecutionManager.class.getName());

@@ -699,6 +699,13 @@ public class ModelBrowserViewController extends AbstractDisplayController {
         }
     }
 
+    public void setParameter(String parameterPath) {
+        FilterableTreeItem<SystemEntity> item = path2item.get(SystemEntityPath.fromString(parameterPath));
+        if (item != null) {
+            executeSetParameter(item.getValue());
+        }
+    }
+
     public SystemEntity getSystemEntity(String path) {
         FilterableTreeItem<SystemEntity> item = path2item.get(SystemEntityPath.fromString(path));
         if (item != null) {
@@ -764,9 +771,13 @@ public class ModelBrowserViewController extends AbstractDisplayController {
         if (selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.PARAMETER) {
             return;
         }
+        executeSetParameter(selected.getValue());
+    }
+
+    private void executeSetParameter(SystemEntity selected) {
         try {
             // Get the descriptor
-            AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getValue().getExternalId());
+            AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getExternalId());
             if (descriptor instanceof ParameterDescriptor) {
                 if (!((ParameterDescriptor) descriptor).isSettable()) {
                     DialogUtils.alert("Set parameter " + descriptor.getPath().getLastPathElement(), null, "Selected parameter " + descriptor.getPath().getLastPathElement() + " cannot be set");

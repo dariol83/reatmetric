@@ -249,5 +249,10 @@ public class MimicsSvgViewController implements Initializable {
             // Request the execution of the activity identified by path
             MainViewController.instance().getModelController().requestActivity(path);
         }
+
+        public void set(String path) {
+            // Request the set of the parameter identified by path
+            MainViewController.instance().getModelController().setParameter(path);
+        }
     }
 }

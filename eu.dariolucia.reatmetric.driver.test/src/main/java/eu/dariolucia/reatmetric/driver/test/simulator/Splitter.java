@@ -55,8 +55,31 @@ public class Splitter extends StationEquipment {
 
     @Override
     public boolean doExecute(byte[] command) {
-        // TODO: implement
-        return false;
+        ByteBuffer bb = ByteBuffer.wrap(command);
+        byte firstByte = bb.get();
+        int commandId = bb.getInt();
+        int commandTag = bb.getInt();
+        if (commandId == 0) { // Operate on input
+            int switchOn = bb.getInt();
+            input = switchOn == 1;
+            return true;
+        } else if (commandId == 1) { // Operate on status
+            int switchOn = bb.getInt();
+            status = switchOn == 1;
+            return true;
+        } else if (commandId == 2) { // Operate on output status
+            int outputId = bb.getInt();
+            int switchOn = bb.getInt();
+            switch(outputId) {
+                case 1: output1 = switchOn == 1; break;
+                case 2: output2 = switchOn == 1; break;
+                case 3: output3 = switchOn == 1; break;
+                default: return false;
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 
     @Override
@@ -65,8 +88,7 @@ public class Splitter extends StationEquipment {
         byte firstByte = bb.get();
         int commandId = bb.getInt();
         int commandTag = bb.getInt();
-        // TODO: implement command Id checking
-        return Pair.of(commandTag, true);
+        return Pair.of(commandTag, commandId == 0 || commandId == 1 || commandId == 2);
     }
 
     @Override
@@ -76,8 +98,9 @@ public class Splitter extends StationEquipment {
 
     @Override
     protected void computeNewState() {
-        if(status) {
-            power = 1500 + 500 * (Math.random() - 0.5);
+        if(status && input) {
+            int base = 600 + (output1 ? 300 : 0) + (output2 ? 300 : 0) + (output3 ? 300 : 0);
+            power = base + 500 * (Math.random() - 0.5);
         } else {
             power = 0.0;
         }

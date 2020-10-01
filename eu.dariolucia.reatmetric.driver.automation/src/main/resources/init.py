@@ -13,7 +13,7 @@ def parameter(parampath):
 def event(eventpath):
     return _scriptManager.event(eventpath)
 
-def set(parampath, value):
+def inject(parampath, value):
     return _scriptManager.set(parampath, value, False)
 
 def raise_event(eventpath):

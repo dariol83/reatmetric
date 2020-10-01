@@ -196,3 +196,7 @@ Open the specified mimics.
 #### reatmetric.exec('path')
 
 Open the dialog window to request the execution of the specified activity.
+
+#### reatmetric.set('path')
+
+Open the dialog window to request the set of the specified parameter.

@@ -18,7 +18,7 @@ function event(eventPath) {
     return _scriptManager.event(eventPath);
 }
 
-function set(paramPath, value) {
+function inject(paramPath, value) {
     return _scriptManager.set(paramPath, value, false);
 }
 

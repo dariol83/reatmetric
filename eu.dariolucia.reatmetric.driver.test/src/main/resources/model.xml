@@ -640,7 +640,6 @@
             </calib_enum>
 		</parameter>
 		
-		
 		<!-- Turbine -->
 		<parameter id="#900" location="STATION.TURBINE.TRB_STATUS" description="Turbine Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
@@ -939,9 +938,9 @@
             </argument>
         </activity>
 
-        <activity id="#950" location="STATION.TURBINE.SET_INPUT" description="Command the input to the desired state" type="STATION CMD">
+        <activity id="#650" location="STATION.SPLITTER.SET_INPUT" description="Command the input to the desired state" type="STATION CMD">
             <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
-                <default_fixed type="RAW" value="9" />
+                <default_fixed type="RAW" value="6" />
             </argument>
             <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
                 <default_fixed type="RAW" value="0" />
@@ -953,14 +952,35 @@
                 </decalib_ienum>
             </argument>
         </activity>
-        <activity id="#951" location="STATION.TURBINE.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+        <activity id="#651" location="STATION.SPLITTER.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
             <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
-                <default_fixed type="RAW" value="9" />
+                <default_fixed type="RAW" value="6" />
             </argument>
             <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
                 <default_fixed type="RAW" value="1" />
             </argument>
             <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#652" location="STATION.SPLITTER.SET_OUTPUT_STATUS" description="Command the output status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="6" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="0">
+                    <point x="OUTPUT1" y="1" />
+                    <point x="OUTPUT2" y="2" />
+                    <point x="OUTPUT3" y="3" />
+                </decalib_ienum>
+            </argument>
+            <argument name="ARG2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
                 <decalib_ienum default="1">
                     <point x="OFF" y="0" />
                     <point x="ON" y="1" />
@@ -1070,6 +1090,35 @@
                 </decalib_ienum>
             </argument>
             <argument name="ARG2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+        <activity id="#950" location="STATION.TURBINE.SET_INPUT" description="Command the input to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="9" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#951" location="STATION.TURBINE.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="9" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
                 <decalib_ienum default="1">
                     <point x="OFF" y="0" />
                     <point x="ON" y="1" />
