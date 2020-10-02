@@ -16,10 +16,54 @@
 
 <ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
     <parameters>
+        <!-- Wiring computations -->
+        <parameter id="#1500" location="STATION.WIRINGS.PS_TO_MTX" description="Power supply to matrix" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    (PS_OUT == "ON" &amp;&amp; PS_STATUS == "ON" &amp;&amp; MTX_IN1 == "ON") ? 1 : 0
+                </expression>
+                <symbol name="PS_OUT" reference="#104" binding="ENG_VALUE" />
+                <symbol name="PS_STATUS" reference="#100" binding="ENG_VALUE" />
+                <symbol name="MTX_IN1" reference="#401" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1501" location="STATION.WIRINGS.DG1_TO_SW" description="Diesel generator 1 to switch" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    (DG_OUT == "ON" &amp;&amp; DG_STATUS == "ON" &amp;&amp; SW_POS == "POSITION_1") ? 1 : 0
+                </expression>
+                <symbol name="DG_OUT" reference="#204" binding="ENG_VALUE" />
+                <symbol name="DG_STATUS" reference="#200" binding="ENG_VALUE" />
+                <symbol name="SW_POS" reference="#500" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1502" location="STATION.WIRINGS.DG2_TO_SW" description="Diesel generator 2 to switch" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    (DG_OUT == "ON" &amp;&amp; DG_STATUS == "ON" &amp;&amp; SW_POS == "POSITION_2") ? 1 : 0
+                </expression>
+                <symbol name="DG_OUT" reference="#304" binding="ENG_VALUE" />
+                <symbol name="DG_STATUS" reference="#300" binding="ENG_VALUE" />
+                <symbol name="SW_POS" reference="#500" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+
 		<!-- Splitter wattometer indicator in 0-100 (percentage) -->
 		<parameter id="#1600" location="STATION.SPLITTER.SPT_S_POWERPERCENT" description="Splitter Power in Percentage" raw_type="REAL" eng_type="REAL" eng_unit="" >
             <synthetic>
-                <expression>(POWER / 3000.0) * 100</expression>
+                <expression dialect="GROOVY">(POWER / 2000.0) * 100</expression>
                 <symbol name="POWER" reference="#605" binding="ENG_VALUE" />
             </synthetic>
 			<checks>

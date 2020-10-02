@@ -221,7 +221,13 @@
 	data-rtmt-fill-color-04="$eng EQ ON := #00FF00" 
 	data-rtmt-fill-color-06=":= #C9C9C9"
   />
-  <path id="pw-spl-to-matrix" d="m84.667 122.38h39.687" fill="none" stroke="#000000" stroke-width=".26458px"/>
+  <path id="pw-spl-to-matrix" d="m84.667 122.38h39.687" fill="none" stroke="#000000" stroke-width=".26458px"
+    data-rtmt-binding-id="STATION.WIRINGS.PS_TO_MTX"
+    data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+    data-rtmt-stroke-color-06=":= #000000"
+    data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
+    data-rtmt-stroke-width-06=":= .187"
+  />
   <g id="switch" stroke="#000000"
     data-rtmt-binding-id="STATION.SWITCH.SW_POSITION"
 	data-rtmt-fill-color-00=":= #00FF00"
@@ -229,8 +235,16 @@
 	data-rtmt-transform-01="$eng EQ POSITION_2 := rotate(180 111.16 180.68)"
   >
    <ellipse id="path1120" cx="111.16" cy="180.68" rx="5.2751" ry="5.2918" stroke-linejoin="round" stroke-width=".18671" style="paint-order:normal"/>
-   <path id="path1124" transform="translate(6.6146 -1.8347e-6)" d="m104.51 175.29c-0.44087 1.3226-0.88184 2.6455-1.7638 3.5276s-2.2046 1.323-3.5278 1.764" fill="none" stroke-width=".26458px"/>
-   <path id="path1128" transform="translate(6.6146 -1.8347e-6)" d="m109.8 180.58c-1.3226 0.44086-2.6455 0.88184-3.5276 1.7638-0.8821 0.882-1.323 2.2046-1.764 3.5278" fill="none" stroke-width=".26458px"/>
+   <path id="path1124" transform="translate(6.6146 -1.8347e-6)" d="m104.51 175.29c-0.44087 1.3226-0.88184 2.6455-1.7638 3.5276s-2.2046 1.323-3.5278 1.764" fill="none" stroke-width=".26458px"
+    data-rtmt-binding-id="STATION.SWITCH.SW_POSITION"
+    data-rtmt-stroke-width-04="$eng EQ POSITION_1 := .800"
+    data-rtmt-stroke-width-06=":= .2645"
+   />
+   <path id="path1128" transform="translate(6.6146 -1.8347e-6)" d="m109.8 180.58c-1.3226 0.44086-2.6455 0.88184-3.5276 1.7638-0.8821 0.882-1.323 2.2046-1.764 3.5278" fill="none" stroke-width=".26458px"
+    data-rtmt-binding-id="STATION.SWITCH.SW_POSITION"
+    data-rtmt-stroke-width-04="$eng EQ POSITION_2 := .800"
+    data-rtmt-stroke-width-06=":= .2645"
+   />
   </g>
   <g id="load" fill="none" stroke="#000000">
    <rect id="rect1132" x="85.99" y="179.26" width="10.583" height="2.6458" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
@@ -253,11 +267,23 @@
 	data-rtmt-fill-color-04="$eng EQ ON := #00FF00" 
 	data-rtmt-fill-color-06=":= #C9C9C9"
   />
-  <path id="gen-diesel1-to-switch" d="m84.667 164.71h26.458v10.583" fill="none" stroke="#000000" stroke-width=".26458px"/>
-  <path id="gen-diesel2-to-switch" d="m84.667 208.36h26.458v-22.49" fill="none" stroke="#000000" stroke-width=".26458px"/>
+  <path id="gen-diesel1-to-switch" d="m84.667 164.71h26.458v10.583" fill="none" stroke="#000000" stroke-width=".26458px"
+    data-rtmt-binding-id="STATION.WIRINGS.DG1_TO_SW"
+    data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+    data-rtmt-stroke-color-06=":= #000000"
+    data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
+    data-rtmt-stroke-width-06=":= .187"
+  />
+  <path id="gen-diesel2-to-switch" d="m84.667 208.36h26.458v-22.49" fill="none" stroke="#000000" stroke-width=".26458px"
+    data-rtmt-binding-id="STATION.WIRINGS.DG2_TO_SW"
+    data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+    data-rtmt-stroke-color-06=":= #000000"
+    data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
+    data-rtmt-stroke-width-06=":= .187"
+  />
   <rect id="matrix-input2" x="124.35" y="177.94" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
     data-rtmt-binding-id="STATION.MATRIX.MTX_INPUT2"
-	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
+	data-rtmt-fill-color-01="$eng EQ ON := #00FF00"
 	data-rtmt-fill-color-02=":= #C9C9C9"
   />
   <path id="switch-to-matrix" d="m116.42 180.58h7.9375" fill="none" stroke="#000000" stroke-width=".26458px"/>
