@@ -44,6 +44,7 @@ import java.util.logging.Logger;
 /**
  * FXML Controller class
  *
+ * // TODO: implement detach, save as, rename buttons
  * @author dario
  */
 public class ParameterDisplayViewController extends AbstractDisplayController {

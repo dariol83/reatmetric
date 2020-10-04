@@ -54,7 +54,6 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.controlsfx.control.PopOver;
 
-import javax.swing.*;
 import java.io.IOException;
 import java.net.URL;
 import java.rmi.RemoteException;
@@ -213,22 +212,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         });
         // Set the view and ctrl as user data in the tab
         t.setUserData(Pair.of(view, ctrl));
-        // Add detachable menu entry
-        registerDetachableTab(t, view, ctrl);
+
         viewTabPane.getSelectionModel().select(t);
 
         return ctrl;
-    }
-
-    private void registerDetachableTab(Tab t, Node view, AbstractDisplayController ctrl) {
-        if (t.getContextMenu() == null) {
-            t.setContextMenu(new ContextMenu());
-        }
-        MenuItem detachMenuItem = new MenuItem("Detach");
-        t.getContextMenu().getItems().add(detachMenuItem);
-        detachMenuItem.setOnAction(event -> {
-            detachTab(t, view, ctrl);
-        });
     }
 
     private void detachTab(Tab t, Node view, AbstractDisplayController ctrl) {

@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 /**
  * FXML Controller class
  *
+ * // TODO: implement simple Gantt
  * @author dario
  */
 public class SchedulerViewController extends AbstractDisplayController implements IScheduledActivityDataSubscriber {

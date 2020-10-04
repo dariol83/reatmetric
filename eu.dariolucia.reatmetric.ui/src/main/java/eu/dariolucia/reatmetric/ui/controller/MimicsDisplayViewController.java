@@ -43,6 +43,8 @@ import java.util.logging.Logger;
 /**
  * FXML Controller class
  *
+ * // TODO: implement detach button
+ *
  * @author dario
  */
 public class MimicsDisplayViewController extends AbstractDisplayController {
