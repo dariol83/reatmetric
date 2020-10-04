@@ -236,15 +236,13 @@
   >
    <ellipse id="path1120" cx="111.16" cy="180.68" rx="5.2751" ry="5.2918" stroke-linejoin="round" stroke-width=".18671" style="paint-order:normal"/>
    <path id="path1124" transform="translate(6.6146 -1.8347e-6)" d="m104.51 175.29c-0.44087 1.3226-0.88184 2.6455-1.7638 3.5276s-2.2046 1.323-3.5278 1.764" fill="none" stroke-width=".26458px"
-    data-rtmt-binding-id="STATION.SWITCH.SW_POSITION"
-    data-rtmt-stroke-width-04="$eng EQ POSITION_1 := .800"
+    data-rtmt-binding-id="STATION.WIRINGS.SW_PATH"
+    data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+    data-rtmt-stroke-color-06=":= #000000"
+    data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
     data-rtmt-stroke-width-06=":= .2645"
    />
-   <path id="path1128" transform="translate(6.6146 -1.8347e-6)" d="m109.8 180.58c-1.3226 0.44086-2.6455 0.88184-3.5276 1.7638-0.8821 0.882-1.323 2.2046-1.764 3.5278" fill="none" stroke-width=".26458px"
-    data-rtmt-binding-id="STATION.SWITCH.SW_POSITION"
-    data-rtmt-stroke-width-04="$eng EQ POSITION_2 := .800"
-    data-rtmt-stroke-width-06=":= .2645"
-   />
+   <path id="path1128" transform="translate(6.6146 -1.8347e-6)" d="m109.8 180.58c-1.3226 0.44086-2.6455 0.88184-3.5276 1.7638-0.8821 0.882-1.323 2.2046-1.764 3.5278" fill="none" stroke-width=".26458px" />
   </g>
   <g id="load" fill="none" stroke="#000000">
    <rect id="rect1132" x="85.99" y="179.26" width="10.583" height="2.6458" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"/>
@@ -286,7 +284,13 @@
 	data-rtmt-fill-color-01="$eng EQ ON := #00FF00"
 	data-rtmt-fill-color-02=":= #C9C9C9"
   />
-  <path id="switch-to-matrix" d="m116.42 180.58h7.9375" fill="none" stroke="#000000" stroke-width=".26458px"/>
+  <path id="switch-to-matrix" d="m116.42 180.58h7.9375" fill="none" stroke="#000000" stroke-width=".26458px"
+    data-rtmt-binding-id="STATION.WIRINGS.SW_TO_MTX"
+    data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+    data-rtmt-stroke-color-06=":= #000000"
+    data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
+    data-rtmt-stroke-width-06=":= .187"
+  />
   <rect id="matrix-output" x="148.17" y="148.83" width="2.6458" height="5.2917" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".187" style="paint-order:normal"
     data-rtmt-binding-id="STATION.MATRIX.MTX_OUTPUT"
 	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
@@ -308,11 +312,22 @@
 	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
 	data-rtmt-fill-color-02=":= #C9C9C9"
   />
-  <g id="splitter-internal" fill="none" stroke="#000000" stroke-width=".26458px">
+  <g id="splitter-internal" fill="none" stroke="#000000" stroke-width=".26458px"
+     data-rtmt-binding-id="STATION.WIRINGS.SPL_INT"
+     data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+     data-rtmt-stroke-color-06=":= #000000"
+     data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
+     data-rtmt-stroke-width-06=":= .264">
    <path id="path1224" d="m187.85 140.9h-5.2917v10.583h-3.9688 9.2604"/>
    <path id="path1226" d="m178.59 151.48h3.9688v10.583h5.2917"/>
   </g>
-  <path id="matrix-to-splitter" d="m150.81 151.48h25.135" fill="none" stroke="#000000" stroke-width=".26458px"/>
+  <path id="matrix-to-splitter" d="m150.81 151.48h25.135" fill="none" stroke="#000000" stroke-width=".26458px"
+    data-rtmt-binding-id="STATION.WIRINGS.MTX_TO_SPLITTER"
+    data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+    data-rtmt-stroke-color-06=":= #000000"
+    data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
+    data-rtmt-stroke-width-06=":= .187"
+  />
   <rect id="rect10-8" x="203.73" y="96.243" width="72.76" height="39.361" fill="none" stroke="#000000" stroke-linejoin="round" stroke-width=".61308" style="paint-order:normal"/>
   <text id="text14-6" x="214.39146" y="103.13951" fill="#000000" font-family="sans-serif" font-size="10.583px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan12-0" x="214.39146" y="103.13951" font-family="sans-serif" font-size="4.2333px" font-weight="bold" stroke-width=".26458">Ventilation Grid</tspan></text>
   <circle id="vent-grid-led" cx="209.07" cy="101.43" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"
@@ -326,9 +341,7 @@
 	data-rtmt-fill-color-06="$eng EQ UNKNOWN := #C9C9C9" 
 	data-rtmt-fill-color-07=":= #00FF00"
   />
-  <g id="fan1-icon" fill="none" stroke="#000000" stroke-linejoin="round"
-    
-  >
+  <g id="fan1-icon" fill="none" stroke="#000000" stroke-linejoin="round">
    <path id="path1278" transform="matrix(.26458 0 0 .26458 0 87)" d="m810 108.7a25 25 0 0 0-25 25 25 25 0 0 0 25 25 25 25 0 0 0 25-25 25 25 0 0 0-25-25zm0 5a20 20 0 0 1 20 20 20 20 0 0 1-20 20 20 20 0 0 1-20-20 20 20 0 0 1 20-20z" stroke-width=".70677" style="paint-order:normal"
    data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN1_SPEED"
 	data-rtmt-fill-color-01="$alarm EQ ALARM := #FF0000" 
@@ -408,7 +421,13 @@
 	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
 	data-rtmt-fill-color-02=":= #C9C9C9"
   />
-  <path id="path1366" d="m190.5 140.9h5.2917v-18.521h5.2917" fill="none" stroke="#000000" stroke-width=".26458px"/>
+  <path id="splitter-to-vg" d="m190.5 140.9h5.2917v-18.521h5.2917" fill="none" stroke="#000000" stroke-width=".26458px"
+    data-rtmt-binding-id="STATION.WIRINGS.SPL_TO_VG"
+    data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+    data-rtmt-stroke-color-06=":= #000000"
+    data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
+    data-rtmt-stroke-width-06=":= .187"
+  />
   <text id="fan1-text" x="208.64285" y="114.43751" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1368" x="208.64285" y="114.43751" stroke-width=".26458"
     data-rtmt-binding-id="STATION.VENTILATION.VNT_FAN1_SPEED"
     data-rtmt-text-00=":= $eng"
@@ -426,14 +445,22 @@
     data-rtmt-text-00=":= $eng"
   >####</tspan></text>
   <path id="input2-output" d="m127 180.58h10.583v-29.104h10.583" fill="none" stroke="#000000" stroke-width=".26458px"
-    data-rtmt-binding-id="STATION.MATRIX.MTX_WIRING"
-	data-rtmt-visibility-00="$raw EQ 2 := visible"
-	data-rtmt-visibility-01=":= hidden"
+    data-rtmt-binding-id="STATION.WIRINGS.MTX_INT_P2"
+	data-rtmt-visibility-00="$raw EQ 0 := hidden"
+	data-rtmt-visibility-01=":= visible"
+    data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+    data-rtmt-stroke-color-06=":= #000000"
+    data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
+    data-rtmt-stroke-width-06=":= .187"
   />
   <path id="input1-output" d="m127 122.38h10.583v29.104h10.583" fill="none" stroke="#000000" stroke-width=".26458px"
-	data-rtmt-binding-id="STATION.MATRIX.MTX_WIRING"
-	data-rtmt-visibility-00="$raw EQ 1 := visible"
-	data-rtmt-visibility-01=":= hidden"
+	data-rtmt-binding-id="STATION.WIRINGS.MTX_INT_P1"
+    data-rtmt-visibility-00="$raw EQ 0 := hidden"
+    data-rtmt-visibility-01=":= visible"
+    data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+    data-rtmt-stroke-color-06=":= #000000"
+    data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
+    data-rtmt-stroke-width-06=":= .187"
   />
   <text id="text1412" x="213.17857" y="132.67485" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1410" x="213.17857" y="132.67485" stroke-width=".26458">1</tspan></text>
   <text id="text1412-6" x="230.3765" y="133.05283" fill="#000000" font-family="sans-serif" font-size="3.5278px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan1410-6" x="230.3765" y="133.05283" stroke-width=".26458">2</tspan></text>
@@ -445,7 +472,13 @@
 	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
 	data-rtmt-fill-color-02=":= #C9C9C9"
   />
-  <path id="path1478" d="m190.5 151.48 10.583-2e-5" fill="none" stroke="#000000" stroke-width=".26458px"/>
+  <path id="splitter-to-tu" d="m190.5 151.48 10.583-2e-5" fill="none" stroke="#000000" stroke-width=".26458px"
+    data-rtmt-binding-id="STATION.WIRINGS.SPL_TO_TU"
+    data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+    data-rtmt-stroke-color-06=":= #000000"
+    data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
+    data-rtmt-stroke-width-06=":= .187"
+  />
   <text id="text14-6-8" x="214.40121" y="145.42833" fill="#000000" font-family="sans-serif" font-size="10.583px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan12-0-9" x="214.40121" y="145.42833" font-family="sans-serif" font-size="4.2333px" font-weight="bold" stroke-width=".26458">Thermal Units</tspan></text>
   <circle id="thermal-led" cx="209.08" cy="143.72" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"
     data-rtmt-binding-id="STATION.THERMAL.THM_STATUS"
@@ -590,7 +623,13 @@
 	data-rtmt-fill-color-01="$eng EQ ON := #00FF00" 
 	data-rtmt-fill-color-02=":= #C9C9C9"
   />
-  <path id="path1739" d="m190.5 162.06h5.2917v18.521" fill="none" stroke="#000000" stroke-width=".2475px"/>
+  <path id="splitter-to-mt" d="m190.5 162.06h5.2917v18.521" fill="none" stroke="#000000" stroke-width=".2475px"
+    data-rtmt-binding-id="STATION.WIRINGS.SPL_TO_MT"
+    data-rtmt-stroke-color-04="$eng EQ ACTIVE := #1E90FF"
+    data-rtmt-stroke-color-06=":= #000000"
+    data-rtmt-stroke-width-04="$eng EQ ACTIVE := .800"
+    data-rtmt-stroke-width-06=":= .187"
+  />
   <text id="text14-6-8-1" x="174.95209" y="190.4758" fill="#000000" font-family="sans-serif" font-size="10.583px" letter-spacing="0px" stroke-width=".26458" word-spacing="0px" style="line-height:1.25" xml:space="preserve"><tspan id="tspan12-0-9-2" x="174.95209" y="190.4758" font-family="sans-serif" font-size="4.2333px" font-weight="bold" stroke-width=".26458">Mechanical Turbine</tspan></text>
   <circle id="turbine-led" cx="169.63" cy="188.76" r="2.6162" fill="#b3b3b3" stroke="#000000" stroke-linejoin="round" stroke-width=".51065" style="paint-order:normal"
     data-rtmt-binding-id="STATION.TURBINE.TRB_STATUS"

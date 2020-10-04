@@ -20,7 +20,7 @@
         <parameter id="#1500" location="STATION.WIRINGS.PS_TO_MTX" description="Power supply to matrix" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
             <synthetic>
                 <expression dialect="GROOVY">
-                    (PS_OUT == "ON" &amp;&amp; PS_STATUS == "ON" &amp;&amp; MTX_IN1 == "ON") ? 1 : 0
+                    (PS_OUT == "ON" &amp;&amp; PS_STATUS == "ON") ? 1 : 0
                 </expression>
                 <symbol name="PS_OUT" reference="#104" binding="ENG_VALUE" />
                 <symbol name="PS_STATUS" reference="#100" binding="ENG_VALUE" />
@@ -53,6 +53,145 @@
                 <symbol name="DG_OUT" reference="#304" binding="ENG_VALUE" />
                 <symbol name="DG_STATUS" reference="#300" binding="ENG_VALUE" />
                 <symbol name="SW_POS" reference="#500" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1503" location="STATION.WIRINGS.SW_PATH" description="Switch path" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    (DG1_LINK == "ACTIVE" &amp;&amp; SW_POS == "POSITION_1") || (DG2_LINK == "ACTIVE" &amp;&amp; SW_POS == "POSITION_2") ? 1 : 0
+                </expression>
+                <symbol name="DG1_LINK" reference="#1501" binding="ENG_VALUE" />
+                <symbol name="DG2_LINK" reference="#1502" binding="ENG_VALUE" />
+                <symbol name="SW_POS" reference="#500" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1504" location="STATION.WIRINGS.SW_TO_MTX" description="Switch to matrix" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    (SW_PATH == "ACTIVE") ? 1 : 0
+                </expression>
+                <symbol name="SW_PATH" reference="#1503" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1505" location="STATION.WIRINGS.MTX_INT_P1" description="Internal wiring state from input 1 to output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    if(WIRING == 0 || WIRING == 2) {
+                        0;
+                    } else if (PS_TO_MTX == 0 || MTX_I1 == "OFF") {
+                        // WIRING -> 1 but no input
+                        1;
+                    } else {
+                        // WIRING -> 1 and input
+                        2;
+                    }
+                </expression>
+                <symbol name="WIRING" reference="#404" binding="SOURCE_VALUE" />
+                <symbol name="PS_TO_MTX" reference="#1500" binding="SOURCE_VALUE" />
+                <symbol name="MTX_I1" reference="#401" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="NOT_WIRED" />
+                <point x="1" y="INACTIVE" />
+                <point x="2" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1506" location="STATION.WIRINGS.MTX_INT_P2" description="Internal wiring state from input 2 to output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    if(WIRING == 0 || WIRING == 1) {
+                    0;
+                    } else if (SW_TO_MTX == 0 || MTX_I2 == "OFF") {
+                    // WIRING -> 2 but no input
+                    1;
+                    } else {
+                    // WIRING -> 2 and input
+                    2;
+                    }
+                </expression>
+                <symbol name="WIRING" reference="#404" binding="SOURCE_VALUE" />
+                <symbol name="SW_TO_MTX" reference="#1504" binding="SOURCE_VALUE" />
+                <symbol name="MTX_I2" reference="#402" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="NOT_WIRED" />
+                <point x="1" y="INACTIVE" />
+                <point x="2" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1507" location="STATION.WIRINGS.MTX_TO_SPLITTER" description="Matrix to splitter" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    (MTX_P1 == "ACTIVE" || MTX_P2 == "ACTIVE") &amp;&amp; MTX_OUT == "ON" ? 1 : 0;
+                </expression>
+                <symbol name="MTX_P1" reference="#1505" binding="ENG_VALUE" />
+                <symbol name="MTX_P2" reference="#1506" binding="ENG_VALUE" />
+                <symbol name="MTX_OUT" reference="#403" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1508" location="STATION.WIRINGS.SPL_INT" description="Splitter internal state" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    MTX_TO_SPLITTER == "ACTIVE" &amp;&amp; SPL_INPUT == "ON" &amp;&amp; SPL_STATUS == "ON" ? 1 : 0;
+                </expression>
+                <symbol name="MTX_TO_SPLITTER" reference="#1507" binding="ENG_VALUE" />
+                <symbol name="SPL_INPUT" reference="#601" binding="ENG_VALUE" />
+                <symbol name="SPL_STATUS" reference="#600" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1509" location="STATION.WIRINGS.SPL_TO_VG" description="Splitter to ventilation grid" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    SPL_INT == "ACTIVE" &amp;&amp; SPL_O1 == "ON" ? 1 : 0;
+                </expression>
+                <symbol name="SPL_INT" reference="#1508" binding="ENG_VALUE" />
+                <symbol name="SPL_O1" reference="#602" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1510" location="STATION.WIRINGS.SPL_TO_TU" description="Splitter to thermal unit" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    SPL_INT == "ACTIVE" &amp;&amp; SPL_O2 == "ON" ? 1 : 0;
+                </expression>
+                <symbol name="SPL_INT" reference="#1508" binding="ENG_VALUE" />
+                <symbol name="SPL_O2" reference="#603" binding="ENG_VALUE" />
+            </synthetic>
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ACTIVE" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#1511" location="STATION.WIRINGS.SPL_TO_MT" description="Splitter to mechanical turbine" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <synthetic>
+                <expression dialect="GROOVY">
+                    SPL_INT == "ACTIVE" &amp;&amp; SPL_O3 == "ON" ? 1 : 0;
+                </expression>
+                <symbol name="SPL_INT" reference="#1508" binding="ENG_VALUE" />
+                <symbol name="SPL_O3" reference="#604" binding="ENG_VALUE" />
             </synthetic>
             <calib_enum default="UNKNOWN">
                 <point x="0" y="INACTIVE" />
