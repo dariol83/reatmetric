@@ -18,9 +18,11 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -43,8 +45,6 @@ import java.util.logging.Logger;
 /**
  * FXML Controller class
  *
- * // TODO: implement detach button
- *
  * @author dario
  */
 public class MimicsDisplayViewController extends AbstractDisplayController {
@@ -66,6 +66,10 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
 
     private URL cssUrl;
 
+    // Tab buttons
+    @FXML
+    protected Button detachButton;
+
     // Avoid dialog when closing tabs due to parent close
     private boolean parentAboutToClose = false;
 
@@ -79,6 +83,12 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         this.loadBtn.setOnShowing(this::onShowingPresetMenu);
         this.cssUrl = getClass().getClassLoader()
                 .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
+
+        // tab buttons visible/invisible depending on tab selection
+        detachButton.setVisible(false);
+        tabPane.getSelectionModel().selectedItemProperty().addListener((t) -> {
+            detachButton.setVisible(!tabPane.getSelectionModel().isEmpty());
+        });
     }
 
     @Override
@@ -127,42 +137,7 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         if (system != null) {
             ctrl.systemConnected(system);
         }
-
-        t.setContextMenu(new ContextMenu());
-        // Tab detaching
-        SeparatorMenuItem sep = new SeparatorMenuItem();
-        t.getContextMenu().getItems().add(sep);
-        MenuItem detachMenuItem = new MenuItem("Detach");
-        t.getContextMenu().getItems().add(detachMenuItem);
-        detachMenuItem.setOnAction(event -> {
-            // Create a detached scene parent
-            Stage stage = new Stage();
-            t.setContent(null);
-            t.setOnCloseRequest(null);
-            this.tabPane.getTabs().remove(t);
-            Scene scene = new Scene(mimicsDisplayWidget, 800, 600);
-            scene.getStylesheets().add(cssUrl.toExternalForm());
-
-            stage.setScene(scene);
-
-            stage.setTitle(t.getText());
-
-            Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
-            stage.getIcons().add(icon);
-            ctrl.setIndependentStage(stage);
-
-            stage.setOnCloseRequest(ev -> {
-                if (DialogUtils.confirm("Close mimics", "About to close mimics " + stage.getTitle(), "Do you want to close mimics " + stage.getTitle() + "?")) {
-                    ctrl.dispose();
-                    stage.close();
-                } else {
-                    ev.consume();
-                }
-            });
-
-            stage.show();
-        });
-
+        t.setUserData(Pair.of(mimicsDisplayWidget, ctrl));
         return ctrl;
     }
 
@@ -267,5 +242,39 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
             }
         }
         return false;
+    }
+
+
+    @FXML
+    public void detachButtonClicked(ActionEvent actionEvent) {
+        Tab t = this.tabPane.getSelectionModel().getSelectedItem();
+        if(t == null) {
+            return;
+        }
+        Pair<VBox, MimicsDisplayTabWidgetController> pair = (Pair<VBox, MimicsDisplayTabWidgetController>) t.getUserData();
+        // Create a detached scene parent
+        Stage stage = new Stage();
+        t.setContent(null);
+        t.setOnCloseRequest(null);
+        this.tabPane.getTabs().remove(t);
+        Scene scene = new Scene(pair.getFirst(), 800, 600);
+        scene.getStylesheets().add(cssUrl.toExternalForm());
+
+        stage.setScene(scene);
+        stage.setTitle(t.getText());
+
+        Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
+        stage.getIcons().add(icon);
+        pair.getSecond().setIndependentStage(stage);
+        stage.setOnCloseRequest(ev -> {
+            if(DialogUtils.confirm("Close", "About to close " + stage.getTitle(), "Do you want to close " + stage.getTitle() + "? Unsaved updates will be lost!")) {
+                pair.getSecond().dispose();
+                stage.close();
+            } else {
+                ev.consume();
+            }
+        });
+
+        stage.show();
     }
 }

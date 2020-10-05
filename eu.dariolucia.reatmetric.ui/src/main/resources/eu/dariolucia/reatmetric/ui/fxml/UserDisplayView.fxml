@@ -45,7 +45,7 @@
                         AnchorPane.topAnchor="0.0" AnchorPane.rightAnchor="0.0"
                         AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
                </TabPane>
-               <HBox AnchorPane.rightAnchor="2.0" AnchorPane.topAnchor="1.0">
+               <HBox AnchorPane.rightAnchor="1.0" AnchorPane.topAnchor="2.0">
                   <children>
                      <Button fx:id="renameButton" mnemonicParsing="false" prefHeight="16.0"
                              prefWidth="16.0" onAction="#renameButtonClicked">
