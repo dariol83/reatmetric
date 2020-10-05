@@ -24,6 +24,11 @@
   ~ limitations under the License.
   -->
 
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.control.Tooltip?>
 <TitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Monitoring ANDs" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ParameterDisplayViewController">
    <content>
       <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
@@ -34,8 +39,57 @@
                   <MenuButton fx:id="loadBtn" mnemonicParsing="false" text="Load..." prefHeight="25.0" prefWidth="100.0" />
                </items>
             </ToolBar>
-            <TabPane fx:id="tabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" tabClosingPolicy="ALL_TABS" VBox.vgrow="ALWAYS">
-            </TabPane>
+            <AnchorPane VBox.vgrow="ALWAYS">
+               <children>
+                  <TabPane fx:id="tabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" tabClosingPolicy="ALL_TABS" VBox.vgrow="ALWAYS"
+                           AnchorPane.topAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                           AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
+                  </TabPane>
+                  <HBox AnchorPane.rightAnchor="1.0" AnchorPane.topAnchor="1.0">
+                     <children>
+                        <Button fx:id="renameButton" mnemonicParsing="false" prefHeight="16.0"
+                                prefWidth="16.0" onAction="#renameButtonClicked">
+                           <graphic>
+                              <ImageView pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/terminal.svg.png"/>
+                                 </image>
+                              </ImageView>
+                           </graphic>
+                           <tooltip>
+                              <Tooltip text="Rename..."/>
+                           </tooltip>
+                        </Button>
+                        <Button fx:id="saveButton" mnemonicParsing="false" prefHeight="16.0"
+                                prefWidth="16.0" onAction="#saveButtonClicked">
+                           <graphic>
+                              <ImageView pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/save.svg.png"/>
+                                 </image>
+                              </ImageView>
+                           </graphic>
+                           <tooltip>
+                              <Tooltip text="Save as..."/>
+                           </tooltip>
+                        </Button>
+                        <Button fx:id="detachButton" mnemonicParsing="false" prefHeight="16.0"
+                                prefWidth="16.0" onAction="#detachButtonClicked">
+                           <graphic>
+                              <ImageView pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/pin.svg.png"/>
+                                 </image>
+                              </ImageView>
+                           </graphic>
+                           <tooltip>
+                              <Tooltip text="Detach tab"/>
+                           </tooltip>
+                        </Button>
+                     </children>
+                  </HBox>
+               </children>
+            </AnchorPane>
          </children>
          <padding>
             <Insets top="0.01" />

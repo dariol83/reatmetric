@@ -28,9 +28,10 @@
 
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
-<VBox fx:id="parentVBox" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.UserDisplayTabWidgetController">
+<?import javafx.scene.layout.AnchorPane?>
+<VBox fx:id="parentVBox" VBox.vgrow="ALWAYS" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.UserDisplayTabWidgetController">
 	<children>
-		<ToolBar prefHeight="32.0">
+		<ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
 			<items>
 				<MenuButton mnemonicParsing="false" text="Add">
                 <items>
@@ -63,10 +64,16 @@
 				</Button>
 			</items>
 		</ToolBar>
-      <ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" pannable="true" VBox.vgrow="ALWAYS">
-         <content>
-            <VBox fx:id="innerBox" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
-         </content>
-      </ScrollPane>
+		<AnchorPane VBox.vgrow="ALWAYS">
+			<children>
+				<ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" pannable="true"
+							AnchorPane.topAnchor="0.0" AnchorPane.rightAnchor="0.0"
+							AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
+					<content>
+						<VBox fx:id="innerBox" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS" />
+					</content>
+				</ScrollPane>
+			</children>
+		</AnchorPane>
 	</children>
 </VBox>

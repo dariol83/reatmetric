@@ -18,6 +18,7 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.PresetStorageManager;
@@ -44,7 +45,6 @@ import java.util.logging.Logger;
 /**
  * FXML Controller class
  *
- * // TODO: implement detach, save as, rename buttons
  * @author dario
  */
 public class UserDisplayViewController extends AbstractDisplayController {
@@ -63,6 +63,16 @@ public class UserDisplayViewController extends AbstractDisplayController {
     @FXML
     protected MenuButton loadBtn;
 
+    // Tab buttons
+    @FXML
+    protected Button detachButton;
+
+    @FXML
+    protected Button saveButton;
+
+    @FXML
+    protected Button renameButton;
+
     // Preset manager
     private final PresetStorageManager presetManager = new PresetStorageManager();
 
@@ -79,6 +89,16 @@ public class UserDisplayViewController extends AbstractDisplayController {
         this.loadBtn.setOnShowing(this::onShowingPresetMenu);
         this.cssUrl = getClass().getClassLoader()
                 .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
+
+        // tab buttons visible/invisible depending on tab selection
+        detachButton.setVisible(false);
+        renameButton.setVisible(false);
+        saveButton.setVisible(false);
+        tabPane.getSelectionModel().selectedItemProperty().addListener((t) -> {
+            detachButton.setVisible(!tabPane.getSelectionModel().isEmpty());
+            renameButton.setVisible(!tabPane.getSelectionModel().isEmpty());
+            saveButton.setVisible(!tabPane.getSelectionModel().isEmpty());
+        });
     }
 
     protected String doGetComponentId() {
@@ -129,61 +149,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
         this.tabPane.getParent().layout();
         this.tabPane.getSelectionModel().select(t);
         ctrl.startSubscription();
-
-        t.setContextMenu(new ContextMenu());
-        MenuItem renameTabMenuItem = new MenuItem("Rename...");
-        t.getContextMenu().getItems().add(renameTabMenuItem);
-        renameTabMenuItem.setOnAction(event -> {
-            // Traditional way to get the response value.
-            Optional<String> result = DialogUtils.input(t.getText(), "Rename Tab", "Change name of the chart tab", "Please provide the name of the chart tab:");
-            result.ifPresent(t::setText);
-        });
-        MenuItem saveTabMenuItem = new MenuItem("Save chart preset...");
-        t.getContextMenu().getItems().add(saveTabMenuItem);
-        saveTabMenuItem.setOnAction(event -> {
-            // Traditional way to get the response value.
-            Optional<String> result = DialogUtils.input(t.getText(), "Save Chart Preset", "Chart Preset", "Please provide the name of the preset:");
-            result.ifPresent(s -> {
-                try {
-                    this.presetManager.save(system.getName(), user, s, doGetComponentId(), ctrl.getChartDescription());
-                } catch (RemoteException e) {
-                    LOG.log(Level.SEVERE, "Cannot save preset, system not responding", e);
-                }
-            });
-        });
-        // Tab detaching
-        SeparatorMenuItem sep = new SeparatorMenuItem();
-        t.getContextMenu().getItems().add(sep);
-        MenuItem detachMenuItem = new MenuItem("Detach");
-        t.getContextMenu().getItems().add(detachMenuItem);
-        detachMenuItem.setOnAction(event -> {
-            // Create a detached scene parent
-            Stage stage = new Stage();
-            t.setContent(null);
-            t.setOnCloseRequest(null);
-            this.tabPane.getTabs().remove(t);
-            // this.tab2contents.remove(t); // if removed, there will be no forwards of system status change
-            Scene scene = new Scene(userDisplayWidget, 800, 600);
-            scene.getStylesheets().add(cssUrl.toExternalForm());
-
-            stage.setScene(scene);
-            stage.setTitle(t.getText());
-
-            Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
-            stage.getIcons().add(icon);
-            ctrl.setIndependentStage(stage);
-            stage.setOnCloseRequest(ev -> {
-                if (DialogUtils.confirm("Close chart", "About to close chart " + stage.getTitle(), "Do you want to close chart " + stage.getTitle() + "? Unsaved chart updates will be lost!")) {
-                    ctrl.dispose();
-                    stage.close();
-                } else {
-                    ev.consume();
-                }
-            });
-
-            stage.show();
-        });
-
+        t.setUserData(Pair.of(userDisplayWidget, ctrl));
         return ctrl;
     }
 
@@ -231,7 +197,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
             try {
                 addChartTabFromPreset(fpreset, p);
             } catch (IOException e) {
-                LOG.log(Level.WARNING, "Cannot initialise chart tab preset " + fpreset + ": " + e.getMessage(), e);
+                LOG.log(Level.WARNING, "Cannot initialise tab preset " + fpreset + ": " + e.getMessage(), e);
             }
         }
     }
@@ -272,5 +238,68 @@ public class UserDisplayViewController extends AbstractDisplayController {
             }
         }
         return false;
+    }
+
+
+    @FXML
+    public void detachButtonClicked(ActionEvent actionEvent) {
+        Tab t = this.tabPane.getSelectionModel().getSelectedItem();
+        if(t == null) {
+            return;
+        }
+        Pair<VBox, UserDisplayTabWidgetController> pair = (Pair<VBox, UserDisplayTabWidgetController>) t.getUserData();
+        // Create a detached scene parent
+        Stage stage = new Stage();
+        t.setContent(null);
+        t.setOnCloseRequest(null);
+        this.tabPane.getTabs().remove(t);
+        Scene scene = new Scene(pair.getFirst(), 800, 600);
+        scene.getStylesheets().add(cssUrl.toExternalForm());
+
+        stage.setScene(scene);
+        stage.setTitle(t.getText());
+
+        Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
+        stage.getIcons().add(icon);
+        pair.getSecond().setIndependentStage(stage);
+        stage.setOnCloseRequest(ev -> {
+            if(DialogUtils.confirm("Close", "About to close " + stage.getTitle(), "Do you want to close " + stage.getTitle() + "? Unsaved updates will be lost!")) {
+                pair.getSecond().dispose();
+                stage.close();
+            } else {
+                ev.consume();
+            }
+        });
+
+        stage.show();
+    }
+
+    @FXML
+    public void saveButtonClicked(ActionEvent actionEvent) {
+        Tab t = this.tabPane.getSelectionModel().getSelectedItem();
+        if(t == null) {
+            return;
+        }
+        Pair<VBox, UserDisplayTabWidgetController> pair = (Pair<VBox, UserDisplayTabWidgetController>) t.getUserData();
+        // Traditional way to get the response value.
+        Optional<String> result = DialogUtils.input(t.getText(), "Save Preset", "Preset", "Please provide the name of the preset:");
+        result.ifPresent(s -> {
+            try {
+                this.presetManager.save(system.getName(), user, s, doGetComponentId(), pair.getSecond().getChartDescription());
+            } catch (RemoteException e) {
+                LOG.log(Level.SEVERE, "Cannot save preset, system not responding", e);
+            }
+        });
+    }
+
+    @FXML
+    public void renameButtonClicked(ActionEvent actionEvent) {
+        Tab t = this.tabPane.getSelectionModel().getSelectedItem();
+        if(t == null) {
+            return;
+        }
+        // Traditional way to get the response value.
+        Optional<String> result = DialogUtils.input(t.getText(), "Rename Tab", "Change name of the tab", "Please provide the name of the tab:");
+        result.ifPresent(t::setText);
     }
 }
