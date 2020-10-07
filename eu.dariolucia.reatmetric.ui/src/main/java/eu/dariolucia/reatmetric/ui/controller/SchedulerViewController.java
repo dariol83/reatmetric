@@ -30,6 +30,8 @@ import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.gantt.GanttChart;
+import eu.dariolucia.reatmetric.ui.udd.InstantAxis;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
 import javafx.beans.Observable;
@@ -45,6 +47,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.chart.CategoryAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
 import javafx.scene.paint.Color;
@@ -69,7 +73,8 @@ import java.util.stream.Collectors;
 /**
  * FXML Controller class
  *
- * // TODO: implement simple Gantt
+ * // TODO: add ability to set pre and post times on the Gantt chart when in live
+ * // TODO: implement support for history retrieval: Gantt follows the entries in the table.
  * @author dario
  */
 public class SchedulerViewController extends AbstractDisplayController implements IScheduledActivityDataSubscriber {
@@ -78,6 +83,9 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     private static final int MAX_ENTRIES = 1000;
     private static final int INITIALIZATION_SECONDS_IN_PAST = 7200;
+    private static final int GANTT_RANGE_PAST = 3600 * 1; // So the Gantt covers 2 hours in the past in live mode
+    private static final int GANTT_RANGE_AHEAD = 3600 * 1; // So the Gantt covers 10 hours in the future in live mode
+    private static final String REATMETRIC_GANTT_STYLE_PREFIX = "reatmetric-gantt-";
 
     // Pane control
     @FXML
@@ -120,6 +128,10 @@ public class SchedulerViewController extends AbstractDisplayController implement
     @FXML
     protected ProgressIndicator progressIndicator;
 
+    // Gantt chart
+    @FXML
+    protected GanttChart<String> ganttChart;
+
     // Table
     @FXML
     protected TableView<ScheduledActivityOccurrenceDataWrapper> dataItemTableView;
@@ -146,9 +158,9 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private TableColumn<ScheduledActivityOccurrenceDataWrapper, String> parentCol;
 
     @FXML
-    public MenuItem editScheduledMenuItem;
+    protected MenuItem editScheduledMenuItem;
     @FXML
-    public MenuItem deleteScheduledMenuItem;
+    protected MenuItem deleteScheduledMenuItem;
 
     // Event table
     @FXML
@@ -170,9 +182,9 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private TableColumn<ScheduledActivityOccurrenceDataWrapper, String> eventParentCol;
 
     @FXML
-    public MenuItem eventEditScheduledMenuItem;
+    protected MenuItem eventEditScheduledMenuItem;
     @FXML
-    public MenuItem eventDeleteScheduledMenuItem;
+    protected MenuItem eventDeleteScheduledMenuItem;
 
     // Popup selector for date/time
     protected final Popup dateTimePopup = new Popup();
@@ -198,6 +210,10 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     private final Timer timer = new Timer("Reatmetric UI - Scheduler time tracker");
     private volatile TimerTask secondTicker;
+
+    // Gantt tracked activities
+    private final Map<ScheduledActivityOccurrenceDataWrapper, XYChart.Data<Instant, String>> activity2data = new HashMap<>();
+    private final Map<String, XYChart.Series<Instant, String>> activityPath2series = new HashMap<>();
 
     private final ISchedulerSubscriber scheduleSubscriber = new ISchedulerSubscriber() {
         @Override
@@ -242,6 +258,39 @@ public class SchedulerViewController extends AbstractDisplayController implement
         this.eventDataItemTableView.setItems(eventTriggeredActivityList);
 
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
+
+        // Chart initialisation
+        this.ganttChart.getStylesheets().add(getClass().getClassLoader().getResource("eu/dariolucia/reatmetric/ui/fxml/css/gantt.css").toExternalForm());
+        updateChartLocation(Instant.now());
+        this.ganttChart.getXAxis().setAutoRanging(false);
+        this.ganttChart.registerInformationExtractor(this::extractEndTime, this::extractStyleClass);
+        this.ganttChart.registerTooltipExtractor(this::extractTooltip);
+        this.ganttChart.registerTaskSelectionListener(this::taskSelected);
+    }
+
+    private void taskSelected(XYChart.Data<Instant, String> item) {
+        if(item == null) {
+            this.dataItemTableView.getSelectionModel().clearSelection();
+        } else {
+            ScheduledActivityOccurrenceDataWrapper w = (ScheduledActivityOccurrenceDataWrapper) item.getExtraValue();
+            this.dataItemTableView.getSelectionModel().select(w);
+        }
+    }
+
+    private String extractTooltip(Object o) {
+        ScheduledActivityOccurrenceDataWrapper w = (ScheduledActivityOccurrenceDataWrapper) o;
+        return w.getPath().asString() + "\n" + "Resources: " + w.get().getResources();
+    }
+
+    private String extractStyleClass(Object o) {
+        ScheduledActivityOccurrenceDataWrapper w = (ScheduledActivityOccurrenceDataWrapper) o;
+        SchedulingState ss = w.get().getState();
+        return REATMETRIC_GANTT_STYLE_PREFIX + ss.name();
+    }
+
+    private Instant extractEndTime(Object o) {
+        ScheduledActivityOccurrenceDataWrapper wrap = (ScheduledActivityOccurrenceDataWrapper) o;
+        return wrap.endTime.get();
     }
 
     private void loadFilterPopup() {
@@ -331,7 +380,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
                             setTextFill(Color.LIGHTBLUE);
                             break;
                         case RUNNING:
-                            setTextFill(Color.LAWNGREEN);
+                            setTextFill(Color.DARKCYAN);
                             break;
                         case FINISHED_NOMINAL:
                             setTextFill(Color.DARKGREEN);
@@ -438,11 +487,12 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     protected void clearTable() {
-        timeScheduledActivityList.clear();
+        clearTimeBasedActivities();
         eventDataItemTableView.getItems().clear();
-        activityMap.clear();
         dataItemTableView.layout();
         dataItemTableView.refresh();
+        eventDataItemTableView.layout();
+        eventDataItemTableView.refresh();
         updateSelectTime();
     }
 
@@ -455,7 +505,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             if (aod.getTrigger() instanceof EventBasedSchedulingTrigger) {
                 eventDataItemTableView.getItems().add(wrapper);
             } else {
-                timeScheduledActivityList.add(wrapper);
+                addToActivityList(wrapper);
             }
             refreshTime = true;
         } else if (aod.getState() == SchedulingState.REMOVED) {
@@ -464,12 +514,70 @@ public class SchedulerViewController extends AbstractDisplayController implement
             if (aod.getTrigger() instanceof EventBasedSchedulingTrigger) {
                 eventDataItemTableView.getItems().remove(wrapper);
             } else {
-                timeScheduledActivityList.remove(wrapper);
+                removeFromActivityList(wrapper);
             }
             return true;
         }
         update(wrapper, aod);
         return refreshTime;
+    }
+
+    private void removeFromActivityList(ScheduledActivityOccurrenceDataWrapper wrapper) {
+        timeScheduledActivityList.remove(wrapper);
+        // Remove from series and maps
+        removeFromChart(wrapper);
+    }
+
+    private void removeFromChart(ScheduledActivityOccurrenceDataWrapper wrapper) {
+        XYChart.Series<Instant, String> series = activityPath2series.get(wrapper.getPath().asString());
+        XYChart.Data<Instant, String> data = activity2data.remove(wrapper);
+        if (data != null) {
+            series.getData().remove(data);
+            if (series.getData().isEmpty()) {
+                activityPath2series.remove(wrapper.getPath().asString());
+                ganttChart.getData().remove(series);
+                ((CategoryAxis)ganttChart.getYAxis()).getCategories().remove(wrapper.getPath().asString());
+            }
+        }
+    }
+
+    private void removeCompletedActivities() {
+        List<ScheduledActivityOccurrenceDataWrapper> toBeRemoved = timeScheduledActivityList.stream().filter(o -> o.stateProperty().get() != SchedulingState.RUNNING && o.stateProperty().get() != SchedulingState.WAITING && o.stateProperty().get() != SchedulingState.SCHEDULED).collect(Collectors.toList());
+        timeScheduledActivityList.removeIf(o -> o.stateProperty().get() != SchedulingState.RUNNING && o.stateProperty().get() != SchedulingState.WAITING && o.stateProperty().get() != SchedulingState.SCHEDULED);
+        for (ScheduledActivityOccurrenceDataWrapper aodw : toBeRemoved) {
+            activityMap.remove(aodw.get().getInternalId());
+            // Remove from series and maps
+            removeFromChart(aodw);
+        }
+    }
+
+    private void addToActivityList(ScheduledActivityOccurrenceDataWrapper wrapper) {
+        timeScheduledActivityList.add(wrapper);
+        // Create series if not existing
+        XYChart.Series<Instant, String> series = activityPath2series.get(wrapper.getPath().asString());
+        if(series == null) {
+            series = new XYChart.Series<>();
+            activityPath2series.put(wrapper.getPath().asString(), series);
+            if(!((CategoryAxis)ganttChart.getYAxis()).getCategories().contains(wrapper.getPath().asString())) {
+                ((CategoryAxis)ganttChart.getYAxis()).getCategories().add(wrapper.getPath().asString());
+            }
+            ganttChart.getData().add(series);
+        }
+        // Create data
+        XYChart.Data<Instant, String> data = new XYChart.Data<>(wrapper.startTimeProperty().get(), wrapper.getPath().asString(), wrapper);
+        // Add data to series
+        series.getData().add(data);
+        // Add data to map
+        activity2data.put(wrapper, data);
+    }
+
+    private void clearTimeBasedActivities() {
+        for (ScheduledActivityOccurrenceDataWrapper saod : timeScheduledActivityList) {
+            activityMap.remove(saod.get().getInternalId());
+            // Remove from series and maps
+            removeFromChart(saod);
+        }
+        timeScheduledActivityList.clear();
     }
 
     private void update(ScheduledActivityOccurrenceDataWrapper wrapper, ScheduledActivityData aod) {
@@ -478,14 +586,15 @@ public class SchedulerViewController extends AbstractDisplayController implement
             // From event to time based
             eventDataItemTableView.getItems().remove(wrapper);
             wrapper.set(aod);
-            timeScheduledActivityList.add(wrapper);
+            addToActivityList(wrapper);
         } else if (!(oldtrigger instanceof EventBasedSchedulingTrigger) && aod.getTrigger() instanceof EventBasedSchedulingTrigger) {
             // From time based to event
-            timeScheduledActivityList.remove(wrapper);
+            removeFromActivityList(wrapper);
             wrapper.set(aod);
             eventDataItemTableView.getItems().add(wrapper);
         } else {
             wrapper.set(aod);
+            this.ganttChart.updateNode(activity2data.get(wrapper));
         }
     }
 
@@ -514,13 +623,6 @@ public class SchedulerViewController extends AbstractDisplayController implement
             updateSelectTime();
         }
         e.consume();
-    }
-
-    private void clearTimeBasedActivities() {
-        for (ScheduledActivityOccurrenceDataWrapper saod : timeScheduledActivityList) {
-            activityMap.remove(saod.get().getInternalId());
-        }
-        timeScheduledActivityList.clear();
     }
 
     private int getNumVisibleRow() {
@@ -719,6 +821,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             };
             this.timer.schedule(secondTicker, 1000, 10000);
         }
+        this.ganttChart.setCurrentTimeMarker(true);
     }
 
     // This is not call by the UI thread!
@@ -731,8 +834,16 @@ public class SchedulerViewController extends AbstractDisplayController implement
         updateSelectTime();
         // Remove old entries
         removeOldEntries();
+        Instant now = Instant.now();
         // Update next to be executed line in time-based schedule table to show a greenish background
-        updateToBeExecutedLine(Instant.now(), true);
+        updateToBeExecutedLine(now, true);
+        // Update chart location
+        updateChartLocation(now);
+    }
+
+    private void updateChartLocation(Instant now) {
+        ((InstantAxis) this.ganttChart.getXAxis()).setLowerBound(now.minusSeconds(GANTT_RANGE_PAST));
+        ((InstantAxis) this.ganttChart.getXAxis()).setUpperBound(now.plusSeconds(GANTT_RANGE_AHEAD));
     }
 
     private void removeOldEntries() {
@@ -740,7 +851,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         int start = this.sortedList.size() - 1;
         while (start >= 0) {
             if (this.sortedList.get(start).get().getStartTime().isBefore(limit)) {
-                this.timeScheduledActivityList.remove(this.sortedList.get(start));
+                removeFromActivityList(this.sortedList.get(start));
                 --start;
             } else {
                 return;
@@ -777,6 +888,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     protected final void stopSubscription() {
+        this.ganttChart.setCurrentTimeMarker(false);
         if (this.secondTicker != null) {
             this.secondTicker.cancel();
             this.secondTicker = null;
@@ -946,11 +1058,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         if (!confirm) {
             return;
         }
-        List<ScheduledActivityOccurrenceDataWrapper> toBeRemoved = timeScheduledActivityList.stream().filter(o -> o.stateProperty().get() != SchedulingState.RUNNING && o.stateProperty().get() != SchedulingState.WAITING && o.stateProperty().get() != SchedulingState.SCHEDULED).collect(Collectors.toList());
-        timeScheduledActivityList.removeIf(o -> o.stateProperty().get() != SchedulingState.RUNNING && o.stateProperty().get() != SchedulingState.WAITING && o.stateProperty().get() != SchedulingState.SCHEDULED);
-        for (ScheduledActivityOccurrenceDataWrapper aodw : toBeRemoved) {
-            activityMap.remove(aodw.get().getInternalId());
-        }
+        removeCompletedActivities();
         event.consume();
     }
 
@@ -1173,7 +1281,6 @@ public class SchedulerViewController extends AbstractDisplayController implement
             }
             return result;
         }
-
     }
 
     public static class FilterWrapper implements Predicate<ScheduledActivityOccurrenceDataWrapper> {

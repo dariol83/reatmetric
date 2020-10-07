@@ -1,0 +1,54 @@
+.reatmetric-gantt-SCHEDULED {
+    -fx-background-color: #6495ED;
+    -fx-border-color: black;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+}
+.reatmetric-gantt-RUNNING {
+    -fx-background-color: #00FFFF;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+.reatmetric-gantt-WAITING {
+    -fx-background-color: #00BFFF;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+.reatmetric-gantt-IGNORED {
+    -fx-background-color: #2F4F4F;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+.reatmetric-gantt-DISABLED {
+    -fx-background-color: #696969;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+.reatmetric-gantt-ABORTED {
+    -fx-background-color: #FA8072;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+.reatmetric-gantt-FINISHED_NOMINAL {
+    -fx-background-color: #7CFC00;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+.reatmetric-gantt-FINISHED_FAIL {
+    -fx-background-color: #FF0000;
+          -fx-border-color: black;
+          -fx-border-width: 1;
+          -fx-cursor: hand;
+}
+.reatmetric-gantt-UNKNOWN {
+    -fx-background-color: #800080;
+            -fx-border-color: black;
+            -fx-border-width: 1;
+            -fx-cursor: hand;
+}

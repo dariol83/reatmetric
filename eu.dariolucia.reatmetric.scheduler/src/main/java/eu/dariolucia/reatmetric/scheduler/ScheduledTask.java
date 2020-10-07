@@ -227,8 +227,9 @@ public class ScheduledTask {
             checkForTaskRemoval();
         } else {
             // Activity is in progress
+            Duration actualDuration = Duration.between(currentData.getStartTime(), now);
             this.currentData = buildUpdatedSchedulingActivityData(currentData.getStartTime(),
-                    Duration.between(currentData.getStartTime(), now),
+                    actualDuration.compareTo(request.getExpectedDuration()) < 0 ? request.getExpectedDuration() : actualDuration, // the duration should be kept, until it is not overcome by the execution
                     activityId,
                     SchedulingState.RUNNING);
             scheduler.notifyTask(this);

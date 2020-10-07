@@ -35,6 +35,11 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.ScrollPane?>
+<?import eu.dariolucia.reatmetric.ui.gantt.GanttChart?>
+<?import eu.dariolucia.reatmetric.ui.udd.InstantAxis?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import java.net.URL?>
 <TitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Scheduler" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.SchedulerViewController">
     <content>
     <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1">
@@ -83,6 +88,19 @@
                <ToggleButton fx:id="enableTgl" mnemonicParsing="false" onAction="#enableToggleSelected" prefHeight="25.0" prefWidth="91.0" text="Enable" />
            </items>
         </ToolBar>
+        <ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="400" maxWidth="1.7976931348623157E308" pannable="true"
+                    VBox.vgrow="NEVER" prefHeight="400">
+             <content>
+                 <GanttChart fx:id="ganttChart" animated="false" legendVisible="false">
+                     <xAxis>
+                         <InstantAxis />
+                     </xAxis>
+                     <yAxis>
+                         <CategoryAxis />
+                     </yAxis>
+                 </GanttChart>
+             </content>
+        </ScrollPane>
         <TabPane VBox.vgrow="ALWAYS">
             <tabs>
                 <Tab text="Schedule View" closable="false">
