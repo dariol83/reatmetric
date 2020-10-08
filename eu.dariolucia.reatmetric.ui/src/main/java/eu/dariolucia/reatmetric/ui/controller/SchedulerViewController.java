@@ -979,7 +979,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             }
             if (latest == null) {
                 this.selectTimeBtn.setText("---");
-                this.dateTimePickerController.setSelectedTime(null);
+                this.dateTimePickerController.setSelectedTime(Instant.now());
             } else {
                 this.selectTimeBtn.setText(formatTime(latest));
                 this.dateTimePickerController.setSelectedTime(latest);
