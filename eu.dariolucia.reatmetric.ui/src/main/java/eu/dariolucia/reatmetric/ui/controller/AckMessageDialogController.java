@@ -184,6 +184,7 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
                     LOG.log(Level.SEVERE, "Acknowledgement failed: " + e.getMessage(), e);
                 }
             });
+            this.ackMessageTableView.getSelectionModel().clearSelection();
         }
     }
 

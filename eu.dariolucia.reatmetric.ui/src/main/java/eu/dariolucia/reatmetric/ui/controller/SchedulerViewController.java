@@ -73,7 +73,6 @@ import java.util.stream.Collectors;
 /**
  * FXML Controller class
  *
- * // TODO: add ability to set pre and post times on the Gantt chart when in live
  * // TODO: implement support for history retrieval: Gantt follows the entries in the table.
  * @author dario
  */
@@ -83,9 +82,11 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     private static final int MAX_ENTRIES = 1000;
     private static final int INITIALIZATION_SECONDS_IN_PAST = 7200;
-    private static final int GANTT_RANGE_PAST = 3600 * 1; // So the Gantt covers 2 hours in the past in live mode
-    private static final int GANTT_RANGE_AHEAD = 3600 * 1; // So the Gantt covers 10 hours in the future in live mode
     private static final String REATMETRIC_GANTT_STYLE_PREFIX = "reatmetric-gantt-";
+
+    // Not final, applicable for the entire UI
+    private static int GANTT_RANGE_PAST = 3600 * 1;
+    private static int GANTT_RANGE_AHEAD = 3600 * 1;
 
     // Pane control
     @FXML
@@ -131,6 +132,9 @@ public class SchedulerViewController extends AbstractDisplayController implement
     // Gantt chart
     @FXML
     protected GanttChart<String> ganttChart;
+
+    @FXML
+    protected Button updateTimeBoundariesBtn;
 
     // Table
     @FXML
@@ -192,11 +196,17 @@ public class SchedulerViewController extends AbstractDisplayController implement
     // Popup selector for filter
     protected final Popup filterPopup = new Popup();
 
+    // Popup selector for Gantt boundaries
+    protected final Popup ganttBoundariesPopup = new Popup();
+
     // Time selector controller
     protected DateTimePickerWidgetController dateTimePickerController;
 
     // Filter controller
     protected IFilterController<ScheduledActivityDataFilter> dataItemFilterController;
+
+    // Gantt time boundaries selector controller
+    protected GanttTimeBoundariesPickerWidgetController ganttTimeBoundariesPickerController;
 
     // Temporary object queue
     private DataProcessingDelegator<ScheduledActivityData> delegator;
@@ -266,6 +276,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
         this.ganttChart.registerInformationExtractor(this::extractEndTime, this::extractStyleClass);
         this.ganttChart.registerTooltipExtractor(this::extractTooltip);
         this.ganttChart.registerTaskSelectionListener(this::taskSelected);
+
+        loadGanttBoundariesPopup();
     }
 
     private void taskSelected(XYChart.Data<Instant, String> item) {
@@ -328,6 +340,28 @@ public class SchedulerViewController extends AbstractDisplayController implement
             this.dateTimePickerController.setActionAfterSelection(() -> {
                 this.dateTimePopup.hide();
                 moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_FUTURE, MAX_ENTRIES * 2, this.dataItemFilterController.getSelectedFilter(), false);
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadGanttBoundariesPopup() {
+        this.ganttBoundariesPopup.setAutoHide(true);
+        this.ganttBoundariesPopup.setHideOnEscape(true);
+
+        try {
+            URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/GanttTimeBoundariesPickerWidget.fxml");
+            FXMLLoader loader = new FXMLLoader(datePickerUrl);
+            Parent dateTimePicker = loader.load();
+            this.ganttTimeBoundariesPickerController = loader.getController();
+            this.ganttBoundariesPopup.getContent().addAll(dateTimePicker);
+            // Load the controller hide with select
+            this.ganttTimeBoundariesPickerController.setActionAfterSelection(() -> {
+                this.ganttBoundariesPopup.hide();
+                GANTT_RANGE_PAST = ganttTimeBoundariesPickerController.getPastDuration();
+                GANTT_RANGE_AHEAD = ganttTimeBoundariesPickerController.getFutureDuration();
+                updateChartLocation(Instant.now());
             });
         } catch (IOException e) {
             e.printStackTrace();
@@ -1177,6 +1211,21 @@ public class SchedulerViewController extends AbstractDisplayController implement
         if (!this.liveTgl.isSelected()) {
             windowEvent.consume();
         }
+    }
+
+    @FXML
+    public void updateTimeBoundariesButtonSelected(ActionEvent e) {
+        if (this.ganttBoundariesPopup.isShowing()) {
+            this.ganttBoundariesPopup.hide();
+        } else {
+            Bounds b = this.updateTimeBoundariesBtn.localToScreen(this.updateTimeBoundariesBtn.getBoundsInLocal());
+            this.ganttTimeBoundariesPickerController.setInterval(GANTT_RANGE_PAST, GANTT_RANGE_AHEAD);
+            this.ganttBoundariesPopup.setX(b.getMinX());
+            this.ganttBoundariesPopup.setY(b.getMaxY());
+            this.ganttBoundariesPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+            this.ganttBoundariesPopup.show(this.liveTgl.getScene().getWindow());
+        }
+        e.consume();
     }
 
     public static class ScheduledActivityOccurrenceDataWrapper implements Comparable<ScheduledActivityOccurrenceDataWrapper> {

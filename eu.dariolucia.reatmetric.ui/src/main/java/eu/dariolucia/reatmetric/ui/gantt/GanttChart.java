@@ -27,8 +27,10 @@ import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
+import javafx.util.Pair;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -54,7 +56,7 @@ public class GanttChart<Y> extends XYChart<Instant, Y> {
 
     private final List<Consumer<XYChart.Data<Instant, Y>>> taskListeners = new ArrayList<>();
 
-    private Data<Instant, Y> currentTimeMarker;
+    private Pair<Rectangle, Line> currentTimeMarker;
 
     public GanttChart(@NamedArg("xAxis") InstantAxis xAxis, @NamedArg("yAxis") Axis<Y> yAxis) {
         this(xAxis, yAxis, FXCollections.observableArrayList());
@@ -92,15 +94,22 @@ public class GanttChart<Y> extends XYChart<Instant, Y> {
     public void setCurrentTimeMarker(boolean marker) {
         if(marker) {
             if(this.currentTimeMarker == null) {
-                this.currentTimeMarker = new Data<Instant, Y>(Instant.now(), null);
+                this.currentTimeMarker = new Pair<>(null, null);
+
                 Line line = new Line();
                 line.getStrokeDashArray().addAll(5d, 5d);
-                this.currentTimeMarker.setNode(line);
                 getPlotChildren().add(line);
+
+                Rectangle r = new Rectangle();
+                r.setFill(new Color(0.2, 0.8, 0.7, 0.2));
+                getPlotChildren().add(r);
+
+                this.currentTimeMarker = new Pair<>(r, line);
             }
         } else {
             if(this.currentTimeMarker != null) {
-                getPlotChildren().remove(this.currentTimeMarker.getNode());
+                getPlotChildren().remove(this.currentTimeMarker.getKey());
+                getPlotChildren().remove(this.currentTimeMarker.getValue());
                 this.currentTimeMarker = null;
             }
         }
@@ -158,10 +167,16 @@ public class GanttChart<Y> extends XYChart<Instant, Y> {
         }
 
         if(currentTimeMarker != null) {
-            currentTimeMarker.setXValue(Instant.now());
+            Instant now = Instant.now();
+            Rectangle rect = currentTimeMarker.getKey();
+            rect.setWidth(getXAxis().getDisplayPosition(now));
+            rect.setHeight(getBoundsInLocal().getHeight());
+            rect.setX(0);
+            rect.setY(0);
+            rect.toFront();
             // The following part is coming from StackOverflow: https://stackoverflow.com/a/28955561
-            Line line = (Line) currentTimeMarker.getNode();
-            line.setStartX(getXAxis().getDisplayPosition(currentTimeMarker.getXValue()) + 0.5);  // 0.5 for crispness
+            Line line = currentTimeMarker.getValue();
+            line.setStartX(getXAxis().getDisplayPosition(now) + 0.5);  // 0.5 for crispness
             line.setEndX(line.getStartX());
             line.setStartY(0d);
             line.setEndY(getBoundsInLocal().getHeight());

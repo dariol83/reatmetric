@@ -39,7 +39,7 @@
 <?import eu.dariolucia.reatmetric.ui.gantt.GanttChart?>
 <?import eu.dariolucia.reatmetric.ui.udd.InstantAxis?>
 <?import javafx.scene.chart.CategoryAxis?>
-<?import java.net.URL?>
+<?import javafx.scene.control.Separator?>
 <TitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Scheduler" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.SchedulerViewController">
     <content>
     <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1">
@@ -54,9 +54,9 @@
                <Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne" text="&gt;" />
                <Button fx:id="goForwardFastBtn" disable="true" mnemonicParsing="false" onAction="#goForwardFast" text="&gt;&gt;" />
                <Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd" text="&gt;|" />
-              <Label text=" " />
-              <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
-              <Label text=" " />
+               <Separator orientation="VERTICAL" />
+               <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
+               <Separator orientation="VERTICAL" />
                <Button fx:id="filterBtn" mnemonicParsing="false" onAction="#filterButtonSelected">
                    <graphic>
                        <ImageView pickOnBounds="true" preserveRatio="true">
@@ -75,7 +75,8 @@
                       </ImageView>
                   </graphic>
               </Button>
-               <Button fx:id="removeBtn" mnemonicParsing="false" onAction="#removeCompletedActivitiesButtonSelected">
+              <Separator orientation="VERTICAL" />
+              <Button fx:id="removeBtn" mnemonicParsing="false" onAction="#removeCompletedActivitiesButtonSelected">
                    <graphic>
                        <ImageView pickOnBounds="true" preserveRatio="true">
                            <image>
@@ -83,9 +84,18 @@
                            </image>
                        </ImageView>
                    </graphic>
-               </Button>
-               <Pane prefHeight="1.0" prefWidth="24.0" HBox.hgrow="ALWAYS" />
-               <ToggleButton fx:id="enableTgl" mnemonicParsing="false" onAction="#enableToggleSelected" prefHeight="25.0" prefWidth="91.0" text="Enable" />
+              </Button>
+              <Button fx:id="updateTimeBoundariesBtn" mnemonicParsing="false" onAction="#updateTimeBoundariesButtonSelected">
+                   <graphic>
+                       <ImageView pickOnBounds="true" preserveRatio="true">
+                           <image>
+                               <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/calendar.svg.png" />
+                           </image>
+                       </ImageView>
+                   </graphic>
+              </Button>
+              <Pane prefHeight="1.0" prefWidth="24.0" HBox.hgrow="ALWAYS" />
+              <ToggleButton fx:id="enableTgl" mnemonicParsing="false" onAction="#enableToggleSelected" prefHeight="25.0" prefWidth="91.0" text="Enable" />
            </items>
         </ToolBar>
         <ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="400" maxWidth="1.7976931348623157E308" pannable="true"
