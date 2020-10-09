@@ -147,7 +147,7 @@ public class ActivityArgumentTableManager {
             return row ;
         });
         // Initialise table with the data
-        Platform.runLater(() -> initialise(descriptor, request));
+        FxUtils.runLater(() -> initialise(descriptor, request));
     }
 
     private void initialise(ActivityDescriptor descriptor, ActivityRequest request) {
@@ -183,7 +183,7 @@ public class ActivityArgumentTableManager {
         }
 
         table.refresh();
-        Platform.runLater(this::recheckArguments);
+        FxUtils.runLater(this::recheckArguments);
     }
 
     private void initialiseRecords(TreeItem<ArgumentBean> item, List<ArrayActivityArgumentRecord> records) {
@@ -245,7 +245,7 @@ public class ActivityArgumentTableManager {
             }
         }
         table.refresh();
-        Platform.runLater(this::recheckArguments);
+        FxUtils.runLater(this::recheckArguments);
     }
 
     private TreeItem<ArgumentBean> createNewRecord(int position, ActivityArrayArgumentDescriptor descriptor) {
@@ -490,7 +490,7 @@ public class ActivityArgumentTableManager {
             table.refresh();
             ready.set(descriptor instanceof ActivityArrayArgumentDescriptor ||
                     (descriptor instanceof ActivityPlainArgumentDescriptor && ((isUseEng() && engValueProperty().get() != null) || (!isUseEng() && rawValueProperty().get() != null))));
-            Platform.runLater(ActivityArgumentTableManager.this::recheckArguments);
+            FxUtils.runLater(ActivityArgumentTableManager.this::recheckArguments);
         }
 
         @Override
@@ -595,7 +595,7 @@ public class ActivityArgumentTableManager {
                 engSelection.setSelected(true);
             }
 
-            Platform.runLater(() -> {
+            FxUtils.runLater(() -> {
                 focusOnControl(rawSelection.isSelected(), rawValueControl, engValueControl);
             });
         }

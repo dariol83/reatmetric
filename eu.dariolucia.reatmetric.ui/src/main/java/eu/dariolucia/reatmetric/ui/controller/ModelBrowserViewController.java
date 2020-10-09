@@ -477,7 +477,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                 updateAlarmStatus(item);
             }
             // Now you can ask the UI thread to set the root in the viewer
-            Platform.runLater(() -> {
+            FxUtils.runLater(() -> {
                 this.modelTree.setRoot(this.path2item.get(this.root.getPath()));
                 this.modelTree.layout();
                 this.modelTree.refresh();
@@ -572,7 +572,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     }
 
     private void addDataItems(List<SystemEntity> objects) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             this.mapLock.lock();
             try {
                 objects.forEach(this::addOrUpdateItemToTree);
@@ -867,7 +867,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     }
 
     public void informAcknowledgementStatus(Set<Integer> ackStatusCleared, Set<Integer> ackStatusActive) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             // The cleared ones must be updated
             for (Integer i : ackStatusCleared) {
                 SystemEntityPath path = this.id2path.get(i);

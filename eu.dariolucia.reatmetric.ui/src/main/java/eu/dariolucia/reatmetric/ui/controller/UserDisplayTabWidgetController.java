@@ -27,6 +27,7 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.udd.*;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.OrderedProperties;
 import eu.dariolucia.reatmetric.ui.utils.UserDisplayCoordinator;
 import javafx.application.Platform;
@@ -227,7 +228,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
     protected void setData(Instant minTime, Instant maxTime, List<AbstractDataItem> messages, boolean clear) {
         // As this data comes from the archive, set the last data max time
         lastDataMaxGenerationTime = lastDataMaxGenerationTime == null ? maxTime : (lastDataMaxGenerationTime.isBefore(maxTime) ? maxTime : lastDataMaxGenerationTime);
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             if (clear) {
                 clearCharts();
             }
@@ -515,7 +516,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
     }
 
     private void markProgressReady() {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             this.progressIndicator.setVisible(false);
         });
     }
@@ -539,7 +540,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
         this.timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                Platform.runLater(() -> {
+                FxUtils.runLater(() -> {
                     currentMax = getMaxTimeReference();
                     currentMin = currentMax.minusMillis(getTimeWindowSize());
                     charts.forEach(a -> a.setBoundaries(currentMin, currentMax));

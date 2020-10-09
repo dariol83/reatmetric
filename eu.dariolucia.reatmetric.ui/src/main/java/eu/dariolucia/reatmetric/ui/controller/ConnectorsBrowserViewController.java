@@ -23,6 +23,7 @@ import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
 import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -123,7 +124,7 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
 
     private void buildConnectorsModel() throws ReatmetricException, RemoteException {
         final List<ITransportConnector> connectors = ReatmetricUI.selectedSystem().getSystem().getTransportConnectors();
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             for(ITransportConnector tc : connectors) {
                 ConnectorStatusWidgetController controller = buildConnectorController();
                 if(controller != null) {
@@ -157,7 +158,7 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
 
     @Override
     public void status(TransportStatus status) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             ConnectorStatusWidgetController controller = connector2controller.get(status.getName());
             if(controller != null) {
                 controller.updateStatus(status);

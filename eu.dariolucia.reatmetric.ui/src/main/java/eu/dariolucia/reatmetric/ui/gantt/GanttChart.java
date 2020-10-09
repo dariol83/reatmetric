@@ -269,7 +269,6 @@ public class GanttChart<Y> extends XYChart<Instant, Y> {
             container.onMouseClickedProperty().set(e -> {
                 taskClicked(item);
                 e.consume();
-                System.out.println("Mouse clicked item " + item);
             });
             item.setNode(container);
         }

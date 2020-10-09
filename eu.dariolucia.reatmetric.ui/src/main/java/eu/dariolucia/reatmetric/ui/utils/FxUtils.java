@@ -16,15 +16,17 @@
 
 package eu.dariolucia.reatmetric.ui.utils;
 
-import javafx.scene.control.MenuItem;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.application.Platform;
 
 public class FxUtils {
 
-    public static void setMenuItemImage(MenuItem menuItem, String imageLocation) {
-        Image img = new Image(FxUtils.class.getResourceAsStream(imageLocation));
-        ImageView menuIcon = new ImageView(img);
-        menuItem.setGraphic(menuIcon);
+    public static void runLater(Runnable r) {
+        Platform.runLater(() -> {
+            try {
+                r.run();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 }

@@ -128,7 +128,7 @@ public class TransportConnectorInitDialog {
                 if (connectOnPositiveInitialise) {
                     connector.connect();
                 }
-				Platform.runLater(() -> {
+				FxUtils.runLater(() -> {
 					popOver.setOnCloseRequest(null);
 					popOver.hide();
 				});
@@ -136,7 +136,7 @@ public class TransportConnectorInitDialog {
                 LOG.log(Level.SEVERE, "Failing to initialise " + (connectOnPositiveInitialise ? "and activate " : "") + "connector " + name + ": " + e.getMessage(), e);
                 // Nasty workaround on this design - deselect if you fail
 				if(connectOnPositiveInitialise) {
-					Platform.runLater(() -> {
+					FxUtils.runLater(() -> {
 						if (hook instanceof ToggleSwitch) {
 							((ToggleSwitch) hook).setSelected(false);
 						}

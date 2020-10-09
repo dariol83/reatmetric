@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -209,14 +210,14 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         // After adding the tab, you need to initialise it in a new round of the UI thread,
         // to allow the layouting of the tab and the correct definition of the parent elements,
         // hence avoiding a null pointer exception
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             t.loadPreset(svgFile);
         });
     }
 
     public void open(String preset) {
         // Ugly but necessary
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             ReatmetricUI.threadPool(getClass()).submit(() -> {
                 String name;
                 try {
@@ -225,7 +226,7 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
                     LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
                     return;
                 }
-                Platform.runLater(() -> {
+                FxUtils.runLater(() -> {
                     if (!selectTab(preset)) {
                         loadPreset(name, preset);
                     }

@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.messages.input.OperationalMessageRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -110,7 +111,7 @@ public class ChatDialogController implements Initializable, IOperationalMessageS
 
     @Override
     public void dataItemsReceived(List<OperationalMessage> dataItems) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             // Update the table
             chatTableView.getItems().addAll(dataItems);
             if (this.handler != null) {

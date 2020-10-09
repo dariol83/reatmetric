@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.*;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -139,7 +140,7 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
 
             }
         }
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             List<AcknowledgedMessage> toRemoveActuals = new LinkedList<>();
             // I iterate on the whole list, so here I compute the messages pending ack
             pendingAcknowledgementSet.clear();

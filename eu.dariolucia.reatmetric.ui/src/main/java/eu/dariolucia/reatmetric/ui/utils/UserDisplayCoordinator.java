@@ -90,7 +90,7 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
             }
         }
         // Forward
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             for(Map.Entry<UserDisplayTabWidgetController, List<EventData>> entry : forwardMap.entrySet()) {
                 entry.getKey().updateDataItems(entry.getValue());
             }
@@ -110,7 +110,7 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
             }
         }
         // Forward
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             for(Map.Entry<UserDisplayTabWidgetController, List<ParameterData>> entry : forwardMap.entrySet()) {
                 entry.getKey().updateDataItems(entry.getValue());
             }

@@ -85,6 +85,7 @@
         <module>eu.dariolucia.reatmetric.remoting</module>
         <module>eu.dariolucia.reatmetric.remoting.connector</module>
         <module>eu.dariolucia.reatmetric.remoting.test</module>
+        <module>eu.dariolucia.reatmetric.remoting.spacecraft</module>
         <module>eu.dariolucia.reatmetric.persist</module>
         <module>eu.dariolucia.reatmetric.scheduler</module>
         <module>eu.dariolucia.reatmetric.driver.automation</module>

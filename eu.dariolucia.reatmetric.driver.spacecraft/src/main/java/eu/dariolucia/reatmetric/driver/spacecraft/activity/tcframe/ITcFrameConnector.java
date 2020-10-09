@@ -22,6 +22,7 @@ import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.IForwardDataUnitStatusSubscriber;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
+import java.rmi.RemoteException;
 import java.util.List;
 
 public interface ITcFrameConnector extends ITransportConnector {
@@ -34,14 +35,14 @@ public interface ITcFrameConnector extends ITransportConnector {
      * @param context the service context
      * @param connectorInformation the configuration string provided in the connector configuration
      */
-    void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, String connectorInformation);
+    void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, String connectorInformation) throws RemoteException;
 
-    void register(IForwardDataUnitStatusSubscriber subscriber);
+    void register(IForwardDataUnitStatusSubscriber subscriber) throws RemoteException;
 
-    void deregister(IForwardDataUnitStatusSubscriber subscriber);
+    void deregister(IForwardDataUnitStatusSubscriber subscriber) throws RemoteException;
 
-    void sendTcFrame(TcTransferFrame frame, long externalId);
+    void sendTcFrame(TcTransferFrame frame, long externalId) throws RemoteException;
 
-    List<String> getSupportedRoutes();
+    List<String> getSupportedRoutes() throws RemoteException;
 
 }

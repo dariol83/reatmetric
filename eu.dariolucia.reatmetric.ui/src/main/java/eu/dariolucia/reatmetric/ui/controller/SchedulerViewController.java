@@ -271,7 +271,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
         // Chart initialisation
         this.ganttChart.getStylesheets().add(getClass().getClassLoader().getResource("eu/dariolucia/reatmetric/ui/fxml/css/gantt.css").toExternalForm());
-        updateChartLocation(Instant.now());
+        Instant now = Instant.now();
+        updateChartLocation(now.minusSeconds(GANTT_RANGE_PAST), now.plusSeconds(GANTT_RANGE_AHEAD));
         this.ganttChart.getXAxis().setAutoRanging(false);
         this.ganttChart.registerInformationExtractor(this::extractEndTime, this::extractStyleClass);
         this.ganttChart.registerTooltipExtractor(this::extractTooltip);
@@ -339,7 +340,10 @@ public class SchedulerViewController extends AbstractDisplayController implement
             // Load the controller hide with select
             this.dateTimePickerController.setActionAfterSelection(() -> {
                 this.dateTimePopup.hide();
-                moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_FUTURE, MAX_ENTRIES * 2, this.dataItemFilterController.getSelectedFilter(), false);
+                Instant time = this.dateTimePickerController.getSelectedTime();
+                // If you want to move to time , first you clear the table
+                clearTable();
+                moveToTime(time, RetrievalDirection.TO_PAST, MAX_ENTRIES * 2, this.dataItemFilterController.getSelectedFilter(), false);
             });
         } catch (IOException e) {
             e.printStackTrace();
@@ -361,11 +365,14 @@ public class SchedulerViewController extends AbstractDisplayController implement
                 this.ganttBoundariesPopup.hide();
                 GANTT_RANGE_PAST = ganttTimeBoundariesPickerController.getPastDuration();
                 GANTT_RANGE_AHEAD = ganttTimeBoundariesPickerController.getFutureDuration();
-                updateChartLocation(Instant.now());
+                Instant now = Instant.now();
+                updateChartLocation(now.minusSeconds(GANTT_RANGE_PAST), now.plusSeconds(GANTT_RANGE_AHEAD));
             });
         } catch (IOException e) {
             e.printStackTrace();
         }
+        // If history retrieval, disable selection of time boundaries
+        updateTimeBoundariesBtn.disableProperty().bind(liveTgl.selectedProperty().not());
     }
 
     private void setupEventTriggersTable() {
@@ -506,7 +513,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     protected void addDataItems(List<ScheduledActivityData> messages, boolean fromLive) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
                 boolean refreshLine = false;
                 for (ScheduledActivityData aod : messages) {
@@ -516,8 +523,34 @@ public class SchedulerViewController extends AbstractDisplayController implement
                 if (refreshLine) {
                     updateToBeExecutedLine(Instant.now(), true);
                 }
+                // If not live, update boundaries
+                if(!fromLive) {
+                    computeTimeBoundariesFromEntries();
+                }
             }
         });
+    }
+
+    private void computeTimeBoundariesFromEntries() {
+        Instant min = Instant.MAX;
+        Instant max = Instant.EPOCH;
+        for(ScheduledActivityOccurrenceDataWrapper w : activity2data.keySet()) {
+            if(w.get().getStartTime().isBefore(min)) {
+                min = w.get().getStartTime();
+            }
+            if(w.get().getEndTime().isAfter(max)) {
+                max = w.get().getEndTime();
+            }
+        }
+        if(min == Instant.MAX) {
+            min = Instant.now().minusSeconds(3600);
+        }
+        if(max == Instant.EPOCH) {
+            max = Instant.now().plusSeconds(3600);
+        }
+        min = min.minusSeconds(3600);
+        max = max.plusSeconds(3600);
+        updateChartLocation(min, max);
     }
 
     protected void clearTable() {
@@ -856,11 +889,14 @@ public class SchedulerViewController extends AbstractDisplayController implement
             this.timer.schedule(secondTicker, 1000, 10000);
         }
         this.ganttChart.setCurrentTimeMarker(true);
+
+        Instant now = Instant.now();
+        updateChartLocation(now.minusSeconds(GANTT_RANGE_PAST), now.plusSeconds(GANTT_RANGE_AHEAD));
     }
 
     // This is not call by the UI thread!
     private void tick() {
-        Platform.runLater(this::refreshTimeBasedState);
+        FxUtils.runLater(this::refreshTimeBasedState);
     }
 
     private void refreshTimeBasedState() {
@@ -872,12 +908,12 @@ public class SchedulerViewController extends AbstractDisplayController implement
         // Update next to be executed line in time-based schedule table to show a greenish background
         updateToBeExecutedLine(now, true);
         // Update chart location
-        updateChartLocation(now);
+        updateChartLocation(now.minusSeconds(GANTT_RANGE_PAST), now.plusSeconds(GANTT_RANGE_AHEAD));
     }
 
-    private void updateChartLocation(Instant now) {
-        ((InstantAxis) this.ganttChart.getXAxis()).setLowerBound(now.minusSeconds(GANTT_RANGE_PAST));
-        ((InstantAxis) this.ganttChart.getXAxis()).setUpperBound(now.plusSeconds(GANTT_RANGE_AHEAD));
+    private void updateChartLocation(Instant past, Instant future) {
+        ((InstantAxis) this.ganttChart.getXAxis()).setLowerBound(past);
+        ((InstantAxis) this.ganttChart.getXAxis()).setUpperBound(future);
     }
 
     private void removeOldEntries() {
@@ -992,7 +1028,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     private void markProgressReady() {
-        Platform.runLater(() -> this.progressIndicator.setVisible(false));
+        FxUtils.runLater(() -> this.progressIndicator.setVisible(false));
     }
 
     private boolean isProcessingAvailable() {
@@ -1176,11 +1212,11 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     @Override
     public void dataItemsReceived(List<ScheduledActivityData> dataItems) {
-        Platform.runLater(() -> delegator.delegate(dataItems));
+        FxUtils.runLater(() -> delegator.delegate(dataItems));
     }
 
     public void internalSchedulerEnablementChanged(boolean enabled) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             enableTgl.setSelected(enabled);
             enableTgl.setText(enabled ? "Disable" : "Enable");
         });

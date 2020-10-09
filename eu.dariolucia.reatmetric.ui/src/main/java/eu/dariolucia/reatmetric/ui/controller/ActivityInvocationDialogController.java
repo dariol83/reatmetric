@@ -23,6 +23,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.ActivityArgumentTableManager;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.PropertyBean;
 import javafx.application.Platform;
 import javafx.beans.InvalidationListener;
@@ -215,7 +216,7 @@ public class ActivityInvocationDialogController implements Initializable {
     private void refreshRoutes(ActivityDescriptor descriptor, ActivityRequest currentRequest) {
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             final List<ActivityRouteState> routesWithAvailability = this.routeSupplier.get();
-            Platform.runLater(() -> {
+            FxUtils.runLater(() -> {
                 initialiseRouteCombo(descriptor, currentRequest, routesWithAvailability);
             });
         });

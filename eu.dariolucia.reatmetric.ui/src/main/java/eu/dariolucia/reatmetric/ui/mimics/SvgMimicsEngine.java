@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.ui.mimics;
 
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import javafx.application.Platform;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -89,7 +90,7 @@ public class SvgMimicsEngine {
             }
         }
         // Now run in UI thread
-        Platform.runLater(() -> toBeApplied.forEach(Runnable::run));
+        FxUtils.runLater(() -> toBeApplied.forEach(Runnable::run));
     }
 
     public void dispose() {

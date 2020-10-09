@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.PropertyBean;
 import eu.dariolucia.reatmetric.ui.utils.ReatmetricValidationSupport;
 import eu.dariolucia.reatmetric.ui.utils.ValueControlUtil;
@@ -186,7 +187,7 @@ public class SetParameterDialogController implements Initializable {
     private void refreshRoutes(ParameterDescriptor descriptor, SetParameterRequest currentRequest) {
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             final List<ActivityRouteState> routesWithAvailability = this.routeSupplier.get();
-            Platform.runLater(() -> {
+            FxUtils.runLater(() -> {
                 initialiseRouteCombo(descriptor, currentRequest, routesWithAvailability);
             });
         });

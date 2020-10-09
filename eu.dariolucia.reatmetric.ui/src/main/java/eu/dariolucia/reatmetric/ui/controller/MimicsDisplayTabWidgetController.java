@@ -29,6 +29,7 @@ import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.MimicsDisplayCoordinator;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -338,7 +339,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     }
 
     private void markProgressReady() {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             this.progressIndicator.setVisible(false);
         });
     }
@@ -483,7 +484,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
            }
            // If from archive and the state is not reset, then raise a warning
            if(messages.isEmpty() && fromArchive && !resetState) {
-               Platform.runLater(() -> DialogUtils.alert("No more parameter samples", "No more parameter samples", "The archive does not contain additional parameter samples"));
+               FxUtils.runLater(() -> DialogUtils.alert("No more parameter samples", "No more parameter samples", "The archive does not contain additional parameter samples"));
                return;
            }
            // Just check what is different and what is not different, and inform the mimics manager
@@ -498,7 +499,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
        // Inform the mimics manager about the changed parameters
        this.mimicsManager.refresh(updatedData);
        // Next shall be run in the UI thread
-       Platform.runLater(this::updateSelectTime);
+       FxUtils.runLater(this::updateSelectTime);
     }
 
     private boolean isStateUpdate(ParameterData oldState, ParameterData pd) {

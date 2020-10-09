@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -80,7 +81,7 @@ public class DebugDialogController implements Initializable {
             if (info_f == null || info_f.isEmpty()) {
                 setEmptyDebugInformation();
             } else {
-                Platform.runLater(() -> updateData(info_f));
+                FxUtils.runLater(() -> updateData(info_f));
             }
         } else {
             setEmptyDebugInformation();
@@ -88,7 +89,7 @@ public class DebugDialogController implements Initializable {
     }
 
     private void setEmptyDebugInformation() {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             vboxParent.getChildren().clear();
             id2control.clear();
             Label l = new Label("No debug information currently available");

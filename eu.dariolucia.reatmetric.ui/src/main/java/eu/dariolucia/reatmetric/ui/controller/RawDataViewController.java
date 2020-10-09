@@ -25,6 +25,7 @@ import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -103,7 +104,7 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
                     String name = selectedRawData.getName();
                     String genTime = InstantCellFactory.DATE_TIME_FORMATTER.format(selectedRawData.getGenerationTime());
                     final LinkedHashMap<String, String> fformatData = formatData;
-                    Platform.runLater(() -> {
+                    FxUtils.runLater(() -> {
                         this.dataInspectionController.setData(name + " - Gen. Time " + genTime, fdata, fformatData);
                         // Bounds b = this.dataItemTableView.localToScreen(this.dataItemTableView.getBoundsInLocal());
                         this.dataInspectionPopup.setX(((MenuItem) event.getSource()).getParentPopup().getAnchorX());

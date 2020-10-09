@@ -50,6 +50,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TcDataLinkProcessor;
 
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -102,8 +103,12 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
         // Create the TC Packet connector map
         this.tcPacketConnectors = new TreeMap<>();
         for(ITcPacketConnector m : tcPacketConnectors) {
-            for(String route : m.getSupportedRoutes()) {
-                this.tcPacketConnectors.put(route, m);
+            try {
+                for(String route : m.getSupportedRoutes()) {
+                    this.tcPacketConnectors.put(route, m);
+                }
+            } catch (RemoteException e) {
+                e.printStackTrace(); // TODO: never thrown here
             }
         }
     }
@@ -218,7 +223,11 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
             // If there is an external connector for the route, go for it
             ITcPacketConnector externalConnector = this.tcPacketConnectors.get(activityInvocation.getRoute());
             if(externalConnector != null) {
-                externalConnector.sendTcPacket(sp, tcTracker);
+                try {
+                    externalConnector.sendTcPacket(sp, tcTracker);
+                } catch (RemoteException e) {
+                    e.printStackTrace(); // TODO never thrown here
+                }
             } else {
                 // Fall back to the TC Data Link processor
                 tcDataLinkProcessor.sendTcPacket(sp, tcTracker);

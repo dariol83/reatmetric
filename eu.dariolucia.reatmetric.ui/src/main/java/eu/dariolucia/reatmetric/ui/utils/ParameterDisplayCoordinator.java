@@ -80,7 +80,7 @@ public class ParameterDisplayCoordinator implements IReatmetricServiceListener {
             }
         }
         // Forward
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             for(Map.Entry<ParameterDisplayTabWidgetController, List<ParameterData>> entry : forwardMap.entrySet()) {
                 entry.getKey().updateDataItems(entry.getValue());
             }

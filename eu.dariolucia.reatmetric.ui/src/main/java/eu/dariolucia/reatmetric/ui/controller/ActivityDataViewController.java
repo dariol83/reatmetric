@@ -349,7 +349,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         //    // Revert the list
         //    Collections.reverse(messages);
         // }
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
                 for (ActivityOccurrenceData aod : messages) {
                     createOrUpdate(aod, true);
@@ -365,7 +365,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     protected void addDataItemsBack(List<ActivityOccurrenceData> messages, int n, boolean clearTable) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             if (!this.displayTitledPane.isDisabled()) {
                 if (clearTable) {
                     clearTable();
@@ -705,7 +705,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     private void markProgressReady() {
-        Platform.runLater(() -> this.progressIndicator.setVisible(false));
+        FxUtils.runLater(() -> this.progressIndicator.setVisible(false));
     }
 
     private boolean isProcessingAvailable() {
@@ -799,7 +799,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
     @Override
     public void dataItemsReceived(List<ActivityOccurrenceData> dataItems) {
-        Platform.runLater(() -> delegator.delegate(dataItems));
+        FxUtils.runLater(() -> delegator.delegate(dataItems));
     }
 
     public static class ActivityOccurrenceDataWrapper {

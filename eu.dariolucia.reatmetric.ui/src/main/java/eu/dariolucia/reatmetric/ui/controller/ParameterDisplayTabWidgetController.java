@@ -480,7 +480,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
     }
 
     private void markProgressReady() {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             this.progressIndicator.setVisible(false);
         });
     }
@@ -583,7 +583,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
     }
 
     public void updateDataItems(List<ParameterData> messages) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             for (ParameterData pd : messages) {
                 ParameterDataWrapper pdw = this.path2wrapper.get(pd.getPath());
                 if (pdw != null) {

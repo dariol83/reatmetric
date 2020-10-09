@@ -54,6 +54,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcVcConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -129,19 +130,29 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                         Collections.singletonList(Quality.GOOD)), null);
         // Register to the cltu senders
         this.cltuSenders = new TreeMap<>();
+
         for(ICltuConnector m : cltuSenders) {
-            for(String route : m.getSupportedRoutes()) {
-                this.cltuSenders.put(route, m);
+            try {
+                for (String route : m.getSupportedRoutes()) {
+                    this.cltuSenders.put(route, m);
+                }
+                m.register(this);
+            } catch (RemoteException e) {
+                e.printStackTrace(); // TODO never thrown here
             }
-            m.register(this);
         }
+
         // Register to the tc frame senders
         this.tcFrameSenders = new TreeMap<>();
-        for(ITcFrameConnector m : frameSenders) {
-            for(String route : m.getSupportedRoutes()) {
-                this.tcFrameSenders.put(route, m);
+        for (ITcFrameConnector m : frameSenders) {
+            try {
+                for (String route : m.getSupportedRoutes()) {
+                    this.tcFrameSenders.put(route, m);
+                }
+                m.register(this);
+            } catch (RemoteException e) {
+                e.printStackTrace(); // TODO never thrown here
             }
-            m.register(this);
         }
     }
 
@@ -298,12 +309,20 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         ICltuConnector connectorInstance = this.cltuSenders.get(route);
         if(connectorInstance != null) {
             byte[] encodedCltu = encoder.apply(tcTransferFrame);
-            connectorInstance.sendCltu(encodedCltu, frameInTransmissionId);
+            try {
+                connectorInstance.sendCltu(encodedCltu, frameInTransmissionId);
+            } catch (RemoteException e) {
+                e.printStackTrace(); // TODO: never thrown here
+            }
             return true;
         } else {
             ITcFrameConnector frameConnector = this.tcFrameSenders.get(route);
             if(frameConnector != null) {
-                frameConnector.sendTcFrame(tcTransferFrame, frameInTransmissionId);
+                try {
+                    frameConnector.sendTcFrame(tcTransferFrame, frameInTransmissionId);
+                } catch (RemoteException e) {
+                    e.printStackTrace(); // TODO: never thrown here
+                }
                 return true;
             }
         }
@@ -313,7 +332,11 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     public void dispose() {
         this.context.getRawDataBroker().unsubscribe(this);
         for(ICltuConnector m : new HashSet<>(cltuSenders.values())) {
-            m.deregister(this);
+            try {
+                m.deregister(this);
+            } catch (RemoteException e) {
+                e.printStackTrace(); // TODO Never thrown here
+            }
         }
         for (Pair<TcVcConfiguration, TcSenderVirtualChannel> tcChannel : tcChannels) {
             if(tcChannel != null) {

@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -72,7 +73,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     protected void printButtonSelected(ActionEvent e) {
         final Node n = doBuildNodeForPrinting();
         if (n != null) {
-            Platform.runLater(() -> { // Needed to allow the stage to show up and layout the element
+            FxUtils.runLater(() -> { // Needed to allow the stage to show up and layout the element
                 Printer printer = Printer.getDefaultPrinter();
                 PageLayout pageLayout = printer.createPageLayout(Paper.A4, PageOrientation.PORTRAIT, Printer.MarginType.HARDWARE_MINIMUM);
                 PrinterJob job = PrinterJob.createPrinterJob();
@@ -133,7 +134,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
 
     @Override
     public void systemConnected(IReatmetricSystem system) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             this.system = system;
             //
             boolean oldStatus = this.serviceConnected;
@@ -145,7 +146,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
 
     @Override
     public void systemDisconnected(IReatmetricSystem system) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             boolean oldStatus = this.serviceConnected;
             //
             doSystemDisconnected(system, oldStatus);

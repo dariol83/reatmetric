@@ -100,7 +100,6 @@ import java.util.stream.Collectors;
  *     requests coming from the processing model. Space packets are encoded in TC packets with optional segment header.
  *     Support for PUS services is limited to Service 1 and Service 11, both with limitations</li>
  * </ul>
- *
  */
 public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHandler {
 
@@ -126,7 +125,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     private volatile SystemStatus status = SystemStatus.UNKNOWN;
 
-    private List<SleServiceInstanceManager<?,?>> sleManagers;
+    private List<SleServiceInstanceManager<?, ?>> sleManagers;
     private TmPacketReplayManager tmPacketReplayer;
     private TmDataLinkProcessor tmDataLinkProcessor;
     private TmPacketProcessor tmPacketProcessor;
@@ -195,19 +194,19 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     private void loadExternalConnectors() {
-        for(ExternalConnectorConfiguration ecc : configuration.getExternalConnectorConfigurations()) {
+        for (ExternalConnectorConfiguration ecc : configuration.getExternalConnectorConfigurations()) {
             loadExternalConnector(ecc);
         }
     }
 
     private void loadExternalConnector(ExternalConnectorConfiguration dc) {
-        if(dc.getDataUnitType() == DataUnitType.CLTU) {
+        if (dc.getDataUnitType() == DataUnitType.CLTU) {
             ServiceLoader<ICltuConnector> serviceLoader = ServiceLoader.load(ICltuConnector.class);
             Optional<ServiceLoader.Provider<ICltuConnector>> provider = serviceLoader.stream().filter(pr -> pr.type().getName().equals(dc.getType())).findFirst();
             if (provider.isPresent()) {
                 ICltuConnector connector = provider.get().get();
-                connector.configure(this.name, this.configuration, this.context, dc.getConfiguration());
                 try {
+                    connector.configure(this.name, this.configuration, this.context, dc.getConfiguration());
                     connector.prepare();
                 } catch (RemoteException e) {
                     // Cannot happen
@@ -216,13 +215,13 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             } else {
                 LOG.log(Level.WARNING, "External CLTU connector for class " + dc.getType() + " and configuration " + dc.getConfiguration() + " not found");
             }
-        } else if(dc.getDataUnitType() == DataUnitType.TC_FRAME) {
+        } else if (dc.getDataUnitType() == DataUnitType.TC_FRAME) {
             ServiceLoader<ITcFrameConnector> serviceLoader = ServiceLoader.load(ITcFrameConnector.class);
             Optional<ServiceLoader.Provider<ITcFrameConnector>> provider = serviceLoader.stream().filter(pr -> pr.type().getName().equals(dc.getType())).findFirst();
             if (provider.isPresent()) {
                 ITcFrameConnector connector = provider.get().get();
-                connector.configure(this.name, this.configuration, this.context, dc.getConfiguration());
                 try {
+                    connector.configure(this.name, this.configuration, this.context, dc.getConfiguration());
                     connector.prepare();
                 } catch (RemoteException e) {
                     // Cannot happen
@@ -231,13 +230,13 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             } else {
                 LOG.log(Level.WARNING, "External TC frame connector for class " + dc.getType() + " and configuration " + dc.getConfiguration() + " not found");
             }
-        } else if(dc.getDataUnitType() == DataUnitType.TC_PACKET) {
+        } else if (dc.getDataUnitType() == DataUnitType.TC_PACKET) {
             ServiceLoader<ITcPacketConnector> serviceLoader = ServiceLoader.load(ITcPacketConnector.class);
             Optional<ServiceLoader.Provider<ITcPacketConnector>> provider = serviceLoader.stream().filter(pr -> pr.type().getName().equals(dc.getType())).findFirst();
             if (provider.isPresent()) {
                 ITcPacketConnector connector = provider.get().get();
-                connector.configure(this.name, this.configuration, this.context, this.serviceBroker, this.packetIdentifier, dc.getConfiguration());
                 try {
+                    connector.configure(this.name, this.configuration, this.context, this.serviceBroker, this.packetIdentifier, dc.getConfiguration());
                     connector.prepare();
                 } catch (RemoteException e) {
                     // Cannot happen
@@ -276,7 +275,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     private void registerActivityExecutor(IActivityExecutor executor) {
-        for(String type : executor.getSupportedActivityTypes()) {
+        for (String type : executor.getSupportedActivityTypes()) {
             activityType2executors.computeIfAbsent(type, o -> new LinkedList<>()).add(executor);
         }
     }
@@ -300,7 +299,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     private void loadPacketServices() throws ReatmetricException {
-        for(ServiceConfiguration sc : configuration.getPacketServiceConfiguration().getServices()) {
+        for (ServiceConfiguration sc : configuration.getPacketServiceConfiguration().getServices()) {
             IService theService = loadService(sc);
             serviceBroker.registerService(theService);
             LOG.info(theService.getName() + " registered");
@@ -311,7 +310,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         ServiceLoader<IService> serviceLoader = ServiceLoader.load(IService.class);
         Optional<ServiceLoader.Provider<IService>> provider = serviceLoader.stream().filter(pr -> pr.type().getName().equals(dc.getType())).findFirst();
         IService theService = null;
-        if(provider.isPresent()) {
+        if (provider.isPresent()) {
             theService = provider.get().get();
             theService.initialise(dc.getConfiguration(), this.name, this.configuration, this.coreConfiguration, this.context, this.serviceBroker);
         }
@@ -346,35 +345,35 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
                 this.packetIdentifier,
                 tmPacketProcessor::extractPacketGenerationTime,
                 tmPacketProcessor::checkPacketQuality
-                );
+        );
         this.tmDataLinkProcessor.initialise();
     }
 
     private void loadSleServiceInstances(String sleFolder) throws IOException {
         LOG.info("Loading SLE configuration at " + sleFolder);
         this.sleManagers = new ArrayList<>();
-        if(sleFolder == null) {
+        if (sleFolder == null) {
             LOG.info("Driver " + this.name + " has no SLE folder configured. Skipping SLE configuration.");
             return;
         }
         File sleFolderFile = new File(sleFolder);
-        if(!sleFolderFile.exists()) {
+        if (!sleFolderFile.exists()) {
             LOG.warning("Driver " + this.name + " points to non-existing SLE folder: " + sleFolderFile.getAbsolutePath());
             return;
         }
         File[] files = sleFolderFile.listFiles();
-        if(files == null) {
+        if (files == null) {
             LOG.warning("Driver " + this.name + " cannot read contents of SLE folder: " + sleFolderFile.getAbsolutePath());
             return;
         }
-        for(File sleConfFile : files) {
+        for (File sleConfFile : files) {
             UtlConfigurationFile confFile = UtlConfigurationFile.load(new FileInputStream(sleConfFile));
-            for(ServiceInstanceConfiguration sic : confFile.getServiceInstances()) {
-                if(sic instanceof RafServiceInstanceConfiguration) {
+            for (ServiceInstanceConfiguration sic : confFile.getServiceInstances()) {
+                if (sic instanceof RafServiceInstanceConfiguration) {
                     createRafServiceInstance(confFile.getPeerConfiguration(), (RafServiceInstanceConfiguration) sic);
-                } else if(sic instanceof RcfServiceInstanceConfiguration) {
+                } else if (sic instanceof RcfServiceInstanceConfiguration) {
                     createRcfServiceInstance(confFile.getPeerConfiguration(), (RcfServiceInstanceConfiguration) sic);
-                } else if(sic instanceof CltuServiceInstanceConfiguration) {
+                } else if (sic instanceof CltuServiceInstanceConfiguration) {
                     createCltuServiceInstance(confFile.getPeerConfiguration(), (CltuServiceInstanceConfiguration) sic);
                 } else {
                     LOG.warning("Driver " + this.name + " cannot load service instance configuration for " + sic.getServiceInstanceIdentifier() + " in file " + sleConfFile + ": SLE service type not supported");
@@ -433,7 +432,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     @Override
     public synchronized List<ITransportConnector> getTransportConnectors() {
-        if(allConnectors == null) {
+        if (allConnectors == null) {
             allConnectors = this.sleManagers.stream().map(o -> (ITransportConnector) o).collect(Collectors.toCollection(LinkedList::new));
             allConnectors.add(this.tmPacketReplayer);
             allConnectors.addAll(this.cltuConnectors);
@@ -459,7 +458,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private void updateStatus(SystemStatus s) {
         boolean toNotify = s != this.status;
         this.status = s;
-        if(toNotify) {
+        if (toNotify) {
             this.listener.driverStatusUpdate(this.name, this.status);
         }
     }
@@ -476,15 +475,15 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     @Override
     public LinkedHashMap<String, String> render(RawData rawData) throws ReatmetricException {
-        if(!rawData.getHandler().equals(getHandler())) {
+        if (!rawData.getHandler().equals(getHandler())) {
             throw new ReatmetricException("Raw data with handler " + rawData.getHandler() + " cannot be processed by driver " + configuration.getName() + ", expecting handler " + getHandler());
         }
         Function<RawData, LinkedHashMap<String, String>> renderingFunction = rawDataRenderers.get(rawData.getType());
-        if(renderingFunction == null) {
+        if (renderingFunction == null) {
             throw new ReatmetricException("Raw data with type " + rawData.getType() + " cannot be processed by driver " + configuration.getName() + ", expecting types " + getSupportedTypes());
         }
         // Ok, now check if raw data has contents. If not, retrieve the one with the contents.
-        if(!rawData.isContentsSet() && rawDataArchive != null) {
+        if (!rawData.isContentsSet() && rawDataArchive != null) {
             rawData = rawDataArchive.retrieve(rawData.getInternalId());
         }
         return renderingFunction.apply(rawData);
@@ -503,8 +502,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     @Override
     public List<String> getSupportedRoutes() {
         Set<String> routes = new HashSet<>();
-        for(Map.Entry<String, List<IActivityExecutor>> entry : activityType2executors.entrySet()) {
-            for(IActivityExecutor ex : entry.getValue()) {
+        for (Map.Entry<String, List<IActivityExecutor>> entry : activityType2executors.entrySet()) {
+            for (IActivityExecutor ex : entry.getValue()) {
                 routes.addAll(ex.getSupportedRoutes());
             }
         }
@@ -520,11 +519,11 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
         String type = activityInvocation.getType();
         List<IActivityExecutor> executors = activityType2executors.get(type);
-        if(executors == null || executors.isEmpty()) {
+        if (executors == null || executors.isEmpty()) {
             throw new ActivityHandlingException("Cannot find any executor to handle activity " + activityInvocation.getPath() + " type " + type);
         }
-        for(IActivityExecutor ex : executors) {
-            if(ex.getSupportedRoutes().contains(activityInvocation.getRoute())) {
+        for (IActivityExecutor ex : executors) {
+            if (ex.getSupportedRoutes().contains(activityInvocation.getRoute())) {
                 ex.executeActivity(activityInvocation);
                 return;
             }
@@ -538,34 +537,34 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
                 .filter(o -> o instanceof CltuServiceInstanceManager)
                 .filter(o -> o.getServiceInstanceIdentifier().equals(route))
                 .findFirst();
-        if(first.isPresent()) {
+        if (first.isPresent()) {
             return first.get().getConnectionStatus().equals(TransportConnectionStatus.OPEN);
         } else {
-            for(ICltuConnector conn : cltuConnectors) {
-                if(conn.getSupportedRoutes().contains(route)) {
-                    try {
+            for (ICltuConnector conn : cltuConnectors) {
+                try {
+                    if (conn.getSupportedRoutes().contains(route)) {
                         return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
-                    } catch (RemoteException e) {
-                        LOG.log(Level.SEVERE, "Remote exception on CLTU connector for route availability of route " + route, e);
                     }
+                } catch (RemoteException e) {
+                    LOG.log(Level.SEVERE, "Remote exception on CLTU connector for route availability of route " + route, e);
                 }
             }
-            for(ITcFrameConnector conn : tcFrameConnectors) {
-                if(conn.getSupportedRoutes().contains(route)) {
-                    try {
+            for (ITcFrameConnector conn : tcFrameConnectors) {
+                try {
+                    if (conn.getSupportedRoutes().contains(route)) {
                         return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
-                    } catch (RemoteException e) {
-                        LOG.log(Level.SEVERE, "Remote exception on TC frame connector for route availability of route " + route, e);
                     }
+                } catch (RemoteException e) {
+                    LOG.log(Level.SEVERE, "Remote exception on TC frame connector for route availability of route " + route, e);
                 }
             }
-            for(ITcPacketConnector conn : tcPacketConnectors) {
-                if(conn.getSupportedRoutes().contains(route)) {
-                    try {
+            for (ITcPacketConnector conn : tcPacketConnectors) {
+                try {
+                    if (conn.getSupportedRoutes().contains(route)) {
                         return conn.getConnectionStatus().equals(TransportConnectionStatus.OPEN);
-                    } catch (RemoteException e) {
-                        LOG.log(Level.SEVERE, "Remote exception on TC packet connector for route availability of route " + route, e);
                     }
+                } catch (RemoteException e) {
+                    LOG.log(Level.SEVERE, "Remote exception on TC packet connector for route availability of route " + route, e);
                 }
             }
         }
@@ -579,7 +578,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     @Override
     public List<DebugInformation> currentDebugInfo() {
-        if(this.name == null) {
+        if (this.name == null) {
             return Collections.emptyList();
         }
         List<DebugInformation> toReturn = new ArrayList<>();

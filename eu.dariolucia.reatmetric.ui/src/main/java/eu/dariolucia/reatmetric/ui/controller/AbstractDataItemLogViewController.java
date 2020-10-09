@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.TableViewUtil;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -307,7 +308,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         // Start subscription if there
         if (this.liveTgl == null || this.liveTgl.isSelected()) {
             // Allow table to be present and layed out before getting its size
-            Platform.runLater(() -> {
+            FxUtils.runLater(() -> {
                 clearTable();
                 moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter());
                 startSubscription();
@@ -346,7 +347,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             // Revert the list
             Collections.reverse(messages);
         }
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
                 this.dataItemList.addAll(0, messages);
                 if (this.filteredItemList.size() > MAX_ENTRIES) {
@@ -362,7 +363,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     protected void addDataItemsBack(List<T> messages, int n, boolean clearTable) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             if (!this.displayTitledPane.isDisabled()) {
                 if (clearTable) {
                     clearTable();
@@ -449,7 +450,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     }
 
     private void markProgressReady() {
-        Platform.runLater(() -> this.progressIndicator.setVisible(false));
+        FxUtils.runLater(() -> this.progressIndicator.setVisible(false));
     }
 
     private boolean isProcessingAvailable() {

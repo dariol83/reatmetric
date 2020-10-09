@@ -23,6 +23,7 @@ import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import eu.dariolucia.reatmetric.ui.plugin.ReatmetricPluginInspector;
+import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -343,7 +344,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
                     ReatmetricUI.selectedSystem().setSystem(this.serviceInspector.getSystem(selectedSystem));
                 } catch (Exception e) {
                     LOG.log(Level.SEVERE, "Error when connecting to system " + selectedSystem + ": " + e.getMessage(), e);
-                    Platform.runLater(() -> {
+                    FxUtils.runLater(() -> {
                         this.connectButton.setDisable(false);
                         this.connectButton.setGraphic(new ImageView(CONNECT_IMAGE));
                     });
@@ -502,7 +503,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     @Override
     public void startGlobalOperationProgress() {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             this.globalProgress.setVisible(true);
             this.globalProgress.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
         });
@@ -510,7 +511,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     @Override
     public void stopGlobalOperationProgress() {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             this.globalProgress.setProgress(0);
             this.globalProgress.setVisible(false);
         });
@@ -518,7 +519,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     @Override
     public void systemConnected(IReatmetricSystem system) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             enableMainViewItems();
             registerAcknowledgeMonitor();
             registerChatMonitor();
@@ -541,7 +542,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     @Override
     public void systemDisconnected(IReatmetricSystem system) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             disableMainViewItems();
             deregisterAcknowledgeMonitor();
             deregisterChatMonitor();
@@ -563,7 +564,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     @Override
     public void systemStatusUpdate(SystemStatus status) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             updateStatusIndicator(status);
         });
     }
@@ -631,7 +632,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
     private void updateStatusIndicator(SystemStatus state) {
-        Platform.runLater(() -> {
+        FxUtils.runLater(() -> {
             switch (state) {
                 case ALARM:
                     this.nominalCrl.setFill(Paint.valueOf(ALARM_COLOR));
