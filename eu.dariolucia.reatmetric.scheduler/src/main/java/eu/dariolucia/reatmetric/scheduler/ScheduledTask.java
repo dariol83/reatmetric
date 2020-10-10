@@ -187,8 +187,10 @@ public class ScheduledTask {
         Instant now = Instant.now();
         if(currentData.getState() == SchedulingState.SCHEDULED &&
                 scheduler.isEnabled() &&
-                (request.getTrigger() instanceof EventBasedSchedulingTrigger && ((EventBasedSchedulingTrigger) request.getTrigger()).getEvent().equals(event.getPath()) &&
-                (request.getLatestInvocationTime() == null || request.getLatestInvocationTime().isAfter(now)))) {
+                request.getTrigger() instanceof EventBasedSchedulingTrigger &&
+                ((EventBasedSchedulingTrigger) request.getTrigger()).isEnabled() &&
+                ((EventBasedSchedulingTrigger) request.getTrigger()).getEvent().equals(event.getPath()) &&
+                (request.getLatestInvocationTime() == null || request.getLatestInvocationTime().isAfter(now))) {
             // Check if the protection time is OK
             if(lastEventTriggerInvocation == null || lastEventTriggerInvocation.plusMillis(((EventBasedSchedulingTrigger) request.getTrigger()).getProtectionTime()).isBefore(now)) {
                 lastEventTriggerInvocation = now;

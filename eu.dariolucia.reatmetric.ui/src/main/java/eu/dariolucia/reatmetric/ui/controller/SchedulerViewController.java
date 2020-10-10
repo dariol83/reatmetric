@@ -83,8 +83,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private static final String REATMETRIC_GANTT_STYLE_PREFIX = "reatmetric-gantt-";
 
     // Not final, applicable for the entire UI
-    private static int GANTT_RANGE_PAST = 3600 * 1;
-    private static int GANTT_RANGE_AHEAD = 3600 * 1;
+    private static int GANTT_RANGE_PAST = 3600;
+    private static int GANTT_RANGE_AHEAD = 3600;
 
     // Pane control
     @FXML
@@ -178,6 +178,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private TableColumn<ScheduledActivityOccurrenceDataWrapper, String> eventResourcesCol;
     @FXML
     private TableColumn<ScheduledActivityOccurrenceDataWrapper, String> eventTriggerCol;
+    @FXML
+    private TableColumn<ScheduledActivityOccurrenceDataWrapper, String> eventEnabledCol;
     @FXML
     private TableColumn<ScheduledActivityOccurrenceDataWrapper, Duration> eventDurationCol;
     @FXML
@@ -380,6 +382,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         this.eventNameCol.setCellValueFactory(o -> o.getValue().nameProperty());
         this.eventSourceCol.setCellValueFactory(o -> o.getValue().sourceProperty());
         this.eventTriggerCol.setCellValueFactory(o -> o.getValue().eventTriggerProperty());
+        this.eventEnabledCol.setCellValueFactory(o -> o.getValue().eventEnabledProperty());
         this.eventResourcesCol.setCellValueFactory(o -> o.getValue().resourcesProperty());
         this.eventDurationCol.setCellValueFactory(o -> o.getValue().durationProperty());
         this.eventParentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));
@@ -1275,6 +1278,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         private final SimpleStringProperty source = new SimpleStringProperty();
         private final SimpleStringProperty trigger = new SimpleStringProperty();
         private final SimpleStringProperty eventTrigger = new SimpleStringProperty();
+        private final SimpleStringProperty eventEnabled = new SimpleStringProperty();
         private final SimpleObjectProperty<SchedulingState> state = new SimpleObjectProperty<>();
         private final SimpleObjectProperty<Duration> duration = new SimpleObjectProperty<>();
 
@@ -1298,7 +1302,9 @@ public class SchedulerViewController extends AbstractDisplayController implement
             name.set(data.getRequest().getPath().getLastPathElement());
             if (data.getTrigger() instanceof EventBasedSchedulingTrigger) {
                 eventTrigger.set(String.valueOf(((EventBasedSchedulingTrigger) data.getTrigger()).getEvent()));
+                eventEnabled.set(((EventBasedSchedulingTrigger) data.getTrigger()).isEnabled() ? "enabled" : "disabled");
             } else {
+                eventEnabled.set("N/A");
                 eventTrigger.set("");
             }
         }
@@ -1349,6 +1355,10 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
         public SimpleStringProperty eventTriggerProperty() {
             return eventTrigger;
+        }
+
+        public SimpleStringProperty eventEnabledProperty() {
+            return eventEnabled;
         }
 
         public BooleanProperty setLineProperty() {

@@ -153,6 +153,18 @@
                         </TextField>
                         <Label text="Protection Time (seconds)" />
                      </children>
+                     <VBox.margin>
+                        <Insets bottom="4.0" />
+                     </VBox.margin>
+                  </HBox>
+                  <HBox>
+                     <children>
+                        <CheckBox fx:id="enabledCheckBox" prefWidth="200.0" text="Enabled">
+                           <HBox.margin>
+                              <Insets right="8.0" />
+                           </HBox.margin>
+                        </CheckBox>
+                     </children>
                   </HBox>
                </children>
             </VBox>

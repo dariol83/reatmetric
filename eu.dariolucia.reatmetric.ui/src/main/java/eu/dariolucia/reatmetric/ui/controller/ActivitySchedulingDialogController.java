@@ -56,6 +56,8 @@ public class ActivitySchedulingDialogController implements Initializable {
     @FXML
     public TextField protectionTimeText;
     @FXML
+    public CheckBox enabledCheckBox;
+    @FXML
     public DatePicker absoluteDatePicker;
     @FXML
     public TextField absoluteTimeText;
@@ -89,6 +91,7 @@ public class ActivitySchedulingDialogController implements Initializable {
         externalIdText.disableProperty().bind(relativeTimeRadio.selectedProperty().not());
         eventPathText.disableProperty().bind(eventDrivenRadio.selectedProperty().not());
         protectionTimeText.disableProperty().bind(eventDrivenRadio.selectedProperty().not());
+        enabledCheckBox.disableProperty().bind(eventDrivenRadio.selectedProperty().not());
         absoluteDatePicker.disableProperty().bind(absoluteTimeRadio.selectedProperty().not());
         absoluteTimeText.disableProperty().bind(absoluteTimeRadio.selectedProperty().not());
 
@@ -110,6 +113,7 @@ public class ActivitySchedulingDialogController implements Initializable {
         relativeTimeText.textProperty().addListener(o -> validate());
         eventPathText.textProperty().addListener(o -> validate());
         protectionTimeText.textProperty().addListener(o -> validate());
+        enabledCheckBox.selectedProperty().addListener(o -> validate());
         absoluteTimeText.textProperty().addListener(o -> validate());
         expectedDurationText.textProperty().addListener(o -> validate());
         taskExternalIdText.textProperty().addListener(o -> validate());
@@ -150,6 +154,7 @@ public class ActivitySchedulingDialogController implements Initializable {
         } else if(request.getTrigger() instanceof EventBasedSchedulingTrigger) {
             eventPathText.setText(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent().asString());
             protectionTimeText.setText(String.valueOf (((EventBasedSchedulingTrigger) request.getTrigger()).getProtectionTime() / 1000));
+            enabledCheckBox.setSelected(((EventBasedSchedulingTrigger) request.getTrigger()).isEnabled());
             eventDrivenRadio.setSelected(true);
         }
         validate();
@@ -360,7 +365,7 @@ public class ActivitySchedulingDialogController implements Initializable {
         } else if(relativeTimeRadio.isSelected()) {
             return new RelativeTimeSchedulingTrigger(getRelativeTriggerExternalIds(), getRelativeTime());
         } else if(eventDrivenRadio.isSelected()) {
-            return new EventBasedSchedulingTrigger(SystemEntityPath.fromString(eventPathText.getText()), getProtectionTime(), true); // TODO: introduce checkbox for enabled state
+            return new EventBasedSchedulingTrigger(SystemEntityPath.fromString(eventPathText.getText()), getProtectionTime(), enabledCheckBox.isSelected());
         } else {
             throw new IllegalStateException("None of the supported triggers can be derived");
         }
