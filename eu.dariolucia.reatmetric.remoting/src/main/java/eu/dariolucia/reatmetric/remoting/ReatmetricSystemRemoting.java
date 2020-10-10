@@ -34,6 +34,7 @@ import eu.dariolucia.reatmetric.api.rawdata.IRawDataProvisionService;
 import eu.dariolucia.reatmetric.api.scheduler.IScheduledActivityDataProvisionService;
 import eu.dariolucia.reatmetric.api.scheduler.IScheduler;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
+import eu.dariolucia.reatmetric.remoting.stubs.TransportConnectorDelegate;
 
 import java.rmi.*;
 import java.rmi.registry.LocateRegistry;
@@ -393,10 +394,14 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
     @Override
     public synchronized List<ITransportConnector> getTransportConnectors() throws ReatmetricException, RemoteException {
+        // Since the transport connectors are provided by the drivers, it could happen that one driver extends the connector
+        // interface to provide additional capabilities. In this case, there is the risk of a exception if the RMI classloader
+        // is disabled (the extended interface might not be present in the UI. To avoid this, for this specific class only,
+        // a server delegate stub is used.
         if (remoteTransportConnectorList == null) {
             remoteTransportConnectorList = new ArrayList<>();
             for (ITransportConnector tc : system.getTransportConnectors()) {
-                ITransportConnector remoted = (ITransportConnector) exportObject(tc);
+                ITransportConnector remoted = (ITransportConnector) exportObject(new TransportConnectorDelegate(tc));
                 remoteTransportConnectorList.add(remoted);
             }
         }

@@ -53,7 +53,7 @@ public class SchedulerProxy extends AbstractStateProvisionServiceProxy<Scheduled
         }
         Remote activeObject = scheduleSubscriber2remote.get(subscriber);
         if(activeObject == null) {
-            activeObject = UnicastRemoteObject.exportObject(subscriber, 0);
+            activeObject = ObjectActivationCache.instance().activate(subscriber, 0);
             if(LOG.isLoggable(Level.FINE)) {
                 LOG.fine("Subscriber active object " + activeObject + " for " + subscriber + " to proxy " + getClass().getSimpleName() + " activated");
             }
@@ -77,7 +77,7 @@ public class SchedulerProxy extends AbstractStateProvisionServiceProxy<Scheduled
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.fine("Deactivating subscriber active object " + activeObject + " for " + subscriber + " in proxy " + getClass().getSimpleName());
                 }
-                UnicastRemoteObject.unexportObject(activeObject, true);
+                ObjectActivationCache.instance().deactivate(activeObject, true);
             } catch (NoSuchObjectException e) {
                 // Ignore
             }
@@ -145,7 +145,7 @@ public class SchedulerProxy extends AbstractStateProvisionServiceProxy<Scheduled
                     if (LOG.isLoggable(Level.FINE)) {
                         LOG.fine("Terminating subscriber active object " + entry.getKey() + " in proxy " + getClass().getSimpleName());
                     }
-                    UnicastRemoteObject.unexportObject(entry.getKey(), true);
+                    ObjectActivationCache.instance().deactivate(entry.getKey(), true);
                 } catch (NoSuchObjectException e) {
                     // Ignore
                 }

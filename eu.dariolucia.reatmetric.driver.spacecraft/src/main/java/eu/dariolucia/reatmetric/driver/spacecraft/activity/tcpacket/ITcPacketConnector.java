@@ -31,7 +31,7 @@ public interface ITcPacketConnector extends ITransportConnector {
 
     /**
      * Configure the connector after its creation.
-     *  @param driverName the name of the driver using the connector instance
+     * @param driverName the name of the driver using the connector instance
      * @param configuration the configuration of the driver
      * @param context the service context
      * @param serviceBroker the service broker

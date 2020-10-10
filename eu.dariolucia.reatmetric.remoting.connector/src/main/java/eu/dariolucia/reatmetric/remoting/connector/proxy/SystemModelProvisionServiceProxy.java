@@ -45,7 +45,7 @@ public class SystemModelProvisionServiceProxy implements ISystemModelProvisionSe
     public void subscribe(ISystemModelSubscriber subscriber) throws RemoteException {
         Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
-            activeObject = UnicastRemoteObject.exportObject(subscriber, 0);
+            activeObject = ObjectActivationCache.instance().activate(subscriber, 0);
             subscriber2remote.put(subscriber, activeObject);
         }
         delegate.subscribe((ISystemModelSubscriber) activeObject);
@@ -61,7 +61,7 @@ public class SystemModelProvisionServiceProxy implements ISystemModelProvisionSe
             delegate.unsubscribe((ISystemModelSubscriber) activeObject);
         } finally {
             try {
-                UnicastRemoteObject.unexportObject(subscriber, true);
+                ObjectActivationCache.instance().deactivate(subscriber, true);
             } catch (NoSuchObjectException e) {
                 // Ignore
             }
@@ -127,7 +127,7 @@ public class SystemModelProvisionServiceProxy implements ISystemModelProvisionSe
                 e.printStackTrace();
             } finally {
                 try {
-                    UnicastRemoteObject.unexportObject(entry.getKey(), true);
+                    ObjectActivationCache.instance().deactivate(entry.getKey(), true);
                 } catch (NoSuchObjectException e) {
                     // Ignore
                 }

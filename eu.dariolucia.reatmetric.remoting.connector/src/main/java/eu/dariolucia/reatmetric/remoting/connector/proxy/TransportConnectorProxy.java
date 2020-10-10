@@ -126,7 +126,7 @@ public class TransportConnectorProxy implements ITransportConnector {
         }
         Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
-            activeObject = UnicastRemoteObject.exportObject(subscriber, 0);
+            activeObject = ObjectActivationCache.instance().activate(subscriber, 0);
             subscriber2remote.put(subscriber, activeObject);
         }
         delegate.register((ITransportSubscriber) activeObject);
@@ -145,7 +145,7 @@ public class TransportConnectorProxy implements ITransportConnector {
             delegate.deregister((ITransportSubscriber) activeObject);
         } finally {
             try {
-                UnicastRemoteObject.unexportObject(subscriber, true);
+                ObjectActivationCache.instance().deactivate(subscriber, true);
             } catch (NoSuchObjectException e) {
                 e.printStackTrace();
             }
@@ -161,7 +161,7 @@ public class TransportConnectorProxy implements ITransportConnector {
                 e.printStackTrace();
             }
             try {
-                UnicastRemoteObject.unexportObject(entry.getKey(), true);
+                ObjectActivationCache.instance().deactivate(entry.getKey(), true);
             } catch (NoSuchObjectException e) {
                 // Ignore
             }
