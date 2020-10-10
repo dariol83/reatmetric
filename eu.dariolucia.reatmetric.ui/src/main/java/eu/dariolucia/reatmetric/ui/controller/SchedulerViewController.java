@@ -33,7 +33,6 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.gantt.GanttChart;
 import eu.dariolucia.reatmetric.ui.udd.InstantAxis;
 import eu.dariolucia.reatmetric.ui.utils.*;
-import javafx.application.Platform;
 import javafx.beans.Observable;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
@@ -73,7 +72,6 @@ import java.util.stream.Collectors;
 /**
  * FXML Controller class
  *
- * // TODO: implement support for history retrieval: Gantt follows the entries in the table.
  * @author dario
  */
 public class SchedulerViewController extends AbstractDisplayController implements IScheduledActivityDataSubscriber {

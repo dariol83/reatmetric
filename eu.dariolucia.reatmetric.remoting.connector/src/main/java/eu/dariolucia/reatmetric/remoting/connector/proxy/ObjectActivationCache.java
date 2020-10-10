@@ -25,13 +25,16 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This activation cache is to keep track of RMI object activation, to avoid multiple activation exceptions.
  */
 public final class ObjectActivationCache {
+
+    private static final Logger LOG = Logger.getLogger(ObjectActivationCache.class.getName());
 
     private static final ObjectActivationCache INSTANCE = new ObjectActivationCache();
 
@@ -56,7 +59,7 @@ public final class ObjectActivationCache {
         Pair<Remote, AtomicInteger> item = cache.get(o);
         if(item == null) {
             // Weird: log warning and return
-            // TODO
+            LOG.log(Level.WARNING, "Unexpected deactivation of object " + o + ", ignored");
             return;
         }
         // First activation
@@ -66,5 +69,4 @@ public final class ObjectActivationCache {
             cache.remove(o);
         }
     }
-
 }

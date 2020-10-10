@@ -108,7 +108,7 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
                     this.tcPacketConnectors.put(route, m);
                 }
             } catch (RemoteException e) {
-                e.printStackTrace(); // TODO: never thrown here
+                LOG.log(Level.WARNING, "Unexpected RemoteException: " + e.getMessage(), e);
             }
         }
     }
@@ -226,7 +226,7 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
                 try {
                     externalConnector.sendTcPacket(sp, tcTracker);
                 } catch (RemoteException e) {
-                    e.printStackTrace(); // TODO never thrown here
+                    LOG.log(Level.WARNING, "Unexpected RemoteException: " + e.getMessage(), e);
                 }
             } else {
                 // Fall back to the TC Data Link processor

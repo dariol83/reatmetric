@@ -138,7 +138,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 }
                 m.register(this);
             } catch (RemoteException e) {
-                e.printStackTrace(); // TODO never thrown here
+                LOG.log(Level.WARNING, "Unexpected RemoteException: " + e.getMessage(), e);
             }
         }
 
@@ -151,7 +151,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 }
                 m.register(this);
             } catch (RemoteException e) {
-                e.printStackTrace(); // TODO never thrown here
+                LOG.log(Level.WARNING, "Unexpected RemoteException: " + e.getMessage(), e);
             }
         }
     }
@@ -312,7 +312,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             try {
                 connectorInstance.sendCltu(encodedCltu, frameInTransmissionId);
             } catch (RemoteException e) {
-                e.printStackTrace(); // TODO: never thrown here
+                LOG.log(Level.WARNING, "Unexpected RemoteException: " + e.getMessage(), e);
             }
             return true;
         } else {
@@ -321,7 +321,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 try {
                     frameConnector.sendTcFrame(tcTransferFrame, frameInTransmissionId);
                 } catch (RemoteException e) {
-                    e.printStackTrace(); // TODO: never thrown here
+                    LOG.log(Level.WARNING, "Unexpected RemoteException: " + e.getMessage(), e);
                 }
                 return true;
             }
@@ -335,7 +335,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             try {
                 m.deregister(this);
             } catch (RemoteException e) {
-                e.printStackTrace(); // TODO Never thrown here
+                LOG.log(Level.WARNING, "Unexpected RemoteException: " + e.getMessage(), e);
             }
         }
         for (Pair<TcVcConfiguration, TcSenderVirtualChannel> tcChannel : tcChannels) {
