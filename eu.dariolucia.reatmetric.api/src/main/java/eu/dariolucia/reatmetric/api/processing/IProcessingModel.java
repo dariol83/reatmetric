@@ -62,6 +62,8 @@ public interface IProcessingModel extends IDebugInfoProvider {
 
     void disable(SystemEntityPath path) throws ProcessingModelException;
 
+    void ignore(SystemEntityPath path) throws ProcessingModelException;
+
     SystemEntity getRoot() throws ProcessingModelException;
 
     List<SystemEntity> getContainedEntities(SystemEntityPath path) throws ProcessingModelException;

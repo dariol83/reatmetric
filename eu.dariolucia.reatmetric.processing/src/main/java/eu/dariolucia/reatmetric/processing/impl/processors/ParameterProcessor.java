@@ -176,7 +176,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         // The placeholder for the AlarmParameterData to be created, if needed
         AlarmParameterData alarmData = null;
         // If the object is enabled, then you have to process it as usual
-        if(entityStatus == Status.ENABLED) {
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             // Prepare the values
             AlarmState alarmState = AlarmState.UNKNOWN;
             Object engValue = null;
@@ -299,6 +299,14 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 }
             }
         } else {
+            // Set validity to DISABLED
+            this.builder.setValidity(Validity.DISABLED);
+            // Replace the state
+            if(this.builder.isChangedSinceLastBuild()) {
+                this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
+                generatedStates.add(this.state);
+                stateChanged = true;
+            }
             // Completely ignore the processing
             if(LOG.isLoggable(Level.FINE)) {
                 LOG.log(Level.FINE, "Parameter sample not computed for parameter " + path() + ": parameter processing is disabled");
@@ -404,6 +412,10 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     private AlarmState check(Object rawValue, Object engValue, Instant generationTime, boolean reevaluation) {
+        // If the status is IGNORED, then no checks are performed
+        if(getEntityStatus() == Status.IGNORED) {
+            return AlarmState.IGNORED;
+        }
         // If there are no checks, then value is NOT_CHECKED
         if(definition.getChecks().isEmpty()) {
             return AlarmState.NOT_CHECKED;

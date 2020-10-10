@@ -360,7 +360,7 @@ public class ActivitySchedulingDialogController implements Initializable {
         } else if(relativeTimeRadio.isSelected()) {
             return new RelativeTimeSchedulingTrigger(getRelativeTriggerExternalIds(), getRelativeTime());
         } else if(eventDrivenRadio.isSelected()) {
-            return new EventBasedSchedulingTrigger(SystemEntityPath.fromString(eventPathText.getText()), getProtectionTime());
+            return new EventBasedSchedulingTrigger(SystemEntityPath.fromString(eventPathText.getText()), getProtectionTime(), true); // TODO: introduce checkbox for enabled state
         } else {
             throw new IllegalStateException("None of the supported triggers can be derived");
         }

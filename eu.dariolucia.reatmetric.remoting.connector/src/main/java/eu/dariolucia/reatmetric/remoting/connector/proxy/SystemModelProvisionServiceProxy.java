@@ -109,6 +109,11 @@ public class SystemModelProvisionServiceProxy implements ISystemModelProvisionSe
     }
 
     @Override
+    public void ignore(SystemEntityPath path) throws ReatmetricException, RemoteException {
+        delegate.ignore(path);
+    }
+
+    @Override
     public AbstractSystemEntityDescriptor getDescriptorOf(int id) throws ReatmetricException, RemoteException {
         return delegate.getDescriptorOf(id);
     }

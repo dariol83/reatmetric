@@ -92,24 +92,37 @@
                                 </graphic>
                             </MenuItem>
                             <SeparatorMenuItem fx:id="expandCollapseSeparator" />
-                            <MenuItem mnemonicParsing="false" onAction="#enableItemAction" text="Enable" >
-                                <graphic>
-                                    <ImageView pickOnBounds="true" preserveRatio="true">
-                                        <image>
-                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/star.svg.png" />
-                                        </image>
-                                    </ImageView>
-                                </graphic>
-                            </MenuItem>
-                            <MenuItem mnemonicParsing="false" onAction="#disableItemAction" text="Disable" >
-                                <graphic>
-                                    <ImageView pickOnBounds="true" preserveRatio="true">
-                                        <image>
-                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/star-f.svg.png" />
-                                        </image>
-                                    </ImageView>
-                                </graphic>
-                            </MenuItem>
+                            <Menu mnemonicParsing="false" text="Status">
+                                <items>
+                                    <MenuItem mnemonicParsing="false" onAction="#enableItemAction" text="Enable" >
+                                        <graphic>
+                                            <ImageView pickOnBounds="true" preserveRatio="true">
+                                                <image>
+                                                    <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/star.svg.png" />
+                                                </image>
+                                            </ImageView>
+                                        </graphic>
+                                    </MenuItem>
+                                    <MenuItem mnemonicParsing="false" onAction="#disableItemAction" text="Disable" >
+                                        <graphic>
+                                            <ImageView pickOnBounds="true" preserveRatio="true">
+                                                <image>
+                                                    <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/star-f.svg.png" />
+                                                </image>
+                                            </ImageView>
+                                        </graphic>
+                                    </MenuItem>
+                                    <MenuItem mnemonicParsing="false" onAction="#ignoreItemAction" text="Ignore" >
+                                        <graphic>
+                                            <ImageView pickOnBounds="true" preserveRatio="true">
+                                                <image>
+                                                    <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/bell-off.svg.png" />
+                                                </image>
+                                            </ImageView>
+                                        </graphic>
+                                    </MenuItem>
+                                </items>
+                            </Menu>
                             <SeparatorMenuItem fx:id="ackSeparator" />
                             <MenuItem fx:id="ackMenuItem" mnemonicParsing="false" onAction="#ackAction" text="Acknowledge alarms" >
                                 <graphic>

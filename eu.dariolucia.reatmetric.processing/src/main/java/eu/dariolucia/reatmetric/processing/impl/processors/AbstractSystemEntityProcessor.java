@@ -101,6 +101,15 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
         }
     }
 
+    public List<AbstractDataItem> ignore() throws ProcessingModelException {
+        if(this.entityStatus != Status.IGNORED) {
+            this.entityStatus = Status.IGNORED;
+            return evaluate();
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
     public abstract List<AbstractDataItem> process(K input) throws ProcessingModelException;
 
     public abstract List<AbstractDataItem> evaluate() throws ProcessingModelException;

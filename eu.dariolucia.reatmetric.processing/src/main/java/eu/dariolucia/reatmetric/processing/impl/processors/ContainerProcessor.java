@@ -20,15 +20,16 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.model.Status;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.input.VoidInputDataItem;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
 import eu.dariolucia.reatmetric.processing.impl.operations.EnableDisableOperation;
-import eu.dariolucia.reatmetric.api.processing.input.VoidInputDataItem;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -101,27 +102,35 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
     @Override
     public List<AbstractDataItem> enable() throws ProcessingModelException {
         // Propagate
-        propagateEnablement(true);
+        propagateEnablement(Status.ENABLED);
         // Process now
         return super.enable();
     }
 
-    private void propagateEnablement(boolean enable) {
+    @Override
+    public List<AbstractDataItem> disable() throws ProcessingModelException {
+        // Propagate
+        propagateEnablement(Status.DISABLED);
+        // Process now
+        return super.disable();
+    }
+
+    private void propagateEnablement(Status toBeApplied) {
         // One layer only
         List<AbstractModelOperation<?>> ops = new ArrayList<>(childProcessors.size());
         for(AbstractSystemEntityProcessor proc : childProcessors) {
-            ops.add(new EnableDisableOperation(proc.getSystemEntityId(), enable));
+            ops.add(new EnableDisableOperation(proc.getSystemEntityId(), toBeApplied));
         }
         // Schedule operation
         processor.scheduleTask(ops, ProcessingModelImpl.USER_DISPATCHING_QUEUE);
     }
 
     @Override
-    public List<AbstractDataItem> disable() throws ProcessingModelException {
+    public List<AbstractDataItem> ignore() throws ProcessingModelException {
         // Propagate
-        propagateEnablement(false);
+        propagateEnablement(Status.IGNORED);
         // Process now
-        return super.disable();
+        return super.ignore();
     }
 
     public List<SystemEntity> getContainedEntities() {

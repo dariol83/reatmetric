@@ -51,6 +51,8 @@ public interface ISystemModelProvisionService extends Remote {
 
     void disable(SystemEntityPath path) throws ReatmetricException, RemoteException;
 
+    void ignore(SystemEntityPath path) throws ReatmetricException, RemoteException;
+
     AbstractSystemEntityDescriptor getDescriptorOf(int id) throws ReatmetricException, RemoteException;
 
     AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ReatmetricException, RemoteException;

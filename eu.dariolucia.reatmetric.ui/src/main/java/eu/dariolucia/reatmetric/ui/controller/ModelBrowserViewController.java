@@ -185,7 +185,8 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     @FXML
     private void enableItemAction(ActionEvent event) {
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
-        if (se != null && se.getValue().getStatus() != Status.ENABLED) {
+        // If not target status or container, run the action
+        if (se != null && se.getValue().getStatus() != Status.ENABLED || se.getValue().getType() == SystemEntityType.CONTAINER) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().enable(se.getValue().getPath());
@@ -199,10 +200,26 @@ public class ModelBrowserViewController extends AbstractDisplayController {
     @FXML
     private void disableItemAction(ActionEvent event) {
         TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
-        if (se != null && se.getValue().getStatus() != Status.DISABLED) {
+        // If not target status or container, run the action
+        if (se != null && se.getValue().getStatus() != Status.DISABLED || se.getValue().getType() == SystemEntityType.CONTAINER) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
                     ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().disable(se.getValue().getPath());
+                } catch (ReatmetricException | RemoteException e) {
+                    LOG.log(Level.SEVERE, "Problem while disabling system entity " + se.getValue().getPath() + ": " + e.getMessage(), e);
+                }
+            });
+        }
+    }
+
+    @FXML
+    private void ignoreItemAction(ActionEvent event) {
+        TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
+        // If not target status or container, run the action
+        if (se != null && (se.getValue().getStatus() != Status.IGNORED || se.getValue().getType() == SystemEntityType.CONTAINER)) {
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                try {
+                    ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().ignore(se.getValue().getPath());
                 } catch (ReatmetricException | RemoteException e) {
                     LOG.log(Level.SEVERE, "Problem while disabling system entity " + se.getValue().getPath() + ": " + e.getMessage(), e);
                 }
@@ -358,6 +375,9 @@ public class ModelBrowserViewController extends AbstractDisplayController {
                             break;
                         case DISABLED:
                             setTextFill(Color.DARKGRAY);
+                            break;
+                        case IGNORED:
+                            setTextFill(Color.DARKCYAN);
                             break;
                         case UNKNOWN:
                             setTextFill(Color.DARKORANGE);

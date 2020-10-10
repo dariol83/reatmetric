@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.processing.impl;
 
 import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.*;
+import eu.dariolucia.reatmetric.api.model.Status;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.*;
@@ -485,7 +486,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         if(LOG.isLoggable(Level.INFO)) {
             LOG.info("Enabling system entity " + path);
         }
-        doEnable(path, true);
+        doEnable(path, Status.ENABLED);
     }
 
     @Override
@@ -493,14 +494,22 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         if(LOG.isLoggable(Level.INFO)) {
             LOG.info("Disabling system entity " + path);
         }
-        doEnable(path, false);
+        doEnable(path, Status.DISABLED);
     }
 
-    private void doEnable(SystemEntityPath path, boolean b) throws ProcessingModelException {
+    @Override
+    public void ignore(SystemEntityPath path) throws ProcessingModelException {
+        if(LOG.isLoggable(Level.INFO)) {
+            LOG.info("Ignoring system entity " + path);
+        }
+        doEnable(path, Status.IGNORED);
+    }
+
+    private void doEnable(SystemEntityPath path, Status toBeApplied) throws ProcessingModelException {
         // Map the path to the entity ID
         int id = getExternalIdOf(path);
         // Build the list of operations to be performed
-        List<AbstractModelOperation<?>> operations = Collections.singletonList(new EnableDisableOperation(id, b));
+        List<AbstractModelOperation<?>> operations = Collections.singletonList(new EnableDisableOperation(id, toBeApplied));
         // Schedule task
         scheduleTask(operations, USER_DISPATCHING_QUEUE);
     }

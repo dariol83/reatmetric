@@ -253,6 +253,11 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
     }
 
     @Override
+    public void ignore(SystemEntityPath path) throws ReatmetricException {
+        processingModel.ignore(path);
+    }
+
+    @Override
     public AbstractSystemEntityDescriptor getDescriptorOf(int id) throws ReatmetricException {
         return processingModel.getDescriptorOf(id);
     }

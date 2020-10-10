@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.impl.operations;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.model.Status;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 
@@ -28,10 +29,10 @@ public class EnableDisableOperation extends AbstractModelOperation<AbstractSyste
     private final Instant creationTime = Instant.now();
 
     private final int id;
-    private final boolean enable;
+    private final Status status;
 
-    public EnableDisableOperation(int id, boolean enable) {
-        this.enable = enable;
+    public EnableDisableOperation(int id, Status status) {
+        this.status = status;
         this.id = id;
     }
 
@@ -42,7 +43,12 @@ public class EnableDisableOperation extends AbstractModelOperation<AbstractSyste
 
     @Override
     protected List<AbstractDataItem> doProcess() throws ProcessingModelException {
-        return enable ? getProcessor().enable() : getProcessor().disable();
+        switch(status) {
+            case ENABLED: return getProcessor().enable();
+            case DISABLED: return getProcessor().disable();
+            case IGNORED: return getProcessor().ignore();
+            default: throw new ProcessingModelException("Status to be applied not supported (" + status + ")");
+        }
     }
 
     @Override
@@ -52,6 +58,6 @@ public class EnableDisableOperation extends AbstractModelOperation<AbstractSyste
 
     @Override
     public String toString() {
-        return (enable ? "'Enable " : "'Disable ") + id + "'";
+        return status + " " + id + "'";
     }
 }

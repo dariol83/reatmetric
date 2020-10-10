@@ -104,7 +104,7 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
         String qualifier = null;
         List<AbstractDataItem> generatedStates = new ArrayList<>(2);
         // If the object is enabled, then you have to process it as usual
-        if(entityStatus == Status.ENABLED) {
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             // Prepare the time values
             Instant generationTime = this.state == null ? Instant.now() : this.state.getGenerationTime();
             generationTime = newValue != null ? newValue.getGenerationTime() : generationTime;
@@ -168,8 +168,8 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                     // Replace the state
                     this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
                     generatedStates.add(this.state);
-                    // Log the event if log is not suppressed
-                    if(definition.isLogEnabled()) {
+                    // Log the event if log is not suppressed and you are not ignoring this event
+                    if(definition.isLogEnabled() && getEntityStatus() != Status.IGNORED) {
                         String logSource = this.state.getSource();
                         if(logSource == null) {
                             logSource = getPath().asString();

@@ -111,6 +111,7 @@ public class AlarmParameterDataViewController
 						case UNKNOWN:
 						case NOT_APPLICABLE:
 						case NOT_CHECKED:
+						case IGNORED:
 							setTextFill(Color.GRAY);
 							break;
 						default:

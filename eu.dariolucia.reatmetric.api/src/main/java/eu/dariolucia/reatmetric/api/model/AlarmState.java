@@ -28,6 +28,7 @@ public enum AlarmState {
     ERROR(true, "Error"),
     NOMINAL(false, "Nominal"),
     NOT_CHECKED(false, "Unchecked"),
+    IGNORED(false, "Ignored"),
     NOT_APPLICABLE(false, "N/A"),
     UNKNOWN(false, "Unknown");
 

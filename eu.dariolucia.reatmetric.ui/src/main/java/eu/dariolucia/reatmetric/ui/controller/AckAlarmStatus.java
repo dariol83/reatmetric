@@ -49,6 +49,7 @@ public enum AckAlarmStatus {
             case NOT_CHECKED:
             case UNKNOWN:
             case VIOLATED:
+            case IGNORED:
                 return pendingAcknowledgement ? NOMINAL_NOT_ACKED : NOMINAL;
             default:
                 throw new IllegalArgumentException("Alarm state " + alarmState + " not supported");

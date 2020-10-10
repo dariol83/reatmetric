@@ -18,12 +18,28 @@
 package eu.dariolucia.reatmetric.api.model;
 
 /**
- *
- * @author dario
+ * Status of a system entity.
  */
 public enum Status {
+    /**
+     * The system entity is enabled and perform a full processing of the incoming data
+     */
     ENABLED,
+    /**
+     * The system entity is disabled and does not perform any processing
+     */
     DISABLED,
+    /**
+     * The system entity is in an ignored state: parameters will not perform checks, events will not log alarm messages.
+     * All the rest will work as usual.
+     */
+    IGNORED,
+    /**
+     * The status of the system entity is not known.
+     */
     UNKNOWN,
+    /**
+     * The system entity does not have a status.
+     */
     NOT_APPLICABLE
 }

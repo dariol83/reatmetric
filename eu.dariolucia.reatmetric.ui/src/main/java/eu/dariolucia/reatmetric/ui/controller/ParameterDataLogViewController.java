@@ -87,6 +87,9 @@ public class ParameterDataLogViewController extends AbstractDataItemLogViewContr
 				if (item != null && !empty && !isEmpty()) {
 					setText(item.name());
 					switch (item) {
+						case DISABLED:
+							setTextFill(Color.GRAY);
+							break;
 						case INVALID:
 							setTextFill(Color.RED);
 							break;
@@ -128,6 +131,7 @@ public class ParameterDataLogViewController extends AbstractDataItemLogViewContr
 						case UNKNOWN:
 						case NOT_APPLICABLE:
 						case NOT_CHECKED:
+						case IGNORED:
 							setTextFill(Color.GRAY);
 							break;
 						default:

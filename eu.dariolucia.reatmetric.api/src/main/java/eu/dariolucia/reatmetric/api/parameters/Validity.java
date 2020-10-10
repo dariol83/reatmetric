@@ -24,6 +24,7 @@ package eu.dariolucia.reatmetric.api.parameters;
 public enum Validity {
     VALID("Valid"),
     INVALID("Invalid"),
+    DISABLED("Disabled"),
     UNKNOWN("Unknown"),
     ERROR("Error");
 
