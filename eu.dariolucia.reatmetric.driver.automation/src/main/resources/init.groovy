@@ -18,50 +18,52 @@ def event(eventPath) {
     return _scriptManager.event(eventPath)
 }
 
-def inject(paramPath, value) {
-    return _scriptManager.set(paramPath, value, false)
+def inject_parameter(paramPath, value) {
+    return _scriptManager.inject_parameter(paramPath, value, false)
 }
 
-def raise(eventPath) {
-    return _scriptManager.raise(eventPath, null, null)
+def raise_event(eventPath) {
+    return _scriptManager.raise_event(eventPath, null, null)
 }
 
-def raise(eventPath, qualifier) {
-    return _scriptManager.raise(eventPath, qualifier, null)
+def raise_event(eventPath, qualifier) {
+    return _scriptManager.raise_event(eventPath, qualifier, null)
 }
 
-def raise(eventPath, qualifier, report) {
-    return _scriptManager.raise(eventPath, qualifier, report)
+def raise_event(eventPath, qualifier, report) {
+    return _scriptManager.raise_event(eventPath, qualifier, report)
 }
 
-def prepareActivity(activityPath) {
-    return _scriptManager.prepareActivity(activityPath)
+def prepare_activity(activityPath) {
+    return _scriptManager.prepare_activity(activityPath)
 }
 
 // -------
 
-def connectorStatus(connectorName) {
-    return _scriptManager.connectorStatus(connectorName)
+def connector_status(connectorName) {
+    return _scriptManager.connector_status(connectorName)
 }
 
-def startConnector(connectorName) {
-    return _scriptManager.startConnector(connectorName)
+def start_connector(connectorName) {
+    return _scriptManager.start_connector(connectorName)
 }
 
-def stopConnector(connectorName) {
-    return _scriptManager.stopConnector(connectorName)
+def stop_connector(connectorName) {
+    return _scriptManager.stop_connector(connectorName)
 }
 
-def abortConnector(connectorName) {
-    return _scriptManager.abortConnector(connectorName)
+def abort_connector(connectorName) {
+    return _scriptManager.abort_connector(connectorName)
 }
 
-def initConnector(connectorName, keys, values) {
-    return _scriptManager.initConnector(connectorName, keys, values)
+def init_connector(connectorName, keys, values) {
+    return _scriptManager.init_connector(connectorName, keys, values)
 }
 
-def systemEntity(path) {
-    return _scriptManager.systemEntity(path)
+// -------
+
+def system_entity(path) {
+    return _scriptManager.system_entity(path)
 }
 
 def enable(path) {
@@ -70,4 +72,8 @@ def enable(path) {
 
 def disable(path) {
     return _scriptManager.disable(path)
+}
+
+def ignore(path) {
+    return _scriptManager.ignore(path)
 }

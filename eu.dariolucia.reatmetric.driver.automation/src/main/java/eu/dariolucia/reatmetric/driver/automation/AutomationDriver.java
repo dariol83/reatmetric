@@ -97,7 +97,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
             this.subscriber = subscriber;
 
             this.configuration = AutomationConfiguration.load(new FileInputStream(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE));
-            this.executor = Executors.newFixedThreadPool(configuration.getMaxParallelScripts(), (t) -> {
+            this.executor = Executors.newFixedThreadPool(configuration.getMaxParallelScripts(), (t) -> { // TODO: make it cached, with a max amount of threads
                 Thread toReturn = new Thread(t, "AutomationDriver Activity Handler Thread");
                 toReturn.setDaemon(true);
                 return toReturn;

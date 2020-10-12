@@ -13,41 +13,44 @@ def parameter(parampath):
 def event(eventpath):
     return _scriptManager.event(eventpath)
 
-def inject(parampath, value):
-    return _scriptManager.set(parampath, value, False)
+def inject_parameter(parampath, value):
+    return _scriptManager.inject_parameter(parampath, value, False)
 
 def raise_event(eventpath):
-    return _scriptManager.raiseEvent(eventpath, None, None)
+    return _scriptManager.raise_event(eventpath, None, None)
 
 def raise_event(eventpath, qualifier):
-    return _scriptManager.raiseEvent(eventpath, qualifier, None)
+    return _scriptManager.raise_event(eventpath, qualifier, None)
 
 def raise_event(eventpath, qualifier, report):
-    return _scriptManager.raiseEvent(eventpath, qualifier, report)
+    return _scriptManager.raise_event(eventpath, qualifier, report)
 
 def prepare_activity(activitypath):
-    return _scriptManager.prepareActivity(activitypath)
+    return _scriptManager.prepare_activity(activitypath)
 
 def connector_status(connectorname):
-    return _scriptManager.connectorStatus(connectorname)
+    return _scriptManager.connector_status(connectorname)
 
 def start_connector(connectorname):
-    return _scriptManager.startConnector(connectorname)
+    return _scriptManager.start_connector(connectorname)
 
 def stop_connector(connectorname):
-    return _scriptManager.stopConnector(connectorname)
+    return _scriptManager.stop_connector(connectorname)
 
 def abort_connector(connectorname):
-    return _scriptManager.abortConnector(connectorname)
+    return _scriptManager.abort_connector(connectorname)
 
 def init_connector(connectorname, keys, values):
-    return _scriptManager.initConnector(connectorname, keys, values)
+    return _scriptManager.init_connector(connectorname, keys, values)
 
 def system_entity(path):
-    return _scriptManager.systemEntity(path)
+    return _scriptManager.system_entity(path)
 
 def enable(path):
     return _scriptManager.enable(path)
 
 def disable(path):
     return _scriptManager.disable(path)
+
+def ignore(path):
+    return _scriptManager.ignore(path)

@@ -16,6 +16,8 @@ map to the specific script file inside the script directory.
 ### API functions
 The automation engine provides to scripts the following API functions.
 
+#### Log messages
+
 `info(String message):void;`
 
 `warning(String message):void;`
@@ -23,6 +25,8 @@ The automation engine provides to scripts the following API functions.
 `alarm(String message):void;`
 
 Raise a message with the specified severity as operational message.
+
+#### State fetching
 
 `parameter(String paramPath):ParameterData;`
 
@@ -32,47 +36,45 @@ Return the current state (as ParameterData) of the specified parameter. Can retu
 
 Return the current state (as EventData) of the specified event. Can return null if no such event can be located in the processing model.
 
-`set(String paramPath, Object value):boolean;`
+#### Parameter injection
+
+`inject_parameter(String paramPath, Object value):boolean;`
 
 Inject the source value of the specified parameter. Return true if the function call to the processing model went OK, false in case of injection exception.
 
-Javascript/Groovy: `raise(String eventPath):boolean;` 
+#### Event injection
 
-Python: `raise_event(String eventPath):boolean;`
+`raise_event(String eventPath):boolean;`
 
 Raise the specified event. Return true if the function call to the processing model went OK, false in case of injection exception.
 
-Javascript/Groovy: `raise(String eventPath, String qualifier):boolean;`  
-
-Python: `raise_event(String eventPath, String qualifier):boolean;`
+`raise_event(String eventPath, String qualifier):boolean;`
 
 Raise the specified event with the attached qualifier. Return true if the function call to the processing model went OK, false in case of injection exception.
 
-Javascript/Groovy: `raise(String eventPath, String qualifier, Object report):boolean;` 
-
-Python: `raise_event(String eventPath, String qualifier, Object report):boolean;`
+`raise_event(String eventPath, String qualifier, Object report):boolean;`
 
 Raise the specified event with the attached qualifier and report. Return true if the function call to the processing model went OK, false in case of injection exception.
 
-Javascript/Groovy: `prepareActivity(String activityPath):ActivityInvocationBuilder;` 
+#### Activity execution and monitoring
 
-Python: `prepare_activity(String activityPath):ActivityInvocationBuilder;`
+`prepare_activity(String activityPath):ActivityInvocationBuilder;`
 
 Prepare the invocation of an activity. Return an object that can be used to customise the activity execution and invoke it subsequently. Can return null if no such activity can be located in the processing model..
 
-`ActivityInvocationBuilder::withRoute(String route):ActivityInvocationBuilder;`
+`ActivityInvocationBuilder::with_route(String route):ActivityInvocationBuilder;`
 
 Set the activity invocation route. Return the builder object.
 
-`ActivityInvocationBuilder::withProperty(String k, String v):ActivityInvocationBuilder;`
+`ActivityInvocationBuilder::with_property(String k, String v):ActivityInvocationBuilder;`
 
 Set a property. Return the builder object.
 
-`ActivityInvocationBuilder::withArgument(String name, Object value, boolean engineering):ActivityInvocationBuilder`;
+`ActivityInvocationBuilder::with_argument(String name, Object value, boolean engineering):ActivityInvocationBuilder`;
 
 Set a plain argument. Return the builder object.
 
-`ActivityInvocationBuilder::withArgument(AbstractActivityArgument arg):ActivityInvocationBuilder;`
+`ActivityInvocationBuilder::with_argument(AbstractActivityArgument arg):ActivityInvocationBuilder;`
 
 Set an argument (plain or array). Return the builder object.
             
@@ -80,31 +82,31 @@ Set an argument (plain or array). Return the builder object.
 
 Execute the activity. Return an ActivityInvocationResult object that can be used to asynchronously monitor the status of the activity.
 
-`ActivityInvocationBuilder::executeAndWait():boolean;`
+`ActivityInvocationBuilder::execute_and_wait():boolean;`
 
 Execute the activity and wait for its completion. Return true if the activity execution completed with success, otherwise false.        
 
-`ActivityInvocationBuilder::executeAndWait(int timeoutSeconds):boolean;`
+`ActivityInvocationBuilder::execute_and_wait(int timeoutSeconds):boolean;`
 
 Execute the activity and wait for its completion in the specified time in seconds. Return true if the activity execution completed with success, otherwise (also in case of timeout) false.
 
-`ActivityInvocationResult::waitForCompletion():boolean;`
+`ActivityInvocationResult::wait_for_completion():boolean;`
 
 Wait for the activity to complete. Return true if the activity execution completed with success, otherwise false.
 
-`ActivityInvocationResult::waitForCompletion(int timeoutSeconds):boolean;`
+`ActivityInvocationResult::wait_for_completion(int timeoutSeconds):boolean;`
 
 Wait for the activity to complete in the specified time in seconds. Return true if the activity execution completed with success, otherwise (also in case of timeout) false.
 
-`ActivityInvocationResult::isInvocationFailed():boolean;`
+`ActivityInvocationResult::is_invocation_failed():boolean;`
 
 Return true if the activity invocation failed, otherwise false.
 
-`ActivityInvocationResult::isCompleted():boolean;`
+`ActivityInvocationResult::is_completed():boolean;`
 
 Return true if the activity execution completed, otherwise false.
 
-`ActivityInvocationResult::currentStatus():ActivityReportState;`
+`ActivityInvocationResult::current_status():ActivityReportState;`
 
 Return the current status (as ActivityReportState) of the activity execution.
 

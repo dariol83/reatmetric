@@ -18,50 +18,50 @@ function event(eventPath) {
     return _scriptManager.event(eventPath);
 }
 
-function inject(paramPath, value) {
-    return _scriptManager.set(paramPath, value, false);
+function inject_parameter(paramPath, value) {
+    return _scriptManager.inject_parameter(paramPath, value, false);
 }
 
-function raise(eventPath) {
-    return _scriptManager.raise(eventPath, null, null);
+function raise_event(eventPath) {
+    return _scriptManager.raise_event(eventPath, null, null);
 }
 
-function raise(eventPath, qualifier) {
-    return _scriptManager.raise(eventPath, qualifier, null);
+function raise_event(eventPath, qualifier) {
+    return _scriptManager.raise_event(eventPath, qualifier, null);
 }
 
-function raise(eventPath, qualifier, report) {
-    return _scriptManager.raise(eventPath, qualifier, report);
+function raise_event(eventPath, qualifier, report) {
+    return _scriptManager.raise_event(eventPath, qualifier, report);
 }
 
-function prepareActivity(activityPath) {
-    return _scriptManager.prepareActivity(activityPath);
+function prepare_activity(activityPath) {
+    return _scriptManager.prepare_activity(activityPath);
 }
 
 // -------
 
-function connectorStatus(connectorName) {
-    return _scriptManager.connectorStatus(connectorName);
+function connector_status(connectorName) {
+    return _scriptManager.connector_status(connectorName);
 }
 
-function startConnector(connectorName) {
-    return _scriptManager.startConnector(connectorName);
+function start_connector(connectorName) {
+    return _scriptManager.start_connector(connectorName);
 }
 
-function stopConnector(connectorName) {
-    return _scriptManager.stopConnector(connectorName);
+function stop_connector(connectorName) {
+    return _scriptManager.stop_connector(connectorName);
 }
 
-function abortConnector(connectorName) {
-    return _scriptManager.abortConnector(connectorName);
+function abort_connector(connectorName) {
+    return _scriptManager.abort_connector(connectorName);
 }
 
-function initConnector(connectorName, keys, values) {
-    return _scriptManager.initConnector(connectorName, keys, values);
+function init_connector(connectorName, keys, values) {
+    return _scriptManager.init_connector(connectorName, keys, values);
 }
 
-function systemEntity(path) {
-    return _scriptManager.systemEntity(path);
+function system_entity(path) {
+    return _scriptManager.system_entity(path);
 }
 
 function enable(path) {
@@ -70,4 +70,8 @@ function enable(path) {
 
 function disable(path) {
     return _scriptManager.disable(path);
+}
+
+function ignore(path) {
+    return _scriptManager.ignore(path);
 }

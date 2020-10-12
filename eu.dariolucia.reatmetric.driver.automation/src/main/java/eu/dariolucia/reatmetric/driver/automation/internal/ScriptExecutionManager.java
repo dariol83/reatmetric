@@ -5,19 +5,21 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *          http://www.apache.org/licenses/LICENSE-2.0
+ *           http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package eu.dariolucia.reatmetric.driver.automation.internal;
 
 import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
@@ -30,11 +32,14 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.api.processing.input.*;
+import eu.dariolucia.reatmetric.api.scheduler.*;
+import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 
 import java.rmi.RemoteException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Level;
@@ -100,7 +105,7 @@ public class ScriptExecutionManager {
         }
     }
 
-    public SystemEntity systemEntity(String path) {
+    public SystemEntity system_entity(String path) {
         checkAborted();
         try {
             return context.getServiceFactory().getSystemModelMonitorService().getSystemEntityAt(SystemEntityPath.fromString(path));
@@ -109,6 +114,8 @@ public class ScriptExecutionManager {
             return null;
         }
     }
+
+    // TODO: introduce wait_for_event(String path, int timeoutSeconds)
 
     public void enable(String path) {
         checkAborted();
@@ -128,8 +135,16 @@ public class ScriptExecutionManager {
         }
     }
 
+    public void ignore(String path) {
+        checkAborted();
+        try {
+            context.getServiceFactory().getSystemModelMonitorService().ignore(SystemEntityPath.fromString(path));
+        } catch (ReatmetricException | RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot ignore system entity " + path + " from automation " + fileName + ": " + e.getMessage(), e);
+        }
+    }
 
-    public boolean set(String paramPath, Object value) {
+    public boolean inject_parameter(String paramPath, Object value) {
         checkAborted();
         Instant now = Instant.now();
         try {
@@ -143,11 +158,7 @@ public class ScriptExecutionManager {
         }
     }
 
-    public boolean raiseEvent(String eventPath, String qualifier, Object report) {
-        return raise(eventPath, qualifier, report);
-    }
-
-    public boolean raise(String eventPath, String qualifier, Object report) {
+    public boolean raise_event(String eventPath, String qualifier, Object report) {
         checkAborted();
         Instant now = Instant.now();
         try {
@@ -161,7 +172,7 @@ public class ScriptExecutionManager {
         }
     }
 
-    public ActivityInvocationBuilder prepareActivity(String activityPath) {
+    public ActivityInvocationBuilder prepare_activity(String activityPath) {
         checkAborted();
         try {
             return new ActivityInvocationBuilder(activityPath);
@@ -171,7 +182,7 @@ public class ScriptExecutionManager {
         }
     }
 
-    public TransportConnectionStatus connectorStatus(String connectorName) {
+    public TransportConnectionStatus connector_status(String connectorName) {
         checkAborted();
         try {
             return context.getServiceFactory().getTransportConnectors().stream()
@@ -200,7 +211,7 @@ public class ScriptExecutionManager {
         }
     }
 
-    public boolean startConnector(String connectorName) {
+    public boolean start_connector(String connectorName) {
         checkAborted();
         try {
             for(ITransportConnector c : context.getServiceFactory().getTransportConnectors()) {
@@ -216,7 +227,7 @@ public class ScriptExecutionManager {
         }
     }
 
-    public boolean stopConnector(String connectorName) {
+    public boolean stop_connector(String connectorName) {
         checkAborted();
         try {
             for(ITransportConnector c : context.getServiceFactory().getTransportConnectors()) {
@@ -232,7 +243,7 @@ public class ScriptExecutionManager {
         }
     }
 
-    public boolean abortConnector(String connectorName) {
+    public boolean abort_connector(String connectorName) {
         checkAborted();
         try {
             for(ITransportConnector c : context.getServiceFactory().getTransportConnectors()) {
@@ -248,7 +259,7 @@ public class ScriptExecutionManager {
         }
     }
 
-    public boolean initConnector(String connectorName, String[] keys, Object[] values) {
+    public boolean init_connector(String connectorName, String[] keys, Object[] values) {
         checkAborted();
         if(keys.length != values.length) {
             LOG.log(Level.SEVERE, "Cannot initialise transport connector " + connectorName + " from automation " + fileName + ": lists of keys-values differ in size");
@@ -283,38 +294,39 @@ public class ScriptExecutionManager {
 
     public class ActivityInvocationBuilder {
 
+        private final ActivityDescriptor descriptor;
         private final ActivityRequest.Builder requestBuilder;
 
         public ActivityInvocationBuilder(String activityPath) throws ReatmetricException {
             try {
                 SystemEntityPath systemEntityPath = SystemEntityPath.fromString(activityPath);
-                int id = context.getProcessingModel().getExternalIdOf(systemEntityPath);
-                this.requestBuilder = ActivityRequest.newRequest(id, systemEntityPath);
+                this.descriptor = (ActivityDescriptor) context.getProcessingModel().getDescriptorOf(systemEntityPath);
+                this.requestBuilder = ActivityRequest.newRequest(this.descriptor.getExternalId(), systemEntityPath);
             } catch (ProcessingModelException e) {
                 LOG.log(Level.SEVERE,"Cannot request invocation of " + activityPath + " from automation " + fileName + ": " + e.getMessage(), e);
                 throw e;
             }
         }
 
-        public ActivityInvocationBuilder withRoute(String route) {
+        public ActivityInvocationBuilder with_route(String route) {
             checkAborted();
             this.requestBuilder.withRoute(route);
             return this;
         }
 
-        public ActivityInvocationBuilder withProperty(String k, String v) {
+        public ActivityInvocationBuilder with_property(String k, String v) {
             checkAborted();
             this.requestBuilder.withProperty(k, v);
             return this;
         }
 
-        public ActivityInvocationBuilder withArgument(String k, Object value, boolean engineering) {
+        public ActivityInvocationBuilder with_argument(String k, Object value, boolean engineering) {
             checkAborted();
             this.requestBuilder.withArgument(new PlainActivityArgument(k, engineering ? null : value, engineering ? value : null, engineering));
             return this;
         }
 
-        public ActivityInvocationBuilder withArgument(AbstractActivityArgument arg) {
+        public ActivityInvocationBuilder with_argument(AbstractActivityArgument arg) {
             checkAborted();
             this.requestBuilder.withArgument(arg);
             return this;
@@ -328,14 +340,92 @@ public class ScriptExecutionManager {
             return result;
         }
 
-        public boolean executeAndWait() {
+        public boolean execute_and_wait() {
             checkAborted();
-            return execute().waitForCompletion();
+            return execute().wait_for_completion();
         }
 
-        public boolean executeAndWait(int timeoutSeconds) {
+        public boolean execute_and_wait(int timeoutSeconds) {
             checkAborted();
-            return execute().waitForCompletion(timeoutSeconds);
+            return execute().wait_for_completion(timeoutSeconds);
+        }
+
+        public SchedulingActivityInvocationBuilder prepare_schedule(String source, String externalId, Duration duration) {
+            checkAborted();
+            ActivityRequest request = this.requestBuilder.build();
+            return new SchedulingActivityInvocationBuilder(SchedulingRequest.newRequest(request, source, externalId, duration != null ? duration : descriptor.getExpectedDuration()));
+        }
+    }
+
+    public class SchedulingActivityInvocationBuilder {
+        private final SchedulingRequest.Builder builder;
+        private CreationConflictStrategy strategy = CreationConflictStrategy.ADD_ANYWAY;
+
+        public SchedulingActivityInvocationBuilder(SchedulingRequest.Builder builder) {
+            this.builder = builder;
+        }
+
+        public SchedulingActivityInvocationBuilder with_resource(String resource) {
+            builder.withResource(resource);
+            return this;
+        }
+
+        public SchedulingActivityInvocationBuilder with_resources(String... resources) {
+            builder.withResources(resources);
+            return this;
+        }
+
+        public SchedulingActivityInvocationBuilder with_resources(Collection<String> resources) {
+            builder.withResources(resources);
+            return this;
+        }
+
+        public SchedulingActivityInvocationBuilder with_latest_invocation_time(Instant time) {
+            builder.withLatestInvocationTime(time);
+            return this;
+        }
+
+        public SchedulingActivityInvocationBuilder with_conflict_strategy(ConflictStrategy conflictStrategy) {
+            builder.withConflictStrategy(conflictStrategy);
+            return this;
+        }
+
+        public SchedulingActivityInvocationBuilder with_creation_conflict_strategy(CreationConflictStrategy strategy) {
+            this.strategy = strategy;
+            return this;
+        }
+
+        public boolean schedule_absolute(Instant scheduledTime) {
+            SchedulingRequest result = builder.build(new AbsoluteTimeSchedulingTrigger(scheduledTime));
+            try {
+                context.getScheduler().schedule(result, this.strategy);
+                return true;
+            } catch (ReatmetricException | RemoteException e) {
+                LOG.log(Level.SEVERE, "Failed scheduling of activity " + result.getRequest().getPath() + " from automation file " + fileName);
+                return false;
+            }
+        }
+
+        public boolean schedule_relative(int secondsDelay, String... predecessors) {
+            SchedulingRequest result = builder.build(new RelativeTimeSchedulingTrigger(new LinkedHashSet<>(Arrays.asList(predecessors)), secondsDelay));
+            try {
+                context.getScheduler().schedule(result, this.strategy);
+                return true;
+            } catch (ReatmetricException | RemoteException e) {
+                LOG.log(Level.SEVERE, "Failed scheduling of activity " + result.getRequest().getPath() + " from automation file " + fileName);
+                return false;
+            }
+        }
+
+        public boolean schedule_event(String eventPath, int millisecondsProtectionTime) {
+            SchedulingRequest result = builder.build(new EventBasedSchedulingTrigger(SystemEntityPath.fromString(eventPath), millisecondsProtectionTime, true));
+            try {
+                context.getScheduler().schedule(result, this.strategy);
+                return true;
+            } catch (ReatmetricException | RemoteException e) {
+                LOG.log(Level.SEVERE, "Failed scheduling of activity " + result.getRequest().getPath() + " from automation file " + fileName);
+                return false;
+            }
         }
     }
 
@@ -371,6 +461,7 @@ public class ScriptExecutionManager {
             }
             try {
                 // Subscribe
+                // TODO: one subscription per invocation looks too much, refactor to have a single activity occurrence subscription for the automation component
                 this.dataProvisionService.subscribe(this, new ActivityOccurrenceDataFilter(null, null, null, null, null, null, Collections.singletonList(request.getId())));
                 // Invoke
                 this.activityId = executionService.startActivity(request);
@@ -385,7 +476,7 @@ public class ScriptExecutionManager {
             }
         }
 
-        public boolean waitForCompletion(int timeoutSeconds) {
+        public boolean wait_for_completion(int timeoutSeconds) {
             checkAborted();
             if(invocationFailed) {
                 return false;
@@ -428,20 +519,20 @@ public class ScriptExecutionManager {
             }
         }
 
-        public boolean waitForCompletion() {
+        public boolean wait_for_completion() {
             checkAborted();
-            return waitForCompletion(0);
+            return wait_for_completion(0);
         }
 
-        public boolean isInvocationFailed() {
+        public boolean is_invocation_failed() {
             return this.invocationFailed;
         }
 
-        public boolean isCompleted() {
+        public boolean is_completed() {
             return this.completed;
         }
 
-        public ActivityReportState currentStatus() {
+        public ActivityReportState current_status() {
             checkAborted();
             if(invocationFailed) {
                 return ActivityReportState.FAIL;
