@@ -42,4 +42,11 @@ public interface IAcknowledgementService extends Remote {
      * @param user the user that acknowledged the message
      */
     void acknowledgeMessages(Collection<AcknowledgedMessage> messages, String user) throws ReatmetricException, RemoteException;
+
+    /**
+     * Acknowledge all pending messages by the specified user.
+     *
+     * @param user the user that acknowledged the message
+     */
+    void acknowledgeAllMessages(String user) throws ReatmetricException, RemoteException;
 }

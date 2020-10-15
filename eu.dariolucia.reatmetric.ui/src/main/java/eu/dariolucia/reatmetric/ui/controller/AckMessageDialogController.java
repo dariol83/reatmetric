@@ -44,6 +44,9 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
 
     private static final Logger LOG = Logger.getLogger(AckMessageDialogController.class.getName());
 
+    private static final int MAX_TABLE_ENTRIES = 2000;
+    private static final int TABLE_ENTRIES_REMOVE_ON_FULL = MAX_TABLE_ENTRIES/10;
+
     @FXML
     private TableColumn<AcknowledgedMessage, String> idCol;
     @FXML
@@ -164,6 +167,10 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
             // Finally update the table
             ackMessageTableView.getItems().removeAll(toRemoveActuals);
             ackMessageTableView.getItems().addAll(messagesToAdd);
+            if(ackMessageTableView.getItems().size() > MAX_TABLE_ENTRIES) {
+                int toRemove = (ackMessageTableView.getItems().size() - MAX_TABLE_ENTRIES) + TABLE_ENTRIES_REMOVE_ON_FULL;
+                ackMessageTableView.getItems().remove(0, toRemove);
+            }
             if (this.handler != null) {
                 this.handler.accept(!ackMessageTableView.getItems().isEmpty());
             }
@@ -191,8 +198,14 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
 
     @FXML
     public void ackAllButtonSelected(ActionEvent actionEvent) {
-        List<AcknowledgedMessage> all = new ArrayList<>(this.ackMessageTableView.getItems());
-        ackMessages(all);
+        ReatmetricUI.threadPool(getClass()).execute(() -> {
+            try {
+                system.getAcknowledgementService().acknowledgeAllMessages(ReatmetricUI.username());
+            } catch (ReatmetricException | RemoteException e) {
+                LOG.log(Level.SEVERE, "Acknowledgement failed: " + e.getMessage(), e);
+            }
+        });
+        this.ackMessageTableView.getSelectionModel().clearSelection();
     }
 
     public boolean isPendingAcknowledgement(int externalId) {

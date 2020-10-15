@@ -20,6 +20,7 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.AcknowledgedMessage;
 import eu.dariolucia.reatmetric.api.messages.IAcknowledgementService;
 
+import java.rmi.RemoteException;
 import java.util.Collection;
 
 /**
@@ -41,5 +42,10 @@ public class AcknowledgementServiceImpl implements IAcknowledgementService {
     @Override
     public void acknowledgeMessages(Collection<AcknowledgedMessage> messages, String user) throws ReatmetricException {
         broker.internalAcknowledgeMessages(messages, user);
+    }
+
+    @Override
+    public void acknowledgeAllMessages(String user) throws ReatmetricException, RemoteException {
+        broker.internalAcknowledgeAllMessages(user);
     }
 }

@@ -179,6 +179,18 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
         storeAndNotify(toStore);
     }
 
+    void internalAcknowledgeAllMessages(String user) throws ReatmetricException {
+        List<AcknowledgedMessage> toStore = new LinkedList<>();
+        synchronized (this) {
+            for (AcknowledgedMessage am : unacknowledgedMessages.values()) {
+                am = am.ack(user);
+                toStore.add(am);
+            }
+        }
+        // Now store and notify
+        storeAndNotify(toStore);
+    }
+
     public IAcknowledgementService getAcknowledgementService() {
         return acknowledgementMessageService;
     }

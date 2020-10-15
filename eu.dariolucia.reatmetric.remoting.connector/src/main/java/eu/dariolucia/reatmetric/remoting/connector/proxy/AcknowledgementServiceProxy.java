@@ -41,4 +41,9 @@ public class AcknowledgementServiceProxy implements IAcknowledgementService {
         delegate.acknowledgeMessages(messages, user);
     }
 
+    @Override
+    public void acknowledgeAllMessages(String user) throws ReatmetricException, RemoteException {
+        delegate.acknowledgeAllMessages(user);
+    }
+
 }

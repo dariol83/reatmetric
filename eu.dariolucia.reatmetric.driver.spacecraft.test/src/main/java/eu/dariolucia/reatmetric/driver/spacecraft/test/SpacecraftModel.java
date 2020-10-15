@@ -70,6 +70,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 /**
  * A simple implementation of a spacecraft model. It generates:
@@ -95,13 +96,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceInstanceListener {
 
+    private static final Logger LOG = Logger.getLogger(SpacecraftModel.class.getName());
+
     public static final int BUFFER_AVAILABLE = 10000;
     public static final String APID_FIELD_NAME = "I-APID";
     public static final String PUS_TYPE_FIELD_NAME = "I-PUS-TYPE";
     public static final String PUS_SUBTYPE_FIELD_NAME = "I-PUS-SUBTYPE";
     public static final int TM_FRAME_LENGTH = 1115;
     public static final int PACKET_GENERATION_PERIOD_MS = 1;
-    public static final int CYCLE_MODULE_SLEEP = 10;
+    public static final int CYCLE_MODULE_SLEEP = 10000000; // 10
     public static final int SETTER_APID = 10;
     public static final int SETTER_PUS = 69;
 
@@ -186,7 +189,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 lastSampleGenerationTime = genTime;
                 double numPacketsPerSecond = (numPackets / (millis/1000.0));
                 double numFramesPerSecond = (numFrames / (millis/1000.0));
-                System.out.println("Frames per second: " + (int) numFramesPerSecond + ", packets per second: " + numPacketsPerSecond);
+                LOG.info("Frames per second: " + (int) numFramesPerSecond + ", packets per second: " + numPacketsPerSecond);
             }
         }
     }
