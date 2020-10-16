@@ -37,12 +37,14 @@ public class PythonExecutor implements IScriptExecutor {
     private final String fileName;
     private final IServiceCoreContext context;
     private final String pythonApiData;
+    private final DataSubscriptionManager dataSubscriptionManager;
 
     private volatile PythonInterpreter pythonEngine;
     private volatile boolean aborted;
     private volatile ScriptExecutionManager manager;
 
-    public PythonExecutor(IServiceCoreContext context, String initData, String contents, IActivityHandler.ActivityInvocation activityInvocation, String fileName) {
+    public PythonExecutor(DataSubscriptionManager dataSubscriptionManager, IServiceCoreContext context, String initData, String contents, IActivityHandler.ActivityInvocation activityInvocation, String fileName) {
+        this.dataSubscriptionManager = dataSubscriptionManager;
         this.contents = contents;
         this.invocation = activityInvocation;
         this.fileName = fileName;
@@ -67,7 +69,7 @@ public class PythonExecutor implements IScriptExecutor {
                     pythonEngine.set(entry.getKey(), entry.getValue());
                 }
             }
-            manager = new ScriptExecutionManager(this.context, invocation, fileName);
+            manager = new ScriptExecutionManager(this.dataSubscriptionManager, this.context, invocation, fileName);
             pythonEngine.set(Constants.BINDING_SCRIPT_MANAGER, manager);
             if(aborted) {
                 throw new IllegalStateException("Script " + fileName + " aborted");

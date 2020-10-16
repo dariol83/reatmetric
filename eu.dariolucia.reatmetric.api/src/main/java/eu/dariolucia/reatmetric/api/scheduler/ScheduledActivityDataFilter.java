@@ -49,7 +49,7 @@ public final class ScheduledActivityDataFilter extends AbstractDataItemFilter<Sc
 
     private final Set<SchedulingState> schedulingStateList;
 
-    private final Set<Long> externalIdList;
+    private final Set<String> externalIdList;
 
     /**
      * The constructor of the event filter.
@@ -61,7 +61,7 @@ public final class ScheduledActivityDataFilter extends AbstractDataItemFilter<Sc
      * @param schedulingStateList the scheduling states to select. It can be null: if so, all states are selected.
      * @param externalIdList the external IDs to select. It can be null: if so, all external IDs are selected.
      */
-    public ScheduledActivityDataFilter(SystemEntityPath parentPath, Collection<SystemEntityPath> activityPathList, Collection<String> resourceList, Collection<String> sourceList, Collection<SchedulingState> schedulingStateList, Collection<Long> externalIdList) {
+    public ScheduledActivityDataFilter(SystemEntityPath parentPath, Collection<SystemEntityPath> activityPathList, Collection<String> resourceList, Collection<String> sourceList, Collection<SchedulingState> schedulingStateList, Collection<String> externalIdList) {
         this.parentPath = parentPath;
         if(activityPathList != null) {
             this.activityPathList = Collections.unmodifiableSet(new LinkedHashSet<>(activityPathList));
@@ -158,7 +158,7 @@ public final class ScheduledActivityDataFilter extends AbstractDataItemFilter<Sc
      *
      * @return the specified external IDs
      */
-    public Set<Long> getExternalIdList() {
+    public Set<String> getExternalIdList() {
         return externalIdList;
     }
 

@@ -35,17 +35,13 @@ import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.automation.common.Constants;
 import eu.dariolucia.reatmetric.driver.automation.definition.AutomationConfiguration;
-import eu.dariolucia.reatmetric.driver.automation.internal.GroovyExecutor;
-import eu.dariolucia.reatmetric.driver.automation.internal.IScriptExecutor;
-import eu.dariolucia.reatmetric.driver.automation.internal.JavascriptExecutor;
-import eu.dariolucia.reatmetric.driver.automation.internal.PythonExecutor;
+import eu.dariolucia.reatmetric.driver.automation.internal.*;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -80,6 +76,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
 
     // For activity execution
     private volatile ExecutorService executor;
+    private volatile DataSubscriptionManager dataSubscriptionManager;
 
     // For activity abortion (done under lock)
     private final Map<Pair<Integer, IUniqueId>, IScriptExecutor> runningExecutors = new HashMap<>();
@@ -97,11 +94,21 @@ public class AutomationDriver implements IDriver, IActivityHandler {
             this.subscriber = subscriber;
 
             this.configuration = AutomationConfiguration.load(new FileInputStream(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE));
-            this.executor = Executors.newFixedThreadPool(configuration.getMaxParallelScripts(), (t) -> { // TODO: make it cached, with a max amount of threads
-                Thread toReturn = new Thread(t, "AutomationDriver Activity Handler Thread");
-                toReturn.setDaemon(true);
-                return toReturn;
-            });
+            this.executor = new ThreadPoolExecutor(configuration.getMaxParallelScripts(), // start with 1 thread
+                    configuration.getMaxParallelScripts(), // max size
+                    600, // idle timeout
+                    TimeUnit.SECONDS,
+                    new ArrayBlockingQueue<>(100), // more than 100 automation procedures in the queue means that the next one is rejected
+                    (t) -> {
+                        Thread toReturn = new Thread(t, "AutomationDriver Activity Handler Thread");
+                        toReturn.setDaemon(true);
+                        return toReturn;
+                    }
+            ); // queue with a size
+
+            this.dataSubscriptionManager = new DataSubscriptionManager(context.getServiceFactory().getActivityOccurrenceDataMonitorService(),
+                    context.getServiceFactory().getEventDataMonitorService(),
+                    context.getServiceFactory().getParameterDataMonitorService());
             InputStream is = this.getClass().getClassLoader().getResourceAsStream(Constants.API_JS_RESOURCE_FILE);
             jsApiData = readContents(is);
             is = this.getClass().getClassLoader().getResourceAsStream(Constants.API_GROOVY_RESOURCE_FILE);
@@ -113,7 +120,8 @@ public class AutomationDriver implements IDriver, IActivityHandler {
             // Inform that everything is fine
             subscriber.driverStatusUpdate(this.name, SystemStatus.NOMINAL);
         } catch (Exception e) {
-            updateStatus(SystemStatus.ALARM);
+            this.status = SystemStatus.ALARM;
+            this.subscriber.driverStatusUpdate(this.name, this.status);
             throw new DriverException(e);
         }
     }
@@ -126,14 +134,6 @@ public class AutomationDriver implements IDriver, IActivityHandler {
             sb.append(read).append((char) 10);
         }
         return sb.toString();
-    }
-
-    private void updateStatus(SystemStatus s) {
-        boolean toNotify = s != this.status;
-        this.status = s;
-        if (toNotify) {
-            this.subscriber.driverStatusUpdate(this.name, this.status);
-        }
     }
 
     @Override
@@ -175,7 +175,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
     @Override
     public synchronized void dispose() {
         running = false;
-        for(IScriptExecutor executor : runningExecutors.values()) {
+        for (IScriptExecutor executor : runningExecutors.values()) {
             executor.abort();
         }
         runningExecutors.clear();
@@ -207,7 +207,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
 
     @Override
     public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
-        if(!running) {
+        if (!running) {
             throw new ActivityHandlingException("Driver not running");
         }
         if (!activityInvocation.getType().equals(Constants.T_SCRIPT_TYPE)) {
@@ -229,7 +229,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
         // abort execution/evaluation (if possible), execution stage shall be reported as FATAL
         Pair<Integer, IUniqueId> key = Pair.of(activityId, activityOccurrenceId);
         IScriptExecutor exec = runningExecutors.get(key);
-        if(exec == null) {
+        if (exec == null) {
             pendingAborts.add(key);
         } else {
             exec.abort();
@@ -239,7 +239,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
     private void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
         try {
             // Record verification
-            announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null, ActivityOccurrenceState.EXECUTION);
+            announce(activityInvocation, model, Instant.now(), ActivityReportState.PENDING, null, ActivityOccurrenceState.EXECUTION);
             // Look up automation: first argument plus argument name
             String fileName = (String) activityInvocation.getArguments().get(Constants.ARGUMENT_FILE_NAME);
             if (fileName == null) {
@@ -258,21 +258,21 @@ public class AutomationDriver implements IDriver, IActivityHandler {
             result = exec.execute();
             deregisterExecution(activityInvocation);
             // Report final state
-            announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, result, ActivityOccurrenceState.VERIFICATION);
+            announce(activityInvocation, model, Instant.now(), ActivityReportState.OK, result, ActivityOccurrenceState.VERIFICATION);
         } catch (Exception e) {
             deregisterExecution(activityInvocation);
             LOG.log(Level.SEVERE, "Execution of procedure " + activityInvocation.getActivityOccurrenceId() + " failed: " + e.getMessage(), e);
-            announce(activityInvocation, model, Instant.now(), EXECUTION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, null, ActivityOccurrenceState.EXECUTION);
+            announce(activityInvocation, model, Instant.now(), ActivityReportState.FATAL, null, ActivityOccurrenceState.EXECUTION);
         }
     }
 
     private IScriptExecutor buildScriptExecutor(ActivityInvocation activityInvocation, String fileName, String contents) throws ActivityHandlingException {
-        if(fileName.endsWith(Constants.JS_EXTENSION)) {
-            return new JavascriptExecutor(this.context, this.jsApiData, contents, activityInvocation, fileName);
-        } else if(fileName.endsWith(Constants.GROOVY_EXTENSION)) {
-            return new GroovyExecutor(this.context, this.groovyApiData, contents, activityInvocation, fileName);
-        } else if(fileName.endsWith(Constants.PYTHON_EXTENSION)) {
-            return new PythonExecutor(this.context, this.pythonApiData, contents, activityInvocation, fileName);
+        if (fileName.endsWith(Constants.JS_EXTENSION)) {
+            return new JavascriptExecutor(this.dataSubscriptionManager, this.context, this.jsApiData, contents, activityInvocation, fileName);
+        } else if (fileName.endsWith(Constants.GROOVY_EXTENSION)) {
+            return new GroovyExecutor(this.dataSubscriptionManager, this.context, this.groovyApiData, contents, activityInvocation, fileName);
+        } else if (fileName.endsWith(Constants.PYTHON_EXTENSION)) {
+            return new PythonExecutor(this.dataSubscriptionManager, this.context, this.pythonApiData, contents, activityInvocation, fileName);
         } else {
             throw new ActivityHandlingException("Script type of " + fileName + " not supported: extension not recognized");
         }
@@ -286,7 +286,7 @@ public class AutomationDriver implements IDriver, IActivityHandler {
 
     private synchronized void registerExecution(ActivityInvocation activityInvocation, IScriptExecutor exec) throws IllegalStateException {
         Pair<Integer, IUniqueId> key = Pair.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId());
-        if(pendingAborts.contains(key)) {
+        if (pendingAborts.contains(key)) {
             throw new IllegalStateException("Activity ID " + key.getSecond() + " pending abort: execution aborted");
         } else {
             pendingAborts.add(key);
@@ -294,8 +294,8 @@ public class AutomationDriver implements IDriver, IActivityHandler {
         }
     }
 
-    protected static void announce(IActivityHandler.ActivityInvocation invocation, IProcessingModel model, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, Object result, ActivityOccurrenceState nextState) {
-        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, genTime, reportState, nextState, result));
+    protected static void announce(ActivityInvocation invocation, IProcessingModel model, Instant genTime, ActivityReportState reportState, Object result, ActivityOccurrenceState nextState) {
+        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), AutomationDriver.EXECUTION_STAGE, genTime, ActivityOccurrenceState.EXECUTION, genTime, reportState, nextState, result));
     }
 
     @Override

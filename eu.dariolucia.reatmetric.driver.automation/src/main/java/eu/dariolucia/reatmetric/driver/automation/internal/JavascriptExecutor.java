@@ -37,12 +37,14 @@ public class JavascriptExecutor implements IScriptExecutor {
     private final String fileName;
     private final IServiceCoreContext context;
     private final String jsApiData;
+    private final DataSubscriptionManager dataSubscriptionManager;
 
     private volatile Engine jsEngine = null;
     private volatile boolean aborted = false;
     private ScriptExecutionManager manager;
 
-    public JavascriptExecutor(IServiceCoreContext context, String initData, String contents, IActivityHandler.ActivityInvocation activityInvocation, String fileName) {
+    public JavascriptExecutor(DataSubscriptionManager dataSubscriptionManager, IServiceCoreContext context, String initData, String contents, IActivityHandler.ActivityInvocation activityInvocation, String fileName) {
+        this.dataSubscriptionManager = dataSubscriptionManager;
         this.contents = contents;
         this.invocation = activityInvocation;
         this.fileName = fileName;
@@ -77,7 +79,7 @@ public class JavascriptExecutor implements IScriptExecutor {
                     throw new IllegalStateException("Script " + fileName + " aborted");
                 }
                 // Add API functions
-                manager = new ScriptExecutionManager(this.context, invocation, fileName);
+                manager = new ScriptExecutionManager(this.dataSubscriptionManager, this.context, invocation, fileName);
                 bindings.putMember(Constants.BINDING_SCRIPT_MANAGER, manager);
                 if(aborted) {
                     throw new IllegalStateException("Script " + fileName + " aborted");

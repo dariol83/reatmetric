@@ -19,14 +19,15 @@ package eu.dariolucia.reatmetric.driver.automation.internal;
 
 import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
-import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
+import eu.dariolucia.reatmetric.api.events.IEventDataSubscriber;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
@@ -42,9 +43,11 @@ import java.rmi.RemoteException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-// TODO add additional functions as needed, align documentation
+
 public class ScriptExecutionManager {
 
     private static final Logger LOG = Logger.getLogger(ScriptExecutionManager.class.getName());
@@ -52,12 +55,15 @@ public class ScriptExecutionManager {
     private final IServiceCoreContext context;
     private final IActivityHandler.ActivityInvocation activityInvocation;
     private final String fileName;
+    private final DataSubscriptionManager dataSubscriptionManager;
+
     private volatile boolean aborted = false;
 
-    public ScriptExecutionManager(IServiceCoreContext context, IActivityHandler.ActivityInvocation activityInvocation, String fileName) {
+    public ScriptExecutionManager(DataSubscriptionManager dataSubscriptionManager, IServiceCoreContext context, IActivityHandler.ActivityInvocation activityInvocation, String fileName) {
         this.context = context;
         this.activityInvocation = activityInvocation;
         this.fileName = fileName;
+        this.dataSubscriptionManager = dataSubscriptionManager;
     }
 
     public synchronized void _abort() {
@@ -115,7 +121,39 @@ public class ScriptExecutionManager {
         }
     }
 
-    // TODO: introduce wait_for_event(String path, int timeoutSeconds)
+    public EventData wait_for_event(String path, int timeoutSeconds) {
+        checkAborted();
+        try {
+            EventWait waiter = new EventWait(path, timeoutSeconds);
+            EventData eventReceived = null;
+            try {
+                eventReceived = waiter.waitForEvent();
+            } finally {
+                waiter.dispose();
+            }
+            return eventReceived;
+        } catch (ReatmetricException | RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot wait for event " + path + " from automation " + fileName + ": " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public ParameterData wait_for_parameter(String path, int timeoutSeconds) {
+        checkAborted();
+        try {
+            ParameterWait waiter = new ParameterWait(path, timeoutSeconds);
+            ParameterData parameter = null;
+            try {
+                parameter = waiter.waitForParameter();
+            } finally {
+                waiter.dispose();
+            }
+            return parameter;
+        } catch (ReatmetricException | RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot wait for parameter " + path + " from automation " + fileName + ": " + e.getMessage(), e);
+            return null;
+        }
+    }
 
     public void enable(String path) {
         checkAborted();
@@ -283,12 +321,107 @@ public class ScriptExecutionManager {
         }
     }
 
+    public boolean delete_scheduled_activity(String externalId) {
+        checkAborted();
+        try {
+            context.getScheduler().remove(new ScheduledActivityDataFilter(null, null, null, null, null, Collections.singletonList(externalId)));
+            return true;
+        } catch (ReatmetricException | RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot delete scheduled item with ID " + externalId + " from automation " + fileName + ": " + e.getMessage(), e);
+            return false;
+        }
+    }
+
     private void logMessage(String message, Severity severity) {
         checkAborted();
         try {
             context.getOperationalMessageBroker().distribute("Script", message, fileName, severity, null, null, true);
         } catch (ReatmetricException e) {
             LOG.log(Level.SEVERE, "logMessage exception from automation " + fileName + ": " + e.getMessage(), e);
+        }
+    }
+
+    private class EventWait implements IEventDataSubscriber {
+
+        private final Semaphore semaphore;
+        private final int externalId;
+        private final int timeout;
+        private volatile EventData receivedEvent;
+
+        public EventWait(String path, int timeoutSeconds) throws ReatmetricException, RemoteException {
+            this.externalId = context.getServiceFactory().getSystemModelMonitorService().getExternalIdOf(SystemEntityPath.fromString(path));
+            this.timeout = timeoutSeconds;
+            this.semaphore = new Semaphore(0);
+        }
+
+        @Override
+        public void dataItemsReceived(List<EventData> dataItems) {
+            for(EventData ed : dataItems) {
+                if(ed.getExternalId() == externalId) {
+                    receivedEvent = ed;
+                    semaphore.release();
+                }
+            }
+        }
+
+        public EventData waitForEvent() {
+            dataSubscriptionManager.subscribe(this, externalId);
+            try {
+                for(int i = 0; i < timeout; ++i) {
+                    checkAborted();
+                    semaphore.tryAcquire(1, TimeUnit.SECONDS);
+                }
+                return receivedEvent; // Do not bother about concurrency, return one of the events you got if more than one
+            } catch (InterruptedException e) {
+                // No event
+                return null;
+            }
+        }
+
+        public void dispose() {
+            dataSubscriptionManager.unsubscribe(this, externalId);
+        }
+    }
+
+    private class ParameterWait implements IParameterDataSubscriber {
+
+        private final Semaphore semaphore;
+        private final int externalId;
+        private final int timeout;
+        private volatile ParameterData receivedParameter;
+
+        public ParameterWait(String path, int timeoutSeconds) throws ReatmetricException, RemoteException {
+            this.externalId = context.getServiceFactory().getSystemModelMonitorService().getExternalIdOf(SystemEntityPath.fromString(path));
+            this.timeout = timeoutSeconds;
+            this.semaphore = new Semaphore(0);
+        }
+
+        @Override
+        public void dataItemsReceived(List<ParameterData> dataItems) {
+            for(ParameterData ed : dataItems) {
+                if(ed.getExternalId() == externalId) {
+                    receivedParameter = ed;
+                    semaphore.release();
+                }
+            }
+        }
+
+        public ParameterData waitForParameter() {
+            dataSubscriptionManager.subscribe(this, externalId);
+            try {
+                for(int i = 0; i < timeout; ++i) {
+                    checkAborted();
+                    semaphore.tryAcquire(1, TimeUnit.SECONDS);
+                }
+                return receivedParameter; // Do not bother about concurrency, return one of the parameters you got if more than one
+            } catch (InterruptedException e) {
+                // No parameter
+                return null;
+            }
+        }
+
+        public void dispose() {
+            dataSubscriptionManager.unsubscribe(this, externalId);
         }
     }
 
@@ -350,10 +483,10 @@ public class ScriptExecutionManager {
             return execute().wait_for_completion(timeoutSeconds);
         }
 
-        public SchedulingActivityInvocationBuilder prepare_schedule(String source, String externalId, Duration duration) {
+        public SchedulingActivityInvocationBuilder prepare_schedule(String source, String externalId, Integer durationSeconds) {
             checkAborted();
             ActivityRequest request = this.requestBuilder.build();
-            return new SchedulingActivityInvocationBuilder(SchedulingRequest.newRequest(request, source, externalId, duration != null ? duration : descriptor.getExpectedDuration()));
+            return new SchedulingActivityInvocationBuilder(SchedulingRequest.newRequest(request, source, externalId, durationSeconds != null ? Duration.ofSeconds(durationSeconds) : descriptor.getExpectedDuration()));
         }
     }
 
@@ -366,36 +499,43 @@ public class ScriptExecutionManager {
         }
 
         public SchedulingActivityInvocationBuilder with_resource(String resource) {
+            checkAborted();
             builder.withResource(resource);
             return this;
         }
 
         public SchedulingActivityInvocationBuilder with_resources(String... resources) {
+            checkAborted();
             builder.withResources(resources);
             return this;
         }
 
         public SchedulingActivityInvocationBuilder with_resources(Collection<String> resources) {
+            checkAborted();
             builder.withResources(resources);
             return this;
         }
 
         public SchedulingActivityInvocationBuilder with_latest_invocation_time(Instant time) {
+            checkAborted();
             builder.withLatestInvocationTime(time);
             return this;
         }
 
         public SchedulingActivityInvocationBuilder with_conflict_strategy(ConflictStrategy conflictStrategy) {
+            checkAborted();
             builder.withConflictStrategy(conflictStrategy);
             return this;
         }
 
         public SchedulingActivityInvocationBuilder with_creation_conflict_strategy(CreationConflictStrategy strategy) {
+            checkAborted();
             this.strategy = strategy;
             return this;
         }
 
         public boolean schedule_absolute(Instant scheduledTime) {
+            checkAborted();
             SchedulingRequest result = builder.build(new AbsoluteTimeSchedulingTrigger(scheduledTime));
             try {
                 context.getScheduler().schedule(result, this.strategy);
@@ -407,6 +547,7 @@ public class ScriptExecutionManager {
         }
 
         public boolean schedule_relative(int secondsDelay, String... predecessors) {
+            checkAborted();
             SchedulingRequest result = builder.build(new RelativeTimeSchedulingTrigger(new LinkedHashSet<>(Arrays.asList(predecessors)), secondsDelay));
             try {
                 context.getScheduler().schedule(result, this.strategy);
@@ -418,6 +559,7 @@ public class ScriptExecutionManager {
         }
 
         public boolean schedule_event(String eventPath, int millisecondsProtectionTime) {
+            checkAborted();
             SchedulingRequest result = builder.build(new EventBasedSchedulingTrigger(SystemEntityPath.fromString(eventPath), millisecondsProtectionTime, true));
             try {
                 context.getScheduler().schedule(result, this.strategy);
@@ -431,7 +573,6 @@ public class ScriptExecutionManager {
 
     private class ActivityInvocationResult implements IActivityOccurrenceDataSubscriber {
         private IActivityExecutionService executionService;
-        private IActivityOccurrenceDataProvisionService dataProvisionService;
         private final ActivityRequest request;
 
         private volatile IUniqueId activityId;
@@ -444,7 +585,6 @@ public class ScriptExecutionManager {
         public ActivityInvocationResult(ActivityRequest request) {
             try {
                 this.executionService = context.getServiceFactory().getActivityExecutionService();
-                this.dataProvisionService = context.getServiceFactory().getActivityOccurrenceDataMonitorService();
             } catch (ReatmetricException | RemoteException e) {
                 LOG.log(Level.SEVERE, "Cannot obtain processing model services: " + e.getMessage(), e);
                 invocationFailed = true;
@@ -461,18 +601,13 @@ public class ScriptExecutionManager {
             }
             try {
                 // Subscribe
-                // TODO: one subscription per invocation looks too much, refactor to have a single activity occurrence subscription for the automation component
-                this.dataProvisionService.subscribe(this, new ActivityOccurrenceDataFilter(null, null, null, null, null, null, Collections.singletonList(request.getId())));
+                dataSubscriptionManager.subscribe(this, request.getId());
                 // Invoke
                 this.activityId = executionService.startActivity(request);
             } catch (ReatmetricException | RemoteException e) {
                 LOG.log(Level.SEVERE, "Failed invocation of activity " + this.activityId + " from automation file " + fileName);
                 invocationFailed = true;
-                try {
-                    dataProvisionService.unsubscribe(this);
-                } catch (RemoteException remoteException) {
-                    remoteException.printStackTrace();
-                }
+                dataSubscriptionManager.unsubscribe(this, request.getId());
             }
         }
 
@@ -548,16 +683,12 @@ public class ScriptExecutionManager {
         @Override
         public void dataItemsReceived(List<ActivityOccurrenceData> dataItems) {
             for(ActivityOccurrenceData aod : dataItems) {
+                if(aod.getInternalId().equals(this.activityId) && aod.getCurrentState() == ActivityOccurrenceState.COMPLETED) {
+                    dataSubscriptionManager.unsubscribe(this, request.getId());
+                }
                 synchronized (this) {
                     dataToProcess.add(aod);
                     notifyAll();
-                }
-                if(aod.getInternalId().equals(this.activityId) && aod.getCurrentState() == ActivityOccurrenceState.COMPLETED) {
-                    try {
-                        dataProvisionService.unsubscribe(this);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
                 }
             }
         }

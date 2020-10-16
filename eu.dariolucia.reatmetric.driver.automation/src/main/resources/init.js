@@ -18,6 +18,14 @@ function event(eventPath) {
     return _scriptManager.event(eventPath);
 }
 
+function wait_for_event(eventPath, timeoutSeconds) {
+    return _scriptManager.wait_for_event(eventPath, timeoutSeconds);
+}
+
+function wait_for_parameter(parameterPath, timeoutSeconds) {
+    return _scriptManager.wait_for_parameter(parameterPath, timeoutSeconds);
+}
+
 function inject_parameter(paramPath, value) {
     return _scriptManager.inject_parameter(paramPath, value, false);
 }
@@ -36,6 +44,10 @@ function raise_event(eventPath, qualifier, report) {
 
 function prepare_activity(activityPath) {
     return _scriptManager.prepare_activity(activityPath);
+}
+
+function delete_scheduled_activity(externalId) {
+    return _scriptManager.delete_scheduled_activity(externalId);
 }
 
 // -------
