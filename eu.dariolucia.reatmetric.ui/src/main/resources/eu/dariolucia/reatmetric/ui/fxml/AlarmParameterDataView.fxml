@@ -29,6 +29,7 @@
 
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
+<?import javafx.scene.control.Separator?>
 <TitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Alarm Parameters" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.AlarmParameterDataViewController">
    <content>
       <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
@@ -43,9 +44,9 @@
                   <Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne" text="&gt;" />
                   <Button fx:id="goForwardFastBtn" disable="true" mnemonicParsing="false" onAction="#goForwardFast" text="&gt;&gt;" />
                   <Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd" text="&gt;|" />
-                  <Label text=" " />
+                   <Separator orientation="VERTICAL" />
                   <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
-                  <Label text=" " />
+                   <Separator orientation="VERTICAL" />
                    <Button fx:id="filterBtn" mnemonicParsing="false" onAction="#filterButtonSelected">
                        <graphic>
                            <ImageView pickOnBounds="true" preserveRatio="true">

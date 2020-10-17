@@ -44,7 +44,7 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
 
     private static final Logger LOG = Logger.getLogger(AckMessageDialogController.class.getName());
 
-    private static final int MAX_TABLE_ENTRIES = 2000;
+    private static final int MAX_TABLE_ENTRIES = 5000;
     private static final int TABLE_ENTRIES_REMOVE_ON_FULL = MAX_TABLE_ENTRIES/10;
 
     @FXML

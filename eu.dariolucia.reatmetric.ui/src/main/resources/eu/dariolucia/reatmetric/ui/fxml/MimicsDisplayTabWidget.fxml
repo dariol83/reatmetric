@@ -31,9 +31,9 @@
 				<Button fx:id="selectTimeBtn" disable="true" mnemonicParsing="false" onAction="#selectTimeButtonSelected" prefHeight="25.0" prefWidth="180.0" text="---" />
 				<Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne" text="&gt;" />
 				<Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd" text="&gt;|" />
-				<Label text=" " />
+				<Separator orientation="VERTICAL" />
                 <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
-                <Label text=" " />
+				<Separator orientation="VERTICAL" />
 				<Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
 					<graphic>
 						<ImageView pickOnBounds="true" preserveRatio="true">

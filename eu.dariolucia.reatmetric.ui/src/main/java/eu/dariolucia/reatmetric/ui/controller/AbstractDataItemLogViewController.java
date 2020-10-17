@@ -165,7 +165,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             e.printStackTrace();
         }
 
-        this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
+        this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction(), MAX_ENTRIES);
 
         // Enable filtering
         dataItemList = dataItemTableView.getItems();

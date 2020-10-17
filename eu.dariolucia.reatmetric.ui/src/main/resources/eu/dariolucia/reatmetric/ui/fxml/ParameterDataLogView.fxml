@@ -36,9 +36,9 @@
                    <Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne" text="&gt;" />
                    <Button fx:id="goForwardFastBtn" disable="true" mnemonicParsing="false" onAction="#goForwardFast" text="&gt;&gt;" />
                    <Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd" text="&gt;|" />
-                   <Label text=" " />
+                   <Separator orientation="VERTICAL" />
                    <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
-                   <Label text=" " />
+                   <Separator orientation="VERTICAL" />
                    <Button fx:id="filterBtn" mnemonicParsing="false" onAction="#filterButtonSelected">
                        <graphic>
                            <ImageView pickOnBounds="true" preserveRatio="true">

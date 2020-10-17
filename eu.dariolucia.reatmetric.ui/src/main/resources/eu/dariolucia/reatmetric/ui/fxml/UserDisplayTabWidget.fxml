@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.ToggleButton?>
@@ -29,6 +28,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.Separator?>
 <VBox fx:id="parentVBox" VBox.vgrow="ALWAYS" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.UserDisplayTabWidgetController">
 	<children>
 		<ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
@@ -50,9 +50,9 @@
 				<Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne" text="&gt;" />
 				<Button fx:id="goForwardFastBtn" disable="true" mnemonicParsing="false" onAction="#goForwardFast" text="&gt;&gt;" />
 				<Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd" text="&gt;|" />
-				<Label text=" " />
+				<Separator orientation="VERTICAL" />
                 <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
-                <Label text=" " />
+				<Separator orientation="VERTICAL" />
 				<Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
 					<graphic>
 						<ImageView pickOnBounds="true" preserveRatio="true">

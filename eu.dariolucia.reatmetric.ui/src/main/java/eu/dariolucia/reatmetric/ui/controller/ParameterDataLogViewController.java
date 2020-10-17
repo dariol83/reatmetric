@@ -48,10 +48,6 @@ import java.util.ResourceBundle;
 public class ParameterDataLogViewController extends AbstractDataItemLogViewController<ParameterData, ParameterDataFilter>
 		implements IParameterDataSubscriber {
 
-	// TODO: for live mode, add a mechanism that understands that you are running at high update rate (time difference with previous update < threshold).
-	//  If so, it keeps a max number of parameters in memory (in a separate list) and performs a refresh of the visible window
-	//  every 0.5 seconds at most. At very high data rates, this log view can otherwise die.
-
 	@FXML
 	private TableColumn<ParameterData, String> nameCol;
 	@FXML
