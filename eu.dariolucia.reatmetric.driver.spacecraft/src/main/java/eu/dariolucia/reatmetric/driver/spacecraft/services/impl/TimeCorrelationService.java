@@ -23,15 +23,10 @@ import eu.dariolucia.ccsds.encdec.value.TimeUtil;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
-import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
-import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.*;
-import eu.dariolucia.reatmetric.core.configuration.AbstractInitialisationConfiguration;
-import eu.dariolucia.reatmetric.core.configuration.ResumeInitialisationConfiguration;
-import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.PacketErrorControlType;
@@ -78,7 +73,7 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     private volatile Pair<BigDecimal, BigDecimal> obt2gtCoefficients;
 
     @Override
-    public void postInitialisation() throws ReatmetricException {
+    public void postInitialisation() {
         this.epoch = spacecraftConfiguration().getEpoch() == null ? null : Instant.ofEpochMilli(spacecraftConfiguration().getEpoch().getTime());
         this.spacecraftId = spacecraftConfiguration().getId();
         this.propagationDelay = spacecraftConfiguration().getPropagationDelay();
@@ -89,9 +84,6 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
             return t;
         });
         this.obt2gtCoefficients = Pair.of(BigDecimal.valueOf(configuration().getInitialCoefficientM()), BigDecimal.valueOf(configuration().getInitialCoefficientQ()));
-        if(serviceCoreConfiguration().getInitialisation() != null) {
-            initialiseTimeCoefficients(serviceCoreConfiguration().getInitialisation(), context().getArchive().getArchive(IRawDataArchive.class));
-        }
         subscribeToRawDataBroker();
     }
 
@@ -100,44 +92,9 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
         return TimeCorrelationServiceConfiguration.load(new FileInputStream(serviceConfigurationPath));
     }
 
-    private void initialiseTimeCoefficients(AbstractInitialisationConfiguration initialisation, IRawDataArchive archive) throws ReatmetricException {
-        if(initialisation instanceof TimeInitialisationConfiguration) {
-            // Get the time coefficient with generation time at the specified one from the reference archive
-            String location = ((TimeInitialisationConfiguration) initialisation).getArchiveLocation();
-            Instant time = ((TimeInitialisationConfiguration) initialisation).getTime().toInstant();
-            if(location == null) {
-                // No archive location -> use current archive
-                retrieveTimeCoefficients(archive, time);
-            } else {
-                // Archive location -> use external archive
-                initialiseFromExternalArchive(location, time);
-            }
-        } else if(initialisation instanceof ResumeInitialisationConfiguration) {
-            // Get the latest time coefficients in the raw data broker
-            Instant latestGenerationTime = archive.retrieveLastGenerationTime();
-            // If latestGenerationTime is null, it means that the archive is empty for this data type
-            if(latestGenerationTime != null) {
-                retrieveTimeCoefficients(archive, latestGenerationTime);
-            }
-        } else {
-            throw new IllegalArgumentException("Initialisation configuration for time correlation service not supported: " + initialisation.getClass().getName());
-        }
-    }
-
-    private void initialiseFromExternalArchive(String location, Instant time) throws ReatmetricException {
-        ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
-        if (archiveLoader.findFirst().isPresent()) {
-            IArchive externalArchive = archiveLoader.findFirst().get().buildArchive(location);
-            externalArchive.connect();
-            IRawDataArchive rawDataArchive = externalArchive.getArchive(IRawDataArchive.class);
-            retrieveTimeCoefficients(rawDataArchive, time);
-            externalArchive.dispose();
-        } else {
-            throw new ReatmetricException("Initialisation archive configured to " + location + ", but no archive factory deployed");
-        }
-    }
-
-    private void retrieveTimeCoefficients(IRawDataArchive archive, Instant latestGenerationTime) throws ArchiveException {
+    @Override
+    protected void initialiseModelFrom(IArchive archiveToUse, Instant latestGenerationTime) throws ReatmetricException {
+        IRawDataArchive archive = archiveToUse.getArchive(IRawDataArchive.class);
         List<RawData> data = archive.retrieve(latestGenerationTime, 1, RetrievalDirection.TO_PAST, new RawDataFilter(true, Constants.N_TIME_COEFFICIENTS, null, Collections.singletonList(Constants.T_TIME_COEFFICIENTS), Collections.singletonList(String.valueOf(spacecraftId)), Collections.singletonList(Quality.GOOD)));
         if(!data.isEmpty()) {
             String coeffs = new String(data.get(0).getContents(), StandardCharsets.US_ASCII);

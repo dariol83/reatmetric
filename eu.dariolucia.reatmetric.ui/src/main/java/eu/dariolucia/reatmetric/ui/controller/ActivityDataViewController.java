@@ -774,7 +774,12 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         }
         final List<Pair<Integer, IUniqueId>> purgeList = new LinkedList<>();
         for (TreeItem<ActivityOccurrenceDataWrapper> item : selected) {
-            purgeList.add(Pair.of(((ActivityOccurrenceData) item.getValue().get()).getExternalId(), ((ActivityOccurrenceData) item.getValue().get()).getInternalId()));
+            // If you select an activity report, you get a class cast exception here if you do not check
+            if(item.getValue().get() instanceof ActivityOccurrenceData) {
+                purgeList.add(Pair.of(((ActivityOccurrenceData) item.getValue().get()).getExternalId(), ((ActivityOccurrenceData) item.getValue().get()).getInternalId()));
+            } else if(item.getValue().get() instanceof ActivityOccurrenceReport) {
+                purgeList.add(Pair.of(((ActivityOccurrenceData) item.getParent().getValue().get()).getExternalId(), ((ActivityOccurrenceData) item.getParent().getValue().get()).getInternalId()));
+            }
         }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {

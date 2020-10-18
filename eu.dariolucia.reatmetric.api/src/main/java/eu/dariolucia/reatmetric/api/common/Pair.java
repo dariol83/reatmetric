@@ -88,4 +88,12 @@ public final class Pair<T, K> implements Serializable {
     public int hashCode() {
         return Objects.hash(first, second);
     }
+
+    @Override
+    public String toString() {
+        return "Pair[" +
+                "first=" + first +
+                ", second=" + second +
+                ']';
+    }
 }

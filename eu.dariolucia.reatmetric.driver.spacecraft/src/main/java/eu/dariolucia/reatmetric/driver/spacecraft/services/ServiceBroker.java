@@ -98,7 +98,7 @@ public class ServiceBroker implements IServiceBroker {
                         s.getFirst().onTcPacket(phase, phaseTime, trackerBean);
                     }
                 } catch (Exception e) {
-                    LOG.log(Level.SEVERE, "Cannot notify packet service subscriber " + subscribers + ": " + e.getMessage(), e);
+                    LOG.log(Level.SEVERE, "Cannot notify packet service subscriber " + s + ": " + e.getMessage(), e);
                 }
             }
         });

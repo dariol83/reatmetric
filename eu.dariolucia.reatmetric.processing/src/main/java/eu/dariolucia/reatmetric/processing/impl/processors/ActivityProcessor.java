@@ -150,7 +150,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     public List<AbstractDataItem> invoke(ActivityRequest request) throws ProcessingModelException {
-        if(entityStatus == Status.ENABLED) {
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             if(LOG.isLoggable(Level.INFO)) {
                 LOG.log(Level.INFO, "Activity invocation request for activity " + getPath() + " received by the processing model");
             }
@@ -440,7 +440,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     public List<AbstractDataItem> create(ActivityRequest request, ActivityProgress progress) throws ProcessingModelException {
-        if(entityStatus == Status.ENABLED) {
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             // Build the map of activity arguments with the corresponding raw values, no checks applied, we need to accept the information from the caller
             Map<String, Object> name2value = buildFinalArgumentMap(request, false);
             // At this stage we do not verify that all arguments are specified, we need to accept the information provided by the caller, without speculations
@@ -463,7 +463,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
 
     @Override
     public List<AbstractDataItem> process(ActivityProgress input) {
-        if(entityStatus == Status.ENABLED) {
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             ActivityOccurrenceProcessor aop = id2occurrence.get(input.getOccurrenceId());
             if (aop == null) {
                 if (LOG.isLoggable(Level.WARNING)) {
@@ -488,7 +488,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             LOG.finer("Evaluating all activity occurrences for activity " + getSystemEntityId());
         }
         List<AbstractDataItem> result = new LinkedList<>();
-        if(entityStatus == Status.ENABLED) {
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             // Copy the keys
             Set<IUniqueId> keys = new HashSet<>(id2occurrence.keySet());
             for(IUniqueId k : keys) {
@@ -513,7 +513,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer("Evaluating activity occurrence " + occurrenceId + " of activity " + getSystemEntityId());
         }
-        if(entityStatus == Status.ENABLED) {
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
             if (aop == null) {
                 if (LOG.isLoggable(Level.WARNING)) {
@@ -536,7 +536,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer("Purging activity occurrence " + occurrenceId + " of activity " + getSystemEntityId());
         }
-        if(entityStatus == Status.ENABLED) {
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
             if (aop == null) {
                 if (LOG.isLoggable(Level.WARNING)) {
@@ -559,7 +559,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer("Aborting activity occurrence " + occurrenceId + " of activity " + getSystemEntityId());
         }
-        if(entityStatus == Status.ENABLED) {
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             ActivityOccurrenceProcessor aop = id2occurrence.get(occurrenceId);
             if (aop == null) {
                 if (LOG.isLoggable(Level.WARNING)) {

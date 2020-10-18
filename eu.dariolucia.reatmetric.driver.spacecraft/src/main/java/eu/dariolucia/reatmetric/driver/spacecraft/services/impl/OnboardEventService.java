@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.driver.spacecraft.services.impl;
 import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
@@ -74,6 +75,11 @@ public class OnboardEventService extends AbstractPacketService<Object> {
     @Override
     public void dispose() {
         // Nothing here
+    }
+
+    @Override
+    protected void initialiseModelFrom(IArchive externalArchive, Instant time) {
+        // Nothing to be initialised here
     }
 
     @Override

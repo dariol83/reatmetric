@@ -20,6 +20,7 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +41,7 @@ public interface IActivityHandler {
 
     void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException;
 
-    class ActivityInvocation {
+    class ActivityInvocation implements Serializable {
         private final IUniqueId activityOccurrenceId;
         private final Instant generationTime;
         private final int activityId;

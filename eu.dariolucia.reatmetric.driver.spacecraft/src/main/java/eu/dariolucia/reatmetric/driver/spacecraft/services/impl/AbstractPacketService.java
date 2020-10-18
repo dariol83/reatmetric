@@ -16,16 +16,25 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.services.impl;
 
+import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataArchive;
+import eu.dariolucia.reatmetric.api.archive.IArchive;
+import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
+import eu.dariolucia.reatmetric.core.configuration.AbstractInitialisationConfiguration;
+import eu.dariolucia.reatmetric.core.configuration.ResumeInitialisationConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
+import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IService;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.time.Instant;
+import java.util.ServiceLoader;
 
 public abstract class AbstractPacketService<T> implements IService {
 
@@ -47,11 +56,53 @@ public abstract class AbstractPacketService<T> implements IService {
         this.serviceBroker = serviceBroker;
         try {
             this.configuration = loadConfiguration(serviceConfigurationPath);
-            postInitialisation();
+            // Initialise from archive?
+            if(this.serviceCoreConfiguration.getInitialisation() != null) {
+                initialiseModel(this.serviceCoreConfiguration.getInitialisation());
+            }
         } catch (IOException e) {
             throw new ReatmetricException(e);
         }
+        postInitialisation();
     }
+
+    protected void initialiseModel(AbstractInitialisationConfiguration initialisation) throws ReatmetricException {
+        if(initialisation instanceof TimeInitialisationConfiguration) {
+            // Get the time coefficient with generation time at the specified one from the reference archive
+            String location = ((TimeInitialisationConfiguration) initialisation).getArchiveLocation();
+            Instant time = ((TimeInitialisationConfiguration) initialisation).getTime().toInstant();
+            if(location == null) {
+                // No archive location -> use current archive
+                initialiseModelFrom(context().getArchive(), time);
+            } else {
+                // Archive location -> use external archive
+                initialiseFromExternalArchive(location, time);
+            }
+        } else if(initialisation instanceof ResumeInitialisationConfiguration) {
+            // Get the latest time coefficients in the raw data broker
+            Instant latestGenerationTime = context().getArchive().getArchive(IRawDataArchive.class).retrieveLastGenerationTime();
+            // If latestGenerationTime is null, it means that the archive is empty for this data type
+            if(latestGenerationTime != null) {
+                initialiseModelFrom(context().getArchive(), latestGenerationTime);
+            }
+        } else {
+            throw new IllegalArgumentException("Initialisation configuration for onboard scheduling service not supported: " + initialisation.getClass().getName());
+        }
+    }
+
+    private void initialiseFromExternalArchive(String location, Instant time) throws ReatmetricException {
+        ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
+        if (archiveLoader.findFirst().isPresent()) {
+            IArchive externalArchive = archiveLoader.findFirst().get().buildArchive(location);
+            externalArchive.connect();
+            initialiseModelFrom(externalArchive, time);
+            externalArchive.dispose();
+        } else {
+            throw new ReatmetricException("Initialisation archive configured to " + location + ", but no archive factory deployed");
+        }
+    }
+
+    protected abstract void initialiseModelFrom(IArchive externalArchive, Instant time) throws ReatmetricException;
 
     protected void postInitialisation() throws ReatmetricException {
         // Sub-classes can extend

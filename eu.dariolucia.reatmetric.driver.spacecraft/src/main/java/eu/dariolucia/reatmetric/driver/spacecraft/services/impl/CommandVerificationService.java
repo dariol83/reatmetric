@@ -25,8 +25,6 @@ import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
-import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
-import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
@@ -38,9 +36,6 @@ import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
-import eu.dariolucia.reatmetric.core.configuration.AbstractInitialisationConfiguration;
-import eu.dariolucia.reatmetric.core.configuration.ResumeInitialisationConfiguration;
-import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfo;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
@@ -50,7 +45,10 @@ import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -67,53 +65,9 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
     private final Map<Integer, List<QueuedReport>> queuedReportMap = new ConcurrentHashMap<>(); // This content is transient and should not be restored
 
     @Override
-    public void postInitialisation() throws ReatmetricException {
-        if(serviceCoreConfiguration().getInitialisation() != null) {
-            initialiseOpenVerificationMap(serviceCoreConfiguration().getInitialisation());
-        }
-    }
-
-    private void initialiseOpenVerificationMap(AbstractInitialisationConfiguration initialisation) throws ReatmetricException {
-        IRawDataArchive rawDataArchive = context().getArchive().getArchive(IRawDataArchive.class);
-        IActivityOccurrenceDataArchive actOccArchive = context().getArchive().getArchive(IActivityOccurrenceDataArchive.class);
-        if(initialisation instanceof TimeInitialisationConfiguration) {
-            // Get the verification map with generation time at the specified one from the reference archive
-            String location = ((TimeInitialisationConfiguration) initialisation).getArchiveLocation();
-            Instant time = ((TimeInitialisationConfiguration) initialisation).getTime().toInstant();
-            if(location == null) {
-                // No archive location -> use current archive
-                retrieveOpenVerificationMap(rawDataArchive, actOccArchive, time);
-            } else {
-                // Archive location -> use external archive
-                initialiseFromExternalArchive(location, time);
-            }
-        } else if(initialisation instanceof ResumeInitialisationConfiguration) {
-            // Get the latest verification map in the raw data broker
-            Instant latestGenerationTime = rawDataArchive.retrieveLastGenerationTime();
-            // If latestGenerationTime is null, it means that the archive is empty for this data type
-            if(latestGenerationTime != null) {
-                retrieveOpenVerificationMap(rawDataArchive, actOccArchive, latestGenerationTime);
-            }
-        } else {
-            throw new IllegalArgumentException("Initialisation configuration for command verification service not supported: " + initialisation.getClass().getName());
-        }
-    }
-
-    private void initialiseFromExternalArchive(String location, Instant time) throws ReatmetricException {
-        ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
-        if (archiveLoader.findFirst().isPresent()) {
-            IArchive externalArchive = archiveLoader.findFirst().get().buildArchive(location);
-            externalArchive.connect();
-            IRawDataArchive rawDataArchive = externalArchive.getArchive(IRawDataArchive.class);
-            IActivityOccurrenceDataArchive accOccArchive = externalArchive.getArchive(IActivityOccurrenceDataArchive.class);
-            retrieveOpenVerificationMap(rawDataArchive, accOccArchive, time);
-            externalArchive.dispose();
-        } else {
-            throw new ReatmetricException("Initialisation archive configured to " + location + ", but no archive factory deployed");
-        }
-    }
-
-    private void retrieveOpenVerificationMap(IRawDataArchive rawDataArchive, IActivityOccurrenceDataArchive actOccArchive, Instant latestGenerationTime) throws ArchiveException {
+    protected void initialiseModelFrom(IArchive archiveToUse, Instant latestGenerationTime) throws ReatmetricException {
+        IRawDataArchive rawDataArchive = archiveToUse.getArchive(IRawDataArchive.class);
+        IActivityOccurrenceDataArchive actOccArchive = archiveToUse.getArchive(IActivityOccurrenceDataArchive.class);
         List<RawData> data = rawDataArchive.retrieve(latestGenerationTime, 1, RetrievalDirection.TO_PAST, new RawDataFilter(true, Constants.N_TC_VERIFICATION_MAP, null, Collections.singletonList(Constants.T_TC_VERIFICATION_MAP), Collections.singletonList(String.valueOf(spacecraftConfiguration().getId())), Collections.singletonList(Quality.GOOD)));
         if(!data.isEmpty()) {
             String serializedMap = new String(data.get(0).getContents(), StandardCharsets.US_ASCII);
