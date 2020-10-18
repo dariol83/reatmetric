@@ -17,31 +17,46 @@
 package eu.dariolucia.reatmetric.driver.spacecraft.services.impl;
 
 import eu.dariolucia.reatmetric.api.activity.*;
+import eu.dariolucia.reatmetric.api.archive.IArchive;
+import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
+import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
+import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.input.*;
+import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
+import eu.dariolucia.reatmetric.api.rawdata.Quality;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import eu.dariolucia.reatmetric.core.configuration.AbstractInitialisationConfiguration;
+import eu.dariolucia.reatmetric.core.configuration.ResumeInitialisationConfiguration;
+import eu.dariolucia.reatmetric.core.configuration.TimeInitialisationConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfo;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.services.OnboardOperationsSchedulingServiceConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * This class implements the ECSS PUS 11 command scheduling service (limited to 11,4 and 11,3 commands).
  * TODO: support for 11,1, 11,2 and status report (minimal capability set) to be implemented
- * TODO: restore from archived state
+ * TODO: restore from archived state (to be tested)
  */
 public class OnboardOperationsSchedulingService extends AbstractPacketService<OnboardOperationsSchedulingServiceConfiguration> {
 
@@ -52,6 +67,74 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
     private final Timer scheduler = new Timer();
     // This map contains the time-tagged TCs
     private final Map<IUniqueId, LinkedTcTracker> linkedActivityOccurrence2tcTracker = new HashMap<>();
+
+    @Override
+    public void postInitialisation() throws ReatmetricException {
+        // TODO: refactor this class and the other services, to have a common codebase for archive access and initialisation support
+        if(serviceCoreConfiguration().getInitialisation() != null) {
+            initialiseModel(serviceCoreConfiguration().getInitialisation(), context().getArchive().getArchive(IRawDataArchive.class));
+        }
+        // subscribeToRawDataBroker(); // No TM reports currently processed, so this is not needed at the moment
+    }
+
+    private void initialiseModel(AbstractInitialisationConfiguration initialisation, IRawDataArchive archive) throws ReatmetricException {
+        if(initialisation instanceof TimeInitialisationConfiguration) {
+            // Get the time coefficient with generation time at the specified one from the reference archive
+            String location = ((TimeInitialisationConfiguration) initialisation).getArchiveLocation();
+            Instant time = ((TimeInitialisationConfiguration) initialisation).getTime().toInstant();
+            if(location == null) {
+                // No archive location -> use current archive
+                retrieveOnboardModel(archive, time);
+            } else {
+                // Archive location -> use external archive
+                initialiseFromExternalArchive(location, time);
+            }
+        } else if(initialisation instanceof ResumeInitialisationConfiguration) {
+            // Get the latest time coefficients in the raw data broker
+            Instant latestGenerationTime = archive.retrieveLastGenerationTime();
+            // If latestGenerationTime is null, it means that the archive is empty for this data type
+            if(latestGenerationTime != null) {
+                retrieveOnboardModel(archive, latestGenerationTime);
+            }
+        } else {
+            throw new IllegalArgumentException("Initialisation configuration for onboard scheduling service not supported: " + initialisation.getClass().getName());
+        }
+    }
+
+    private void initialiseFromExternalArchive(String location, Instant time) throws ReatmetricException {
+        ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
+        if (archiveLoader.findFirst().isPresent()) {
+            IArchive externalArchive = archiveLoader.findFirst().get().buildArchive(location);
+            externalArchive.connect();
+            IRawDataArchive rawDataArchive = externalArchive.getArchive(IRawDataArchive.class);
+            retrieveOnboardModel(rawDataArchive, time);
+            externalArchive.dispose();
+        } else {
+            throw new ReatmetricException("Initialisation archive configured to " + location + ", but no archive factory deployed");
+        }
+    }
+
+    private void retrieveOnboardModel(IRawDataArchive archive, Instant time) throws ReatmetricException {
+        List<RawData> data = archive.retrieve(time, 1, RetrievalDirection.TO_PAST, new RawDataFilter(true, Constants.N_SCHEDULE_MODEL_STATE, null, Collections.singletonList(Constants.T_SCHEDULE_MODEL_STATE), Collections.singletonList(String.valueOf(spacecraftConfiguration().getId())), Collections.singletonList(Quality.GOOD)));
+        if(!data.isEmpty()) {
+            try {
+                Map<IUniqueId, LinkedTcTracker> theMap = (Map<IUniqueId, LinkedTcTracker>) new ObjectInputStream(new ByteArrayInputStream(data.get(0).getContents())).readObject();
+                for(Map.Entry<IUniqueId, LinkedTcTracker> entry : theMap.entrySet()) {
+                    this.linkedActivityOccurrence2tcTracker.put(entry.getKey(), entry.getValue());
+                    // If the linked task is completed - 11,4 fully executed - then start with the timer again
+                    if(entry.getValue().isCompleted()) {
+                        entry.getValue().registerScheduledTc();
+                    }
+                }
+            } catch (IOException | ClassNotFoundException e) {
+                throw new ReatmetricException(e);
+            }
+        } else {
+            if(LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, "Onboard schedule model for spacecraft " + spacecraftConfiguration().getId() + " at time " + time + " not found");
+            }
+        }
+    }
 
     @Override
     public synchronized void onTcPacket(TcPhase phase, Instant phaseTime, TcTracker tcTracker) {
@@ -76,6 +159,8 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
                     LOG.log(Level.SEVERE, "Error while dispatching 11,4 command for activity " + tcTracker.getInvocation().getPath() + " (" + tcTracker.getInvocation().getActivityOccurrenceId() + "): " + e.getMessage(), e);
                     linkedTracker.terminate(TcPhase.FAILED, phaseTime, false);
                 }
+                // Save state
+                storeState();
                 // Stop here
                 return;
             }
@@ -89,6 +174,8 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
             LinkedTcTracker linkedTcTracker = linkedActivityOccurrence2tcTracker.get(new LongUniqueId(Long.parseLong(occIdStr)));
             // Update the tracking information
             linkedTcTracker.informTcTransition(phase, phaseTime);
+            // Save state
+            storeState();
         }
         // If it is a 11,3 in status COMPLETED, the schedule is reset
         if(tcTracker.getInfo().getPusHeader().getServiceType() == 11 && tcTracker.getInfo().getPusHeader().getServiceSubType() == 3 && phase == TcPhase.COMPLETED) {
@@ -98,6 +185,8 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
                 LinkedTcTracker linkedTcTracker = linkedActivityOccurrence2tcTracker.remove(id);
                 linkedTcTracker.terminate(TcPhase.FAILED, phaseTime, false);
             }
+            // Save state
+            storeState();
         }
         // In any case, if the tcTracker is present in the linkedActivityOccurrence2tcTracker and results as STARTED or COMPLETED or FAILED, it should be removed silently
         if(phase == TcPhase.STARTED || phase == TcPhase.COMPLETED || phase == TcPhase.FAILED) {
@@ -105,7 +194,26 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
             LinkedTcTracker track = linkedActivityOccurrence2tcTracker.remove(occId);
             if(track != null) {
                 track.terminate(phase, phaseTime, true);
+                // Save state
+                storeState();
             }
+        }
+    }
+
+    /**
+     * Store the state of the model, so that it is possible to restore it from the archive.
+     */
+    private synchronized void storeState() {
+        try {
+            // Serialize map
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(this.linkedActivityOccurrence2tcTracker);
+            oos.flush();
+            RawData rd = new RawData(context().getRawDataBroker().nextRawDataId(), Instant.now(), Constants.N_SCHEDULE_MODEL_STATE, Constants.T_SCHEDULE_MODEL_STATE, "", String.valueOf(spacecraftConfiguration().getId()), Quality.GOOD, null, bos.toByteArray(), Instant.now(), driverName(), null);
+            context().getRawDataBroker().distribute(Collections.singletonList(rd));
+        } catch (ReatmetricException | IOException e) {
+            LOG.log(Level.SEVERE, "Cannot store on-board schedule model for spacecraft " + spacecraftConfiguration().getId() + ": " + e.getMessage(), e);
         }
     }
 
@@ -245,14 +353,15 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
         return OnboardOperationsSchedulingServiceConfiguration.load(new FileInputStream(serviceConfigurationPath));
     }
 
-    private class LinkedTcTracker {
+    private class LinkedTcTracker implements Serializable {
 
         private final TcTracker tcTracker;
-        private volatile TimerTask scheduledOpening;
+        private volatile transient TimerTask scheduledOpening;
         private volatile Instant currentExecutionTime;
         private volatile Number subscheduleId;
         private volatile String lastAnnouncedStage = ActivityOccurrenceReport.RELEASE_REPORT_NAME;
         private volatile ActivityOccurrenceState lastAnnouncedState = ActivityOccurrenceState.RELEASE;
+        private volatile boolean completed = false;
 
         public LinkedTcTracker(TcTracker tcTracker, Instant executionTime) {
             this.tcTracker = tcTracker;
@@ -284,7 +393,8 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
                 }
                 break;
                 case COMPLETED: {
-                    registerScheduledTc(this, currentExecutionTime);
+                    completed = true;
+                    registerScheduledTc();
                     serviceBroker().informTcPacket(TcPhase.SCHEDULED, phaseTime, tcTracker);
                     reportActivityState(tcTracker, phaseTime, ActivityOccurrenceState.SCHEDULING, Constants.STAGE_SPACECRAFT_SCHEDULED, ActivityReportState.OK, ActivityOccurrenceState.SCHEDULING, currentExecutionTime);
                 }
@@ -296,7 +406,7 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
             }
         }
 
-        private synchronized void registerScheduledTc(LinkedTcTracker tcTracker, Instant scheduledTime) {
+        public synchronized void registerScheduledTc() {
             TimerTask scheduledTc = scheduledOpening;
             if(scheduledTc != null) {
                 boolean okCancelled = scheduledTc.cancel();
@@ -307,14 +417,15 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
             scheduledOpening = new TimerTask() {
                 @Override
                 public void run() {
-                    tcTracker.informOnboardAvailability();
+                    informOnboardAvailability();
                 }
             };
-            scheduler.schedule(scheduledOpening, new Date(scheduledTime.toEpochMilli() - VERIFICATION_AHEAD_MILLIS));
+            Date toActivate = new Date(currentExecutionTime.toEpochMilli() - VERIFICATION_AHEAD_MILLIS);
+            scheduler.schedule(scheduledOpening, toActivate);
             scheduler.purge();
         }
 
-        public void informOnboardAvailability() {
+        public synchronized void informOnboardAvailability() {
             serviceBroker().informTcPacket(TcPhase.AVAILABLE_ONBOARD, currentExecutionTime, tcTracker);
             reportActivityState(tcTracker, currentExecutionTime, ActivityOccurrenceState.EXECUTION, Constants.STAGE_ONBOARD_AVAILABILITY, ActivityReportState.EXPECTED, ActivityOccurrenceState.EXECUTION, currentExecutionTime);
             lastAnnouncedStage = Constants.STAGE_SPACECRAFT_SCHEDULED;
@@ -322,6 +433,8 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
             // Remove tracker from map
             linkedActivityOccurrence2tcTracker.remove(tcTracker.getInvocation().getActivityOccurrenceId());
             scheduler.purge();
+            // Save state to be done here, as this method is run by a different thread
+            storeState();
         }
 
         public void terminate(TcPhase phase, Instant phaseTime, boolean silently) {
@@ -335,10 +448,15 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
             }
             linkedActivityOccurrence2tcTracker.remove(tcTracker.getInvocation().getActivityOccurrenceId());
             scheduler.purge();
+            // State stored by the caller
         }
 
         public void setSubscheduleId(Number value) {
             subscheduleId = value;
+        }
+
+        public boolean isCompleted() {
+            return completed;
         }
     }
 }

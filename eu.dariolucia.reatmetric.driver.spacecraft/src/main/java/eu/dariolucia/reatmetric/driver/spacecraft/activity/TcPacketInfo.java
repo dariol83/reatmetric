@@ -20,10 +20,11 @@ import eu.dariolucia.ccsds.encdec.pus.AckField;
 import eu.dariolucia.ccsds.encdec.pus.TcPusHeader;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.PacketErrorControlType;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TcPacketInfo {
+public class TcPacketInfo implements Serializable {
 
     public static final short TYPE_ID = 101;
 

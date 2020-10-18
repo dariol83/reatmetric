@@ -83,6 +83,6 @@ Example: `2`
 #### linked-scheduled-activity-occurrence
 
 Allow to keep tracking between a scheduled activity occurrence and the PUS 11,4 TC.
-This implementation of the PUS 11 supports a single TC per PUS 11,4.
+The implementation of the PUS 11 in this module supports a single TC per PUS 11,4.
 
-Format: `internal`
+Format: *internal*
