@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 
@@ -23,10 +24,35 @@ import java.util.List;
 
 public interface IActivityExecutor {
 
+    /**
+     * Execute the provided activity occurrence.
+     *
+     * @param activityInvocation the activity occurrence to execute
+     * @throws ActivityHandlingException in case of errors during the activity handling process
+     */
     void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException;
 
+    /**
+     * Return the list of the supported activity types.
+     *
+     * @return the list of supported activity types
+     */
     List<String> getSupportedActivityTypes();
 
+    /**
+     * Return the list of the supported routes.
+     *
+     * @return the list of supported routes
+     */
     List<String> getSupportedRoutes();
+
+    /**
+     * Abort the specified activity occurrence, if present. Implementors of this method shall not report any exception,
+     * if the occurrence is not handled by them, but silently return.
+     *
+     * @param activityId the activity ID
+     * @param activityOccurrenceId the activity occurrence ID to abort
+     */
+    void abort(int activityId, IUniqueId activityOccurrenceId);
 
 }

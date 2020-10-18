@@ -33,6 +33,7 @@ import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuUplinkStatusEnum;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
@@ -476,6 +477,11 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
     @Override
     public List<String> getSupportedRoutes() {
         return Collections.singletonList(getServiceInstanceIdentifier());
+    }
+
+    @Override
+    public void abort(int activityId, IUniqueId activityOccurrenceId) {
+        // An activity executed by this executor cannot be aborted
     }
 
     public void sendThrowEvent(IActivityHandler.ActivityInvocation activityInvocation) {

@@ -32,6 +32,7 @@ import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
@@ -170,7 +171,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     }
 
     @Override
-    public void informStatusUpdate(long id, ForwardDataUnitProcessingStatus status, Instant time) {
+    public synchronized void informStatusUpdate(long id, ForwardDataUnitProcessingStatus status, Instant time) {
         RequestTracker tracker = this.cltuId2requestTracker.get(id);
         if(tracker != null) {
             tracker.trackCltuStatus(id, status, time);
@@ -201,7 +202,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         return null;
     }
 
-    public void sendTcPacket(SpacePacket sp, TcTracker tcTracker) throws ActivityHandlingException {
+    public synchronized void sendTcPacket(SpacePacket sp, TcTracker tcTracker) throws ActivityHandlingException {
         LOG.log(Level.INFO, "TC packet with APID (" + sp.getApid() + ") for activity " + tcTracker.getInvocation().getPath() + " encoded: " + StringUtil.toHexDump(sp.getPacket()));
         try {
             // Overridden TC VC ID
@@ -329,7 +330,12 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         return false;
     }
 
-    public void dispose() {
+    public synchronized void dispose() {
+        // All pending TC groups must be aborted
+        Set<String> tcGroups = new HashSet<>(pendingGroupTcs.keySet());
+        for(String group : tcGroups) {
+            abortTcGroup(group, pendingGroupTcs.get(group));
+        }
         this.context.getRawDataBroker().unsubscribe(this);
         for(ICltuConnector m : new HashSet<>(cltuSenders.values())) {
             try {
@@ -351,7 +357,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     }
 
     @Override
-    public void transferFrameGenerated(AbstractSenderVirtualChannel vc, TcTransferFrame generatedFrame, int bufferedBytes) {
+    public synchronized void transferFrameGenerated(AbstractSenderVirtualChannel vc, TcTransferFrame generatedFrame, int bufferedBytes) {
         // Ignore BC frames
         if(generatedFrame.getFrameType() != TcTransferFrame.FrameType.BC) {
             lastGeneratedFrames.add(generatedFrame);
@@ -374,7 +380,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     }
 
     @Override
-    public void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
+    public synchronized void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
         context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.PENDING, ActivityOccurrenceState.RELEASE, null));
         if(activityInvocation.getPath().getLastPathElement().equals(Constants.TC_COP1_DIRECTIVE_NAME)) {
             // Three parameters: TC VC ID (enumeration: 0 to 7), directive ID (enumeration: as per FopDirective enum), qualifier (enumeration)
@@ -423,7 +429,30 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     }
 
     @Override
-    public void transferNotification(FopEngine engine, FopOperationStatus status, TcTransferFrame frame) {
+    public synchronized void abort(int activityId, IUniqueId activityOccurrenceId) {
+        // If the activityOccurrenceId is part of a group command, then the group commands (and the related TCs up to now
+        // pending release) should be aborted.
+        for(Map.Entry<String, List<TcTracker>> entry : this.pendingGroupTcs.entrySet()) {
+            for(TcTracker tcTracker : entry.getValue()) {
+                if(tcTracker.getInvocation().getActivityOccurrenceId().equals(activityOccurrenceId)) {
+                    // Found, abort all TC group
+                    abortTcGroup(entry.getKey(), entry.getValue());
+                    return;
+                }
+            }
+        }
+    }
+
+    private void abortTcGroup(String groupToAbort, List<TcTracker> tcTrackers) {
+        LOG.log(Level.WARNING, "Aborting TC group " + groupToAbort + " due to abort request received");
+        this.pendingGroupTcs.remove(groupToAbort);
+        Instant now = Instant.now();
+        informServiceBroker(TcPhase.FAILED, now, tcTrackers);
+        reportActivityState(tcTrackers, now, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
+    }
+
+    @Override
+    public synchronized void transferNotification(FopEngine engine, FopOperationStatus status, TcTransferFrame frame) {
         if(frame.getFrameType() == TcTransferFrame.FrameType.AD && (status == FopOperationStatus.NEGATIVE_CONFIRM || status == FopOperationStatus.POSIIVE_CONFIRM)) {
             long frameInTransmissionId = (Long) frame.getAnnotationValue(Constants.ANNOTATION_TC_FRAME_ID);
             RequestTracker tracker = cltuId2requestTracker.get(frameInTransmissionId);

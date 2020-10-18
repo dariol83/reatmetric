@@ -573,7 +573,13 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
 
     @Override
     public void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException {
-        // TODO: not implemented yet ... I do not even know if this can be done at all. For sure for group activities not yet released, but for others it is impossible
+        // Abort can be done for sure for group activities not yet released, but for others it is impossible.
+        // Forward to all executors
+        for(List<IActivityExecutor> listExec : activityType2executors.values()) {
+            for(IActivityExecutor exec : listExec) {
+                exec.abort(activityId, activityOccurrenceId);
+            }
+        }
     }
 
     @Override

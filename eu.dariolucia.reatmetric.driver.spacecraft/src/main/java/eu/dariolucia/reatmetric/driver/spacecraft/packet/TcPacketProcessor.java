@@ -28,6 +28,7 @@ import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
@@ -121,6 +122,11 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
     @Override
     public List<String> getSupportedRoutes() {
         return tcDataLinkProcessor.getSupportedRoutes();
+    }
+
+    @Override
+    public void abort(int activityId, IUniqueId activityOccurrenceId) {
+        // Nothing can be done here
     }
 
     @Override
