@@ -157,13 +157,17 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             LOG.log(Level.SEVERE, String.format("Parameter %d (%s) is a synthetic parameter, but a sample was injected. Processing ignored.", definition.getId(), definition.getLocation()));
             return Collections.emptyList();
         }
+        // To be returned at the end of the processing
+        List<AbstractDataItem> generatedStates = new ArrayList<>(3);
         // Re-evaluation: a re-evaluation state only makes sense if: this is synthetic parameter or there was a previous value to be re-evaluated.
         // If that is not the case, it is pointless to continue with the processing.
         if(newValue == null && definition.getExpression() == null && (this.state == null || this.state.getSourceValue() == null)) {
             if(LOG.isLoggable(Level.FINEST)) {
                 LOG.log(Level.FINEST, String.format("Skipping re-evaluation of parameter %d (%s) as there is no previous sample", definition.getId(), definition.getLocation()));
             }
-            return Collections.emptyList();
+            // Finalize entity state and prepare for the returned list of data items
+            computeSystemEntityState(false, generatedStates);
+            return generatedStates;
         }
         // Previous value
         Object previousValue = this.state == null ? null : this.state.getEngValue();
@@ -171,8 +175,6 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         boolean wasInAlarm = this.state != null && this.state.getAlarmState().isAlarm();
         // Required to take decision at the end
         boolean stateChanged = false;
-        // To be returned at the end of the processing
-        List<AbstractDataItem> generatedStates = new ArrayList<>(3);
         // The placeholder for the AlarmParameterData to be created, if needed
         AlarmParameterData alarmData = null;
         // If the object is enabled, then you have to process it as usual
