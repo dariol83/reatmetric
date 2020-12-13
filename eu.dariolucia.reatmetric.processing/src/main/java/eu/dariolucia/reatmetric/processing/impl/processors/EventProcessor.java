@@ -170,20 +170,17 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                     generatedStates.add(this.state);
                     // Log the event if log is not suppressed and you are not ignoring this event
                     if(definition.isLogEnabled() && getEntityStatus() != Status.IGNORED) {
-                        String logSource = this.state.getSource();
-                        if(logSource == null) {
-                            logSource = getPath().asString();
-                        }
+                        String logSource = definition.getLocation(); // this.state.getSource();
                         switch (definition.getSeverity()) {
                             case ALARM:
                             case ERROR:
-                                LOG.log(Level.SEVERE, "Event " + getPath() + " raised: " + getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
+                                LOG.log(Level.SEVERE, getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
                                 break;
                             case WARN:
-                                LOG.log(Level.WARNING, "Event " + getPath() + " raised: " + getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
+                                LOG.log(Level.WARNING, getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
                                 break;
                             case INFO:
-                                LOG.log(Level.INFO, "Event " + getPath() + " raised: " + getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
+                                LOG.log(Level.INFO, getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
                                 break;
                         }
                     }

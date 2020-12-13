@@ -304,7 +304,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
             @Override
             public void run() {
                 if (currentTimeoutTask == this) {
-                    parent.processor.scheduleTask(Collections.singletonList(new ActivityOccurrenceUpdateOperation(parent.getSystemEntityId(), occurrenceId)), ProcessingModelImpl.USER_DISPATCHING_QUEUE);
+                    parent.processor.scheduleTask(Collections.singletonList(new ActivityOccurrenceUpdateOperation(parent.getSystemEntityId(), occurrenceId)), ProcessingModelImpl.COMMAND_DISPATCHING_QUEUE);
                 }
             }
         };

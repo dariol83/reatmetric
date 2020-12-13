@@ -229,6 +229,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                     } else {
                         // Effectively, as there is no change in the depending elements, the processing can end here
                         // Before existing, compute the system entity state if needed
+                        if(LOG.isLoggable(Level.FINEST)) {
+                            LOG.log(Level.FINEST, String.format("Sample of parameter %d (%s) discarded, no change in depending elements", definition.getId(), definition.getLocation()));
+                        }
                         computeSystemEntityState(false, generatedStates);
                         return generatedStates;
                     }
@@ -284,6 +287,10 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
                 generatedStates.add(this.state);
                 stateChanged = true;
+            } else {
+                if(LOG.isLoggable(Level.FINEST)) {
+                    LOG.log(Level.FINEST, String.format("Sample of parameter %d (%s) discarded, no change since last update (!)", definition.getId(), definition.getLocation()));
+                }
             }
             // Compute alarm state
             if(stateChanged && valid()) {
@@ -345,12 +352,12 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             case ALARM:
             case ERROR:
             {
-                LOG.log(Level.SEVERE, "Parameter " + getPath() + " in alarm, value " + alarmData.getCurrentValue(), new Object[] {getPath().asString(), getSystemEntityId()});
+                LOG.log(Level.SEVERE, "Parameter " + getPath() + " in alarm, value " + alarmData.getCurrentValue(), new Object[] {definition.getLocation(), getSystemEntityId()});
             }
             break;
             case WARNING:
             {
-                LOG.log(Level.WARNING, "Parameter " + getPath() + " in alarm, value " + alarmData.getCurrentValue(), new Object[] {getPath().asString(), getSystemEntityId()});
+                LOG.log(Level.WARNING, "Parameter " + getPath() + " in alarm, value " + alarmData.getCurrentValue(), new Object[] {definition.getLocation(), getSystemEntityId()});
             }
             break;
         }

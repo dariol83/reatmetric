@@ -50,17 +50,20 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private static final Logger LOG = Logger.getLogger(ProcessingModelImpl.class.getName());
 
-    private static final int UPDATE_TASK_CAPACITY = 1000;
+    private static final int REPORTING_TASK_CAPACITY = 1000;
+    private static final int COMMAND_TASK_CAPACITY = 10000;
 
     public static final String PROCESSING_MODEL_NAME = "Processing Model";
     public static final String DEBUG_INPUT_QUEUE_SIZE = "Input queue size";
     public static final String DEBUG_OUTPUT_DATA_ITEMS = "Output data items";
     public static final String DEBUG_OUTPUT_DATA_ITEMS_UNIT = "data items/second";
+    public static final String DEBUG_INPUT_DATA_ITEMS = "Input data items";
+    public static final String DEBUG_INPUT_DATA_ITEMS_UNIT = "data items/second";
 
     public static final String FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME = "Forwarding to Activity Handler";
 
-    public static final int USER_DISPATCHING_QUEUE = 0;
-    public static final int TM_DISPATCHING_QUEUE = 1;
+    public static final int COMMAND_DISPATCHING_QUEUE = 0;
+    public static final int REPORTING_DISPATCHING_QUEUE = 1;
 
     private final ProcessingDefinition processingDefinition;
 
@@ -70,8 +73,8 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private final GraphModel graphModel;
 
-    private final BlockingQueue<ProcessingTask> tmUpdateTaskQueue = new ArrayBlockingQueue<>(UPDATE_TASK_CAPACITY);
-    private final BlockingQueue<ProcessingTask> activityUpdateTaskQueue = new ArrayBlockingQueue<>(UPDATE_TASK_CAPACITY);
+    private final BlockingQueue<ProcessingTask> reportingUpdateTaskQueue = new ArrayBlockingQueue<>(REPORTING_TASK_CAPACITY);
+    private final BlockingQueue<ProcessingTask> activityUpdateTaskQueue = new ArrayBlockingQueue<>(COMMAND_TASK_CAPACITY);
 
     private final ExecutorService taskProcessors = ThreadUtil.newThreadExecutor(Runtime.getRuntime().availableProcessors(), "Reatmetric Processing - Task Processor");
 
@@ -94,11 +97,13 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private final Timer performanceSampler = new Timer("Reatmetric Processing - Sampler", true);
     private final AtomicReference<List<DebugInformation>> lastStats = new AtomicReference<>(Arrays.asList(
-            DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_INPUT_QUEUE_SIZE, 0, UPDATE_TASK_CAPACITY, ""),
+            DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_INPUT_QUEUE_SIZE, 0, REPORTING_TASK_CAPACITY, ""),
+            DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_INPUT_DATA_ITEMS, 0, null, DEBUG_INPUT_DATA_ITEMS_UNIT),
             DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_OUTPUT_DATA_ITEMS, 0, null, DEBUG_OUTPUT_DATA_ITEMS_UNIT)
     ));
     private Instant lastSampleGenerationTime;
-    private long dataItemOutput = 0;
+    private volatile long dataItemOutput = 0;
+    private final AtomicLong dataItemInput = new AtomicLong(0);
 
     /**
      * The set of running activity processors, i.e. those processors that have at least one activity occurrence currently
@@ -120,7 +125,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         graphModel = new GraphModel(processingDefinition, this);
         graphModel.build();
         // Activate the dispatchers
-        tmDispatcher.submit(() -> doDispatch(tmDispatcher, tmUpdateTaskQueue));
+        tmDispatcher.submit(() -> doDispatch(tmDispatcher, reportingUpdateTaskQueue));
         activityDispatcher.submit(() -> doDispatch(activityDispatcher, activityUpdateTaskQueue));
         // Create redirector that uses the asynchronous notifier
         outputRedirector = createOutputRedirector();
@@ -139,15 +144,19 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
             if (lastSampleGenerationTime == null) {
                 lastSampleGenerationTime = genTime;
                 dataItemOutput = 0;
+                dataItemInput.set(0);
             } else {
-                long numItems = dataItemOutput;
+                long numItemsOutput = dataItemOutput;
                 dataItemOutput = 0;
+                long numItemsInput = dataItemInput.getAndSet(0);
                 int millis = (int) (genTime.toEpochMilli() - lastSampleGenerationTime.toEpochMilli());
                 lastSampleGenerationTime = genTime;
-                double itemsPerSecond = (numItems / (millis/1000.0));
+                double outputItemsPerSecond = (numItemsOutput / (millis/1000.0));
+                double inputItemsPerSecond = (numItemsInput / (millis/1000.0));
                 List<DebugInformation> toSet = Arrays.asList(
-                        DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_INPUT_QUEUE_SIZE, tmUpdateTaskQueue.size(), UPDATE_TASK_CAPACITY, ""),
-                        DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_OUTPUT_DATA_ITEMS, (int) itemsPerSecond, null, DEBUG_OUTPUT_DATA_ITEMS_UNIT)
+                        DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_INPUT_QUEUE_SIZE, reportingUpdateTaskQueue.size(), REPORTING_TASK_CAPACITY, ""),
+                        DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_INPUT_DATA_ITEMS, (int) inputItemsPerSecond, null, DEBUG_INPUT_DATA_ITEMS_UNIT),
+                        DebugInformation.of(PROCESSING_MODEL_NAME, DEBUG_OUTPUT_DATA_ITEMS, (int) outputItemsPerSecond, null, DEBUG_OUTPUT_DATA_ITEMS_UNIT)
                 );
                 lastStats.set(toSet);
             }
@@ -197,11 +206,27 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         ProcessingTask taskToRun = new ProcessingTask(new ProcessingTask.Job(operations, outputRedirector, workingSet));
         // Add the task to be done to the queue
         switch(dispatchingQueue) {
-            case USER_DISPATCHING_QUEUE:
-                activityUpdateTaskQueue.offer(taskToRun);
+            case COMMAND_DISPATCHING_QUEUE:
+                // Blocking queue -> this blocking call can introduce a potential deadlock if the queue becomes full, the call is stuck and the
+                // call comes from the Processing Model internal classes.
+                // TODO: replace the queue with a unbounded queue with high watermark for calls that can be blocked, and
+                //  not respected by Processing Model internal calls
+                try {
+                    activityUpdateTaskQueue.put(taskToRun);
+                } catch (InterruptedException e) {
+                    Thread.interrupted();
+                    LOG.log(Level.FINE, "Thread interrupted while inserting element inside the activity update queue", e);
+                }
                 break;
             default:
-                tmUpdateTaskQueue.offer(taskToRun);
+                dataItemInput.addAndGet(operations.size());
+                // Blocking queue -> introduces backpressure on the reporting chain
+                try {
+                    reportingUpdateTaskQueue.put(taskToRun);
+                } catch (InterruptedException e) {
+                    Thread.interrupted();
+                    LOG.log(Level.FINE, "Thread interrupted while inserting element inside the reporting update queue", e);
+                }
                 break;
         }
         // Done
@@ -286,7 +311,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = sampleList.stream().map(ParameterSampleProcessOperation::new).collect(Collectors.toList());
         // Schedule task
-        scheduleTask(operations, TM_DISPATCHING_QUEUE);
+        scheduleTask(operations, REPORTING_DISPATCHING_QUEUE);
     }
 
     @Override
@@ -294,7 +319,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new RaiseEventOperation(event));
         // Schedule task
-        scheduleTask(operations, TM_DISPATCHING_QUEUE);
+        scheduleTask(operations, REPORTING_DISPATCHING_QUEUE);
     }
 
     @Override
@@ -330,7 +355,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new ReportActivityProgressOperation(progress));
         // Schedule task
-        scheduleTask(operations, TM_DISPATCHING_QUEUE);
+        scheduleTask(operations, REPORTING_DISPATCHING_QUEUE);
     }
 
     @Override
@@ -338,7 +363,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = activityOccurrenceIds.stream().map(PurgeActivityOperation::new).collect(Collectors.toList());
         // Schedule task
-        scheduleTask(operations, USER_DISPATCHING_QUEUE);
+        scheduleTask(operations, COMMAND_DISPATCHING_QUEUE);
     }
 
     @Override
@@ -349,7 +374,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new AbortActivityOperation(activityId, activityOccurrenceId));
         // Schedule task
-        scheduleTask(operations, USER_DISPATCHING_QUEUE);
+        scheduleTask(operations, COMMAND_DISPATCHING_QUEUE);
     }
 
     @Override
@@ -404,7 +429,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private IUniqueId scheduleActivityOperation(ActivityRequest request, List<AbstractModelOperation<?>> operations, String type) throws ProcessingModelException {
         // Schedule task
-        ProcessingTask pt = scheduleTask(operations, USER_DISPATCHING_QUEUE);
+        ProcessingTask pt = scheduleTask(operations, COMMAND_DISPATCHING_QUEUE);
 
         List<AbstractDataItem> executionResult;
         // Wait for the activity creation
@@ -511,7 +536,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new EnableDisableOperation(id, toBeApplied));
         // Schedule task
-        scheduleTask(operations, USER_DISPATCHING_QUEUE);
+        scheduleTask(operations, COMMAND_DISPATCHING_QUEUE);
     }
 
     @Override
