@@ -66,7 +66,7 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     private Instant epoch;
     private volatile int generationPeriod;
 
-    private final List<RawData> matchingFrames = new LinkedList<>();
+    private final List<RawData> matchingFrames = new LinkedList<>(); // The users of this list assume that the frames are ERT ordered (0: more recent, size()-1: oldest)
     private final List<Pair<Instant, Instant>> timeCouples = new LinkedList<>();
     // Why BigDecimal? If you want to keep nanosecond precision, double resolution can keep up to microsecond and
     // CUC 4,3 has a resolution of 59.6 nsec, CUC 4,4 is at picosecond level
@@ -181,6 +181,9 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
 
     private void addMatchingFrame(RawData frame) {
         synchronized (matchingFrames) {
+            if(LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, String.format("Adding 0-frame with ERT %s", frame.getReceptionTime().toString()));
+            }
             this.matchingFrames.add(0, frame);
             if (matchingFrames.size() > MATCHING_FRAMES_MAX_SIZE) {
                 matchingFrames.remove(matchingFrames.size() - 1);
@@ -221,10 +224,17 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     }
 
     private void addTimeCouple(Instant onboardTime, Instant utcTime) {
-        if(LOG.isLoggable(Level.FINE))
+        if(LOG.isLoggable(Level.INFO))
         {
-            LOG.log(Level.FINE, String.format("Adding time couple: OBT=%s, UTC=%s", onboardTime.toString(), utcTime.toString()));
+            LOG.log(Level.INFO, String.format("Adding time couple: OBT=%s, UTC=%s", onboardTime.toString(), utcTime.toString()));
         }
+        // Iterate on the time couples (they are max 2): if utcTime is before of any of the two second members of each pair, then forget about this time couple
+        for(Pair<Instant, Instant> couple : timeCouples) {
+            if(utcTime.isBefore(couple.getSecond())) {
+                return;
+            }
+        }
+        // Check is OK, add time couple
         this.timeCouples.add(Pair.of(onboardTime, utcTime));
         if(this.timeCouples.size() > 2) {
             this.timeCouples.remove(0);
@@ -254,9 +264,8 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
             }
             BigDecimal m = (fTc.getSecond().subtract(sTc.getSecond())).divide(divisor, 9, RoundingMode.HALF_UP);
             BigDecimal q = sTc.getSecond().subtract(m.multiply(sTc.getFirst()));
-            if(LOG.isLoggable(Level.FINE))
-            {
-                LOG.log(Level.FINE, String.format("Time coefficient generated: m=%s, q=%s", m.toPlainString(), q.toPlainString()));
+            if(LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, String.format("Time coefficient generated: m=%s, q=%s", m.toPlainString(), q.toPlainString()));
             }
             this.obt2gtCoefficients = Pair.of(m, q);
             // Distribute the coefficients: generation time is the UTC generation time of the most recent time couple
@@ -327,8 +336,13 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
                     // The frame might be the correct one...
                     if (atf.getVirtualChannelFrameCount() == targetVcc) {
                         // ... but check time consistency with this frame
-                        Duration timeBetweenFrames = Duration.between(packetFrameDescriptor.getEarthReceptionTime(), frame.getReceptionTime());
-                        if (timeBetweenFrames.toNanos() / 1000 <= configuration().getMaximumFrameTimeDelay()) {
+                        Duration timeBetweenFrames = Duration.between(frame.getReceptionTime(), packetFrameDescriptor.getEarthReceptionTime());
+                        // The frame must be arrived before or at the same time of the frame delivering the time packet AND
+                        // it must be within the limits (not too old)
+                        if (!timeBetweenFrames.isNegative() && timeBetweenFrames.toNanos() / 1000 <= configuration().getMaximumFrameTimeDelay()) {
+                            if(LOG.isLoggable(Level.INFO)) {
+                                LOG.log(Level.INFO, String.format("Frame found for time packet: time packet frame %s, 0-frame %s, duration %s", packetFrameDescriptor.getEarthReceptionTime().toString(), frame.getReceptionTime().toString(), timeBetweenFrames.toString()));
+                            }
                             // That's the one
                             return frame;
                         }
