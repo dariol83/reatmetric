@@ -106,6 +106,7 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
         if(store && archive != null) {
             archive.store(items);
         }
+
         for(RawDataSubscriptionManager s : subscribers) {
             try {
                 s.notifyItems(items);
@@ -167,7 +168,7 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
             sanitizeFilters();
             this.items = new LinkedBlockingQueue<>();
             this.dispatcher = new Thread(this::run);
-            this.dispatcher.setName("Raw Data Dispatcher Thread");
+            this.dispatcher.setName("Raw Data Dispatcher Thread - " + subscriber.toString());
             this.dispatcher.setDaemon(true);
             this.dispatcher.start();
         }
@@ -175,7 +176,7 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
         private void run() {
             List<RawData> toProcess;
             while(running) {
-                toProcess = new ArrayList<>();
+                toProcess = new ArrayList<>(MAX_QUEUE);
                 // Wait for item
                 synchronized (this) {
                     while(running && items.isEmpty()) {
@@ -215,7 +216,7 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
                 synchronized (this) {
                     while(running && items.size() >= MAX_QUEUE && !Thread.currentThread().equals(dispatcher)) {
                         try {
-                            items.wait();
+                            this.wait();
                         } catch (InterruptedException e) {
                             // Repeat the cycle
                         }

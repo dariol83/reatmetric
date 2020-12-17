@@ -613,4 +613,9 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             return lifecycleCompleted;
         }
     }
+
+    @Override
+    public String toString() {
+        return "TC Data Link Processor";
+    }
 }

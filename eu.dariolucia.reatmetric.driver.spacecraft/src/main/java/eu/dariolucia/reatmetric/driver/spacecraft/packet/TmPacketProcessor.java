@@ -43,6 +43,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ITimeCorrelation;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
+import eu.dariolucia.reatmetric.driver.spacecraft.util.BoundedExecutorService;
 
 import java.time.Instant;
 import java.util.*;
@@ -91,17 +92,17 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
 
     private final BlockingQueue<RawData> incomingPacketsQueue = new ArrayBlockingQueue<>(MAX_INPUT_QUEUE_SIZE);
 
-    private final ExecutorService dispatcherService = Executors.newFixedThreadPool(1, (r) -> {
+    private final ExecutorService dispatcherService = new BoundedExecutorService(1, 1000, (r) -> {
         Thread t = new Thread(r, "TM Packet Processing - Dispatcher");
         t.setDaemon(true);
         return t;
     });
-    private final ExecutorService decoderService = Executors.newFixedThreadPool(2, (r) -> {
+    private final ExecutorService decoderService = new BoundedExecutorService(2, 1000, (r) -> {
         Thread t = new Thread(r, "TM Packet Processing - Decoder");
         t.setDaemon(true);
         return t;
     });
-    private final ExecutorService notifierService = Executors.newFixedThreadPool(1, (r) -> {
+    private final ExecutorService notifierService = new BoundedExecutorService(1, 1000, (r) -> {
         Thread t = new Thread(r, "TM Packet Processing - Notifier");
         t.setDaemon(true);
         return t;
@@ -200,7 +201,6 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         synchronized (performanceSampler) {
             packetInput += messages.size();
         }
-
         synchronized (incomingPacketsQueue) {
             while(incomingPacketsQueue.size() + messages.size() > MAX_INPUT_QUEUE_SIZE) { // It would block
                 try {
@@ -214,7 +214,6 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
             incomingPacketsQueue.addAll(messages);
             incomingPacketsQueue.notifyAll();
         }
-
         // That's it
     }
 
@@ -488,5 +487,10 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         public DecodingResult getResult() {
             return result;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "TM Packet Processor";
     }
 }

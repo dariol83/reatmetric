@@ -181,8 +181,8 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
 
     private void addMatchingFrame(RawData frame) {
         synchronized (matchingFrames) {
-            if(LOG.isLoggable(Level.INFO)) {
-                LOG.log(Level.INFO, String.format("Adding 0-frame with ERT %s", frame.getReceptionTime().toString()));
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, String.format("Adding 0-frame with ERT %s", frame.getReceptionTime().toString()));
             }
             this.matchingFrames.add(0, frame);
             if (matchingFrames.size() > MATCHING_FRAMES_MAX_SIZE) {
@@ -224,9 +224,9 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     }
 
     private void addTimeCouple(Instant onboardTime, Instant utcTime) {
-        if(LOG.isLoggable(Level.INFO))
+        if(LOG.isLoggable(Level.FINE))
         {
-            LOG.log(Level.INFO, String.format("Adding time couple: OBT=%s, UTC=%s", onboardTime.toString(), utcTime.toString()));
+            LOG.log(Level.FINE, String.format("Adding time couple: OBT=%s, UTC=%s", onboardTime.toString(), utcTime.toString()));
         }
         // Iterate on the time couples (they are max 2): if utcTime is before of any of the two second members of each pair, then forget about this time couple
         for(Pair<Instant, Instant> couple : timeCouples) {
@@ -264,8 +264,8 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
             }
             BigDecimal m = (fTc.getSecond().subtract(sTc.getSecond())).divide(divisor, 9, RoundingMode.HALF_UP);
             BigDecimal q = sTc.getSecond().subtract(m.multiply(sTc.getFirst()));
-            if(LOG.isLoggable(Level.INFO)) {
-                LOG.log(Level.INFO, String.format("Time coefficient generated: m=%s, q=%s", m.toPlainString(), q.toPlainString()));
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, String.format("Time coefficient generated: m=%s, q=%s", m.toPlainString(), q.toPlainString()));
             }
             this.obt2gtCoefficients = Pair.of(m, q);
             // Distribute the coefficients: generation time is the UTC generation time of the most recent time couple
@@ -340,8 +340,8 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
                         // The frame must be arrived before or at the same time of the frame delivering the time packet AND
                         // it must be within the limits (not too old)
                         if (!timeBetweenFrames.isNegative() && timeBetweenFrames.toNanos() / 1000 <= configuration().getMaximumFrameTimeDelay()) {
-                            if(LOG.isLoggable(Level.INFO)) {
-                                LOG.log(Level.INFO, String.format("Frame found for time packet: time packet frame %s, 0-frame %s, duration %s", packetFrameDescriptor.getEarthReceptionTime().toString(), frame.getReceptionTime().toString(), timeBetweenFrames.toString()));
+                            if(LOG.isLoggable(Level.FINER)) {
+                                LOG.log(Level.FINER, String.format("Frame found for time packet: time packet frame %s, 0-frame %s, duration %s", packetFrameDescriptor.getEarthReceptionTime().toString(), frame.getReceptionTime().toString(), timeBetweenFrames.toString()));
                             }
                             // That's the one
                             return frame;

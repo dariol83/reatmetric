@@ -103,4 +103,9 @@ public class CommandVerifier implements IRawDataSubscriber {
     public void shutdown() {
         this.broker.unsubscribe(this);
     }
+
+    @Override
+    public String toString() {
+        return "Command Verifier";
+    }
 }

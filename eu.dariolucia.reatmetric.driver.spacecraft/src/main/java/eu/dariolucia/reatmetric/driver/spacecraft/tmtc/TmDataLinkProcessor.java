@@ -362,4 +362,9 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     public List<DebugInformation> currentDebugInfo() {
         return lastStats.get();
     }
+
+    @Override
+    public String toString() {
+        return "TM Data Link Processor";
+    }
 }
