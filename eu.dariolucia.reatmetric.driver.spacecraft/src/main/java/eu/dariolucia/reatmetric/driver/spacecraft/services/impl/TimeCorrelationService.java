@@ -58,7 +58,7 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
 
     private static final Logger LOG = Logger.getLogger(TimeCorrelationService.class.getName());
 
-    private static final int MATCHING_FRAMES_MAX_SIZE = 16;
+    private static final int MATCHING_FRAMES_MAX_SIZE = 256;
 
     private int spacecraftId;
     private long propagationDelay;
