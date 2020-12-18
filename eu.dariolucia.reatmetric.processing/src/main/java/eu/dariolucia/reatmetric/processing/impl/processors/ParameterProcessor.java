@@ -61,6 +61,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     private volatile AlarmState latestGeneratedAlarmSeverityMessage;
 
+    private Instant lastReportedLogTime = null;
+    private int skippedLogMessagesCounter = 0;
+
     public ParameterProcessor(ParameterProcessingDefinition definition, ProcessingModelImpl processor) {
         super(definition, processor, SystemEntityType.PARAMETER);
         this.builder = new ParameterDataBuilder(definition.getId(), SystemEntityPath.fromString(definition.getLocation()));
@@ -344,22 +347,35 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         // Generation of alarm messages is performed only if the generated alarm data is different in terms of severity
         // from the one generated before, or if the parameter moved back into its nominal state in the meantime
         AlarmState state = alarmData.getCurrentAlarmState();
-        if(latestGeneratedAlarmSeverityMessage != null && latestGeneratedAlarmSeverityMessage == state) {
+        AlarmState previousState = latestGeneratedAlarmSeverityMessage;
+        if(previousState != null && previousState == state) {
             return;
         }
         latestGeneratedAlarmSeverityMessage = state;
-        switch (state) {
-            case ALARM:
-            case ERROR:
-            {
-                LOG.log(Level.SEVERE, "Parameter " + getPath() + " in alarm, value " + alarmData.getCurrentValue(), new Object[] {definition.getLocation(), getSystemEntityId()});
+        Instant now = Instant.now();
+        if(lastReportedLogTime == null || lastReportedLogTime.plusMillis(definition.getLogRepetitionPeriod()).isBefore(now)) {
+            String suffix = skippedLogMessagesCounter == 0 ? "" : " (skipped: " + skippedLogMessagesCounter + ")";
+            switch (state) {
+                case ALARM:
+                case ERROR: {
+                    LOG.log(Level.SEVERE, "Parameter " + getPath() + " in alarm, value " + alarmData.getCurrentValue() + suffix, new Object[]{definition.getLocation(), getSystemEntityId()});
+                }
+                break;
+                case VIOLATED:
+                case WARNING: {
+                    LOG.log(Level.WARNING, "Parameter " + getPath() + " in alarm, value " + alarmData.getCurrentValue() + suffix, new Object[]{definition.getLocation(), getSystemEntityId()});
+                }
+                case NOMINAL: {
+                    if(previousState == AlarmState.ALARM || previousState == AlarmState.ERROR || previousState == AlarmState.WARNING || previousState == AlarmState.VIOLATED) {
+                        LOG.log(Level.INFO, "Parameter " + getPath() + " back in limit, value " + alarmData.getCurrentValue() + suffix, new Object[]{definition.getLocation(), getSystemEntityId()});
+                    }
+                }
+                break;
             }
-            break;
-            case WARNING:
-            {
-                LOG.log(Level.WARNING, "Parameter " + getPath() + " in alarm, value " + alarmData.getCurrentValue(), new Object[] {definition.getLocation(), getSystemEntityId()});
-            }
-            break;
+            lastReportedLogTime = now;
+            skippedLogMessagesCounter = 0;
+        } else {
+            ++skippedLogMessagesCounter;
         }
     }
 

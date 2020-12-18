@@ -34,6 +34,12 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlAttribute(name = "eng_unit")
     private String unit = "";
 
+    /**
+     * Min repetition period for log generation in case of alarms, in milliseconds
+     */
+    @XmlAttribute(name = "log_repetition_period")
+    private int logRepetitionPeriod = 0;
+
     @XmlElement(name = "validity")
     private ValidityCondition validity;
 
@@ -149,6 +155,20 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
 
     public void setSetter(ParameterSetterDefinition setter) {
         this.setter = setter;
+    }
+
+    /**
+     * The minimum log generation period in milliseconds. If an alarm generates a log within the minimum repetition period window,
+     * the log message is skipped and a counter increased.
+     *
+     * @return the minimum log repetition period in milliseconds
+     */
+    public int getLogRepetitionPeriod() {
+        return logRepetitionPeriod;
+    }
+
+    public void setLogRepetitionPeriod(int logRepetitionPeriod) {
+        this.logRepetitionPeriod = logRepetitionPeriod;
     }
 
     public List<Object> buildExpectedValuesRaw() {

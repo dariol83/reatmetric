@@ -30,10 +30,15 @@ public class EventProcessingDefinition extends AbstractProcessingDefinition {
     private String type = "";
 
     /**
-     * Inhibition period in milliseconds
+     * Event inhibition period, in milliseconds
      */
     @XmlAttribute(name = "inhibition_period")
     private int inhibitionPeriod = 0;
+    /**
+     * Minimum repetition period for log generation, in milliseconds
+     */
+    @XmlAttribute(name = "log_repetition_period")
+    private int logRepetitionPeriod = 0;
 
     @XmlAttribute(name = "log_enabled")
     private boolean logEnabled = true;
@@ -85,5 +90,19 @@ public class EventProcessingDefinition extends AbstractProcessingDefinition {
 
     public void setLogEnabled(boolean logEnabled) {
         this.logEnabled = logEnabled;
+    }
+
+    /**
+     * The minimum log generation period in milliseconds. If a new event generates a log within the minimum repetition period window,
+     * the log message is skipped and a counter increased.
+     *
+     * @return the minimum log repetition period in milliseconds
+     */
+    public int getLogRepetitionPeriod() {
+        return logRepetitionPeriod;
+    }
+
+    public void setLogRepetitionPeriod(int logRepetitionPeriod) {
+        this.logRepetitionPeriod = logRepetitionPeriod;
     }
 }

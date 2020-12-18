@@ -56,6 +56,8 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     private final List<String> internalSource = new LinkedList<>(); // nulls allowed
 
     private Instant lastReportedEventTime = null;
+    private Instant lastReportedLogTime = null;
+    private int skippedLogMessagesCounter = 0;
 
     private final EventDataBuilder builder;
 
@@ -157,6 +159,7 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
             }
             // Check if you have to raise the event
             if(mustBeRaised) {
+                Instant now = Instant.now();
                 for(String source : sourceList) {
                     // Set necessary objects
                     this.builder.setEventState(qualifier, source, route, report, containerId);
@@ -164,24 +167,32 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                     this.builder.setGenerationTime(generationTime);
                     // Build final state, set it and return it
                     // Set the reception time
-                    this.builder.setReceptionTime(newValue != null ? newValue.getReceptionTime() : Instant.now());
+                    Instant receptionTime = newValue != null ? newValue.getReceptionTime() : now;
+                    this.builder.setReceptionTime(receptionTime);
                     // Replace the state
                     this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
                     generatedStates.add(this.state);
                     // Log the event if log is not suppressed and you are not ignoring this event
                     if(definition.isLogEnabled() && getEntityStatus() != Status.IGNORED) {
-                        String logSource = definition.getLocation(); // this.state.getSource();
-                        switch (definition.getSeverity()) {
-                            case ALARM:
-                            case ERROR:
-                                LOG.log(Level.SEVERE, getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
-                                break;
-                            case WARN:
-                                LOG.log(Level.WARNING, getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
-                                break;
-                            case INFO:
-                                LOG.log(Level.INFO, getDefinition().getDescription(), new Object[] {logSource, getSystemEntityId()});
-                                break;
+                        if(lastReportedLogTime == null || lastReportedLogTime.plusMillis(definition.getLogRepetitionPeriod()).isBefore(now)) {
+                            String logSource = definition.getLocation(); // this.state.getSource();
+                            String suffix = skippedLogMessagesCounter == 0 ? "" : " (skipped: " + skippedLogMessagesCounter + ")";
+                            switch (definition.getSeverity()) {
+                                case ALARM:
+                                case ERROR:
+                                    LOG.log(Level.SEVERE, getDefinition().getDescription() + suffix, new Object[]{logSource, getSystemEntityId()});
+                                    break;
+                                case WARN:
+                                    LOG.log(Level.WARNING, getDefinition().getDescription() + suffix, new Object[]{logSource, getSystemEntityId()});
+                                    break;
+                                case INFO:
+                                    LOG.log(Level.INFO, getDefinition().getDescription() + suffix, new Object[]{logSource, getSystemEntityId()});
+                                    break;
+                            }
+                            lastReportedLogTime = now;
+                            skippedLogMessagesCounter = 0;
+                        } else {
+                            ++skippedLogMessagesCounter;
                         }
                     }
                 }
