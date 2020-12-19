@@ -20,11 +20,12 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ArrayArgumentRecordInvocationDefinition {
+public class ArrayArgumentRecordInvocationDefinition implements Serializable {
 
     @XmlElements({
             @XmlElement(name="argument",type= PlainArgumentInvocationDefinition.class),

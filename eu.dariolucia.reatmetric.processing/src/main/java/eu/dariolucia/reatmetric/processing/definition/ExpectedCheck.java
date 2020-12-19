@@ -25,13 +25,14 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ExpectedCheck extends CheckDefinition {
+public class ExpectedCheck extends CheckDefinition implements Serializable {
 
     @XmlAttribute(required = true)
     private ValueTypeEnum type;

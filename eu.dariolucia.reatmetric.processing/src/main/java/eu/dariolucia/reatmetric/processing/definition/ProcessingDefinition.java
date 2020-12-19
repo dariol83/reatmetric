@@ -31,7 +31,7 @@ import java.util.logging.Logger;
 
 @XmlRootElement(name = "processing", namespace = "http://dariolucia.eu/reatmetric/processing/definition")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ProcessingDefinition {
+public class ProcessingDefinition implements Serializable {
 
     private static final Logger LOG = Logger.getLogger(ProcessingDefinition.class.getName());
 
@@ -61,6 +61,13 @@ public class ProcessingDefinition {
         return o;
     }
 
+    /**
+     * Read and aggregate all files present in the provided location. File names with a leading dot are ignored.
+     *
+     * @param definitionsLocation the folder containing the definition files
+     * @return the aggregated definitions
+     * @throws ReatmetricException in case of issues during the loading of the files
+     */
     public static ProcessingDefinition loadAll(String definitionsLocation) throws ReatmetricException {
         ProcessingDefinition aggregated = new ProcessingDefinition();
         File folder = new File(definitionsLocation);
@@ -68,6 +75,11 @@ public class ProcessingDefinition {
             throw new ReatmetricException("Cannot read definition files in folder " + definitionsLocation);
         }
         for(File def : folder.listFiles()) {
+            // Ignore files with leading dot
+            if(def.getName().startsWith(".")) {
+                continue;
+            }
+            //
             try {
                 ProcessingDefinition eachDef = ProcessingDefinition.load(new FileInputStream(def));
                 aggregated.getParameterDefinitions().addAll(eachDef.getParameterDefinitions());
@@ -136,5 +148,24 @@ public class ProcessingDefinition {
 
     public void setSyntheticParameterProcessingEnabled(boolean syntheticParameterProcessingEnabled) {
         this.syntheticParameterProcessingEnabled = syntheticParameterProcessingEnabled;
+    }
+
+    /**
+     * The next transient field is used to provide the location folder where the cache file for the topological sorting will
+     * be stored:
+     * <ul>
+     * <li>If it is not set, the topological sorting will be created from the definitions but not cached.</li>
+     * <li>If it is set and the cache file is not present, the topological sorting will be created from the definitions and a cache file created.</li>
+     * <li>If it is set and the cache file is present, the topological sort will be loaded from the cache file.</li>
+     * </ul>
+     */
+    private transient String cacheFolder;
+
+    public String getCacheFolder() {
+        return cacheFolder;
+    }
+
+    public void setCacheFolder(String cacheFolder) {
+        this.cacheFolder = cacheFolder;
     }
 }

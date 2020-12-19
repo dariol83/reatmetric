@@ -22,10 +22,11 @@ import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import java.io.Serializable;
 import java.time.Instant;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class DeltaCheck extends CheckDefinition {
+public class DeltaCheck extends CheckDefinition implements Serializable {
 
     @XmlAttribute(name="high")
     private double highLimit = Double.POSITIVE_INFINITY;

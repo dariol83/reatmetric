@@ -25,10 +25,11 @@ import org.graalvm.polyglot.Value;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import java.io.Serializable;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public abstract class CalibrationDefinition {
+public abstract class CalibrationDefinition implements Serializable {
 
     @XmlElement(name = "applicability")
     private ValidityCondition applicability = null;

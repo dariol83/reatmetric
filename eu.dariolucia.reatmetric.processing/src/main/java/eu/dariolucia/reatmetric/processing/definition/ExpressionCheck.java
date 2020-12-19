@@ -24,11 +24,12 @@ import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.Collections;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ExpressionCheck extends CheckDefinition{
+public class ExpressionCheck extends CheckDefinition implements Serializable {
 
     public static final String INPUT_BINDING = "input";
 

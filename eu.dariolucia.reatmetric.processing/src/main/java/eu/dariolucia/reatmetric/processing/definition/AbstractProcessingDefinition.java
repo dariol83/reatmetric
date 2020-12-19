@@ -21,9 +21,10 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlID;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import java.io.Serializable;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public abstract class AbstractProcessingDefinition {
+public abstract class AbstractProcessingDefinition implements Serializable {
 
     @XmlID
     @XmlAttribute(required = true)

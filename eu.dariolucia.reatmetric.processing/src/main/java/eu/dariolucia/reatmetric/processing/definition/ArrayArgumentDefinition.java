@@ -17,11 +17,12 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import javax.xml.bind.annotation.*;
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ArrayArgumentDefinition extends AbstractArgumentDefinition {
+public class ArrayArgumentDefinition extends AbstractArgumentDefinition implements Serializable {
 
     @XmlAttribute(name = "argument_expander", required = true)
     private String argumentExpander;

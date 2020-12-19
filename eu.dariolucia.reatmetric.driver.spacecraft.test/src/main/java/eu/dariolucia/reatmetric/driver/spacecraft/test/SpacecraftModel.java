@@ -104,7 +104,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     public static final String PUS_SUBTYPE_FIELD_NAME = "I-PUS-SUBTYPE";
     public static final int TM_FRAME_LENGTH = 1115;
     public static final int PACKET_GENERATION_PERIOD_MS = 1;
-    public static final int CYCLE_MODULE_SLEEP = 10; // 10
+    public static final int CYCLE_MODULE_SLEEP = 1; // 10
     public static final int SETTER_APID = 10;
     public static final int SETTER_PUS = 69;
 

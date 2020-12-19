@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import javax.xml.bind.annotation.*;
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -38,7 +39,7 @@ import java.util.List;
  * can be forwarded to an handler only if the selected handler supports the activity type.
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ActivityProcessingDefinition extends AbstractProcessingDefinition {
+public class ActivityProcessingDefinition extends AbstractProcessingDefinition implements Serializable {
 
     @XmlAttribute(name = "type", required = true)
     private String type;

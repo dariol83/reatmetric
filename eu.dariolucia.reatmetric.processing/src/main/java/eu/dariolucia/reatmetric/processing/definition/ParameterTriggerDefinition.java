@@ -20,9 +20,10 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlIDREF;
+import java.io.Serializable;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ParameterTriggerDefinition {
+public class ParameterTriggerDefinition implements Serializable {
 
     @XmlIDREF
     @XmlAttribute(name = "event", required = true)

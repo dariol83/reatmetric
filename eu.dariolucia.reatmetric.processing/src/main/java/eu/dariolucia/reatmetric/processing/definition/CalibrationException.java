@@ -18,7 +18,9 @@ package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
-public class CalibrationException extends ReatmetricException {
+import java.io.Serializable;
+
+public class CalibrationException extends ReatmetricException implements Serializable {
 
     public CalibrationException(String message) {
         super(message);

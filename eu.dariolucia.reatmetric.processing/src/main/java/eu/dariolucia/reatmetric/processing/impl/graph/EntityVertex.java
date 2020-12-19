@@ -62,6 +62,10 @@ public class EntityVertex {
         updateOperation.setOrderingId(orderingId);
     }
 
+    public int getOrderingId() {
+        return orderingId;
+    }
+
     public void assignProcessor(AbstractModelOperation operation) {
         operation.setOrderingId(orderingId);
         operation.setProcessor(processor);

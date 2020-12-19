@@ -23,12 +23,13 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class InvertedEnumCalibration extends CalibrationDefinition {
+public class InvertedEnumCalibration extends CalibrationDefinition implements Serializable {
 
     @XmlAttribute(name = "default")
     private Long defaultValue;

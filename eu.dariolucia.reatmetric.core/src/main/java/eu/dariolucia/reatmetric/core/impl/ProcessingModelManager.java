@@ -119,6 +119,7 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
         }
         // Aggregate all the definitions inside the definitionsLocation path
         ProcessingDefinition definitions = ProcessingDefinition.loadAll(definitionsLocation);
+        definitions.setCacheFolder(definitionsLocation);
         // Create the access services
         parameterDataAccessManager = new ParameterDataAccessManager(parameterArchive);
         alarmDataAccessManager = new AlarmParameterDataAccessManager(alarmArchive);

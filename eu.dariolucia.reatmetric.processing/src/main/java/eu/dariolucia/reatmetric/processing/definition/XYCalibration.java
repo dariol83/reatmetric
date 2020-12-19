@@ -23,12 +23,13 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class XYCalibration extends CalibrationDefinition {
+public class XYCalibration extends CalibrationDefinition implements Serializable {
 
     @XmlElement(name = "point", required = true)
     private List<XYCalibrationPoint> points;

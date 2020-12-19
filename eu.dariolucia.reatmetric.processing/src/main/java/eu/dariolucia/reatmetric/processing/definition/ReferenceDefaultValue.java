@@ -23,9 +23,10 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlIDREF;
+import java.io.Serializable;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ReferenceDefaultValue extends AbstractDefaultValue {
+public class ReferenceDefaultValue extends AbstractDefaultValue implements Serializable {
 
     @XmlIDREF
     @XmlAttribute(name = "parameter", required = true)

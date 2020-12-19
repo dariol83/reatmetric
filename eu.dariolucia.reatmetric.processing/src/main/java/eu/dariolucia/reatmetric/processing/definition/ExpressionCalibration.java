@@ -23,10 +23,11 @@ import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import java.io.Serializable;
 import java.util.Collections;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ExpressionCalibration extends CalibrationDefinition {
+public class ExpressionCalibration extends CalibrationDefinition implements Serializable {
 
     public static final String INPUT_BINDING = "input";
 

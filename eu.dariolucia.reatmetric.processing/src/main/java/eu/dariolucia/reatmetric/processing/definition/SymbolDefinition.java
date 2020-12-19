@@ -18,9 +18,10 @@ package eu.dariolucia.reatmetric.processing.definition;
 
 import javax.xml.bind.annotation.*;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import java.io.Serializable;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class SymbolDefinition {
+public class SymbolDefinition implements Serializable {
 
     @XmlAttribute(name = "name", required = true)
     private String name;

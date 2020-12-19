@@ -22,9 +22,10 @@ import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import java.io.Serializable;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class LogCalibration extends CalibrationDefinition{
+public class LogCalibration extends CalibrationDefinition implements Serializable {
 
     @XmlAttribute
     private double a0 = 0;

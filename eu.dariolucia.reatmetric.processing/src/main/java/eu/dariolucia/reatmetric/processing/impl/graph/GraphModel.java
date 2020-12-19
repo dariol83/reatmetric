@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.processing.impl.graph;
 
+import com.oracle.truffle.api.TruffleLanguage;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
@@ -28,6 +29,7 @@ import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperation;
 import eu.dariolucia.reatmetric.processing.impl.processors.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -36,6 +38,7 @@ import java.util.logging.Logger;
 public class GraphModel {
 
     private static final Logger LOG = Logger.getLogger(GraphModel.class.getName());
+    private static final String CACHE_FILE_NAME = ".ordering.cache";
 
     private final ProcessingDefinition definition;
 
@@ -157,6 +160,23 @@ public class GraphModel {
     }
 
     private void computeTopologicalOrdering() throws ProcessingModelException {
+        LOG.info("Computing model process ordering");
+        // If the cache folder is set, check if there is the cache file
+        if(definition.getCacheFolder() != null) {
+            File cache = new File(definition.getCacheFolder() + File.separator + CACHE_FILE_NAME);
+            try {
+                if (cache.exists()) {
+                    // Try to load and apply the cache
+                    applyCache(cache);
+                    // Done
+                    return;
+                }
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Cannot read/apply cache file at " + cache.getAbsolutePath() + ": " + e.getMessage());
+            }
+        }
+
+        // If you reach this point, it means that you have to compute the topological sort yourself
         List<EntityVertex> result = new LinkedList<>();
         Set<EntityVertex> alreadyProcessed = new HashSet<>();
         List<EntityVertex> toProcess = new LinkedList<>(this.idMap.values());
@@ -173,6 +193,69 @@ public class GraphModel {
             ev.setOrderingId(i);
         }
         // Done
+
+        // If the cache folder is set, then generate a cache file
+        if(definition.getCacheFolder() != null) {
+            File cache = new File(definition.getCacheFolder() + File.separator + CACHE_FILE_NAME);
+            try {
+                if (cache.exists()) {
+                    cache.delete();
+                }
+                cache.createNewFile();
+                // Try to store the cache
+                storeCache(cache);
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Cannot create cache file at " + cache.getAbsolutePath() + ": " + e.getMessage());
+
+            }
+        }
+
+        LOG.info("Model process ordering completed");
+    }
+
+    /**
+     * The cache is a sequence of integer, in pairs: the first is the system entity ID, the second is the ordering number.
+     *
+     * @param cache the file containing the cached ordering
+     * @throws IOException if there are issues when reading the file
+     */
+    private void storeCache(File cache) throws IOException {
+        LOG.info("Storing orderings to cache file " + cache.getAbsolutePath());
+        DataOutputStream dis = new DataOutputStream(new FileOutputStream(cache));
+        for(Map.Entry<Integer, EntityVertex> entry : idMap.entrySet()) {
+            dis.writeInt(entry.getKey());
+            dis.writeInt(entry.getValue().getOrderingId());
+        }
+        dis.close();
+        LOG.info("Cache file construction completed");
+    }
+
+    private void applyCache(File cache) throws IOException {
+        LOG.info("Loading orderings from cache file " + cache.getAbsolutePath());
+        int couplesToApply = idMap.size();
+        try (DataInputStream dis = new DataInputStream(new FileInputStream(cache))) {
+            while (true) {
+                int evId = dis.readInt();
+                int ordening = dis.readInt();
+                EntityVertex ev = idMap.get(evId);
+                if (ev != null) {
+                    ev.setOrderingId(ordening);
+                    --couplesToApply;
+                } else {
+                    throw new IOException("System Entity ID " + evId + " not found in the definition map, cache file might be outdated or corrupted");
+                }
+            }
+        } catch (EOFException e) {
+            if (LOG.isLoggable(Level.FINER)) {
+                LOG.finer("End of cache file detected");
+            }
+            if(couplesToApply != 0) {
+                // Bad
+                throw new IOException("Cache file did not cover the complete set of definitions, " + couplesToApply + " without ordering number, cache file might be outdated or corrupted");
+            }
+        } finally {
+            LOG.info("Cache file processing completed");
+        }
     }
 
     private void navigate(EntityVertex next, Set<EntityVertex> alreadyInPath, Set<EntityVertex> alreadyProcessed, List<EntityVertex> result) throws ProcessingModelException {

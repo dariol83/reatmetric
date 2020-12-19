@@ -23,11 +23,12 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class RangeEnumCalibration extends CalibrationDefinition {
+public class RangeEnumCalibration extends CalibrationDefinition implements Serializable {
 
     @XmlAttribute(name = "default")
     private String defaultValue;

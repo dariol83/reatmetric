@@ -38,13 +38,14 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
+import java.io.Serializable;
 import java.lang.ref.SoftReference;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ExpressionDefinition {
+public class ExpressionDefinition implements Serializable {
 
     public final static String PYTHON_RESULT_NAME = "_result";
 

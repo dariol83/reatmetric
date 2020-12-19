@@ -19,9 +19,10 @@ package eu.dariolucia.reatmetric.processing.definition;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 
 import javax.xml.bind.annotation.*;
+import java.io.Serializable;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class EventProcessingDefinition extends AbstractProcessingDefinition {
+public class EventProcessingDefinition extends AbstractProcessingDefinition implements Serializable {
 
     @XmlAttribute
     private Severity severity = Severity.INFO;

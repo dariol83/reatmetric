@@ -17,11 +17,12 @@
 package eu.dariolucia.reatmetric.processing.definition;
 
 import javax.xml.bind.annotation.*;
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ArrayArgumentInvocationDefinition extends AbstractArgumentInvocationDefinition {
+public class ArrayArgumentInvocationDefinition extends AbstractArgumentInvocationDefinition implements Serializable {
 
     @XmlElement(name = "records")
     private List<ArrayArgumentRecordInvocationDefinition> records = new LinkedList<>();

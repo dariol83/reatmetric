@@ -19,9 +19,10 @@ package eu.dariolucia.reatmetric.processing.definition;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+import java.io.Serializable;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public abstract class AbstractArgumentDefinition {
+public abstract class AbstractArgumentDefinition implements Serializable {
 
     @XmlAttribute(name = "name", required = true)
     private String name;
