@@ -43,12 +43,12 @@ public class AboutDialogController implements Initializable {
     private String buildAboutText() {
         StringBuilder sb = new StringBuilder();
         sb.append("<html><body><h2>ReatMetric UI " + ReatmetricUI.APPLICATION_VERSION).append("</h2>\n")
-                .append("<p>Copyright (c) 2019-2020 Dario Lucia</p>")
+                .append("<p>Copyright (c) 2019-2021 Dario Lucia</p>")
                 .append("<p>https://www.dariolucia.eu</p>")
                 .append("<p>https://github.com/dariol83/reatmetric</p>")
                 .append("<br /><p>Released under the Apache License 2.0</p>" +
-                        "<br /><br /><p><i>Perfection is achieved not when there is nothing more to add, but when there is nothing left to take away.</i></p>")
-                .append("<p align=\"right\">Le Petit Prince</p></body></html>");
+                        "<br /><br /><p><i>Il semble que la perfection soit atteinte non quand il n'y a plus rien à ajouter, mais quand il n'y a plus rien à retrancher.</i></p>")
+                .append("<p align=\"right\">Antoine de Saint-Exupéry</p></body></html>");
         return sb.toString();
     }
 }

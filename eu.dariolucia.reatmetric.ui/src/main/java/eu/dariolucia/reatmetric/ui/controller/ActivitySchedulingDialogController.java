@@ -17,21 +17,27 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
+import eu.dariolucia.reatmetric.ui.utils.SystemEntityResolver;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.util.Callback;
+import org.controlsfx.control.textfield.AutoCompletionBinding;
+import org.controlsfx.control.textfield.TextFields;
 
 import java.net.URL;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ActivitySchedulingDialogController implements Initializable {
 
@@ -120,6 +126,18 @@ public class ActivitySchedulingDialogController implements Initializable {
         latestExecutionCheckbox.selectedProperty().addListener(o -> validate());
         latestExecutionDatePicker.valueProperty().addListener(o -> validate());
         latestExecutionTimeText.textProperty().addListener(o -> validate());
+
+        TextFields.bindAutoCompletion(eventPathText, new Callback<AutoCompletionBinding.ISuggestionRequest, Collection<String>>() {
+            @Override
+            public Collection<String> call(AutoCompletionBinding.ISuggestionRequest iSuggestionRequest) {
+                String partialPath = iSuggestionRequest.getUserText();
+                if(partialPath.length() < 3) {
+                    return Collections.emptyList();
+                } else {
+                    return SystemEntityResolver.getResolver().getFromFilter(partialPath, SystemEntityType.EVENT).stream().map(o -> o.getPath().asString()).collect(Collectors.toList());
+                }
+            }
+        });
 
         validate();
     }

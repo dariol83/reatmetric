@@ -35,6 +35,7 @@ import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -64,13 +65,14 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * FXML Controller class
  *
  * @author dario
  */
-public class ModelBrowserViewController extends AbstractDisplayController {
+public class ModelBrowserViewController extends AbstractDisplayController implements SystemEntityResolver.ISystemEntityResolver {
 
     private static final Logger LOG = Logger.getLogger(ModelBrowserViewController.class.getName());
 
@@ -274,7 +276,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
         clearButton.setStyle("-fx-cursor: hand");
         clearButton.setOnMouseClicked(this::filterClearButtonPressed);
         this.filterText.setRight(clearButton);
-        filterText.textProperty().addListener((obs, oldValue, newValue) -> updatePredicate(newValue));
+        this.filterText.textProperty().addListener((obs, oldValue, newValue) -> updatePredicate(newValue));
 
         this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getName()));
         this.nameCol.setCellFactory(column -> new TreeTableCell<>() {
@@ -423,6 +425,7 @@ public class ModelBrowserViewController extends AbstractDisplayController {
 
     @Override
     protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
+        SystemEntityResolver.setResolver(null);
         this.displayTitledPane.setDisable(true);
         // Clear the table
         clearTreeModel();
@@ -430,8 +433,9 @@ public class ModelBrowserViewController extends AbstractDisplayController {
 
     @Override
     protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
-        this.displayTitledPane.setDisable(false);
         startSubscription();
+        this.displayTitledPane.setDisable(false);
+        SystemEntityResolver.setResolver(this);
     }
 
     private void startSubscription() {
@@ -726,8 +730,47 @@ public class ModelBrowserViewController extends AbstractDisplayController {
         }
     }
 
+    @Override
     public SystemEntity getSystemEntity(String path) {
-        FilterableTreeItem<SystemEntity> item = path2item.get(SystemEntityPath.fromString(path));
+        return getSystemEntity(SystemEntityPath.fromString(path));
+    }
+
+    @Override
+    public SystemEntity getSystemEntity(int id) {
+        SystemEntityPath path = id2path.get(id);
+        if(path == null) {
+            return null;
+        } else {
+            return getSystemEntity(path);
+        }
+    }
+
+    @Override
+    public List<SystemEntity> getFromFilter(String partialPath, SystemEntityType type) {
+        FilterableTreeItem<SystemEntity> root = (FilterableTreeItem<SystemEntity>) modelTree.getRoot();
+        List<FilterableTreeItem<SystemEntity>> toProcess = new LinkedList<>();
+        List<SystemEntity> toReturn = new LinkedList<>();
+        toProcess.add(root);
+        while(!toProcess.isEmpty()) {
+            FilterableTreeItem<SystemEntity> toCheck = toProcess.remove(0);
+            String path = toCheck.getValue().getPath().asString();
+            if(path.startsWith(partialPath) || partialPath.startsWith(path)) {
+                // Process must go on
+                if(toCheck.getValue().getType() == SystemEntityType.CONTAINER) {
+                    List<FilterableTreeItem<SystemEntity>> list = toCheck.getSourceChildren().stream().map(o -> (FilterableTreeItem<SystemEntity>) o).collect(Collectors.toList());
+                    toProcess.addAll(list);
+                }
+                // Whether this must be returned, depends on the type
+                if(type == null || toCheck.getValue().getType() == type) {
+                    toReturn.add(toCheck.getValue());
+                }
+            }
+        }
+        return toReturn;
+    }
+
+    private SystemEntity getSystemEntity(SystemEntityPath path) {
+        FilterableTreeItem<SystemEntity> item = path2item.get(path);
         if (item != null) {
             return item.getValue();
         } else {
