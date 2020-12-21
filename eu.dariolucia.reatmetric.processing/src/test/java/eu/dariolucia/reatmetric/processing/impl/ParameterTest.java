@@ -32,6 +32,7 @@ import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.python.antlr.op.Param;
 
 import javax.xml.bind.JAXBException;
 import java.time.Duration;
@@ -222,10 +223,15 @@ class ParameterTest {
 
         model.disable(SystemEntityPath.fromString("ROOT.BATTERY"));
 
-        AwaitUtil.awaitAndVerify(5000, () -> outList.size() == 5);
+        AwaitUtil.await(5000);
+        AwaitUtil.awaitAndVerify(5000, outList::size, 9);
 
         for(AbstractDataItem i : outList) {
-            assertEquals(Status.DISABLED, ((SystemEntity)i).getStatus());
+            if(i instanceof SystemEntity) {
+                assertEquals(Status.DISABLED, ((SystemEntity) i).getStatus());
+            } else if(i instanceof ParameterData) {
+                assertEquals(Validity.DISABLED, ((ParameterData) i).getValidity());
+            }
         }
 
         testLogger.info("Injection - Enable battery");
