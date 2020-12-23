@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.processing.definition;
+package eu.dariolucia.reatmetric.scheduler.definition;
 
-import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
-import eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import eu.dariolucia.reatmetric.scheduler.IInternalResolver;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlIDREF;
 import java.io.Serializable;
 import java.util.Objects;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class MatcherDefinition implements Serializable {
 
-    @XmlIDREF
     @XmlAttribute(name = "parameter", required = true)
-    private ParameterProcessingDefinition parameter;
+    private String parameter;
 
     @XmlAttribute(name = "operator", required = true)
     private MatcherType operator;
@@ -47,9 +46,8 @@ public class MatcherDefinition implements Serializable {
     @XmlAttribute(name = "value")
     private String value;
 
-    @XmlIDREF
     @XmlAttribute(name = "reference")
-    private ParameterProcessingDefinition reference;
+    private String reference;
 
     @XmlAttribute(name = "use_reference_raw_value")
     private boolean useReferenceRawValue = false;
@@ -57,24 +55,24 @@ public class MatcherDefinition implements Serializable {
     public MatcherDefinition() {
     }
 
-    public MatcherDefinition(ParameterProcessingDefinition parameter, MatcherType operator, ValueTypeEnum valueType, String value) {
+    public MatcherDefinition(String parameter, MatcherType operator, ValueTypeEnum valueType, String value) {
         this.parameter = parameter;
         this.operator = operator;
         this.valueType = valueType;
         this.value = value;
     }
 
-    public MatcherDefinition(ParameterProcessingDefinition parameter, MatcherType operator, ParameterProcessingDefinition reference) {
+    public MatcherDefinition(String parameter, MatcherType operator, String reference) {
         this.parameter = parameter;
         this.operator = operator;
         this.reference = reference;
     }
 
-    public ParameterProcessingDefinition getParameter() {
+    public String getParameter() {
         return parameter;
     }
 
-    public void setParameter(ParameterProcessingDefinition parameter) {
+    public void setParameter(String parameter) {
         this.parameter = parameter;
     }
 
@@ -102,11 +100,11 @@ public class MatcherDefinition implements Serializable {
         this.value = value;
     }
 
-    public ParameterProcessingDefinition getReference() {
+    public String getReference() {
         return reference;
     }
 
-    public void setReference(ParameterProcessingDefinition reference) {
+    public void setReference(String reference) {
         this.reference = reference;
     }
 
@@ -130,18 +128,18 @@ public class MatcherDefinition implements Serializable {
      * Execute the comparison between the parameter and either the provided value or the value of the referenced parameter.
      * This method does not take into consideration any validity or alarm state of the referenced parameter.
      *
-     * @param resolver the entity resolver
+     * @param resolver the parameter resolver
      * @return true if the specified matching is fulfilled, otherwise false
-     * @throws MatcherException in case of errors raised when evaluating this matcher
+     * @throws ReatmetricException in case of errors raised when evaluating this matcher
      */
-    public boolean execute(IBindingResolver resolver) throws MatcherException {
+    public boolean execute(IInternalResolver resolver) throws ReatmetricException {
         // Get the value of the parameter
-        IParameterBinding param = (IParameterBinding) resolver.resolve(parameter.getId());
+        ParameterData param = resolver.getParameterData(parameter);
         Object paramValue = null;
         if(isUseRawValue()) {
-            paramValue = param.rawValue();
+            paramValue = param.getSourceValue();
         } else {
-            paramValue = param.value();
+            paramValue = param.getEngValue();
         }
         // At this stage, if the value is null (no value at all), any comparison is meaningless, therefore we return an invalid state
         if(paramValue == null) {
@@ -152,18 +150,18 @@ public class MatcherDefinition implements Serializable {
             // Construct the value
             compareValue = ValueUtil.parse(valueType, value);
         } else if(reference != null) {
-            IParameterBinding ref = (IParameterBinding) resolver.resolve(reference.getId());
+            ParameterData ref = resolver.getParameterData(reference);
             if(isUseReferenceRawValue()) {
-                compareValue = ref.rawValue();
+                compareValue = ref.getSourceValue();
             } else {
-                compareValue = ref.value();
+                compareValue = ref.getEngValue();
             }
             // At this stage, if the value is null, then no way to compare
             if(compareValue == null) {
                 return false;
             }
         } else {
-            throw new MatcherException("Neither value nor reference attributes are set, cannot compare");
+            throw new ReatmetricException("Neither value nor reference attributes are set, cannot compare");
         }
         // If equality is needed, then go for it
         if(operator == MatcherType.EQUAL || operator == MatcherType.NOT_EQUAL) {
@@ -183,7 +181,7 @@ public class MatcherDefinition implements Serializable {
             }
         } else {
             // nulls are handled before
-            throw new MatcherException("Provided values '" + paramValue + "' and '" + compareValue + "' cannot be casted to Comparable, cannot compare");
+            throw new ReatmetricException("Provided values '" + paramValue + "' and '" + compareValue + "' cannot be casted to Comparable, cannot compare");
         }
     }
 }

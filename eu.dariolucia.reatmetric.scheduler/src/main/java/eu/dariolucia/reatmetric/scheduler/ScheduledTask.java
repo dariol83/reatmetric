@@ -42,7 +42,8 @@ import java.util.logging.Logger;
 public class ScheduledTask {
 
     private static final Logger LOG = Logger.getLogger(ScheduledTask.class.getName());
-    private final DateTimeFormatter DATE_TIME_FORMATTER_SECONDS = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.of("UTC"));
+
+    public static final DateTimeFormatter DATE_TIME_FORMATTER_SECONDS = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneId.of("UTC"));
 
     private final Scheduler scheduler;
     private final Timer timer;

@@ -16,8 +16,6 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
-
 import javax.xml.bind.annotation.*;
 import java.io.Serializable;
 import java.util.LinkedList;

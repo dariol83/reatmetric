@@ -16,10 +16,7 @@
 
 package eu.dariolucia.reatmetric.scheduler;
 
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
-import eu.dariolucia.reatmetric.api.activity.IActivityExecutionService;
-import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionService;
-import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataSubscriber;
+import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
@@ -32,11 +29,19 @@ import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
 import eu.dariolucia.reatmetric.api.events.IEventDataSubscriber;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
+import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.exceptions.SchedulingException;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
+import eu.dariolucia.reatmetric.scheduler.definition.BotProcessingDefinition;
+import eu.dariolucia.reatmetric.scheduler.definition.SchedulerConfiguration;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.time.Duration;
 import java.time.Instant;
@@ -47,14 +52,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class Scheduler implements IScheduler {
+public class Scheduler implements IScheduler, IInternalResolver {
 
     private static final Logger LOG = Logger.getLogger(Scheduler.class.getName());
+
+    private final SchedulerConfiguration configuration;
 
     private final IScheduledActivityDataArchive archive;
     private final IActivityExecutionService executionService;
     private final IEventDataProvisionService eventService;
     private final IActivityOccurrenceDataProvisionService activityService;
+    private final IParameterDataProvisionService parameterService;
 
     private final List<ISchedulerSubscriber> schedulerSubscribers = new CopyOnWriteArrayList<>();
 
@@ -98,26 +106,34 @@ public class Scheduler implements IScheduler {
      * For event-based activities.
      */
     private final List<SystemEntityPath> subscribedEvents = new LinkedList<>();
-
+    /**
+     * Keeps track of the scheduler enablement state
+     */
     private volatile boolean enabled;
+    /**
+     * Parameter states involved in the bot processing
+     */
+    private final Map<String, ParameterData> cachedParameterMap = new ConcurrentHashMap<>();
 
-    private final IActivityOccurrenceDataSubscriber activitySubscriber = new IActivityOccurrenceDataSubscriber() {
-        @Override
-        public void dataItemsReceived(List<ActivityOccurrenceData> dataItems) {
-            dispatcher.submit(() -> activityUpdate(dataItems));
-        }
-    };
+    private final IActivityOccurrenceDataSubscriber activitySubscriber = dataItems -> dispatcher.submit(() -> activityUpdate(dataItems));
 
-    private final IEventDataSubscriber eventSubscriber = new IEventDataSubscriber() {
-        @Override
-        public void dataItemsReceived(List<EventData> dataItems) {
-            dispatcher.submit(() -> eventUpdate(dataItems));
-        }
-    };
+    private final IEventDataSubscriber eventSubscriber = dataItems -> dispatcher.submit(() -> eventUpdate(dataItems));
+
+    private final IParameterDataSubscriber parameterSubscriber = dataItems -> dispatcher.submit(() -> parameterUpdate(dataItems));
 
     private EventDataFilter currentEventFilter = null;
 
-    public Scheduler(IArchive archive, IActivityExecutionService activityExecutor, IEventDataProvisionService eventMonService, IActivityOccurrenceDataProvisionService activityMonService) {
+    public Scheduler(String configurationLocation, IArchive archive, IActivityExecutionService activityExecutor, IEventDataProvisionService eventMonService, IActivityOccurrenceDataProvisionService activityMonService, IParameterDataProvisionService parameterService) {
+        SchedulerConfiguration tempConfiguration = null;
+        if(configurationLocation != null) {
+            try {
+                tempConfiguration = SchedulerConfiguration.load(new FileInputStream(configurationLocation));
+            } catch (IOException e) {
+                LOG.log(Level.SEVERE, "Cannot load scheduler configuration at " + configurationLocation + ": " + e.getMessage(), e);
+            }
+        }
+        this.configuration = tempConfiguration;
+
         if (archive != null) {
             this.archive = archive.getArchive(IScheduledActivityDataArchive.class);
         } else {
@@ -126,6 +142,7 @@ public class Scheduler implements IScheduler {
         this.executionService = activityExecutor;
         this.eventService = eventMonService;
         this.activityService = activityMonService;
+        this.parameterService = parameterService;
         IUniqueId lastStoredUniqueId = null;
         try {
             lastStoredUniqueId = this.archive != null ? this.archive.retrieveLastId() : null;
@@ -136,12 +153,6 @@ public class Scheduler implements IScheduler {
             this.sequencer.set(0);
         } else {
             this.sequencer.set(lastStoredUniqueId.asLong());
-        }
-        // Subscribe to get info about all activities
-        try {
-            this.activityService.subscribe(activitySubscriber, null);
-        } catch (RemoteException e) {
-            LOG.log(Level.SEVERE, "Activity Service remote exception: " + e.getMessage(), e);
         }
     }
 
@@ -175,6 +186,20 @@ public class Scheduler implements IScheduler {
             }
             currentEventFilter = null;
         }
+        //
+        if(configuration != null) {
+            Set<String> paramsToSubscribe = new HashSet<>();
+            for (BotProcessingDefinition bpd : configuration.getBots()) {
+                paramsToSubscribe.addAll(bpd.getMonitoredParameters());
+            }
+            if(!paramsToSubscribe.isEmpty()) {
+                try {
+                    parameterService.unsubscribe(parameterSubscriber);
+                } catch (RemoteException e) {
+                    LOG.log(Level.SEVERE, "Parameter Service remote exception: " + e.getMessage(), e);
+                }
+            }
+        }
         // Clear subscriptions
         schedulerSubscribers.clear();
         subscriberIndex.clear();
@@ -191,10 +216,31 @@ public class Scheduler implements IScheduler {
         } else {
             disable();
         }
-
+        // Subscribe to get info about all activities
+        try {
+            this.activityService.subscribe(activitySubscriber, null);
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Activity Service remote exception: " + e.getMessage(), e);
+        }
         // Initialise from archive
         if (archive != null) {
             dispatcher.submit(this::initFromArchive);
+        }
+        // Subscribe for parameters defined in the bot definitions
+        if(configuration != null) {
+            Set<String> paramsToSubscribe = new HashSet<>();
+            for (BotProcessingDefinition bpd : configuration.getBots()) {
+                paramsToSubscribe.addAll(bpd.getMonitoredParameters());
+            }
+            // TODO: init with the current state from the processing model
+            if(!paramsToSubscribe.isEmpty()) {
+                ParameterDataFilter filter = new ParameterDataFilter(null, paramsToSubscribe.stream().map(SystemEntityPath::fromString).collect(Collectors.toList()), null, null, null,null);
+                try {
+                    parameterService.subscribe(parameterSubscriber, filter);
+                } catch (RemoteException e) {
+                    LOG.log(Level.SEVERE, "Parameter Service remote exception: " + e.getMessage(), e);
+                }
+            }
         }
     }
 
@@ -330,6 +376,18 @@ public class Scheduler implements IScheduler {
             LOG.log(Level.SEVERE, "Scheduling request for activity " + request.getRequest().getPath() + " (" + request.getExternalId() + ") encountered a problem: " + e.getMessage(), e);
             throw new SchedulingException(e);
         }
+    }
+
+    void internalScheduleRequest(List<SchedulingRequest> requests, CreationConflictStrategy conflictStrategy) {
+        dispatcher.submit(() -> {
+            for(SchedulingRequest request : requests) {
+                try {
+                    scheduleTask(request, conflictStrategy, null);
+                } catch (SchedulingException e) {
+                    LOG.log(Level.WARNING, "Cannot schedule request " + request.getExternalId() + ": " + e.getMessage(), e);
+                }
+            }
+        });
     }
 
     void internalScheduleRequest(SchedulingRequest request, CreationConflictStrategy conflictStrategy) {
@@ -892,6 +950,26 @@ public class Scheduler implements IScheduler {
     /**
      * To be called from the dispatcher thread.
      */
+    void parameterUpdate(List<ParameterData> dataItems) {
+        if(!dataItems.isEmpty()) {
+            List<SchedulingRequest> requests = new LinkedList<>();
+            for(ParameterData pd : dataItems) {
+                cachedParameterMap.put(pd.getPath().asString(), pd);
+            }
+            for(BotProcessingDefinition bpd : configuration.getBots()) {
+                if(bpd.isAffectedBy(dataItems)) {
+                    requests.addAll(bpd.evaluate(this));
+                }
+            }
+            if(!requests.isEmpty()) {
+                internalScheduleRequest(requests, CreationConflictStrategy.ADD_ANYWAY);
+            }
+        }
+    }
+
+    /**
+     * To be called from the dispatcher thread.
+     */
     void deregisterActivity(IUniqueId activityId) {
         this.activityId2scheduledTask.remove(activityId);
     }
@@ -911,6 +989,21 @@ public class Scheduler implements IScheduler {
             this.executionService.abortActivity(activityId, activityOccurrenceId);
         } catch (ReatmetricException | RemoteException e) {
             LOG.log(Level.SEVERE, "Cannot abort activity occurrence " + activityOccurrenceId + ": " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public ParameterData getParameterData(String path) {
+        return cachedParameterMap.get(path);
+    }
+
+    @Override
+    public ActivityDescriptor resolveDescriptor(String path) {
+        try {
+            return activityService.getDescriptor(SystemEntityPath.fromString(path));
+        } catch (ReatmetricException | RemoteException e) {
+            LOG.log(Level.WARNING, "Cannot retrieve activity descriptor for path " + path + ": " + e.getMessage(), e);
+            return null;
         }
     }
 }

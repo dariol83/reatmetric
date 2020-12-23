@@ -129,7 +129,7 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
         LOG.info("Loading scheduler");
         ServiceLoader<ISchedulerFactory> scheduleLoader = ServiceLoader.load(ISchedulerFactory.class);
         if(scheduleLoader.findFirst().isPresent()) {
-            scheduler = scheduleLoader.findFirst().get().buildScheduler(archive, processingModelManager, processingModelManager.getEventDataMonitorService(), processingModelManager.getActivityOccurrenceDataMonitorService());
+            scheduler = scheduleLoader.findFirst().get().buildScheduler(null, archive, processingModelManager, processingModelManager.getEventDataMonitorService(), processingModelManager.getActivityOccurrenceDataMonitorService(), processingModelManager.getParameterDataMonitorService());
         } else {
             LOG.warning("Scheduler implementation not found");
         }

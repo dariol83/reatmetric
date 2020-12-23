@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataProvisionSer
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.exceptions.ArchiveException;
 import eu.dariolucia.reatmetric.api.events.IEventDataProvisionService;
+import eu.dariolucia.reatmetric.api.parameters.IParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.scheduler.exceptions.SchedulingException;
 
@@ -37,13 +38,14 @@ public interface ISchedulerFactory {
      * The returned {@link IScheduler} object is not required to be a different new object: {@link ISchedulerFactory}
      * implementations are allowed to cache objects or use a singleton-based design.
      *
+     * @param schedulerConfigurationLocation location of the schedule configuration, can be null
      * @param archive the archive system, can be null: in such case, nothing is restored
      * @param activityExecutor  the activity execution service, cannot be null
      * @param eventMonService  the event provision service, cannot be null
      * @param activityMonService  the activity provision service, cannot be null
+     * @param parameterMonService the parameter provision service, cannot be null
      * @return an implementation of {@link IScheduler} interface
      * @throws SchedulingException in case of problems arising from the construction of the specific {@link IScheduler} object
      */
-    IScheduler buildScheduler(IArchive archive, IActivityExecutionService activityExecutor, IEventDataProvisionService eventMonService, IActivityOccurrenceDataProvisionService activityMonService) throws SchedulingException;
-
+   IScheduler buildScheduler(String schedulerConfigurationLocation, IArchive archive, IActivityExecutionService activityExecutor, IEventDataProvisionService eventMonService, IActivityOccurrenceDataProvisionService activityMonService, IParameterDataProvisionService parameterMonService);
 }
