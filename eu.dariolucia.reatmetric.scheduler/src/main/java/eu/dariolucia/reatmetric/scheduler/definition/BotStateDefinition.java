@@ -27,12 +27,17 @@ import javax.xml.bind.annotation.XmlElement;
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 /**
  *
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 public class BotStateDefinition implements Serializable {
+
+    private static final Logger LOG = Logger.getLogger(BotStateDefinition.class.getName());
 
     @XmlAttribute(name="name", required = true)
     private String name;
@@ -71,12 +76,12 @@ public class BotStateDefinition implements Serializable {
      * Transient (stateless)
      */
 
-    public boolean evaluate(IInternalResolver resolver) {
+    public boolean evaluate(IInternalResolver resolver, String source) {
         return conditions.stream().allMatch(o -> {
             try {
                 return o.execute(resolver);
             } catch (ReatmetricException e) {
-                // TODO: log
+                LOG.log(logRecord(Level.WARNING, "Cannot evalute condition in " + getName() + ": " + e.getMessage(), e, new Object[] {source, null}));
                 return false;
             }
         });
@@ -89,9 +94,16 @@ public class BotStateDefinition implements Serializable {
             if(req != null) {
                 toReturn.add(req);
             } else {
-                // TODO: log
+                LOG.log(logRecord(Level.WARNING, "Cannot build action request in " + getName() + " for activity" + aid.getActivity(), null, new Object[] {source, null}));
             }
         }
         return toReturn;
+    }
+
+    private LogRecord logRecord(Level level, String msg, Throwable e, Object[] objects) {
+        LogRecord lr = new LogRecord(level, msg);
+        lr.setThrown(e);
+        lr.setParameters(objects);
+        return lr;
     }
 }

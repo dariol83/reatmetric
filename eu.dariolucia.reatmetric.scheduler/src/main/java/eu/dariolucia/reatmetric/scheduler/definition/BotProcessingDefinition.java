@@ -116,12 +116,12 @@ public class BotProcessingDefinition implements Serializable {
             return Collections.emptyList();
         }
         // If inited, first evaluate the current state: if the evaluation of the current state is OK, do nothing
-        if(currentState != STATE_NOT_INITED && botStates.get(currentState).evaluate(resolver)) {
+        if(currentState != STATE_NOT_INITED && botStates.get(currentState).evaluate(resolver, getName())) {
             return Collections.emptyList();
         }
         // If not inited or the current state is not OK, evaluate in order, the first positive evaluation is used
         for(int i = 0; i < botStates.size(); ++i) {
-            if(botStates.get(i).evaluate(resolver)) {
+            if(botStates.get(i).evaluate(resolver, getName())) {
                 if(currentState != STATE_NOT_INITED || executeOnInit) {
                     currentState = i;
                     return botStates.get(i).buildActionRequests(resolver, name);

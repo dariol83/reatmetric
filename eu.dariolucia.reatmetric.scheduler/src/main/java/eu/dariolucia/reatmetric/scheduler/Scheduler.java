@@ -232,10 +232,10 @@ public class Scheduler implements IScheduler, IInternalResolver {
             for (BotProcessingDefinition bpd : configuration.getBots()) {
                 paramsToSubscribe.addAll(bpd.getMonitoredParameters());
             }
-            // TODO: init with the current state from the processing model
             if(!paramsToSubscribe.isEmpty()) {
                 ParameterDataFilter filter = new ParameterDataFilter(null, paramsToSubscribe.stream().map(SystemEntityPath::fromString).collect(Collectors.toList()), null, null, null,null);
                 try {
+                    // This will generate a callback with all the initial values of the required parameters
                     parameterService.subscribe(parameterSubscriber, filter);
                 } catch (RemoteException e) {
                     LOG.log(Level.SEVERE, "Parameter Service remote exception: " + e.getMessage(), e);
