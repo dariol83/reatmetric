@@ -206,12 +206,12 @@ public class Scheduler implements IScheduler, IInternalResolver {
     }
 
     @Override
-    public void initialise(boolean schedulerEnabled) {
+    public void initialise() {
         if (LOG.isLoggable(Level.FINE)) {
             LOG.fine("initialise() invoked");
         }
         // Start disabled or enabled
-        if(schedulerEnabled) {
+        if(configuration == null || configuration.isSchedulerEnabled()) {
             enable();
         } else {
             disable();
@@ -318,9 +318,17 @@ public class Scheduler implements IScheduler, IInternalResolver {
     public void subscribe(ISchedulerSubscriber subscriber) {
         dispatcher.submit(() -> {
             schedulerSubscribers.add(subscriber);
+            // The bots now
+            List<BotStateData> data = new LinkedList<>();
+            if(configuration != null) {
+                data.addAll(configuration.getBots().stream().map(BotProcessingDefinition::getCurrentState).collect(Collectors.toList()));
+            }
             notifier.submit(() -> {
                 try {
                     subscriber.schedulerEnablementChanged(isEnabled());
+                    if(!data.isEmpty()) {
+                        subscriber.botStateUpdated(data);
+                    }
                 } catch (RemoteException e) {
                     LOG.log(Level.SEVERE, "Subscriber remote exception, dropping it");
                     unsubscribe(subscriber);
@@ -773,6 +781,63 @@ public class Scheduler implements IScheduler, IInternalResolver {
         }
     }
 
+    @Override
+    public void enableBot(String name) throws SchedulingException {
+        final BotProcessingDefinition fToSet = findBotDefinition(name);
+        dispatcher.submit(() -> setBotEnablement(fToSet, true));
+    }
+
+    @Override
+    public void disableBot(String name) throws SchedulingException {
+        final BotProcessingDefinition fToSet = findBotDefinition(name);
+        dispatcher.submit(() -> setBotEnablement(fToSet, false));
+    }
+
+    private BotProcessingDefinition findBotDefinition(String name) throws SchedulingException {
+        if (this.configuration == null) {
+            throw new SchedulingException("Cannot enable/disable bot " + name + ": no bots defined");
+        }
+        BotProcessingDefinition toSet = null;
+        for (BotProcessingDefinition bps : this.configuration.getBots()) {
+            if (bps.getName().equals(name)) {
+                toSet = bps;
+                break;
+            }
+        }
+        if (toSet == null) {
+            throw new SchedulingException("Cannot enable/disable bot " + name + ": bot not found");
+        }
+        return toSet;
+    }
+
+    /**
+     * To be called by the dispatcher thread.
+     *
+     * @param bot the bot
+     * @param status the new enablement status
+     */
+    private void setBotEnablement(BotProcessingDefinition bot, boolean status) {
+        BotStateData newState = bot.updateEnablement(status);
+        if(newState != null) {
+            notifyBotState(Collections.singletonList(newState));
+        }
+    }
+
+    private void notifyBotState(List<BotStateData> states) {
+        for (ISchedulerSubscriber subscriber : schedulerSubscribers) {
+            notifier.submit(() -> {
+                try {
+                    if (!states.isEmpty()) {
+                        subscriber.botStateUpdated(states);
+                    }
+                } catch (RemoteException e) {
+                    LOG.log(Level.SEVERE, "Subscriber remote exception, dropping it");
+                    unsubscribe(subscriber);
+                }
+            });
+        }
+    }
+
     private List<ScheduledTask> retrieveTasksFrom(Instant startTime, Instant endTime) {
         return id2scheduledTask.values().stream()
                 .filter(o -> (o.getCurrentData().getStartTime().isAfter(startTime) || o.getCurrentData().getStartTime().equals(startTime)) &&
@@ -956,14 +1021,17 @@ public class Scheduler implements IScheduler, IInternalResolver {
             for(ParameterData pd : dataItems) {
                 cachedParameterMap.put(pd.getPath().asString(), pd);
             }
+            List<BotStateData> updatedStates = new LinkedList<>();
             for(BotProcessingDefinition bpd : configuration.getBots()) {
                 if(bpd.isAffectedBy(dataItems)) {
                     requests.addAll(bpd.evaluate(this));
+                    updatedStates.add(bpd.getCurrentState());
                 }
             }
             if(!requests.isEmpty()) {
                 internalScheduleRequest(requests, CreationConflictStrategy.ADD_ANYWAY);
             }
+            notifyBotState(updatedStates);
         }
     }
 

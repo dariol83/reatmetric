@@ -10,11 +10,11 @@ import java.util.List;
 
 /**
  * Interface implemented by a ReatMetric scheduler, allowing the change in the scheduler state as well as
- * the capability to create, update and remove scheduled activities.
+ * the capability to create, update, remove scheduled activities and enable/disable the configured bots.
  */
 public interface IScheduler extends IScheduledActivityDataProvisionService {
 
-    void initialise(boolean schedulerEnabled) throws SchedulingException, RemoteException;
+    void initialise() throws SchedulingException, RemoteException;
 
     /**
      * Subscribe the provided subscriber to the scheduler, to know the current scheduler state.
@@ -90,6 +90,22 @@ public interface IScheduler extends IScheduledActivityDataProvisionService {
      */
     List<ScheduledActivityData> load(Instant startTime, Instant endTime, List<SchedulingRequest> requests, String source, CreationConflictStrategy conflictStrategy) throws SchedulingException, RemoteException;
 
+    /**
+     * Enable the bot identified by the provided name. Once re-enabled, the bot will move to the uninitialised state and
+     * it will compute the first valid state.
+     *
+     * @param name the name of the bot to enable
+     * @throws SchedulingException in case of errors in the scheduler
+     */
+    void enableBot(String name) throws SchedulingException, RemoteException;
+
+    /**
+     * Disable the bot identified by the provided name.
+     *
+     * @param name the name of the bot to disable
+     * @throws SchedulingException in case of errors in the scheduler
+     */
+    void disableBot(String name) throws SchedulingException, RemoteException;
     /**
      * Dispose the scheduler. Pending tasks will not be modified, to allow resume (if the archiving is enabled).
      */

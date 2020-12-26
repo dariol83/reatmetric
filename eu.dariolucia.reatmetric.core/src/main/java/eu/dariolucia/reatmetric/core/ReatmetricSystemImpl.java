@@ -129,7 +129,7 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
         LOG.info("Loading scheduler");
         ServiceLoader<ISchedulerFactory> scheduleLoader = ServiceLoader.load(ISchedulerFactory.class);
         if(scheduleLoader.findFirst().isPresent()) {
-            scheduler = scheduleLoader.findFirst().get().buildScheduler(null, archive, processingModelManager, processingModelManager.getEventDataMonitorService(), processingModelManager.getActivityOccurrenceDataMonitorService(), processingModelManager.getParameterDataMonitorService());
+            scheduler = scheduleLoader.findFirst().get().buildScheduler(configuration.getSchedulerConfiguration(), archive, processingModelManager, processingModelManager.getEventDataMonitorService(), processingModelManager.getActivityOccurrenceDataMonitorService(), processingModelManager.getParameterDataMonitorService());
         } else {
             LOG.warning("Scheduler implementation not found");
         }
@@ -154,7 +154,7 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
         // Initialise scheduler now
         if(scheduler != null) {
             try {
-                scheduler.initialise(configuration.isSchedulerEnabled());
+                scheduler.initialise();
             } catch (RemoteException e) {
                 // Ignore for this method
             }

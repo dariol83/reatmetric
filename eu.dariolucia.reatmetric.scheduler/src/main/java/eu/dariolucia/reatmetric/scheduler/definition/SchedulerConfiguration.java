@@ -19,10 +19,7 @@ package eu.dariolucia.reatmetric.scheduler.definition;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
@@ -43,6 +40,9 @@ public class SchedulerConfiguration {
         }
     }
 
+    @XmlAttribute(name = "scheduler-enabled")
+    private boolean schedulerEnabled = true;
+
     @XmlElement(name = "bot-definition")
     private List<BotProcessingDefinition> bots = new LinkedList<>();
 
@@ -52,5 +52,13 @@ public class SchedulerConfiguration {
 
     public void setBots(List<BotProcessingDefinition> bots) {
         this.bots = bots;
+    }
+
+    public boolean isSchedulerEnabled() {
+        return schedulerEnabled;
+    }
+
+    public void setSchedulerEnabled(boolean schedulerEnabled) {
+        this.schedulerEnabled = schedulerEnabled;
     }
 }

@@ -29,9 +29,12 @@ import javax.xml.bind.annotation.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ActivityInvocationDefinition implements Serializable {
+
+    private static final AtomicLong SEQUENCER = new AtomicLong(0);
 
     @XmlAttribute(name="activity", required = true)
     private String activity;
@@ -127,7 +130,7 @@ public class ActivityInvocationDefinition implements Serializable {
         ActivityDescriptor descriptor = resolver.resolveDescriptor(activity);
         if(descriptor != null) {
             ActivityRequest ar = new ActivityRequest(descriptor.getExternalId(), descriptor.getPath(), getArgumentsList(), getPropertiesMap(), route, source);
-            return new SchedulingRequest(ar, new HashSet<>(getResources()), source, source + "-" + ScheduledTask.DATE_TIME_FORMATTER_SECONDS.format(now), new AbsoluteTimeSchedulingTrigger(now), now.plusSeconds(maxInvocationTime), getConflictStrategy(), descriptor.getExpectedDuration());
+            return new SchedulingRequest(ar, new HashSet<>(getResources()), source, source + "-" + SEQUENCER.incrementAndGet(), new AbsoluteTimeSchedulingTrigger(now), now.plusSeconds(maxInvocationTime), getConflictStrategy(), descriptor.getExpectedDuration());
         } else {
             return null;
         }

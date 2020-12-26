@@ -37,10 +37,10 @@ public class MatcherDefinition implements Serializable {
     @XmlAttribute(name = "operator", required = true)
     private MatcherType operator;
 
-    @XmlAttribute(name = "use_raw_value")
+    @XmlAttribute(name = "use-raw-value")
     private boolean useRawValue = false;
 
-    @XmlAttribute(name = "value_type")
+    @XmlAttribute(name = "value-type")
     private ValueTypeEnum valueType;
 
     @XmlAttribute(name = "value")
@@ -49,7 +49,7 @@ public class MatcherDefinition implements Serializable {
     @XmlAttribute(name = "reference")
     private String reference;
 
-    @XmlAttribute(name = "use_reference_raw_value")
+    @XmlAttribute(name = "use-reference-raw-value")
     private boolean useReferenceRawValue = false;
 
     public MatcherDefinition() {

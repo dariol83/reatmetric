@@ -41,9 +41,13 @@ public class ServiceCoreConfiguration {
         }
         configuration.setDefinitionsLocation(configuration.getDefinitionsLocation().replace(HOME_VAR, HOME_DIR));
         configuration.setLogPropertyFile(configuration.getLogPropertyFile().replace(HOME_VAR, HOME_DIR));
+        if(configuration.getSchedulerConfiguration() != null) {
+            configuration.setSchedulerConfiguration(configuration.getSchedulerConfiguration().replace(HOME_VAR, HOME_DIR));
+        }
         for(DriverConfiguration dc : configuration.getDrivers()) {
             dc.setConfiguration(dc.getConfiguration().replace(HOME_VAR, HOME_DIR));
         }
+        //
         return configuration;
     }
 
@@ -65,8 +69,8 @@ public class ServiceCoreConfiguration {
     })
     private AbstractInitialisationConfiguration initialisation;
 
-    @XmlElement(name = "scheduler-enabled")
-    private boolean schedulerEnabled = true;
+    @XmlElement(name = "scheduler-configuration")
+    private String schedulerConfiguration;
 
     @XmlElement(name = "driver", required = true)
     private List<DriverConfiguration> drivers = new LinkedList<>();
@@ -127,11 +131,11 @@ public class ServiceCoreConfiguration {
         this.initialisation = initialisation;
     }
 
-    public boolean isSchedulerEnabled() {
-        return schedulerEnabled;
+    public String getSchedulerConfiguration() {
+        return schedulerConfiguration;
     }
 
-    public void setSchedulerEnabled(boolean schedulerEnabled) {
-        this.schedulerEnabled = schedulerEnabled;
+    public void setSchedulerConfiguration(String schedulerConfiguration) {
+        this.schedulerConfiguration = schedulerConfiguration;
     }
 }

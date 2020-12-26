@@ -17,6 +17,7 @@
 package eu.dariolucia.reatmetric.scheduler.definition;
 
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.api.scheduler.BotStateData;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import eu.dariolucia.reatmetric.scheduler.IInternalResolver;
 
@@ -34,6 +35,7 @@ import java.util.*;
 public class BotProcessingDefinition implements Serializable {
 
     public static final int STATE_NOT_INITED = -1;
+    public static final String NOT_INITIALISED_STATE_NAME = "<not initialised>";
 
     @XmlAttribute(name = "name", required = true)
     private String name;
@@ -87,6 +89,8 @@ public class BotProcessingDefinition implements Serializable {
 
     private transient int currentState = STATE_NOT_INITED;
 
+    private transient BotStateData currentBotState = null;
+
     public Set<String> getMonitoredParameters() {
         if(monitoredParameters == null) {
             monitoredParameters = new TreeSet<>();
@@ -124,14 +128,53 @@ public class BotProcessingDefinition implements Serializable {
             if(botStates.get(i).evaluate(resolver, getName())) {
                 if(currentState != STATE_NOT_INITED || executeOnInit) {
                     currentState = i;
+                    currentBotState = buildStateData();
                     return botStates.get(i).buildActionRequests(resolver, name);
                 } else {
                     currentState = i;
+                    currentBotState = buildStateData();
                     return Collections.emptyList();
                 }
             }
         }
         // If no positive evaluation is found, stay in the current state
         return Collections.emptyList();
+    }
+
+    public BotStateData updateEnablement(boolean status) {
+        if(status == this.enabled) {
+            // Do nothing
+            return null;
+        }
+        if(this.enabled) {
+            // Status to be disabled
+            this.enabled = false;
+        } else {
+            // Status to be enabled
+            this.enabled = true;
+            // Reset the state
+            this.currentState = STATE_NOT_INITED;
+        }
+        currentBotState = buildStateData();
+        return currentBotState;
+    }
+
+    private String getStateName() {
+        if(currentState == STATE_NOT_INITED) {
+            return NOT_INITIALISED_STATE_NAME;
+        } else {
+            return botStates.get(currentState).getName();
+        }
+    }
+
+    private BotStateData buildStateData() {
+        return new BotStateData(getName(),currentState,getStateName(),isEnabled());
+    }
+
+    public BotStateData getCurrentState() {
+        if(currentBotState == null) {
+            currentBotState = new BotStateData(getName(), STATE_NOT_INITED, NOT_INITIALISED_STATE_NAME, isEnabled());
+        }
+        return currentBotState;
     }
 }

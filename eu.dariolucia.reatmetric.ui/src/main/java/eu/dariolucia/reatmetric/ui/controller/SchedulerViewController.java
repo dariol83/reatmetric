@@ -190,6 +190,22 @@ public class SchedulerViewController extends AbstractDisplayController implement
     @FXML
     protected MenuItem eventDeleteScheduledMenuItem;
 
+    // Bot Table
+    @FXML
+    protected TableView<BotStateDataWrapper> botDataItemTableView;
+
+    @FXML
+    private TableColumn<BotStateDataWrapper, String> botNameCol;
+    @FXML
+    private TableColumn<BotStateDataWrapper, String> botStateCol;
+    @FXML
+    private TableColumn<BotStateDataWrapper, String> botEnabledCol;
+
+    @FXML
+    protected MenuItem botEnableMenuItem;
+    @FXML
+    protected MenuItem botDisableMenuItem;
+
     // Popup selector for date/time
     protected final Popup dateTimePopup = new Popup();
 
@@ -218,6 +234,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     private ObservableList<ScheduledActivityOccurrenceDataWrapper> eventTriggeredActivityList;
 
+    private Map<String, BotStateDataWrapper> botStatesMap = new TreeMap<>();
+
     private final Timer timer = new Timer("Reatmetric UI - Scheduler time tracker");
     private volatile TimerTask secondTicker;
 
@@ -229,6 +247,11 @@ public class SchedulerViewController extends AbstractDisplayController implement
         @Override
         public void schedulerEnablementChanged(boolean enabled) {
             internalSchedulerEnablementChanged(enabled);
+        }
+
+        @Override
+        public void botStateUpdated(List<BotStateData> botStates) {
+            internalBotStateUpdated(botStates);
         }
     };
 
@@ -255,6 +278,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
         setupEventTriggersTable();
 
+        setupBotTable();
+
         // Timed activities
         this.timeScheduledActivityList = FXCollections.observableList(FXCollections.observableArrayList(),
                 data -> new Observable[]{data.setLineProperty(), data.startTimeProperty(), data.endTimeProperty(), data.durationProperty(), data.stateProperty(), data.nameProperty(), data.resourcesProperty(), data.triggerProperty()});
@@ -266,6 +291,10 @@ public class SchedulerViewController extends AbstractDisplayController implement
         this.eventTriggeredActivityList = FXCollections.observableList(FXCollections.observableArrayList(),
                 data -> new Observable[]{data.startTimeProperty(), data.endTimeProperty(), data.durationProperty(), data.stateProperty(), data.nameProperty(), data.resourcesProperty(), data.triggerProperty(), data.eventTriggerProperty()});
         this.eventDataItemTableView.setItems(eventTriggeredActivityList);
+
+        // Bots
+        this.botDataItemTableView.setItems(FXCollections.observableList(FXCollections.observableArrayList(),
+                data -> new Observable[]{data.nameProperty(), data.stateNameProperty(), data.enabledProperty()}));
 
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
 
@@ -373,6 +402,14 @@ public class SchedulerViewController extends AbstractDisplayController implement
         }
         // If history retrieval, disable selection of time boundaries
         updateTimeBoundariesBtn.disableProperty().bind(liveTgl.selectedProperty().not());
+    }
+
+    private void setupBotTable() {
+        this.botDataItemTableView.setPlaceholder(new Label(""));
+
+        this.botStateCol.setCellValueFactory(o -> o.getValue().stateNameProperty());
+        this.botNameCol.setCellValueFactory(o -> o.getValue().nameProperty());
+        this.botEnabledCol.setCellValueFactory(o -> o.getValue().enabledProperty());
     }
 
     private void setupEventTriggersTable() {
@@ -1048,6 +1085,9 @@ public class SchedulerViewController extends AbstractDisplayController implement
         if (oldStatus) {
             persistColumnConfiguration();
         }
+        // Clear bot data
+        botStatesMap.clear();
+        botDataItemTableView.getItems().clear();
     }
 
     @Override
@@ -1131,6 +1171,35 @@ public class SchedulerViewController extends AbstractDisplayController implement
         }
         removeCompletedActivities();
         event.consume();
+    }
+
+    @FXML
+    public void onBotEnableMenuItem(ActionEvent actionEvent) {
+        BotStateDataWrapper selected = this.botDataItemTableView.getSelectionModel().getSelectedItem();
+        setBotEnable(selected, true);
+    }
+
+    @FXML
+    public void onBotDisableMenuItem(ActionEvent actionEvent) {
+        BotStateDataWrapper selected = this.botDataItemTableView.getSelectionModel().getSelectedItem();
+        setBotEnable(selected, false);
+    }
+
+    private void setBotEnable(BotStateDataWrapper selected, boolean enablement) {
+        boolean confirm = DialogUtils.confirm((enablement ? "Enable" : "Disable") + " bot " + selected.getName(), null, "Do you want to continue?");
+        if(confirm) {
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                try {
+                    if(enablement) {
+                        ReatmetricUI.selectedSystem().getSystem().getScheduler().enableBot(selected.getName());
+                    } else {
+                        ReatmetricUI.selectedSystem().getSystem().getScheduler().disableBot(selected.getName());
+                    }
+                } catch (ReatmetricException | RemoteException e) {
+                    LOG.log(Level.SEVERE, "Cannot complete the requested operation: " + e.getMessage(), e);
+                }
+            });
+        }
     }
 
     @FXML
@@ -1220,6 +1289,20 @@ public class SchedulerViewController extends AbstractDisplayController implement
         FxUtils.runLater(() -> {
             enableTgl.setSelected(enabled);
             enableTgl.setText(enabled ? "Disable" : "Enable");
+        });
+    }
+
+    private void internalBotStateUpdated(List<BotStateData> botStates) {
+        FxUtils.runLater(() -> {
+            for(BotStateData bsd : botStates) {
+                BotStateDataWrapper bsdw = botStatesMap.get(bsd.getName());
+                if(bsdw == null) {
+                    bsdw = new BotStateDataWrapper(bsd);
+                    botStatesMap.put(bsd.getName(), bsdw);
+                    botDataItemTableView.getItems().add(bsdw);
+                }
+                bsdw.set(bsd);
+            }
         });
     }
 
@@ -1373,6 +1456,58 @@ public class SchedulerViewController extends AbstractDisplayController implement
                 result = (int) (property.get().getInternalId().asLong() - o.get().getInternalId().asLong());
             }
             return result;
+        }
+    }
+
+    public static class BotStateDataWrapper {
+
+        private final SimpleObjectProperty<BotStateData> property = new SimpleObjectProperty<>();
+
+        private final SimpleStringProperty name = new SimpleStringProperty();
+        private final SimpleStringProperty stateName = new SimpleStringProperty();
+        private final SimpleStringProperty enabled = new SimpleStringProperty();
+
+        public BotStateDataWrapper(BotStateData data) {
+            set(data);
+        }
+
+        public void set(BotStateData data) {
+            property.set(data);
+            name.set(data.getName());
+            stateName.set(data.getStateName());
+            enabled.set(data.isEnabled() ? "Enabled" : "Disabled");
+        }
+
+        public BotStateData getProperty() {
+            return property.get();
+        }
+
+        public SimpleObjectProperty<BotStateData> propertyProperty() {
+            return property;
+        }
+
+        public String getName() {
+            return name.get();
+        }
+
+        public SimpleStringProperty nameProperty() {
+            return name;
+        }
+
+        public String getStateName() {
+            return stateName.get();
+        }
+
+        public SimpleStringProperty stateNameProperty() {
+            return stateName;
+        }
+
+        public String getEnabled() {
+            return enabled.get();
+        }
+
+        public SimpleStringProperty enabledProperty() {
+            return enabled;
         }
     }
 
