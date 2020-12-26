@@ -24,6 +24,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
+<?import javafx.scene.control.Tooltip?>
 <VBox prefHeight="240.0" prefWidth="1350.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.AckMessageDialogController">
    <children>
       <TableView fx:id="ackMessageTableView" fixedCellSize="20.0" prefHeight="200.0" prefWidth="1400.0" VBox.vgrow="ALWAYS">
@@ -42,11 +43,17 @@
                <HBox.margin>
                   <Insets right="4.0" top="8.0" />
                </HBox.margin>
+               <tooltip>
+                  <Tooltip text="Acknowledge the selected messages" />
+               </tooltip>
             </Button>
             <Button mnemonicParsing="false" onAction="#ackAllButtonSelected" prefWidth="100.0" text="Ack. All">
                <HBox.margin>
                   <Insets right="4.0" top="8.0" />
                </HBox.margin>
+               <tooltip>
+                  <Tooltip text="Acknowledge all outstanding messages" />
+               </tooltip>
             </Button>
          </children>
       </HBox>

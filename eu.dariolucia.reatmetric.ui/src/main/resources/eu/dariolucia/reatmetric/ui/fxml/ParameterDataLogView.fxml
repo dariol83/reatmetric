@@ -47,6 +47,9 @@
                                </image>
                            </ImageView>
                        </graphic>
+                       <tooltip>
+                           <Tooltip text="Set a filter" />
+                       </tooltip>
                    </Button>
                    <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
                        <graphic>
@@ -56,6 +59,9 @@
                                </image>
                            </ImageView>
                        </graphic>
+                       <tooltip>
+                           <Tooltip text="Print the display" />
+                       </tooltip>
                    </Button>
                </items>
             </ToolBar>

@@ -1186,7 +1186,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
     }
 
     private void setBotEnable(BotStateDataWrapper selected, boolean enablement) {
-        boolean confirm = DialogUtils.confirm((enablement ? "Enable" : "Disable") + " bot " + selected.getName(), null, "Do you want to continue?");
+        boolean confirm = DialogUtils.confirm((enablement ? "Enable" : "Disable") + " bot " + selected.getName(), null,
+                "Request to " + (enablement ? "enable" : "disable") + " bot " + selected.getName() + ". Do you want to continue?");
         if(confirm) {
             ReatmetricUI.threadPool(getClass()).execute(() -> {
                 try {
@@ -1328,6 +1329,10 @@ public class SchedulerViewController extends AbstractDisplayController implement
         editScheduledMenuItem.setVisible(this.liveTgl.isSelected() && dataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
         eventDeleteScheduledMenuItem.setVisible(this.liveTgl.isSelected() && !eventDataItemTableView.getSelectionModel().getSelectedItems().isEmpty());
         eventEditScheduledMenuItem.setVisible(this.liveTgl.isSelected() && eventDataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
+        botEnableMenuItem.setVisible(botDataItemTableView.getSelectionModel().getSelectedItems().size() == 1 &&
+                !botDataItemTableView.getSelectionModel().getSelectedItem().getProperty().isEnabled());
+        botEnableMenuItem.setVisible(botDataItemTableView.getSelectionModel().getSelectedItems().size() == 1 &&
+                botDataItemTableView.getSelectionModel().getSelectedItem().getProperty().isEnabled());
         if (!this.liveTgl.isSelected()) {
             windowEvent.consume();
         }

@@ -32,6 +32,7 @@
 <?import javafx.scene.control.TreeTableColumn?>
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tooltip?>
 <TitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Activities" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityDataViewController">
     <content>
     <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1">
@@ -57,6 +58,9 @@
                            </image>
                        </ImageView>
                    </graphic>
+                   <tooltip>
+                       <Tooltip text="Set a filter" />
+                   </tooltip>
                </Button>
                <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
                   <graphic>
@@ -66,6 +70,9 @@
                           </image>
                       </ImageView>
                   </graphic>
+                   <tooltip>
+                       <Tooltip text="Print the display" />
+                   </tooltip>
               </Button>
                <Separator orientation="VERTICAL" />
                <Button fx:id="removeBtn" mnemonicParsing="false" onAction="#removeButtonSelected">
@@ -76,6 +83,9 @@
                            </image>
                        </ImageView>
                    </graphic>
+                   <tooltip>
+                       <Tooltip text="Clear the list of the displayed activities" />
+                   </tooltip>
                </Button>
            </items>
         </ToolBar>

@@ -39,6 +39,7 @@
 <?import eu.dariolucia.reatmetric.ui.udd.InstantAxis?>
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tooltip?>
 <TitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Scheduler" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.SchedulerViewController">
     <content>
     <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1">
@@ -64,6 +65,9 @@
                            </image>
                        </ImageView>
                    </graphic>
+                   <tooltip>
+                       <Tooltip text="Set a filter" />
+                   </tooltip>
                </Button>
                <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
                   <graphic>
@@ -73,6 +77,9 @@
                           </image>
                       </ImageView>
                   </graphic>
+                   <tooltip>
+                       <Tooltip text="Print the display" />
+                   </tooltip>
               </Button>
               <Separator orientation="VERTICAL" />
               <Button fx:id="removeBtn" mnemonicParsing="false" onAction="#removeCompletedActivitiesButtonSelected">
@@ -83,6 +90,9 @@
                            </image>
                        </ImageView>
                    </graphic>
+                  <tooltip>
+                      <Tooltip text="Remove all completed activities" />
+                  </tooltip>
               </Button>
               <Button fx:id="updateTimeBoundariesBtn" mnemonicParsing="false" onAction="#updateTimeBoundariesButtonSelected">
                    <graphic>
@@ -92,9 +102,16 @@
                            </image>
                        </ImageView>
                    </graphic>
+                  <tooltip>
+                      <Tooltip text="Update the time boundaries" />
+                  </tooltip>
               </Button>
               <Pane prefHeight="1.0" prefWidth="24.0" HBox.hgrow="ALWAYS" />
-              <ToggleButton fx:id="enableTgl" mnemonicParsing="false" onAction="#enableToggleSelected" prefHeight="25.0" prefWidth="91.0" text="Enable" />
+              <ToggleButton fx:id="enableTgl" mnemonicParsing="false" onAction="#enableToggleSelected" prefHeight="25.0" prefWidth="91.0" text="Enable">
+                  <tooltip>
+                      <Tooltip text="Enable/disable the scheduler" />
+                  </tooltip>
+              </ToggleButton>
            </items>
         </ToolBar>
         <ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="400" maxWidth="1.7976931348623157E308" pannable="true"
@@ -122,16 +139,16 @@
                     </graphic>
                     <TableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
                         <columns>
-                            <TableColumn fx:id="extIdCol" editable="false" prefWidth="90.0" text="External ID" />
-                            <TableColumn fx:id="nameCol" editable="false" prefWidth="130.0" text="Name" />
-                            <TableColumn fx:id="stateCol" editable="false" prefWidth="90.0" text="State" />
-                            <TableColumn fx:id="startTimeCol" editable="false" prefWidth="190.0" text="Start Time" />
-                            <TableColumn fx:id="endTimeCol" editable="false" prefWidth="190.0" text="End Time" />
-                            <TableColumn fx:id="sourceCol" editable="false" prefWidth="100.0" text="Source" />
-                            <TableColumn fx:id="triggerCol" editable="false" prefWidth="100.0" text="Trigger" />
-                            <TableColumn fx:id="resourcesCol" editable="false" prefWidth="100.0" text="Resources" />
-                            <TableColumn fx:id="durationCol" editable="false" prefWidth="100.0" text="Duration" />
-                            <TableColumn fx:id="parentCol" editable="false" prefWidth="130.0" text="Parent" />
+                            <TableColumn fx:id="extIdCol" editable="false" sortable="false" prefWidth="90.0" text="External ID" />
+                            <TableColumn fx:id="nameCol" editable="false" sortable="false" prefWidth="130.0" text="Name" />
+                            <TableColumn fx:id="stateCol" editable="false" sortable="false" prefWidth="90.0" text="State" />
+                            <TableColumn fx:id="startTimeCol" editable="false" sortable="false" prefWidth="190.0" text="Start Time" />
+                            <TableColumn fx:id="endTimeCol" editable="false" sortable="false" prefWidth="190.0" text="End Time" />
+                            <TableColumn fx:id="sourceCol" editable="false" sortable="false" prefWidth="100.0" text="Source" />
+                            <TableColumn fx:id="triggerCol" editable="false" sortable="false" prefWidth="100.0" text="Trigger" />
+                            <TableColumn fx:id="resourcesCol" editable="false" sortable="false" prefWidth="100.0" text="Resources" />
+                            <TableColumn fx:id="durationCol" editable="false" sortable="false" prefWidth="100.0" text="Duration" />
+                            <TableColumn fx:id="parentCol" editable="false" sortable="false" prefWidth="130.0" text="Parent" />
                         </columns>
                         <contextMenu>
                             <ContextMenu onShowing="#menuAboutToShow">
@@ -182,15 +199,15 @@
                     </graphic>
                     <TableView fx:id="botDataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
                         <columns>
-                            <TableColumn fx:id="botNameCol" editable="false" prefWidth="130.0" text="Name" />
+                            <TableColumn fx:id="botNameCol" editable="false" prefWidth="200.0" text="Name" />
                             <TableColumn fx:id="botStateCol" editable="false" prefWidth="100.0" text="State" />
                             <TableColumn fx:id="botEnabledCol" editable="false" prefWidth="80.0" text="Enabled" />
                         </columns>
                         <contextMenu>
                             <ContextMenu onShowing="#menuAboutToShow">
                                 <items>
-                                    <MenuItem fx:id="botEnableMenuItem" mnemonicParsing="false" onAction="#onBotEnableMenuItem" text="Enable" />
-                                    <MenuItem fx:id="botDisableMenuItem" mnemonicParsing="false" onAction="#onBotDisableMenuItem" text="Disable" />
+                                    <MenuItem fx:id="botEnableMenuItem" mnemonicParsing="false" onAction="#onBotEnableMenuItem" text="Enable..." />
+                                    <MenuItem fx:id="botDisableMenuItem" mnemonicParsing="false" onAction="#onBotDisableMenuItem" text="Disable..." />
                                 </items>
                             </ContextMenu>
                         </contextMenu>

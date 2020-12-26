@@ -24,6 +24,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Tooltip?>
 <VBox prefHeight="240.0" prefWidth="740.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ChatDialogController">
    <children>
       <TableView fx:id="chatTableView" fixedCellSize="20.0" prefHeight="200.0" prefWidth="1400.0" VBox.vgrow="ALWAYS">
@@ -39,11 +40,17 @@
                <HBox.margin>
                   <Insets right="4.0" top="8.0" />
                </HBox.margin>
+               <tooltip>
+                  <Tooltip text="Type the chat message to send" />
+               </tooltip>
             </TextField>
             <Button fx:id="sendButton" mnemonicParsing="false" onAction="#sendMessageAction" prefWidth="100.0" text="Send">
                <HBox.margin>
                   <Insets top="8.0" />
                </HBox.margin>
+               <tooltip>
+                  <Tooltip text="Send the typed message" />
+               </tooltip>
             </Button>
          </children>
       </HBox>

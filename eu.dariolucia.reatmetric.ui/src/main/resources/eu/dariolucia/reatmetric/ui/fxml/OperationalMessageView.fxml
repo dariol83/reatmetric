@@ -2,7 +2,6 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
@@ -30,6 +29,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tooltip?>
 <TitledPane fx:id="displayTitledPane" collapsible="false" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minWidth="650.0" prefWidth="717.0" text="Operational Messages" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.OperationalMessageViewController">
    <content>
       <VBox prefHeight="200.0" prefWidth="100.0">
@@ -55,6 +55,9 @@
                                </image>
                            </ImageView>
                        </graphic>
+                       <tooltip>
+                           <Tooltip text="Set a filter" />
+                       </tooltip>
                    </Button>
                    <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
                        <graphic>
@@ -64,6 +67,9 @@
                                </image>
                            </ImageView>
                        </graphic>
+                       <tooltip>
+                           <Tooltip text="Print the display" />
+                       </tooltip>
                    </Button>
                </items>
             </ToolBar>

@@ -29,6 +29,7 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.Tooltip?>
 <VBox fx:id="parentVBox" VBox.vgrow="ALWAYS" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.UserDisplayTabWidgetController">
 	<children>
 		<ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
@@ -61,6 +62,9 @@
 							</image>
 						</ImageView>
 					</graphic>
+					<tooltip>
+						<Tooltip text="Print the display" />
+					</tooltip>
 				</Button>
 			</items>
 		</ToolBar>
