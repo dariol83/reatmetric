@@ -8,7 +8,8 @@ functions used in an M&C system.
 ![Alarms](docs/images/reatmetric-alarms-01.PNG "Alarm display example")
 ![Charts](docs/images/reatmetric-charts-01.PNG "Chart example")
 ![Mimics](docs/images/reatmetric-mimics-01.PNG "Mimics example")
-
+![Scheduler](docs/images/reatmetric-scheduler-01.PNG "Scheduler example")
+![Debug Chat Acks](docs/images/reatmetric-floatings-01.PNG "Chat, debug info, acknowledgement example")
 ## System Overview
 
 ### Modules
@@ -17,10 +18,13 @@ ReatMetric is a modular framework, decomposed in modules following the Java modu
 - **eu.dariolucia.reatmetric.persist**: this module contains an implementation of the archiving interfaces as defined by the _api_ module based on Apache Derby and a file-based approach. While this implementation is suited for one-off testing and small M&C systems, its usage in large scale systems is not suggested, due to the file-based approach limitations.
 - **eu.dariolucia.reatmetric.processing**: this module contains the implementation of the M&C processing capabilities at the level of parameters, events and activities. The terminology as well as the conceptual decomposition is partially derived from the ECSS standard ECSS-E-ST-70-31C: while the data definition tries to cover to the maximum possible extent the standard, the coverage is not complete in order to limit the complexity of its implementation.
 - **eu.dariolucia.reatmetric.core**: this module provides an implementation of the main service specified by the _api_ module, and it has a direct dependency on the _processing_ implementation. It provides brokers for raw data distribution and message distribution and defines a lower level API for the definition of _drivers_.
-- **eu.dariolucia.reatmetric.driver.automation**: this module provides a driver implementation of an automation system capable to execute Javascript-based scripts.
+- **eu.dariolucia.reatmetric.scheduler**: this module provides an implementation of the scheduler interface specified by the _api_ module. It allows scheduling (absolute time, relative time, event-based) of activities and conflict management based on resource declaration. It allows the definition of so-called bots, to execute actions depending on the values of the specified parameters.
+- **eu.dariolucia.reatmetric.remoting**: this module provides the mechanism to expose an implementation of the IReatmetricSystem via Java RMI (server side).
+- **eu.dariolucia.reatmetric.remoting.connector**: this module provides the mechanism to connect to a remote implementation of the IReatmetricSystem via Java RMI (client side).
+- **eu.dariolucia.reatmetric.ui**: this module implements a fully featured UI (JavaFX-based) that can be used to start and operate a ReatMetric-based system.
+- **eu.dariolucia.reatmetric.driver.automation**: this module provides a driver implementation of an automation system capable to execute Javascript, Groovy or Python scripts.
 - **eu.dariolucia.reatmetric.driver.spacecraft**: this module provides a driver implementation for the monitoring and control of a CCSDS/ECSS-PUS compliant spacecraft. Currently it includes support for the reception of TM/AOS frames via SLE RAF/RCF services, TM packet extraction, parameter decoding, PUS 9 time correlation, PUS 5 event mapping, PUS 1 command verification, PUS 11 on-board command scheduling (limited to 11,4 commands), telecommand encoding and CLTU transmission via SLE CLTU, full COP-1 support.
 - **eu.dariolucia.reatmetric.driver.test**: this module is a simple test driver that shows how to implement a simple custom driver.
-- **eu.dariolucia.reatmetric.ui**: this module implements a fully featured UI (JavaFX-based) that can be used to start and operate a ReatMetric-based system.
 
 ### Dependencies
 The ReatMetric modules are based on a very limited set of dependencies:
@@ -28,7 +32,10 @@ The ReatMetric modules are based on a very limited set of dependencies:
 - [openJFX](https://openjfx.io) and [ControlsFX](https://github.com/controlsfx/controlsfx): for the graphical user interface of the _ui_ module;
 - [Apache Derby](http://db.apache.org/derby): providing the storage backend of the _persist_ module;
 - [JAXB](https://javaee.github.io/jaxb-v2): for the configuration of all modules;
-- [GraalVM](https://www.graalvm.org): for the scripting language support in the _processing_ and _automation_ modules.
+- [Groovy](https://groovy-lang.org): for the Groovy language support in the _processing_ and _automation_ modules (best choice).
+- [GraalVM](https://www.graalvm.org): for the Javascript language support in the _processing_ and _automation_ modules.
+- [Jython](https://www.jython.org/): for the Python language support in the _processing_ and _automation_ modules.
+- [ControlsFX](https://github.com/controlsfx/controlsfx): advanced UI controls for the _ui_ module.
 
 ## Core Functionalities
 
@@ -61,10 +68,8 @@ The ReatMetric modules are based on a very limited set of dependencies:
 ## Implement your driver
 
 ## Roadmap
-- Activity scheduler
 - Alternative _persist_ implementations (server-based - in addition to file-based - Apache Derby, PostgreSQL)
-- Distributed deployment (on microservices)
-- Remoting and Web interface
+- Web interface
 
 ## Acknowledgements and Credits
 

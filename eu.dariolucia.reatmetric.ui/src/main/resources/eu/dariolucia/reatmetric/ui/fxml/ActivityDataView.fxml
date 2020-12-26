@@ -40,13 +40,61 @@
         <ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
            <items>
               <ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" prefHeight="25.0" prefWidth="91.0" selected="true" text="Live" />
-               <Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart" text="|&lt;" />
-               <Button fx:id="goBackFastBtn" disable="true" mnemonicParsing="false" onAction="#goBackFast" text="&lt;&lt;" />
-               <Button fx:id="goBackOneBtn" disable="true" mnemonicParsing="false" onAction="#goBackOne" text="&lt;" />
+               <Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart">
+                   <graphic>
+                       <ImageView pickOnBounds="true" preserveRatio="true">
+                           <image>
+                               <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/fast-backward.svg.png" />
+                           </image>
+                       </ImageView>
+                   </graphic>
+               </Button>
+               <Button fx:id="goBackFastBtn" disable="true" mnemonicParsing="false" onAction="#goBackFast">
+                   <graphic>
+                       <ImageView pickOnBounds="true" preserveRatio="true">
+                           <image>
+                               <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/backward.svg.png" />
+                           </image>
+                       </ImageView>
+                   </graphic>
+               </Button>
+               <Button fx:id="goBackOneBtn" disable="true" mnemonicParsing="false" onAction="#goBackOne">
+                   <graphic>
+                       <ImageView pickOnBounds="true" preserveRatio="true">
+                           <image>
+                               <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/back.svg.png" />
+                           </image>
+                       </ImageView>
+                   </graphic>
+               </Button>
                <Button fx:id="selectTimeBtn" disable="true" mnemonicParsing="false" onAction="#selectTimeButtonSelected" prefHeight="25.0" prefWidth="180.0" text="---" />
-               <Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne" text="&gt;" />
-               <Button fx:id="goForwardFastBtn" disable="true" mnemonicParsing="false" onAction="#goForwardFast" text="&gt;&gt;" />
-               <Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd" text="&gt;|" />
+               <Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne">
+                   <graphic>
+                       <ImageView pickOnBounds="true" preserveRatio="true">
+                           <image>
+                               <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/play.svg.png" />
+                           </image>
+                       </ImageView>
+                   </graphic>
+               </Button>
+               <Button fx:id="goForwardFastBtn" disable="true" mnemonicParsing="false" onAction="#goForwardFast">
+                   <graphic>
+                       <ImageView pickOnBounds="true" preserveRatio="true">
+                           <image>
+                               <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/forward.svg.png" />
+                           </image>
+                       </ImageView>
+                   </graphic>
+               </Button>
+               <Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd">
+                   <graphic>
+                       <ImageView pickOnBounds="true" preserveRatio="true">
+                           <image>
+                               <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/fast-forward.svg.png" />
+                           </image>
+                       </ImageView>
+                   </graphic>
+               </Button>
                <Separator orientation="VERTICAL" />
               <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
                <Separator orientation="VERTICAL" />
