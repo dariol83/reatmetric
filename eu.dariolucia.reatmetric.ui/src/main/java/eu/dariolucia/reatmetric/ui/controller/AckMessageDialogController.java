@@ -40,6 +40,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+/**
+ * FXML Controller class
+ *
+ * TODO: add quick plot for events and parameters messages
+ *
+ * @author dario
+ */
 public class AckMessageDialogController implements Initializable, IAcknowledgedMessageSubscriber {
 
     private static final Logger LOG = Logger.getLogger(AckMessageDialogController.class.getName());

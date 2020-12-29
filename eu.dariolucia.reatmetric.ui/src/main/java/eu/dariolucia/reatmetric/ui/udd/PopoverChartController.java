@@ -19,56 +19,63 @@ package eu.dariolucia.reatmetric.ui.udd;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
-import eu.dariolucia.reatmetric.api.common.IDataItemProvisionService;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.UserDisplayCoordinator;
 import javafx.geometry.Insets;
+import javafx.scene.Scene;
 import javafx.scene.chart.AreaChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.ScatterChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.ProgressIndicator;
-import org.controlsfx.control.PopOver;
+import javafx.scene.image.Image;
+import javafx.stage.Stage;
 
 import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class PopoverChartController implements IChartDisplayController {
+
+    private final static Logger LOG = Logger.getLogger(PopoverChartController.class.getName());
 
     private static final Timer UPDATE_TIMER = new Timer("ReatMetric UI - Chart Popover Update Thread", true);
     private static final int UPDATE_PERIOD = 5000;
     private static final int TIME_WINDOW = 60000;
 
-    private final PopOver popOver;
+    private final Stage stage;
     private final AbstractChartManager chartManager;
     private final XYChart<Instant, Number> chart;
     private final ParameterDataFilter parameterDataFilter;
     private final EventDataFilter eventDataFilter;
 
     private final TimerTask updateTask;
+    private final SystemEntity entity;
 
     public PopoverChartController(SystemEntity entity) throws ReatmetricException {
-        // TODO: remove the popover and use a stage, with closable feature by pressing ESC
-        popOver = new PopOver();
-        popOver.setHeaderAlwaysVisible(true);
-        popOver.setArrowLocation(PopOver.ArrowLocation.BOTTOM_LEFT);
+        this.entity = entity;
+        // Create a detached scene parent
+        stage = new Stage();
+        stage.setOnCloseRequest(null);
+
+        Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
+        stage.getIcons().add(icon);
+        stage.setOnCloseRequest(ev -> popupClosed());
 
         Instant now = Instant.now();
         if(entity.getType() == SystemEntityType.PARAMETER) {
             parameterDataFilter = new ParameterDataFilter(null, Collections.singletonList(entity.getPath()), null, null, null, null);
             eventDataFilter = new EventDataFilter(null, Collections.emptyList(), null, null, null, null, null);
-            popOver.setTitle("Parameter " + entity.getPath().asString());
+            stage.setTitle("Parameter " + entity.getPath().asString());
             // Chart
             chart = new AreaChart<>(new InstantAxis(), new NumberAxis());
             chart.setAnimated(false);
@@ -86,7 +93,7 @@ public class PopoverChartController implements IChartDisplayController {
         } else if(entity.getType() == SystemEntityType.EVENT) {
             parameterDataFilter = new ParameterDataFilter(null, Collections.emptyList(), null, null, null, null);
             eventDataFilter = new EventDataFilter(null, Collections.singletonList(entity.getPath()), null, null, null, null, null);
-            popOver.setTitle("Event " + entity.getPath().asString());
+            stage.setTitle("Event " + entity.getPath().asString());
             // Chart
             chart = new ScatterChart<>(new InstantAxis(), new NumberAxis());
             chart.setAnimated(false);
@@ -107,12 +114,7 @@ public class PopoverChartController implements IChartDisplayController {
         } else {
             throw new ReatmetricException("Support is only for parameters and events");
         }
-        chart.setPrefWidth(600);
 
-        // Register on hidden
-        popOver.setOnHidden(o -> {
-            popupClosed(entity);
-        });
         // Register to coordinator
         UserDisplayCoordinator.instance().register(this);
 
@@ -124,7 +126,7 @@ public class PopoverChartController implements IChartDisplayController {
             @Override
             public void run() {
                 FxUtils.runLater(() -> {
-                    if(popOver.isShowing()) {
+                    if(stage.isShowing()) {
                         Instant now = Instant.now();
                         chartManager.setBoundaries(now.minusMillis(TIME_WINDOW - UPDATE_PERIOD), now.plusMillis(UPDATE_PERIOD));
                     }
@@ -135,17 +137,23 @@ public class PopoverChartController implements IChartDisplayController {
 
         // Now, add a progress indicator to the popover ...
         ProgressIndicator pi = new ProgressIndicator();
-        pi.setPrefWidth(200);
-        pi.setPrefHeight(200);
+        pi.setPrefWidth(30);
+        pi.setPrefHeight(30);
         pi.setPadding(new Insets(6,6,6,6));
-        popOver.setContentNode(pi);
+
+        Scene scene = new Scene(pi, 800, 600);
+        scene.getStylesheets().add(getClass().getClassLoader()
+                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+        stage.setScene(scene);
+        stage.setWidth(600);
+        stage.setHeight(200);
         // ... and retrieve data from the archive from now - TIME_WINDOW to now ...
         ReatmetricUI.threadPool(this.getClass()).submit(() -> {
             final List<AbstractDataItem> retrievedData = retrieveDataFromArchive(now);
             FxUtils.runLater(() -> {
                 chartManager.plot(retrievedData);
                 // Then, show the chart
-                popOver.setContentNode(chart);
+                scene.setRoot(chart);
             });
         });
     }
@@ -160,32 +168,35 @@ public class PopoverChartController implements IChartDisplayController {
                 data.addAll(ReatmetricUI.selectedSystem().getSystem().getEventDataMonitorService().retrieve(Instant.ofEpochSecond(3600*24*365*1000L), 100, RetrievalDirection.TO_PAST, eventDataFilter));
             }
         } catch (ReatmetricException | RemoteException e) {
-            // TODO: log
-            e.printStackTrace();
+            LOG.log(Level.WARNING, "Cannot retrieve archived data for entity " + entity.getPath(), new Object[] { "Quick Plot", null });
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "", e);
+            }
         }
         Collections.reverse(data);
         return data;
     }
 
-    private void popupClosed(SystemEntity parameter) {
+    private void popupClosed() {
         updateTask.cancel();
         UserDisplayCoordinator.instance().deregister(this);
         UserDisplayCoordinator.instance().filterUpdated();
         chartManager.clear();
+        stage.close();
     }
 
-    public PopOver getPopOver() {
-        return popOver;
+    public Stage getStage() {
+        return stage;
     }
 
     @Override
     public void dispose() {
-        popOver.hide();
+        stage.hide();
     }
 
     @Override
     public void systemDisconnected(IReatmetricSystem system) {
-        popOver.hide();
+        stage.hide();
     }
 
     @Override
@@ -211,5 +222,9 @@ public class PopoverChartController implements IChartDisplayController {
     @Override
     public void updateDataItems(List<? extends AbstractDataItem> items) {
         chartManager.plot((List<AbstractDataItem>) items);
+    }
+
+    public void show() {
+        stage.show();
     }
 }

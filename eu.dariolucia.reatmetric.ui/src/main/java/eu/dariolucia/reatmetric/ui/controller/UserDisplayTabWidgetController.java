@@ -184,6 +184,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
     }
 
     private void fetchRecords(final Instant minTime, final Instant maxTime, final boolean clear) {
+        // TODO: refactor by using the new retrieve method in IDataItemProvisionService?
         final ParameterDataFilter pdf = getCurrentParameterFilter();
         final EventDataFilter edf = getCurrentEventFilter();
         // Retrieve the next one and add it on top

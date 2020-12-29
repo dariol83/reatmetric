@@ -48,7 +48,7 @@
                                 <graphic>
                                     <ImageView pickOnBounds="true" preserveRatio="true">
                                         <image>
-                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/chevron-circle-up-right.svg.png" />
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/signal.svg.png" />
                                         </image>
                                     </ImageView>
                                 </graphic>

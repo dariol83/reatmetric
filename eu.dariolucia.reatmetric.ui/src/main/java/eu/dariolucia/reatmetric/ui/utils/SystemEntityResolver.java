@@ -17,9 +17,14 @@
 
 package eu.dariolucia.reatmetric.ui.utils;
 
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 
+import java.rmi.RemoteException;
 import java.util.List;
 
 /**
@@ -53,5 +58,11 @@ public class SystemEntityResolver {
         SystemEntity getSystemEntity(int id);
 
         List<SystemEntity> getFromFilter(String partialPath, SystemEntityType type);
+
+        AbstractSystemEntityDescriptor getDescriptorOf(int externalId) throws ReatmetricException, RemoteException;
+
+        AbstractSystemEntityDescriptor getDescriptorOf(String path) throws ReatmetricException, RemoteException;
+
+        AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ReatmetricException, RemoteException;
     }
 }

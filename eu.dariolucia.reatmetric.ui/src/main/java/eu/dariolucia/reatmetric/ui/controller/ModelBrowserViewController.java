@@ -29,6 +29,7 @@ import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.api.scheduler.CreationConflictStrategy;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.udd.PopoverChartController;
 import eu.dariolucia.reatmetric.ui.utils.*;
@@ -57,6 +58,7 @@ import org.controlsfx.control.textfield.CustomTextField;
 
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -68,8 +70,6 @@ import java.util.stream.Collectors;
 
 /**
  * FXML Controller class
- *
- * // TODO: add descriptor caching
  *
  * @author dario
  */
@@ -157,6 +157,12 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private MenuItem quickPlotMenuItem;
     @FXML
     private SeparatorMenuItem quickPlotSeparator;
+
+    // ****************************************************************************
+    // Descriptor cache
+    // ****************************************************************************
+    private final Map<Integer, AbstractSystemEntityDescriptor> externalId2descriptor = new HashMap<>();
+    private final Map<String, AbstractSystemEntityDescriptor> path2descriptor = new TreeMap<>();
 
     @FXML
     private void filterClearButtonPressed(Event e) {
@@ -434,6 +440,9 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         this.displayTitledPane.setDisable(true);
         // Clear the table
         clearTreeModel();
+        // Clear caches
+        externalId2descriptor.clear();
+        path2descriptor.clear();
     }
 
     @Override
@@ -823,8 +832,35 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
     }
 
-    private AbstractSystemEntityDescriptor getDescriptorOf(int externalId) throws ReatmetricException, RemoteException {
-        return ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(externalId);
+    @Override
+    public AbstractSystemEntityDescriptor getDescriptorOf(int externalId) throws ReatmetricException, RemoteException {
+        AbstractSystemEntityDescriptor toReturn = this.externalId2descriptor.get(externalId);
+        if(toReturn == null) {
+            toReturn = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(externalId);
+            if(toReturn != null) {
+                this.externalId2descriptor.put(externalId, toReturn);
+                this.path2descriptor.put(toReturn.getPath().asString(), toReturn);
+            }
+        }
+        return toReturn;
+    }
+
+    @Override
+    public AbstractSystemEntityDescriptor getDescriptorOf(String path) throws ReatmetricException, RemoteException {
+        AbstractSystemEntityDescriptor toReturn = this.path2descriptor.get(path);
+        if(toReturn == null) {
+            toReturn = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(SystemEntityPath.fromString(path));
+            if(toReturn != null) {
+                this.externalId2descriptor.put(toReturn.getExternalId(), toReturn);
+                this.path2descriptor.put(toReturn.getPath().asString(), toReturn);
+            }
+        }
+        return toReturn;
+    }
+
+    @Override
+    public AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ReatmetricException, RemoteException {
+        return getDescriptorOf(path.asString());
     }
 
     private void runActivity(ActivityInvocationDialogController activityInvocationDialogController) {
@@ -851,15 +887,32 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 (selected.getValue().getType() != SystemEntityType.PARAMETER && selected.getValue().getType() != SystemEntityType.EVENT)) {
             return;
         }
-        if(selected.getValue().getType() == SystemEntityType.PARAMETER || selected.getValue().getType() == SystemEntityType.EVENT) {
-            plotEntity(modelTree, selected.getValue());
+        if(selected.getValue().getType() == SystemEntityType.PARAMETER) {
+            // Get the descriptor
+            try {
+                ParameterDescriptor pd = (ParameterDescriptor) getDescriptorOf(selected.getValue().getExternalId());
+                if (pd == null) {
+                    // Weird ...
+                    return;
+                } else if (pd.getEngineeringDataType() != ValueTypeEnum.REAL &&
+                        pd.getEngineeringDataType() != ValueTypeEnum.SIGNED_INTEGER &&
+                        pd.getEngineeringDataType() != ValueTypeEnum.UNSIGNED_INTEGER &&
+                        pd.getEngineeringDataType() != ValueTypeEnum.ENUMERATED) {
+                    LOG.log(Level.INFO, "Cannot plot system entity " + selected.getValue().getPath() + ": unsupported parameter type " + pd.getEngineeringDataType());
+                    return;
+                }
+            } catch (ReatmetricException | RemoteException e) {
+                LOG.log(Level.WARNING, "Cannot plot system entity " + selected.getValue().getPath() + " (descriptor error): " + e.getMessage(), e);
+                return;
+            }
         }
+        plotEntity(selected.getValue());
     }
 
-    private void plotEntity(Node graphic, SystemEntity value) {
+    private void plotEntity(SystemEntity value) {
         try {
             PopoverChartController ctrl = new PopoverChartController(value);
-            ctrl.getPopOver().show(graphic);
+            ctrl.show();
         } catch (ReatmetricException e) {
             LOG.log(Level.WARNING, "Cannot plot system entity " + value.getPath() + ": " + e.getMessage(), e);
         }
@@ -963,6 +1016,9 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         } catch (RemoteException | ReatmetricException e) {
             e.printStackTrace();
         }
+        // Clear cache
+        externalId2descriptor.clear();
+        path2descriptor.clear();
         super.dispose();
     }
 

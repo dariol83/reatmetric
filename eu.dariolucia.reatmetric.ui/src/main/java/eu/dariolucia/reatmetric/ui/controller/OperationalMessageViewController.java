@@ -40,6 +40,8 @@ import java.util.ResourceBundle;
 /**
  * FXML Controller class
  *
+ * TODO: add quick plot for events and parameters messages
+ *
  * @author dario
  */
 public class OperationalMessageViewController extends AbstractDataItemLogViewController<OperationalMessage, OperationalMessageFilter> implements IOperationalMessageSubscriber {

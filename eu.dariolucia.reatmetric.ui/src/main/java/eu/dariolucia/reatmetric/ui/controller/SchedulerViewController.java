@@ -1223,7 +1223,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
             // If the activity is in SCHEDULED
             if (selected.get().getState() == SchedulingState.SCHEDULED) {
                 // Get the descriptor
-                AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.get().getRequest().getId());
+                // AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.get().getRequest().getId());
+                AbstractSystemEntityDescriptor descriptor = SystemEntityResolver.getResolver().getDescriptorOf(selected.get().getRequest().getId());
                 // Get the route list
                 Supplier<List<ActivityRouteState>> routeList = () -> {
                     try {
