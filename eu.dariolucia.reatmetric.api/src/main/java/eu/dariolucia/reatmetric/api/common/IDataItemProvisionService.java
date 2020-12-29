@@ -22,6 +22,7 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.time.Instant;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -45,6 +46,7 @@ public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R e
      *
      * @param subscriber the callback interface, cannot be null
      * @param filter the filter object, can be null
+     * @throws RemoteException in case of remoting problem
      */
     void subscribe(T subscriber, R filter) throws RemoteException;
 
@@ -52,6 +54,7 @@ public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R e
      * Unsubscribe the callback interface from the provision service.
      *
      * @param subscriber the callback interface to unsubscribe, cannot be null
+     * @throws RemoteException in case of remoting problem
      */
     void unsubscribe(T subscriber) throws RemoteException;
 
@@ -68,6 +71,7 @@ public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R e
      * @param filter the filter, can be null
      * @return the retrieved objects
      * @throws ReatmetricException if a problem arises with the retrieval operation
+     * @throws RemoteException in case of remoting problem
      */
     List<K> retrieve(Instant startTime, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException, RemoteException;
 
@@ -84,7 +88,49 @@ public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R e
      * @param filter the filter, can be null
      * @return the retrieved objects
      * @throws ReatmetricException if a problem arises with the retrieval operation
+     * @throws RemoteException in case of remoting problem
      */
     List<K> retrieve(K startItem, int numRecords, RetrievalDirection direction, R filter) throws ReatmetricException, RemoteException;
 
+    /**
+     * Retrieve all {@link AbstractDataItem} objects, starting from generation time [startTime] up to [endTime], in ascending time order.
+     * The returned objects shall match the provided filter and shall be consecutive in the time direction, without gaps nor duplicates.
+     *
+     * @param startTime the start time of the retrieving interval (inclusive)
+     * @param endTime the end time of the retrieving interval (inclusive)
+     * @param filter the filter, can be null
+     * @return the retrieved objects
+     * @throws ReatmetricException if a problem arises with the retrieval operation
+     * @throws RemoteException in case of remoting problem
+     */
+    default List<K> retrieve(Instant startTime, Instant endTime, R filter) throws ReatmetricException, RemoteException {
+        if(startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("Start time is after end time");
+        }
+        List<K> data = new LinkedList<>();
+        boolean timeWindowCovered = false;
+
+        List<K> temp = retrieve(startTime, 100, RetrievalDirection.TO_FUTURE, filter);
+        while(temp != null && !temp.isEmpty() && !timeWindowCovered) {
+            // Add all items to the list that have gen. time < now
+            for(K pd : temp) {
+                if(pd.getGenerationTime().isBefore(endTime)) {
+                    data.add(pd);
+                } else if(pd.getGenerationTime().equals(endTime)) {
+                    data.add(pd);
+                    // Stop the retrieval
+                    timeWindowCovered = true;
+                    break;
+                } else {
+                    // Stop the retrieval
+                    timeWindowCovered = true;
+                    break;
+                }
+            }
+            if(!timeWindowCovered) {
+                temp = retrieve(temp.get(temp.size() - 1), 100, RetrievalDirection.TO_FUTURE, filter);
+            }
+        }
+        return data;
+    }
 }

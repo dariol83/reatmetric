@@ -28,9 +28,9 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.udd.*;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
+import eu.dariolucia.reatmetric.ui.udd.IChartDisplayController;
 import eu.dariolucia.reatmetric.ui.utils.OrderedProperties;
 import eu.dariolucia.reatmetric.ui.utils.UserDisplayCoordinator;
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -64,7 +64,7 @@ import java.util.stream.Collectors;
  *
  * @author dario
  */
-public class UserDisplayTabWidgetController extends AbstractDisplayController implements Initializable {
+public class UserDisplayTabWidgetController extends AbstractDisplayController implements Initializable, IChartDisplayController {
 
     // Live/retrieval controls
     @FXML
@@ -240,6 +240,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
         });
     }
 
+    @Override
     public void updateDataItems(List<? extends AbstractDataItem> items) {
         if (this.live) {
             // As this data comes from the live stream, set the last data max time
@@ -472,6 +473,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
         }
     }
 
+    @Override
     public boolean isLive() {
         return this.live;
     }
@@ -564,10 +566,12 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
         }
     }
 
+    @Override
     public ParameterDataFilter getCurrentParameterFilter() {
         return this.currentParameterFilter;
     }
 
+    @Override
     public EventDataFilter getCurrentEventFilter() {
         return this.currentEventFilter;
     }

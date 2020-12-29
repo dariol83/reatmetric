@@ -44,6 +44,16 @@
               <contextMenu>
                     <ContextMenu fx:id="contextMenu" onShowing="#menuAboutToShow">
                         <items>
+                            <MenuItem fx:id="quickPlotMenuItem" mnemonicParsing="false" onAction="#quickPlotAction" text="Quick Plot">
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/chevron-circle-up-right.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
+                            <SeparatorMenuItem fx:id="quickPlotSeparator" />
                             <MenuItem fx:id="setParameterMenuItem" mnemonicParsing="false" onAction="#setParameterAction" text="Set Value...">
                                 <graphic>
                                     <ImageView pickOnBounds="true" preserveRatio="true">

@@ -42,14 +42,20 @@ public class XYTimeChartManager extends AbstractChartManager {
 
 	private final XYChart<Instant, Number> chart;
 	private final Map<SystemEntityPath, XYChart.Series<Instant, Number>> parameter2series = new LinkedHashMap<>();
-	
-    public XYTimeChartManager(Consumer<AbstractChartManager> informer, XYChart<Instant, Number> n) {
+
+	public XYTimeChartManager(Consumer<AbstractChartManager> informer, XYChart<Instant, Number> n) {
+		this(informer, n, true);
+	}
+
+    public XYTimeChartManager(Consumer<AbstractChartManager> informer, XYChart<Instant, Number> n, boolean registerDnD) {
     	super(informer);
 		this.chart = n;
-		this.chart.setOnDragOver(this::onDragOver);
-		this.chart.setOnDragEntered(this::onDragEntered);
-		this.chart.setOnDragExited(this::onDragExited);
-		this.chart.setOnDragDropped(this::onDragDropped);
+		if(registerDnD) {
+			this.chart.setOnDragOver(this::onDragOver);
+			this.chart.setOnDragEntered(this::onDragEntered);
+			this.chart.setOnDragExited(this::onDragExited);
+			this.chart.setOnDragDropped(this::onDragDropped);
+		}
 	}
 
 	protected void onDragOver(DragEvent event) {

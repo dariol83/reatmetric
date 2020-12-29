@@ -27,10 +27,8 @@ import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.controller.MimicsDisplayTabWidgetController;
-import eu.dariolucia.reatmetric.ui.controller.UserDisplayTabWidgetController;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
-import javafx.application.Platform;
+import eu.dariolucia.reatmetric.ui.udd.IChartDisplayController;
 
 import java.rmi.RemoteException;
 import java.util.*;
@@ -58,7 +56,7 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
     private IParameterDataSubscriber parameterSubscriber;
     private IEventDataSubscriber eventSubscriber;
 
-    private final List<UserDisplayTabWidgetController> registeredViews = new CopyOnWriteArrayList<>();
+    private final List<IChartDisplayController> registeredViews = new CopyOnWriteArrayList<>();
 
     public UserDisplayCoordinator() {
         this.parameterDelegator = new DataProcessingDelegator<>(getClass().getSimpleName(), buildIncomingParameterDataDelegatorAction());
@@ -79,8 +77,8 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
 
     private void forwardEventDataItems(List<EventData> t) {
         // Build forward map
-        final Map<UserDisplayTabWidgetController, List<EventData>> forwardMap = new LinkedHashMap<>();
-        for(UserDisplayTabWidgetController c : registeredViews) {
+        final Map<IChartDisplayController, List<EventData>> forwardMap = new LinkedHashMap<>();
+        for(IChartDisplayController c : registeredViews) {
             if(c.isLive()) {
                 EventDataFilter edf = c.getCurrentEventFilter();
                 List<EventData> toForward = t.stream().filter(edf).collect(Collectors.toList());
@@ -91,7 +89,7 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
         }
         // Forward
         FxUtils.runLater(() -> {
-            for(Map.Entry<UserDisplayTabWidgetController, List<EventData>> entry : forwardMap.entrySet()) {
+            for(Map.Entry<IChartDisplayController, List<EventData>> entry : forwardMap.entrySet()) {
                 entry.getKey().updateDataItems(entry.getValue());
             }
         });
@@ -99,8 +97,8 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
 
     private void forwardParameterDataItems(List<ParameterData> t) {
         // Build forward map
-        final Map<UserDisplayTabWidgetController, List<ParameterData>> forwardMap = new LinkedHashMap<>();
-        for(UserDisplayTabWidgetController c : registeredViews) {
+        final Map<IChartDisplayController, List<ParameterData>> forwardMap = new LinkedHashMap<>();
+        for(IChartDisplayController c : registeredViews) {
             if(c.isLive()) {
                 ParameterDataFilter pdf = c.getCurrentParameterFilter();
                 List<ParameterData> toForward = t.stream().filter(pdf).collect(Collectors.toList());
@@ -111,7 +109,7 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
         }
         // Forward
         FxUtils.runLater(() -> {
-            for(Map.Entry<UserDisplayTabWidgetController, List<ParameterData>> entry : forwardMap.entrySet()) {
+            for(Map.Entry<IChartDisplayController, List<ParameterData>> entry : forwardMap.entrySet()) {
                 entry.getKey().updateDataItems(entry.getValue());
             }
         });
@@ -134,7 +132,7 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
 
     private ParameterDataFilter buildParameterFilter() {
         Set<SystemEntityPath> params = new TreeSet<>();
-        for(UserDisplayTabWidgetController c : registeredViews) {
+        for(IChartDisplayController c : registeredViews) {
             params.addAll(c.getCurrentParameterFilter().getParameterPathList());
         }
         return new ParameterDataFilter(null, new ArrayList<>(params),null,null,null, null);
@@ -142,7 +140,7 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
 
     private EventDataFilter buildEventFilter() {
         Set<SystemEntityPath> params = new TreeSet<>();
-        for(UserDisplayTabWidgetController c : registeredViews) {
+        for(IChartDisplayController c : registeredViews) {
             params.addAll(c.getCurrentEventFilter().getEventPathList());
         }
         return new EventDataFilter(null, new ArrayList<>(params),null, null,null,null, null);
@@ -206,16 +204,16 @@ public class UserDisplayCoordinator implements IReatmetricServiceListener {
         // Nothing
     }
 
-    public void register(UserDisplayTabWidgetController display) {
+    public void register(IChartDisplayController display) {
         this.registeredViews.add(display);
     }
 
-    public void deregister(UserDisplayTabWidgetController display) {
+    public void deregister(IChartDisplayController display) {
         this.registeredViews.remove(display);
     }
 
     public void dispose() {
-        for(UserDisplayTabWidgetController ctrl : registeredViews) {
+        for(IChartDisplayController ctrl : registeredViews) {
             ctrl.dispose();
         }
         registeredViews.clear();

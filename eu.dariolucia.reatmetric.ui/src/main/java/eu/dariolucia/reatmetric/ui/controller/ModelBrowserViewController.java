@@ -30,12 +30,11 @@ import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.api.scheduler.CreationConflictStrategy;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.udd.PopoverChartController;
 import eu.dariolucia.reatmetric.ui.utils.*;
-import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -69,6 +68,8 @@ import java.util.stream.Collectors;
 
 /**
  * FXML Controller class
+ *
+ * // TODO: add descriptor caching
  *
  * @author dario
  */
@@ -152,6 +153,10 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private SeparatorMenuItem ackSeparator;
     @FXML
     private MenuItem ackMenuItem;
+    @FXML
+    private MenuItem quickPlotMenuItem;
+    @FXML
+    private SeparatorMenuItem quickPlotSeparator;
 
     @FXML
     private void filterClearButtonPressed(Event e) {
@@ -639,6 +644,12 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         showAckAlarm &= alarmStatusMap.get(selected.getValue().getExternalId()).get().toBeAcked();
         ackMenuItem.setVisible(showAckAlarm);
         ackSeparator.setVisible(showAckAlarm);
+
+        // Quick plot
+        boolean showQuickPlot = type == SystemEntityType.PARAMETER || type == SystemEntityType.EVENT;
+        quickPlotMenuItem.setVisible(showQuickPlot);
+        quickPlotSeparator.setVisible(showQuickPlot);
+
     }
 
     @FXML
@@ -649,7 +660,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
         try {
             // Get the descriptor
-            AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getValue().getExternalId());
+            AbstractSystemEntityDescriptor descriptor = getDescriptorOf(selected.getValue().getExternalId());
             if (descriptor instanceof ActivityDescriptor) {
                 // Get the route list
                 Supplier<List<ActivityRouteState>> routeList = () -> {
@@ -781,7 +792,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private void executeActivity(SystemEntity toExecute) {
         try {
             // Get the descriptor
-            AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(toExecute.getExternalId());
+            AbstractSystemEntityDescriptor descriptor = getDescriptorOf(toExecute.getExternalId());
             if (descriptor instanceof ActivityDescriptor) {
                 // Get the route list
                 Supplier<List<ActivityRouteState>> routeList = () -> {
@@ -812,6 +823,10 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
     }
 
+    private AbstractSystemEntityDescriptor getDescriptorOf(int externalId) throws ReatmetricException, RemoteException {
+        return ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(externalId);
+    }
+
     private void runActivity(ActivityInvocationDialogController activityInvocationDialogController) {
         ActivityRequest request = activityInvocationDialogController.buildRequest();
         boolean confirm = DialogUtils.confirm("Request execution of activity", activityInvocationDialogController.getPath(), "Do you want to dispatch the execution request to the processing model?");
@@ -829,6 +844,28 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     }
 
     @FXML
+    private void quickPlotAction(ActionEvent actionEvent) {
+        TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
+        if (selected == null ||
+                selected.getValue() == null ||
+                (selected.getValue().getType() != SystemEntityType.PARAMETER && selected.getValue().getType() != SystemEntityType.EVENT)) {
+            return;
+        }
+        if(selected.getValue().getType() == SystemEntityType.PARAMETER || selected.getValue().getType() == SystemEntityType.EVENT) {
+            plotEntity(modelTree, selected.getValue());
+        }
+    }
+
+    private void plotEntity(Node graphic, SystemEntity value) {
+        try {
+            PopoverChartController ctrl = new PopoverChartController(value);
+            ctrl.getPopOver().show(graphic);
+        } catch (ReatmetricException e) {
+            LOG.log(Level.WARNING, "Cannot plot system entity " + value.getPath() + ": " + e.getMessage(), e);
+        }
+    }
+
+    @FXML
     private void setParameterAction(ActionEvent actionEvent) {
         TreeItem<SystemEntity> selected = this.modelTree.getSelectionModel().getSelectedItem();
         if (selected == null || selected.getValue() == null || selected.getValue().getType() != SystemEntityType.PARAMETER) {
@@ -840,7 +877,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private void executeSetParameter(SystemEntity selected) {
         try {
             // Get the descriptor
-            AbstractSystemEntityDescriptor descriptor = ReatmetricUI.selectedSystem().getSystem().getSystemModelMonitorService().getDescriptorOf(selected.getExternalId());
+            AbstractSystemEntityDescriptor descriptor = getDescriptorOf(selected.getExternalId());
             if (descriptor instanceof ParameterDescriptor) {
                 if (!((ParameterDescriptor) descriptor).isSettable()) {
                     DialogUtils.alert("Set parameter " + descriptor.getPath().getLastPathElement(), null, "Selected parameter " + descriptor.getPath().getLastPathElement() + " cannot be set");

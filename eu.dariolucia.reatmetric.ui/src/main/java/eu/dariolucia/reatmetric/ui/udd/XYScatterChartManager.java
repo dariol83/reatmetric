@@ -44,13 +44,19 @@ public class XYScatterChartManager extends AbstractChartManager {
 
 	private final AtomicInteger eventCounter = new AtomicInteger(0);
 
-    public XYScatterChartManager(Consumer<AbstractChartManager> informer, ScatterChart<Instant, Number> n) {
+	public XYScatterChartManager(Consumer<AbstractChartManager> informer, ScatterChart<Instant, Number> n) {
+		this(informer, n, true);
+	}
+
+    public XYScatterChartManager(Consumer<AbstractChartManager> informer, ScatterChart<Instant, Number> n, boolean registerDnD) {
     	super(informer);
 		this.chart = n;
-		this.chart.setOnDragOver(this::onDragOver);
-		this.chart.setOnDragEntered(this::onDragEntered);
-		this.chart.setOnDragExited(this::onDragExited);
-		this.chart.setOnDragDropped(this::onDragDropped);
+		if(registerDnD) {
+			this.chart.setOnDragOver(this::onDragOver);
+			this.chart.setOnDragEntered(this::onDragEntered);
+			this.chart.setOnDragExited(this::onDragExited);
+			this.chart.setOnDragDropped(this::onDragDropped);
+		}
 	}
 
 	protected void onDragOver(DragEvent event) {
