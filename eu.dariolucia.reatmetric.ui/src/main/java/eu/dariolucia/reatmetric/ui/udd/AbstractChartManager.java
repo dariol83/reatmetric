@@ -79,4 +79,6 @@ public abstract class AbstractChartManager {
 	public abstract List<String> getCurrentEntityPaths();
 
     public abstract void addItems(List<String> items);
+
+    public abstract Instant getLatestReceivedGenerationTime();
 }

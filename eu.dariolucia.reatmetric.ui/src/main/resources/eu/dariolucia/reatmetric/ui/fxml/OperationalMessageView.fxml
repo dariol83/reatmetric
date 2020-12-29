@@ -30,6 +30,8 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.control.ContextMenu?>
+<?import javafx.scene.control.MenuItem?>
 <TitledPane fx:id="displayTitledPane" collapsible="false" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minWidth="650.0" prefWidth="717.0" text="Operational Messages" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.OperationalMessageViewController">
    <content>
       <VBox prefHeight="200.0" prefWidth="100.0">
@@ -129,6 +131,21 @@
                   <TableColumn fx:id="sourceCol" editable="false" minWidth="8.0" prefWidth="160.0" sortable="false" text="Source" />
                 <TableColumn fx:id="messageCol" editable="false" maxWidth="1.7976931348623157E308" minWidth="43.0" prefWidth="800.0" sortable="false" text="Message" />
               </columns>
+                <contextMenu>
+                    <ContextMenu fx:id="tableContextMenu" onShowing="#menuAboutToShow">
+                        <items>
+                            <MenuItem fx:id="quickPlotMenuItem" mnemonicParsing="false" onAction="#onQuickPlotMenuItem" text="Quick plot">
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/signal.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
+                        </items>
+                    </ContextMenu>
+                </contextMenu>
             </TableView>
          </children>
          <padding>

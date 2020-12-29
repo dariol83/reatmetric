@@ -42,6 +42,7 @@ public class XYTimeChartManager extends AbstractChartManager {
 
 	private final XYChart<Instant, Number> chart;
 	private final Map<SystemEntityPath, XYChart.Series<Instant, Number>> parameter2series = new LinkedHashMap<>();
+	private volatile Instant maxGenerationTimeOnChart = Instant.EPOCH;
 
 	public XYTimeChartManager(Consumer<AbstractChartManager> informer, XYChart<Instant, Number> n) {
 		this(informer, n, true);
@@ -111,6 +112,9 @@ public class XYTimeChartManager extends AbstractChartManager {
 						// data.getNode().setVisible(false);
 						Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
 								(pd.getGenerationTime().toString())));
+						if(pd.getGenerationTime().isAfter(maxGenerationTimeOnChart)) {
+							maxGenerationTimeOnChart = pd.getGenerationTime();
+						}
 					} else {
 						parameter2series.remove(pd.getPath());
 						chart.getData().remove(s);
@@ -123,6 +127,7 @@ public class XYTimeChartManager extends AbstractChartManager {
 	@Override
 	public void clear() {
 		this.parameter2series.values().forEach(a -> a.getData().clear());
+		this.maxGenerationTimeOnChart = Instant.EPOCH;
 	}
 
 	@Override
@@ -152,5 +157,10 @@ public class XYTimeChartManager extends AbstractChartManager {
 		for(String item : items) {
 			addParameter(SystemEntityPath.fromString(item));
 		}
+	}
+
+	@Override
+	public Instant getLatestReceivedGenerationTime() {
+		return maxGenerationTimeOnChart;
 	}
 }

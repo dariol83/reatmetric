@@ -25,6 +25,10 @@
 <?import javafx.scene.layout.VBox?>
 
 <?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.control.ContextMenu?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
 <VBox prefHeight="240.0" prefWidth="1350.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.AckMessageDialogController">
    <children>
       <TableView fx:id="ackMessageTableView" fixedCellSize="20.0" prefHeight="200.0" prefWidth="1400.0" VBox.vgrow="ALWAYS">
@@ -35,6 +39,21 @@
             <TableColumn fx:id="sourceCol" editable="false" minWidth="8.0" prefWidth="160.0" sortable="false" text="Source" />
             <TableColumn fx:id="messageCol" editable="false" maxWidth="1.7976931348623157E308" minWidth="43.0" prefWidth="800.0" sortable="false" text="Message" />
          </columns>
+         <contextMenu>
+            <ContextMenu fx:id="tableContextMenu" onShowing="#menuAboutToShow">
+               <items>
+                  <MenuItem fx:id="quickPlotMenuItem" mnemonicParsing="false" onAction="#onQuickPlotMenuItem" text="Quick plot">
+                     <graphic>
+                        <ImageView pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/signal.svg.png" />
+                           </image>
+                        </ImageView>
+                     </graphic>
+                  </MenuItem>
+               </items>
+            </ContextMenu>
+         </contextMenu>
       </TableView>
       <HBox prefHeight="40.0">
          <children>

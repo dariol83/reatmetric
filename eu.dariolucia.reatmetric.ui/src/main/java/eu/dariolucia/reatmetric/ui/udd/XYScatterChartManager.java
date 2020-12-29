@@ -43,6 +43,7 @@ public class XYScatterChartManager extends AbstractChartManager {
 	private final Map<SystemEntityPath, Integer> event2position = new TreeMap<>();
 
 	private final AtomicInteger eventCounter = new AtomicInteger(0);
+	private volatile Instant maxGenerationTimeOnChart = Instant.EPOCH;
 
 	public XYScatterChartManager(Consumer<AbstractChartManager> informer, ScatterChart<Instant, Number> n) {
 		this(informer, n, true);
@@ -112,6 +113,9 @@ public class XYScatterChartManager extends AbstractChartManager {
 					s.getData().add(data);
 					// data.getNode().setVisible(false);
 					Tooltip.install(data.getNode(), new Tooltip(pd.getGenerationTime().toString()));
+					if(pd.getGenerationTime().isAfter(maxGenerationTimeOnChart)) {
+						maxGenerationTimeOnChart = pd.getGenerationTime();
+					}
 				}
 			}
 		}
@@ -120,6 +124,7 @@ public class XYScatterChartManager extends AbstractChartManager {
 	@Override
 	public void clear() {
 		this.event2series.values().forEach(a -> a.getData().clear());
+		this.maxGenerationTimeOnChart = Instant.EPOCH;
 	}
 
 	@Override
@@ -143,5 +148,10 @@ public class XYScatterChartManager extends AbstractChartManager {
 		for(String item : items) {
 			addEvent(SystemEntityPath.fromString(item));
 		}
+	}
+
+	@Override
+	public Instant getLatestReceivedGenerationTime() {
+		return maxGenerationTimeOnChart;
 	}
 }

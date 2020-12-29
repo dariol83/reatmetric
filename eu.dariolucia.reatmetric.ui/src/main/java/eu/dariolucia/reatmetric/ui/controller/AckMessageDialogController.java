@@ -20,9 +20,14 @@ import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.*;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.udd.PopoverChartController;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
+import eu.dariolucia.reatmetric.ui.utils.SystemEntityResolver;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
@@ -30,6 +35,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.paint.Color;
+import javafx.stage.WindowEvent;
 
 import java.net.URL;
 import java.rmi.RemoteException;
@@ -42,8 +48,6 @@ import java.util.stream.Collectors;
 
 /**
  * FXML Controller class
- *
- * TODO: add quick plot for events and parameters messages
  *
  * @author dario
  */
@@ -67,6 +71,12 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
 
     @FXML
     private TableView<AcknowledgedMessage> ackMessageTableView;
+
+    @FXML
+    private ContextMenu tableContextMenu;
+    @FXML
+    private MenuItem quickPlotMenuItem;
+
     private volatile IReatmetricSystem system;
     private volatile Consumer<Boolean> handler;
 
@@ -106,6 +116,15 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
                 }
             }
         });
+
+        ackMessageTableView.getSelectionModel().selectedItemProperty().addListener(o -> {
+            if(ackMessageTableView.getSelectionModel().getSelectedItem() != null && ackMessageTableView.getSelectionModel().getSelectedItem().getMessage().getLinkedEntityId() != null) {
+                ackMessageTableView.setContextMenu(tableContextMenu);
+            } else {
+                ackMessageTableView.setContextMenu(null);
+            }
+        });
+        ackMessageTableView.setContextMenu(null);
     }
 
     public void activate(Consumer<Boolean> alarmPresentNotifier) {
@@ -236,6 +255,47 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
                     LOG.log(Level.SEVERE, "Acknowledgement failed: " + e.getMessage(), e);
                 }
             });
+        }
+    }
+
+    @FXML
+    public void menuAboutToShow(WindowEvent windowEvent) {
+        boolean setVisible = ackMessageTableView.getSelectionModel().getSelectedItem() != null && ackMessageTableView.getSelectionModel().getSelectedItem().getMessage().getLinkedEntityId() != null;
+        if(setVisible) {
+            // Get the source and make sure it can be plotted
+            SystemEntity se = SystemEntityResolver.getResolver().getSystemEntity(ackMessageTableView.getSelectionModel().getSelectedItem().getMessage().getLinkedEntityId());
+            setVisible = se.getType() == SystemEntityType.PARAMETER || se.getType() == SystemEntityType.EVENT;
+            if(setVisible && se.getType() == SystemEntityType.PARAMETER) {
+                // Get the descriptor and make sure it can be plotted
+                try {
+                    ParameterDescriptor pd = (ParameterDescriptor) SystemEntityResolver.getResolver().getDescriptorOf(se.getExternalId());
+                    if (pd == null) {
+                        // Weird ...
+                        setVisible = false;
+                    } else if (pd.getEngineeringDataType() != ValueTypeEnum.REAL &&
+                            pd.getEngineeringDataType() != ValueTypeEnum.SIGNED_INTEGER &&
+                            pd.getEngineeringDataType() != ValueTypeEnum.UNSIGNED_INTEGER &&
+                            pd.getEngineeringDataType() != ValueTypeEnum.ENUMERATED) {
+                        LOG.log(Level.FINE, "Cannot plot system entity " + se.getPath() + ": unsupported parameter type " + pd.getEngineeringDataType());
+                        setVisible = false;
+                    }
+                } catch (ReatmetricException | RemoteException e) {
+                    LOG.log(Level.WARNING, "Cannot plot system entity " + se.getPath() + " (descriptor error): " + e.getMessage(), e);
+                    setVisible = false;
+                }
+            }
+        }
+        quickPlotMenuItem.setVisible(setVisible);
+    }
+
+    @FXML
+    public void onQuickPlotMenuItem(ActionEvent actionEvent) {
+        SystemEntity value = SystemEntityResolver.getResolver().getSystemEntity(ackMessageTableView.getSelectionModel().getSelectedItem().getMessage().getLinkedEntityId());
+        try {
+            PopoverChartController ctrl = new PopoverChartController(value);
+            ctrl.show();
+        } catch (ReatmetricException e) {
+            LOG.log(Level.WARNING, "Cannot plot system entity " + value.getPath() + ": " + e.getMessage(), e);
         }
     }
 }

@@ -1332,7 +1332,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         eventEditScheduledMenuItem.setVisible(this.liveTgl.isSelected() && eventDataItemTableView.getSelectionModel().getSelectedItems().size() == 1);
         botEnableMenuItem.setVisible(botDataItemTableView.getSelectionModel().getSelectedItems().size() == 1 &&
                 !botDataItemTableView.getSelectionModel().getSelectedItem().getProperty().isEnabled());
-        botEnableMenuItem.setVisible(botDataItemTableView.getSelectionModel().getSelectedItems().size() == 1 &&
+        botDisableMenuItem.setVisible(botDataItemTableView.getSelectionModel().getSelectedItems().size() == 1 &&
                 botDataItemTableView.getSelectionModel().getSelectedItem().getProperty().isEnabled());
         if (!this.liveTgl.isSelected()) {
             windowEvent.consume();

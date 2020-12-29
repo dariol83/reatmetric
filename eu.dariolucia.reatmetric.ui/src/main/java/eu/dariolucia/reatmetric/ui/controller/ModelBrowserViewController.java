@@ -898,7 +898,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                         pd.getEngineeringDataType() != ValueTypeEnum.SIGNED_INTEGER &&
                         pd.getEngineeringDataType() != ValueTypeEnum.UNSIGNED_INTEGER &&
                         pd.getEngineeringDataType() != ValueTypeEnum.ENUMERATED) {
-                    LOG.log(Level.INFO, "Cannot plot system entity " + selected.getValue().getPath() + ": unsupported parameter type " + pd.getEngineeringDataType());
+                    LOG.log(Level.FINE, "Cannot plot system entity " + selected.getValue().getPath() + ": unsupported parameter type " + pd.getEngineeringDataType());
                     return;
                 }
             } catch (ReatmetricException | RemoteException e) {

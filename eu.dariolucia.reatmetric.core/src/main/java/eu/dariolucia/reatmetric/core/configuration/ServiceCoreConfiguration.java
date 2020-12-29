@@ -28,6 +28,10 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ServiceCoreConfiguration {
 
+    // TODO: add a way to autostart connectors (with exclusions)
+    // TODO: add a way to indicate connectors with auto-reconnection enabled (with exclusions), this is per driver configuration, and as part of the ITransportConnector interface
+    // TODO: update somehow the ITransportConnector interface to expose whether it is auto-reconnecting or not, plus subscription interface to signal changes in this status.
+
     private static final String HOME_VAR = "$HOME";
     private static final String HOME_DIR = System.getProperty("user.home");
 

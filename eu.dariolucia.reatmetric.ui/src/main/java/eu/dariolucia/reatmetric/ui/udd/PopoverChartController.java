@@ -61,6 +61,9 @@ public class PopoverChartController implements IChartDisplayController {
     private final TimerTask updateTask;
     private final SystemEntity entity;
 
+    private volatile Instant lastReceivedGenerationTime = null;
+    private volatile Instant lastComputedMaxTime = null;
+
     public PopoverChartController(SystemEntity entity) throws ReatmetricException {
         this.entity = entity;
         // Create a detached scene parent
@@ -127,13 +130,23 @@ public class PopoverChartController implements IChartDisplayController {
             public void run() {
                 FxUtils.runLater(() -> {
                     if(stage.isShowing()) {
-                        Instant now = Instant.now();
-                        chartManager.setBoundaries(now.minusMillis(TIME_WINDOW - UPDATE_PERIOD), now.plusMillis(UPDATE_PERIOD));
+                        // Get the last received generation time
+                        Instant computedLastReceivedGenerationTime = computeLastReceivedGenerationTime();
+                        if(lastReceivedGenerationTime == null || !lastReceivedGenerationTime.equals(computedLastReceivedGenerationTime)) {
+                            lastReceivedGenerationTime = computedLastReceivedGenerationTime;
+                            lastComputedMaxTime = lastReceivedGenerationTime.plusMillis(UPDATE_PERIOD);
+                        } else {
+                            // No more data is coming, increase lastComputedMaxTime by UPDATE_PERIOD
+                            if(lastComputedMaxTime == null) {
+                                lastComputedMaxTime = Instant.now();
+                            }
+                            lastComputedMaxTime = lastComputedMaxTime.plusMillis(UPDATE_PERIOD);
+                        }
+                        chartManager.setBoundaries(lastComputedMaxTime.minusMillis(TIME_WINDOW), lastComputedMaxTime);
                     }
                 });
             }
         };
-        UPDATE_TIMER.schedule(updateTask, UPDATE_PERIOD, UPDATE_PERIOD);
 
         // Now, add a progress indicator to the popover ...
         ProgressIndicator pi = new ProgressIndicator();
@@ -149,17 +162,22 @@ public class PopoverChartController implements IChartDisplayController {
         stage.setHeight(200);
         // ... and retrieve data from the archive from now - TIME_WINDOW to now ...
         ReatmetricUI.threadPool(this.getClass()).submit(() -> {
-            final List<AbstractDataItem> retrievedData = retrieveDataFromArchive(now);
+            final List<AbstractDataItem> retrievedData = retrieveDataFromArchive();
             FxUtils.runLater(() -> {
                 chartManager.plot(retrievedData);
-                // Then, show the chart
+                // Then, show the chart ...
                 scene.setRoot(chart);
+                // ... and start the clock
+                UPDATE_TIMER.schedule(updateTask, UPDATE_PERIOD, UPDATE_PERIOD);
             });
         });
     }
 
-    // TODO: what if the data that is arriving is old (see approach in user display for such type of plot, we cannot use Instant.now())... we should probably use a very large time
-    private List<AbstractDataItem> retrieveDataFromArchive(Instant now) {
+    private Instant computeLastReceivedGenerationTime() {
+        return chartManager.getLatestReceivedGenerationTime();
+    }
+
+    private List<AbstractDataItem> retrieveDataFromArchive() {
         List<AbstractDataItem> data = new LinkedList<>();
         try {
             if (!parameterDataFilter.getParameterPathList().isEmpty()) {

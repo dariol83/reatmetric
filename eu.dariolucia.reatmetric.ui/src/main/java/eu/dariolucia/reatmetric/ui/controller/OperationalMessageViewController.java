@@ -23,28 +23,41 @@ import eu.dariolucia.reatmetric.api.messages.IOperationalMessageSubscriber;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.udd.PopoverChartController;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
+import eu.dariolucia.reatmetric.ui.utils.SystemEntityResolver;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.paint.Color;
+import javafx.stage.WindowEvent;
 
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * FXML Controller class
  *
- * TODO: add quick plot for events and parameters messages
  *
  * @author dario
  */
 public class OperationalMessageViewController extends AbstractDataItemLogViewController<OperationalMessage, OperationalMessageFilter> implements IOperationalMessageSubscriber {
+
+    private static final Logger LOG = Logger.getLogger(OperationalMessageViewController.class.getName());
 
     @FXML
     private TableColumn<OperationalMessage, String> idCol;
@@ -56,6 +69,11 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
     private TableColumn<OperationalMessage, String> sourceCol;
     @FXML
     private TableColumn<OperationalMessage, String> messageCol;
+
+    @FXML
+    private ContextMenu tableContextMenu;
+    @FXML
+    private MenuItem quickPlotMenuItem;
 
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
@@ -91,6 +109,15 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
                 }
             }
         });
+
+        dataItemTableView.getSelectionModel().selectedItemProperty().addListener(o -> {
+            if(dataItemTableView.getSelectionModel().getSelectedItem() != null && dataItemTableView.getSelectionModel().getSelectedItem().getLinkedEntityId() != null) {
+                dataItemTableView.setContextMenu(tableContextMenu);
+            } else {
+                dataItemTableView.setContextMenu(null);
+            }
+        });
+        dataItemTableView.setContextMenu(null);
     }
 
     @Override
@@ -149,4 +176,44 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
         return "OperationalMessageView";
     }
 
+    @FXML
+    public void menuAboutToShow(WindowEvent windowEvent) {
+        boolean setVisible = dataItemTableView.getSelectionModel().getSelectedItem() != null && dataItemTableView.getSelectionModel().getSelectedItem().getLinkedEntityId() != null;
+        if(setVisible) {
+            // Get the source and make sure it can be plotted
+            SystemEntity se = SystemEntityResolver.getResolver().getSystemEntity(dataItemTableView.getSelectionModel().getSelectedItem().getLinkedEntityId());
+            setVisible = se.getType() == SystemEntityType.PARAMETER || se.getType() == SystemEntityType.EVENT;
+            if(setVisible && se.getType() == SystemEntityType.PARAMETER) {
+                // Get the descriptor and make sure it can be plotted
+                try {
+                    ParameterDescriptor pd = (ParameterDescriptor) SystemEntityResolver.getResolver().getDescriptorOf(se.getExternalId());
+                    if (pd == null) {
+                        // Weird ...
+                        setVisible = false;
+                    } else if (pd.getEngineeringDataType() != ValueTypeEnum.REAL &&
+                            pd.getEngineeringDataType() != ValueTypeEnum.SIGNED_INTEGER &&
+                            pd.getEngineeringDataType() != ValueTypeEnum.UNSIGNED_INTEGER &&
+                            pd.getEngineeringDataType() != ValueTypeEnum.ENUMERATED) {
+                        LOG.log(Level.FINE, "Cannot plot system entity " + se.getPath() + ": unsupported parameter type " + pd.getEngineeringDataType());
+                        setVisible = false;
+                    }
+                } catch (ReatmetricException | RemoteException e) {
+                    LOG.log(Level.WARNING, "Cannot plot system entity " + se.getPath() + " (descriptor error): " + e.getMessage(), e);
+                    setVisible = false;
+                }
+            }
+        }
+        quickPlotMenuItem.setVisible(setVisible);
+    }
+
+    @FXML
+    public void onQuickPlotMenuItem(ActionEvent actionEvent) {
+        SystemEntity value = SystemEntityResolver.getResolver().getSystemEntity(dataItemTableView.getSelectionModel().getSelectedItem().getLinkedEntityId());
+        try {
+            PopoverChartController ctrl = new PopoverChartController(value);
+            ctrl.show();
+        } catch (ReatmetricException e) {
+            LOG.log(Level.WARNING, "Cannot plot system entity " + value.getPath() + ": " + e.getMessage(), e);
+        }
+    }
 }
