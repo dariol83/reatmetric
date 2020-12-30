@@ -40,6 +40,10 @@ import eu.dariolucia.reatmetric.api.scheduler.IScheduledActivityDataProvisionSer
 import eu.dariolucia.reatmetric.api.scheduler.IScheduler;
 import eu.dariolucia.reatmetric.api.scheduler.ISchedulerFactory;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
+import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
+import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
+import eu.dariolucia.reatmetric.api.transport.TransportStatus;
+import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.core.api.*;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.DriverConfiguration;
@@ -60,13 +64,14 @@ import java.util.logging.Logger;
 /**
  * Reference ReatMetric system implementation.
  */
-public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreContext, IDriverListener {
+public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreContext, IDriverListener, ITransportSubscriber {
 
     private static final Logger LOG = Logger.getLogger(ReatmetricSystemImpl.class.getName());
 
     private final List<IDriver> drivers = new ArrayList<>();
     private final List<ITransportConnector> transportConnectors = new ArrayList<>();
     private final List<ITransportConnector> transportConnectorsImmutable = Collections.unmodifiableList(transportConnectors);
+
     private final Map<Pair<String, String>, IRawDataRenderer> renderers = new HashMap<>();
     private final ServiceCoreConfiguration configuration;
 
@@ -80,6 +85,8 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
     private Consumer<SystemStatus> statusSubscriber;
 
     private volatile boolean initialised = false;
+
+    private final Timer executor = new Timer("ReatMetric Core - Executor", true);
 
     public ReatmetricSystemImpl(String initString) throws ReatmetricException {
         try {
@@ -159,11 +166,53 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
                 // Ignore for this method
             }
         }
+        // Check the connection status of the connectors (autoconnect, reconnect)
+        initialiseConnectorsProperties();
         // Derive system status
         deriveSystemStatus();
         initialised = true;
         // Done and ready to go
         LOG.info("Reatmetric Core System loaded with status " + systemStatus);
+    }
+
+    private void initialiseConnectorsProperties() {
+        List<ITransportConnector> toBeStartedNow = new LinkedList<>();
+        for(ITransportConnector connector : transportConnectors) {
+            // Reconnection flag
+            boolean isReconnectExcluded = configuration.getAutostartConnectors().getReconnectExclusions().stream().anyMatch(o -> {
+                try {
+                    return connector.getName().matches(o);
+                } catch (RemoteException e) {
+                    LOG.log(Level.WARNING, "Cannot retrieve name of transport connector: " + e.getMessage(), e);
+                    return true;
+                }
+            });
+            try {
+                connector.setReconnect(configuration.getAutostartConnectors().isReconnect() && !isReconnectExcluded);
+            } catch (RemoteException e) {
+                LOG.log(Level.WARNING, "Cannot set reconnection status of transport connector: " + e.getMessage(), e);
+            }
+            boolean isAutostartExcluded = configuration.getAutostartConnectors().getStartupExclusions().stream().anyMatch(o -> {
+                try {
+                    return connector.getName().matches(o);
+                } catch (RemoteException e) {
+                    LOG.log(Level.WARNING, "Cannot retrieve name of transport connector: " + e.getMessage(), e);
+                    return true;
+                }
+            });
+            if(configuration.getAutostartConnectors().isStartup() && !isAutostartExcluded) {
+                toBeStartedNow.add(connector);
+            }
+        }
+        // Start now!
+        for(ITransportConnector connector : toBeStartedNow) {
+            try {
+                connector.initialise(connector.getCurrentProperties());
+                connector.connect();
+            } catch (Exception e) { // Protect the startup sequence!
+                LOG.log(Level.WARNING, "Cannot start transport connector: " + e.getMessage(), e);
+            }
+        }
     }
 
     @Override
@@ -198,6 +247,13 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
     @Override
     public void dispose() throws ReatmetricException {
         initialised = false;
+        for(ITransportConnector tc : transportConnectors) {
+            try {
+                tc.deregister(this);
+            } catch (RemoteException e) {
+                LOG.log(Level.WARNING, "Cannot deregister from transport connector: " + e.getMessage(), e);
+            }
+        }
         for(IDriver d : drivers) {
             d.dispose();
         }
@@ -239,6 +295,13 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
 
     private void registerConnectors(List<ITransportConnector> transportConnectors) {
         this.transportConnectors.addAll(transportConnectors);
+        transportConnectors.forEach(o -> {
+            try {
+                o.register(this);
+            } catch (RemoteException e) {
+                LOG.log(Level.WARNING, "Cannot register to transport connector: " + e.getMessage(), e);
+            }
+        });
     }
 
     private IDriver loadDriver(DriverConfiguration dc) throws DriverException {
@@ -285,7 +348,7 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
     }
 
     @Override
-    public IOperationalMessageCollectorService getOperationalMessageCollectorService() throws ReatmetricException, RemoteException {
+    public IOperationalMessageCollectorService getOperationalMessageCollectorService() {
         return messageBroker.getCollectorService();
     }
 
@@ -403,5 +466,32 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
         toReturn.add(DebugInformation.of("Java", "CPUs", avlProcess, null, null ));
         //
         return toReturn;
+    }
+
+    @Override
+    public void status(TransportStatus status) throws RemoteException {
+        if(status.isAutoReconnect() &&
+                (status.getStatus() == TransportConnectionStatus.ERROR ||
+                 status.getStatus() == TransportConnectionStatus.ABORTED ||
+                 status.getStatus() == TransportConnectionStatus.IDLE)) {
+            // Look for the connector
+            for(ITransportConnector c : transportConnectors) {
+                if(c.getName().equals(status.getName())) {
+                    executor.schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            try {
+                                if(c.getConnectionStatus() != TransportConnectionStatus.OPEN && c.getConnectionStatus() != TransportConnectionStatus.CONNECTING) {
+                                    c.connect();
+                                }
+                            } catch (RemoteException | TransportException e) {
+                                LOG.log(Level.WARNING, "Cannot reconnect transport connector: " + e.getMessage(), e);
+                            }
+                        }
+                    }, 500);
+                    return;
+                }
+            }
+        }
     }
 }

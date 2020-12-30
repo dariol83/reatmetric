@@ -72,6 +72,7 @@ import java.util.stream.Collectors;
 /**
  * FXML Controller class
  *
+ * TODO: fix scheduler retrieval bugs (maybe just do it per time and not per activity...)
  * @author dario
  */
 public class SchedulerViewController extends AbstractDisplayController implements IScheduledActivityDataSubscriber {

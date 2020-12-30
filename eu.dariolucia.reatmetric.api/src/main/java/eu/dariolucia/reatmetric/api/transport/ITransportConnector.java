@@ -40,6 +40,7 @@ public interface ITransportConnector extends Remote {
      * Return the name of the connector.
      *
      * @return the name of the connector
+     * @throws RemoteException in case of issues on the remote side
      */
     String getName() throws RemoteException;
 
@@ -47,6 +48,7 @@ public interface ITransportConnector extends Remote {
      * Return the description of the connector.
      *
      * @return the description of the connector
+     * @throws RemoteException in case of issues on the remote side
      */
     String getDescription() throws RemoteException;
 
@@ -54,14 +56,17 @@ public interface ITransportConnector extends Remote {
      * Return the current connection status.
      *
      * @return the current connection status
+     * @throws RemoteException in case of issues on the remote side
      */
     TransportConnectionStatus getConnectionStatus() throws RemoteException;
 
     /**
      * Ask the connector to finalise its construction. This method shall be called before calling any of the other
-     * {@link ITransportConnector} methods. Failing in doing so may result in undefined behaviour.
+     * {@link ITransportConnector} methods. As such, it is typically invoked by the driver responsible for the creation
+     * of the connector. Failing to invoke this method may result in undefined behaviour.
      *
      * Not supposed to be remoted.
+     * @throws RemoteException in case of issues on the remote side
      */
     void prepare() throws RemoteException;
 
@@ -69,6 +74,7 @@ public interface ITransportConnector extends Remote {
      * Return the initialisation status.
      *
      * @return true if the connector is initialised, otherwise false
+     * @throws RemoteException in case of issues on the remote side
      */
     boolean isInitialised() throws RemoteException;
 
@@ -77,6 +83,7 @@ public interface ITransportConnector extends Remote {
      *
      * @param properties the properties that this connector shall use
      * @throws TransportException in case of problems
+     * @throws RemoteException in case of issues on the remote side
      */
     void initialise(Map<String, Object> properties) throws TransportException, RemoteException;
 
@@ -84,6 +91,7 @@ public interface ITransportConnector extends Remote {
      * Ask the connector to perform the connection to the external system.
      *
      * @throws TransportException in case of problems
+     * @throws RemoteException in case of issues on the remote side
      */
     void connect() throws TransportException, RemoteException;
 
@@ -91,6 +99,7 @@ public interface ITransportConnector extends Remote {
      * Ask the connector to disconnect from the external system.
      *
      * @throws TransportException in case of problems
+     * @throws RemoteException in case of issues on the remote side
      */
     void disconnect() throws TransportException, RemoteException;
 
@@ -98,6 +107,7 @@ public interface ITransportConnector extends Remote {
      * Ask the connector to abort the connection to the external system.
      *
      * @throws TransportException in case of problems
+     * @throws RemoteException in case of issues on the remote side
      */
     void abort() throws TransportException, RemoteException;
 
@@ -106,6 +116,7 @@ public interface ITransportConnector extends Remote {
      * implementation after calling this method may result in undefined behaviour.
      *
      * Not supposed to be remoted.
+     * @throws RemoteException in case of issues on the remote side
      */
     void dispose() throws RemoteException;
 
@@ -115,6 +126,7 @@ public interface ITransportConnector extends Remote {
      * required value type.
      *
      * @return the initialisation map
+     * @throws RemoteException in case of issues on the remote side
      */
     Map<String, Pair<String, ValueTypeEnum>> getSupportedProperties() throws RemoteException;
 
@@ -122,6 +134,7 @@ public interface ITransportConnector extends Remote {
      * Return the current initialisation property values.
      *
      * @return the current initialisation property values
+     * @throws RemoteException in case of issues on the remote side
      */
     Map<String, Object> getCurrentProperties() throws RemoteException;
 
@@ -129,6 +142,7 @@ public interface ITransportConnector extends Remote {
      * Register a subscriber to this transport connector.
      *
      * @param listener the subscriber to register
+     * @throws RemoteException in case of issues on the remote side
      */
     void register(ITransportSubscriber listener) throws RemoteException;
 
@@ -136,6 +150,22 @@ public interface ITransportConnector extends Remote {
      * Deregister a subscriber from this transport connector.
      *
      * @param listener the subscriber to deregister
+     * @throws RemoteException in case of issues on the remote side
      */
     void deregister(ITransportSubscriber listener) throws RemoteException;
+
+    /**
+     * Mark this transport connector to enable auto-reconnection when the connection is lost.
+     * @param reconnect true to enable reconnection, otherwise false
+     * @throws RemoteException in case of issues on the remote side
+     */
+    void setReconnect(boolean reconnect) throws RemoteException;
+
+    /**
+     * Give back the value of the reconnect flag.
+     *
+     * @return the reconnect flag value
+     * @throws RemoteException in case of issues on the remote side
+     */
+    boolean isReconnect() throws RemoteException;
 }

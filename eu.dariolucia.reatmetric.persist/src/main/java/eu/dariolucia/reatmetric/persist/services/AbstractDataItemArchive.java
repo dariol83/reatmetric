@@ -157,6 +157,10 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         if (LOG.isLoggable(Level.FINEST)) {
             LOG.finest(this + " - store(List) called: items.size() = " + items.size());
         }
+        if (items.isEmpty()) {
+            // Just ignore the call
+            return;
+        }
         checkDisposed();
         checkStorageQueueFull(items.size());
         // It can happen that items has more elements than the storageQueue. So we do an incremental mass storage.

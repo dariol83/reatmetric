@@ -29,13 +29,17 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.UserDisplayCoordinator;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.chart.AreaChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.ScatterChart;
 import javafx.scene.chart.XYChart;
+import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.image.Image;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.rmi.RemoteException;
@@ -150,22 +154,38 @@ public class PopoverChartController implements IChartDisplayController {
 
         // Now, add a progress indicator to the popover ...
         ProgressIndicator pi = new ProgressIndicator();
-        pi.setPrefWidth(30);
-        pi.setPrefHeight(30);
-        pi.setPadding(new Insets(6,6,6,6));
-
-        Scene scene = new Scene(pi, 800, 600);
+        pi.setPrefWidth(32);
+        pi.setPrefHeight(32);
+        pi.setMinSize(32, 32);
+        pi.setMaxSize(32, 32);
+        // pi.setPadding(new Insets(16,16,16,16));
+        VBox theBox = new VBox();
+        theBox.setSpacing(8);
+        theBox.setAlignment(Pos.CENTER);
+        theBox.getChildren().add(new Label(""));
+        theBox.getChildren().add(pi);
+        theBox.getChildren().add(new Label(""));
+        theBox.setPrefHeight(200);
+        theBox.setMinSize(1, 200);
+        theBox.setMaxSize(Integer.MAX_VALUE, 200);
+        VBox.setVgrow(theBox.getChildren().get(0), Priority.ALWAYS);
+        VBox.setVgrow(pi, Priority.NEVER);
+        VBox.setVgrow(theBox.getChildren().get(2), Priority.ALWAYS);
+        stage.setWidth(600);
+        stage.setHeight(200);
+        Scene scene = new Scene(theBox, 600, 200);
         scene.getStylesheets().add(getClass().getClassLoader()
                 .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
         stage.setScene(scene);
-        stage.setWidth(600);
-        stage.setHeight(200);
+
         // ... and retrieve data from the archive from now - TIME_WINDOW to now ...
         ReatmetricUI.threadPool(this.getClass()).submit(() -> {
             final List<AbstractDataItem> retrievedData = retrieveDataFromArchive();
             FxUtils.runLater(() -> {
                 chartManager.plot(retrievedData);
                 // Then, show the chart ...
+                stage.setWidth(600);
+                stage.setHeight(200);
                 scene.setRoot(chart);
                 // ... and start the clock
                 UPDATE_TIMER.schedule(updateTask, UPDATE_PERIOD, UPDATE_PERIOD);

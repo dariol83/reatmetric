@@ -30,13 +30,15 @@ public final class TransportStatus implements Serializable {
     private final AlarmState alarmState;
     private final long txRate;
     private final long rxRate;
+    private final boolean autoReconnect;
 
-    public TransportStatus(String name, TransportConnectionStatus status, long txRate, long rxRate, AlarmState alarmState) {
+    public TransportStatus(String name, TransportConnectionStatus status, long txRate, long rxRate, AlarmState alarmState, boolean autoReconnect) {
         this.name = name;
         this.status = status;
         this.txRate = txRate;
         this.rxRate = rxRate;
         this.alarmState = alarmState;
+        this.autoReconnect = autoReconnect;
     }
 
     /**
@@ -85,6 +87,15 @@ public final class TransportStatus implements Serializable {
         return alarmState;
     }
 
+    /**
+     * The auto-reconnection of the transport status.
+     *
+     * @return the auto-reconnection flag linked to this connector
+     */
+    public boolean isAutoReconnect() {
+        return autoReconnect;
+    }
+
     @Override
     public String toString() {
         return "TransportStatus{" +
@@ -93,6 +104,7 @@ public final class TransportStatus implements Serializable {
                 ", txRate=" + txRate +
                 ", rxRate=" + rxRate +
                 ", alarmState=" + alarmState +
+                ", autoReconnect=" + autoReconnect +
                 '}';
     }
 }

@@ -50,6 +50,7 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
     private volatile boolean prepared = false;
     private volatile boolean initialised = false;
     private volatile boolean busy = false;
+    private volatile boolean autoReconnect = false;
 
     protected AbstractTransportConnector(String name, String description) {
         this();
@@ -126,6 +127,20 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
     @Override
     public boolean isInitialised() {
         return initialised;
+    }
+
+    @Override
+    public void setReconnect(boolean autoReconnect) {
+        boolean toNotify = !Objects.equals(autoReconnect, this.autoReconnect);
+        this.autoReconnect = autoReconnect;
+        if(toNotify) {
+            notifySubscribers();
+        }
+    }
+
+    @Override
+    public boolean isReconnect() {
+        return this.autoReconnect;
     }
 
     @Override
@@ -216,7 +231,7 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
     protected abstract void doDispose();
 
     private void notifySubscribers() {
-        TransportStatus status = new TransportStatus(name, connectionStatus, lastTxRate, lastRxRate, lastAlarmState);
+        TransportStatus status = new TransportStatus(name, connectionStatus, lastTxRate, lastRxRate, lastAlarmState, autoReconnect);
         this.subscribers.forEach((s) -> {
             try {
                 if(LOG.isLoggable(Level.FINER)) {

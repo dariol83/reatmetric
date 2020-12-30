@@ -24,7 +24,6 @@ import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +41,8 @@ public class SchedulerProxy extends AbstractStateProvisionServiceProxy<Scheduled
         super(delegate);
     }
 
-    public void initialise(boolean schedulerEnabled) {
+    @Override
+    public void initialise() {
         // Not from remote
         throw new UnsupportedOperationException("Not to be called from remote");
     }
@@ -122,6 +122,16 @@ public class SchedulerProxy extends AbstractStateProvisionServiceProxy<Scheduled
 
     public List<ScheduledActivityData> load(Instant startTime, Instant endTime, List<SchedulingRequest> requests, String source, CreationConflictStrategy conflictStrategy) throws SchedulingException, RemoteException {
         return delegate.load(startTime, endTime, requests, source, conflictStrategy);
+    }
+
+    @Override
+    public void enableBot(String name) throws SchedulingException, RemoteException {
+        delegate.enableBot(name);
+    }
+
+    @Override
+    public void disableBot(String name) throws SchedulingException, RemoteException {
+        delegate.disableBot(name);
     }
 
     public void dispose() {

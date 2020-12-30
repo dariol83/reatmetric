@@ -46,6 +46,8 @@ public class ConnectorStatusWidgetController implements Initializable {
     private static final Image ACTION_ABORT_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/close-circle.svg.png"));
     private static final Image ACTION_PLAY_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/play.svg.png"));
     private static final Image ACTION_STOP_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/stop.svg.png"));
+    private static final Image ACTION_RECONNECT_ON_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/refresh.svg.png"));
+    private static final Image ACTION_RECONNECT_OFF_IMG = new Image(ConnectorStatusWidgetController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/redo.svg.png"));
 
     @FXML
     public Circle statusCircle;
@@ -59,6 +61,8 @@ public class ConnectorStatusWidgetController implements Initializable {
     public Label rxLabel;
     @FXML
     public Label txLabel;
+    @FXML
+    public ImageView reconnectImg;
     @FXML
     public ImageView startStopImg;
     @FXML
@@ -79,15 +83,18 @@ public class ConnectorStatusWidgetController implements Initializable {
         updateRateLabel(rxLabel, status.getRxRate());
         updateRateLabel(txLabel, status.getTxRate());
         updateStatusButton(status.getStatus());
+        updateReconnectButton(status.isAutoReconnect());
         // Done
     }
 
     public void setConnector(ITransportConnector connector) {
         this.connector = connector;
         TransportConnectionStatus status = TransportConnectionStatus.NOT_INIT;
+        boolean reconnect = false;
         try {
             this.name = connector.getName();
             status = connector.getConnectionStatus();
+            reconnect = connector.isReconnect();
         } catch (RemoteException e) {
             LOG.log(Level.SEVERE, "Transport connector cannot be accessed due to remote exception", e);
         }
@@ -97,6 +104,11 @@ public class ConnectorStatusWidgetController implements Initializable {
         updateRateLabel(txLabel, 0);
         updateRateLabel(rxLabel, 0);
         updateStatusButton(status);
+        updateReconnectButton(reconnect);
+    }
+
+    private void updateReconnectButton(boolean reconnect) {
+        reconnectImg.setImage(reconnect ? ACTION_RECONNECT_ON_IMG : ACTION_RECONNECT_OFF_IMG);
     }
 
     private void updateStatusButton(TransportConnectionStatus status) {
@@ -186,6 +198,17 @@ public class ConnectorStatusWidgetController implements Initializable {
     public void initialize(URL url, ResourceBundle resourceBundle) {
         initImg.setImage(ACTION_INIT_IMG);
         abortImg.setImage(ACTION_ABORT_IMG);
+    }
+
+    @FXML
+    public void reconnectButtonClicked(MouseEvent mouseEvent) {
+        ReatmetricUI.threadPool(ConnectorStatusWidgetController.class).execute(() -> {
+            try {
+                connector.setReconnect(!connector.isReconnect());
+            } catch (RemoteException e) {
+                LOG.log(Level.WARNING, "Cannot set reconnection status of " + this.name + ": " + e.getMessage(), e);
+            }
+        });
     }
 
     @FXML

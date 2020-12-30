@@ -26,7 +26,6 @@ import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -135,7 +134,7 @@ public class TransportConnectorProxy implements ITransportConnector {
     @Override
     public void deregister(ITransportSubscriber subscriber) throws RemoteException {
         if(LOG.isLoggable(Level.FINE)) {
-            LOG.fine("Deregistering subscriber " + subscriber + " to connector " + getName());
+            LOG.fine("De-registering subscriber " + subscriber + " to connector " + getName());
         }
         Remote activeObject = subscriber2remote.remove(subscriber);
         if(activeObject == null) {
@@ -150,6 +149,16 @@ public class TransportConnectorProxy implements ITransportConnector {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    public void setReconnect(boolean reconnect) throws RemoteException {
+        delegate.setReconnect(reconnect);
+    }
+
+    @Override
+    public boolean isReconnect() throws RemoteException {
+        return delegate.isReconnect();
     }
 
     public void terminate() {

@@ -104,4 +104,14 @@ public class TransportConnectorDelegate implements ITransportConnector {
     public void deregister(ITransportSubscriber listener) throws RemoteException {
         delegate.deregister(listener);
     }
+
+    @Override
+    public void setReconnect(boolean reconnect) throws RemoteException {
+        delegate.setReconnect(reconnect);
+    }
+
+    @Override
+    public boolean isReconnect() throws RemoteException {
+        return delegate.isReconnect();
+    }
 }
