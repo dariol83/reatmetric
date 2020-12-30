@@ -30,6 +30,7 @@ public class InstantCellFactory<T> {
 
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS").withZone(ZoneId.of("UTC"));
     public static final DateTimeFormatter DATE_TIME_FORMATTER_SECONDS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.of("UTC"));
+    public static final DateTimeFormatter DATE_TIME_FORMATTER_DOY = DateTimeFormatter.ofPattern("DDD").withZone(ZoneId.of("UTC"));
 
     public static <T>  Callback<TableColumn<T, Instant>, TableCell<T, Instant>> instantCellFactory() {
         return new Callback<>() {

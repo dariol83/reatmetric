@@ -28,7 +28,6 @@ import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
@@ -46,6 +45,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.media.AudioClip;
 import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
@@ -55,6 +55,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.controlsfx.control.PopOver;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.rmi.RemoteException;
@@ -93,6 +94,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private static final String CHAT_LABEL_CSS_STYLE_ALARM = "-fx-background-color: -fx-faint-focus-color";
 
     private static volatile MainViewController.Facade INSTANCE = null;
+    private AudioClip alarmSound;
 
     public static MainViewController.Facade instance() {
         return INSTANCE;
@@ -102,6 +104,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     @FXML
     public Label timeLbl;
+    @FXML
+    public Label timeDoyLbl;
     @FXML
     private Accordion sideAccordion;
     @FXML
@@ -128,6 +132,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private ProgressBar globalProgress;
     @FXML
     private Button chatButton;
+    @FXML
+    private ToggleButton soundButton;
 
     @FXML
     private Button connectButton;
@@ -450,13 +456,23 @@ public class MainViewController implements Initializable, IReatmetricServiceList
             e.printStackTrace();
         }
 
+        try {
+            alarmSound = new AudioClip(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/sound/alarm.wav").toExternalForm());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         // Flashing timeline for alarms
         alarmFlashTimeline = new Timeline(
                 new KeyFrame(Duration.seconds(0.5), e -> {
                     systemLbl.setStyle(SYSTEM_LABEL_CSS_STYLE_ALARM);
+                    if(soundButton.isSelected()) {
+                        alarmSound.play();
+                    }
                 }),
                 new KeyFrame(Duration.seconds(1.0), e -> {
                     systemLbl.setStyle(SYSTEM_LABEL_CSS_STYLE_NOALARM);
+                    alarmSound.stop();
                 })
         );
         alarmFlashTimeline.setCycleCount(Animation.INDEFINITE);
@@ -489,7 +505,12 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         // digital clock, update 1 per second.
         final Timeline digitalTime = new Timeline(
                 new KeyFrame(Duration.seconds(0),
-                        actionEvent -> timeLbl.setText(InstantCellFactory.DATE_TIME_FORMATTER_SECONDS.format(Instant.now()))
+                        actionEvent -> {
+                            Instant now = Instant.now();
+                            String dateText = InstantCellFactory.DATE_TIME_FORMATTER_SECONDS.format(now);
+                            timeLbl.setText(dateText);
+                            timeDoyLbl.setText("DOY: " + InstantCellFactory.DATE_TIME_FORMATTER_DOY.format(now));
+                        }
                 ),
                 new KeyFrame(Duration.seconds(1))
         );
@@ -615,6 +636,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         this.systemLbl.setDisable(true);
 
         this.chatButton.setDisable(true);
+        this.soundButton.setDisable(true);
     }
 
     private void enableMainViewItems() {
@@ -629,6 +651,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         this.systemLbl.setDisable(false);
 
         this.chatButton.setDisable(false);
+        this.soundButton.setDisable(false);
     }
 
     private void updateStatusIndicator(SystemStatus state) {

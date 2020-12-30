@@ -26,6 +26,7 @@ open module eu.dariolucia.reatmetric.ui {
     requires javafx.base;
     requires javafx.controls;
     requires javafx.web;
+    requires javafx.media;
 
     requires org.controlsfx.controls;
 

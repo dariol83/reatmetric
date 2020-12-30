@@ -37,6 +37,7 @@
 <?import javafx.scene.Cursor?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.ToggleButton?>
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="900.0"
       prefWidth="1700.0" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/11.0.1"
       xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.MainViewController">
@@ -53,6 +54,33 @@
                     </HBox.margin>
                 </Button>
                 <Pane prefHeight="200.0" prefWidth="200.0" HBox.hgrow="ALWAYS"/>
+                <VBox spacing="8">
+                    <children>
+                        <Label fx:id="timeLbl" alignment="TOP_CENTER" textAlignment="CENTER" prefHeight="24.0" prefWidth="250" wrapText="true" text="0000-00-00 00:00:00">
+                            <font>
+                                <Font size="18.0"/>
+                            </font>
+                            <style>
+                                -fx-text-fill: white;
+                                -fx-font-weight: bold;
+                                -fx-background-color: transparent;
+                            </style>
+                        </Label>
+                        <Label fx:id="timeDoyLbl" alignment="TOP_CENTER" textAlignment="CENTER" prefHeight="24.0" prefWidth="250" wrapText="true" text="DOY: 000">
+                            <font>
+                                <Font size="18.0"/>
+                            </font>
+                            <style>
+                                -fx-text-fill: white;
+                                -fx-font-weight: bold;
+                                -fx-background-color: transparent;
+                            </style>
+                        </Label>
+                    </children>
+                    <HBox.margin>
+                        <Insets left="4.0"/>
+                    </HBox.margin>
+                </VBox>
                 <ImageView fx:id="bannerImage" fitHeight="64.0" fitWidth="300.0" pickOnBounds="true" preserveRatio="true" onMouseClicked="#aboutAction">
                     <image>
                         <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-full-color-320px.png"/>
@@ -330,6 +358,19 @@
                         onMouseClicked="#debugAction"
                         style="-fx-cursor: hand;" />
                 <Separator orientation="VERTICAL"/>
+                <ToggleButton fx:id="soundButton" disable="true" selected="true"
+                        prefHeight="24.0" prefWidth="24.0">
+                    <graphic>
+                        <ImageView pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/bell.svg.png"/>
+                            </image>
+                        </ImageView>
+                    </graphic>
+                    <tooltip>
+                        <Tooltip text="Enable/disable alarm sound"/>
+                    </tooltip>
+                </ToggleButton>
                 <Label fx:id="systemLbl" onMouseClicked="#systemLabelAction" alignment="CENTER" disable="true"
                        prefHeight="24.0" prefWidth="200.0"
                        style="-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;"
@@ -354,16 +395,6 @@
                 <Pane prefHeight="1.0" prefWidth="24.0" HBox.hgrow="ALWAYS"/>
                 <Separator orientation="VERTICAL"/>
                 <ProgressBar fx:id="globalProgress" prefWidth="100.0" progress="0" visible="false"/>
-                <Separator orientation="VERTICAL"/>
-                <Label fx:id="timeLbl" prefHeight="17.0" HBox.hgrow="ALWAYS" text="0000-00-00 00:00:00">
-                    <font>
-                        <Font size="11.0"/>
-                    </font>
-                    <style>
-                        -fx-alignment: BASELINE_LEFT;
-                        -fx-font-weight: bold;
-                    </style>
-                </Label>
                 <Separator orientation="VERTICAL"/>
                 <Button fx:id="chatButton" onAction="#chatButtonAction" alignment="CENTER" disable="true"
                        prefHeight="24.0" prefWidth="24.0">
