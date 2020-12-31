@@ -72,8 +72,6 @@ import java.util.stream.Collectors;
 /**
  * FXML Controller class
  *
- * TODO: fix scheduler retrieval bugs (maybe just do it per time and not per activity...)
- * TODO: extend time selector to indicate the time span to be used in historical mode
  * @author dario
  */
 public class SchedulerViewController extends AbstractDisplayController implements IScheduledActivityDataSubscriber {
@@ -87,6 +85,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     // Not final, applicable for the entire UI
     private static int GANTT_RANGE_PAST = 3600;
     private static int GANTT_RANGE_AHEAD = 3600;
+    private static int GANTT_RETRIEVAL_RANGE = 7200;
 
     // Pane control
     @FXML
@@ -395,14 +394,18 @@ public class SchedulerViewController extends AbstractDisplayController implement
                 this.ganttBoundariesPopup.hide();
                 GANTT_RANGE_PAST = ganttTimeBoundariesPickerController.getPastDuration();
                 GANTT_RANGE_AHEAD = ganttTimeBoundariesPickerController.getFutureDuration();
-                Instant now = Instant.now();
-                updateChartLocation(now.minusSeconds(GANTT_RANGE_PAST), now.plusSeconds(GANTT_RANGE_AHEAD));
+                GANTT_RETRIEVAL_RANGE = ganttTimeBoundariesPickerController.getRetrievalDuration();
+                if(this.liveTgl.isSelected()) {
+                    Instant now = Instant.now();
+                    updateChartLocation(now.minusSeconds(GANTT_RANGE_PAST), now.plusSeconds(GANTT_RANGE_AHEAD));
+                } else {
+                    // Take the max and extend back
+                    fetchTimeInterval(ganttChart.getMaxTime().minusSeconds(GANTT_RETRIEVAL_RANGE), ganttChart.getMaxTime());
+                }
             });
         } catch (IOException e) {
             e.printStackTrace();
         }
-        // If history retrieval, disable selection of time boundaries
-        updateTimeBoundariesBtn.disableProperty().bind(liveTgl.selectedProperty().not());
     }
 
     private void setupBotTable() {
@@ -695,6 +698,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
 
     @FXML
     protected void liveToggleSelected(ActionEvent e) {
+        ganttTimeBoundariesPickerController.setLive(this.liveTgl.isSelected());
         if (this.liveTgl.isSelected()) {
             clearTable();
             initialiseDisplayFromTime(Instant.now(), this.dataItemFilterController.getSelectedFilter());
@@ -1375,7 +1379,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             this.ganttBoundariesPopup.hide();
         } else {
             Bounds b = this.updateTimeBoundariesBtn.localToScreen(this.updateTimeBoundariesBtn.getBoundsInLocal());
-            this.ganttTimeBoundariesPickerController.setInterval(GANTT_RANGE_PAST, GANTT_RANGE_AHEAD);
+            this.ganttTimeBoundariesPickerController.setInterval(GANTT_RANGE_PAST, GANTT_RANGE_AHEAD, GANTT_RETRIEVAL_RANGE);
             this.ganttBoundariesPopup.setX(b.getMinX());
             this.ganttBoundariesPopup.setY(b.getMaxY());
             this.ganttBoundariesPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());

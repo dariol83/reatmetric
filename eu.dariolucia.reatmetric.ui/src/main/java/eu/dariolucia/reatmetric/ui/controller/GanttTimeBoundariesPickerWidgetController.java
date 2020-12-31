@@ -20,13 +20,10 @@ package eu.dariolucia.reatmetric.ui.controller;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.DatePicker;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 
 import java.net.URL;
-import java.time.*;
 import java.util.ResourceBundle;
 
 /**
@@ -50,12 +47,18 @@ public class GanttTimeBoundariesPickerWidgetController implements Initializable 
     @FXML
     private Spinner<Integer> aheadSecondSpn;
 
+    @FXML
+    private Spinner<Integer> retrievalHourSpn;
+    @FXML
+    private Spinner<Integer> retrievalMinuteSpn;
+
     private Runnable actionAfterSelection;
 
     private int pastDuration;
 
     private int futureDuration;
 
+    private int retrievalDuration;
 
     /**
      * Initializes the controller class.
@@ -69,12 +72,16 @@ public class GanttTimeBoundariesPickerWidgetController implements Initializable 
         this.aheadHourSpn.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 120, 0));
         this.aheadMinuteSpn.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 59, 0));
         this.aheadSecondSpn.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 59, 0));
+
+        this.retrievalHourSpn.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 120, 0));
+        this.retrievalMinuteSpn.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 59, 0));
     }
 
     @FXML
     private void selectButtonPressed(ActionEvent e) {
         this.pastDuration = deriveFromWidgets(pastHourSpn.getValue(), pastMinuteSpn.getValue(), pastSecondSpn.getValue());
         this.futureDuration = deriveFromWidgets(aheadHourSpn.getValue(), aheadMinuteSpn.getValue(), aheadSecondSpn.getValue());
+        this.retrievalDuration = retrievalHourSpn.getValue() * 3600 + retrievalMinuteSpn.getValue() * 60;
         if (this.actionAfterSelection != null) {
             this.actionAfterSelection.run();
         }
@@ -88,9 +95,21 @@ public class GanttTimeBoundariesPickerWidgetController implements Initializable 
         this.actionAfterSelection = r;
     }
 
-    public void setInterval(int pastDuration, int futureDuration) {
+    public void setLive(boolean live) {
+        this.pastHourSpn.setDisable(!live);
+        this.pastMinuteSpn.setDisable(!live);
+        this.pastSecondSpn.setDisable(!live);
+        this.aheadHourSpn.setDisable(!live);
+        this.aheadMinuteSpn.setDisable(!live);
+        this.aheadSecondSpn.setDisable(!live);
+        this.retrievalHourSpn.setDisable(live);
+        this.retrievalMinuteSpn.setDisable(live);
+    }
+
+    public void setInterval(int pastDuration, int futureDuration, int retrievalDuration) {
         this.pastDuration = pastDuration;
         this.futureDuration = futureDuration;
+        this.retrievalDuration = retrievalDuration;
         updateWidgets();
     }
 
@@ -100,6 +119,10 @@ public class GanttTimeBoundariesPickerWidgetController implements Initializable 
 
     public int getFutureDuration() {
         return futureDuration;
+    }
+
+    public int getRetrievalDuration() {
+        return retrievalDuration;
     }
 
     private void updateWidgets() {
@@ -116,5 +139,8 @@ public class GanttTimeBoundariesPickerWidgetController implements Initializable 
         this.aheadHourSpn.getValueFactory().setValue(aheadH);
         this.aheadMinuteSpn.getValueFactory().setValue(aheadM);
         this.aheadSecondSpn.getValueFactory().setValue(aheadS);
+
+        this.retrievalHourSpn.getValueFactory().setValue(retrievalDuration/3600);
+        this.retrievalMinuteSpn.getValueFactory().setValue((retrievalDuration%3600)/60);
     }
 }

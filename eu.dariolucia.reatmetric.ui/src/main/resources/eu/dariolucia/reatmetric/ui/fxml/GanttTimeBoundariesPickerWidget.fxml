@@ -50,6 +50,18 @@
             <Insets bottom="4.0" left="4.0" right="4.0" top="4.0" />
          </padding>
       </HBox>
+      <HBox>
+         <children>
+            <Label prefHeight="24.0" prefWidth="100" text="Retrieval Width" />
+            <Label alignment="CENTER" prefHeight="24.0" text="HH " />
+            <Spinner fx:id="retrievalHourSpn" editable="true" minHeight="24.0" prefHeight="24.0" prefWidth="52.0" disable="true" />
+            <Label alignment="CENTER" prefHeight="24.0" text=" MM " />
+            <Spinner fx:id="retrievalMinuteSpn" editable="true" prefHeight="25.0" prefWidth="52.0" />
+         </children>
+         <padding>
+            <Insets bottom="4.0" left="4.0" right="4.0" top="4.0" />
+         </padding>
+      </HBox>
       <HBox prefWidth="200.0">
          <children>
             <Button mnemonicParsing="false" onAction="#selectButtonPressed" text="Select" />
