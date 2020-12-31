@@ -318,4 +318,12 @@ public class GanttChart<Y> extends XYChart<Instant, Y> {
             if (yData != null) ya.invalidateRange(yData);
         }
     }
+
+    public Instant getMaxTime() {
+        return ((InstantAxis)getXAxis()).getUpperBound();
+    }
+
+    public Instant getMinTime() {
+        return ((InstantAxis)getXAxis()).getLowerBound();
+    }
 }
