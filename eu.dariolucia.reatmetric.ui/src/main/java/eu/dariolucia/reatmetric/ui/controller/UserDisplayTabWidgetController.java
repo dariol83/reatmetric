@@ -184,39 +184,24 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
     }
 
     private void fetchRecords(final Instant minTime, final Instant maxTime, final boolean clear) {
-        // TODO: refactor by using the new retrieve method in IDataItemProvisionService?
         final ParameterDataFilter pdf = getCurrentParameterFilter();
         final EventDataFilter edf = getCurrentEventFilter();
         // Retrieve the next one and add it on top
         markProgressBusy();
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<AbstractDataItem> messages = new LinkedList<>();
 
                 // Retrieve the parameters
                 List<ParameterData> pmessages = ReatmetricUI.selectedSystem().getSystem()
-                        .getParameterDataMonitorService().retrieve(minTime, 100, RetrievalDirection.TO_FUTURE, pdf);
-                messages.addAll(pmessages);
-                // Repeat until endTime is reached
-                if (pmessages.size() > 0 && pmessages.get(pmessages.size() - 1).getGenerationTime().isBefore(maxTime)) {
-                    List<ParameterData> newMessages = ReatmetricUI.selectedSystem().getSystem()
-                            .getParameterDataMonitorService()
-                            .retrieve(pmessages.get(messages.size() - 1), 100, RetrievalDirection.TO_FUTURE, pdf);
-                    messages.addAll(newMessages);
-                }
+                        .getParameterDataMonitorService().retrieve(minTime, maxTime, pdf);
+                List<AbstractDataItem> messages = new LinkedList<>(pmessages);
 
                 // Retrieve the events
                 List<EventData> emessages = ReatmetricUI.selectedSystem().getSystem()
-                        .getEventDataMonitorService().retrieve(minTime, 100, RetrievalDirection.TO_FUTURE, edf);
+                        .getEventDataMonitorService().retrieve(minTime, maxTime, edf);
                 messages.addAll(emessages);
-                // Repeat until endTime is reached
-                if (emessages.size() > 0 && emessages.get(emessages.size() - 1).getGenerationTime().isBefore(maxTime)) {
-                    List<EventData> newMessages = ReatmetricUI.selectedSystem().getSystem()
-                            .getEventDataMonitorService()
-                            .retrieve(emessages.get(emessages.size() - 1), 100, RetrievalDirection.TO_FUTURE, edf);
-                    messages.addAll(newMessages);
-                }
-                messages.removeIf(eventData -> eventData.getGenerationTime().isAfter(maxTime));
+
+                // messages.removeIf(eventData -> eventData.getGenerationTime().isAfter(maxTime));
 
                 setData(minTime, maxTime, messages, clear);
             } catch (Exception e) {

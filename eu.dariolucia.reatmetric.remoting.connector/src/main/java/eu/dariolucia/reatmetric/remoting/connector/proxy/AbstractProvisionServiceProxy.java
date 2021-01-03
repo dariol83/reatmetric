@@ -91,6 +91,11 @@ public abstract class AbstractProvisionServiceProxy<T extends AbstractDataItem, 
         return delegate.retrieve(startItem, numRecords, direction, filter);
     }
 
+    @Override
+    public List<T> retrieve(Instant startTime, Instant endTime, K filter) throws ReatmetricException, RemoteException {
+        return delegate.retrieve(startTime, endTime, filter);
+    }
+
     public void terminate() {
         // Unsubscribe all remotes
         for(Map.Entry<U, Remote> entry : subscriber2remote.entrySet()) {
