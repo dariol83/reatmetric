@@ -131,20 +131,23 @@ TM/TC setup:
 - TM packets: with packet CRC.
 
 Scenario 1 results:
-- Processing start-up time (as per logs - first run, no cache):
-- Processing start-up time (as per logs - with cache):
-- Max TM rate without backpressure: 
-- Nb. of TM frames per second:
-- Nb. of TM packets per second:
-- Nb. of TM parameter samples decoded per second:
-- Nb. of processed items generated per second:
-- Memory usage (Windows Task Monitor):
-- CPU load:
+- Processing start-up time (as per logs - first run, no cache): 26 seconds
+- Processing start-up time (as per logs - with cache): 10 seconds
+- Max TM rate: 23.1 Mbit/sec (SLE TML level - RAF complete mode - processing backpressure propagated to the data generator)
+- Nb. of TM frames per second: ca 2.300/sec
+- Nb. of TM packets per second: ca 8.000/sec
+- Nb. of TM parameter samples decoded per second: ca 435.000/sec
+- Nb. of processed items generated per second: ca 530.000/sec
+- Memory usage (heap size): between 2 and 4 GB, Windows reports 5 GB 
+- CPU load: between 35% and 45% (equivalent of almost 6 cores fully utilised)
+
+![Connector Performance](docs/images/reatmetric-test-all-in-a-box-01.PNG "Connector Performance")
+![System Performance](docs/images/reatmetric-test-all-in-a-box-02.PNG "System Performance")
 
 Scenario 2 results:
 - Processing start-up time (as per logs - first run, no cache):
 - Processing start-up time (as per logs - with cache):
-- Max TM rate without backpressure: 
+- Max TM rate: 
 - Nb. of TM frames per second:
 - Nb. of TM packets per second:
 - Nb. of TM parameter samples decoded per second:

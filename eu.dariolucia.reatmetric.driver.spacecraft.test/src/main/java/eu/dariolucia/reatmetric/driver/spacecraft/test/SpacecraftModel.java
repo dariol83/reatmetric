@@ -104,7 +104,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     public static final String PUS_SUBTYPE_FIELD_NAME = "I-PUS-SUBTYPE";
     public static final int TM_FRAME_LENGTH = 1115;
     public static final int PACKET_GENERATION_PERIOD_MS = 1;
-    public static final int CYCLE_MODULE_SLEEP = 1; // 10
+    public static final int CYCLE_MODULE_SLEEP = 10000; // 10
     public static final int SETTER_APID = 10;
     public static final int SETTER_PUS = 69;
 
@@ -125,7 +125,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private final FarmEngine farm;
 
     // TM processing part
-    private final BlockingQueue<SpacePacket> packetsToSend = new ArrayBlockingQueue<>(1000);
+    private final BlockingQueue<SpacePacket> packetsToSend = new ArrayBlockingQueue<>(2000);
     private final TmMasterChannelMuxer tmMux;
     private final Map<Integer, TmSenderVirtualChannel> id2tmvc = new TreeMap<>();
     private IPacketEncoder encoder;
@@ -134,7 +134,6 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private List<TmPacketTemplate> pus1Packets = new LinkedList<>();
     private Map<Integer, AtomicInteger> apid2counter = new HashMap<>();
     private final ProcessingModelBasedResolver resolver;
-    private final ExecutorService frameSender = Executors.newFixedThreadPool(1); // OK, test tool
 
     private final Timer performanceSampler = new Timer("Spacecraft Sampler", true);
     private Instant lastSampleGenerationTime;
@@ -317,7 +316,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             try {
                 SpacePacket sp = pkt.generate();
                 if(sp != null) {
-                    packetsToSend.put(sp);
+                    addPacketToQueue(sp, false);
                     synchronized (performanceSampler) {
                         ++packetsPerSecond;
                     }
@@ -332,7 +331,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 try {
                     SpacePacket spev = evpkt.generate();
                     if(spev != null) {
-                        packetsToSend.put(spev);
+                        addPacketToQueue(spev, false);
                         synchronized (performanceSampler) {
                             ++packetsPerSecond;
                         }
@@ -344,10 +343,27 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         }
     }
 
+    private void addPacketToQueue(SpacePacket sp, boolean withPriority) throws InterruptedException {
+        synchronized (packetsToSend) {
+            while (!withPriority && packetsToSend.size() >= 1000) {
+                packetsToSend.wait();
+            }
+            packetsToSend.put(sp);
+            packetsToSend.notifyAll();
+        }
+    }
+
     private void sendPackets() {
         while (running) {
             try {
-                SpacePacket sp = this.packetsToSend.take();
+                SpacePacket sp = null;
+                synchronized (packetsToSend) {
+                    while (packetsToSend.isEmpty()) {
+                        packetsToSend.wait();
+                    }
+                    sp = packetsToSend.take();
+                    packetsToSend.notifyAll();
+                }
                 // Get the TM VC to use: 0 if configured, otherwise the first
                 TmSenderVirtualChannel vcToUse = this.id2tmvc.get(0);
                 if (vcToUse == null) {
@@ -395,19 +411,21 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     }
 
     private void sendTmFrame(TmTransferFrame tmTransferFrame) {
-        this.frameSender.execute(() -> {
-            // Send the transfer frame
-            // if vcId == 0 and vcc == 0, generate time packet: generation rate is 256
-            if (tmTransferFrame.getVirtualChannelId() == 0 && tmTransferFrame.getVirtualChannelFrameCount() == 0) {
-                generateTimePacket(Instant.now());
-            }
-            if (rafProvider.getCurrentBindingState() == ServiceInstanceBindingStateEnum.ACTIVE) {
+        // Send the transfer frame
+        // if vcId == 0 and vcc == 0, generate time packet: generation rate is 256
+        if (tmTransferFrame.getVirtualChannelId() == 0 && tmTransferFrame.getVirtualChannelFrameCount() == 0) {
+            generateTimePacket(Instant.now());
+        }
+        if (rafProvider.getCurrentBindingState() == ServiceInstanceBindingStateEnum.ACTIVE) {
+            try {
                 boolean result = rafProvider.transferData(tmTransferFrame.getFrame(), 0, 1, Instant.now(), false, StringUtil.toHexDump("ANTENNA-TEST".getBytes(StandardCharsets.ISO_8859_1)), false, new byte[0]);
                 if (!result) {
                     System.out.println("Error transferring TF");
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        });
+        }
     }
 
     private void generateTimePacket(Instant now) {
@@ -422,7 +440,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         builder.addData(obt);
         SpacePacket sp = builder.build();
         try {
-            this.packetsToSend.put(sp);
+            addPacketToQueue(sp, true);
             synchronized (performanceSampler) {
                 ++packetsPerSecond;
             }
@@ -548,7 +566,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 SpacePacket sp = pt.generate(Arrays.copyOfRange(packet.getPacket(), 0, 4));
                 System.out.println("Queueing PUS 1 packet: " + StringUtil.toHexDump(sp.getPacket()));
                 try {
-                    this.packetsToSend.put(sp);
+                    addPacketToQueue(sp, false);
                     synchronized (performanceSampler) {
                         ++packetsPerSecond;
                     }
@@ -565,7 +583,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 SpacePacket sp = pt.generate(Arrays.copyOfRange(packet.getPacket(), 0, 4));
                 System.out.println("Queueing PUS 1 packet (def): " + StringUtil.toHexDump(sp.getPacket()));
                 try {
-                    this.packetsToSend.put(sp);
+                    addPacketToQueue(sp, false);
                     synchronized (performanceSampler) {
                         ++packetsPerSecond;
                     }
