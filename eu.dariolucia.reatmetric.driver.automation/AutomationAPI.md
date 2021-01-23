@@ -80,7 +80,7 @@ Set the activity invocation route. Return the builder object.
 
 Set a property. Return the builder object.
 
-`ActivityInvocationBuilder::with_argument(String name, Object value, boolean engineering):ActivityInvocationBuilder;
+`ActivityInvocationBuilder::with_argument(String name, Object value, boolean engineering):ActivityInvocationBuilder`
 
 Set a plain argument. Return the builder object.
 
