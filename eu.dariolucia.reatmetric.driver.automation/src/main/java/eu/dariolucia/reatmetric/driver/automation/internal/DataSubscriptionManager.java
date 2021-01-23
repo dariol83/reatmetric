@@ -32,6 +32,9 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 
 import java.rmi.RemoteException;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -54,6 +57,13 @@ public class DataSubscriptionManager {
 
     private final IParameterDataSubscriber parameterDataSubscriber = this::processParameters;
 
+    private final ExecutorService invocationDispatcher = Executors.newFixedThreadPool(1, t -> {
+       Thread thr = new Thread(t);
+       thr.setName("Automation - Data Subscription Manager - Dispatcher");
+       thr.setDaemon(true);
+       return thr;
+    });
+
     public DataSubscriptionManager(IActivityOccurrenceDataProvisionService activityDataService, IEventDataProvisionService eventDataService, IParameterDataProvisionService parameterService) {
         this.activityDataService = activityDataService;
         this.eventService = eventDataService;
@@ -61,10 +71,11 @@ public class DataSubscriptionManager {
     }
 
     synchronized void subscribe(IEventDataSubscriber s, int externalId) {
+        LOG.fine(Thread.currentThread().getName() + " || " + "subscribe(IEventDataSubscriber) - External ID " + externalId + ": invoked");
         boolean alreadyRegistered = true;
         List<IEventDataSubscriber> subs = currentEventSubscribers.get(externalId);
         if(subs == null) {
-            subs = new ArrayList<>();
+            subs = new CopyOnWriteArrayList<>();
             currentEventSubscribers.put(externalId, subs);
             alreadyRegistered = false;
         }
@@ -76,13 +87,15 @@ public class DataSubscriptionManager {
                 LOG.log(Level.SEVERE, "Cannot subscribe to event provision service: " + e.getMessage(), e);
             }
         }
+        LOG.fine(Thread.currentThread().getName() + " || " + "subscribe(IEventDataSubscriber) - External ID " + externalId + ": invocation end");
     }
 
     synchronized void subscribe(IActivityOccurrenceDataSubscriber s, int externalId) {
+        LOG.fine(Thread.currentThread().getName() + " || " + "subscribe(IActivityOccurrenceDataSubscriber) - External ID " + externalId + ": invoked");
         boolean alreadyRegistered = true;
         List<IActivityOccurrenceDataSubscriber> subs = currentActivitySubscribers.get(externalId);
         if(subs == null) {
-            subs = new ArrayList<>();
+            subs = new CopyOnWriteArrayList<>();
             currentActivitySubscribers.put(externalId, subs);
             alreadyRegistered = false;
         }
@@ -94,13 +107,15 @@ public class DataSubscriptionManager {
                 LOG.log(Level.SEVERE, "Cannot subscribe to activity occurrence provision service: " + e.getMessage(), e);
             }
         }
+        LOG.fine(Thread.currentThread().getName() + " || " + "subscribe(IActivityOccurrenceDataSubscriber) - External ID " + externalId + ": invocation end");
     }
 
     synchronized void subscribe(IParameterDataSubscriber s, int externalId) {
+        LOG.fine(Thread.currentThread().getName() + " || " + "subscribe(IParameterDataSubscriber) - External ID " + externalId + ": invoked");
         boolean alreadyRegistered = true;
         List<IParameterDataSubscriber> subs = currentParameterSubscribers.get(externalId);
         if(subs == null) {
-            subs = new ArrayList<>();
+            subs = new CopyOnWriteArrayList<>();
             currentParameterSubscribers.put(externalId, subs);
             alreadyRegistered = false;
         }
@@ -112,9 +127,11 @@ public class DataSubscriptionManager {
                 LOG.log(Level.SEVERE, "Cannot subscribe to activity occurrence provision service: " + e.getMessage(), e);
             }
         }
+        LOG.fine(Thread.currentThread().getName() + " || " + "subscribe(IParameterDataSubscriber) - External ID " + externalId + ": invocation end");
     }
 
     synchronized void unsubscribe(IActivityOccurrenceDataSubscriber s, int externalId) {
+        LOG.fine(Thread.currentThread().getName() + " || " + "unsubscribe(IActivityOccurrenceDataSubscriber) - External ID " + externalId + ": invoked");
         boolean externalIdRemoved = false;
         List<IActivityOccurrenceDataSubscriber> subs = currentActivitySubscribers.get(externalId);
         if(subs != null) {
@@ -137,9 +154,11 @@ public class DataSubscriptionManager {
                 LOG.log(Level.SEVERE, "Cannot subscribe (after unsubscription) to activity occurrence provision service: " + e.getMessage(), e);
             }
         }
+        LOG.fine(Thread.currentThread().getName() + " || " + "unsubscribe(IActivityOccurrenceDataSubscriber) - External ID " + externalId + ": invocation end");
     }
 
     synchronized void unsubscribe(IEventDataSubscriber s, int externalId) {
+        LOG.fine(Thread.currentThread().getName() + " || " + "unsubscribe(IEventDataSubscriber) - External ID " + externalId + ": invoked");
         boolean externalIdRemoved = false;
         List<IEventDataSubscriber> subs = currentEventSubscribers.get(externalId);
         if(subs != null) {
@@ -162,9 +181,11 @@ public class DataSubscriptionManager {
                 LOG.log(Level.SEVERE, "Cannot subscribe (after unsubscription) to event provision service: " + e.getMessage(), e);
             }
         }
+        LOG.fine(Thread.currentThread().getName() + " || " + "unsubscribe(IEventDataSubscriber) - External ID " + externalId + ": invocation end");
     }
 
     synchronized void unsubscribe(IParameterDataSubscriber s, int externalId) {
+        LOG.fine(Thread.currentThread().getName() + " || " + "unsubscribe(IParameterDataSubscriber) - External ID " + externalId + ": invoked");
         boolean externalIdRemoved = false;
         List<IParameterDataSubscriber> subs = currentParameterSubscribers.get(externalId);
         if(subs != null) {
@@ -187,53 +208,72 @@ public class DataSubscriptionManager {
                 LOG.log(Level.SEVERE, "Cannot subscribe (after unsubscription) to event provision service: " + e.getMessage(), e);
             }
         }
+        LOG.fine(Thread.currentThread().getName() + " || " + "unsubscribe(IParameterDataSubscriber) - External ID " + externalId + ": invocation end");
     }
 
-    public synchronized void processParameters(List<ParameterData> dataItems) {
-        for(ParameterData item : dataItems) {
-            List<ParameterData> singleItem = Collections.singletonList(item);
-            List<IParameterDataSubscriber> subs = currentParameterSubscribers.get(item.getExternalId());
-            if(subs != null) {
-                subs.forEach(o -> {
-                    try {
-                        o.dataItemsReceived(singleItem);
-                    } catch (RemoteException e) {
-                        LOG.log(Level.WARNING, "Remote exception when notifying automation procedure subscriber for parameters: " + e.getMessage(), e);
+    public void processParameters(List<ParameterData> dataItems) {
+        invocationDispatcher.execute(() -> {
+            LOG.fine(Thread.currentThread().getName() + " || " + "processParameters() - dataItems.size() " + dataItems.size() + ": invoked");
+            synchronized (DataSubscriptionManager.this) {
+                for (ParameterData item : dataItems) {
+                    List<ParameterData> singleItem = Collections.singletonList(item);
+                    List<IParameterDataSubscriber> subs = currentParameterSubscribers.get(item.getExternalId());
+                    if (subs != null) {
+                        subs.forEach(o -> {
+                            try {
+                                o.dataItemsReceived(singleItem);
+                            } catch (RemoteException e) {
+                                LOG.log(Level.WARNING, "Remote exception when notifying automation procedure subscriber for parameters: " + e.getMessage(), e);
+                            }
+                        });
                     }
-                });
+                }
             }
-        }
+            LOG.fine(Thread.currentThread().getName() + " || " + "processParameters() - dataItems.size() " + dataItems.size() + ": invocation end");
+        });
     }
 
-    public synchronized void processEvents(List<EventData> dataItems) {
-        for(EventData item : dataItems) {
-            List<EventData> singleItem = Collections.singletonList(item);
-            List<IEventDataSubscriber> subs = currentEventSubscribers.get(item.getExternalId());
-            if(subs != null) {
-                subs.forEach(o -> {
-                    try {
-                        o.dataItemsReceived(singleItem);
-                    } catch (RemoteException e) {
-                        LOG.log(Level.WARNING, "Remote exception when notifying automation procedure subscriber for events: " + e.getMessage(), e);
+    public void processEvents(List<EventData> dataItems) {
+        invocationDispatcher.execute(() -> {
+            LOG.fine(Thread.currentThread().getName() + " || " + "processEvents() - dataItems.size() " + dataItems.size() + ": invoked");
+            synchronized (DataSubscriptionManager.this) {
+                for (EventData item : dataItems) {
+                    List<EventData> singleItem = Collections.singletonList(item);
+                    List<IEventDataSubscriber> subs = currentEventSubscribers.get(item.getExternalId());
+                    if (subs != null) {
+                        subs.forEach(o -> {
+                            try {
+                                o.dataItemsReceived(singleItem);
+                            } catch (RemoteException e) {
+                                LOG.log(Level.WARNING, "Remote exception when notifying automation procedure subscriber for events: " + e.getMessage(), e);
+                            }
+                        });
                     }
-                });
+                }
             }
-        }
+            LOG.fine(Thread.currentThread().getName() + " || " + "processEvents() - dataItems.size() " + dataItems.size() + ": invocation end");
+        });
     }
 
     public synchronized void processActivities(List<ActivityOccurrenceData> dataItems) {
-        for(ActivityOccurrenceData item : dataItems) {
-            List<ActivityOccurrenceData> singleItem = Collections.singletonList(item);
-            List<IActivityOccurrenceDataSubscriber> subs = currentActivitySubscribers.get(item.getExternalId());
-            if(subs != null) {
-                subs.forEach(o -> {
-                    try {
-                        o.dataItemsReceived(singleItem);
-                    } catch (RemoteException e) {
-                        LOG.log(Level.WARNING, "Remote exception when notifying automation procedure subscriber for activities: " + e.getMessage(), e);
+        invocationDispatcher.execute(() -> {
+            LOG.fine(Thread.currentThread().getName() + " || " + "processActivities() - dataItems.size() " + dataItems.size() + ": invoked");
+            synchronized (DataSubscriptionManager.this) {
+                for (ActivityOccurrenceData item : dataItems) {
+                    List<ActivityOccurrenceData> singleItem = Collections.singletonList(item);
+                    List<IActivityOccurrenceDataSubscriber> subs = currentActivitySubscribers.get(item.getExternalId());
+                    if (subs != null) {
+                        subs.forEach(o -> {
+                            try {
+                                o.dataItemsReceived(singleItem);
+                            } catch (RemoteException e) {
+                                LOG.log(Level.WARNING, "Remote exception when notifying automation procedure subscriber for activities: " + e.getMessage(), e);
+                            }
+                        });
                     }
-                });
+                }
             }
-        }
+            LOG.fine(Thread.currentThread().getName() + " || " + "processActivities() - dataItems.size() " + dataItems.size() + ": invocation end");
+        });
     }
 }
