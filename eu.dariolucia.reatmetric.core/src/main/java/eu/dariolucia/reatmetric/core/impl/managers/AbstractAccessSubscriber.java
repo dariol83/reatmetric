@@ -71,7 +71,9 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
                 }
                 // Deliver
                 try {
-                    subscriber.dataItemsReceived(initialItems);
+                    if(!initialItems.isEmpty()) {
+                        subscriber.dataItemsReceived(initialItems);
+                    }
                 } catch (RemoteException e) {
                     LOG.log(Level.SEVERE, "Remote exception when notifying subscriber, terminating...", e);
                     manager.unsubscribe(subscriber);
