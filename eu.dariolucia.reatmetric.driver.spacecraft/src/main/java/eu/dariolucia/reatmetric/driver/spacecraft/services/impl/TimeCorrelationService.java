@@ -295,8 +295,10 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     }
 
     private BigDecimal convertToBigDecimal(Instant instant) {
-        // Highly inefficient, but avoids rounding errors, should be changed to something more efficient later
-        return new BigDecimal(instant.getEpochSecond() + "." + String.format("%09d", instant.getNano()));
+        // Thanks to slux83 for the 10x faster implementation
+        int nanosecDigits = instant.getNano() == 0 ? 1 : (int) (Math.log10(instant.getNano()) + 1);
+        return new BigDecimal(instant.getEpochSecond() + ".000000000".substring(0, 10 - nanosecDigits) + instant.getNano());
+        // return new BigDecimal(instant.getEpochSecond() + "." + String.format("%09d", instant.getNano()));
     }
 
     private Instant extractOnboardTime(SpacePacket spacePacket) {
