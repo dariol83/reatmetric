@@ -166,7 +166,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         // Set the execution time if any
         this.executionTime = executionTime != null ? executionTime : this.executionTime;
         // Generate the ActivityOccurrenceData and add it to the temporary list
-        ActivityOccurrenceData activityOccurrenceData = new ActivityOccurrenceData(this.occurrenceId, creationTime, null, parent.getSystemEntityId(), parent.getPath().getLastPathElement(), parent.getPath(), parent.getDefinition().getType(), this.arguments, this.properties, List.copyOf(this.reports), this.route, this.source);
+        ActivityOccurrenceData activityOccurrenceData = new ActivityOccurrenceData(this.occurrenceId, creationTime, null, parent.getSystemEntityId(), parent.getPath().getLastPathElement(), parent.getPath(), parent.getDefinition().getType(), this.arguments, this.properties, this.reports, this.route, this.source);
         temporaryDataItemList.add(activityOccurrenceData);
         // If the current state is now COMPLETION, stop the timeout
         if (currentState == ActivityOccurrenceState.COMPLETED) {
