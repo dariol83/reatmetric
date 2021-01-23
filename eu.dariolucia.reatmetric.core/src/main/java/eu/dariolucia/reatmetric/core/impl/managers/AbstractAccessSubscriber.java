@@ -172,7 +172,12 @@ public abstract class AbstractAccessSubscriber<T extends AbstractDataItem, K ext
             queue.notifyAll();
         }
         try {
-            this.managerThread.join();
+            // Let's avoid the situation of a thread joining itself
+            if(Thread.currentThread() != this.managerThread) {
+                this.managerThread.join();
+            } else {
+                LOG.log(Level.FINE, "Thread joining itself: " + Thread.currentThread().getName());
+            }
         } catch (InterruptedException e) {
             LOG.log(Level.FINE, "Interrupted while waiting for termination of access subscriber " + getName() + " for inner subscriber " + subscriber);
         }
