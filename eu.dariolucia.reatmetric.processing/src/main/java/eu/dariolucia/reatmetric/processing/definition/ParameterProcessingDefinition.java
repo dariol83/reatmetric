@@ -18,6 +18,7 @@ package eu.dariolucia.reatmetric.processing.definition;
 
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
+import javax.script.ScriptException;
 import javax.xml.bind.annotation.*;
 import java.io.Serializable;
 import java.util.LinkedList;
@@ -256,4 +257,19 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         }
     }
 
+    @Override
+    public void preload() throws Exception {
+        if(expression != null) {
+            expression.preload();
+        }
+        for(CalibrationDefinition cd : calibrations) {
+            cd.preload();
+        }
+        for(CheckDefinition cd : checks) {
+            cd.preload();
+        }
+        if(validity != null) {
+            validity.preload();
+        }
+    }
 }

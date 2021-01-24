@@ -146,4 +146,9 @@ public class ActivityProcessingDefinition extends AbstractProcessingDefinition i
     public void setExpectedDuration(int expectedDuration) {
         this.expectedDuration = expectedDuration;
     }
+
+    @Override
+    public void preload() throws Exception {
+        // Nothing to do here
+    }
 }

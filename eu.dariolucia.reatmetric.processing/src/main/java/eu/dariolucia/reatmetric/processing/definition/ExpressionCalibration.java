@@ -59,4 +59,9 @@ public class ExpressionCalibration extends CalibrationDefinition implements Seri
             throw new CalibrationException("Cannot (unexpected) calibrate value " + valueToCalibrate + " using expression", e);
         }
     }
+
+    @Override
+    public void preload() throws Exception {
+        definition.preload();
+    }
 }

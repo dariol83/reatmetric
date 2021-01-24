@@ -127,4 +127,8 @@ public abstract class CheckDefinition implements Serializable {
             throw new CheckException("Cannot check " + valueToCheck + " as input to limit check: value cannot be converted to double");
         }
     }
+
+    public void preload() throws Exception {
+        // To be overriden if needed
+    }
 }

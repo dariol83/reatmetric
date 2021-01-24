@@ -149,5 +149,10 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
         public Definition(int id, String description, String location) {
             super(id, description, location);
         }
+
+        @Override
+        public void preload() {
+            // Nothing to do here
+        }
     }
 }

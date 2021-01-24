@@ -111,4 +111,8 @@ public abstract class CalibrationDefinition implements Serializable {
         // Return the result
         return result;
     }
+
+    public void preload() throws Exception {
+        // To be overriden if needed
+    }
 }

@@ -70,4 +70,9 @@ public class ExpressionCheck extends CheckDefinition implements Serializable {
         // Return result
         return deriveState(violated, currentViolations);
     }
+
+    @Override
+    public void preload() throws Exception {
+        definition.preload();
+    }
 }

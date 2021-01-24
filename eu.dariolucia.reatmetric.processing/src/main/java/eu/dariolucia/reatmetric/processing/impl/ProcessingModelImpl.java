@@ -27,6 +27,9 @@ import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelExcepti
 import eu.dariolucia.reatmetric.api.processing.input.*;
 import eu.dariolucia.reatmetric.api.processing.scripting.IBindingResolver;
 import eu.dariolucia.reatmetric.api.processing.scripting.IEntityBinding;
+import eu.dariolucia.reatmetric.processing.definition.ActivityProcessingDefinition;
+import eu.dariolucia.reatmetric.processing.definition.EventProcessingDefinition;
+import eu.dariolucia.reatmetric.processing.definition.ParameterProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.graph.GraphModel;
 import eu.dariolucia.reatmetric.processing.impl.operations.*;
@@ -113,6 +116,9 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     public ProcessingModelImpl(ProcessingDefinition processingDefinition, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialSequencerMap, IProcessingModelInitialiser initialiser) throws ProcessingModelException {
         this.processingDefinition = processingDefinition;
+        // Start off the preloader thread: one off, using internal executor for parallel preloading
+        new Thread(this::preloadDefinitions, "Reatmetric Processing - Preloader").start();
+        //
         this.output = output;
         this.initialiser = initialiser;
         // Initialise the sequencer
@@ -136,6 +142,45 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 sample();
             }
         }, 1000, 2000);
+    }
+
+    private void preloadDefinitions() {
+        LOG.log(Level.INFO, "Processing definition preloading started");
+        ExecutorService service = Executors.newFixedThreadPool(4);
+        for(ParameterProcessingDefinition d : processingDefinition.getParameterDefinitions()) {
+            service.submit(() -> {
+                try {
+                    d.preload();
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Preloading of " + d.getLocation() + " (" + d.getId() + " failed: " + e.getMessage(), e);
+                }
+            });
+        }
+        for(EventProcessingDefinition d : processingDefinition.getEventDefinitions()) {
+            service.submit(() -> {
+                try {
+                    d.preload();
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Preloading of " + d.getLocation() + " (" + d.getId() + " failed: " + e.getMessage(), e);
+                }
+            });
+        }
+        for(ActivityProcessingDefinition d : processingDefinition.getActivityDefinitions()) {
+            service.submit(() -> {
+                try {
+                    d.preload();
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Preloading of " + d.getLocation() + " (" + d.getId() + " failed: " + e.getMessage(), e);
+                }
+            });
+        }
+        service.shutdown();
+        try {
+            service.awaitTermination(120, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            // Nothing here
+        }
+        LOG.log(Level.INFO, "Processing definition preloading completed");
     }
 
     private void sample() {

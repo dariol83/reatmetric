@@ -110,6 +110,21 @@ public class ExpressionDefinition implements Serializable {
         }
     }
 
+    /**
+     * This method is called upon initialisation by a separate thread that starts preloading the engines and the expression code.
+     *
+     * @throws ScriptException in case of issues dealing with the script engine
+     */
+    public void preload() throws ScriptException {
+        switch(dialect) {
+            case JS: initGraalVmJsCache(); break;
+            case GROOVY: initGroovyCache(); break;
+            case PYTHON: initPythonCache(); break;
+            default:
+                throw new ScriptException("Dialect not supported: " + dialect);
+        }
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Javascript support via GraalVM.js (slow at the moment, buggy if caching of Engine and Source is done).
     // SoftReference need to overcome bug: https://github.com/graalvm/graaljs/issues/268
@@ -118,15 +133,20 @@ public class ExpressionDefinition implements Serializable {
     private transient volatile SoftReference<GraalVmJsCache> jsCache = new SoftReference<>(null);
 
     private Object executeJs(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
+        GraalVmJsCache cached = initGraalVmJsCache();
+        return cached.process(resolver, additionalBindings, symbols);
+    }
+
+    // Synchronized due to async cache building
+    private synchronized GraalVmJsCache initGraalVmJsCache() {
         GraalVmJsCache cached = jsCache.get();
         if(cached == null) {
-            // It was gone
             Engine jsEngine = Engine.create();
             Source jsSource = Source.create("js", expression);
             cached = new GraalVmJsCache(jsEngine, jsSource);
             jsCache = new SoftReference<>(cached);
         }
-        return cached.process(resolver, additionalBindings, symbols);
+        return cached;
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -139,10 +159,7 @@ public class ExpressionDefinition implements Serializable {
 
     private Object executePython(IBindingResolver resolver, Map<String, Object> additionalBindings, ValueTypeEnum expectedReturnValueType) throws ScriptException {
         // One engine per expression, to avoid concurrent access: might not be wise from a memory POV...
-        if(pythonEngine == null) {
-            pythonEngine = new PythonInterpreter();
-            pythonCode = pythonEngine.compile(expression);
-        }
+        initPythonCache();
         // Update the bindings
         for(SymbolDefinition sd : symbols) {
             pythonEngine.set(sd.getName(), toBindingProperty(sd.getBinding(), resolver.resolve(sd.getReference())));
@@ -172,6 +189,14 @@ public class ExpressionDefinition implements Serializable {
         }
     }
 
+    // Synchronized due to async cache building
+    private synchronized void initPythonCache() {
+        if(pythonEngine == null) {
+            pythonEngine = new PythonInterpreter();
+            pythonCode = pythonEngine.compile(expression);
+        }
+    }
+
     // ----------------------------------------------------------------------------------------------------------------
     // Groovy support
     // ----------------------------------------------------------------------------------------------------------------
@@ -182,12 +207,7 @@ public class ExpressionDefinition implements Serializable {
 
     private Object executeGroovy(IBindingResolver resolver, Map<String, Object> additionalBindings) throws ScriptException {
         try {
-            if (groovyShell == null) {
-                groovyBinding = new Binding();
-                groovyShell = new GroovyShell();
-                groovyScript = groovyShell.parse(expression);
-                groovyScript.setBinding(groovyBinding);
-            }
+            initGroovyCache();
         } catch (CompilationFailedException e) {
             throw new ScriptException(e);
         }
@@ -204,6 +224,16 @@ public class ExpressionDefinition implements Serializable {
             return groovyScript.run();
         } catch (Exception e) {
             throw new ScriptException(e);
+        }
+    }
+
+    // Synchronized due to async cache building
+    private synchronized void initGroovyCache() {
+        if (groovyShell == null) {
+            groovyBinding = new Binding();
+            groovyShell = new GroovyShell();
+            groovyScript = groovyShell.parse(expression);
+            groovyScript.setBinding(groovyBinding);
         }
     }
 

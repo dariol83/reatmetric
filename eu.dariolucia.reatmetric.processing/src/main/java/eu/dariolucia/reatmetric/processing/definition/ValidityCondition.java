@@ -85,4 +85,10 @@ public class ValidityCondition implements Serializable {
             return true;
         }
     }
+
+    public void preload() throws Exception {
+        if(condition != null) {
+            condition.preload();
+        }
+    }
 }

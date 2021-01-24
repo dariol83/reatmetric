@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
+import javax.script.ScriptException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -70,4 +71,9 @@ public abstract class AbstractProcessingDefinition implements Serializable {
     public void setLocation(String location) {
         this.location = location;
     }
+
+    /**
+     * Runtime operation to activate definition preloading - e.g for expressions or heavy computations
+     */
+    public abstract void preload() throws Exception;
 }

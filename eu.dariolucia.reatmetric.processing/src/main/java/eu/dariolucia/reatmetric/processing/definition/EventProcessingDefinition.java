@@ -106,4 +106,11 @@ public class EventProcessingDefinition extends AbstractProcessingDefinition impl
     public void setLogRepetitionPeriod(int logRepetitionPeriod) {
         this.logRepetitionPeriod = logRepetitionPeriod;
     }
+
+    @Override
+    public void preload() throws Exception {
+        if(condition != null) {
+            condition.preload();
+        }
+    }
 }
