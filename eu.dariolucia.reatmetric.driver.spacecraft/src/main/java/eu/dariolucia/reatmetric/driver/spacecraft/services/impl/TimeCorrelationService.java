@@ -295,10 +295,8 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     }
 
     private BigDecimal convertToBigDecimal(Instant instant) {
-        // Thanks to slux83 for the 10x faster implementation
-        int nanosecDigits = instant.getNano() == 0 ? 1 : (int) (Math.log10(instant.getNano()) + 1);
-        return new BigDecimal(instant.getEpochSecond() + ".000000000".substring(0, 10 - nanosecDigits) + instant.getNano());
-        // return new BigDecimal(instant.getEpochSecond() + "." + String.format("%09d", instant.getNano()));
+        // Thanks to xpromache for the optimized implementation: issue #4
+        return BigDecimal.valueOf(instant.getEpochSecond()).add(BigDecimal.valueOf(instant.getNano(), 9));
     }
 
     private Instant extractOnboardTime(SpacePacket spacePacket) {
