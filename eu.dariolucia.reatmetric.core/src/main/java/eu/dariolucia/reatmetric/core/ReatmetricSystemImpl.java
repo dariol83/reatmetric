@@ -460,9 +460,12 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
         long freeMemory = Runtime.getRuntime().freeMemory();
         long maxMemory = Runtime.getRuntime().maxMemory();
         int avlProcess = Runtime.getRuntime().availableProcessors();
-        toReturn.add(DebugInformation.of("Java", "Total Memory", totalMemory, null, "bytes" ));
-        toReturn.add(DebugInformation.of("Java", "Free Memory", freeMemory, null, "bytes" ));
-        toReturn.add(DebugInformation.of("Java", "Max Memory", maxMemory, null, "bytes" ));
+
+        toReturn.add(DebugInformation.of("Java", "Reserved Memory", totalMemory/1000000, null, "MB" ));
+        toReturn.add(DebugInformation.of("Java", "Free Memory", freeMemory/1000000, null, "MB" ));
+        // toReturn.add(DebugInformation.of("Java", "Used Memory", (totalMemory/1000000) - (freeMemory/1000000), null, "MB" ));
+        toReturn.add(DebugInformation.of("Java", "Used Memory", (totalMemory/1000000) - (freeMemory/1000000), (totalMemory/1000000), "MB" ));
+        toReturn.add(DebugInformation.of("Java", "Max Memory", maxMemory/1000000, null, "MB" ));
         toReturn.add(DebugInformation.of("Java", "CPUs", avlProcess, null, null ));
         //
         return toReturn;
