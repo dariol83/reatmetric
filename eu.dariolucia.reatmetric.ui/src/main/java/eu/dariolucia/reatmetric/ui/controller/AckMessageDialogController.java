@@ -28,8 +28,8 @@ import eu.dariolucia.reatmetric.ui.udd.PopoverChartController;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityResolver;
-import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -160,21 +160,29 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
     public void dataItemsReceived(List<AcknowledgedMessage> dataItems) {
         Set<Long> messagesToRemove = new HashSet<>();
         List<AcknowledgedMessage> messagesToAdd = new LinkedList<>();
+        Set<Integer> removedEntityIDs = new HashSet<>();
+        Set<Integer> addedEntityIDs = new HashSet<>();
         for (AcknowledgedMessage am : dataItems) {
             if (am.getState() == AcknowledgementState.ACKNOWLEDGED) {
+                // Messages acknowledged
                 messagesToRemove.add(am.getInternalId().asLong());
+                if(am.getMessage().getLinkedEntityId() != null) {
+                    removedEntityIDs.add(am.getMessage().getLinkedEntityId());
+                }
             } else {
                 // New message for acknowledgement
                 messagesToAdd.add(am);
-
+                if(am.getMessage().getLinkedEntityId() != null) {
+                    addedEntityIDs.add(am.getMessage().getLinkedEntityId());
+                }
             }
         }
         FxUtils.runLater(() -> {
             List<AcknowledgedMessage> toRemoveActuals = new LinkedList<>();
             // I iterate on the whole list, so here I compute the messages pending ack
             pendingAcknowledgementSet.clear();
-            for (int i = 0; i < ackMessageTableView.getItems().size(); ++i) {
-                AcknowledgedMessage am = ackMessageTableView.getItems().get(i);
+            ObservableList<AcknowledgedMessage> ackMessageTableViewItems = ackMessageTableView.getItems();
+            for (AcknowledgedMessage am : ackMessageTableViewItems) {
                 if (messagesToRemove.contains(am.getInternalId().asLong())) {
                     toRemoveActuals.add(am);
                 } else {
@@ -188,19 +196,20 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
             Set<Integer> finallyRemoved = toRemoveActuals.stream().map(o -> o.getMessage().getLinkedEntityId()).filter(Objects::nonNull).collect(Collectors.toSet());
             pendingAcknowledgementSet.addAll(messagesToAdd.stream().map(o -> o.getMessage().getLinkedEntityId()).filter(Objects::nonNull).collect(Collectors.toSet()));
             finallyRemoved.removeAll(pendingAcknowledgementSet);
-            // Inform the model browser of the current status
-            MainViewController.instance().getModelController().informAcknowledgementStatus(finallyRemoved, Collections.unmodifiableSet(pendingAcknowledgementSet));
             // Finally update the table
-            ackMessageTableView.getItems().removeAll(toRemoveActuals);
-            ackMessageTableView.getItems().addAll(messagesToAdd);
-            if(ackMessageTableView.getItems().size() > MAX_TABLE_ENTRIES) {
-                int toRemove = (ackMessageTableView.getItems().size() - MAX_TABLE_ENTRIES) + TABLE_ENTRIES_REMOVE_ON_FULL;
-                ackMessageTableView.getItems().remove(0, toRemove);
+            ackMessageTableViewItems.removeAll(toRemoveActuals);
+            ackMessageTableViewItems.addAll(messagesToAdd);
+            if(ackMessageTableViewItems.size() > MAX_TABLE_ENTRIES) {
+                int toRemove = (ackMessageTableViewItems.size() - MAX_TABLE_ENTRIES) + TABLE_ENTRIES_REMOVE_ON_FULL;
+                ackMessageTableViewItems.remove(0, toRemove);
             }
             if (this.handler != null) {
-                this.handler.accept(!ackMessageTableView.getItems().isEmpty());
+                this.handler.accept(!ackMessageTableViewItems.isEmpty());
             }
         });
+
+        // Once you enqueued the update in the UI thread, inform the model browser of the current status
+        MainViewController.instance().getModelController().informAcknowledgementStatus(removedEntityIDs, addedEntityIDs);
     }
 
     @FXML
