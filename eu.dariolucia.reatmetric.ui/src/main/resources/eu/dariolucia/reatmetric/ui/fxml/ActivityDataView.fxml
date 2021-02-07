@@ -137,7 +137,7 @@
                </Button>
            </items>
         </ToolBar>
-        <TreeTableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
+        <TreeTableView fx:id="dataItemTableView" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
           <columns>
             <TreeTableColumn fx:id="nameCol" editable="false" prefWidth="130.0" text="Name" />
             <TreeTableColumn fx:id="stateCol" editable="false" prefWidth="100.0" text="State" />

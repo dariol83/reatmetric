@@ -27,7 +27,7 @@
 <?import javafx.scene.control.Tooltip?>
 <VBox prefHeight="240.0" prefWidth="740.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ChatDialogController">
    <children>
-      <TableView fx:id="chatTableView" fixedCellSize="20.0" prefHeight="200.0" prefWidth="1400.0" VBox.vgrow="ALWAYS">
+      <TableView fx:id="chatTableView" prefHeight="200.0" prefWidth="1400.0" VBox.vgrow="ALWAYS">
          <columns>
             <TableColumn fx:id="sourceCol" reorderable="false" editable="false" minWidth="8.0" prefWidth="120.0" sortable="false" text="Sender" />
             <TableColumn fx:id="genTimeCol" reorderable="false" editable="false" prefWidth="180.0" sortable="false" text="Time" />

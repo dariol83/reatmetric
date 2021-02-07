@@ -185,7 +185,7 @@
                             </image>
                         </ImageView>
                     </graphic>
-                    <TableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
+                    <TableView fx:id="dataItemTableView" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
                         <columns>
                             <TableColumn fx:id="extIdCol" editable="false" sortable="false" prefWidth="90.0" text="External ID" />
                             <TableColumn fx:id="nameCol" editable="false" sortable="false" prefWidth="130.0" text="Name" />
@@ -216,7 +216,7 @@
                             </image>
                         </ImageView>
                     </graphic>
-                    <TableView fx:id="eventDataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
+                    <TableView fx:id="eventDataItemTableView" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
                         <columns>
                             <TableColumn fx:id="eventExtIdCol" editable="false" prefWidth="90.0" text="External ID" />
                             <TableColumn fx:id="eventNameCol" editable="false" prefWidth="130.0" text="Name" />
@@ -245,7 +245,7 @@
                             </image>
                         </ImageView>
                     </graphic>
-                    <TableView fx:id="botDataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
+                    <TableView fx:id="botDataItemTableView" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
                         <columns>
                             <TableColumn fx:id="botNameCol" editable="false" prefWidth="200.0" text="Name" />
                             <TableColumn fx:id="botStateCol" editable="false" prefWidth="100.0" text="State" />

@@ -123,7 +123,7 @@
                    </Button>
                </items>
             </ToolBar>
-            <TableView fx:id="dataItemTableView" fixedCellSize="20.0" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+            <TableView fx:id="dataItemTableView" prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
               <columns>
                 <TableColumn fx:id="idCol" editable="false" prefWidth="75.0" sortable="false" text="ID" />
                   <TableColumn fx:id="severityCol" editable="false" prefWidth="75.0" sortable="false" text="Severity" />

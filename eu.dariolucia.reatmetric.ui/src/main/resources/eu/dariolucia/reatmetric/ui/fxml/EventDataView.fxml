@@ -121,7 +121,7 @@
                    </Button>
                </items>
             </ToolBar>
-            <TableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
+            <TableView fx:id="dataItemTableView" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
               <columns>
                 <TableColumn fx:id="nameCol" editable="false" prefWidth="130.0" sortable="false" text="Name" />
                   <TableColumn fx:id="typeCol" editable="false" prefWidth="75.0" sortable="false" text="Type" />

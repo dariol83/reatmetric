@@ -113,7 +113,7 @@
                    </Button>
                </items>
             </ToolBar>
-            <TableView fx:id="dataItemTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" VBox.vgrow="ALWAYS">
+            <TableView fx:id="dataItemTableView" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" VBox.vgrow="ALWAYS">
               <columns>
                   <TableColumn fx:id="nameCol" editable="false" prefWidth="130.0" text="Name" />
                   <TableColumn fx:id="engValueCol" editable="false" prefWidth="100.0" text="Eng. Value" />

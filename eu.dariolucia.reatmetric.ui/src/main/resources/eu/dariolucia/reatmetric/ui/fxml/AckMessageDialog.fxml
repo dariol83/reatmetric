@@ -31,7 +31,7 @@
 <?import javafx.scene.image.Image?>
 <VBox prefHeight="240.0" prefWidth="1350.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.AckMessageDialogController">
    <children>
-      <TableView fx:id="ackMessageTableView" fixedCellSize="20.0" prefHeight="200.0" prefWidth="1400.0" VBox.vgrow="ALWAYS">
+      <TableView fx:id="ackMessageTableView" prefHeight="200.0" prefWidth="1400.0" VBox.vgrow="ALWAYS">
          <columns>
             <TableColumn fx:id="idCol" editable="false" prefWidth="75.0" sortable="false" text="ID" />
             <TableColumn fx:id="severityCol" editable="false" prefWidth="75.0" sortable="false" text="Severity" />

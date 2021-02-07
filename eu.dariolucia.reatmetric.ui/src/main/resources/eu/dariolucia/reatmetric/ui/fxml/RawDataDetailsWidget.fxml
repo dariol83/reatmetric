@@ -47,7 +47,7 @@
             </TitledPane>
           <TitledPane fx:id="hexTitledPane" animated="false" expanded="false" text="Hex View">
                <content>
-                  <TableView fx:id="rawDataDetailsTableView" fixedCellSize="20.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="0.0" minWidth="1.0">
+                  <TableView fx:id="rawDataDetailsTableView" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="0.0" minWidth="1.0">
                     <columns>
                       <TableColumn fx:id="offsetCol" editable="false" maxWidth="60.0" prefWidth="60.0" resizable="false" sortable="false" text="Offset" />
                       <TableColumn fx:id="0Col" editable="false" maxWidth="24.0" minWidth="24.0" prefWidth="24.0" resizable="false" sortable="false" text="0" />
