@@ -142,4 +142,8 @@ public enum ValueTypeEnum {
         }
         return ValueTypeEnum.values()[code - 1];
     }
+
+    public String asBeautyString() {
+        return name().replace('_', ' ');
+    }
 }

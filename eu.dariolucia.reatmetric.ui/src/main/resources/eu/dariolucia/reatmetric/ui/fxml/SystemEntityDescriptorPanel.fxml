@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~          http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<VBox fx:id="vboxParent" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.SystemEntityDescriptorPanelController">
+   <children>
+      <HBox VBox.vgrow="NEVER">
+         <children>
+            <Label minWidth="100.0" prefWidth="100.0" text="Path">
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin>
+               <padding>
+                  <Insets top="5.0" />
+               </padding>
+            </Label>
+            <Label fx:id="pathLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin>
+               <font>
+                  <Font name="System Bold" size="12.0" />
+               </font>
+            </Label>
+         </children>
+         <padding>
+            <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+         </padding>
+      </HBox>
+      <HBox layoutX="10.0" layoutY="10.0" VBox.vgrow="NEVER">
+         <children>
+            <Label minWidth="100.0" prefWidth="100.0" text="ID #">
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin>
+            </Label>
+            <Label fx:id="externalIdLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+               <HBox.margin>
+                  <Insets />
+               </HBox.margin>
+               <font>
+                  <Font name="System Bold" size="12.0" />
+               </font>
+            </Label>
+         </children>
+         <padding>
+            <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+         </padding>
+      </HBox>
+      <StackPane fx:id="stackPane" VBox.vgrow="ALWAYS">
+         <children>
+            <VBox fx:id="parameterVBox" visible="false">
+               <children>
+                  <HBox spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Description">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="parameterDescriptionLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+                  <HBox layoutX="10.0" layoutY="10.0" spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Raw Data Type">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="rawDataTypeLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+                  <HBox layoutX="10.0" layoutY="33.0" spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Eng. Data Type">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="engDataTypeLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+                  <HBox layoutX="10.0" layoutY="56.0" spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Unit">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="unitLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+                  <HBox layoutX="10.0" layoutY="79.0" spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Type">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="parameterTypeLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+               </children></VBox>
+            <VBox fx:id="eventVBox" layoutX="10.0" layoutY="10.0" visible="false">
+               <children>
+                  <HBox spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Description">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="eventDescriptionLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+                  <HBox layoutX="10.0" layoutY="10.0" spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Severity">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="severityLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+                  <HBox layoutX="10.0" layoutY="33.0" spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Type">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="eventTypeLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+                  <HBox layoutX="10.0" layoutY="79.0" spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Condition">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="conditionLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+               </children>
+            </VBox>
+            <VBox fx:id="activityVBox" layoutX="10.0" layoutY="10.0" visible="false">
+               <children>
+                  <HBox spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Description">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="activityDescriptionLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+                  <HBox layoutX="10.0" layoutY="10.0" spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Def. Route">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="routeLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+                  <HBox layoutX="10.0" layoutY="33.0" spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Type">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="activityTypeLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+                  <HBox layoutX="10.0" layoutY="79.0" spacing="5.0">
+                     <children>
+                        <Label minWidth="100.0" prefWidth="100.0" text="Exp. Duration">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                        </Label>
+                        <Label fx:id="expectedDurationLabel" alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" minWidth="0.0" styleClass="marked-label" text="---" textAlignment="RIGHT" HBox.hgrow="ALWAYS">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <font>
+                              <Font name="System Bold" size="12.0" />
+                           </font>
+                        </Label>
+                     </children>
+                     <padding>
+                        <Insets bottom="3.0" left="3.0" right="3.0" top="3.0" />
+                     </padding>
+                  </HBox>
+               </children>
+            </VBox>
+         </children>
+      </StackPane>
+   </children>
+   <padding>
+      <Insets bottom="4.0" left="4.0" right="4.0" top="4.0" />
+   </padding>
+</VBox>

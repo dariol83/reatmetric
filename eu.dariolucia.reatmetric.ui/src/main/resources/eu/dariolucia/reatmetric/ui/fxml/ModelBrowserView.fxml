@@ -157,6 +157,7 @@
                     </ContextMenu>
               </contextMenu>
             </TreeTableView>
+            <fx:include source="SystemEntityDescriptorPanel.fxml" fx:id="systemEntityDescriptor" />
          </children>
          <padding>
             <Insets top="0.01" />

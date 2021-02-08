@@ -47,6 +47,7 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
 import javafx.scene.text.Font;
@@ -77,11 +78,11 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
 
     private static final Logger LOG = Logger.getLogger(ModelBrowserViewController.class.getName());
 
-    private final Image containerImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/elements_obj.gif"));
-    private final Image parameterImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/genericvariable_obj.gif"));
-    private final Image eventImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/smartmode_co.gif"));
-    private final Image activityImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/debugt_obj.gif"));
-    private final Image reportImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/file_obj.gif"));
+    private final Image containerImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/box.svg.png"));
+    private final Image parameterImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/menu.svg.png"));
+    private final Image eventImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/thunder.svg.png"));
+    private final Image activityImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/cogs.svg.png"));
+    private final Image reportImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/file.svg.png"));
 
     // Pane control
     @FXML
@@ -163,6 +164,14 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     // ****************************************************************************
     private final Map<Integer, AbstractSystemEntityDescriptor> externalId2descriptor = new HashMap<>();
     private final Map<String, AbstractSystemEntityDescriptor> path2descriptor = new TreeMap<>();
+
+    // ****************************************************************************
+    // System entity descriptor handling
+    // ****************************************************************************
+    @FXML
+    private VBox systemEntityDescriptor;
+    @FXML
+    private SystemEntityDescriptorPanelController systemEntityDescriptorController;
 
     @FXML
     private void filterClearButtonPressed(Event e) {
@@ -413,6 +422,27 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 addDataItems(a);
             } finally {
                 this.mapLock.unlock();
+            }
+        });
+
+        this.modelTree.getSelectionModel().selectedItemProperty().addListener((a) -> {
+            TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
+            if(se == null) {
+                systemEntityDescriptorController.reset();
+            } else {
+                SystemEntity theEntity = se.getValue();
+                if(theEntity == null) {
+                    systemEntityDescriptorController.reset();
+                } else if(theEntity.getType() == SystemEntityType.CONTAINER) {
+                    systemEntityDescriptorController.handle(theEntity.getPath(), null);
+                } else {
+                    try {
+                        systemEntityDescriptorController.handle(theEntity.getPath(), getDescriptorOf(theEntity.getExternalId()));
+                    } catch (ReatmetricException | RemoteException e) {
+                        systemEntityDescriptorController.reset();
+                        LOG.log(Level.WARNING, "Cannot retrieve descriptor of " + theEntity.getPath() + " (" + theEntity.getExternalId() + "): " + e.getMessage(), e);
+                    }
+                }
             }
         });
     }
