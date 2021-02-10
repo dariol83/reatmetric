@@ -91,7 +91,7 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
         this.context = context;
         this.serviceBroker = serviceBroker;
         this.packetEncoder = serviceBroker.locate(IPacketEncoder.class);
-        this.packetDecoder = serviceBroker.locate(IPacketDecoder.class);;
+        this.packetDecoder = serviceBroker.locate(IPacketDecoder.class);
         this.tcDataLinkProcessor = tcDataLinkProcessor;
 
         // Create a map based on the external ID
@@ -289,13 +289,13 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
         SpacePacket sp = spb.build();
         switch (packetInfo.getChecksumType()) {
             case CRC: {
-                short crc = PusChecksumUtil.crcChecksum(sp.getPacket(), 0, sp.getLength());
+                short crc = PusChecksumUtil.crcChecksum(sp.getPacket(), 0, sp.getLength() - 2);
                 sp.getPacket()[sp.getLength() - 2] = (byte) ((crc >> 8) & 0x00FF);
                 sp.getPacket()[sp.getLength() - 1] = (byte) (crc & 0x00FF);
             }
             break;
             case ISO: {
-                short iso = PusChecksumUtil.isoChecksum(sp.getPacket(), 0, sp.getLength());
+                short iso = PusChecksumUtil.isoChecksum(sp.getPacket(), 0, sp.getLength() - 2);
                 sp.getPacket()[sp.getLength() - 2] = (byte) ((iso >> 8) & 0x00FF);
                 sp.getPacket()[sp.getLength() - 1] = (byte) (iso & 0x00FF);
             }
