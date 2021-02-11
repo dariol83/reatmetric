@@ -70,6 +70,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -104,7 +105,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     public static final String PUS_SUBTYPE_FIELD_NAME = "I-PUS-SUBTYPE";
     public static final int TM_FRAME_LENGTH = 1115;
     public static final int PACKET_GENERATION_PERIOD_MS = 1;
-    public static final int CYCLE_MODULE_SLEEP = 1; // 10
+    public static final int CYCLE_MODULE_SLEEP = 10; // 10
     public static final int SETTER_APID = 10;
     public static final int SETTER_PUS = 69;
 
@@ -129,10 +130,10 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private final TmMasterChannelMuxer tmMux;
     private final Map<Integer, TmSenderVirtualChannel> id2tmvc = new TreeMap<>();
     private IPacketEncoder encoder;
-    private List<TmPacketTemplate> periodicPackets = new LinkedList<>();
-    private List<TmPacketTemplate> eventPackets = new LinkedList<>();
-    private List<TmPacketTemplate> pus1Packets = new LinkedList<>();
-    private Map<Integer, AtomicInteger> apid2counter = new HashMap<>();
+    private final List<TmPacketTemplate> periodicPackets = new LinkedList<>();
+    private final List<TmPacketTemplate> eventPackets = new LinkedList<>();
+    private final List<TmPacketTemplate> pus1Packets = new LinkedList<>();
+    private final Map<Integer, AtomicInteger> apid2counter = new HashMap<>();
     private final ProcessingModelBasedResolver resolver;
 
     private final Timer performanceSampler = new Timer("Spacecraft Sampler", true);
@@ -305,7 +306,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     Thread.sleep(PACKET_GENERATION_PERIOD_MS);
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LOG.log(Level.SEVERE, "", e);
             }
             TmPacketTemplate pkt = this.periodicPackets.get(hkCounter++);
             hkCounter = hkCounter % periodicPackets.size();
@@ -322,7 +323,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.log(Level.SEVERE, "", e);
             }
 
             if (Math.random() < 0.01) {
@@ -337,7 +338,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                         }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    LOG.log(Level.SEVERE, "", e);
                 }
             }
         }
@@ -356,7 +357,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private void sendPackets() {
         while (running) {
             try {
-                SpacePacket sp = null;
+                SpacePacket sp;
                 synchronized (packetsToSend) {
                     while (packetsToSend.isEmpty()) {
                         packetsToSend.wait();
@@ -377,7 +378,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 }
             } catch (Exception e) {
                 Thread.interrupted();
-                e.printStackTrace();
+                LOG.log(Level.SEVERE, "", e);
             }
         }
     }
@@ -402,7 +403,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         try {
             Thread.sleep(cltu.length * 8);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "", e);
         }
         cltuProvider.cltuProgress(cltuId, CltuStatusEnum.RADIATED, startTime, new Date(), BUFFER_AVAILABLE);
         // Process the CLTU
@@ -420,10 +421,10 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             try {
                 boolean result = rafProvider.transferData(tmTransferFrame.getFrame(), 0, 1, Instant.now(), false, StringUtil.toHexDump("ANTENNA-TEST".getBytes(StandardCharsets.ISO_8859_1)), false, new byte[0]);
                 if (!result) {
-                    System.out.println("Error transferring TF");
+                    LOG.severe("Error transferring TF");
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                LOG.log(Level.SEVERE, "", e);
             }
         }
     }
@@ -445,7 +446,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 ++packetsPerSecond;
             }
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "", e);
         }
     }
 
@@ -461,10 +462,28 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     @Override
     public void spacePacketExtracted(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, byte[] packet, boolean qualityIndicator) {
         SpacePacket sp = new SpacePacket(packet, qualityIndicator);
-        System.out.println("Received TC packet: " + StringUtil.toHexDump(packet));
+
+        // Verify TC packet checksum
+        boolean validChecksum = true;
+        switch (this.spacecraftConfiguration.getTcPacketConfiguration().getTcPecPresent()) {
+            case CRC:
+                validChecksum = (PusChecksumUtil.crcChecksum(packet, 0, packet.length) == 0);
+                break;
+            case ISO:
+                validChecksum = (PusChecksumUtil.verifyIsoChecksum(packet, 0, packet.length));
+                break;
+        }
+
+        if (!validChecksum) {
+            LOG.severe("The received TC packet " + StringUtil.toHexDump(packet) + " does not have a correct checksum");
+            queuePus1(sp, 2);
+            return;
+        }
+
+        LOG.info("Received TC packet: " + StringUtil.toHexDump(packet));
         if (qualityIndicator) {
             AckField acks = new AckField(sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH]);
-            System.out.println("ACK flags: " + acks);
+            LOG.info("ACK flags: " + acks);
             if (acks.isAcceptanceAckSet()) {
                 queuePus1(sp, 1);
             }
@@ -514,18 +533,17 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     ByteBuffer.wrap(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + pusHeader.getEncodedLength() + 10, 12).get((byte[]) value);
                     break;
                 default:
-                    System.out.println("Setter packet ignored, unknown type " + type + " for parameter " + name);
+                    LOG.warning("Setter packet ignored, unknown type " + type + " for parameter " + name);
                     break;
             }
             // Locate the parameter
             if(value != null) {
                 resolver.updateParameterValue(name, value);
             } else {
-                System.out.println("Setter packet ignored, value null for parameter " + name);
+                LOG.warning("Setter packet ignored, value null for parameter " + name);
             }
         } catch (Exception e) {
-            System.out.println("Setter packet ignored, exception detected");
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Setter packet ignored, exception detected", e);
         }
     }
 
@@ -533,7 +551,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         return sp.getApid() == SETTER_APID && sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH + 1] == SETTER_PUS;
     }
 
-    private void queueCommandExecution(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, SpacePacket sp) {
+    private void queueCommandExecution(AbstractReceiverVirtualChannel<?> vc, AbstractTransferFrame firstFrame, SpacePacket sp) {
         // sp is a 11,4 packet: we need to extract the command to schedule, according to the 11,4 definition
         // First of all, get rid of the TC PUS header: assume sourceLen octet align
         int sourceLenSpare = (spacecraftConfiguration.getTcPacketConfiguration().getSourceIdLength() + spacecraftConfiguration.getTcPacketConfiguration().getSpareLength()) / 8;
@@ -544,7 +562,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         byte[] cucTime = Arrays.copyOfRange(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + 3 + sourceLenSpare + subScheduleByteLen + counterByteLen, SpacePacket.SP_PRIMARY_HEADER_LENGTH + 3 + sourceLenSpare + subScheduleByteLen + counterByteLen + 6);
         Instant time = TimeUtil.fromCUC(cucTime, spacecraftConfiguration.getEpoch().toInstant(), 4,2);
         byte[] packet = Arrays.copyOfRange(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH + 3 + sourceLenSpare + subScheduleByteLen + counterByteLen + 6, sp.getPacket().length - 2); // -2 to consider PECF, hardcoded
-        System.out.println("Scheduled TC at " + time + ": " + StringUtil.toHexDump(packet));
+        LOG.info("Scheduled TC at " + time + ": " + StringUtil.toHexDump(packet));
         queueeTcScheduler.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -564,14 +582,14 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             if (pt.apid == packet.getApid() && pt.subtype == subtype) {
                 // Found
                 SpacePacket sp = pt.generate(Arrays.copyOfRange(packet.getPacket(), 0, 4));
-                System.out.println("Queueing PUS 1 packet: " + StringUtil.toHexDump(sp.getPacket()));
+                LOG.info("Queueing PUS 1 packet: " + StringUtil.toHexDump(sp.getPacket()));
                 try {
                     addPacketToQueue(sp, false);
                     synchronized (performanceSampler) {
                         ++packetsPerSecond;
                     }
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    LOG.log(Level.SEVERE, "", e);
                 }
                 return;
             }
@@ -581,19 +599,19 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             if (pt.subtype == subtype) {
                 // Found
                 SpacePacket sp = pt.generate(Arrays.copyOfRange(packet.getPacket(), 0, 4));
-                System.out.println("Queueing PUS 1 packet (def): " + StringUtil.toHexDump(sp.getPacket()));
+                LOG.info("Queueing PUS 1 packet (def): " + StringUtil.toHexDump(sp.getPacket()));
                 try {
                     addPacketToQueue(sp, false);
                     synchronized (performanceSampler) {
                         ++packetsPerSecond;
                     }
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    LOG.log(Level.SEVERE, "", e);
                 }
                 return;
             }
         }
-        System.out.println("Queueing PUS 1 packet with subtype " + subtype + " not found");
+        LOG.warning("Queueing PUS 1 packet with subtype " + subtype + " not found");
     }
 
     public void stopProcessing() {
@@ -656,7 +674,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             this.pusConfiguration = pusConfiguration;
         }
 
-        private SpacePacket generate() throws EncodingException {
+        private SpacePacket generate() {
             int destIdLen = pusConfiguration.getDestinationLength();
             TmPusHeader pusHeader = new TmPusHeader((byte) 1, (short) type, (short) subtype, null, destIdLen == 0 ? null : 0, Instant.now(), null);
             byte[] encodedPusHeader = new byte[64];
@@ -665,11 +683,11 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
 
             SpacePacketBuilder builder = SpacePacketBuilder.create().setTelemetryPacket().setApid(apid).setPacketSequenceCount(apidCounter).setSecondaryHeaderFlag(true).setSequenceFlag(SpacePacket.SequenceFlagType.UNSEGMENTED).setQualityIndicator(true);
             builder.addData(encodedPusHeader, 0, secHeaderLen);
-            byte[] encodedBody = null;
+            byte[] encodedBody;
             try {
                 encodedBody = encoder.encode(definition.getId(), resolver);
             } catch (EncodingException e) {
-                System.out.println("Error when encoding " + definition.getId() + " packet body: " + e.getMessage());
+                LOG.severe("Error when encoding " + definition.getId() + " packet body: " + e.getMessage());
                 return null;
             }
             builder.addData(encodedBody, SpacePacket.SP_PRIMARY_HEADER_LENGTH + secHeaderLen, encodedBody.length - (SpacePacket.SP_PRIMARY_HEADER_LENGTH + secHeaderLen));
