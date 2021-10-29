@@ -162,9 +162,11 @@ Scenario 2 results:
 ## Implement your driver
 
 ## Roadmap
+- Optimisations and features for the JavaFX UI
+- Implementation of a serial-USB driver to interface an Atari Portfolio (https://en.wikipedia.org/wiki/Atari_Portfolio) for parameter/messages/events visualisation (I know, it is pretty useless in practice, but I want to learn how to handle USB ports using Java, and demonstrate that it is possible to have something that works and it is optimised to interface hardware that is more than 30 years old)
 - Alternative _persist_ implementations (server-based - in addition to file-based - Apache Derby, PostgreSQL)
-- Web interface
-- Microservices
+- Web interface (at some point)
+
 
 ## Acknowledgements and Credits
 
