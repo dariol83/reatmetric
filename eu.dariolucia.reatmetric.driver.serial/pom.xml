@@ -14,7 +14,6 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -26,9 +25,9 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>eu.dariolucia.reatmetric.ui</artifactId>
-    <name>REATMETRIC UI</name>
-    <description>REATMETRIC JavaFX graphical interface</description>
+    <artifactId>eu.dariolucia.reatmetric.driver.serial</artifactId>
+    <name>REATMETRIC DRIVER - Serial driver</name>
+    <description>REATMETRIC driver module for serial communication of low bandwidth monitoring data</description>
 
     <dependencies>
         <dependency>
@@ -37,46 +36,20 @@
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.core</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.glassfish.jaxb</groupId>
             <artifactId>jaxb-runtime</artifactId>
             <version>${jaxb.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-base</artifactId>
-            <version>${openjfx.version}</version>
+            <groupId>com.fazecast</groupId>
+            <artifactId>jSerialComm</artifactId>
+            <version>${jserialcomm.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-fxml</artifactId>
-            <version>${openjfx.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-web</artifactId>
-            <version>${openjfx.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-controls</artifactId>
-            <version>${openjfx.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-graphics</artifactId>
-            <version>${openjfx.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.controlsfx</groupId>
-            <artifactId>controlsfx</artifactId>
-            <version>${controlsfx.version}</version>
-        </dependency>
-        <!--
-        <dependency>
-            <groupId>com.panemu</groupId>
-            <artifactId>tiwulfx-dock</artifactId>
-            <version>${tiwulf.version}</version>
-        </dependency>
-        -->
     </dependencies>
+
 </project>
