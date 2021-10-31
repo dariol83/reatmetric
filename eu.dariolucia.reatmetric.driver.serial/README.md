@@ -3,14 +3,16 @@ This driver allows sending real-time monitoring data (currently parameters and l
 to a specified serial port.
 
 ### Protocol
-This protocol has been conceived to allow visualisation of ReatMetric real-time data using very low power/low 
+This protocol has been designed to allow visualisation of ReatMetric real-time data using very low power/low 
 resources terminals, such as the Atari Portfolio™ (1989) via serial or parallel ports, or basic serial terminals. 
 It is not supposed to be used for fully fledged data transfers. Use the available remoting connector for that, 
 or write your own driver to match your needs.
 
 The protocol is fully synchronous, with the knowledge of the session kept on the server side (i.e. on this driver). 
 Interactions are always started by the client. The server always waits for client instructions. All messages are 
-US-ASCII encoded. Server-side, the protocol has two main states:
+US-ASCII encoded. The client **must** wait for the server to reply to its command, before sending the next command.
+
+Server-side, the protocol has two main states:
 
 *DEREGISTERED*: all messages received when the server is in this state are rejected with message ABORT\r\n 
 and the server remains in the DEREGISTERED state, except if the HELLO message is received. An HELLO message 

@@ -32,8 +32,8 @@ class SerialDriver2Test {
         }
 
         SerialPort comPort = SerialPort.getCommPort(NAME);
-        comPort.openPort();
         comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 10000, 0);
+        comPort.openPort();
         try {
             int retries = 0;
             while (retries < 10) {
