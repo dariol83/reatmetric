@@ -118,7 +118,8 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
     	this.dataItemTableView.setPlaceholder(new Label(""));
-    	
+    	this.dataItemTableView.setFixedCellSize(TABLE_ROW_HEIGHT);
+
     	if(this.liveTgl != null) {
 	        this.goToStartBtn.disableProperty().bind(this.liveTgl.selectedProperty());
 	        this.goBackFastBtn.disableProperty().bind(this.liveTgl.selectedProperty());
@@ -141,7 +142,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             // Load the controller hide with select
             this.dateTimePickerController.setActionAfterSelection(() -> {
                 this.dateTimePopup.hide();
-                moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
+                moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, getNumVisibleRow(this.dataItemTableView) * 2, this.dataItemFilterController.getSelectedFilter());
             });
         } catch (IOException e) {
             e.printStackTrace();
@@ -181,7 +182,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     protected void liveToggleSelected(ActionEvent e) {
         if (this.liveTgl.isSelected()) {
         	clearTable();
-        	moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter());
+        	moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(this.dataItemTableView), this.dataItemFilterController.getSelectedFilter());
             startSubscription();
         } else {
             stopSubscription();
@@ -212,7 +213,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     @FXML
     protected void goBackFast(ActionEvent e) {
         if(isProcessingAvailable()) {
-            fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_PAST);
+            fetchRecords(getNumVisibleRow(this.dataItemTableView), RetrievalDirection.TO_PAST);
         }
     }
 
@@ -226,14 +227,14 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     @FXML
     protected void goToEnd(ActionEvent e) {
         if(isProcessingAvailable()) {
-            moveToTime(Instant.ofEpochSecond(3600*24*365*1000L), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.ofEpochSecond(3600*24*365*1000L), RetrievalDirection.TO_PAST, getNumVisibleRow(this.dataItemTableView) * 2, this.dataItemFilterController.getSelectedFilter());
         }
     }
 
     @FXML
     protected void goForwardFast(ActionEvent e) {
         if(isProcessingAvailable()) {
-            fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_FUTURE);
+            fetchRecords(getNumVisibleRow(this.dataItemTableView), RetrievalDirection.TO_FUTURE);
         }
     }
 
@@ -310,7 +311,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             // Allow table to be present and layed out before getting its size
             FxUtils.runLater(() -> {
                 clearTable();
-                moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter());
+                moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(this.dataItemTableView), this.dataItemFilterController.getSelectedFilter());
                 startSubscription();
             });
         }
@@ -465,12 +466,6 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         return this.dataItemTableView.getItems().get(this.dataItemTableView.getItems().size() - 1);
     }
 
-    private int getNumVisibleRow() {
-        double h = this.dataItemTableView.getHeight();
-        h -= 30; // Header 
-        return (int) (h / this.dataItemTableView.getFixedCellSize()) + 1;
-    }
-
     protected void applyFilter(V selectedFilter) {
         this.dataItemFilterController.setSelectedFilter(selectedFilter);
         // Apply the filter on the current table
@@ -505,7 +500,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             } else {
                 markFilterActivated();
             }
-            moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, getNumVisibleRow(), selectedFilter);
+            moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, getNumVisibleRow(this.dataItemTableView), selectedFilter);
         }
     }
 

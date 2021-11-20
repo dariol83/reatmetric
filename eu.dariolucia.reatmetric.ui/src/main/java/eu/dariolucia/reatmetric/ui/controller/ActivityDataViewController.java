@@ -26,7 +26,6 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
-import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -146,6 +145,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
         this.dataItemTableView.setPlaceholder(new Label(""));
+        this.dataItemTableView.setFixedCellSize(TABLE_ROW_HEIGHT);
 
         this.goToStartBtn.disableProperty().bind(this.liveTgl.selectedProperty());
         this.goBackOneBtn.disableProperty().bind(this.liveTgl.selectedProperty());
@@ -167,7 +167,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             // Load the controller hide with select
             this.dateTimePickerController.setActionAfterSelection(() -> {
                 this.dateTimePopup.hide();
-                moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
+                moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, getNumVisibleRow(this.dataItemTableView) * 2, this.dataItemFilterController.getSelectedFilter());
             });
         } catch (IOException e) {
             e.printStackTrace();
@@ -322,14 +322,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             } else {
                 markFilterActivated();
             }
-            moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, getNumVisibleRow(), selectedFilter);
+            moveToTime(this.dateTimePickerController.getSelectedTime(), RetrievalDirection.TO_PAST, getNumVisibleRow(this.dataItemTableView), selectedFilter);
         }
-    }
-
-    private int getNumVisibleRow() {
-        double h = this.dataItemTableView.getHeight();
-        h -= 30; // Header
-        return (int) (h / this.dataItemTableView.getFixedCellSize()) + 1;
     }
 
     private void markFilterDeactivated() {
@@ -471,7 +465,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     protected void liveToggleSelected(ActionEvent e) {
         if (this.liveTgl.isSelected()) {
             clearTable();
-            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(this.dataItemTableView), this.dataItemFilterController.getSelectedFilter());
             startSubscription();
         } else {
             stopSubscription();
@@ -499,7 +493,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @FXML
     protected void goBackFast(ActionEvent e) {
         if (isProcessingAvailable()) {
-            fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_PAST);
+            fetchRecords(getNumVisibleRow(this.dataItemTableView), RetrievalDirection.TO_PAST);
         }
         e.consume();
     }
@@ -507,7 +501,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @FXML
     protected void goToEnd(ActionEvent e) {
         if (isProcessingAvailable()) {
-            moveToTime(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L), RetrievalDirection.TO_PAST, getNumVisibleRow() * 2, this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L), RetrievalDirection.TO_PAST, getNumVisibleRow(this.dataItemTableView) * 2, this.dataItemFilterController.getSelectedFilter());
         }
         e.consume();
     }
@@ -523,7 +517,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @FXML
     protected void goForwardFast(ActionEvent e) {
         if (isProcessingAvailable()) {
-            fetchRecords(getNumVisibleRow(), RetrievalDirection.TO_FUTURE);
+            fetchRecords(getNumVisibleRow(this.dataItemTableView), RetrievalDirection.TO_FUTURE);
         }
         e.consume();
     }
@@ -735,7 +729,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         // Start subscription if there
         if (this.liveTgl == null || this.liveTgl.isSelected()) {
             clearTable();
-            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(), this.dataItemFilterController.getSelectedFilter());
+            moveToTime(Instant.now(), RetrievalDirection.TO_PAST, getNumVisibleRow(this.dataItemTableView), this.dataItemFilterController.getSelectedFilter());
             startSubscription();
         }
     }

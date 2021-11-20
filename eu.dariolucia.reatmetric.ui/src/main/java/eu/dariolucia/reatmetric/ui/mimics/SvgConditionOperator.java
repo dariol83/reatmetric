@@ -50,7 +50,7 @@ public enum SvgConditionOperator implements BiFunction<Object, Object, Boolean> 
     }
 
     private boolean innerEquals(Object o1, Object o2) {
-        if(o1 instanceof Number) {
+        if(o1 instanceof Number && o2 instanceof Number) {
             // Assume that also o2 is a number
             Number n1 = (Number) o1;
             Number n2 = (Number) o2;

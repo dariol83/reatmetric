@@ -23,13 +23,14 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.print.*;
 import javafx.scene.Node;
 import javafx.scene.SnapshotParameters;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TreeTableView;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.transform.Scale;
@@ -51,6 +52,8 @@ import java.util.logging.Logger;
 public abstract class AbstractDisplayController implements Initializable, IReatmetricServiceListener {
 
     private static final Logger LOG = Logger.getLogger(AbstractDisplayController.class.getName());
+
+    protected static final double TABLE_ROW_HEIGHT = 24;
 
     // Info
     protected IReatmetricSystem system = null;
@@ -162,6 +165,20 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
         } else {
             return InstantCellFactory.DATE_TIME_FORMATTER.format(time);
         }
+    }
+
+    protected static int getNumVisibleRow(TableView<?> table) {
+        double h = table.getHeight();
+        h -= 30; // Header
+        double csize = table.getFixedCellSize();
+        return (int) (h / csize);
+    }
+
+    protected static int getNumVisibleRow(TreeTableView<?> table) {
+        double h = table.getHeight();
+        h -= 30; // Header
+        double csize = table.getFixedCellSize();
+        return (int) (h / csize);
     }
 
     protected abstract void doInitialize(URL url, ResourceBundle rb);
