@@ -19,11 +19,10 @@ package eu.dariolucia.reatmetric.ui.utils;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import javafx.application.Platform;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
+import javafx.stage.Window;
 
 import javax.swing.*;
 import java.util.Optional;
@@ -61,5 +60,15 @@ public class DialogUtils {
                 .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
+    public static void customInfoDialog(Window window, VBox toAdd, String title) {
+        Dialog<ButtonType> d = new Dialog<>();
+        d.setTitle(title);
+        d.initModality(Modality.APPLICATION_MODAL);
+        d.initOwner(window);
+        d.getDialogPane().getButtonTypes().addAll(ButtonType.OK);
+        d.getDialogPane().setContent(toAdd);
+        d.show();
     }
 }

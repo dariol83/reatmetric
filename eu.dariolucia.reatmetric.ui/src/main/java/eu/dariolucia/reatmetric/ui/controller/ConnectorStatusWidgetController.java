@@ -26,6 +26,7 @@ import eu.dariolucia.reatmetric.ui.utils.TransportConnectorInitDialog;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
@@ -198,6 +199,11 @@ public class ConnectorStatusWidgetController implements Initializable {
     public void initialize(URL url, ResourceBundle resourceBundle) {
         initImg.setImage(ACTION_INIT_IMG);
         abortImg.setImage(ACTION_ABORT_IMG);
+
+        Tooltip.install(initImg, new Tooltip("Initialise the connector"));
+        Tooltip.install(abortImg, new Tooltip("Abort the connector"));
+        Tooltip.install(startStopImg, new Tooltip("Start/stop the connector"));
+        Tooltip.install(reconnectImg, new Tooltip("Toggle automatic reconnection"));
     }
 
     @FXML

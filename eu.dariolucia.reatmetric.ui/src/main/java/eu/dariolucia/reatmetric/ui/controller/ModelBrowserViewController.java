@@ -23,6 +23,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.events.EventDescriptor;
 import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
@@ -39,6 +40,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -59,7 +61,6 @@ import org.controlsfx.control.textfield.CustomTextField;
 
 import java.io.IOException;
 import java.net.URL;
-import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -158,20 +159,14 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     private MenuItem quickPlotMenuItem;
     @FXML
     private SeparatorMenuItem quickPlotSeparator;
+    @FXML
+    private MenuItem definitionDetailsMenuItem;
 
     // ****************************************************************************
     // Descriptor cache
     // ****************************************************************************
     private final Map<Integer, AbstractSystemEntityDescriptor> externalId2descriptor = new HashMap<>();
     private final Map<String, AbstractSystemEntityDescriptor> path2descriptor = new TreeMap<>();
-
-    // ****************************************************************************
-    // System entity descriptor handling
-    // ****************************************************************************
-    @FXML
-    private VBox systemEntityDescriptor;
-    @FXML
-    private SystemEntityDescriptorPanelController systemEntityDescriptorController;
 
     @FXML
     private void filterClearButtonPressed(Event e) {
@@ -276,6 +271,23 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         }
     }
 
+    @FXML
+    private void definitionDetailsItemAction(ActionEvent actionEvent) {
+        TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
+        if (se != null) {
+            try {
+                URL detailDialog = ActivityInvocationDialogUtil.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/SystemEntityDescriptorPanel.fxml");
+                FXMLLoader loader = new FXMLLoader(detailDialog);
+                VBox controllerRoot = loader.load();
+                SystemEntityDescriptorPanelController controller = loader.getController();
+                controller.handle(se.getValue().getPath(), getDescriptorOf(se.getValue().getExternalId()));
+                DialogUtils.customInfoDialog(this.modelTree.getScene().getWindow(), controllerRoot, "Information about " + se.getValue().getPath());
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Problem while showing information on system entity " + se.getValue().getPath() + ": " + e.getMessage(), e);
+            }
+        }
+    }
+
     private void expandItem(TreeItem<SystemEntity> item, boolean expand) {
         item.expandedProperty().set(expand);
         for (TreeItem<SystemEntity> child : item.getChildren()) {
@@ -309,18 +321,23 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     switch (entity.getType()) {
                         case CONTAINER:
                             setGraphic(new ImageView(containerImage));
+                            setTooltip(new Tooltip(entity.getName()));
                             break;
                         case PARAMETER:
                             setGraphic(new ImageView(parameterImage));
+                            setTooltip(createParameterTooltip(entity));
                             break;
                         case EVENT:
                             setGraphic(new ImageView(eventImage));
+                            setTooltip(createEventTooltip(entity));
                             break;
                         case ACTIVITY:
                             setGraphic(new ImageView(activityImage));
+                            setTooltip(createActivityTooltip(entity));
                             break;
                         case REPORT:
                             setGraphic(new ImageView(reportImage));
+                            setTooltip(new Tooltip(entity.getName()));
                             break;
                         default:
                             setGraphic(null);
@@ -424,27 +441,51 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 this.mapLock.unlock();
             }
         });
+    }
 
-        this.modelTree.getSelectionModel().selectedItemProperty().addListener((a) -> {
-            TreeItem<SystemEntity> se = this.modelTree.getSelectionModel().getSelectedItem();
-            if(se == null) {
-                systemEntityDescriptorController.reset();
-            } else {
-                SystemEntity theEntity = se.getValue();
-                if(theEntity == null) {
-                    systemEntityDescriptorController.reset();
-                } else if(theEntity.getType() == SystemEntityType.CONTAINER) {
-                    systemEntityDescriptorController.handle(theEntity.getPath(), null);
-                } else {
-                    try {
-                        systemEntityDescriptorController.handle(theEntity.getPath(), getDescriptorOf(theEntity.getExternalId()));
-                    } catch (ReatmetricException | RemoteException e) {
-                        systemEntityDescriptorController.reset();
-                        LOG.log(Level.WARNING, "Cannot retrieve descriptor of " + theEntity.getPath() + " (" + theEntity.getExternalId() + "): " + e.getMessage(), e);
-                    }
+    private Tooltip createActivityTooltip(SystemEntity entity) {
+        Tooltip tp = new Tooltip("");
+        tp.showingProperty().addListener(a -> {
+            if(tp.getText().isEmpty()) {
+                try {
+                    ActivityDescriptor d = (ActivityDescriptor) getDescriptorOf(entity.getExternalId());
+                    tp.setText("Activity " + d.getPath() + "\n\n" + d.getDescription() + "\n\nType: \t" + d.getActivityType() + "\nRoute: \t" + Objects.toString(d.getDefaultRoute(), "") + "\nDuration: \t" + d.getExpectedDuration().toSeconds() + " second(s)");
+                } catch (ReatmetricException | RemoteException e) {
+                    tp.setText("Cannot retrieve event information");
                 }
             }
         });
+        return tp;
+    }
+
+    private Tooltip createEventTooltip(SystemEntity entity) {
+        Tooltip tp = new Tooltip("");
+        tp.showingProperty().addListener(a -> {
+            if(tp.getText().isEmpty()) {
+                try {
+                    EventDescriptor d = (EventDescriptor) getDescriptorOf(entity.getExternalId());
+                    tp.setText("Event " + d.getPath() + "\n\n" + d.getDescription() + "\n\nType: \t" + d.getEventType() + "\nSeverity: \t" + d.getSeverity());
+                } catch (ReatmetricException | RemoteException e) {
+                    tp.setText("Cannot retrieve event information");
+                }
+            }
+        });
+        return tp;
+    }
+
+    private Tooltip createParameterTooltip(SystemEntity entity) {
+        Tooltip tp = new Tooltip("");
+        tp.showingProperty().addListener(a -> {
+            if(tp.getText().isEmpty()) {
+                try {
+                    ParameterDescriptor d = (ParameterDescriptor) getDescriptorOf(entity.getExternalId());
+                    tp.setText("Parameter " + d.getPath() + "\n\n" + d.getDescription() + "\n\nRaw value: \t" + d.getRawDataType() + "\nEng. value: \t" + d.getEngineeringDataType() + "\n\nUnit: " + d.getUnit());
+                } catch (ReatmetricException | RemoteException e) {
+                    tp.setText("Cannot retrieve parameter information");
+                }
+            }
+        });
+        return tp;
     }
 
     private void updatePredicate(String newValue) {
@@ -689,6 +730,9 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         quickPlotMenuItem.setVisible(showQuickPlot);
         quickPlotSeparator.setVisible(showQuickPlot);
 
+        // Details
+        boolean showDetails = type == SystemEntityType.PARAMETER || type == SystemEntityType.EVENT || type == SystemEntityType.ACTIVITY;
+        definitionDetailsMenuItem.setVisible(showDetails);
     }
 
     @FXML
@@ -725,6 +769,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 Tab activityTab = new Tab("Activity Execution");
                 activityTab.setContent(activityDialogPair.getFirst());
                 TabPane innerTabPane = new TabPane(activityTab, scheduleTab);
+                innerTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
                 d.getDialogPane().setContent(innerTabPane);
                 Button ok = (Button) d.getDialogPane().lookupButton(ButtonType.OK);
                 ok.disableProperty().bind(Bindings.or(activityDialogPair.getSecond().entriesValidProperty().not(), scheduleDialogPair.getSecond().entriesValidProperty().not()));

@@ -153,11 +153,19 @@
                                     </ImageView>
                                 </graphic>
                             </MenuItem>
+                            <MenuItem fx:id="definitionDetailsMenuItem" mnemonicParsing="false" onAction="#definitionDetailsItemAction" text="Definition details" >
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/info.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
                         </items>
                     </ContextMenu>
               </contextMenu>
             </TreeTableView>
-            <fx:include source="SystemEntityDescriptorPanel.fxml" fx:id="systemEntityDescriptor" />
          </children>
          <padding>
             <Insets top="0.01" />

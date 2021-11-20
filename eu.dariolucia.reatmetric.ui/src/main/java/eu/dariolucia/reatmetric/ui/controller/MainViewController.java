@@ -68,7 +68,6 @@ import java.util.logging.Logger;
 
 /**
  * TODO: implement tab detach with library
- * TODO: add capability to retrieve the description of system entities (caching already present), with panel below the model treeview
  *
  * @author dario
  */
