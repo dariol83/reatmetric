@@ -41,31 +41,18 @@ public class SerialConfiguration {
         }
     }
 
-    @XmlAttribute(name = "bus", required = true)
-    private int bus;
-
     @XmlAttribute(name = "device", required = true)
-    private int device;
+    private String device;
 
     @XmlAttribute(name = "timeout")
-    private int timeout = 10;
+    private int timeout = 10; // Read timeout seconds
 
-    public int getBus() {
-        return bus;
-    }
-
-    public SerialConfiguration setBus(int bus) {
-        this.bus = bus;
-        return this;
-    }
-
-    public int getDevice() {
+    public String getDevice() {
         return device;
     }
 
-    public SerialConfiguration setDevice(int device) {
+    public void setDevice(String device) {
         this.device = device;
-        return this;
     }
 
     public int getTimeout() {
