@@ -62,7 +62,7 @@ public class DialogUtils {
         return result.isPresent() && result.get() == ButtonType.OK;
     }
 
-    public static void customInfoDialog(Window window, VBox toAdd, String title) {
+    public static void customInfoDialog(Window window, Node toAdd, String title) {
         Dialog<ButtonType> d = new Dialog<>();
         d.setTitle(title);
         d.initModality(Modality.APPLICATION_MODAL);

@@ -25,6 +25,7 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
@@ -246,4 +247,11 @@ public class AlarmParameterDataViewController
 		return "AlarmParameterDataView";
 	}
 
+	@FXML
+	private void locateItemAction(ActionEvent actionEvent) {
+		AlarmParameterData ed = this.dataItemTableView.getSelectionModel().getSelectedItem();
+		if(ed != null) {
+			MainViewController.instance().getModelController().locate(ed.getPath());
+		}
+	}
 }

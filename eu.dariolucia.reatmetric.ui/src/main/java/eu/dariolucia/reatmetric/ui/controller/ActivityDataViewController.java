@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -799,6 +800,14 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     @Override
     public void dataItemsReceived(List<ActivityOccurrenceData> dataItems) {
         FxUtils.runLater(() -> delegator.delegate(dataItems));
+    }
+
+    @FXML
+    private void locateItemAction(ActionEvent actionEvent) {
+        ActivityOccurrenceDataWrapper ed = this.dataItemTableView.getSelectionModel().getSelectedItem().getValue();
+        if(ed != null) {
+            MainViewController.instance().getModelController().locate(ed.getPath());
+        }
     }
 
     public static class ActivityOccurrenceDataWrapper {

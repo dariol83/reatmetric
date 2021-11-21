@@ -124,6 +124,21 @@
                   <TableColumn fx:id="alarmStateCol" editable="false" text="Alarm State" />
                   <TableColumn fx:id="parentCol" editable="false" prefWidth="130.0" text="Parent" />
               </columns>
+                <contextMenu>
+                    <ContextMenu>
+                        <items>
+                            <MenuItem mnemonicParsing="false" onAction="#locateItemAction" text="Locate">
+                                <graphic>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                        <image>
+                                            <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/map-marker.svg.png" />
+                                        </image>
+                                    </ImageView>
+                                </graphic>
+                            </MenuItem>
+                        </items>
+                    </ContextMenu>
+                </contextMenu>
             </TableView>
          </children>
          <padding>

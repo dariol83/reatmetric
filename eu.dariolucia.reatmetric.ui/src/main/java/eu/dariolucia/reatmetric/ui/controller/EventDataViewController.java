@@ -29,6 +29,7 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -221,4 +222,11 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
         return "EventDataView";
     }
 
+    @FXML
+    private void locateItemAction(ActionEvent actionEvent) {
+        EventData ed = this.dataItemTableView.getSelectionModel().getSelectedItem();
+        if(ed != null) {
+            MainViewController.instance().getModelController().locate(ed.getPath());
+        }
+    }
 }

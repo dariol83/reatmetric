@@ -701,5 +701,9 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         public void acknowledge(Set<Integer> toAcknowledge) {
             ackMessageController.ackRecursive(toAcknowledge);
         }
+
+        public void expandModelTree() {
+            sideAccordion.setExpandedPane((TitledPane) sideAccordion.getChildrenUnmodifiable().get(0));
+        }
     }
 }

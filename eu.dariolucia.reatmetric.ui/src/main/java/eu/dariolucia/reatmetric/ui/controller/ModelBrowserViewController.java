@@ -49,6 +49,7 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.Paint;
@@ -87,8 +88,10 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
 
     // Pane control
     @FXML
-    private TitledPane displayTitledPane;
+    private AnchorPane displayTitledPane;
 
+    @FXML
+    private ImageView searchImage;
     @FXML
     private CustomTextField filterText;
     @FXML
@@ -508,6 +511,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     @Override
     protected void doSystemDisconnected(IReatmetricSystem system, boolean oldStatus) {
         SystemEntityResolver.setResolver(null);
+        this.searchImage.setDisable(true);
         this.displayTitledPane.setDisable(true);
         // Clear the table
         clearTreeModel();
@@ -519,6 +523,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     @Override
     protected void doSystemConnected(IReatmetricSystem system, boolean oldStatus) {
         startSubscription();
+        this.searchImage.setDisable(false);
         this.displayTitledPane.setDisable(false);
         SystemEntityResolver.setResolver(this);
     }
@@ -1120,5 +1125,45 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 }
             }
         });
+    }
+
+    public void locate(SystemEntityPath path) {
+        // Navigate
+        String[] elements = path.getPathElements();
+        TreeItem<SystemEntity> currentItem = null;
+        for(String element : elements) {
+            if(currentItem == null) {
+                // First element
+                if(this.modelTree.getRoot().getValue().getName().equals(element)) {
+                    currentItem = this.modelTree.getRoot();
+                } else {
+                    // Well, problem here, do nothing
+                    return;
+                }
+            } else {
+                for(TreeItem<SystemEntity> inner : currentItem.getChildren()) {
+                    if(inner.getValue().getName().equals(element)) {
+                        currentItem = inner;
+                        break;
+                    }
+                }
+            }
+        }
+        // If the titledPane is collapsed, expand
+        MainViewController.instance().expandModelTree();
+        // Select and expand
+        if(currentItem != null) {
+            // Focus
+            this.modelTree.requestFocus();
+            // Recursively expand
+            TreeItem<SystemEntity> toExpand = currentItem.getParent();
+            while(toExpand != null) {
+                toExpand.setExpanded(true);
+                toExpand = toExpand.getParent();
+            }
+            final TreeItem<SystemEntity> fcurrentItem = currentItem;
+            // Select
+            FxUtils.runLater(() -> this.modelTree.getSelectionModel().select(fcurrentItem));
+        }
     }
 }

@@ -25,19 +25,17 @@ import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
-import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.paint.Color;
-import javafx.stage.Popup;
 
 import java.io.IOException;
 import java.net.URL;
@@ -70,9 +68,9 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
     @FXML
     private TableColumn<RawData, String> sourceCol;
 
-    // Popup selector for date/time
-    private final Popup dataInspectionPopup = new Popup();
+    // Inspector controller
     private RawDataDetailsWidgetController dataInspectionController;
+    private Parent dataInspectionWidget;
 
     // Report cache
     private final LRUCache cache = new LRUCache();
@@ -106,11 +104,7 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
                     final LinkedHashMap<String, String> fformatData = formatData;
                     FxUtils.runLater(() -> {
                         this.dataInspectionController.setData(name + " - Gen. Time " + genTime, fdata, fformatData);
-                        // Bounds b = this.dataItemTableView.localToScreen(this.dataItemTableView.getBoundsInLocal());
-                        this.dataInspectionPopup.setX(((MenuItem) event.getSource()).getParentPopup().getAnchorX());
-                        this.dataInspectionPopup.setY(((MenuItem) event.getSource()).getParentPopup().getAnchorY());
-                        this.dataInspectionPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
-                        this.dataInspectionPopup.show(this.displayTitledPane.getScene().getWindow());
+                        DialogUtils.customInfoDialog(this.displayTitledPane.getScene().getWindow(), this.dataInspectionWidget, name + " - " + genTime);
                     });
                 } catch (ReatmetricException | RemoteException e) {
                     ReatmetricUI.setStatusLabel("Retrieve of raw data contents failed: " + selectedRawData.getName());
@@ -156,15 +150,11 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
             }
         });
 
-        this.dataInspectionPopup.setAutoHide(true);
-        this.dataInspectionPopup.setHideOnEscape(true);
-
         try {
             URL rawDataDetailsUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/RawDataDetailsWidget.fxml");
             FXMLLoader loader = new FXMLLoader(rawDataDetailsUrl);
-            Parent rawDataDetailsWidget = loader.load();
+            this.dataInspectionWidget = loader.load();
             this.dataInspectionController = loader.getController();
-            this.dataInspectionPopup.getContent().addAll(rawDataDetailsWidget);
         } catch (IOException e) {
             e.printStackTrace();
         }

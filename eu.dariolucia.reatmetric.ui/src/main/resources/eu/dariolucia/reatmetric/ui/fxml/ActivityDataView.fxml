@@ -33,6 +33,7 @@
 <?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.control.SeparatorMenuItem?>
 <TitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Activities" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityDataViewController">
     <content>
     <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1">
@@ -153,7 +154,25 @@
           <contextMenu>
               <ContextMenu>
                 <items>
-                    <MenuItem mnemonicParsing="false" onAction="#onPurgeMenuItem" text="Purge selected activity occurrence(s)" />
+                    <MenuItem mnemonicParsing="false" onAction="#onPurgeMenuItem" text="Purge selected activity occurrence(s)">
+                        <graphic>
+                            <ImageView pickOnBounds="true" preserveRatio="true">
+                                <image>
+                                    <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/trash-alt-f.svg.png" />
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </MenuItem>
+                    <SeparatorMenuItem mnemonicParsing="false" />
+                    <MenuItem mnemonicParsing="false" onAction="#locateItemAction" text="Locate">
+                        <graphic>
+                            <ImageView pickOnBounds="true" preserveRatio="true">
+                                <image>
+                                    <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/map-marker.svg.png" />
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </MenuItem>
                 </items>
               </ContextMenu>
            </contextMenu>

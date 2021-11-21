@@ -742,6 +742,14 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         }
     }
 
+    @FXML
+    private void locateItemAction(ActionEvent actionEvent) {
+        ParameterDataWrapper ed = this.dataItemTableView.getSelectionModel().getSelectedItem();
+        if(ed != null) {
+            MainViewController.instance().getModelController().locate(ed.getPath());
+        }
+    }
+
     public static class ParameterDataWrapper {
 
         private final SystemEntityPath path;

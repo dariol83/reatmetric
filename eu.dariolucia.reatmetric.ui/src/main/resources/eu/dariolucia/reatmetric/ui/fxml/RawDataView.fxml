@@ -136,7 +136,15 @@
                <contextMenu>
                   <ContextMenu>
                     <items>
-                      <MenuItem mnemonicParsing="false" onAction="#inspectItemAction" text="Inspect..." />
+                      <MenuItem mnemonicParsing="false" onAction="#inspectItemAction" text="Inspect...">
+                          <graphic>
+                              <ImageView pickOnBounds="true" preserveRatio="true">
+                                  <image>
+                                      <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/search.svg.png" />
+                                  </image>
+                              </ImageView>
+                          </graphic>
+                      </MenuItem>
                     </items>
                   </ContextMenu>
                </contextMenu>

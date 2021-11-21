@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
@@ -28,6 +29,7 @@ import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -206,4 +208,11 @@ public class ParameterDataLogViewController extends AbstractDataItemLogViewContr
 		return "ParameterDataLogView";
 	}
 
+	@FXML
+	private void locateItemAction(ActionEvent actionEvent) {
+		ParameterData ed = this.dataItemTableView.getSelectionModel().getSelectedItem();
+		if(ed != null) {
+			MainViewController.instance().getModelController().locate(ed.getPath());
+		}
+	}
 }

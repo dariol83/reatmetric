@@ -105,13 +105,56 @@
        <contextMenu>
           <ContextMenu>
             <items>
-                <MenuItem mnemonicParsing="false" onAction="#onActionAddSeparatorMenuItem" text="Add separator..." />
+                <MenuItem mnemonicParsing="false" onAction="#onActionAddSeparatorMenuItem" text="Add separator..." >
+                </MenuItem>
                 <SeparatorMenuItem mnemonicParsing="false" />
-                <MenuItem mnemonicParsing="false" onAction="#onActionMoveUpMenuItem" text="Move up" />
-                <MenuItem mnemonicParsing="false" onAction="#onActionMoveDownMenuItem" text="Move down" />
+                <MenuItem mnemonicParsing="false" onAction="#onActionMoveUpMenuItem" text="Move up">
+                    <graphic>
+                        <ImageView pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/arrow-up.svg.png" />
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </MenuItem>
+                <MenuItem mnemonicParsing="false" onAction="#onActionMoveDownMenuItem" text="Move down">
+                    <graphic>
+                        <ImageView pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/arrow-down.svg.png" />
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </MenuItem>
                 <SeparatorMenuItem mnemonicParsing="false" />
-                <MenuItem mnemonicParsing="false" onAction="#onActionRemoveMenuItem" text="Remove selected item(s)" />
-                <MenuItem mnemonicParsing="false" onAction="#onActionRemoveAllMenuItem" text="Remove all items" />
+                <MenuItem mnemonicParsing="false" onAction="#onActionRemoveMenuItem" text="Remove selected item(s)">
+                    <graphic>
+                        <ImageView pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/trash-alt-f.svg.png" />
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </MenuItem>
+                <MenuItem mnemonicParsing="false" onAction="#onActionRemoveAllMenuItem" text="Remove all items">
+                    <graphic>
+                        <ImageView pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/trash-alt.svg.png" />
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </MenuItem>
+                <SeparatorMenuItem mnemonicParsing="false" />
+                <MenuItem mnemonicParsing="false" onAction="#locateItemAction" text="Locate">
+                    <graphic>
+                        <ImageView pickOnBounds="true" preserveRatio="true">
+                            <image>
+                                <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/map-marker.svg.png" />
+                            </image>
+                        </ImageView>
+                    </graphic>
+                </MenuItem>
             </items>
           </ContextMenu>
        </contextMenu>
