@@ -24,10 +24,11 @@ import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
 import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
-import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.*;
+import javafx.scene.control.Control;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -36,7 +37,9 @@ import javafx.stage.Window;
 import java.io.IOException;
 import java.net.URL;
 import java.rmi.RemoteException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -52,7 +55,7 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
 
     // Pane control
     @FXML
-    protected TitledPane displayTitledPane;
+    protected AnchorPane displayTitledPane;
 
     @FXML
     private VBox vbox;

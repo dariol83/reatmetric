@@ -18,12 +18,14 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.layout.VBox?>
 
-<TitledPane fx:id="displayTitledPane" text="Available Connectors" collapsible="false" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ConnectorsBrowserViewController">
-   <content>
-      <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
+<?import javafx.scene.layout.AnchorPane?>
+<AnchorPane fx:id="displayTitledPane" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ConnectorsBrowserViewController">
+   <children>
+      <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0"
+            AnchorPane.topAnchor="0.0" AnchorPane.rightAnchor="0.0"
+            AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
          <children>
             <ScrollPane fx:id="scrollpane" fitToWidth="true" VBox.vgrow="ALWAYS">
                <content>
@@ -35,5 +37,8 @@
             <Insets top="0.01" />
          </padding>
       </VBox>
-   </content>
-</TitledPane>
+   </children>
+   <padding>
+      <Insets top="0" right="0" left="0" bottom="0"/>
+   </padding>
+</AnchorPane>
