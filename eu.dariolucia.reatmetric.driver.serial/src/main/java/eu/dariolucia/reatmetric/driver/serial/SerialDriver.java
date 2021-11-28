@@ -146,7 +146,7 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
         // First, let's dump the serial port devices in the system
         SerialPort[] ports = SerialPort.getCommPorts();
         for (SerialPort sp : ports) {
-            LOG.log(Level.INFO, "Serial port device detected: " + sp, new Object[]{ this.name });
+            LOG.log(Level.INFO, String.format("Serial port device detected: %s", sp), new Object[]{ this.name });
         }
         // Now open the selected one
         SerialPort comPort;
@@ -156,7 +156,7 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
                 comPort = SerialPort.getCommPort(configuration.getDevice());
             } catch (SerialPortInvalidPortException e) {
                 // If the serial port is invalid, no way this can work: SEVERE message, driver status and bail out
-                LOG.log(Level.SEVERE, "Error while opening serial device " + configuration.getDevice() + ": " + e.getMessage(), new Object[]{ this.name });
+                LOG.log(Level.SEVERE, String.format("Error while opening serial device %s: %s", configuration.getDevice(), e.getMessage()), new Object[]{ this.name });
                 this.driverStatus = SystemStatus.WARNING;
                 this.driverSubscriber.driverStatusUpdate(this.name, this.driverStatus);
                 this.serialReadingActive = false;
@@ -165,7 +165,13 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
 
             // If you are here, you have a com port matching, then open it
             comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, this.configuration.getTimeout() * 1000, 0);
-            // TODO configure port settings from configuration: baud rate, parity, stop, data bits, RTS, etc
+            // Configure port settings from configuration: baud rate, parity, stop, data bits, flow control
+            comPort.setBaudRate(this.configuration.getBaudrate());
+            comPort.setParity(this.configuration.getParity().getValue());
+            comPort.setNumDataBits(this.configuration.getDataBits());
+            comPort.setNumStopBits(this.configuration.getStopBits().getValue());
+            comPort.setFlowControl(this.configuration.getFlowControl().getValue());
+
             comPort.openPort();
             // Now try to read until \r\n (0x0D0A), send the data to the protocol manager and write back the response
             StringBuilder readString = new StringBuilder();

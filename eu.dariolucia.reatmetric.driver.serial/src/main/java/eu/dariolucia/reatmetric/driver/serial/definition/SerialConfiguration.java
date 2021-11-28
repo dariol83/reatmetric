@@ -16,15 +16,17 @@
 
 package eu.dariolucia.reatmetric.driver.serial.definition;
 
+import com.fazecast.jSerialComm.SerialPort;
+
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.*;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlRootElement;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
 
 @XmlRootElement(name = "serial", namespace = "http://dariolucia.eu/reatmetric/driver/serial")
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -34,8 +36,7 @@ public class SerialConfiguration {
         try {
             JAXBContext jc = JAXBContext.newInstance(SerialConfiguration.class);
             Unmarshaller u = jc.createUnmarshaller();
-            SerialConfiguration o = (SerialConfiguration) u.unmarshal(is);
-            return o;
+            return (SerialConfiguration) u.unmarshal(is);
         } catch (JAXBException e) {
             throw new IOException(e);
         }
@@ -46,6 +47,21 @@ public class SerialConfiguration {
 
     @XmlAttribute(name = "timeout")
     private int timeout = 10; // Read timeout seconds
+
+    @XmlAttribute(name = "baudrate")
+    private int baudrate = 9600; // bauds per second
+
+    @XmlAttribute(name = "parity")
+    private ParityEnum parity = ParityEnum.NO; // parity
+
+    @XmlAttribute(name = "data-bits")
+    private int dataBits = 8;
+
+    @XmlAttribute(name = "stop-bits")
+    private StopBitsEnum stopBits = StopBitsEnum.ONE;
+
+    @XmlAttribute(name = "flow-control")
+    private FlowControlEnum flowControl = FlowControlEnum.NONE;
 
     public String getDevice() {
         return device;
@@ -59,8 +75,100 @@ public class SerialConfiguration {
         return timeout;
     }
 
-    public SerialConfiguration setTimeout(int timeout) {
+    public void setTimeout(int timeout) {
         this.timeout = timeout;
-        return this;
+    }
+
+    public int getBaudrate() {
+        return baudrate;
+    }
+
+    public void setBaudrate(int baudrate) {
+        this.baudrate = baudrate;
+    }
+
+    public ParityEnum getParity() {
+        return parity;
+    }
+
+    public void setParity(ParityEnum parity) {
+        this.parity = parity;
+    }
+
+    public int getDataBits() {
+        return dataBits;
+    }
+
+    public void setDataBits(int dataBits) {
+        this.dataBits = dataBits;
+    }
+
+    public StopBitsEnum getStopBits() {
+        return stopBits;
+    }
+
+    public void setStopBits(StopBitsEnum stopBits) {
+        this.stopBits = stopBits;
+    }
+
+    public FlowControlEnum getFlowControl() {
+        return flowControl;
+    }
+
+    public void setFlowControl(FlowControlEnum flowControl) {
+        this.flowControl = flowControl;
+    }
+
+    public enum ParityEnum {
+        NO(SerialPort.NO_PARITY),
+        ODD(SerialPort.ODD_PARITY),
+        EVEN(SerialPort.EVEN_PARITY),
+        MARK(SerialPort.MARK_PARITY),
+        SPACE(SerialPort.SPACE_PARITY);
+
+        private final int value;
+
+        ParityEnum(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
+
+    public enum StopBitsEnum {
+        ONE(SerialPort.ONE_STOP_BIT),
+        ONEDOTFIVE(SerialPort.ONE_POINT_FIVE_STOP_BITS),
+        TWO(SerialPort.TWO_STOP_BITS);
+
+        private final int value;
+
+        StopBitsEnum(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
+
+    public enum FlowControlEnum {
+        NONE(SerialPort.FLOW_CONTROL_DISABLED),
+        CTS(SerialPort.FLOW_CONTROL_CTS_ENABLED),
+        RTS_CTS(SerialPort.FLOW_CONTROL_RTS_ENABLED | SerialPort.FLOW_CONTROL_CTS_ENABLED),
+        DSR(SerialPort.FLOW_CONTROL_DSR_ENABLED),
+        DTR_DSR(SerialPort.FLOW_CONTROL_DTR_ENABLED| SerialPort.FLOW_CONTROL_DSR_ENABLED),
+        XON_XOFF(SerialPort.FLOW_CONTROL_XONXOFF_IN_ENABLED | SerialPort.FLOW_CONTROL_XONXOFF_OUT_ENABLED);
+
+        private final int value;
+
+        FlowControlEnum(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
     }
 }
