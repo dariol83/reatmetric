@@ -25,6 +25,7 @@ import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDescriptor;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.*;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
@@ -91,6 +92,11 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
 
     @Override
     public List<AbstractDataItem> process(EventOccurrence newValue) {
+        // Guard condition: if this event is mirrored and a sample was injected, alarm and exit processing
+        if(definition.isMirrored() && newValue != null) {
+            LOG.log(Level.SEVERE, String.format("Event %d (%s) is a mirrored event, but a sample was injected. Processing ignored.", definition.getId(), definition.getLocation()));
+            return Collections.emptyList();
+        }
         // Guard condition: if this event has an expression, newValue must be null
         if(definition.getCondition() != null && newValue != null) {
             if(LOG.isLoggable(Level.SEVERE)) {
@@ -105,6 +111,11 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
         List<String> sourceList = null;
         String qualifier = null;
         List<AbstractDataItem> generatedStates = new ArrayList<>(2);
+        // Re-evaluation of a mirrored event does not make sense, only compute the entity state change if any
+        if(definition.isMirrored()) {
+            computeEntityState(generatedStates);
+            return generatedStates;
+        }
         // If the object is enabled, then you have to process it as usual
         if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             // Prepare the time values
@@ -173,28 +184,7 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                     this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
                     generatedStates.add(this.state);
                     // Log the event if log is not suppressed and you are not ignoring this event
-                    if(definition.isLogEnabled() && getEntityStatus() != Status.IGNORED) {
-                        if(lastReportedLogTime == null || lastReportedLogTime.plusMillis(definition.getLogRepetitionPeriod()).isBefore(now)) {
-                            String logSource = definition.getLocation(); // this.state.getSource();
-                            String suffix = skippedLogMessagesCounter == 0 ? "" : " (skipped: " + skippedLogMessagesCounter + ")";
-                            switch (definition.getSeverity()) {
-                                case ALARM:
-                                case ERROR:
-                                    LOG.log(Level.SEVERE, getDefinition().getDescription() + suffix, new Object[]{logSource, getSystemEntityId()});
-                                    break;
-                                case WARN:
-                                    LOG.log(Level.WARNING, getDefinition().getDescription() + suffix, new Object[]{logSource, getSystemEntityId()});
-                                    break;
-                                case INFO:
-                                    LOG.log(Level.INFO, getDefinition().getDescription() + suffix, new Object[]{logSource, getSystemEntityId()});
-                                    break;
-                            }
-                            lastReportedLogTime = now;
-                            skippedLogMessagesCounter = 0;
-                        } else {
-                            ++skippedLogMessagesCounter;
-                        }
-                    }
+                    generateLogMessage(now);
                 }
                 // Remember the generation time (needed to check if inhibition is needed)
                 this.lastReportedEventTime = generationTime;
@@ -211,6 +201,31 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
         return generatedStates;
     }
 
+    private void generateLogMessage(Instant now) {
+        if(definition.isLogEnabled() && getEntityStatus() != Status.IGNORED) {
+            if(lastReportedLogTime == null || lastReportedLogTime.plusMillis(definition.getLogRepetitionPeriod()).isBefore(now)) {
+                String logSource = definition.getLocation(); // this.state.getSource();
+                String suffix = skippedLogMessagesCounter == 0 ? "" : " (skipped: " + skippedLogMessagesCounter + ")";
+                switch (definition.getSeverity()) {
+                    case ALARM:
+                    case ERROR:
+                        LOG.log(Level.SEVERE, getDefinition().getDescription() + suffix, new Object[]{logSource, getSystemEntityId()});
+                        break;
+                    case WARN:
+                        LOG.log(Level.WARNING, getDefinition().getDescription() + suffix, new Object[]{logSource, getSystemEntityId()});
+                        break;
+                    case INFO:
+                        LOG.log(Level.INFO, getDefinition().getDescription() + suffix, new Object[]{logSource, getSystemEntityId()});
+                        break;
+                }
+                lastReportedLogTime = now;
+                skippedLogMessagesCounter = 0;
+            } else {
+                ++skippedLogMessagesCounter;
+            }
+        }
+    }
+
     private void computeEntityState(List<AbstractDataItem> generatedStates) {
         this.systemEntityBuilder.setAlarmState(AlarmState.NOT_APPLICABLE);
         this.systemEntityBuilder.setStatus(entityStatus);
@@ -221,6 +236,10 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     }
 
     void raiseEvent(String source) {
+        if(this.definition.isMirrored()) {
+            LOG.log(Level.SEVERE, String.format("Cannot event %s from internal source %s, event is mirrored", path(), source));
+            return;
+        }
         if(LOG.isLoggable(Level.FINEST)) {
             LOG.log(Level.FINEST, String.format("Raising event %s from internal source %s, entity status is %s", path(), source, entityStatus));
         }
@@ -304,5 +323,34 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     @Override
     public Instant receptionTime() {
         return this.state == null ? null : this.state.getReceptionTime();
+    }
+
+    public List<AbstractDataItem> mirror(EventData itemToMirror) {
+        // Guard condition: if this event is not mirrored, alarm and exit processing
+        if(!definition.isMirrored()) {
+            LOG.log(Level.SEVERE, String.format("Event %d (%s) is not a mirrored event, but an event full state was injected. Processing ignored.", definition.getId(), definition.getLocation()));
+            return Collections.emptyList();
+        }
+        // To be returned at the end of the processing
+        List<AbstractDataItem> generatedStates = new ArrayList<>(2);
+        // If the object is enabled, then you have to process it as usual
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
+            // Copy the status into the builder
+            this.builder.setInitialisation(itemToMirror);
+            // You must always build an update
+            this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
+            generatedStates.add(this.state);
+            // Finalize entity state and prepare for the returned list of data items
+            computeEntityState(generatedStates);
+            // Check if a log message must be raised (using the properties defined in the definition)
+            generateLogMessage(Instant.now());
+        } else {
+            // Completely ignore the processing
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Event state not mirrored for event " + path() + ": event processing is disabled");
+            }
+        }
+        // Return the list
+        return generatedStates;
     }
 }

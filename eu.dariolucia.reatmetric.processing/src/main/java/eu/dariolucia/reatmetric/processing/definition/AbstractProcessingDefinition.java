@@ -16,11 +16,7 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import javax.script.ScriptException;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlID;
+import javax.xml.bind.annotation.*;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.io.Serializable;
 
@@ -37,6 +33,9 @@ public abstract class AbstractProcessingDefinition implements Serializable {
 
     @XmlAttribute
     private String description = "";
+
+    @XmlTransient
+    private boolean mirrored = false;
 
     protected AbstractProcessingDefinition() {
         // None
@@ -70,6 +69,23 @@ public abstract class AbstractProcessingDefinition implements Serializable {
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    /**
+     * Define whether this object is a mirrored object, i.e. the status can only be reported to the processing model from the mirror()
+     * operation. A mirrored object is an object, whose state is not computed by the processing model. The only operation that the processing model
+     * can do, is to ignore the update ({@link eu.dariolucia.reatmetric.api.model.Status#IGNORED}.
+     *
+     * Processing-related updates, i.e. parameter injection, event reports and activity requests/reports are ignored and a warning is raised in such cases.
+     *
+     * @return true if the object is a mirrored one, false otherwise.
+     */
+    public boolean isMirrored() {
+        return mirrored;
+    }
+
+    public void setMirrored(boolean mirrored) {
+        this.mirrored = mirrored;
     }
 
     /**

@@ -87,4 +87,19 @@ public interface IProcessingModel extends IDebugInfoProvider {
     List<ActivityRouteState> getRouteAvailability() throws ProcessingModelException;
 
     List<ActivityRouteState> getRouteAvailability(String type) throws ProcessingModelException;
+
+    /**
+     * Apply the provided list of data items (of type {@link eu.dariolucia.reatmetric.api.parameters.ParameterData},
+     * {@link eu.dariolucia.reatmetric.api.events.EventData}, {@link ActivityOccurrenceData}) to the items in this
+     * processing model. All items reported here must map to processing model object marked as 'mirrored', or a warning
+     * will be raised.
+     *
+     * The idea of this method is to allow distribution of the processing model onto several processes and to
+     * enable a master-slave, or low-level vs high-level monitoring concept. The monitoring driver is responsible to map
+     * the incoming data item to the corresponding ID/path.
+     *
+     * @param items the list of data item states that must be mirrored by the processing model
+     * @throws ProcessingModelException in case of issues when applying the update
+     */
+    void mirror(List<AbstractDataItem> items) throws ProcessingModelException;
 }

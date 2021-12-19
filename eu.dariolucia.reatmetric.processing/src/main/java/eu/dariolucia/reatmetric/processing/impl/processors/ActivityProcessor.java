@@ -622,4 +622,10 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     public List<ActivityOccurrenceData> getActiveActivityOccurrences() {
         return id2occurrence.values().stream().map(Supplier::get).collect(Collectors.toList());
     }
+
+    public List<AbstractDataItem> mirror(ActivityOccurrenceData input) {
+        // TODO: implement - internal ID mapping <source activity occurrence> --> <target activity occurrence> needed
+        //  and inside that, internal ID mapping from <source report> --> <target report>
+        return null;
+    }
 }

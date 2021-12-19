@@ -57,8 +57,29 @@ public class ProcessingDefinition implements Serializable {
     public static ProcessingDefinition load(InputStream is) throws JAXBException {
         JAXBContext jc = JAXBContext.newInstance(ProcessingDefinition.class);
         Unmarshaller u = jc.createUnmarshaller();
-        ProcessingDefinition o = (ProcessingDefinition) u.unmarshal(is);
-        return o;
+        ProcessingDefinition processingDefinition = (ProcessingDefinition) u.unmarshal(is);
+        // Update properties to propagate
+        if(processingDefinition.isMirrored() || processingDefinition.getPathPrefix() != null) {
+            for (ParameterProcessingDefinition parameterProcessingDefinition : processingDefinition.getParameterDefinitions()) {
+                propagateProperties(processingDefinition, parameterProcessingDefinition);
+            }
+            for (EventProcessingDefinition eventProcessingDefinition : processingDefinition.getEventDefinitions()) {
+                propagateProperties(processingDefinition, eventProcessingDefinition);
+            }
+            for (ActivityProcessingDefinition activityProcessingDefinition : processingDefinition.getActivityDefinitions()) {
+                propagateProperties(processingDefinition, activityProcessingDefinition);
+            }
+        }
+        return processingDefinition;
+    }
+
+    private static void propagateProperties(ProcessingDefinition processingDefinition, AbstractProcessingDefinition o) {
+        if(processingDefinition.isMirrored()) {
+            o.setMirrored(processingDefinition.isMirrored());
+        }
+        if(processingDefinition.getPathPrefix() != null) {
+            o.setLocation(processingDefinition.getPathPrefix() + o.getLocation());
+        }
     }
 
     /**
@@ -95,6 +116,12 @@ public class ProcessingDefinition implements Serializable {
 
     @XmlAttribute(name = "synthetic_parameter_processing_enabled")
     private boolean syntheticParameterProcessingEnabled = true;
+
+    @XmlAttribute(name = "mirrored")
+    private boolean mirrored = false;
+
+    @XmlAttribute(name = "path_prefix")
+    private String pathPrefix = null;
 
     @XmlElementWrapper(name = "parameters")
     @XmlElement(name = "parameter")
@@ -148,6 +175,28 @@ public class ProcessingDefinition implements Serializable {
 
     public void setSyntheticParameterProcessingEnabled(boolean syntheticParameterProcessingEnabled) {
         this.syntheticParameterProcessingEnabled = syntheticParameterProcessingEnabled;
+    }
+
+    /**
+     * If a definition is marked as mirrored, it means that the processing object can be updated with a full state
+     * from an external processing model: updatable objects are not processed by the processing model.
+     *
+     * @return true if mirrored, otherwise false
+     */
+    public boolean isMirrored() {
+        return mirrored;
+    }
+
+    public void setMirrored(boolean mirrored) {
+        this.mirrored = mirrored;
+    }
+
+    public String getPathPrefix() {
+        return pathPrefix;
+    }
+
+    public void setPathPrefix(String pathPrefix) {
+        this.pathPrefix = pathPrefix;
     }
 
     /**

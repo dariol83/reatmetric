@@ -135,11 +135,11 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         List<AbstractDataItem> stateList = initialiser.getState(getSystemEntityId(), SystemEntityType.PARAMETER);
         if(!stateList.isEmpty()) {
             this.state = (ParameterData) stateList.get(0);
-            builder.setInitialisation(this.state);
+            this.builder.setInitialisation(this.state);
             if (stateList.size() > 1) {
                 AlarmParameterData alarmData = (AlarmParameterData) stateList.get(1);
-                currentAlarmData = alarmData;
-                alarmBuilder.setInitialisation(alarmData);
+                this.currentAlarmData = alarmData;
+                this.alarmBuilder.setInitialisation(alarmData);
             }
         }
     }
@@ -155,6 +155,11 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     @Override
     public synchronized List<AbstractDataItem> process(ParameterSample newValue) throws ProcessingModelException {
+        // Guard condition: if this parameter is mirrored and a sample was injected, alarm and exit processing
+        if(definition.isMirrored() && newValue != null) {
+            LOG.log(Level.SEVERE, String.format("Parameter %d (%s) is a mirrored parameter, but a sample was injected. Processing ignored.", definition.getId(), definition.getLocation()));
+            return Collections.emptyList();
+        }
         // Guard condition: if this parameter has an expression, newValue must be null
         if(definition.getExpression() != null && newValue != null) {
             LOG.log(Level.SEVERE, String.format("Parameter %d (%s) is a synthetic parameter, but a sample was injected. Processing ignored.", definition.getId(), definition.getLocation()));
@@ -162,8 +167,14 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         }
         // To be returned at the end of the processing
         List<AbstractDataItem> generatedStates = new ArrayList<>(3);
-        // Re-evaluation: a re-evaluation state only makes sense if: this is synthetic parameter or there was a previous value to be re-evaluated.
+        // Re-evaluation: for mirrored parameters the re-evaluation does not make sense.
+        // For normal parameters, a re-evaluation state only makes sense if: this is synthetic parameter or there was a previous value to be re-evaluated.
         // If that is not the case, it is pointless to continue with the processing.
+        if(definition.isMirrored()) {
+            // Re-evaluation of a mirrored parameter does not make sense, only compute the entity state change if any
+            computeSystemEntityState(false, generatedStates);
+            return generatedStates;
+        }
         if(newValue == null && definition.getExpression() == null && (this.state == null || this.state.getSourceValue() == null)) {
             if(LOG.isLoggable(Level.FINEST)) {
                 LOG.log(Level.FINEST, String.format("Skipping re-evaluation of parameter %d (%s) as there is no previous sample", definition.getId(), definition.getLocation()));
@@ -296,20 +307,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 }
             }
             // Compute alarm state
-            if(stateChanged && valid()) {
-                // If nominal, set the last nominal value
-                if(!inAlarm()) {
-                    this.alarmBuilder.setLastNominalValue(this.state.getEngValue(), this.state.getGenerationTime());
-                }
-                // Set current values
-                this.alarmBuilder.setCurrentValue(this.state.getAlarmState(), this.state.getEngValue(), this.state.getGenerationTime(), this.state.getReceptionTime());
-                if(this.alarmBuilder.isChangedSinceLastBuild()) {
-                    alarmData = this.alarmBuilder.build(new LongUniqueId(processor.getNextId(AlarmParameterData.class)));
-                    if(LOG.isLoggable(Level.FINER)) {
-                        LOG.log(Level.FINER, "Alarm Parameter Data generated: " + alarmData);
-                    }
-                }
-            }
+            alarmData = computeAlarmParameterData(stateChanged);
         } else {
             // Set validity to DISABLED
             this.builder.setValidity(Validity.DISABLED);
@@ -327,6 +325,14 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         // Finalize entity state and prepare for the returned list of data items
         computeSystemEntityState(stateChanged, generatedStates);
         // If there is an AlarmParameterData, then report it and save it
+        finalizeAlarmParameterData(generatedStates, alarmData);
+        // At this stage, check the triggers and, for each of them, derive the correct behaviour
+        activateTriggers(newValue, previousValue, wasInAlarm, stateChanged);
+        // Return the list
+        return generatedStates;
+    }
+
+    private void finalizeAlarmParameterData(List<AbstractDataItem> generatedStates, AlarmParameterData alarmData) {
         if(alarmData != null) {
             generatedStates.add(alarmData);
             currentAlarmData = alarmData;
@@ -337,8 +343,59 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             currentAlarmData = null;
             latestGeneratedAlarmSeverityMessage = null;
         }
-        // At this stage, check the triggers and, for each of them, derive the correct behaviour
-        activateTriggers(newValue, previousValue, wasInAlarm, stateChanged);
+    }
+
+    private AlarmParameterData computeAlarmParameterData(boolean stateChanged) {
+        AlarmParameterData alarmData = null;
+        if(stateChanged && valid()) {
+            // If nominal, set the last nominal value
+            if(!inAlarm()) {
+                this.alarmBuilder.setLastNominalValue(this.state.getEngValue(), this.state.getGenerationTime());
+            }
+            // Set current values
+            this.alarmBuilder.setCurrentValue(this.state.getAlarmState(), this.state.getEngValue(), this.state.getGenerationTime(), this.state.getReceptionTime());
+            if(this.alarmBuilder.isChangedSinceLastBuild()) {
+                alarmData = this.alarmBuilder.build(new LongUniqueId(processor.getNextId(AlarmParameterData.class)));
+                if(LOG.isLoggable(Level.FINER)) {
+                    LOG.log(Level.FINER, "Alarm Parameter Data generated: " + alarmData);
+                }
+            }
+        }
+        return alarmData;
+    }
+
+    public synchronized List<AbstractDataItem> mirror(ParameterData itemToMirror) {
+        // Guard condition: if this parameter is not mirrored, alarm and exit processing
+        if(!definition.isMirrored()) {
+            LOG.log(Level.SEVERE, String.format("Parameter %d (%s) is not a mirrored parameter, but a parameter full state was injected. Processing ignored.", definition.getId(), definition.getLocation()));
+            return Collections.emptyList();
+        }
+        // To be returned at the end of the processing
+        List<AbstractDataItem> generatedStates = new ArrayList<>(3);
+        AlarmParameterData alarmData = null;
+        // If the object is enabled, then you have to process it as usual
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
+            // Copy the status into the builder
+            this.builder.setInitialisation(itemToMirror);
+            // Prevent alarm detection
+            if(entityStatus == Status.IGNORED) {
+                this.builder.setAlarmState(AlarmState.IGNORED);
+            }
+            // You must always build an update
+            this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
+            generatedStates.add(this.state);
+            // Compute alarm state
+            alarmData = computeAlarmParameterData(true);
+            // Finalize entity state and prepare for the returned list of data items
+            computeSystemEntityState(true, generatedStates);
+            // If there is an AlarmParameterData, then report it and save it
+            finalizeAlarmParameterData(generatedStates, alarmData);
+        } else {
+            // Completely ignore the processing
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Parameter state not mirrored for parameter " + path() + ": parameter processing is disabled");
+            }
+        }
         // Return the list
         return generatedStates;
     }

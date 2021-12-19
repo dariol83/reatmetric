@@ -77,6 +77,10 @@ public class GraphModel {
         // - parameter triggers
         // - references of default values for activity arguments
         for(ParameterProcessingDefinition param : definition.getParameterDefinitions()) {
+            // Mirrored parameters do not depend on anything
+            if(param.isMirrored()) {
+                continue;
+            }
             if(param.getExpression() != null) {
                 addEdges(param, param.getExpression());
             }
@@ -122,11 +126,19 @@ public class GraphModel {
             }
         }
         for(EventProcessingDefinition event : definition.getEventDefinitions()) {
+            // Mirrored events do not depend on anything
+            if(event.isMirrored()) {
+                continue;
+            }
             if(event.getCondition() != null) {
                 addEdges(event, event.getCondition());
             }
         }
         for(ActivityProcessingDefinition act : definition.getActivityDefinitions()) {
+            // Mirrored activities do not depend on anything
+            if(act.isMirrored()) {
+                continue;
+            }
             if(act.getVerification() != null) {
                 addEdges(act, act.getVerification());
             }

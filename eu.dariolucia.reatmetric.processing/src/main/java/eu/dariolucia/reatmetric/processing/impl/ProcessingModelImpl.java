@@ -18,9 +18,11 @@ package eu.dariolucia.reatmetric.processing.impl;
 
 import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.*;
+import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.model.Status;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.processing.*;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
@@ -622,6 +624,23 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     @Override
     public AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ProcessingModelException {
         return graphModel.getDescriptorOf(path);
+    }
+
+    @Override
+    public void mirror(List<AbstractDataItem> items) {
+        // Build the list of operations to be performed
+        List<AbstractModelOperation<?>> operations = new LinkedList<>();
+        for(AbstractDataItem adi : items) {
+            if(adi instanceof ParameterData) {
+                operations.add(new ParameterMirrorOperation((ParameterData) adi));
+            } else if(adi instanceof EventData) {
+                operations.add(new EventMirrorOperation((EventData) adi));
+            } else if(adi instanceof ActivityOccurrenceData) {
+                operations.add(new ActivityMirrorOperation((ActivityOccurrenceData) adi));
+            }
+        }
+        // Schedule task
+        scheduleTask(operations, REPORTING_DISPATCHING_QUEUE);
     }
 
     /*
