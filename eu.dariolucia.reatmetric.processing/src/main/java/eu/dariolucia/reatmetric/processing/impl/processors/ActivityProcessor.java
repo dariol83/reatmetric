@@ -48,6 +48,8 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     private final Map<IUniqueId, ActivityOccurrenceProcessor> id2occurrence = new ConcurrentHashMap<>();
     private final Map<String, AbstractArgumentDefinition> name2argumentDefinition = new TreeMap<>();
 
+    private final Map<IUniqueId, IUniqueId> mirroredId2localId = new ConcurrentHashMap<>();
+
     private final ActivityDescriptor descriptor;
 
     public ActivityProcessor(ActivityProcessingDefinition act, ProcessingModelImpl processingModel) {
@@ -626,6 +628,29 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     public List<AbstractDataItem> mirror(ActivityOccurrenceData input) {
         // TODO: implement - internal ID mapping <source activity occurrence> --> <target activity occurrence> needed
         //  and inside that, internal ID mapping from <source report> --> <target report>
-        return null;
+        if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
+            // Check if a local internal ID is already present for this state
+            IUniqueId localId = this.mirroredId2localId.get(input.getInternalId());
+            ActivityOccurrenceProcessor activityOccurrence = null;
+            if(localId == null) {
+                // Not present - create new ActivityOccurrenceProcessor
+                activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), input.getGenerationTime(), input.getArguments(), input.getProperties(), new LinkedList<>(), input.getRoute(), input.getSource(), input.getInternalId());
+                id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
+                mirroredId2localId.put(input.getInternalId(), activityOccurrence.getOccurrenceId());
+                // inform the processor that the activity occurrence has been created, check equality to 1 to avoid calling the registration for every occurrence
+                if (id2occurrence.size() == 1) {
+                    processor.registerActiveActivityProcessor(this);
+                }
+            } else {
+                activityOccurrence = id2occurrence.get(localId);
+            }
+            return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.mirror(input));
+        } else {
+            // Completely ignore the processing
+            if(LOG.isLoggable(Level.WARNING)) {
+                LOG.log(Level.WARNING, "Activity mirror request not computed for activity " + getPath() + ": activity processing is disabled");
+            }
+            return Collections.emptyList();
+        }
     }
 }

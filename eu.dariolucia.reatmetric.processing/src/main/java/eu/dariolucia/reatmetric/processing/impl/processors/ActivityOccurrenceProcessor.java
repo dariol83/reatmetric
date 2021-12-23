@@ -25,10 +25,10 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
 import eu.dariolucia.reatmetric.processing.impl.operations.ActivityOccurrenceUpdateOperation;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 
 import javax.script.ScriptException;
 import java.time.Instant;
@@ -42,6 +42,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     private static final Logger LOG = Logger.getLogger(ActivityOccurrenceProcessor.class.getName());
 
     public static final String SELF_BINDING = "self";
+    public static final String MIRRORED_ACTIVITY_OCCURRENCE_ID_KEY = "mirrored_activity_occurrence_id";
 
     private final ActivityProcessor parent;
     private final IUniqueId occurrenceId;
@@ -51,6 +52,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     private final List<ActivityOccurrenceReport> reports;
     private final String route;
     private final String source;
+    private final IUniqueId mirroredOccurrenceId;
 
     private ActivityOccurrenceState currentState;
     private Instant executionTime;
@@ -63,15 +65,47 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
 
     private volatile ActivityOccurrenceData lastGeneratedState = null;
 
-    public ActivityOccurrenceProcessor(ActivityProcessor parent, IUniqueId occurrenceId, Instant creationTime, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> reports, String route, String source) {
+    private final Set<IUniqueId> processedMirroredReportIds = new HashSet<>();
+
+    public ActivityOccurrenceProcessor(ActivityProcessor parent, IUniqueId occurrenceId, Instant creationTime, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> reports, String route, String source, IUniqueId mirroredOccurrenceId) {
         this.parent = parent;
         this.occurrenceId = occurrenceId;
         this.creationTime = creationTime;
-        this.arguments = Collections.unmodifiableMap(arguments);
-        this.properties = Collections.unmodifiableMap(properties);
+        this.arguments = Map.copyOf(arguments != null ? arguments : Collections.emptyMap());
+        Map<String, String> propMap = new LinkedHashMap<>(properties != null ? properties : Collections.emptyMap());
+        if(mirroredOccurrenceId != null) {
+            propMap.put(MIRRORED_ACTIVITY_OCCURRENCE_ID_KEY, String.valueOf(mirroredOccurrenceId.asLong()));
+        }
+        this.properties = Map.copyOf(propMap);
+
         this.reports = reports;
         this.route = route;
         this.source = source;
+        // Set the final mirroredOccurrenceId variable: in this way, we handle also the case when the activity occurrence
+        // is restored from the archive
+        if(mirroredOccurrenceId == null) {
+            String mirroredIdProperty = this.properties.get(MIRRORED_ACTIVITY_OCCURRENCE_ID_KEY);
+            if(mirroredIdProperty != null && !mirroredIdProperty.isBlank()) {
+                IUniqueId parsed = null;
+                // Parse it here
+                try {
+                    parsed = new LongUniqueId(Long.parseLong(mirroredIdProperty));
+                } catch (NumberFormatException e) {
+                    if (LOG.isLoggable(Level.WARNING)) {
+                        LOG.log(Level.WARNING, String.format("Parsing of mirrored activity occurrence ID %s of activity %s failed: value was %s", occurrenceId, parent.getPath(), mirroredIdProperty));
+                    }
+                }
+                this.mirroredOccurrenceId = parsed;
+            } else {
+                this.mirroredOccurrenceId = null;
+            }
+        } else {
+            this.mirroredOccurrenceId = mirroredOccurrenceId;
+        }
+    }
+
+    public ActivityOccurrenceProcessor(ActivityProcessor parent, IUniqueId occurrenceId, Instant creationTime, Map<String, Object> arguments, Map<String, String> properties, List<ActivityOccurrenceReport> reports, String route, String source) {
+        this(parent, occurrenceId, creationTime, arguments, properties, reports, route, source, null);
     }
 
     public ActivityOccurrenceProcessor(ActivityProcessor parent, ActivityOccurrenceData occurrenceToRestore) {
@@ -166,7 +200,11 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         // Set the execution time if any
         this.executionTime = executionTime != null ? executionTime : this.executionTime;
         // Generate the ActivityOccurrenceData and add it to the temporary list
-        ActivityOccurrenceData activityOccurrenceData = new ActivityOccurrenceData(this.occurrenceId, creationTime, null, parent.getSystemEntityId(), parent.getPath().getLastPathElement(), parent.getPath(), parent.getDefinition().getType(), this.arguments, this.properties, this.reports, this.route, this.source);
+        ActivityOccurrenceData activityOccurrenceData = new ActivityOccurrenceData(this.occurrenceId, creationTime,
+                (this.mirroredOccurrenceId == null ? null : this.mirroredOccurrenceId.asLong()),
+                parent.getSystemEntityId(), parent.getPath().getLastPathElement(), parent.getPath(), parent.getDefinition().getType(),
+                this.arguments, this.properties, this.reports, this.route, this.source);
+
         temporaryDataItemList.add(activityOccurrenceData);
         // If the current state is now COMPLETION, stop the timeout
         if (currentState == ActivityOccurrenceState.COMPLETED) {
@@ -174,6 +212,31 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         }
         // Set the last generated state
         this.lastGeneratedState = activityOccurrenceData;
+    }
+
+    /**
+     * The mirror approach for activity occurrences creates an activity occurrence for each mirrored activity occurrence,
+     * reported via the mirror() operation.
+     *
+     * @param input the updated activity occurrence mirrored state
+     * @return the list of results, produced by the update
+     */
+    public List<AbstractDataItem> mirror(ActivityOccurrenceData input) {
+        // This is like a progress
+        List<AbstractDataItem> toReturn = new LinkedList<>();
+        for(ActivityOccurrenceReport r : input.getProgressReports()) {
+            boolean alreadyProcessed = processedMirroredReportIds.contains(r.getInternalId());
+            if(!alreadyProcessed) {
+                processedMirroredReportIds.add(r.getInternalId());
+                toReturn.addAll(progress(toActivityProgress(r)));
+            }
+        }
+        return toReturn;
+    }
+
+    private ActivityProgress toActivityProgress(ActivityOccurrenceReport r) {
+        return ActivityProgress.of(parent.getSystemEntityId(), getOccurrenceId(), r.getName(),
+                r.getGenerationTime(), r.getState(), r.getExecutionTime(), r.getStatus(), r.getStateTransition(), r.getResult());
     }
 
     public List<AbstractDataItem> progress(ActivityProgress progress) {
@@ -198,7 +261,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         temporaryDataItemList.clear();
         // Generate ActivityOccurrenceReport according to progress
         ActivityOccurrenceState previousState = currentState;
-        // A FATAL blocks the activity occurrence tracking
+        // A FATAL ActivityReportState blocks the activity occurrence tracking
         ActivityOccurrenceState nextState = progress.getStatus() == ActivityReportState.FATAL ? ActivityOccurrenceState.COMPLETED : progress.getNextState();
         generateReport(progress.getName(), progress.getGenerationTime(), progress.getExecutionTime(), progress.getState(), progress.getStatus(), progress.getResult(), nextState);
 
@@ -365,7 +428,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         try {
             parent.processor.forwardAbortToHandler(occurrenceId, parent.getSystemEntityId(), route, parent.getDefinition().getType());
         } catch (ProcessingModelException e) {
-            LOG.log(Level.SEVERE, String.format("Abort request for activity occurrence %s:%d cannot be forwarded to the activity handler identified by route %s and type %s: %s", parent.getPath(), occurrenceId.asLong(), route, parent.getDefinition().getType(), e.getMessage()));
+            LOG.log(Level.SEVERE, String.format("Abort request for activity occurrence %s:%d cannot be forwarded to the activity handler identified by route %s and type %s: %s", parent.getPath(), occurrenceId.asLong(), route, parent.getDefinition().getType(), e.getMessage()), e);
         }
     }
 
@@ -375,7 +438,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         }
         // Clear temporary list
         temporaryDataItemList.clear();
-        // If currentTimeoutState is applicable, currentTimeoutTask is pending and it is expired, generate ActivityOccurrenceReport accordingly
+        // If currentTimeoutState is applicable, currentTimeoutTask is pending, and it is expired, generate ActivityOccurrenceReport accordingly
         boolean expired = verifyTimeout();
         // If currentState is VERIFICATION, check expression: if OK, then announce ActivityOccurrenceReport OK and move to COMPLETION
         if (currentState == ActivityOccurrenceState.VERIFICATION) {
@@ -444,4 +507,5 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     public void visit(IProcessingModelVisitor visitor) {
         visitor.onVisit(lastGeneratedState);
     }
+
 }
