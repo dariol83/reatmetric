@@ -98,6 +98,7 @@
         <module>eu.dariolucia.reatmetric.driver.spacecraft.test</module>
         <module>eu.dariolucia.reatmetric.driver.test</module>
         <module>eu.dariolucia.reatmetric.driver.serial</module>
+        <module>eu.dariolucia.reatmetric.driver.remote</module>
         <module>eu.dariolucia.reatmetric.ui</module>
         <module>eu.dariolucia.reatmetric.ui.test</module>
         <module>eu.dariolucia.reatmetric.ui.remoting</module>

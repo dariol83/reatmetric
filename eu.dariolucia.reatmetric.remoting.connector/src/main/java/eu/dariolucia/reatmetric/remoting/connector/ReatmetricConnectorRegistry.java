@@ -30,7 +30,7 @@ import java.util.List;
 
 public class ReatmetricConnectorRegistry implements IReatmetricRegister {
 
-    private static final String INIT_FILE_KEY = "reatmetric.remoting.connector.config"; // Absolute location of the configuration file, to configure the registry
+    public static final String INIT_FILE_KEY = "reatmetric.remoting.connector.config"; // Absolute location of the configuration file, to configure the registry
 
     private final List<IReatmetricSystem> systems = new ArrayList<>();
 
