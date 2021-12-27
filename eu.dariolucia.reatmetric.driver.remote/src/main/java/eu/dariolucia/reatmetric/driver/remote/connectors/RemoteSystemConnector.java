@@ -65,6 +65,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
     }
 
     public RemoteSystemConnector(RemoteDriver remoteDriver, RemoteConfiguration configuration) {
+        super(configuration.getName() + " connector", "Connector to remote ReatMetric system " + configuration.getName());
         this.driver = remoteDriver;
         this.configuration = configuration;
     }

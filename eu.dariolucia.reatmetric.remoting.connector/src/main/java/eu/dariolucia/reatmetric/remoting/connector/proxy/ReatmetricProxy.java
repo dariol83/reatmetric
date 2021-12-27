@@ -76,7 +76,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
         // Perform look up, assume system is already initialised
         Registry reg = LocateRegistry.getRegistry(connector.getHost(), connector.getPort());
         try {
-            this.delegate = (IReatmetricSystem) reg.lookup(connector.getName());
+            this.delegate = (IReatmetricSystem) reg.lookup(connector.getRemoteName());
         } catch (NotBoundException e) {
             throw new ReatmetricException(e);
         }
@@ -150,8 +150,8 @@ public class ReatmetricProxy implements IReatmetricSystem {
 
     @Override
     public String getName() {
-        // Never retrieved from the remote system, use the configuration name, as it must match the remote system name
-        return connector.getName();
+        // Never retrieved from the remote system, use the configuration local name
+        return connector.getLocalName();
     }
 
     @Override

@@ -27,15 +27,22 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ReatmetricConnectorRegistry implements IReatmetricRegister {
 
+    private static final Logger LOG = Logger.getLogger(ReatmetricConnectorRegistry.class.getName());
     public static final String INIT_FILE_KEY = "reatmetric.remoting.connector.config"; // Absolute location of the configuration file, to configure the registry
 
     private final List<IReatmetricSystem> systems = new ArrayList<>();
 
     public ReatmetricConnectorRegistry() throws FileNotFoundException, JAXBException {
         String filePath = System.getProperty(INIT_FILE_KEY);
+        if(filePath == null) {
+            LOG.log(Level.WARNING, "Remoting connector configuration property " + INIT_FILE_KEY + " not set, no remote systems configured");
+            return;
+        }
         RemotingConnectorConfiguration conf = RemotingConnectorConfiguration.load(new FileInputStream(filePath));
         // Now create a proxy object for each system
         for(ConnectorConfiguration cc : conf.getConnectors()) {

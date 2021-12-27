@@ -15,5 +15,5 @@
   -->
 
 <ns1:connectors xmlns:ns1="http://dariolucia.eu/reatmetric/remoting/connector/configuration">
-	<connector name="Remote Test System" host="127.0.0.1" port="6002" />
+	<connector local-name="Remote Test System" remote-name="Test System" host="127.0.0.1" port="6002" />
 </ns1:connectors>

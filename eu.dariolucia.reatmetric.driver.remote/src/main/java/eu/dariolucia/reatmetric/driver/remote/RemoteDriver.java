@@ -17,7 +17,6 @@
 
 package eu.dariolucia.reatmetric.driver.remote;
 
-import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
@@ -25,7 +24,6 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
@@ -38,14 +36,9 @@ import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.remote.connectors.RemoteSystemConnector;
 import eu.dariolucia.reatmetric.driver.remote.definition.RemoteConfiguration;
-import eu.dariolucia.reatmetric.remoting.connector.ReatmetricConnectorRegistry;
 
-import javax.xml.bind.JAXBException;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.rmi.RemoteException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -95,7 +88,7 @@ public class RemoteDriver implements IDriver {
             // Create connector
             this.remoteSystemConnector = new RemoteSystemConnector(this, this.configuration);
             // Start the connector
-
+            this.remoteSystemConnector.prepare();
             // Inform that everything is fine
             this.driverStatus = SystemStatus.NOMINAL;
             subscriber.driverStatusUpdate(this.name, this.driverStatus);

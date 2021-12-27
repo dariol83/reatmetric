@@ -23,8 +23,11 @@ import javax.xml.bind.annotation.XmlAttribute;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ConnectorConfiguration {
 
-    @XmlAttribute(name = "name", required = true)
-    private String name;
+    @XmlAttribute(name = "remote-name", required = true)
+    private String remoteName;
+
+    @XmlAttribute(name = "local-name", required = true)
+    private String localName;
 
     @XmlAttribute(name = "host", required = true)
     private String host;
@@ -35,12 +38,21 @@ public class ConnectorConfiguration {
     public ConnectorConfiguration() {
     }
 
-    public String getName() {
-        return name;
+    public String getLocalName() {
+        return localName;
     }
 
-    public ConnectorConfiguration setName(String name) {
-        this.name = name;
+    public ConnectorConfiguration setLocalName(String localName) {
+        this.localName = localName;
+        return this;
+    }
+
+    public String getRemoteName() {
+        return remoteName;
+    }
+
+    public ConnectorConfiguration setRemoteName(String name) {
+        this.remoteName = name;
         return this;
     }
 

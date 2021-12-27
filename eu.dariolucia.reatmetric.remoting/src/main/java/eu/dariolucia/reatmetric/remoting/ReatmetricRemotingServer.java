@@ -42,13 +42,18 @@ public class ReatmetricRemotingServer {
     private static final List<ReatmetricSystemRemoting> REMOTED_SYSTEMS = new CopyOnWriteArrayList<>();
 
     public static void main(String[] args) throws RemoteException {
-        if(args.length != 1) {
-            System.err.println("Usage: ReatmetricRemotingServer <port>");
+        if(args.length < 1 || args.length > 2) {
+            System.err.println("Usage: ReatmetricRemotingServer <port> [system name]");
             System.exit(1);
         }
         int port = Integer.parseInt(args[0]);
-
-        LOG.info("ReatMetric Remoting Server launched, creating registry on port " + port);
+        String message = "ReatMetric Remoting Server launched, creating registry on port " + port;
+        String systemName = null;
+        if(args.length == 2) {
+            systemName = args[1];
+            message += " for system " + systemName;
+        }
+        LOG.info(message);
         Registry registry = LocateRegistry.createRegistry(port);
 
         LOG.info("Loading systems...");
@@ -62,12 +67,16 @@ public class ReatmetricRemotingServer {
                     String system = null;
                     try {
                         system = cp.getName();
-                        LOG.info("Loading system " + system);
-                        cp.initialise(ReatmetricRemotingServer::logSystemStatus);
-                        ReatmetricSystemRemoting remoting = new ReatmetricSystemRemoting(registry, system, cp);
-                        remoting.activate();
-                        REMOTED_SYSTEMS.add(remoting);
-                        LOG.info("System " + system + " registered");
+                        if(systemName == null || systemName.equals(system)) {
+                            LOG.info("Loading system " + system);
+                            cp.initialise(ReatmetricRemotingServer::logSystemStatus);
+                            ReatmetricSystemRemoting remoting = new ReatmetricSystemRemoting(registry, system, cp);
+                            remoting.activate();
+                            REMOTED_SYSTEMS.add(remoting);
+                            LOG.info("System " + system + " registered");
+                        } else {
+                            LOG.info("System " + system + " ignored");
+                        }
                     } catch (ReatmetricException | AlreadyBoundException | RemoteException e) {
                         LOG.log(Level.SEVERE, "Cannot load system " + system + " from registry " + reg + ": " + e.getMessage(), e);
                     }

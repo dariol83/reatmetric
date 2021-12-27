@@ -71,5 +71,10 @@
             <artifactId>eu.dariolucia.reatmetric.remoting</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.remote</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
 </project>

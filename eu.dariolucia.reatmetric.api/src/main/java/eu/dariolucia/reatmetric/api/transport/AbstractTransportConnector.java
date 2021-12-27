@@ -57,7 +57,7 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
         setCharacteristics(name, description);
     }
 
-    protected AbstractTransportConnector() {
+    private AbstractTransportConnector() {
         this.bitrateTimer = new Timer(name + " Bitrate Timer", true);
         this.bitrateTimer.schedule(new TimerTask() {
             @Override
