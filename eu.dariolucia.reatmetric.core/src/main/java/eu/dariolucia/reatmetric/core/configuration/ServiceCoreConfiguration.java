@@ -40,7 +40,9 @@ public class ServiceCoreConfiguration {
             configuration.setArchiveLocation(configuration.getArchiveLocation().replace(HOME_VAR, HOME_DIR));
         }
         configuration.setDefinitionsLocation(configuration.getDefinitionsLocation().replace(HOME_VAR, HOME_DIR));
-        configuration.setLogPropertyFile(configuration.getLogPropertyFile().replace(HOME_VAR, HOME_DIR));
+        if(configuration.getLogPropertyFile() != null) {
+            configuration.setLogPropertyFile(configuration.getLogPropertyFile().replace(HOME_VAR, HOME_DIR));
+        }
         if(configuration.getSchedulerConfiguration() != null) {
             configuration.setSchedulerConfiguration(configuration.getSchedulerConfiguration().replace(HOME_VAR, HOME_DIR));
         }
