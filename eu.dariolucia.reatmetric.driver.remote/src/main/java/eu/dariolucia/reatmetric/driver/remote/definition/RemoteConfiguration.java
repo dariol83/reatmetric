@@ -19,12 +19,11 @@ package eu.dariolucia.reatmetric.driver.remote.definition;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 @XmlRootElement(name = "remote", namespace = "http://dariolucia.eu/reatmetric/driver/remote")
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -46,6 +45,9 @@ public class RemoteConfiguration {
     @XmlAttribute(name = "local-path-prefix", required = true)
     private String localPathPrefix;
 
+    @XmlAttribute(name = "route", required = true)
+    private String route;
+
     public String getName() {
         return name;
     }
@@ -60,5 +62,13 @@ public class RemoteConfiguration {
 
     public void setLocalPathPrefix(String localPathPrefix) {
         this.localPathPrefix = localPathPrefix;
+    }
+
+    public String getRoute() {
+        return route;
+    }
+
+    public void setRoute(String route) {
+        this.route = route;
     }
 }

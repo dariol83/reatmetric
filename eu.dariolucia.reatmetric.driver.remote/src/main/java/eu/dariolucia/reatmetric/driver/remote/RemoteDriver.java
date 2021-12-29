@@ -17,17 +17,22 @@
 
 package eu.dariolucia.reatmetric.driver.remote;
 
+import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
+import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.core.api.IDriver;
 import eu.dariolucia.reatmetric.core.api.IDriverListener;
 import eu.dariolucia.reatmetric.core.api.IRawDataRenderer;
@@ -39,16 +44,14 @@ import eu.dariolucia.reatmetric.driver.remote.definition.RemoteConfiguration;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  *
  */
-public class RemoteDriver implements IDriver {
+public class RemoteDriver implements IDriver, IActivityHandler {
 
     private static final Logger LOG = Logger.getLogger(RemoteDriver.class.getName());
 
@@ -59,6 +62,10 @@ public class RemoteDriver implements IDriver {
     private IServiceCoreContext context;
     private IDriverListener driverSubscriber;
     private SystemStatus driverStatus;
+
+    // For activity handling
+    private IProcessingModel model;
+    private List<String> supportedActivityTypes;
 
     // Driver specific properties
     private RemoteConfiguration configuration;
@@ -111,7 +118,7 @@ public class RemoteDriver implements IDriver {
 
     @Override
     public List<IActivityHandler> getActivityHandlers() {
-        return Collections.emptyList();
+        return Collections.singletonList(this);
     }
 
     @Override
@@ -128,6 +135,10 @@ public class RemoteDriver implements IDriver {
     public List<DebugInformation> currentDebugInfo() {
         return Collections.emptyList();
     }
+
+    // --------------------------------------------------------------------
+    // Internal methods
+    // --------------------------------------------------------------------
 
     public List<Integer> getLocalParameters() {
         return visitFor(SystemEntityType.PARAMETER);
@@ -188,5 +199,92 @@ public class RemoteDriver implements IDriver {
         } catch (ProcessingModelException e) {
             LOG.log(Level.SEVERE, "Error when mirroring processing data from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
         }
+    }
+
+    // --------------------------------------------------------------------
+    // IActivityHandler methods
+    // --------------------------------------------------------------------
+
+    @Override
+    public void registerModel(IProcessingModel model) {
+        this.model = model;
+    }
+
+    @Override
+    public void deregisterModel(IProcessingModel model) {
+        this.model = null;
+    }
+
+    @Override
+    public List<String> getSupportedRoutes() {
+        return Collections.singletonList(configuration.getRoute());
+    }
+
+    @Override
+    public List<String> getSupportedActivityTypes() {
+        if(this.supportedActivityTypes == null) {
+            retrieveSupportedActivityTypes();
+        }
+        return this.supportedActivityTypes;
+    }
+
+    private void retrieveSupportedActivityTypes() {
+        Set<String> toReturn = new TreeSet<>();
+        String prefix = this.configuration.getLocalPathPrefix();
+        // Visit the model for type
+        model.visit(new IProcessingModelVisitor() {
+            @Override
+            public boolean shouldDescend(SystemEntity path) {
+                return path.getPath().asString().startsWith(prefix) || prefix.startsWith(path.getPath().asString());
+            }
+
+            @Override
+            public void startVisit(SystemEntity path) {
+                if(path.getType() == SystemEntityType.ACTIVITY && path.getPath().asString().startsWith(prefix)) {
+                    // Get descriptor
+                    ActivityDescriptor ad = null;
+                    try {
+                        ad = (ActivityDescriptor) model.getDescriptorOf(path.getExternalId());
+                        toReturn.add(ad.getActivityType());
+                    } catch (ProcessingModelException e) {
+                        LOG.log(Level.WARNING, "Cannot retrieve activity descriptor of entity " + path.getExternalId() + ": " + e.getMessage(), e);
+                    }
+                }
+            }
+
+            @Override
+            public void onVisit(AbstractDataItem item) {
+                // Nothing
+            }
+
+            @Override
+            public void endVisit(SystemEntity path) {
+                // Nothing
+            }
+        });
+        // Done
+        this.supportedActivityTypes = List.copyOf(new ArrayList<>(toReturn));
+    }
+
+    @Override
+    public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        // TODO - If invocation is for an activity of the managed subtree, forward and report remote activity occurrence id,
+        //  as result, and complete this invocation. Else exception.
+        // TODO - Post-execution verification and timeouts to be ignored in the local processing model.
+    }
+
+    @Override
+    public boolean getRouteAvailability(String route) throws ActivityHandlingException {
+        if(!route.equals(this.configuration.getRoute())) {
+            return false;
+        } else {
+            return this.remoteSystemConnector.getConnectionStatus() == TransportConnectionStatus.OPEN;
+        }
+    }
+
+    @Override
+    public void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException {
+        // TODO - If activityId is for an activity of the managed subtree, then fetch current (local) activity state,
+        //  retrieve the remote activity id (result) and, if present, forward the abort request.
     }
 }
