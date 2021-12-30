@@ -35,4 +35,5 @@ public interface IServiceCoreContext {
 
     IOperationalMessageBroker getOperationalMessageBroker();
 
+    String getSystemName();
 }

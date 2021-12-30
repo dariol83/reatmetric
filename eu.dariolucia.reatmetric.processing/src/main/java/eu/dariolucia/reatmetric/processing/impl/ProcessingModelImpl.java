@@ -94,7 +94,8 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private final WorkingSet workingSet = new WorkingSet();
 
-    private final Map<String, IActivityHandler> activityHandlers = new ConcurrentHashMap<>();
+    private final List<IActivityHandler> activityHandlersList = new CopyOnWriteArrayList<>();
+    private final Map<String, IActivityHandler> route2activityHandler = new ConcurrentHashMap<>();
 
     private final Consumer<List<AbstractDataItem>> outputRedirector;
 
@@ -327,7 +328,13 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     public IActivityHandler checkHandlerAvailability(String route, String type) throws ProcessingModelException {
         // Check if the route exist
-        IActivityHandler handler = activityHandlers.get(route);
+        IActivityHandler handler = route2activityHandler.get(route);
+        if(handler == null) {
+            // Maybe it is a dynamic route, let's update the map
+            refreshActivityRouteMap();
+            // Try again
+            handler = route2activityHandler.get(route);
+        }
         if(handler == null) {
             throw new ProcessingModelException("Cannot find activity handler for route " + route);
         }
@@ -335,6 +342,18 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
             throw new ProcessingModelException("The selected activity handler does not support processing of activity type " + type);
         }
         return handler;
+    }
+
+    private void refreshActivityRouteMap() {
+        for(IActivityHandler h : this.activityHandlersList) {
+            List<String> routes = h.getSupportedRoutes();
+            for(String route : routes) {
+                // Let's update the map, in case of dynamically added routes
+                if(!this.route2activityHandler.containsKey(route)) {
+                    this.route2activityHandler.put(route, h);
+                }
+            }
+        }
     }
 
     public void registerActiveActivityProcessor(ActivityProcessor ap) {
@@ -503,20 +522,23 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void registerActivityHandler(IActivityHandler handler) throws ProcessingModelException {
+        this.activityHandlersList.add(handler);
         for(String route : handler.getSupportedRoutes()) {
-            if(this.activityHandlers.containsKey(route)) {
-                throw new ProcessingModelException("Duplicated route: " + route + " is supported by handler " + handler + " but also by handler " + this.activityHandlers.get(route));
+            if(this.route2activityHandler.containsKey(route)) {
+                throw new ProcessingModelException("Duplicated route: " + route + " is supported by handler " + handler + " but also by handler " + this.route2activityHandler.get(route));
             }
-            this.activityHandlers.put(route, handler);
+            this.route2activityHandler.put(route, handler);
         }
         handler.registerModel(this);
     }
 
     @Override
     public void deregisterActivityHandler(IActivityHandler handler) {
+        handler.deregisterModel(this);
         for(String route : handler.getSupportedRoutes()) {
-            this.activityHandlers.remove(route);
+            this.route2activityHandler.remove(route);
         }
+        this.activityHandlersList.remove(handler);
     }
 
     @Override
@@ -527,12 +549,16 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     @Override
     public List<ActivityRouteState> getRouteAvailability(String type) {
         List<ActivityRouteState> states = new LinkedList<>();
-        for(IActivityHandler h : this.activityHandlers.values()) {
+        for(IActivityHandler h : this.activityHandlersList) {
             if(type != null && !h.getSupportedActivityTypes().contains(type)) {
                 continue;
             }
             List<String> routes = h.getSupportedRoutes();
             for(String route : routes) {
+                // Let's update the map, in case of dynamically added routes
+                if(!this.route2activityHandler.containsKey(route)) {
+                    this.route2activityHandler.put(route, h);
+                }
                 boolean available;
                 try {
                     available = h.getRouteAvailability(route);

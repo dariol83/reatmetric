@@ -17,22 +17,22 @@
 
 package eu.dariolucia.reatmetric.driver.remote;
 
-import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
-import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
-import eu.dariolucia.reatmetric.api.common.DebugInformation;
-import eu.dariolucia.reatmetric.api.common.IUniqueId;
-import eu.dariolucia.reatmetric.api.common.SystemStatus;
+import eu.dariolucia.reatmetric.api.activity.*;
+import eu.dariolucia.reatmetric.api.common.*;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
+import eu.dariolucia.reatmetric.api.processing.input.*;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
+import eu.dariolucia.reatmetric.api.value.Array;
 import eu.dariolucia.reatmetric.core.api.IDriver;
 import eu.dariolucia.reatmetric.core.api.IDriverListener;
 import eu.dariolucia.reatmetric.core.api.IRawDataRenderer;
@@ -44,7 +44,10 @@ import eu.dariolucia.reatmetric.driver.remote.definition.RemoteConfiguration;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -57,15 +60,18 @@ public class RemoteDriver implements IDriver, IActivityHandler {
 
     public static final String CONFIGURATION_FILE = "configuration.xml";
 
+    public static final String TRANSMISSION_STAGE = "Transmission";
+
     // Driver generic properties
     private String name;
     private IServiceCoreContext context;
-    private IDriverListener driverSubscriber;
     private SystemStatus driverStatus;
 
     // For activity handling
     private IProcessingModel model;
-    private List<String> supportedActivityTypes;
+    private List<String> supportedActivityTypes; // From the definitions
+    private final Set<String> supportedRoutes = new LinkedHashSet<>(); // From the remote system
+    private ExecutorService activityExecutor;
 
     // Driver specific properties
     private RemoteConfiguration configuration;
@@ -86,9 +92,6 @@ public class RemoteDriver implements IDriver, IActivityHandler {
         this.name = name;
         this.context = context;
         this.driverStatus = SystemStatus.NOMINAL;
-        this.driverSubscriber = subscriber;
-        // Create the protocol manager
-
         try {
             // Read the configuration
             this.configuration = RemoteConfiguration.load(new FileInputStream(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE));
@@ -96,6 +99,12 @@ public class RemoteDriver implements IDriver, IActivityHandler {
             this.remoteSystemConnector = new RemoteSystemConnector(this, this.configuration);
             // Start the connector
             this.remoteSystemConnector.prepare();
+            // Start the thread to handle activity execution requests on the remote system
+            this.activityExecutor = Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "Remote System " + this.configuration.getName() + " - Activity Handler Thread");
+                t.setDaemon(true);
+                return t;
+            });
             // Inform that everything is fine
             this.driverStatus = SystemStatus.NOMINAL;
             subscriber.driverStatusUpdate(this.name, this.driverStatus);
@@ -129,6 +138,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
     @Override
     public void dispose() {
         this.remoteSystemConnector.dispose();
+        this.activityExecutor.shutdown();
     }
 
     @Override
@@ -154,7 +164,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
 
     private List<Integer> visitFor(SystemEntityType type) {
         List<Integer> toReturn = new LinkedList<>();
-        String prefix = this.configuration.getLocalPathPrefix();
+        String prefix = this.configuration.getRemotePathSelector();
         // Visit the model for type
         this.context.getProcessingModel().visit(new IProcessingModelVisitor() {
             @Override
@@ -217,7 +227,11 @@ public class RemoteDriver implements IDriver, IActivityHandler {
 
     @Override
     public List<String> getSupportedRoutes() {
-        return Collections.singletonList(configuration.getRoute());
+        // With the approach below, as soon as the routes are present (even if new routes)
+        // they will be added to the set and always checked for availability
+        List<String> routes = this.remoteSystemConnector.retrieveRemoteRoutes();
+        this.supportedRoutes.addAll(routes);
+        return new ArrayList<>(this.supportedRoutes);
     }
 
     @Override
@@ -230,7 +244,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
 
     private void retrieveSupportedActivityTypes() {
         Set<String> toReturn = new TreeSet<>();
-        String prefix = this.configuration.getLocalPathPrefix();
+        String prefix = this.configuration.getRemotePathSelector();
         // Visit the model for type
         model.visit(new IProcessingModelVisitor() {
             @Override
@@ -242,7 +256,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
             public void startVisit(SystemEntity path) {
                 if(path.getType() == SystemEntityType.ACTIVITY && path.getPath().asString().startsWith(prefix)) {
                     // Get descriptor
-                    ActivityDescriptor ad = null;
+                    ActivityDescriptor ad;
                     try {
                         ad = (ActivityDescriptor) model.getDescriptorOf(path.getExternalId());
                         toReturn.add(ad.getActivityType());
@@ -268,17 +282,151 @@ public class RemoteDriver implements IDriver, IActivityHandler {
 
     @Override
     public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
-        // TODO - If invocation is for an activity of the managed subtree, forward and report remote activity occurrence id,
-        //  as result, and complete this invocation. Else exception.
-        // TODO - Post-execution verification and timeouts to be ignored in the local processing model.
+        // TODO - Post-execution verification and timeouts to be ignored in the local processing model for mirrored activities.
+        // TODO - For mirrored activities, difference between locally invoked and remotely announced.
+        if(this.activityExecutor.isShutdown()) {
+            throw new ActivityHandlingException(this.name + " driver disposed");
+        }
+        if(!isInManagedSubtree(activityInvocation)) {
+            throw new ActivityHandlingException("Activity " + activityInvocation.getPath() + " is not part of remote system " + configuration.getName());
+        }
+        if(this.remoteSystemConnector.getConnectionStatus() != TransportConnectionStatus.OPEN) {
+            throw new ActivityHandlingException("Remote system " + configuration.getName() + " is not connected");
+        }
+        if(!this.remoteSystemConnector.isRemoteRouteAvailable(activityInvocation.getRoute())) {
+            throw new ActivityHandlingException("Route " + activityInvocation.getRoute() + " on remote system " + configuration.getName() + " is not available");
+        }
+        ActivityRequest request = deriveActivityRequest(activityInvocation);
+        // At this stage, all checks are completed, go for it
+        this.activityExecutor.execute(() -> executeRemoteActivity(activityInvocation, request));
+    }
+
+    private void executeRemoteActivity(ActivityInvocation localInvocation, ActivityRequest mappedRequest) {
+        // If invocation is for an activity of the managed subtree, forward and report remote activity occurrence id,
+        // as result, and complete this invocation. Else exception.
+        try {
+            synchronized (this) {
+                // Record verification
+                announce(localInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION, null);
+                // Transmission
+                IUniqueId remoteActivityOccurrenceId = remoteSystemConnector.invokeRemoteActivity(mappedRequest);
+                // No exception means that the activity transmission is done and the activity is on the remote system now, this occurrence is over and the
+                // processing model can transition it to complete stage
+                announce(localInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.VERIFICATION, remoteActivityOccurrenceId.asLong());
+            }
+        } catch(Exception e) {
+            LOG.log(Level.SEVERE, "Transmission of activity " + localInvocation.getActivityOccurrenceId() + " failed: " + e.getMessage(), e);
+            announce(localInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION, null);
+        }
+    }
+
+    private ActivityRequest deriveActivityRequest(ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        String remotePathToUse = activityInvocation.getPath().asString();
+        if(!remotePathToUse.startsWith(configuration.getRemotePathPrefix())) {
+            throw new ActivityHandlingException("Remote activity path derivation failed: invoked activity path is " + activityInvocation.getPath().asString() + ", but remote path prefix is " + configuration.getRemotePathPrefix());
+        }
+        remotePathToUse = remotePathToUse.substring(configuration.getRemotePathPrefix().length());
+        ActivityRequest.Builder builder = ActivityRequest.newRequest(activityInvocation.getActivityId(), SystemEntityPath.fromString(remotePathToUse));
+        builder.withRoute(activityInvocation.getRoute());
+        builder.withSource(context.getSystemName() + " " + activityInvocation.getSource());
+        builder.withProperties(activityInvocation.getProperties());
+        // Map arguments
+        ActivityDescriptor activityDescriptor;
+        try {
+            activityDescriptor = (ActivityDescriptor) model.getDescriptorOf(activityInvocation.getActivityId());
+        } catch (ProcessingModelException | ClassCastException e) {
+            throw new ActivityHandlingException("Cannot retrieve activity " + activityInvocation.getActivityId() + " from processing model", e);
+        }
+        if(activityDescriptor == null) {
+            throw new ActivityHandlingException("Activity " + activityInvocation.getActivityId() + " not defined in the processing model");
+        }
+        List<AbstractActivityArgument> argMap = new LinkedList<>();
+        for(Map.Entry<String, Object> arg : activityInvocation.getArguments().entrySet()) {
+            // Remember: at this stage, all args are decalibrated
+            // Retrieve the argument descriptor
+            AbstractActivityArgumentDescriptor argDesc = getArgumentDescriptor(activityDescriptor, arg.getKey());
+            if(argDesc == null) {
+                throw new ActivityHandlingException("Provided argument " + arg.getKey() + " not found in the list of arguments for activity " + activityInvocation.getPath());
+            }
+            if(argDesc instanceof ActivityPlainArgumentDescriptor) {
+                argMap.add(new PlainActivityArgument(arg.getKey(), arg.getValue(), null, false));
+            } else if(argDesc instanceof ActivityArrayArgumentDescriptor) {
+                ActivityArrayArgumentDescriptor arrayDesc = (ActivityArrayArgumentDescriptor) argDesc;
+                // This means that the value is Array (eu.dariolucia.reatmetric.api)
+                Array arrayValue = (Array) arg.getValue();
+                // Map to value hierarchy
+                ArrayActivityArgument arrayArg = mapToArrayArgument(activityInvocation, arrayDesc, arrayValue);
+                argMap.add(arrayArg);
+            }
+        }
+        builder.withArguments(argMap);
+        return builder.build();
+    }
+
+    private ArrayActivityArgument mapToArrayArgument(ActivityInvocation invocation, ActivityArrayArgumentDescriptor arrayDesc, Array arrayValue) throws ActivityHandlingException {
+        List<ArrayActivityArgumentRecord> records = new ArrayList<>(arrayValue.getRecords().size());
+        for(Array.Record arrayValueRecord : arrayValue.getRecords()) {
+            List<AbstractActivityArgument> argMap = new LinkedList<>();
+            for(Pair<String, Object> arg : arrayValueRecord.getElements()) {
+                // Retrieve the argument descriptor
+                AbstractActivityArgumentDescriptor argDesc = getArrayArgumentDescriptor(arrayDesc, arg.getFirst());
+                if(argDesc == null) {
+                    throw new ActivityHandlingException("Provided array argument " + arg.getFirst() + " not found in the list of arguments for activity " + invocation.getPath());
+                }
+                if(argDesc instanceof ActivityPlainArgumentDescriptor) {
+                    argMap.add(new PlainActivityArgument(arg.getFirst(), arg.getSecond(), null, false));
+                } else if(argDesc instanceof ActivityArrayArgumentDescriptor) {
+                    ActivityArrayArgumentDescriptor arrayDesc2 = (ActivityArrayArgumentDescriptor) argDesc;
+                    // This means that the value is Array (eu.dariolucia.reatmetric.api)
+                    Array arrayValue2 = (Array) arg.getSecond();
+                    // Map to value hierarchy
+                    ArrayActivityArgument arrayArg = mapToArrayArgument(invocation, arrayDesc2, arrayValue2);
+                    argMap.add(arrayArg);
+                }
+            }
+            ArrayActivityArgumentRecord rec = new ArrayActivityArgumentRecord(argMap);
+            records.add(rec);
+        }
+        return new ArrayActivityArgument(arrayDesc.getName(), records);
+    }
+
+    private AbstractActivityArgumentDescriptor getArrayArgumentDescriptor(ActivityArrayArgumentDescriptor arrayDesc, String recordName) {
+        for(AbstractActivityArgumentDescriptor argDesc : arrayDesc.getElements()) {
+            if(argDesc.getName().equals(recordName)) {
+                return argDesc;
+            }
+        }
+        return null;
+    }
+
+    private AbstractActivityArgumentDescriptor getArgumentDescriptor(ActivityDescriptor activityDescriptor, String argumentName) {
+        for(AbstractActivityArgumentDescriptor argDesc : activityDescriptor.getArgumentDescriptors()) {
+            if(argDesc.getName().equals(argumentName)) {
+                return argDesc;
+            }
+        }
+        return null;
+    }
+
+    public synchronized void announce(IActivityHandler.ActivityInvocation invocation, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, Object result) {
+        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, null, reportState, occState, result));
+    }
+
+    private boolean isInManagedSubtree(ActivityInvocation activityInvocation) {
+        return activityInvocation.getPath().asString().startsWith(this.configuration.getRemotePathSelector());
     }
 
     @Override
-    public boolean getRouteAvailability(String route) throws ActivityHandlingException {
-        if(!route.equals(this.configuration.getRoute())) {
+    public boolean getRouteAvailability(String route) {
+        if(!this.supportedRoutes.contains(route)) {
+            // No route available
+            return false;
+        } else if (this.remoteSystemConnector.getConnectionStatus() == TransportConnectionStatus.OPEN) {
+            // No remote system available
             return false;
         } else {
-            return this.remoteSystemConnector.getConnectionStatus() == TransportConnectionStatus.OPEN;
+            // Route is remotely available
+            return this.remoteSystemConnector.isRemoteRouteAvailable(route);
         }
     }
 

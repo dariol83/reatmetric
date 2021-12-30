@@ -438,6 +438,11 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
     }
 
     @Override
+    public String getSystemName() {
+        return getName();
+    }
+
+    @Override
     public void driverStatusUpdate(String driverName, SystemStatus status) {
         deriveSystemStatus();
     }

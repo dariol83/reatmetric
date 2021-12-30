@@ -16,14 +16,14 @@
 
 package eu.dariolucia.reatmetric.driver.remote.definition;
 
+import eu.dariolucia.reatmetric.remoting.connector.configuration.ConnectorConfiguration;
+
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 @XmlRootElement(name = "remote", namespace = "http://dariolucia.eu/reatmetric/driver/remote")
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -39,14 +39,47 @@ public class RemoteConfiguration {
         }
     }
 
+    /**
+     * Name of the system, as registered in the remoting connector configuration
+     * as 'local-name'.
+     *
+     * @see ConnectorConfiguration#getLocalName()
+     */
     @XmlAttribute(name = "remote-system-name", required = true)
     private String name;
 
-    @XmlAttribute(name = "local-path-prefix", required = true)
-    private String localPathPrefix;
+    /**
+     * Prefix added to the remote definitions in the processing model.
+     * This property is needed to derive the system entity paths of the remote processing model,
+     * starting from the paths of the local processing model.
+     * <p>
+     *     For instance:
+     *     <ul>
+     *         <li>Remote path: systemA.deviceB.elementC.paramD</li>
+     *         <li>Local path: domainX.systemA.deviceB.elementC.paramD</li>
+     *         <li>Remote path prefix: domainX.</li>
+     *     </ul>
+     * </p>
+     */
+    @XmlAttribute(name = "remote-path-prefix")
+    private String remotePathPrefix = "";
 
-    @XmlAttribute(name = "route", required = true)
-    private String route;
+    /**
+     * Path indicating the (container) system entity (in the local processing model) that maps to
+     * the remote system's processing model (or part of it).
+     * This property is needed to allow the driver to subscribe to the relevant parameters and events
+     * defined in the local definitions.
+     * <p>
+     *     For instance:
+     *     <ul>
+     *         <li>Remote path: 'systemA' and all children</li>
+     *         <li>Local path: domainX.systemA...</li>
+     *         <li>Remote path selector: domainX.systemA</li>
+     *     </ul>
+     * </p>
+     */
+    @XmlAttribute(name = "remote-path-selector", required = true)
+    private String remotePathSelector;
 
     public String getName() {
         return name;
@@ -56,19 +89,20 @@ public class RemoteConfiguration {
         this.name = name;
     }
 
-    public String getLocalPathPrefix() {
-        return localPathPrefix;
+    public String getRemotePathSelector() {
+        return remotePathSelector;
     }
 
-    public void setLocalPathPrefix(String localPathPrefix) {
-        this.localPathPrefix = localPathPrefix;
+    public void setRemotePathSelector(String remotePathSelector) {
+        this.remotePathSelector = remotePathSelector;
     }
 
-    public String getRoute() {
-        return route;
+    public String getRemotePathPrefix() {
+        return remotePathPrefix;
     }
 
-    public void setRoute(String route) {
-        this.route = route;
+    public void setRemotePathPrefix(String remotePathPrefix) {
+        this.remotePathPrefix = remotePathPrefix;
     }
+
 }

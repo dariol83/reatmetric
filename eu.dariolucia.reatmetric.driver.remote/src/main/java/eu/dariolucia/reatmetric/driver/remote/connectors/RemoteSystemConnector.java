@@ -1,9 +1,8 @@
 package eu.dariolucia.reatmetric.driver.remote.connectors;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
-import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceDataFilter;
-import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataSubscriber;
+import eu.dariolucia.reatmetric.api.activity.*;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
@@ -15,9 +14,13 @@ import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.transport.AbstractTransportConnector;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
@@ -26,10 +29,12 @@ import eu.dariolucia.reatmetric.driver.remote.definition.RemoteConfiguration;
 import eu.dariolucia.reatmetric.remoting.connector.ReatmetricConnectorRegistry;
 
 import java.rmi.RemoteException;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class RemoteSystemConnector extends AbstractTransportConnector {
 
@@ -76,7 +81,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
     }
 
     @Override
-    protected void doConnect() {
+    protected synchronized void doConnect() {
         if(system != null) {
             // Do nothing
             return;
@@ -158,7 +163,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
     }
 
     @Override
-    protected void doDisconnect() {
+    protected synchronized void doDisconnect() {
         if(system == null) {
             // Do nothing
             return;
@@ -220,7 +225,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
     }
 
     @Override
-    protected void doDispose() {
+    protected synchronized void doDispose() {
         try {
             disconnect();
         } catch (TransportException e) {
@@ -230,7 +235,67 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
     }
 
     @Override
-    public void abort() throws TransportException, RemoteException {
+    public synchronized void abort() throws TransportException, RemoteException {
         disconnect();
+    }
+
+    /**
+     * Connect to the remote system and retrieve the remote available routes.
+     *
+     * @return the available routes
+     */
+    public List<String> retrieveRemoteRoutes() {
+        IReatmetricSystem s = getReatmetricSystem();
+        if(s != null) {
+            try {
+                List<ActivityRouteState> routes = s.getActivityExecutionService().getRouteAvailability();
+                return routes.stream().map(ActivityRouteState::getRoute).collect(Collectors.toList());
+            } catch (ReatmetricException | RemoteException e) {
+                LOG.log(Level.SEVERE, "Error when retrieving available routes from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+            }
+        }
+        // Cannot retrieve, no system, no routes
+        return Collections.emptyList();
+    }
+
+    private synchronized IReatmetricSystem getReatmetricSystem() {
+        return this.system;
+    }
+
+    /**
+     * Check if the specified route is available on the remote system.
+     *
+     * @param route the route to check
+     * @return true if the route is available, otherwise false
+     */
+    public boolean isRemoteRouteAvailable(String route) {
+        IReatmetricSystem s = getReatmetricSystem();
+        if(s != null) {
+            try {
+                List<ActivityRouteState> routes = s.getActivityExecutionService().getRouteAvailability();
+                for (ActivityRouteState r : routes) {
+                    if (r.getRoute().equals(route)) {
+                        return r.getAvailability() == ActivityRouteAvailability.AVAILABLE;
+                    }
+                }
+                return false;
+            } catch (ReatmetricException | RemoteException e) {
+                LOG.log(Level.SEVERE, "Error when retrieving available routes from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+            }
+        }
+        return false;
+    }
+
+    public IUniqueId invokeRemoteActivity(ActivityRequest request) throws ActivityHandlingException {
+        IReatmetricSystem s = getReatmetricSystem();
+        if(s != null) {
+            try {
+                return s.getActivityExecutionService().startActivity(request);
+            } catch (ReatmetricException | RemoteException e) {
+                throw new ActivityHandlingException("Forwarding of activity request (" + request.getId() + ") with path " + request.getPath() + " to remote system failed: " + e.getMessage(), e);
+            }
+        } else {
+            throw new ActivityHandlingException("Remote system " + configuration.getName() + " not available, remove activity invocation " + request.getPath() + " failed");
+        }
     }
 }

@@ -92,7 +92,11 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
     private volatile boolean useAdMode;
 
-    private final ExecutorService delegator = Executors.newFixedThreadPool(1);
+    private final ExecutorService delegator = Executors.newFixedThreadPool(1, r -> {
+        Thread t = new Thread(r, "TC Data Link Processor Handler Thread");
+        t.setDaemon(true);
+        return t;
+    });
 
     public TcDataLinkProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, List<ICltuConnector> cltuSenders, List<ITcFrameConnector> frameSenders) {
         this.configuration = configuration;

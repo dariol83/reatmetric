@@ -78,7 +78,7 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
     private final TcDataLinkProcessor tcDataLinkProcessor;
     private final Map<String, ITcPacketConnector> tcPacketConnectors;
     private final ExecutorService tcExecutor = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "Activity Handler Thread");
+        Thread t = new Thread(r, "TC Packet Processor Activity Handler Thread");
         t.setDaemon(true);
         return t;
     });
