@@ -79,7 +79,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     private final GraphModel graphModel;
 
     private final BlockingQueue<ProcessingTask> reportingUpdateTaskQueue = new ArrayBlockingQueue<>(REPORTING_TASK_CAPACITY);
-    private final BlockingQueue<ProcessingTask> activityUpdateTaskQueue = new ArrayBlockingQueue<>(COMMAND_TASK_CAPACITY);
+    private final ArrayBlockingQueue<ProcessingTask> activityUpdateTaskQueue = new ArrayBlockingQueue<>(COMMAND_TASK_CAPACITY * 2);
 
     private final ExecutorService taskProcessors = ThreadUtil.newThreadExecutor(Runtime.getRuntime().availableProcessors(), "Reatmetric Processing - Task Processor");
 
@@ -235,6 +235,12 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 this.workingSet.add(toProcess.getAffectedItems());
                 // Ready to be processed, submit the task
                 this.taskProcessors.submit(toProcess);
+                // If the queue is the command queue, notify for potential waiters
+                if (queue == this.activityUpdateTaskQueue) {
+                    synchronized (this.activityUpdateTaskQueue) {
+                        this.activityUpdateTaskQueue.notifyAll();
+                    }
+                }
             } catch(Exception e) {
                 LOG.log(Level.SEVERE, "Exception when dispatching processing tasks: " + e.getMessage(), e);
             }
@@ -250,20 +256,35 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations, int dispatchingQueue) {
+        return scheduleTask(operations, dispatchingQueue, false);
+    }
+
+    public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations, int dispatchingQueue, boolean internalRequest) {
         // Create the processing task
         ProcessingTask taskToRun = new ProcessingTask(new ProcessingTask.Job(operations, outputRedirector, workingSet));
         // Add the task to be done to the queue
         switch(dispatchingQueue) {
             case COMMAND_DISPATCHING_QUEUE:
                 // Blocking queue -> this blocking call can introduce a potential deadlock if the queue becomes full, the call is stuck and the
-                // call comes from the Processing Model internal classes.
-                // TODO: replace the queue with a unbounded queue with high watermark for calls that can be blocked, and
-                //  not respected by Processing Model internal calls
-                try {
-                    activityUpdateTaskQueue.put(taskToRun);
-                } catch (InterruptedException e) {
-                    Thread.interrupted();
-                    LOG.log(Level.FINE, "Thread interrupted while inserting element inside the activity update queue", e);
+                // call comes from the Processing Model internal classes. This is the reason why the internalRequest flag must be checked:
+                // if such flag is set to true, then the request must be honoured.
+                // The approach below reserves half of the queue size for mixed operations (internal/external) and the other half for
+                // internal operations only. Yes, it can still block, but only for internal operations (timers and propagations),
+                // which naturally decrease over time if no further activity operations can be requested, which is the case until
+                // the queue utilisation is > 50%. Total queue size is COMMAND_TASK_CAPACITY x 2.
+                synchronized (activityUpdateTaskQueue) {
+                    try {
+                        // Non-internal request might wait a bit
+                        while (!internalRequest && activityUpdateTaskQueue.remainingCapacity() < COMMAND_TASK_CAPACITY) {
+                            activityUpdateTaskQueue.wait();
+                        }
+                        // If I reach this point, I have some breathing space, so I should be able to add without risking to be blocked.
+                        // The sync block in fact prevents that to happen :)
+                        activityUpdateTaskQueue.put(taskToRun);
+                    } catch (InterruptedException e) {
+                        Thread.interrupted();
+                        LOG.log(Level.FINE, "Thread interrupted while inserting element inside the activity update queue", e);
+                    }
                 }
                 break;
             default:
@@ -565,7 +586,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                     states.add(new ActivityRouteState(route, available ? ActivityRouteAvailability.AVAILABLE : ActivityRouteAvailability.UNAVAILABLE));
                 } catch (ActivityHandlingException e) {
                     if(LOG.isLoggable(Level.FINE)) {
-                        LOG.log(Level.FINE, String.format("Retrieving status of route %s on handler %s raised an error: %s", route, h.toString(), e.getMessage()), e);
+                        LOG.log(Level.FINE, String.format("Retrieving status of route %s on handler %s raised an error: %s", route, h, e.getMessage()), e);
                     }
                     states.add(new ActivityRouteState(route, ActivityRouteAvailability.UNKNOWN));
                 }
