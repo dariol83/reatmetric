@@ -42,7 +42,6 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     private static final Logger LOG = Logger.getLogger(ActivityOccurrenceProcessor.class.getName());
 
     public static final String SELF_BINDING = "self";
-    public static final String MIRRORED_ACTIVITY_OCCURRENCE_ID_KEY = "mirrored_activity_occurrence_id";
 
     private final ActivityProcessor parent;
     private final IUniqueId occurrenceId;
@@ -74,7 +73,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         this.arguments = Map.copyOf(arguments != null ? arguments : Collections.emptyMap());
         Map<String, String> propMap = new LinkedHashMap<>(properties != null ? properties : Collections.emptyMap());
         if(mirroredOccurrenceId != null) {
-            propMap.put(MIRRORED_ACTIVITY_OCCURRENCE_ID_KEY, String.valueOf(mirroredOccurrenceId.asLong()));
+            propMap.put(ActivityOccurrenceData.MIRRORED_ACTIVITY_OCCURRENCE_ID_PROPERTY_KEY, String.valueOf(mirroredOccurrenceId.asLong()));
         }
         this.properties = Map.copyOf(propMap);
 
@@ -84,7 +83,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         // Set the final mirroredOccurrenceId variable: in this way, we handle also the case when the activity occurrence
         // is restored from the archive
         if(mirroredOccurrenceId == null) {
-            String mirroredIdProperty = this.properties.get(MIRRORED_ACTIVITY_OCCURRENCE_ID_KEY);
+            String mirroredIdProperty = this.properties.get(ActivityOccurrenceData.MIRRORED_ACTIVITY_OCCURRENCE_ID_PROPERTY_KEY);
             if(mirroredIdProperty != null && !mirroredIdProperty.isBlank()) {
                 IUniqueId parsed = null;
                 // Parse it here
@@ -240,6 +239,8 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
     }
 
     public List<AbstractDataItem> progress(ActivityProgress progress) {
+        // In order to understand what we have to do, we need to check if the activity is mirrored: if it is, no specific processing in terms
+        // of timers has to be performed.
         if (LOG.isLoggable(Level.FINER)) {
             LOG.finer("progress() - About to process progress of activity occurrence " + getOccurrenceId() + ": " + progress);
         }
@@ -251,9 +252,9 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
             return Collections.emptyList();
         }
         if (progress.getNextState() == ActivityOccurrenceState.COMPLETED) {
-            // Progress with COMPLETION as next state is not allowed
+            // Progress with COMPLETED as next state is not allowed
             if (LOG.isLoggable(Level.SEVERE)) {
-                LOG.severe(String.format("Reported progress for activity occurrence %s of activity %s has next state set to COMPLETION, which is not supported. Reported states can be up to VERIFICATION.", occurrenceId, parent.getPath()));
+                LOG.severe(String.format("Reported progress for activity occurrence %s of activity %s has next state set to COMPLETION, which is not supposed to be reported. Reported states can be up to VERIFICATION.", occurrenceId, parent.getPath()));
             }
             return Collections.emptyList();
         }
@@ -265,67 +266,72 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         ActivityOccurrenceState nextState = progress.getStatus() == ActivityReportState.FATAL ? ActivityOccurrenceState.COMPLETED : progress.getNextState();
         generateReport(progress.getName(), progress.getGenerationTime(), progress.getExecutionTime(), progress.getState(), progress.getStatus(), progress.getResult(), nextState);
 
-        // Enable timeout, if the situation is appropriate
-        if (previousState != ActivityOccurrenceState.TRANSMISSION && currentState == ActivityOccurrenceState.TRANSMISSION) {
-            // If progress triggers the transition to TRANSMISSION, start the TRANSMISSION timeout if specified
-            if (parent.getDefinition().getTransmissionTimeout() > 0) {
-                startTimeout(ActivityOccurrenceState.TRANSMISSION, parent.getDefinition().getTransmissionTimeout());
-            }
-        } else if (previousState != ActivityOccurrenceState.SCHEDULING && currentState == ActivityOccurrenceState.SCHEDULING) {
-            // Stop transmission timeout
-            stopTimeout(ActivityOccurrenceState.TRANSMISSION);
-        } else if (previousState != ActivityOccurrenceState.EXECUTION && currentState == ActivityOccurrenceState.EXECUTION) {
-            // Stop transmission timeout
-            stopTimeout(ActivityOccurrenceState.TRANSMISSION);
-            // If progress triggers the transition to EXECUTION, start the EXECUTION timeout if specified
-            if (parent.getDefinition().getExecutionTimeout() > 0) {
-                startTimeout(ActivityOccurrenceState.EXECUTION, parent.getDefinition().getExecutionTimeout());
-            }
-        } else if (previousState != ActivityOccurrenceState.VERIFICATION && currentState == ActivityOccurrenceState.VERIFICATION) {
-            // Stop execution timeout
-            stopTimeout(ActivityOccurrenceState.EXECUTION);
-            // If progress triggers the transition to VERIFICATION, start the VERIFICATION timeout if specified and if an expression is defined
-            if (parent.getDefinition().getVerification() != null && parent.getDefinition().getVerificationTimeout() > 0) {
-                startTimeout(ActivityOccurrenceState.VERIFICATION, parent.getDefinition().getVerificationTimeout());
-            }
-            // If an expression is specified, run the expression now as verification (if in the correct state)
-            if (parent.getDefinition().getVerification() != null) {
-                try {
-                    Boolean verificationResult = (Boolean) parent.getDefinition().getVerification().execute(parent.processor, Map.of(SELF_BINDING, this), ValueTypeEnum.BOOLEAN);
-                    if (verificationResult) {
-                        if (LOG.isLoggable(Level.INFO)) {
-                            LOG.log(Level.INFO, String.format("Verification of activity occurrence %s of activity %s completed", occurrenceId, parent.getPath()));
+        // Timers and activity post-execution verification performed only for non-mirrored activities
+        if(!parent.getDefinition().isMirrored()) {
+            // Enable timeout, if the situation is appropriate
+            if (previousState != ActivityOccurrenceState.TRANSMISSION && currentState == ActivityOccurrenceState.TRANSMISSION) {
+                // If progress triggers the transition to TRANSMISSION, start the TRANSMISSION timeout if specified
+                if (parent.getDefinition().getTransmissionTimeout() > 0) {
+                    startTimeout(ActivityOccurrenceState.TRANSMISSION, parent.getDefinition().getTransmissionTimeout());
+                }
+            } else if (previousState != ActivityOccurrenceState.SCHEDULING && currentState == ActivityOccurrenceState.SCHEDULING) {
+                // Stop transmission timeout
+                stopTimeout(ActivityOccurrenceState.TRANSMISSION);
+            } else if (previousState != ActivityOccurrenceState.EXECUTION && currentState == ActivityOccurrenceState.EXECUTION) {
+                // Stop transmission timeout
+                stopTimeout(ActivityOccurrenceState.TRANSMISSION);
+                // If progress triggers the transition to EXECUTION, start the EXECUTION timeout if specified
+                if (parent.getDefinition().getExecutionTimeout() > 0) {
+                    startTimeout(ActivityOccurrenceState.EXECUTION, parent.getDefinition().getExecutionTimeout());
+                }
+            } else if (previousState != ActivityOccurrenceState.VERIFICATION && currentState == ActivityOccurrenceState.VERIFICATION) {
+                // Stop execution timeout
+                stopTimeout(ActivityOccurrenceState.EXECUTION);
+                // If progress triggers the transition to VERIFICATION, start the VERIFICATION timeout if specified and if an expression is defined
+                if (parent.getDefinition().getVerification() != null && parent.getDefinition().getVerificationTimeout() > 0) {
+                    startTimeout(ActivityOccurrenceState.VERIFICATION, parent.getDefinition().getVerificationTimeout());
+                }
+                // If an expression is specified, run the expression now as verification (if in the correct state)
+                if (parent.getDefinition().getVerification() != null) {
+                    try {
+                        Boolean verificationResult = (Boolean) parent.getDefinition().getVerification().execute(parent.processor, Map.of(SELF_BINDING, this), ValueTypeEnum.BOOLEAN);
+                        if (verificationResult) {
+                            if (LOG.isLoggable(Level.INFO)) {
+                                LOG.log(Level.INFO, String.format("Verification of activity occurrence %s of activity %s completed", occurrenceId, parent.getPath()));
+                            }
+                            // Activity occurrence confirmed by parameter data, add report with OK state and move state to COMPLETION
+                            generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETED);
+                        } else if (parent.getDefinition().getVerificationTimeout() == 0) {
+                            if (LOG.isLoggable(Level.WARNING)) {
+                                LOG.log(Level.WARNING, String.format("Verification of activity occurrence %s of activity %s failed", occurrenceId, parent.getPath()));
+                            }
+                            // No timeout, so derive the final state now
+                            generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.FAIL, null, ActivityOccurrenceState.COMPLETED);
+                        } else {
+                            if (LOG.isLoggable(Level.FINE)) {
+                                LOG.log(Level.FINE, String.format("Verification of activity occurrence %s of activity %s pending", occurrenceId, parent.getPath()));
+                            }
+                            // Expression not OK but there is a timeout, announce the PENDING
+                            generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.PENDING, null, ActivityOccurrenceState.VERIFICATION);
                         }
-                        // Activity occurrence confirmed by parameter data, add report with OK state and move state to COMPLETION
-                        generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETED);
-                    } else if (parent.getDefinition().getVerificationTimeout() == 0) {
-                        if (LOG.isLoggable(Level.WARNING)) {
-                            LOG.log(Level.WARNING, String.format("Verification of activity occurrence %s of activity %s failed", occurrenceId, parent.getPath()));
-                        }
-                        // No timeout, so derive the final state now
-                        generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.FAIL, null, ActivityOccurrenceState.COMPLETED);
-                    } else {
-                        if (LOG.isLoggable(Level.FINE)) {
-                            LOG.log(Level.FINE, String.format("Verification of activity occurrence %s of activity %s pending", occurrenceId, parent.getPath()));
-                        }
-                        // Expression not OK but there is a timeout, announce the PENDING
-                        generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.PENDING, null, ActivityOccurrenceState.VERIFICATION);
+                    } catch (ScriptException | ClassCastException e) {
+                        // Expression has a radical error
+                        LOG.log(Level.SEVERE, String.format("Error while evaluating verification expression of activity occurrence %s of activity %s: %s", occurrenceId, parent.getPath(), e.getMessage()), e);
+                        generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.ERROR, null, ActivityOccurrenceState.COMPLETED);
                     }
-                } catch (ScriptException | ClassCastException e) {
-                    // Expression has a radical error
-                    LOG.log(Level.SEVERE, String.format("Error while evaluating verification expression of activity occurrence %s of activity %s: %s", occurrenceId, parent.getPath(), e.getMessage()), e);
-                    generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.ERROR, null, ActivityOccurrenceState.COMPLETED);
+                } else {
+                    if (LOG.isLoggable(Level.FINE)) {
+                        LOG.log(Level.FINE, String.format("Verification of activity occurrence %s of activity %s completed: no expression defined", occurrenceId, parent.getPath()));
+                    }
+                    // If no expression is defined, move currentState to COMPLETION
+                    generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETED);
                 }
-            } else {
-                if (LOG.isLoggable(Level.FINE)) {
-                    LOG.log(Level.FINE, String.format("Verification of activity occurrence %s of activity %s completed: no expression defined", occurrenceId, parent.getPath()));
-                }
-                // If no expression is defined, move currentState to COMPLETION
-                generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETED);
             }
-        }
-        // Verify timeout completions: this can generate an additional ActivityOccurrenceData object
-        verifyTimeout();
+            // Verify timeout completions: this can generate an additional ActivityOccurrenceData object
+            verifyTimeout();
+            //
+        } // End processing part
+
         if (LOG.isLoggable(Level.FINER)) {
             LOG.finer("Returning list after processing progress: " + progress);
             for(ActivityOccurrenceData aod : temporaryDataItemList) {

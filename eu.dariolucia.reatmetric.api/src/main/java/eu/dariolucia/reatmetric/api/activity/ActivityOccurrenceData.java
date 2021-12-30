@@ -29,7 +29,7 @@ import java.util.*;
  * activity is requested, an activity occurrence is instantiated and follows a defined activity lifecycle, going through
  * the states defined in the {@link ActivityOccurrenceState}.
  *
- * Each activity state is split in one or more so called verification stages. For each stage, updates to the stage state
+ * Each activity state is split in one or more so-called verification stages. For each stage, updates to the stage state
  * are reported by means of progress reports ({@link ActivityOccurrenceReport}, which define also the transition from
  * one {@link ActivityOccurrenceState} to the next state.
  *
@@ -41,6 +41,8 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
      *
      */
     private static final long serialVersionUID = 1L;
+
+    public static final String MIRRORED_ACTIVITY_OCCURRENCE_ID_PROPERTY_KEY = "mirrored_activity_occurrence_id";
 
     private final int externalId;
 
@@ -254,7 +256,7 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
      * This method derives the aggregated status of the activity occurrence. The status of the activity: can be OK, FAIL,
      * PENDING, UNKNOWN (not others).
      *
-     * OK -> Activity is COMPLETED && no FATAL present && last state in verification or execution state is OK)
+     * OK -> Activity is COMPLETED && no FATAL present && last state in verification or execution state is OK
      * FAIL -> Activity is COMPLETED && (FATAL present || last state in verification or execution state is FAIL)
      * UNKNOWN -> Activity is COMPLETED && no FATAL present && no execution state reported
      * PENDING -> Activity is not completed

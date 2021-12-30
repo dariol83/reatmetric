@@ -68,8 +68,10 @@ import java.util.logging.Logger;
 
 /**
  * TODO: implement tab detach with library
+ * TODO: implement activity occurrence visualisation
+ * TODO: improve raw data visualisation
  *
- * @author dario
+ * @author Dario Lucia
  */
 public class MainViewController implements Initializable, IReatmetricServiceListener {
 

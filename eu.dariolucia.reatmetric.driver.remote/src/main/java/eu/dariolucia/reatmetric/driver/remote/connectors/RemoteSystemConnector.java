@@ -14,11 +14,9 @@ import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
-import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.transport.AbstractTransportConnector;
@@ -60,7 +58,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
     private final IActivityOccurrenceDataSubscriber activityDataSubscriber = this::remoteActivitiesReceived;
 
     private void remoteActivitiesReceived(List<ActivityOccurrenceData> activityOccurrenceData) {
-        driver.ingestProcessingData(activityOccurrenceData);
+        driver.ingestActivityProcessingData(activityOccurrenceData);
     }
 
     private final IOperationalMessageSubscriber messageSubscriber = this::remoteMessagesReceived;
@@ -70,7 +68,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
     }
 
     public RemoteSystemConnector(RemoteDriver remoteDriver, RemoteConfiguration configuration) {
-        super(configuration.getName() + " connector", "Connector to remote ReatMetric system " + configuration.getName());
+        super(configuration.getName() + " connector", "Connector to remote Reatmetric system " + configuration.getName());
         this.driver = remoteDriver;
         this.configuration = configuration;
     }
@@ -265,12 +263,14 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
     /**
      * Check if the specified route is available on the remote system.
      *
-     * @param route the route to check
+     * @param route the remote route to check (remote name)
      * @return true if the route is available, otherwise false
      */
     public boolean isRemoteRouteAvailable(String route) {
         IReatmetricSystem s = getReatmetricSystem();
         if(s != null) {
+            // Route is clean
+            route = route.substring(0, route.lastIndexOf(RemoteDriver.ROUTE_SYSTEM_SEPARATOR));
             try {
                 List<ActivityRouteState> routes = s.getActivityExecutionService().getRouteAvailability();
                 for (ActivityRouteState r : routes) {
@@ -295,7 +295,20 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
                 throw new ActivityHandlingException("Forwarding of activity request (" + request.getId() + ") with path " + request.getPath() + " to remote system failed: " + e.getMessage(), e);
             }
         } else {
-            throw new ActivityHandlingException("Remote system " + configuration.getName() + " not available, remove activity invocation " + request.getPath() + " failed");
+            throw new ActivityHandlingException("Remote system " + configuration.getName() + " not available, remote activity invocation " + request.getPath() + " failed");
+        }
+    }
+
+    public void invokeRemoteAbort(int activityId, IUniqueId remoteOccurrenceId) throws ActivityHandlingException {
+        IReatmetricSystem s = getReatmetricSystem();
+        if(s != null) {
+            try {
+                s.getActivityExecutionService().abortActivity(activityId, remoteOccurrenceId);
+            } catch (ReatmetricException | RemoteException e) {
+                throw new ActivityHandlingException("Forwarding of abort request for activity " + activityId + "[" + remoteOccurrenceId + "] to remote system failed: " + e.getMessage(), e);
+            }
+        } else {
+            throw new ActivityHandlingException("Remote system " + configuration.getName() + " not available, remote abort invocation for activity " + activityId + "[" + remoteOccurrenceId + "] failed");
         }
     }
 }

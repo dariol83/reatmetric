@@ -50,6 +50,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -61,6 +62,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
     public static final String CONFIGURATION_FILE = "configuration.xml";
 
     public static final String TRANSMISSION_STAGE = "Transmission";
+    public static final String ROUTE_SYSTEM_SEPARATOR = "@";
 
     // Driver generic properties
     private String name;
@@ -68,9 +70,9 @@ public class RemoteDriver implements IDriver, IActivityHandler {
     private SystemStatus driverStatus;
 
     // For activity handling
-    private IProcessingModel model;
+    private volatile IProcessingModel model;
     private List<String> supportedActivityTypes; // From the definitions
-    private final Set<String> supportedRoutes = new LinkedHashSet<>(); // From the remote system
+    private final Set<String> supportedRoutes = new LinkedHashSet<>(); // From the remote system, plus suffix '@configuration.getName()'
     private ExecutorService activityExecutor;
 
     // Driver specific properties
@@ -211,6 +213,26 @@ public class RemoteDriver implements IDriver, IActivityHandler {
         }
     }
 
+    public void ingestActivityProcessingData(List<ActivityOccurrenceData> activityOccurrenceData) {
+        try {
+            // Remap route
+            List<AbstractDataItem> remapped = new ArrayList<>(activityOccurrenceData.size());
+            for(ActivityOccurrenceData aod : activityOccurrenceData) {
+                ActivityOccurrenceData remappedAod = new ActivityOccurrenceData(aod.getInternalId(), aod.getGenerationTime(),
+                        aod.getExtension(), aod.getExternalId(), aod.getName(), aod.getPath(), aod.getType(),
+                        aod.getArguments(),
+                        aod.getProperties(),
+                        aod.getProgressReports(),
+                        aod.getRoute() + RemoteDriver.ROUTE_SYSTEM_SEPARATOR + configuration.getName(),
+                        aod.getSource());
+                remapped.add(remappedAod);
+            }
+            context.getProcessingModel().mirror(remapped);
+        } catch (ProcessingModelException e) {
+            LOG.log(Level.SEVERE, "Error when mirroring activity processing data from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+        }
+    }
+
     // --------------------------------------------------------------------
     // IActivityHandler methods
     // --------------------------------------------------------------------
@@ -229,7 +251,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
     public List<String> getSupportedRoutes() {
         // With the approach below, as soon as the routes are present (even if new routes)
         // they will be added to the set and always checked for availability
-        List<String> routes = this.remoteSystemConnector.retrieveRemoteRoutes();
+        List<String> routes = this.remoteSystemConnector.retrieveRemoteRoutes().stream().map(o -> o + ROUTE_SYSTEM_SEPARATOR + configuration.getName()).collect(Collectors.toList());
         this.supportedRoutes.addAll(routes);
         return new ArrayList<>(this.supportedRoutes);
     }
@@ -282,8 +304,6 @@ public class RemoteDriver implements IDriver, IActivityHandler {
 
     @Override
     public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
-        // TODO - Post-execution verification and timeouts to be ignored in the local processing model for mirrored activities.
-        // TODO - For mirrored activities, difference between locally invoked and remotely announced.
         if(this.activityExecutor.isShutdown()) {
             throw new ActivityHandlingException(this.name + " driver disposed");
         }
@@ -293,8 +313,9 @@ public class RemoteDriver implements IDriver, IActivityHandler {
         if(this.remoteSystemConnector.getConnectionStatus() != TransportConnectionStatus.OPEN) {
             throw new ActivityHandlingException("Remote system " + configuration.getName() + " is not connected");
         }
-        if(!this.remoteSystemConnector.isRemoteRouteAvailable(activityInvocation.getRoute())) {
-            throw new ActivityHandlingException("Route " + activityInvocation.getRoute() + " on remote system " + configuration.getName() + " is not available");
+        String route = getRemoteRouteIdentifier(activityInvocation.getRoute());
+        if(!this.remoteSystemConnector.isRemoteRouteAvailable(route)) {
+            throw new ActivityHandlingException("Route " + route + " on remote system " + configuration.getName() + " is not available");
         }
         ActivityRequest request = deriveActivityRequest(activityInvocation);
         // At this stage, all checks are completed, go for it
@@ -305,15 +326,13 @@ public class RemoteDriver implements IDriver, IActivityHandler {
         // If invocation is for an activity of the managed subtree, forward and report remote activity occurrence id,
         // as result, and complete this invocation. Else exception.
         try {
-            synchronized (this) {
-                // Record verification
-                announce(localInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION, null);
-                // Transmission
-                IUniqueId remoteActivityOccurrenceId = remoteSystemConnector.invokeRemoteActivity(mappedRequest);
-                // No exception means that the activity transmission is done and the activity is on the remote system now, this occurrence is over and the
-                // processing model can transition it to complete stage
-                announce(localInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.VERIFICATION, remoteActivityOccurrenceId.asLong());
-            }
+            // Record verification
+            announce(localInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION, null);
+            // Transmission
+            IUniqueId remoteActivityOccurrenceId = remoteSystemConnector.invokeRemoteActivity(mappedRequest);
+            // No exception means that the activity transmission is done and the activity is on the remote system now, this occurrence is over and the
+            // processing model can transition it to complete stage
+            announce(localInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.VERIFICATION, remoteActivityOccurrenceId.asLong());
         } catch(Exception e) {
             LOG.log(Level.SEVERE, "Transmission of activity " + localInvocation.getActivityOccurrenceId() + " failed: " + e.getMessage(), e);
             announce(localInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION, null);
@@ -321,19 +340,24 @@ public class RemoteDriver implements IDriver, IActivityHandler {
     }
 
     private ActivityRequest deriveActivityRequest(ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        IProcessingModel cModel = this.model;
+        if(cModel == null) {
+            throw new ActivityHandlingException("Model not registered in driver " + this.name);
+        }
         String remotePathToUse = activityInvocation.getPath().asString();
         if(!remotePathToUse.startsWith(configuration.getRemotePathPrefix())) {
             throw new ActivityHandlingException("Remote activity path derivation failed: invoked activity path is " + activityInvocation.getPath().asString() + ", but remote path prefix is " + configuration.getRemotePathPrefix());
         }
         remotePathToUse = remotePathToUse.substring(configuration.getRemotePathPrefix().length());
         ActivityRequest.Builder builder = ActivityRequest.newRequest(activityInvocation.getActivityId(), SystemEntityPath.fromString(remotePathToUse));
-        builder.withRoute(activityInvocation.getRoute());
+        String route = getRemoteRouteIdentifier(activityInvocation.getRoute());
+        builder.withRoute(route);
         builder.withSource(context.getSystemName() + " " + activityInvocation.getSource());
         builder.withProperties(activityInvocation.getProperties());
         // Map arguments
         ActivityDescriptor activityDescriptor;
         try {
-            activityDescriptor = (ActivityDescriptor) model.getDescriptorOf(activityInvocation.getActivityId());
+            activityDescriptor = (ActivityDescriptor) cModel.getDescriptorOf(activityInvocation.getActivityId());
         } catch (ProcessingModelException | ClassCastException e) {
             throw new ActivityHandlingException("Cannot retrieve activity " + activityInvocation.getActivityId() + " from processing model", e);
         }
@@ -342,7 +366,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
         }
         List<AbstractActivityArgument> argMap = new LinkedList<>();
         for(Map.Entry<String, Object> arg : activityInvocation.getArguments().entrySet()) {
-            // Remember: at this stage, all args are decalibrated
+            // Remember: at this stage, all args are de-calibrated
             // Retrieve the argument descriptor
             AbstractActivityArgumentDescriptor argDesc = getArgumentDescriptor(activityDescriptor, arg.getKey());
             if(argDesc == null) {
@@ -409,7 +433,10 @@ public class RemoteDriver implements IDriver, IActivityHandler {
     }
 
     public synchronized void announce(IActivityHandler.ActivityInvocation invocation, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, Object result) {
-        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, null, reportState, occState, result));
+        IProcessingModel cModel = this.model;
+        if(cModel != null) {
+            cModel.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, null, reportState, occState, result));
+        }
     }
 
     private boolean isInManagedSubtree(ActivityInvocation activityInvocation) {
@@ -425,14 +452,59 @@ public class RemoteDriver implements IDriver, IActivityHandler {
             // No remote system available
             return false;
         } else {
-            // Route is remotely available
+            // Route is remotely available? Extract remote route name and ask the connector
+            route = getRemoteRouteIdentifier(route);
             return this.remoteSystemConnector.isRemoteRouteAvailable(route);
         }
     }
 
+    private String getRemoteRouteIdentifier(String route) {
+        return route.substring(0, route.lastIndexOf(ROUTE_SYSTEM_SEPARATOR));
+    }
+
     @Override
     public void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ActivityHandlingException {
-        // TODO - If activityId is for an activity of the managed subtree, then fetch current (local) activity state,
-        //  retrieve the remote activity id (result) and, if present, forward the abort request.
+        // If activityId is for an activity of the managed subtree, then fetch current (local) activity state,
+        // retrieve the remote activity id (property field or result) and, if present, forward the abort request.
+        if(this.activityExecutor.isShutdown()) {
+            throw new ActivityHandlingException(this.name + " driver disposed");
+        }
+        if(this.remoteSystemConnector.getConnectionStatus() != TransportConnectionStatus.OPEN) {
+            throw new ActivityHandlingException("Remote system " + configuration.getName() + " is not connected");
+        }
+        IProcessingModel cModel = this.model;
+        if(cModel == null) {
+            throw new ActivityHandlingException("Model not registered in driver " + this.name);
+        }
+        // We need to support the abort of an activity even remotely executed, so we check the properties
+        List<AbstractDataItem> activityStates;
+        try {
+            activityStates = cModel.getById(Collections.singletonList(activityId));
+        } catch (ProcessingModelException e) {
+            throw new ActivityHandlingException("Cannot retrieve occurrences of activity ID " + activityId + " from the processing model: " + e.getMessage(), e);
+        }
+        for(AbstractDataItem as : activityStates) {
+            if(as instanceof ActivityOccurrenceData && as.getInternalId().equals(activityOccurrenceId)) {
+                Map<String, String> properties = ((ActivityOccurrenceData) as).getProperties();
+                if(properties.containsKey(ActivityOccurrenceData.MIRRORED_ACTIVITY_OCCURRENCE_ID_PROPERTY_KEY)) {
+                    IUniqueId remoteOccurrenceId = new LongUniqueId(Long.parseLong(properties.get(ActivityOccurrenceData.MIRRORED_ACTIVITY_OCCURRENCE_ID_PROPERTY_KEY)));
+                    activityExecutor.execute(() -> executeRemoteAbort(activityId, remoteOccurrenceId));
+                    return;
+                } else if(((ActivityOccurrenceData) as).getResult() != null && ((ActivityOccurrenceData) as).getResult() instanceof Long) {
+                    IUniqueId remoteOccurrenceId = new LongUniqueId((Long) ((ActivityOccurrenceData) as).getResult());
+                    activityExecutor.execute(() -> executeRemoteAbort(activityId, remoteOccurrenceId));
+                    return;
+                }
+            }
+        }
+        throw new ActivityHandlingException("Cannot abort occurrence " + activityOccurrenceId.asLong() + " of activity " + activityId + ": remote occurrence ID not found");
+    }
+
+    private void executeRemoteAbort(int activityId, IUniqueId remoteOccurrenceId) {
+        try {
+            remoteSystemConnector.invokeRemoteAbort(activityId, remoteOccurrenceId);
+        } catch(Exception e) {
+            LOG.log(Level.SEVERE, "Abort of activity " + activityId + "[" + remoteOccurrenceId + "] failed: " + e.getMessage(), e);
+        }
     }
 }
