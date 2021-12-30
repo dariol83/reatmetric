@@ -626,8 +626,6 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     public List<AbstractDataItem> mirror(ActivityOccurrenceData input) {
-        // TODO: implement - internal ID mapping <source activity occurrence> --> <target activity occurrence> needed
-        //  and inside that, internal ID mapping from <source report> --> <target report>
         if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             // Check if a local internal ID is already present for this state
             IUniqueId localId = this.mirroredId2localId.get(input.getInternalId());
