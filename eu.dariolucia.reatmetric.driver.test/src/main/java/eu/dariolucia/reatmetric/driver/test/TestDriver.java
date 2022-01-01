@@ -296,16 +296,16 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
             storeRawData(activityInvocation.getActivityOccurrenceId(), activityInvocation.getPath(), activityInvocation.getGenerationTime(), activityInvocation.getRoute(), activityInvocation.getType(), activityInvocation.getSource(), encodedCommand.getSecond());
             synchronized (this) {
                 // Record verification
-                announce(activityInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+                announce(activityInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceState.TRANSMISSION);
                 verifier.recordCommandVerification(encodedCommand.getFirst(), activityInvocation);
                 // Transmission
                 connector.send(encodedCommand.getSecond());
                 // No exception means that the activity transmission is done and the activity is pending acceptance and execution
-                announce(activityInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION);
+                announce(activityInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceState.EXECUTION);
             }
         } catch(Exception e) {
             LOG.log(Level.SEVERE, "Transmission of activity " + activityInvocation.getActivityOccurrenceId() + " failed: " + e.getMessage(), e);
-            announce(activityInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
+            announce(activityInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceState.TRANSMISSION);
             if(encodedCommand != null) {
                 verifier.removeCommandVerification(encodedCommand.getFirst());
             }
@@ -318,8 +318,8 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         context.getRawDataBroker().distribute(Collections.singletonList(rd), true);
     }
 
-    public synchronized void announce(IActivityHandler.ActivityInvocation invocation, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState) {
-        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, null, reportState, occState, null));
+    public synchronized void announce(IActivityHandler.ActivityInvocation invocation, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, ActivityOccurrenceState nextState) {
+        model.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, null, reportState, nextState, null));
     }
 
     public synchronized void announce(IActivityHandler.ActivityInvocation invocation, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, ActivityOccurrenceState nextOccState, Instant executionTime, Object result) {

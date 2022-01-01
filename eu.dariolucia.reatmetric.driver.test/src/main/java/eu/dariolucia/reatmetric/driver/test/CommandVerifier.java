@@ -59,9 +59,9 @@ public class CommandVerifier implements IRawDataSubscriber {
             this.commandTag2activityInvocation.put(cmdTag, activityInvocation);
         }
         // Announce all expected execution stages
-        this.driver.announce(activityInvocation, Instant.now(), TestDriver.ACCEPTANCE_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
-        this.driver.announce(activityInvocation, Instant.now(), TestDriver.EXECUTION_START_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
-        this.driver.announce(activityInvocation, Instant.now(), TestDriver.EXECUTION_COMPLETED_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION);
+        this.driver.announce(activityInvocation, Instant.now(), TestDriver.ACCEPTANCE_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, ActivityOccurrenceState.EXECUTION);
+        this.driver.announce(activityInvocation, Instant.now(), TestDriver.EXECUTION_START_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, ActivityOccurrenceState.EXECUTION);
+        this.driver.announce(activityInvocation, Instant.now(), TestDriver.EXECUTION_COMPLETED_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, ActivityOccurrenceState.EXECUTION);
     }
 
     private void processCommandAck(RawData rd) {
@@ -79,7 +79,7 @@ public class CommandVerifier implements IRawDataSubscriber {
         if(inv != null) {
             switch (firstByte) {
                 case 2: // Acceptance
-                    this.driver.announce(inv, Instant.ofEpochMilli(timestamp), TestDriver.ACCEPTANCE_STAGE, ok ? ActivityReportState.OK : ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION);
+                    this.driver.announce(inv, Instant.ofEpochMilli(timestamp), TestDriver.ACCEPTANCE_STAGE, ok ? ActivityReportState.OK : ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, ActivityOccurrenceState.EXECUTION);
                     break;
                 case 3: // Start
                     this.driver.announce(inv, Instant.ofEpochMilli(timestamp), TestDriver.EXECUTION_START_STAGE, ok ? ActivityReportState.OK : ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, ActivityOccurrenceState.EXECUTION, Instant.now(), null);

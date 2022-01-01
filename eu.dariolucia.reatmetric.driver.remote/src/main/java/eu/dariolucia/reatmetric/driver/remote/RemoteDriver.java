@@ -61,7 +61,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
 
     public static final String CONFIGURATION_FILE = "configuration.xml";
 
-    public static final String TRANSMISSION_STAGE = "Transmission";
+    public static final String RELAY_STAGE_NAME = "Relay";
     public static final String ENTITY_SYSTEM_SEPARATOR = "@";
 
     // Driver generic properties
@@ -327,15 +327,15 @@ public class RemoteDriver implements IDriver, IActivityHandler {
         // as result, and complete this invocation. Else exception.
         try {
             // Record verification
-            announce(localInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION, null);
+            announce(localInvocation, Instant.now(), RELAY_STAGE_NAME, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceState.TRANSMISSION, null);
             // Transmission
             IUniqueId remoteActivityOccurrenceId = remoteSystemConnector.invokeRemoteActivity(mappedRequest);
             // No exception means that the activity transmission is done and the activity is on the remote system now, this occurrence is over and the
             // processing model can transition it to complete stage
-            announce(localInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.OK, ActivityOccurrenceState.VERIFICATION, remoteActivityOccurrenceId.asLong());
+            announce(localInvocation, Instant.now(), RELAY_STAGE_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceState.VERIFICATION, remoteActivityOccurrenceId.asLong());
         } catch(Exception e) {
             LOG.log(Level.SEVERE, "Transmission of activity " + localInvocation.getActivityOccurrenceId() + " failed: " + e.getMessage(), e);
-            announce(localInvocation, Instant.now(), TRANSMISSION_STAGE, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION, null);
+            announce(localInvocation, Instant.now(), RELAY_STAGE_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceState.TRANSMISSION, null);
         }
     }
 
@@ -432,10 +432,10 @@ public class RemoteDriver implements IDriver, IActivityHandler {
         return null;
     }
 
-    public synchronized void announce(IActivityHandler.ActivityInvocation invocation, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, Object result) {
+    public synchronized void announce(IActivityHandler.ActivityInvocation invocation, Instant genTime, String name, ActivityReportState reportState, ActivityOccurrenceState occState, ActivityOccurrenceState nextState, Object result) {
         IProcessingModel cModel = this.model;
         if(cModel != null) {
-            cModel.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, null, reportState, occState, result));
+            cModel.reportActivityProgress(ActivityProgress.of(invocation.getActivityId(), invocation.getActivityOccurrenceId(), name, genTime, occState, null, reportState, nextState, result));
         }
     }
 

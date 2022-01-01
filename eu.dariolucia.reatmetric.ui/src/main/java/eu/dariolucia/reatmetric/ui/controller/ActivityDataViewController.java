@@ -24,7 +24,6 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -101,6 +100,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
     @FXML
     private TreeTableColumn<ActivityOccurrenceDataWrapper, String> nameCol;
+    @FXML
+    private TreeTableColumn<ActivityOccurrenceDataWrapper, IUniqueId> occIdCol;
     @FXML
     private TreeTableColumn<ActivityOccurrenceDataWrapper, ActivityOccurrenceState> stateCol;
     @FXML
@@ -194,6 +195,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         }
 
         this.nameCol.setCellValueFactory(o -> o.getValue().getValue().nameProperty());
+        this.occIdCol.setCellValueFactory(o -> o.getValue().getValue().occIdProperty());
         this.stateCol.setCellValueFactory(o -> o.getValue().getValue().stateProperty());
         this.statusCol.setCellValueFactory(o -> o.getValue().getValue().statusProperty());
         this.sourceCol.setCellValueFactory(o -> o.getValue().getValue().sourceProperty());
@@ -816,6 +818,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         private final SimpleObjectProperty<Object> property = new SimpleObjectProperty<>();
 
         private final SimpleStringProperty name = new SimpleStringProperty();
+        private final SimpleObjectProperty<IUniqueId> occId = new SimpleObjectProperty<>();
         private final SimpleObjectProperty<ActivityReportState> status = new SimpleObjectProperty<>();
         private final SimpleObjectProperty<Instant> generationTime = new SimpleObjectProperty<>();
         private final SimpleObjectProperty<Instant> executionTime = new SimpleObjectProperty<>();
@@ -846,32 +849,11 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             result.set(data.getResult());
             status.set(data.getStatus());
             name.set(data.getName());
+            occId.set(null);
         }
 
         private void deriveStatus(ActivityOccurrenceData data) {
             statusProperty().set(data.aggregateStatus());
-
-//            // The status of the activity: can be OK, FAIL, PENDING, UNKNOWN (not others)
-//            // OK -> Activity is COMPLETED && no FATAL present && last state in verification or execution state is OK)
-//            // FAIL -> Activity is COMPLETED && (FATAL present || last state in verification or execution state is FAIL)
-//            // UNKNOWN -> Activity is COMPLETED && no FATAL present && no execution state reported
-//            // PENDING -> Activity is not completed
-//            if(data.getCurrentState() == ActivityOccurrenceState.COMPLETED) {
-//                for(int i = data.getProgressReports().size() - 1; i >= 0; --i) {
-//                    ActivityOccurrenceReport report = data.getProgressReports().get(i);
-//                    if(report.getStatus() == ActivityReportState.FATAL || report.getStatus() == ActivityReportState.FAIL) {
-//                        statusProperty().set(ActivityReportState.FAIL);
-//                        break;
-//                    } else if(report.getStatus() == ActivityReportState.OK && (report.getState() == ActivityOccurrenceState.EXECUTION || report.getState() == ActivityOccurrenceState.VERIFICATION)) {
-//                        statusProperty().set(ActivityReportState.OK);
-//                        break;
-//                    } else {
-//                        statusProperty().set(ActivityReportState.UNKNOWN);
-//                    }
-//                }
-//            } else {
-//                statusProperty().set(ActivityReportState.PENDING);
-//            }
         }
 
         public void set(ActivityOccurrenceData data) {
@@ -884,11 +866,16 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             state.set(data.getCurrentState());
             result.set(data.getResult());
             name.set(data.getName());
+            occId.set(data.getInternalId());
             deriveStatus(data);
         }
 
         public Object get() {
             return property.getValue();
+        }
+
+        public SimpleObjectProperty<IUniqueId> occIdProperty() {
+            return occId;
         }
 
         public SimpleObjectProperty<Instant> generationTimeProperty() {

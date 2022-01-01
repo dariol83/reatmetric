@@ -141,13 +141,14 @@
         <TreeTableView fx:id="dataItemTableView" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
           <columns>
             <TreeTableColumn fx:id="nameCol" editable="false" prefWidth="130.0" text="Name" />
+            <TreeTableColumn fx:id="occIdCol" editable="false" prefWidth="70.0" text="ID" />
             <TreeTableColumn fx:id="stateCol" editable="false" prefWidth="100.0" text="State" />
             <TreeTableColumn fx:id="statusCol" editable="false" prefWidth="100.0" text="Status" />
             <TreeTableColumn fx:id="genTimeCol" editable="false" prefWidth="200.0" text="Gen. Time" />
             <TreeTableColumn fx:id="execTimeCol" editable="false" prefWidth="200.0" text="Exec. Time" />
-              <TreeTableColumn fx:id="sourceCol" editable="false" prefWidth="100.0" text="Source" />
-              <TreeTableColumn fx:id="typeCol" editable="false" prefWidth="100.0" text="Type" />
-              <TreeTableColumn fx:id="routeCol" editable="false" prefWidth="100.0" text="Route" />
+            <TreeTableColumn fx:id="sourceCol" editable="false" prefWidth="100.0" text="Source" />
+            <TreeTableColumn fx:id="typeCol" editable="false" prefWidth="100.0" text="Type" />
+            <TreeTableColumn fx:id="routeCol" editable="false" prefWidth="100.0" text="Route" />
             <TreeTableColumn fx:id="resultCol" editable="false" prefWidth="100.0" text="Result" />
             <TreeTableColumn fx:id="parentCol" editable="false" prefWidth="130.0" text="Parent" />
           </columns>

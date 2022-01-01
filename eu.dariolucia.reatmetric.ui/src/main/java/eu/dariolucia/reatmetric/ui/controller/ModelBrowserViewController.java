@@ -1162,8 +1162,11 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 toExpand = toExpand.getParent();
             }
             final TreeItem<SystemEntity> fcurrentItem = currentItem;
-            // Select
-            FxUtils.runLater(() -> this.modelTree.getSelectionModel().select(fcurrentItem));
+            // Select and scroll so that it is visible
+            FxUtils.runLater(() -> {
+                this.modelTree.getSelectionModel().select(fcurrentItem);
+                this.modelTree.scrollTo(this.modelTree.getSelectionModel().getSelectedIndex());
+            });
         }
     }
 }
