@@ -62,7 +62,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
     public static final String CONFIGURATION_FILE = "configuration.xml";
 
     public static final String TRANSMISSION_STAGE = "Transmission";
-    public static final String ROUTE_SYSTEM_SEPARATOR = "@";
+    public static final String ENTITY_SYSTEM_SEPARATOR = "@";
 
     // Driver generic properties
     private String name;
@@ -103,7 +103,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
             this.remoteSystemConnector.prepare();
             // Start the thread to handle activity execution requests on the remote system
             this.activityExecutor = Executors.newSingleThreadExecutor(r -> {
-                Thread t = new Thread(r, "Remote System " + this.configuration.getName() + " - Activity Handler Thread");
+                Thread t = new Thread(r, "Remote System " + this.configuration.getRemoteSystemName() + " - Activity Handler Thread");
                 t.setDaemon(true);
                 return t;
             });
@@ -200,7 +200,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
             try {
                 context.getOperationalMessageBroker().distribute(om.getId(), om.getMessage(), om.getSource(), om.getSeverity(), om.getExtension(), om.getLinkedEntityId(), true);
             } catch (ReatmetricException e) {
-                LOG.log(Level.SEVERE, "Error when distributing operational message from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+                LOG.log(Level.SEVERE, "Error when distributing operational message from remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
             }
         }
     }
@@ -209,7 +209,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
         try {
             context.getProcessingModel().mirror((List<AbstractDataItem>) data);
         } catch (ProcessingModelException e) {
-            LOG.log(Level.SEVERE, "Error when mirroring processing data from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+            LOG.log(Level.SEVERE, "Error when mirroring processing data from remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
         }
     }
 
@@ -223,13 +223,13 @@ public class RemoteDriver implements IDriver, IActivityHandler {
                         aod.getArguments(),
                         aod.getProperties(),
                         aod.getProgressReports(),
-                        aod.getRoute() + RemoteDriver.ROUTE_SYSTEM_SEPARATOR + configuration.getName(),
+                        aod.getRoute() + RemoteDriver.ENTITY_SYSTEM_SEPARATOR + configuration.getRemoteSystemName(),
                         aod.getSource());
                 remapped.add(remappedAod);
             }
             context.getProcessingModel().mirror(remapped);
         } catch (ProcessingModelException e) {
-            LOG.log(Level.SEVERE, "Error when mirroring activity processing data from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+            LOG.log(Level.SEVERE, "Error when mirroring activity processing data from remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
         }
     }
 
@@ -251,7 +251,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
     public List<String> getSupportedRoutes() {
         // With the approach below, as soon as the routes are present (even if new routes)
         // they will be added to the set and always checked for availability
-        List<String> routes = this.remoteSystemConnector.retrieveRemoteRoutes().stream().map(o -> o + ROUTE_SYSTEM_SEPARATOR + configuration.getName()).collect(Collectors.toList());
+        List<String> routes = this.remoteSystemConnector.retrieveRemoteRoutes().stream().map(o -> o + ENTITY_SYSTEM_SEPARATOR + configuration.getRemoteSystemName()).collect(Collectors.toList());
         this.supportedRoutes.addAll(routes);
         return new ArrayList<>(this.supportedRoutes);
     }
@@ -308,14 +308,14 @@ public class RemoteDriver implements IDriver, IActivityHandler {
             throw new ActivityHandlingException(this.name + " driver disposed");
         }
         if(!isInManagedSubtree(activityInvocation)) {
-            throw new ActivityHandlingException("Activity " + activityInvocation.getPath() + " is not part of remote system " + configuration.getName());
+            throw new ActivityHandlingException("Activity " + activityInvocation.getPath() + " is not part of remote system " + configuration.getRemoteSystemName());
         }
         if(this.remoteSystemConnector.getConnectionStatus() != TransportConnectionStatus.OPEN) {
-            throw new ActivityHandlingException("Remote system " + configuration.getName() + " is not connected");
+            throw new ActivityHandlingException("Remote system " + configuration.getRemoteSystemName() + " is not connected");
         }
         String route = getRemoteRouteIdentifier(activityInvocation.getRoute());
         if(!this.remoteSystemConnector.isRemoteRouteAvailable(route)) {
-            throw new ActivityHandlingException("Route " + route + " on remote system " + configuration.getName() + " is not available");
+            throw new ActivityHandlingException("Route " + route + " on remote system " + configuration.getRemoteSystemName() + " is not available");
         }
         ActivityRequest request = deriveActivityRequest(activityInvocation);
         // At this stage, all checks are completed, go for it
@@ -352,7 +352,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
         ActivityRequest.Builder builder = ActivityRequest.newRequest(activityInvocation.getActivityId(), SystemEntityPath.fromString(remotePathToUse));
         String route = getRemoteRouteIdentifier(activityInvocation.getRoute());
         builder.withRoute(route);
-        builder.withSource(context.getSystemName() + " " + activityInvocation.getSource());
+        builder.withSource(activityInvocation.getSource() + ENTITY_SYSTEM_SEPARATOR + context.getSystemName());
         builder.withProperties(activityInvocation.getProperties());
         // Map arguments
         ActivityDescriptor activityDescriptor;
@@ -448,7 +448,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
         if(!this.supportedRoutes.contains(route)) {
             // No route available
             return false;
-        } else if (this.remoteSystemConnector.getConnectionStatus() == TransportConnectionStatus.OPEN) {
+        } else if (this.remoteSystemConnector.getConnectionStatus() != TransportConnectionStatus.OPEN) {
             // No remote system available
             return false;
         } else {
@@ -459,7 +459,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
     }
 
     private String getRemoteRouteIdentifier(String route) {
-        return route.substring(0, route.lastIndexOf(ROUTE_SYSTEM_SEPARATOR));
+        return route.substring(0, route.lastIndexOf(ENTITY_SYSTEM_SEPARATOR));
     }
 
     @Override
@@ -470,7 +470,7 @@ public class RemoteDriver implements IDriver, IActivityHandler {
             throw new ActivityHandlingException(this.name + " driver disposed");
         }
         if(this.remoteSystemConnector.getConnectionStatus() != TransportConnectionStatus.OPEN) {
-            throw new ActivityHandlingException("Remote system " + configuration.getName() + " is not connected");
+            throw new ActivityHandlingException("Remote system " + configuration.getRemoteSystemName() + " is not connected");
         }
         IProcessingModel cModel = this.model;
         if(cModel == null) {

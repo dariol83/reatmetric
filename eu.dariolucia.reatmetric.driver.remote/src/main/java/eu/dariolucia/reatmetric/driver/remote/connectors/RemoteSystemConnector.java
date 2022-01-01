@@ -68,7 +68,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
     }
 
     public RemoteSystemConnector(RemoteDriver remoteDriver, RemoteConfiguration configuration) {
-        super(configuration.getName() + " connector", "Connector to remote Reatmetric system " + configuration.getName());
+        super(configuration.getRemoteSystemName() + " connector", "Connector to remote Reatmetric system " + configuration.getRemoteSystemName());
         this.driver = remoteDriver;
         this.configuration = configuration;
     }
@@ -90,7 +90,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
             // Discover the system
             ReatmetricConnectorRegistry registry = new ReatmetricConnectorRegistry();
             for (IReatmetricSystem s : registry.availableSystems()) {
-                if (s.getName().equals(this.configuration.getName())) {
+                if (s.getName().equals(this.configuration.getRemoteSystemName())) {
                     system = s;
                     break;
                 }
@@ -98,7 +98,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
 
             if (system == null) {
                 // No such system
-                throw new TransportException("Remote system " + this.configuration.getName() +
+                throw new TransportException("Remote system " + this.configuration.getRemoteSystemName() +
                         " not found in the connector registry: ensure that the property " +
                         ReatmetricConnectorRegistry.INIT_FILE_KEY + " is set");
             }
@@ -107,7 +107,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
             AtomicReference<SystemStatus> initResult = new AtomicReference<>();
             system.initialise(initResult::set);
 
-            LOG.log(Level.INFO, "Remote system " + this.configuration.getName() + " initialisation status: " + initResult.get());
+            LOG.log(Level.INFO, "Remote system " + this.configuration.getRemoteSystemName() + " initialisation status: " + initResult.get());
 
             // Register to the remote system
             registerToParameters();
@@ -128,7 +128,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
                     updateAlarmState(AlarmState.NOMINAL);
                     break;
             }
-            LOG.log(Level.INFO, "Nominal connection to remote system " + this.configuration.getName() + " established");
+            LOG.log(Level.INFO, "Nominal connection to remote system " + this.configuration.getRemoteSystemName() + " established");
         } catch (Exception e) {
             reportConnectionProblem(e);
         }
@@ -172,47 +172,47 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
             try {
                 system.getParameterDataMonitorService().unsubscribe(this.parameterDataSubscriber);
             } catch (Exception e) {
-                LOG.log(Level.FINE, "Cannot unsubscribe parameter data from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+                LOG.log(Level.FINE, "Cannot unsubscribe parameter data from remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
             }
             try {
                 system.getEventDataMonitorService().unsubscribe(this.eventDataSubscriber);
             } catch (Exception e) {
-                LOG.log(Level.FINE, "Cannot unsubscribe event data from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+                LOG.log(Level.FINE, "Cannot unsubscribe event data from remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
             }
             try {
                 system.getActivityOccurrenceDataMonitorService().unsubscribe(this.activityDataSubscriber);
             } catch (Exception e) {
-                LOG.log(Level.FINE, "Cannot unsubscribe activity data from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+                LOG.log(Level.FINE, "Cannot unsubscribe activity data from remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
             }
             try {
                 system.getOperationalMessageMonitorService().unsubscribe(this.messageSubscriber);
             } catch (Exception e) {
-                LOG.log(Level.FINE, "Cannot unsubscribe operational messages from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+                LOG.log(Level.FINE, "Cannot unsubscribe operational messages from remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
             }
 
             try {
                 system.dispose();
             } catch (ReatmetricException | RemoteException ex) {
-                LOG.log(Level.WARNING, "Cannot close connection to remote system " + this.configuration.getName() + ": " + ex.getMessage(), ex);
+                LOG.log(Level.WARNING, "Cannot close connection to remote system " + this.configuration.getRemoteSystemName() + ": " + ex.getMessage(), ex);
             }
             system = null;
             // Done
             updateConnectionStatus(TransportConnectionStatus.IDLE);
             updateAlarmState(AlarmState.NOT_APPLICABLE);
-            LOG.log(Level.INFO, "Nominal connection to remote system " + this.configuration.getName() + " closed");
+            LOG.log(Level.INFO, "Nominal connection to remote system " + this.configuration.getRemoteSystemName() + " closed");
         } catch (Exception e) {
             reportConnectionProblem(e);
         }
     }
 
     private void reportConnectionProblem(Exception e) {
-        LOG.log(Level.SEVERE, "Problem when connecting to remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+        LOG.log(Level.SEVERE, "Problem when connecting to remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
         // Clean up system
         if(system != null) {
             try {
                 system.dispose();
             } catch (ReatmetricException | RemoteException ex) {
-                LOG.log(Level.SEVERE, "Cannot dispose connection to remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+                LOG.log(Level.SEVERE, "Cannot dispose connection to remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
             }
         }
         system = null;
@@ -227,7 +227,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
         try {
             disconnect();
         } catch (TransportException e) {
-            LOG.log(Level.SEVERE, "Error when disposing connector to remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+            LOG.log(Level.SEVERE, "Error when disposing connector to remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
         }
         system = null;
     }
@@ -249,7 +249,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
                 List<ActivityRouteState> routes = s.getActivityExecutionService().getRouteAvailability();
                 return routes.stream().map(ActivityRouteState::getRoute).collect(Collectors.toList());
             } catch (ReatmetricException | RemoteException e) {
-                LOG.log(Level.SEVERE, "Error when retrieving available routes from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+                LOG.log(Level.SEVERE, "Error when retrieving available routes from remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
             }
         }
         // Cannot retrieve, no system, no routes
@@ -270,7 +270,6 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
         IReatmetricSystem s = getReatmetricSystem();
         if(s != null) {
             // Route is clean
-            route = route.substring(0, route.lastIndexOf(RemoteDriver.ROUTE_SYSTEM_SEPARATOR));
             try {
                 List<ActivityRouteState> routes = s.getActivityExecutionService().getRouteAvailability();
                 for (ActivityRouteState r : routes) {
@@ -280,7 +279,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
                 }
                 return false;
             } catch (ReatmetricException | RemoteException e) {
-                LOG.log(Level.SEVERE, "Error when retrieving available routes from remote system " + this.configuration.getName() + ": " + e.getMessage(), e);
+                LOG.log(Level.SEVERE, "Error when retrieving available routes from remote system " + this.configuration.getRemoteSystemName() + ": " + e.getMessage(), e);
             }
         }
         return false;
@@ -295,7 +294,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
                 throw new ActivityHandlingException("Forwarding of activity request (" + request.getId() + ") with path " + request.getPath() + " to remote system failed: " + e.getMessage(), e);
             }
         } else {
-            throw new ActivityHandlingException("Remote system " + configuration.getName() + " not available, remote activity invocation " + request.getPath() + " failed");
+            throw new ActivityHandlingException("Remote system " + configuration.getRemoteSystemName() + " not available, remote activity invocation " + request.getPath() + " failed");
         }
     }
 
@@ -308,7 +307,7 @@ public class RemoteSystemConnector extends AbstractTransportConnector {
                 throw new ActivityHandlingException("Forwarding of abort request for activity " + activityId + "[" + remoteOccurrenceId + "] to remote system failed: " + e.getMessage(), e);
             }
         } else {
-            throw new ActivityHandlingException("Remote system " + configuration.getName() + " not available, remote abort invocation for activity " + activityId + "[" + remoteOccurrenceId + "] failed");
+            throw new ActivityHandlingException("Remote system " + configuration.getRemoteSystemName() + " not available, remote abort invocation for activity " + activityId + "[" + remoteOccurrenceId + "] failed");
         }
     }
 }

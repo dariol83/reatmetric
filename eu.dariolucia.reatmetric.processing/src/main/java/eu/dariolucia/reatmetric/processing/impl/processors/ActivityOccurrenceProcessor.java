@@ -251,8 +251,8 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
             }
             return Collections.emptyList();
         }
-        if (progress.getNextState() == ActivityOccurrenceState.COMPLETED) {
-            // Progress with COMPLETED as next state is not allowed
+        if (progress.getNextState() == ActivityOccurrenceState.COMPLETED && this.mirroredOccurrenceId == null) {
+            // Progress with COMPLETED as next state is not allowed for locally requested activities
             if (LOG.isLoggable(Level.SEVERE)) {
                 LOG.severe(String.format("Reported progress for activity occurrence %s of activity %s has next state set to COMPLETION, which is not supposed to be reported. Reported states can be up to VERIFICATION.", occurrenceId, parent.getPath()));
             }
@@ -330,6 +330,18 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
             // Verify timeout completions: this can generate an additional ActivityOccurrenceData object
             verifyTimeout();
             //
+        } else {
+            // If the definition is mirrored, you can have two cases:
+            // 1) this occurrence is created by this processing model (this.mirroredOccurrenceId == null), or
+            // 2) this occurrence maps data coming from a remote processing model (this.mirroredOccurrenceId != null)
+            if(this.mirroredOccurrenceId == null) {
+                // Case 1): move currentState to COMPLETION if the progress hits the verification
+                if (previousState != ActivityOccurrenceState.VERIFICATION && currentState == ActivityOccurrenceState.VERIFICATION) {
+                    generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETED);
+                }
+            } else {
+                // Case 2): apply the COMPLETION stage if the progress hits that: do nothing, as this step is done already.
+            }
         } // End processing part
 
         if (LOG.isLoggable(Level.FINER)) {

@@ -46,7 +46,7 @@ public class RemoteConfiguration {
      * @see ConnectorConfiguration#getLocalName()
      */
     @XmlAttribute(name = "remote-system-name", required = true)
-    private String name;
+    private String remoteSystemName;
 
     /**
      * Prefix added to the remote definitions in the processing model.
@@ -81,12 +81,12 @@ public class RemoteConfiguration {
     @XmlAttribute(name = "remote-path-selector", required = true)
     private String remotePathSelector;
 
-    public String getName() {
-        return name;
+    public String getRemoteSystemName() {
+        return remoteSystemName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setRemoteSystemName(String remoteSystemName) {
+        this.remoteSystemName = remoteSystemName;
     }
 
     public String getRemotePathSelector() {
