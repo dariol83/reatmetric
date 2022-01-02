@@ -29,10 +29,10 @@ import javafx.fxml.Initializable;
 import javafx.print.*;
 import javafx.scene.Node;
 import javafx.scene.SnapshotParameters;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TreeTableView;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
+import javafx.scene.layout.VBox;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Transform;
 import javafx.stage.Window;
@@ -192,6 +192,25 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
 
     protected void informDisplayAttached() {
         // Subclasses can override
+    }
+
+    protected void initialiseToolbarVisibility(TitledPane pane, ToolBar toolbar, CheckMenuItem linkedMenuEntry) {
+        toolbar.visibleProperty().bind(linkedMenuEntry.selectedProperty());
+        toolbar.visibleProperty().addListener((observableValue, oldValue, newValue) -> {
+            VBox vbox = (VBox) pane.getContent();
+            if(newValue) {
+                // Visible
+                if(vbox.getChildren().get(0) != toolbar) {
+                    vbox.getChildren().add(0, toolbar);
+                }
+            } else {
+                // Not visible
+                if(vbox.getChildren().get(0) == toolbar) {
+                    vbox.getChildren().remove(0);
+                }
+            }
+            pane.layout();
+        });
     }
 }
 

@@ -23,7 +23,7 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.PresetStorageManager;
-import javafx.application.Platform;
+import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -57,6 +57,12 @@ public class UserDisplayViewController extends AbstractDisplayController {
     // Pane control
     @FXML
     protected TitledPane displayTitledPane;
+    @FXML
+    protected CheckMenuItem toggleShowToolbarItem;
+    @FXML
+    protected MenuItem detachMenuItem;
+    @FXML
+    protected ToolBar toolbar;
 
     @FXML
     protected TabPane tabPane;
@@ -100,6 +106,26 @@ public class UserDisplayViewController extends AbstractDisplayController {
             renameButton.setVisible(!tabPane.getSelectionModel().isEmpty());
             saveButton.setVisible(!tabPane.getSelectionModel().isEmpty());
         });
+
+        initialiseToolbarVisibility(displayTitledPane, toolbar, toggleShowToolbarItem);
+    }
+
+    @FXML
+    private void detachAttachItemAction(ActionEvent actionEvent) {
+        if(DetachedTabUtil.isDetached((Stage) displayTitledPane.getScene().getWindow())) {
+            DetachedTabUtil.attachTab((Stage) displayTitledPane.getScene().getWindow());
+            informDisplayAttached();
+        }
+    }
+
+    @Override
+    protected void informDisplayAttached() {
+        detachMenuItem.setDisable(true);
+    }
+
+    @Override
+    protected void informDisplayDetached() {
+        detachMenuItem.setDisable(false);
     }
 
     protected String doGetComponentId() {

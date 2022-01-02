@@ -37,7 +37,6 @@ import javafx.geometry.Bounds;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
-import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
@@ -168,22 +167,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         this.dateTimePopup.setAutoHide(true);
         this.dateTimePopup.setHideOnEscape(true);
 
-        this.toolbar.visibleProperty().bind(this.toggleShowToolbarItem.selectedProperty());
-        this.toolbar.visibleProperty().addListener((observableValue, oldValue, newValue) -> {
-            VBox vbox = (VBox) displayTitledPane.getContent();
-            if(newValue) {
-                // Visible
-                if(vbox.getChildren().size() == 1) {
-                    vbox.getChildren().add(0, toolbar);
-                }
-            } else {
-                // Not visible
-                if(vbox.getChildren().size() > 1) {
-                    vbox.getChildren().remove(toolbar);
-                }
-            }
-            displayTitledPane.layout();
-        });
+        initialiseToolbarVisibility(this.displayTitledPane, toolbar, toggleShowToolbarItem);
+
         try {
             URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
@@ -844,6 +829,16 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         }
     }
 
+    @Override
+    protected void informDisplayAttached() {
+        detachMenuItem.setDisable(true);
+    }
+
+    @Override
+    protected void informDisplayDetached() {
+        detachMenuItem.setDisable(false);
+    }
+
     public static class ActivityOccurrenceDataWrapper {
 
         private final SystemEntityPath path;
@@ -991,16 +986,6 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                 return null;
             }
         }
-    }
-
-    @Override
-    protected void informDisplayAttached() {
-        detachMenuItem.setDisable(true);
-    }
-
-    @Override
-    protected void informDisplayDetached() {
-        detachMenuItem.setDisable(false);
     }
 
     public static class FilterWrapper implements Predicate<ActivityOccurrenceDataWrapper> {

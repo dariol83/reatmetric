@@ -31,14 +31,14 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.udd.PopoverChartController;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityResolver;
+import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.MenuItem;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
+import javafx.scene.control.*;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 
 import java.net.URL;
@@ -58,6 +58,13 @@ import java.util.logging.Logger;
 public class OperationalMessageViewController extends AbstractDataItemLogViewController<OperationalMessage, OperationalMessageFilter> implements IOperationalMessageSubscriber {
 
     private static final Logger LOG = Logger.getLogger(OperationalMessageViewController.class.getName());
+
+    @FXML
+    protected CheckMenuItem toggleShowToolbarItem;
+    @FXML
+    protected MenuItem detachMenuItem;
+    @FXML
+    protected ToolBar toolbar;
 
     @FXML
     private TableColumn<OperationalMessage, String> idCol;
@@ -118,6 +125,8 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
             }
         });
         dataItemTableView.setContextMenu(null);
+
+        initialiseToolbarVisibility(displayTitledPane, toolbar, toggleShowToolbarItem);
     }
 
     @Override
@@ -215,5 +224,23 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
         } catch (ReatmetricException e) {
             LOG.log(Level.WARNING, "Cannot plot system entity " + value.getPath() + ": " + e.getMessage(), e);
         }
+    }
+
+    @FXML
+    private void detachAttachItemAction(ActionEvent actionEvent) {
+        if(DetachedTabUtil.isDetached((Stage) displayTitledPane.getScene().getWindow())) {
+            DetachedTabUtil.attachTab((Stage) displayTitledPane.getScene().getWindow());
+            informDisplayAttached();
+        }
+    }
+
+    @Override
+    protected void informDisplayAttached() {
+        detachMenuItem.setDisable(true);
+    }
+
+    @Override
+    protected void informDisplayDetached() {
+        detachMenuItem.setDisable(false);
     }
 }

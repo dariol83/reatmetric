@@ -22,7 +22,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
-import javafx.application.Platform;
+import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -60,6 +60,13 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
     protected TitledPane displayTitledPane;
 
     @FXML
+    protected CheckMenuItem toggleShowToolbarItem;
+    @FXML
+    protected MenuItem detachMenuItem;
+    @FXML
+    protected ToolBar toolbar;
+
+    @FXML
     protected TabPane tabPane;
 
     @FXML
@@ -90,6 +97,8 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         tabPane.getSelectionModel().selectedItemProperty().addListener((t) -> {
             detachButton.setVisible(!tabPane.getSelectionModel().isEmpty());
         });
+
+        initialiseToolbarVisibility(displayTitledPane, toolbar, toggleShowToolbarItem);
     }
 
     @Override
@@ -277,5 +286,23 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         });
 
         stage.show();
+    }
+
+    @FXML
+    private void detachAttachItemAction(ActionEvent actionEvent) {
+        if(DetachedTabUtil.isDetached((Stage) displayTitledPane.getScene().getWindow())) {
+            DetachedTabUtil.attachTab((Stage) displayTitledPane.getScene().getWindow());
+            informDisplayAttached();
+        }
+    }
+
+    @Override
+    protected void informDisplayAttached() {
+        detachMenuItem.setDisable(true);
+    }
+
+    @Override
+    protected void informDisplayDetached() {
+        detachMenuItem.setDisable(false);
     }
 }

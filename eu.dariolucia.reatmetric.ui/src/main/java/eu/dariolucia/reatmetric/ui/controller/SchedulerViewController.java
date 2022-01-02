@@ -33,6 +33,7 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.gantt.GanttChart;
 import eu.dariolucia.reatmetric.ui.udd.InstantAxis;
 import eu.dariolucia.reatmetric.ui.utils.*;
+import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
 import javafx.beans.Observable;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
@@ -51,10 +52,7 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
 import javafx.scene.paint.Color;
-import javafx.stage.Modality;
-import javafx.stage.Popup;
-import javafx.stage.Window;
-import javafx.stage.WindowEvent;
+import javafx.stage.*;
 
 import java.io.IOException;
 import java.net.URL;
@@ -90,6 +88,12 @@ public class SchedulerViewController extends AbstractDisplayController implement
     // Pane control
     @FXML
     protected TitledPane displayTitledPane;
+    @FXML
+    protected CheckMenuItem toggleShowToolbarItem;
+    @FXML
+    protected MenuItem detachMenuItem;
+    @FXML
+    protected ToolBar toolbar;
 
     // Live/retrieval controls
     @FXML
@@ -309,6 +313,26 @@ public class SchedulerViewController extends AbstractDisplayController implement
         this.ganttChart.registerTaskSelectionListener(this::taskSelected);
 
         loadGanttBoundariesPopup();
+
+        initialiseToolbarVisibility(displayTitledPane, toolbar, toggleShowToolbarItem);
+    }
+
+    @FXML
+    private void detachAttachItemAction(ActionEvent actionEvent) {
+        if(DetachedTabUtil.isDetached((Stage) displayTitledPane.getScene().getWindow())) {
+            DetachedTabUtil.attachTab((Stage) displayTitledPane.getScene().getWindow());
+            informDisplayAttached();
+        }
+    }
+
+    @Override
+    protected void informDisplayAttached() {
+        detachMenuItem.setDisable(true);
+    }
+
+    @Override
+    protected void informDisplayDetached() {
+        detachMenuItem.setDisable(false);
     }
 
     private void taskSelected(XYChart.Data<Instant, String> item) {

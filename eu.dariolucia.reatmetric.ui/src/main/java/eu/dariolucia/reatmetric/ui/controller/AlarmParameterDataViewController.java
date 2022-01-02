@@ -30,15 +30,16 @@ import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
+import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
+import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 
 import java.net.URL;
 import java.rmi.RemoteException;
@@ -54,6 +55,13 @@ import java.util.ResourceBundle;
 public class AlarmParameterDataViewController
 		extends AbstractDataItemLogViewController<AlarmParameterData, AlarmParameterDataFilter>
 		implements IAlarmParameterDataSubscriber {
+
+	@FXML
+	protected CheckMenuItem toggleShowToolbarItem;
+	@FXML
+	protected MenuItem detachMenuItem;
+	@FXML
+	protected ToolBar toolbar;
 
 	@FXML
 	private TableColumn<AlarmParameterData, String> nameCol;
@@ -125,6 +133,8 @@ public class AlarmParameterDataViewController
 				}
 			}
 		});
+
+		initialiseToolbarVisibility(displayTitledPane, toolbar, toggleShowToolbarItem);
 	}
 
 	@FXML
@@ -254,4 +264,23 @@ public class AlarmParameterDataViewController
 			MainViewController.instance().getModelController().locate(ed.getPath());
 		}
 	}
+
+	@FXML
+	private void detachAttachItemAction(ActionEvent actionEvent) {
+		if(DetachedTabUtil.isDetached((Stage) displayTitledPane.getScene().getWindow())) {
+			DetachedTabUtil.attachTab((Stage) displayTitledPane.getScene().getWindow());
+			informDisplayAttached();
+		}
+	}
+
+	@Override
+	protected void informDisplayAttached() {
+		detachMenuItem.setDisable(true);
+	}
+
+	@Override
+	protected void informDisplayDetached() {
+		detachMenuItem.setDisable(false);
+	}
+
 }

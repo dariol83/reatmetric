@@ -32,11 +32,14 @@
 <?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.control.ContextMenu?>
 <?import javafx.scene.control.MenuItem?>
-<TitledPane fx:id="displayTitledPane" collapsible="false" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minWidth="650.0" prefWidth="717.0" text="Operational Messages" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.OperationalMessageViewController">
+<?import eu.dariolucia.reatmetric.ui.widgets.EnhancedTitledPane?>
+
+<?import javafx.scene.control.CheckMenuItem?>
+<EnhancedTitledPane fx:id="displayTitledPane" collapsible="false" disable="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minWidth="650.0" prefWidth="717.0" text="Operational Messages" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.OperationalMessageViewController">
    <content>
       <VBox prefHeight="200.0" prefWidth="100.0">
          <children>
-            <ToolBar prefHeight="32.0" prefWidth="606.0">
+            <ToolBar fx:id="toolbar" prefHeight="32.0" prefWidth="606.0">
                <items>
                   <ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" prefHeight="25.0" prefWidth="91.0" selected="true" text="Live" />
                    <Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart">
@@ -153,4 +156,12 @@
          </padding>
       </VBox>
    </content>
-</TitledPane>
+    <titleContextMenu>
+        <ContextMenu>
+            <items>
+                <CheckMenuItem fx:id="toggleShowToolbarItem" mnemonicParsing="false" selected="true" text="Show toolbar" />
+                <MenuItem fx:id="detachMenuItem" onAction="#detachAttachItemAction" mnemonicParsing="false" text="Attach to tab pane" disable="true" />
+            </items>
+        </ContextMenu>
+    </titleContextMenu>
+</EnhancedTitledPane>

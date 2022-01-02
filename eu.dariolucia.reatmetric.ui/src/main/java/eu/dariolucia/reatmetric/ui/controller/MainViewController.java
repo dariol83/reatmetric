@@ -67,7 +67,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * TODO: implement tab detach with library
+ * TODO: implement tab detach with library - in progress
  * TODO: implement activity occurrence visualisation
  * TODO: improve raw data visualisation
  *

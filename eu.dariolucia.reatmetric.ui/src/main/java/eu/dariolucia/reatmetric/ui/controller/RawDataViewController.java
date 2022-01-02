@@ -28,14 +28,15 @@ import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
+import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
+import javafx.scene.control.*;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
@@ -52,6 +53,13 @@ import java.util.ResourceBundle;
  * @author dario
  */
 public class RawDataViewController extends AbstractDataItemLogViewController<RawData, RawDataFilter> implements IRawDataSubscriber {
+
+    @FXML
+    protected CheckMenuItem toggleShowToolbarItem;
+    @FXML
+    protected MenuItem detachMenuItem;
+    @FXML
+    protected ToolBar toolbar;
 
     @FXML
     private TableColumn<RawData, String> nameCol;
@@ -158,6 +166,26 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        initialiseToolbarVisibility(displayTitledPane, toolbar, toggleShowToolbarItem);
+    }
+
+    @FXML
+    private void detachAttachItemAction(ActionEvent actionEvent) {
+        if(DetachedTabUtil.isDetached((Stage) displayTitledPane.getScene().getWindow())) {
+            DetachedTabUtil.attachTab((Stage) displayTitledPane.getScene().getWindow());
+            informDisplayAttached();
+        }
+    }
+
+    @Override
+    protected void informDisplayAttached() {
+        detachMenuItem.setDisable(true);
+    }
+
+    @Override
+    protected void informDisplayDetached() {
+        detachMenuItem.setDisable(false);
     }
 
     @Override
