@@ -114,23 +114,6 @@
                                          tabClosingPolicy="ALL_TABS"
                                          AnchorPane.topAnchor="0.0" AnchorPane.rightAnchor="1.0"
                                          AnchorPane.bottomAnchor="1.0" AnchorPane.leftAnchor="0.0"/>
-                                <HBox AnchorPane.rightAnchor="2.0" AnchorPane.bottomAnchor="4.0">
-                                    <children>
-                                        <Button fx:id="detachButton" mnemonicParsing="false" prefHeight="16.0"
-                                                prefWidth="16.0" onAction="#detachMouseClicked">
-                                            <graphic>
-                                                <ImageView pickOnBounds="true" preserveRatio="true">
-                                                    <image>
-                                                        <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/pin.svg.png"/>
-                                                    </image>
-                                                </ImageView>
-                                            </graphic>
-                                            <tooltip>
-                                                <Tooltip text="Detach tab"/>
-                                            </tooltip>
-                                        </Button>
-                                    </children>
-                                </HBox>
                             </children>
                         </AnchorPane>
                     </items>

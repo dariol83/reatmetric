@@ -268,7 +268,7 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         stage.getIcons().add(icon);
         pair.getSecond().setIndependentStage(stage);
         stage.setOnCloseRequest(ev -> {
-            if(DialogUtils.confirm("Close", "About to close " + stage.getTitle(), "Do you want to close " + stage.getTitle() + "? Unsaved updates will be lost!")) {
+            if(DialogUtils.confirm("Close", "About to close " + stage.getTitle(), "Do you want to close " + stage.getTitle() + "?")) {
                 pair.getSecond().dispose();
                 stage.close();
             } else {

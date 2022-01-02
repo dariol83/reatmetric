@@ -16,7 +16,7 @@ import javafx.stage.WindowEvent;
 
 public class EnhancedTitledPane extends TitledPane {
 
-    private static final Image IMG = new Image(EnhancedTitledPane.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/cog.svg.png"));
+    private static final Image IMG = new Image(EnhancedTitledPane.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/menu.svg.png"));
 
     private final Label titleLabel = new Label("");
     private final ToggleButton titleButton = new ToggleButton();
@@ -55,8 +55,7 @@ public class EnhancedTitledPane extends TitledPane {
 
     private void menuButtonClicked(ActionEvent actionEvent) {
         if(titleButton.isSelected() && titleContextMenuProperty().get() != null)  {
-            double menuWidth = titleContextMenuProperty().get().getWidth();
-            titleContextMenuProperty().get().show(this.titleButton, Side.BOTTOM, 0, 1);
+            titleContextMenuProperty().get().show(this.titleButton, Side.LEFT, 0, 0);
         } else if(!titleButton.isSelected() && titleContextMenuProperty().get() != null) {
             titleContextMenuProperty().get().hide();
         }

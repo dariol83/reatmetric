@@ -29,16 +29,17 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.control.TreeTableView?>
 <?import javafx.scene.control.TreeTableColumn?>
-<?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.control.SeparatorMenuItem?>
 
-<TitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Activities" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityDataViewController">
+<?import eu.dariolucia.reatmetric.ui.widgets.EnhancedTitledPane?>
+<?import javafx.scene.control.CheckMenuItem?>
+<EnhancedTitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Activities" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityDataViewController">
     <content>
     <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1">
      <children>
-        <ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
+        <ToolBar fx:id="toolbar" maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
            <items>
               <ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" prefHeight="25.0" prefWidth="91.0" selected="true" text="Live" />
                <Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart">
@@ -184,4 +185,12 @@
      </padding>
     </VBox>
     </content>
-</TitledPane>
+    <titleContextMenu>
+        <ContextMenu>
+            <items>
+                <CheckMenuItem fx:id="toggleShowToolbarItem" mnemonicParsing="false" selected="true" text="Show toolbar" />
+                <MenuItem fx:id="detachMenuItem" onAction="#detachAttachItemAction" mnemonicParsing="false" text="Attach to tab pane" disable="true" />
+            </items>
+        </ContextMenu>
+    </titleContextMenu>
+</EnhancedTitledPane>

@@ -35,7 +35,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.transform.Scale;
 import javafx.scene.transform.Transform;
-import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import java.net.URL;
@@ -47,7 +46,7 @@ import java.util.logging.Logger;
 /**
  * FXML Controller class
  *
- * @author dario
+ * @author Dario Lucia
  */
 public abstract class AbstractDisplayController implements Initializable, IReatmetricServiceListener {
 
@@ -60,8 +59,6 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     protected String user = System.getProperty("user.name");
 
     protected boolean serviceConnected = false;
-
-    private volatile Stage detachedStage = null;
 
     /**
      * Initializes the controller class.
@@ -113,7 +110,7 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
     }
 
     public void dispose() {
-        LOG.fine("Disposing controller " + getClass().getSimpleName() + " - " + toString());
+        LOG.fine("Disposing controller " + getClass().getSimpleName() + " - " + this);
         systemDisconnected(null);
         ReatmetricUI.selectedSystem().removeSubscriber(this);
     }
@@ -189,12 +186,12 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
 
     protected abstract void doSystemConnected(IReatmetricSystem system, boolean oldStatus);
 
-    public void setDetached(Stage stage) {
-        this.detachedStage = stage;
+    protected void informDisplayDetached() {
+        // Subclasses can override
     }
 
-    public boolean isDetached() {
-        return this.detachedStage != null;
+    protected void informDisplayAttached() {
+        // Subclasses can override
     }
 }
 
