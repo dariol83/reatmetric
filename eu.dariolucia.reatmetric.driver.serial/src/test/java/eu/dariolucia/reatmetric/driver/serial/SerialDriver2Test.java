@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 
 class SerialDriver2Test {
 
-    private static final String NAME = "Serial0";
+    private static final String NAME = "USB-Serial Controller";
 
     @Test
     public void testSerial() {

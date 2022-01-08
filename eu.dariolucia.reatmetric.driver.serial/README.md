@@ -139,7 +139,7 @@ Example (assuming that the value length is set to 10)
     04 08:12:08          0 I N/A
     OK\r\n
 
-Note that the full length of the variable part becomes known as soon as the number of entries is known.
+Note that the full length of the variable block (the list of parameters) can be derived as soon as the number of entries is known.
 
 #### Set max number of log messages in log update
 
