@@ -39,7 +39,7 @@ public class Terminal {
         }
         System.out.println("Arguments: " + Arrays.toString(args));
         SerialPort comPort = SerialPort.getCommPort(args[0]);
-        comPort.setComPortTimeouts(SerialPort.TIMEOUT_NONBLOCKING, 5000000, Integer.MAX_VALUE);
+        comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, Integer.MAX_VALUE, Integer.MAX_VALUE);
 
         comPort.setBaudRate(Integer.parseInt(args[1]));
         comPort.setParity(Integer.parseInt(args[4]));
@@ -50,44 +50,35 @@ public class Terminal {
         comPort.openPort();
 
         InputStream is = comPort.getInputStream();
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
         OutputStream os = comPort.getOutputStream();
 
         Thread.sleep(1000);
 
-        comPort.addDataListener(new SerialPortDataListener() {
+        new Thread(new Runnable() {
             @Override
-            public int getListeningEvents() {
-                return SerialPort.LISTENING_EVENT_DATA_AVAILABLE;
-            }
-
-            @Override
-            public void serialEvent(SerialPortEvent serialPortEvent) {
-                try {
-                    byte[] buffer = new byte[1024];
-                    int read = is.read(buffer);
-                    String data = new String(buffer, 0, read);
-                    for(int i = 0; i < data.length(); ++i) {
-                        char c = data.charAt(i);
-                        System.out.print(c);
-                        if(c == 0x0D) {
-                            System.out.print((char) 0x0A);
-                        }
+            public void run() {
+                while(true) {
+                    try {
+                        String data = br.readLine();
+                        System.out.println(data);
+                    } catch (IOException e) {
+                        System.out.println("Last error code: " + comPort.getLastErrorCode() + ", " + comPort.getLastErrorLocation());
+                        e.printStackTrace();
                     }
-                } catch (IOException e) {
-                    System.out.println("Last error code: " + comPort.getLastErrorCode() + ", " + comPort.getLastErrorLocation());
-                    e.printStackTrace();
                 }
             }
-        });
+        }).start();
+
         try {
             // Read from keyboard and send on Enter
-            BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+            BufferedReader brOut = new BufferedReader(new InputStreamReader(System.in));
             String line = null;
-            while((line = br.readLine()) != null) {
+            while((line = brOut.readLine()) != null) {
                 byte[] toSend = line.getBytes(StandardCharsets.US_ASCII);
                 System.out.println("Sending " + toSend.length + " bytes: " + Arrays.toString(toSend));
                 os.write(toSend);
-                os.write(new byte[] { 0x0D, 0x0A });
+                os.write(new byte[] { 0x0D }); //, 0x0A });
                 os.flush();
                 System.out.println("Sending done");
             }

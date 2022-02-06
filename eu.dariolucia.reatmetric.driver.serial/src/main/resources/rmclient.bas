@@ -6,23 +6,23 @@ $COM 1024
 
 'there is no wait or sleep in PB
 'so use active wait
-SUB wait cycles SHARED
-    FOR n = 1 TO cycles
-        SQR(123.543)
+SUB wait (cycles%) SHARED
+    FOR n = 1 TO cycles%
+        temp = SQR(123.543)
     NEXT n
 END SUB
 
-SUB exit_hdlr SHARED
+SUB exithdlr SHARED
     'send BYE
     PRINT #1,"BYE"
     'read response line
-    LINE INPUT #1,lastline%
+    LINE INPUT #1,lastline$
     'close
     CLOSE 1
     connected% = 0
 END SUB
 
-SUB msg_hdlr SHARED
+SUB msghdlr SHARED
     CLS
     'set max log number
     PRINT #1,"SET_MAX_LOG 04"
@@ -42,12 +42,11 @@ SUB msg_hdlr SHARED
         PRINT #1,"UPDATE_LOG"
         'read server response (and ignore)
         LINE INPUT #1,lastline2$
-        'clean screen
-        CLS
-        WHILE NOT endresponse%
+        WHILE endresponse% = 0
             'read server response
             LINE INPUT #1,lastline2$
-            IF MID$(lastline2$,1,2) = "OK" THEN
+            partofstr$ = MID$(lastline2$,1,2)
+            IF partofstr$ = "OK" THEN
                 'done
                 endresponse% = 1
             ELSE
@@ -56,11 +55,12 @@ SUB msg_hdlr SHARED
             END IF
         WEND 'end of response
         'wait some time and repeat
-        CALL wait 20
+        waittime% = 200
+        CALL wait(waittime%)
     WEND  'loop until key is pressed
 END SUB
 
-SUB param_hdlr SHARED
+SUB paramhdlr SHARED
     CLS
     'first deregister params if any
     PRINT #1,"DEREG_PARAM_ALL"
@@ -85,7 +85,8 @@ SUB param_hdlr SHARED
                 'registration fail
                 PRINT "Registration failed: ";
                 PRINT lastline$
-                CALL wait 10
+                waittime% = 10
+                CALL wait(waittime%)
                 'go on
             END IF
         END IF
@@ -106,7 +107,7 @@ SUB param_hdlr SHARED
         LINE INPUT #1,lastline2$
         'clean screen
         CLS
-        WHILE NOT endresponse%
+        WHILE endresponse% = 0
             'read server response
             LINE INPUT #1,lastline2$
             IF MID$(lastline2$,1,2) = "OK" THEN
@@ -118,11 +119,13 @@ SUB param_hdlr SHARED
             END IF
         WEND 'end of response
         'wait some time and repeat
-        CALL wait 20
+        waittime% = 200
+        CALL wait(waittime%)
     WEND  'loop until key is pressed
 END SUB
 
-SUB process_input SHARED
+SUB processinput SHARED
+inputcycle:
     CLS
     PRINT "1: AND"
     PRINT "2: Messages"
@@ -131,20 +134,22 @@ SUB process_input SHARED
 
     IF userinput% = 1 THEN
         'parameters
-        CALL param_hdlr
+        CALL paramhdlr
         GOTO inputcycle
-    ELSE IF userinput% = 2 THEN
+    ELSEIF userinput% = 2 THEN
         'messages
-        CALL msg_hdlr
+        CALL msghdlr
         GOTO inputcycle
-    ELSE IF userinput% = 3 THEN
+    ELSEIF userinput% = 3 THEN
         'exit
-        CALL exit_hdlr
+        CALL exithdlr
     ELSE
         CLS
         PRINT "Wrong selection"
         TONE 7,50
-        CALL wait 10
+        waittime% = 10
+        CALL wait(waittime%)
+        GOTO inputcycle
     END IF
 END SUB
 
@@ -169,7 +174,8 @@ WHILE nattemp% <= attemps%
     PRINT "Reatmetric Client"
     PRINT "Connecting... Attempt ";nattempt%;"\";attemps%;
     PRINT
-    CALL wait 10
+    waittime% = 10
+    CALL wait(waittime%)
     'open communications port at 4800 baud
     'using even parity, 7 data bits,
     '1 stop bit, suppress RTS, ignore
@@ -193,13 +199,13 @@ WHILE nattemp% <= attemps%
     END IF
 WEND
 
-IF connected% == 1
+IF connected% = 1 THEN
     CLS
     PRINT "Reatmetric Client"
     PRINT "Connected to remote system"
     PRINT
     WHILE connected% = 1
-        CALL process_input
+        CALL processinput
     WEND
     CLS
     PRINT "Reatmetric Client"

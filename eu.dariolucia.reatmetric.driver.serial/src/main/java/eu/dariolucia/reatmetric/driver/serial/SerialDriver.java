@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.driver.serial;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortInvalidPortException;
+import com.fazecast.jSerialComm.SerialPortTimeoutException;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
@@ -46,8 +47,10 @@ import eu.dariolucia.reatmetric.driver.serial.definition.SerialConfiguration;
 import eu.dariolucia.reatmetric.driver.serial.protocol.IMonitoringDataManager;
 import eu.dariolucia.reatmetric.driver.serial.protocol.ProtocolManager;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
@@ -164,7 +167,7 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
             }
 
             // If you are here, you have a com port matching, then open it
-            comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, this.configuration.getTimeout() * 1000, 0);
+            comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, this.configuration.getTimeout() * 1000, Integer.MAX_VALUE);
             // Configure port settings from configuration: baud rate, parity, stop, data bits, flow control
             comPort.setBaudRate(this.configuration.getBaudrate());
             comPort.setParity(this.configuration.getParity().getValue());
@@ -173,41 +176,21 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
             comPort.setFlowControl(this.configuration.getFlowControl().getValue());
 
             comPort.openPort();
-            // Now try to read until \r\n (0x0D0A), send the data to the protocol manager and write back the response
-            StringBuilder readString = new StringBuilder();
-            boolean carriageReturnEncountered = false;
+            // Now try to read a line, send the data to the protocol manager and write back the response
+            BufferedReader br = new BufferedReader(new InputStreamReader(comPort.getInputStream()));
             while(this.serialReadingActive) {
                 try {
-                    // This buffer is large enough to store even the longest request message (parameter path > 1000 chars)
-                    // and since the request is only one line and then a response must be received otherwise the protocol
-                    // is violated, this is good enough
-                    byte[] readBuffer = new byte[1024];
-
-                    int numRead = comPort.readBytes(readBuffer, readBuffer.length);
-                    if (numRead == -1) {
-                        Thread.sleep(1000); // Sleep one second and retry
-                    } else {
-                        for (int i = 0; i < numRead; ++i) {
-                            byte charRead = readBuffer[i];
-                            // Append the character
-                            readString.append((char) charRead);
-                            if (charRead == 0x0D) { // If it is a \r, flag it as encountered
-                                carriageReturnEncountered = true;
-                            } else if (carriageReturnEncountered && charRead == 0x0A) { // If it is a \n and preceded by \r, done
-                                // String found and complete, process it
-                                String command = readString.toString();
-                                // Reset the reading
-                                carriageReturnEncountered = false;
-                                readString = new StringBuilder();
-                                // Process command
-                                byte[] toSend = this.protocolManager.event(command);
-                                // Send bytes
-                                comPort.writeBytes(toSend, toSend.length);
-                            } else { // It is a character (ok) or a \n not preceded by a \r (weird...)
-                                carriageReturnEncountered = false;
-                            }
-                        }
+                    String command = br.readLine(); // End of line is also only CR
+                    if (command == null) {
+                        Thread.sleep(1000);
+                        continue;
                     }
+                    // Process command
+                    byte[] toSend = this.protocolManager.event(command);
+                    // Send bytes
+                    comPort.writeBytes(toSend, toSend.length);
+                } catch (SerialPortTimeoutException e) {
+                    // Nothing to report here, it could be normal
                 } catch (Exception e) {
                     // An exception here means the reading had a problem: break the inner loop, close the com port
                     LOG.log(Level.SEVERE, "Error in reading/writing from device " + comPort + ": " + e.getMessage(), new Object[]{ this.name });

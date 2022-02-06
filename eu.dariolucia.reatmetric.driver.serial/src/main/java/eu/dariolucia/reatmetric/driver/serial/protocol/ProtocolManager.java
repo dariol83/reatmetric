@@ -41,7 +41,7 @@ public class ProtocolManager {
     private static final String C_SET_LOG_LEN =         "SET_LOG_LEN";
     private static final String C_UPDATE_LOG =          "UPDATE_LOG";
 
-    private static final String EOL = "" + (char) 10 + (char) 13;
+    private static final String EOL = "" + (char) 10;
     private static final byte[] S_ABORT =   "ABORT".concat(EOL).getBytes(StandardCharsets.US_ASCII);
     private static final byte[] S_HI =      "HI RTM".concat(EOL).getBytes(StandardCharsets.US_ASCII);
     private static final byte[] S_CYA =     "CYA".concat(EOL).getBytes(StandardCharsets.US_ASCII);

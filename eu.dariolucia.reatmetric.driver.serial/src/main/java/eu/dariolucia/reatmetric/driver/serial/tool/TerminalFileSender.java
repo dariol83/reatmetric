@@ -35,15 +35,15 @@ public class TerminalFileSender {
             }
             System.exit(1);
         }
-
+        System.out.println("Sending file " + args[1]);
         SerialPort comPort = SerialPort.getCommPort(args[0]);
-        comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 10000, 0);
+        comPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, Integer.MAX_VALUE, 0);
 
         comPort.setBaudRate(4800);
         comPort.setParity(SerialPort.EVEN_PARITY);
         comPort.setNumDataBits(7);
         comPort.setNumStopBits(1);
-        comPort.setFlowControl(SerialPort.FLOW_CONTROL_RTS_ENABLED | SerialPort.FLOW_CONTROL_CTS_ENABLED);
+        comPort.setFlowControl(SerialPort.FLOW_CONTROL_DISABLED);
 
         comPort.openPort();
 
@@ -54,8 +54,11 @@ public class TerminalFileSender {
             while((line = br.readLine()) != null) {
                 comPort.writeBytes(line.getBytes(StandardCharsets.US_ASCII), line.length());
                 comPort.writeBytes(new byte[] { 0x0D, 0x0A }, 2);
+                Thread.sleep(100);
             }
             System.out.println("File " + args[1] + " sent to serial device " + args[0]);
+            Thread.sleep(10000);
+            System.out.println("Done");
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
