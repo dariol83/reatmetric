@@ -33,6 +33,9 @@ open module eu.dariolucia.reatmetric.ui {
     requires eu.dariolucia.reatmetric.api;
     requires java.rmi;
 
+    // In order to activate JAXB implementation
+    requires com.sun.xml.bind;
+
     exports eu.dariolucia.reatmetric.ui;
 
     uses eu.dariolucia.reatmetric.api.IReatmetricRegister;

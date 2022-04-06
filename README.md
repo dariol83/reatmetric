@@ -94,7 +94,12 @@ basic support for time-tagged commands.
 
 ### Automation Driver
 
-To be written...
+The automation driver supports 3 different languages so far, even though 2 are probably buggy:
+- Groovy (the language of choice)
+- Javascript (via GraalVM, which has a memory management issue, yet to be fixed)
+- Python (via Jython, which presents deployment problems due to conflicting jffi artifacts in the Java module system).
+
+The two buggy languages might be removed soon, or split into a deprecated-experimental automation driver.
 
 ### Performance
 The performance are computed with reference to the following 2 platforms:
@@ -159,11 +164,24 @@ Scenario 2 results:
 
 ## Getting Started
 
+If you want to quickly try Reatmetric out, I suggest the following approach:
+- Build the complete tree with maven: mvn clean install
+- Create a folder called 'reatmetric' inside your home folder and decompress there the configuration zip inside eu.dariolucia.reatmetric.ui.test/src/main/resources
+- Update the configuration data as appropriate. There is no need to change the processing definition data
+- Go inside eu.dariolucia.reatmetric.ui.test/target/deps and remove jffi-1.2.19-native.jar
+- Go inside eu.dariolucia.reatmetric.ui.test/target and run the following line (assuming Java is in your path)
+
+(Windows)
+java --module-path="deps" -Dreatmetric.core.config=<path to Reatmetric>\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+
+(Linux)  
+java --module-path="deps" -Dreatmetric.core.config=<path to Reatmetric>/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+
 ## Implement your driver
 
 ## Roadmap
-- Optimisations and features for the JavaFX UI
 - Implementation of a serial-USB driver to interface an Atari Portfolio (https://en.wikipedia.org/wiki/Atari_Portfolio) for parameter/messages/events visualisation (I know, it is pretty useless in practice, but I want to learn how to handle USB ports using Java, and demonstrate that it is possible to have something that works and it is optimised to interface hardware that is more than 30 years old)
+- Optimisations and features for the JavaFX UI
 - Alternative _persist_ implementations (server-based - in addition to file-based - Apache Derby, PostgreSQL)
 - Web interface (at some point)
 
