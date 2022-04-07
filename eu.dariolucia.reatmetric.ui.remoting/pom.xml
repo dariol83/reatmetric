@@ -91,5 +91,12 @@
             <artifactId>eu.dariolucia.reatmetric.remoting.connector</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <!-- This dependency is there only to pull out all the classes that might be distributed via brokers as value objects,
+        which will trigger a ClassNotFoundException on the UI side at deserialisation time, which will propagate on the server side -->
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.spacecraft</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
 </project>
