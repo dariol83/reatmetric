@@ -22,7 +22,6 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -38,15 +37,8 @@ public abstract class AbstractProvisionServiceProxy<T extends AbstractDataItem, 
 
     private final Map<U, Remote> subscriber2remote = new ConcurrentHashMap<>();
 
-    private final String localAddress;
-
-    public AbstractProvisionServiceProxy(V delegate, String localAddress) {
+    public AbstractProvisionServiceProxy(V delegate) {
         this.delegate = delegate;
-        this.localAddress = localAddress;
-    }
-
-    protected String getLocalAddress() {
-        return localAddress;
     }
 
     @Override
@@ -56,7 +48,7 @@ public abstract class AbstractProvisionServiceProxy<T extends AbstractDataItem, 
         }
         Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
-            activeObject = ObjectActivationCache.instance().activate(subscriber, this.localAddress,0);
+            activeObject = ObjectActivationCache.instance().activate(subscriber, 0);
             if(LOG.isLoggable(Level.FINE)) {
                 LOG.fine("Subscriber active object " + activeObject + " for " + subscriber + " to proxy " + getClass().getSimpleName() + " activated");
             }

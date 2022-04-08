@@ -20,16 +20,11 @@ import eu.dariolucia.reatmetric.api.alarms.AlarmParameterData;
 import eu.dariolucia.reatmetric.api.alarms.AlarmParameterDataFilter;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataProvisionService;
 import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataSubscriber;
-import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.events.*;
-import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-
-import java.rmi.RemoteException;
 
 public class AlarmParameterDataProvisionServiceProxy extends AbstractProvisionServiceProxy<AlarmParameterData, AlarmParameterDataFilter, IAlarmParameterDataSubscriber, IAlarmParameterDataProvisionService> implements IAlarmParameterDataProvisionService {
 
-    public AlarmParameterDataProvisionServiceProxy(IAlarmParameterDataProvisionService delegate, String localAddress) {
-        super(delegate, localAddress);
+    public AlarmParameterDataProvisionServiceProxy(IAlarmParameterDataProvisionService delegate) {
+        super(delegate);
     }
 
 }

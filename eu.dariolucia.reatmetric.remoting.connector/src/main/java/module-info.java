@@ -4,7 +4,6 @@ open module eu.dariolucia.reatmetric.remoting.connector {
     requires java.xml.bind;
 
     requires eu.dariolucia.reatmetric.api;
-    requires eu.dariolucia.reatmetric.remoting;
 
     exports eu.dariolucia.reatmetric.remoting.connector;
     exports eu.dariolucia.reatmetric.remoting.connector.proxy;

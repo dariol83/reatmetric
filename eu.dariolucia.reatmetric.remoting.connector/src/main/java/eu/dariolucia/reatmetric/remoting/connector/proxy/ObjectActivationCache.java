@@ -18,8 +18,6 @@
 package eu.dariolucia.reatmetric.remoting.connector.proxy;
 
 import eu.dariolucia.reatmetric.api.common.Pair;
-import eu.dariolucia.reatmetric.remoting.util.SimpleRMIClientSocketFactory;
-import eu.dariolucia.reatmetric.remoting.util.SimpleRMIServerSocketFactory;
 
 import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
@@ -46,19 +44,12 @@ public final class ObjectActivationCache {
 
     private final Map<Object, Pair<Remote, AtomicInteger>> cache = new HashMap<>();
 
-    synchronized Remote activate(Remote o, String localAddress, int port) throws RemoteException {
+    synchronized Remote activate(Remote o, int port) throws RemoteException {
+        LOG.log(Level.INFO, "Requesting export of object " + o);
         Pair<Remote, AtomicInteger> item = cache.get(o);
         if(item == null) {
             // First activation
-            if(localAddress == null) {
-                item = Pair.of(UnicastRemoteObject.exportObject(o, port), new AtomicInteger(0));
-            } else {
-                item = Pair.of(UnicastRemoteObject.exportObject(o,
-                        port,
-                        new SimpleRMIClientSocketFactory(localAddress),
-                        new SimpleRMIServerSocketFactory(localAddress)),
-                        new AtomicInteger(0));
-            }
+            item = Pair.of(UnicastRemoteObject.exportObject(o, port), new AtomicInteger(0));
             LOG.log(Level.INFO, "Object activated: " + item.getFirst());
             cache.put(o, item);
         }

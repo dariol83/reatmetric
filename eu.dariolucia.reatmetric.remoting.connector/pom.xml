@@ -36,11 +36,6 @@
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>eu.dariolucia.reatmetric</groupId>
-            <artifactId>eu.dariolucia.reatmetric.remoting</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.glassfish.jaxb</groupId>
             <artifactId>jaxb-runtime</artifactId>
             <version>${jaxb.version}</version>

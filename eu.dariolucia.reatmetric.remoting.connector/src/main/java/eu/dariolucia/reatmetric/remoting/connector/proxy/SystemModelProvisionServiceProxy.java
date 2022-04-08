@@ -26,7 +26,6 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,18 +35,16 @@ public class SystemModelProvisionServiceProxy implements ISystemModelProvisionSe
     protected final ISystemModelProvisionService delegate;
 
     private final Map<ISystemModelSubscriber, Remote> subscriber2remote = new ConcurrentHashMap<>();
-    private final String localAddress;
 
-    public SystemModelProvisionServiceProxy(ISystemModelProvisionService delegate, String localAddress) {
+    public SystemModelProvisionServiceProxy(ISystemModelProvisionService delegate) {
         this.delegate = delegate;
-        this.localAddress = localAddress;
     }
 
     @Override
     public void subscribe(ISystemModelSubscriber subscriber) throws RemoteException {
         Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
-            activeObject = ObjectActivationCache.instance().activate(subscriber, this.localAddress,0);
+            activeObject = ObjectActivationCache.instance().activate(subscriber, 0);
             subscriber2remote.put(subscriber, activeObject);
         }
         delegate.subscribe((ISystemModelSubscriber) activeObject);

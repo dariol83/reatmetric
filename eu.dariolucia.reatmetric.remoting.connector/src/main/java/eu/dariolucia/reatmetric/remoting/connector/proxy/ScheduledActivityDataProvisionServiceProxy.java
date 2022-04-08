@@ -23,8 +23,8 @@ import eu.dariolucia.reatmetric.api.scheduler.ScheduledActivityDataFilter;
 
 public class ScheduledActivityDataProvisionServiceProxy extends AbstractStateProvisionServiceProxy<ScheduledActivityData, ScheduledActivityDataFilter, IScheduledActivityDataSubscriber, IScheduledActivityDataProvisionService> implements IScheduledActivityDataProvisionService {
 
-    public ScheduledActivityDataProvisionServiceProxy(IScheduledActivityDataProvisionService delegate, String localAddress) {
-        super(delegate, localAddress);
+    public ScheduledActivityDataProvisionServiceProxy(IScheduledActivityDataProvisionService delegate) {
+        super(delegate);
     }
 
 }

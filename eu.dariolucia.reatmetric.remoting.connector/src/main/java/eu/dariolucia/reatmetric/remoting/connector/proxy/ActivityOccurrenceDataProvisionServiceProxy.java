@@ -19,14 +19,13 @@ package eu.dariolucia.reatmetric.remoting.connector.proxy;
 import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
-import eu.dariolucia.reatmetric.api.parameters.*;
 
 import java.rmi.RemoteException;
 
 public class ActivityOccurrenceDataProvisionServiceProxy extends AbstractStateProvisionServiceProxy<ActivityOccurrenceData, ActivityOccurrenceDataFilter, IActivityOccurrenceDataSubscriber, IActivityOccurrenceDataProvisionService> implements IActivityOccurrenceDataProvisionService {
 
-    public ActivityOccurrenceDataProvisionServiceProxy(IActivityOccurrenceDataProvisionService delegate, String localAddress) {
-        super(delegate, localAddress);
+    public ActivityOccurrenceDataProvisionServiceProxy(IActivityOccurrenceDataProvisionService delegate) {
+        super(delegate);
     }
 
     @Override

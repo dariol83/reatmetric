@@ -23,8 +23,8 @@ import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 
 public class OperationalMessageProvisionServiceProxy extends AbstractProvisionServiceProxy<OperationalMessage, OperationalMessageFilter, IOperationalMessageSubscriber, IOperationalMessageProvisionService> implements IOperationalMessageProvisionService {
 
-    public OperationalMessageProvisionServiceProxy(IOperationalMessageProvisionService delegate, String localAddress) {
-        super(delegate, localAddress);
+    public OperationalMessageProvisionServiceProxy(IOperationalMessageProvisionService delegate) {
+        super(delegate);
     }
     
 }

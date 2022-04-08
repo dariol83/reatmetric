@@ -34,8 +34,8 @@ The ReatMetric modules are based on a very limited set of dependencies:
 - [Apache Derby](http://db.apache.org/derby): providing the storage backend of the _persist_ module;
 - [JAXB](https://javaee.github.io/jaxb-v2): for the configuration of all modules;
 - [Groovy](https://groovy-lang.org): for the Groovy language support in the _processing_ and _automation_ modules (best choice);
-- [GraalVM](https://www.graalvm.org): for the Javascript language support in the _processing_ and _automation_ modules;
-- [Jython](https://www.jython.org/): for the Python language support in the _processing_ and _automation_ modules.
+- [GraalVM](https://www.graalvm.org): for the Javascript language support in the _automation_ modules;
+- [Jython](https://www.jython.org/): for the Python language support in the _automation_ modules.
 
 ## Functionalities
 
@@ -152,17 +152,22 @@ Scenario 1 results:
 Scenario 2 results:
 - Processing start-up time (as per logs - first run, no cache): 113 seconds
 - Processing start-up time (as per logs - with cache): 56 seconds
-- Max TM rate: 
-- Nb. of TM frames per second:
-- Nb. of TM packets per second:
-- Nb. of TM parameter samples decoded per second:
-- Nb. of processed items generated per second:
-- Memory usage server (top):
-- Memory usage UI (Windows Task Monitor):
-- CPU load server:
-- CPU load UI:
+- Max TM rate: 4.6 Mbit/sec (peak: 7 Mbit/sec)
+- Nb. of TM frames per second (peak): ca 450/sec
+- Nb. of TM packets per second (peak): ca 1270/sec
+- Nb. of TM parameter samples decoded per second (peak): 70000/sec
+- Nb. of processed items generated per second (peak): 100000/sec 
+- Memory usage server (heap size): between 2 and 4 GB, top reports 4.6 GB (capped with -Xmx4G)
+- Memory usage UI (Windows Task Monitor): 1.6 GB
+- CPU load server: between 320% and 350% (all 4 cores above 80%)
+- CPU load UI: 3-5% (equivalent to a single core 70% utilised)
+
+![Connector Performance](docs/images/reatmetric-test-raspberry-01.PNG "Connector Performance")
+![System Performance](docs/images/reatmetric-test-raspberry-02.PNG "System Performance")
 
 ## Getting Started
+
+### All-in-one
 
 If you want to quickly try Reatmetric out, I suggest the following approach:
 - Build the complete tree with maven: mvn clean install
@@ -172,10 +177,42 @@ If you want to quickly try Reatmetric out, I suggest the following approach:
 - Go inside eu.dariolucia.reatmetric.ui.test/target and run the following line (assuming Java is in your path)
 
 (Windows)
-java --module-path="deps" -Dreatmetric.core.config=<path to Reatmetric>\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+java --module-path="deps" -Dreatmetric.core.config=path to Reatmetric\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
 
 (Linux)  
-java --module-path="deps" -Dreatmetric.core.config=<path to Reatmetric>/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+java --module-path="deps" -Dreatmetric.core.config=path to Reatmetric/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+
+### With remoting
+
+If you want to try Reatmetric using a client-server deployment, I suggest the following approach:
+- Build the complete tree with maven: mvn clean install
+- Create a folder called 'reatmetric' inside your home folder and decompress there the configuration zip inside eu.dariolucia.reatmetric.ui.test/src/main/resources
+- Update the configuration data as appropriate. There is no need to change the processing definition data
+- Go inside eu.dariolucia.reatmetric.remoting.test/target/deps and remove jffi-1.2.19-native.jar
+- Go inside eu.dariolucia.reatmetric.remoting.test/target and run the following line (assuming Java is in your path)
+
+(Windows)
+java --module-path="deps" -Dreatmetric.core.config=path to Reatmetric\configuration.xml -m eu.dariolucia.reatmetric.remoting/eu.dariolucia.reatmetric.remoting.ReatmetricRemotingServer 19000
+
+(Linux)  
+java --module-path="deps" -Dreatmetric.core.config=path to Reatmetric/configuration.xml -m eu.dariolucia.reatmetric.remoting/eu.dariolucia.reatmetric.remoting.ReatmetricRemotingServer 19000
+
+- Create a folder called 'reatmetric_remoting' inside your home folder
+- Inside the folder created in the previous step, create a remoting configuration, so that the UI can connect
+- Go inside eu.dariolucia.reatmetric.ui.remoting/target/deps and remove jffi-1.2.19-native.jar
+- Go inside eu.dariolucia.reatmetric.ui.remoting/target and run the following line (assuming Java is in your path)
+
+(Windows)
+java --module-path="deps" -Djava.rmi.server.hostname=server IP to use for local connections -Dreatmetric.remoting.connector.config=path to Reatmetric remoting\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+
+(Linux)  
+java --module-path="deps" -Djava.rmi.server.hostname=server IP to use for local connections -Dreatmetric.remoting.connector.config=path to Reatmetric remoting/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+
+Example of remoting configuration:
+
+<ns1:connectors xmlns:ns1="http://dariolucia.eu/reatmetric/remoting/connector/configuration">
+	<connector local-name="Test System" remote-name="Test System" host="192.168.2.106" port="19000" />
+</ns1:connectors>
 
 ## Implement your driver
 

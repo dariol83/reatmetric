@@ -24,8 +24,8 @@ import java.rmi.RemoteException;
 
 public class EventDataProvisionServiceProxy extends AbstractProvisionServiceProxy<EventData, EventDataFilter, IEventDataSubscriber, IEventDataProvisionService> implements IEventDataProvisionService {
 
-    public EventDataProvisionServiceProxy(IEventDataProvisionService delegate, String localAddress) {
-        super(delegate, localAddress);
+    public EventDataProvisionServiceProxy(IEventDataProvisionService delegate) {
+        super(delegate);
     }
 
     @Override

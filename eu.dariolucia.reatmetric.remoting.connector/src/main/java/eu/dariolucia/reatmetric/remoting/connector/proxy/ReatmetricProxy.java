@@ -157,7 +157,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
     @Override
     public synchronized IOperationalMessageProvisionService getOperationalMessageMonitorService() throws ReatmetricException, RemoteException {
         if(operationalMessageProvisionServiceProxy == null) {
-            operationalMessageProvisionServiceProxy = new OperationalMessageProvisionServiceProxy(delegate.getOperationalMessageMonitorService(), connector.getLocalAddress());
+            operationalMessageProvisionServiceProxy = new OperationalMessageProvisionServiceProxy(delegate.getOperationalMessageMonitorService());
         }
         return operationalMessageProvisionServiceProxy;
     }
@@ -173,7 +173,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
     @Override
     public synchronized IAcknowledgedMessageProvisionService getAcknowledgedMessageMonitorService() throws ReatmetricException, RemoteException {
         if(acknowledgedMessageProvisionServiceProxy == null) {
-            acknowledgedMessageProvisionServiceProxy = new AcknowledgedMessageProvisionServiceProxy(delegate.getAcknowledgedMessageMonitorService(), connector.getLocalAddress());
+            acknowledgedMessageProvisionServiceProxy = new AcknowledgedMessageProvisionServiceProxy(delegate.getAcknowledgedMessageMonitorService());
         }
         return acknowledgedMessageProvisionServiceProxy;
     }
@@ -189,7 +189,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
     @Override
     public synchronized IRawDataProvisionService getRawDataMonitorService() throws ReatmetricException, RemoteException {
         if(rawDataProvisionServiceProxy == null) {
-            rawDataProvisionServiceProxy = new RawDataProvisionServiceProxy(delegate.getRawDataMonitorService(), connector.getLocalAddress());
+            rawDataProvisionServiceProxy = new RawDataProvisionServiceProxy(delegate.getRawDataMonitorService());
         }
         return rawDataProvisionServiceProxy;
     }
@@ -197,7 +197,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
     @Override
     public synchronized IParameterDataProvisionService getParameterDataMonitorService() throws ReatmetricException, RemoteException {
         if(parameterDataProvisionServiceProxy == null) {
-            parameterDataProvisionServiceProxy = new ParameterDataProvisionServiceProxy(delegate.getParameterDataMonitorService(), connector.getLocalAddress());
+            parameterDataProvisionServiceProxy = new ParameterDataProvisionServiceProxy(delegate.getParameterDataMonitorService());
         }
         return parameterDataProvisionServiceProxy;
     }
@@ -205,7 +205,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
     @Override
     public synchronized ISystemModelProvisionService getSystemModelMonitorService() throws ReatmetricException, RemoteException {
         if(systemModelProvisionServiceProxy == null) {
-            systemModelProvisionServiceProxy = new SystemModelProvisionServiceProxy(delegate.getSystemModelMonitorService(), connector.getLocalAddress());
+            systemModelProvisionServiceProxy = new SystemModelProvisionServiceProxy(delegate.getSystemModelMonitorService());
         }
         return systemModelProvisionServiceProxy;
     }
@@ -213,7 +213,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
     @Override
     public synchronized IEventDataProvisionService getEventDataMonitorService() throws ReatmetricException, RemoteException {
         if(eventDataProvisionServiceProxy == null) {
-            eventDataProvisionServiceProxy = new EventDataProvisionServiceProxy(delegate.getEventDataMonitorService(), connector.getLocalAddress());
+            eventDataProvisionServiceProxy = new EventDataProvisionServiceProxy(delegate.getEventDataMonitorService());
         }
         return eventDataProvisionServiceProxy;
     }
@@ -221,7 +221,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
     @Override
     public synchronized IAlarmParameterDataProvisionService getAlarmParameterDataMonitorService() throws ReatmetricException, RemoteException {
         if(alarmParameterDataProvisionServiceProxy == null) {
-            alarmParameterDataProvisionServiceProxy = new AlarmParameterDataProvisionServiceProxy(delegate.getAlarmParameterDataMonitorService(), connector.getLocalAddress());
+            alarmParameterDataProvisionServiceProxy = new AlarmParameterDataProvisionServiceProxy(delegate.getAlarmParameterDataMonitorService());
         }
         return alarmParameterDataProvisionServiceProxy;
     }
@@ -229,7 +229,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
     @Override
     public synchronized IActivityOccurrenceDataProvisionService getActivityOccurrenceDataMonitorService() throws ReatmetricException, RemoteException {
         if(activityOccurrenceDataProvisionServiceProxy == null) {
-            activityOccurrenceDataProvisionServiceProxy = new ActivityOccurrenceDataProvisionServiceProxy(delegate.getActivityOccurrenceDataMonitorService(), connector.getLocalAddress());
+            activityOccurrenceDataProvisionServiceProxy = new ActivityOccurrenceDataProvisionServiceProxy(delegate.getActivityOccurrenceDataMonitorService());
         }
         return activityOccurrenceDataProvisionServiceProxy;
     }
@@ -245,7 +245,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
     @Override
     public synchronized IScheduler getScheduler() throws ReatmetricException, RemoteException {
         if(schedulerProxy == null) {
-            schedulerProxy = new SchedulerProxy(delegate.getScheduler(), connector.getLocalAddress());
+            schedulerProxy = new SchedulerProxy(delegate.getScheduler());
         }
         return schedulerProxy;
     }
@@ -253,7 +253,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
     @Override
     public synchronized IScheduledActivityDataProvisionService getScheduledActivityDataMonitorService() throws ReatmetricException, RemoteException {
         if(scheduledActivityDataProvisionServiceProxy == null) {
-            scheduledActivityDataProvisionServiceProxy = new ScheduledActivityDataProvisionServiceProxy(delegate.getScheduledActivityDataMonitorService(), connector.getLocalAddress());
+            scheduledActivityDataProvisionServiceProxy = new ScheduledActivityDataProvisionServiceProxy(delegate.getScheduledActivityDataMonitorService());
         }
         return scheduledActivityDataProvisionServiceProxy;
     }
@@ -264,7 +264,7 @@ public class ReatmetricProxy implements IReatmetricSystem {
             List<ITransportConnector> theConnectors = delegate.getTransportConnectors();
             transportConnectorProxyList = new ArrayList<>(theConnectors.size());
             for(ITransportConnector t : theConnectors) {
-                transportConnectorProxyList.add(new TransportConnectorProxy(t, connector.getLocalAddress()));
+                transportConnectorProxyList.add(new TransportConnectorProxy(t));
             }
         }
         return transportConnectorProxyList.stream().map(o -> (ITransportConnector) o).collect(Collectors.toList());
