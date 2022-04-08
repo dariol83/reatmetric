@@ -21,21 +21,7 @@ package eu.dariolucia.reatmetric.processing.definition;
  */
 public enum ExpressionDialect {
     /**
-     * The expression will be evaluated using the Javascript interpreter.
-     */
-    JS,
-    /**
      * The expression will be evaluated using the Groovy interpreter.
      */
-    GROOVY,
-    /**
-     * The expression will be evaluated using the Python interpreter.
-     *
-     * Important: the support of Python for expressions is inherently tricky and works as expected for single expressions. A full length block with statements,
-     * if, for, complex function calls and other blocks will not return any value as it will be compiled for 'exec'ution rather than
-     * for 'eval'uation: https://stackoverflow.com/questions/2220699/whats-the-difference-between-eval-exec-and-compile
-     * Reatmetric uses the approach described here: https://stackoverflow.com/questions/1887320/get-data-back-from-jython-scripts-using-jsr-223
-     * The result is fetched by getting the variable _result at the end of the expression evaluation, so make sure to set it accordingly.
-     */
-    PYTHON
+    GROOVY
 }

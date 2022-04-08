@@ -24,15 +24,14 @@ import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
-import eu.dariolucia.reatmetric.api.value.BitString;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelOutput;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
-import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.api.value.BitString;
+import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.python.antlr.op.Param;
 
 import javax.xml.bind.JAXBException;
 import java.time.Duration;
@@ -638,45 +637,6 @@ class ParameterTest {
                 assertEquals("BASE", ((SystemEntity) outList.get(i)).getName());
             } else if(((ParameterData) outList.get(i)).getExternalId() == 1101) {
                 assertEquals(1101, ((ParameterData) outList.get(i)).getExternalId());
-                assertEquals(-20L, ((ParameterData) outList.get(i)).getSourceValue());
-                assertEquals(-20L, ((ParameterData) outList.get(i)).getEngValue());
-                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
-                ++i;
-                assertEquals("EXP1", ((SystemEntity) outList.get(i)).getName());
-            }
-        }
-    }
-
-
-    @Test
-    void testPythonExpressionPropertyBindings() throws JAXBException, ProcessingModelException, InterruptedException {
-        Logger testLogger = Logger.getLogger(getClass().getName());
-        ProcessingDefinition pd = ProcessingDefinition.load(this.getClass().getClassLoader().getResourceAsStream("processing_definitions_parameters.xml"));
-        ProcessingModelFactoryImpl factory = new ProcessingModelFactoryImpl();
-        List<AbstractDataItem> outList = new CopyOnWriteArrayList<>();
-        // All output data items go in the outList
-        IProcessingModelOutput output = outList::addAll;
-        IProcessingModel model = factory.build(pd, output, null);
-
-        testLogger.info("Injection - Batch 1");
-        ParameterSample b = ParameterSample.of(1200, 10);
-        model.injectParameters(Collections.singletonList(b));
-
-        //
-        AwaitUtil.awaitAndVerify(20000, outList::size, 4);
-
-        // Checks
-        for(int i = 0; i < outList.size(); ++i) {
-            if(((ParameterData) outList.get(i)).getExternalId() == 1200) {
-                assertEquals(1200, ((ParameterData) outList.get(i)).getExternalId());
-                assertEquals(10L, ((ParameterData) outList.get(i)).getSourceValue());
-                assertEquals(20L, ((ParameterData) outList.get(i)).getEngValue());
-                assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());
-                assertEquals(AlarmState.NOMINAL, ((ParameterData) outList.get(i)).getAlarmState());
-                ++i;
-                assertEquals("BASE", ((SystemEntity) outList.get(i)).getName());
-            } else if(((ParameterData) outList.get(i)).getExternalId() == 1201) {
-                assertEquals(1201, ((ParameterData) outList.get(i)).getExternalId());
                 assertEquals(-20L, ((ParameterData) outList.get(i)).getSourceValue());
                 assertEquals(-20L, ((ParameterData) outList.get(i)).getEngValue());
                 assertEquals(Validity.VALID, ((ParameterData) outList.get(i)).getValidity());

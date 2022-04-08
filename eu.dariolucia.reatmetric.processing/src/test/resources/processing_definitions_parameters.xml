@@ -276,13 +276,5 @@
                 </expected>
             </checks>
         </parameter>
-        <parameter id="#1201" location="ROOT.EXPTESTPY.EXP1" description="Parameter with python expression 1" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
-            <synthetic dialect="PYTHON">
-                <expression>100 if SOURCEVAL == 30 else -20</expression>
-                <symbol name="SOURCEVAL" reference="#1200" binding="SOURCE_VALUE" />
-            </synthetic>
-        </parameter>
-
-
     </parameters>
 </ns1:processing>
