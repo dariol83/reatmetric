@@ -35,6 +35,9 @@ public class ConnectorConfiguration {
     @XmlAttribute(name = "port", required = true)
     private int port;
 
+    @XmlAttribute(name = "local-address", required = false)
+    private String localAddress = null;
+
     public ConnectorConfiguration() {
     }
 
@@ -72,5 +75,13 @@ public class ConnectorConfiguration {
     public ConnectorConfiguration setPort(int port) {
         this.port = port;
         return this;
+    }
+
+    public String getLocalAddress() {
+        return localAddress;
+    }
+
+    public void setLocalAddress(String localAddress) {
+        this.localAddress = localAddress;
     }
 }

@@ -38,13 +38,15 @@ public class TransportConnectorProxy implements ITransportConnector {
     private final ITransportConnector delegate;
 
     private final Map<ITransportSubscriber, Remote> subscriber2remote = new ConcurrentHashMap<>();
+    private final String localAddress;
 
     private volatile String cachedName;
     private volatile String cachedDescription;
     private volatile Map<String, Pair<String, ValueTypeEnum>> cachedProperties;
 
-    public TransportConnectorProxy(ITransportConnector delegate) {
+    public TransportConnectorProxy(ITransportConnector delegate, String localAddress) {
         this.delegate = delegate;
+        this.localAddress = localAddress;
     }
 
     @Override
@@ -125,7 +127,7 @@ public class TransportConnectorProxy implements ITransportConnector {
         }
         Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
-            activeObject = ObjectActivationCache.instance().activate(subscriber, 0);
+            activeObject = ObjectActivationCache.instance().activate(subscriber, this.localAddress, 0);
             subscriber2remote.put(subscriber, activeObject);
         }
         delegate.register((ITransportSubscriber) activeObject);

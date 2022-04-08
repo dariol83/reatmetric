@@ -24,8 +24,8 @@ import java.rmi.RemoteException;
 
 public class ParameterDataProvisionServiceProxy extends AbstractStateProvisionServiceProxy<ParameterData, ParameterDataFilter, IParameterDataSubscriber, IParameterDataProvisionService> implements IParameterDataProvisionService {
 
-    public ParameterDataProvisionServiceProxy(IParameterDataProvisionService delegate) {
-        super(delegate);
+    public ParameterDataProvisionServiceProxy(IParameterDataProvisionService delegate, String localAddress) {
+        super(delegate, localAddress);
     }
 
     @Override

@@ -25,8 +25,8 @@ import java.rmi.RemoteException;
 
 public class ActivityOccurrenceDataProvisionServiceProxy extends AbstractStateProvisionServiceProxy<ActivityOccurrenceData, ActivityOccurrenceDataFilter, IActivityOccurrenceDataSubscriber, IActivityOccurrenceDataProvisionService> implements IActivityOccurrenceDataProvisionService {
 
-    public ActivityOccurrenceDataProvisionServiceProxy(IActivityOccurrenceDataProvisionService delegate) {
-        super(delegate);
+    public ActivityOccurrenceDataProvisionServiceProxy(IActivityOccurrenceDataProvisionService delegate, String localAddress) {
+        super(delegate, localAddress);
     }
 
     @Override

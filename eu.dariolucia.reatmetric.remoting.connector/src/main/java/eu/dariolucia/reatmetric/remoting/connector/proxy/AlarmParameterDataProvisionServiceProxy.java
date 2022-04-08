@@ -28,8 +28,8 @@ import java.rmi.RemoteException;
 
 public class AlarmParameterDataProvisionServiceProxy extends AbstractProvisionServiceProxy<AlarmParameterData, AlarmParameterDataFilter, IAlarmParameterDataSubscriber, IAlarmParameterDataProvisionService> implements IAlarmParameterDataProvisionService {
 
-    public AlarmParameterDataProvisionServiceProxy(IAlarmParameterDataProvisionService delegate) {
-        super(delegate);
+    public AlarmParameterDataProvisionServiceProxy(IAlarmParameterDataProvisionService delegate, String localAddress) {
+        super(delegate, localAddress);
     }
 
 }

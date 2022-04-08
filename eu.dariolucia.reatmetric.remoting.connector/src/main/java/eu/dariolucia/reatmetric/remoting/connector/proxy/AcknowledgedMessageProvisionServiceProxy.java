@@ -23,8 +23,8 @@ import eu.dariolucia.reatmetric.api.messages.IAcknowledgedMessageSubscriber;
 
 public class AcknowledgedMessageProvisionServiceProxy extends AbstractProvisionServiceProxy<AcknowledgedMessage, AcknowledgedMessageFilter, IAcknowledgedMessageSubscriber, IAcknowledgedMessageProvisionService> implements IAcknowledgedMessageProvisionService {
 
-    public AcknowledgedMessageProvisionServiceProxy(IAcknowledgedMessageProvisionService delegate) {
-        super(delegate);
+    public AcknowledgedMessageProvisionServiceProxy(IAcknowledgedMessageProvisionService delegate, String localAddress) {
+        super(delegate, localAddress);
     }
 
 }

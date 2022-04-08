@@ -36,16 +36,18 @@ public class SystemModelProvisionServiceProxy implements ISystemModelProvisionSe
     protected final ISystemModelProvisionService delegate;
 
     private final Map<ISystemModelSubscriber, Remote> subscriber2remote = new ConcurrentHashMap<>();
+    private final String localAddress;
 
-    public SystemModelProvisionServiceProxy(ISystemModelProvisionService delegate) {
+    public SystemModelProvisionServiceProxy(ISystemModelProvisionService delegate, String localAddress) {
         this.delegate = delegate;
+        this.localAddress = localAddress;
     }
 
     @Override
     public void subscribe(ISystemModelSubscriber subscriber) throws RemoteException {
         Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
-            activeObject = ObjectActivationCache.instance().activate(subscriber, 0);
+            activeObject = ObjectActivationCache.instance().activate(subscriber, this.localAddress,0);
             subscriber2remote.put(subscriber, activeObject);
         }
         delegate.subscribe((ISystemModelSubscriber) activeObject);

@@ -150,8 +150,8 @@ Scenario 1 results:
 ![System Performance](docs/images/reatmetric-test-all-in-a-box-02.PNG "System Performance")
 
 Scenario 2 results:
-- Processing start-up time (as per logs - first run, no cache):
-- Processing start-up time (as per logs - with cache):
+- Processing start-up time (as per logs - first run, no cache): 113 seconds
+- Processing start-up time (as per logs - with cache): 56 seconds
 - Max TM rate: 
 - Nb. of TM frames per second:
 - Nb. of TM packets per second:

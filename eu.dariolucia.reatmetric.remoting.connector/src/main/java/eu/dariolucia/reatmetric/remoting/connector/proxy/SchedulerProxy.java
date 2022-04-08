@@ -37,8 +37,8 @@ public class SchedulerProxy extends AbstractStateProvisionServiceProxy<Scheduled
 
     private final Map<ISchedulerSubscriber, Remote> scheduleSubscriber2remote = new ConcurrentHashMap<>();
 
-    public SchedulerProxy(IScheduler delegate) {
-        super(delegate);
+    public SchedulerProxy(IScheduler delegate, String localAddress) {
+        super(delegate, localAddress);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class SchedulerProxy extends AbstractStateProvisionServiceProxy<Scheduled
         }
         Remote activeObject = scheduleSubscriber2remote.get(subscriber);
         if(activeObject == null) {
-            activeObject = ObjectActivationCache.instance().activate(subscriber, 0);
+            activeObject = ObjectActivationCache.instance().activate(subscriber, getLocalAddress(), 0);
             if(LOG.isLoggable(Level.FINE)) {
                 LOG.fine("Subscriber active object " + activeObject + " for " + subscriber + " to proxy " + getClass().getSimpleName() + " activated");
             }

@@ -25,8 +25,8 @@ import java.util.List;
 
 public class AbstractStateProvisionServiceProxy<T extends AbstractDataItem, K extends AbstractDataItemFilter<T>, U extends IDataItemSubscriber<T>, V extends IDataItemStateProvisionService<U, K, T>> extends AbstractProvisionServiceProxy<T, K, U, V> implements IDataItemStateProvisionService<U, K, T> {
 
-    public AbstractStateProvisionServiceProxy(V delegate) {
-        super(delegate);
+    public AbstractStateProvisionServiceProxy(V delegate, String localAddress) {
+        super(delegate, localAddress);
     }
 
     @Override

@@ -28,8 +28,8 @@ import java.util.LinkedHashMap;
 
 public class RawDataProvisionServiceProxy extends AbstractProvisionServiceProxy<RawData, RawDataFilter, IRawDataSubscriber, IRawDataProvisionService> implements IRawDataProvisionService {
 
-    public RawDataProvisionServiceProxy(IRawDataProvisionService delegate) {
-        super(delegate);
+    public RawDataProvisionServiceProxy(IRawDataProvisionService delegate, String localAddress) {
+        super(delegate, localAddress);
     }
 
     @Override
