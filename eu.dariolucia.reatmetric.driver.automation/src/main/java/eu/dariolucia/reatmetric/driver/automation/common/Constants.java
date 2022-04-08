@@ -42,5 +42,5 @@ public class Constants {
     public static final String AUTOMATION_ROUTE = "Automation Engine";
 
     // Python result object name
-    public static final String PYTHON_RESULT_NAME = ExpressionDefinition.PYTHON_RESULT_NAME;
+    public static final String PYTHON_RESULT_NAME = "_result";
 }
