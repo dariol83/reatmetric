@@ -152,9 +152,9 @@ Scenario 1 results:
 Scenario 2 results:
 - Processing start-up time (as per logs - first run, no cache): 113 seconds
 - Processing start-up time (as per logs - with cache): 56 seconds
-- Max TM rate: 4.6 Mbit/sec (peak: 7 Mbit/sec)
-- Nb. of TM frames per second (peak): ca 450/sec
-- Nb. of TM packets per second (peak): ca 1270/sec
+- Max TM rate: 4.6 Mbit/sec (peak: 7 Mbit/sec, no backlog: 2.5 Mbit/sec)
+- Nb. of TM frames per second (peak): ca 450/sec, no backlog 250/sec
+- Nb. of TM packets per second (peak): ca 1270/sec, no backlog 900/sec
 - Nb. of TM parameter samples decoded per second (peak): 70000/sec
 - Nb. of processed items generated per second (peak): 100000/sec 
 - Memory usage server (heap size): between 2 and 4 GB, top reports 4.6 GB (capped with -Xmx4G)
