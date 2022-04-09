@@ -127,10 +127,10 @@ The data definition of the processing model include:
 - 10'000 activities
 
 The TM/TC data definition of the spacecraft include:
--- 3'600 3,25 TM packets
--- 10'000 5,[1,2,3,4] TM packets
--- time packet, verification reports
--- 10'000 TC commands 
+- 3'600 3,25 TM packets
+- 10'000 5,[1,2,3,4] TM packets
+- time packet, verification reports
+- 10'000 TC commands 
 
 TM/TC setup:
 - single RAF SLE in online timely mode;
