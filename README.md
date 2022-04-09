@@ -108,7 +108,7 @@ The two buggy languages are encapsulated into experimental automation drivers.
 The performance are computed with reference to the following 2 platforms:
 
 1) Zotac Magnus EN72070V: Intel Core i7-9750H, Hexa-core, 2.6 GHz without turbo boost; 32 GB DDR4 2666 MHz; Windows 10 Professional 64 bits; openJDK 11.
-2) Raspberry PI 4: Broadcom BCM2711, Quad Core Cortex-A72 (ARM v8) 64-bit SoC @ 1.5GHz, 8 GB DDR4 3200 MHz; Ubuntu Linux 64 bits; openJDK 11.
+2) Raspberry PI 4: Broadcom BCM2711, Quad Core Cortex-A72 (ARM v8) 64-bit SoC @ 1.5GHz, 8 GB DDR4 3200 MHz; Manjaro Linux 64 bits; openJDK 11.
 
 Scenario 1 setup:
 - Spacecraft simulator running on the same machine as the ReatMetric system;
