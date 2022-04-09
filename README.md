@@ -213,9 +213,9 @@ java --module-path="deps" -Djava.rmi.server.hostname=server IP to use for local 
 
 Example of remoting configuration:
 
-<ns1:connectors xmlns:ns1="http://dariolucia.eu/reatmetric/remoting/connector/configuration">
-	<connector local-name="Test System" remote-name="Test System" host="192.168.2.106" port="19000" />
-</ns1:connectors>
+    <ns1:connectors xmlns:ns1="http://dariolucia.eu/reatmetric/remoting/connector/configuration">
+	    <connector local-name="Test System" remote-name="Test System" host="192.168.2.106" port="19000" />
+    </ns1:connectors>
 
 ## Implement your driver
 
