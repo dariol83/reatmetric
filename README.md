@@ -22,7 +22,10 @@ ReatMetric is a modular framework, decomposed in modules following the Java modu
 - **eu.dariolucia.reatmetric.remoting**: this module provides the mechanism to expose an implementation of the IReatmetricSystem via Java RMI (server side).
 - **eu.dariolucia.reatmetric.remoting.connector**: this module provides the mechanism to connect to a remote implementation of the IReatmetricSystem via Java RMI (client side).
 - **eu.dariolucia.reatmetric.ui**: this module implements a fully featured UI (JavaFX-based) that can be used to start and operate a ReatMetric-based system.
-- **eu.dariolucia.reatmetric.driver.automation**: this module provides a driver implementation of an automation system capable to execute Javascript, Groovy or Python scripts.
+- **eu.dariolucia.reatmetric.driver.automation.base**: this module provides a driver codebase to implement an automation system based on script files.
+- **eu.dariolucia.reatmetric.driver.automation.groovy**: this module provides a driver implementation of an automation system capable to execute Groovy scripts. Preferred choice.
+- **eu.dariolucia.reatmetric.driver.automation.js**: this module provides a driver implementation of an automation system capable to execute Javascript scripts. Experimental.
+- **eu.dariolucia.reatmetric.driver.automation.python**: this module provides a driver implementation of an automation system capable to execute Python scripts. Experimental.
 - **eu.dariolucia.reatmetric.driver.spacecraft**: this module provides a driver implementation for the monitoring and control of a CCSDS/ECSS-PUS compliant spacecraft. Currently it includes support for the reception of TM/AOS frames via SLE RAF/RCF services, TM packet extraction, parameter decoding, PUS 9 time correlation, PUS 5 event mapping, PUS 1 command verification, PUS 11 on-board command scheduling (limited to 11,4 commands), telecommand encoding and CLTU transmission via SLE CLTU, full COP-1 support.
 - **eu.dariolucia.reatmetric.driver.test**: this module is a simple test driver that shows how to implement a simple custom driver.
 
@@ -94,12 +97,12 @@ basic support for time-tagged commands.
 
 ### Automation Driver
 
-The automation driver supports 3 different languages so far, even though 2 are probably buggy:
+The automation drivers support 3 different languages so far, even though 2 are probably buggy:
 - Groovy (the language of choice)
 - Javascript (via GraalVM, which has a memory management issue, yet to be fixed)
 - Python (via Jython, which presents deployment problems due to conflicting jffi artifacts in the Java module system).
 
-The two buggy languages might be removed soon, or split into a deprecated-experimental automation driver.
+The two buggy languages are encapsulated into experimental automation drivers.
 
 ### Performance
 The performance are computed with reference to the following 2 platforms:
