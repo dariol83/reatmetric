@@ -158,8 +158,8 @@ Scenario 2 results:
 - Max TM rate: 4.6 Mbit/sec (peak: 7 Mbit/sec, no backlog: 2.5 Mbit/sec)
 - Nb. of TM frames per second (peak): ca 450/sec, no backlog 250/sec
 - Nb. of TM packets per second (peak): ca 1270/sec, no backlog 900/sec
-- Nb. of TM parameter samples decoded per second (peak): 70000/sec
-- Nb. of processed items generated per second (peak): 100000/sec 
+- Nb. of TM parameter samples decoded per second (peak): 70.000/sec
+- Nb. of processed items generated per second (peak): 100.000/sec 
 - Memory usage server (heap size): between 2 and 4 GB, top reports 4.6 GB (capped with -Xmx4G)
 - Memory usage UI (Windows Task Monitor): 1.6 GB
 - CPU load server: between 320% and 350% (all 4 cores above 80%)
