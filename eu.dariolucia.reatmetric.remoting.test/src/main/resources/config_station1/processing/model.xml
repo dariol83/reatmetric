@@ -1,0 +1,1130 @@
+<!--
+  ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~          http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
+    <parameters>
+		<!-- Power Supply Distributor -->
+		<parameter id="#100" location="STATION.POWERSUPPLY.PS_STATUS" description="Power Supply Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#101" location="STATION.POWERSUPPLY.PS_TENSION" description="Power Supply Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="210"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="270" low="200"/>
+            </checks>
+		</parameter>
+		<parameter id="#102" location="STATION.POWERSUPPLY.PS_CURRENT" description="Power Supply Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
+			<!-- You can have valid measured current only if the output is enabled and the 
+			matrix input 1 is enabled -->
+			<validity>
+				<condition>
+                    <expression>POWERSUPPLY_OUTPUT == "ON" &amp;&amp; MATRIX_INPUT1 == "ON"</expression>
+                    <symbol name="POWERSUPPLY_OUTPUT" reference="#104" binding="ENG_VALUE" />
+					<symbol name="MATRIX_INPUT1" reference="#401" binding="ENG_VALUE" />
+                </condition>
+			</validity>
+			<checks>
+                <limit name="BCLIMIT" type="REAL" severity="WARNING" high="17.5" low="14.0"/>
+				<limit name="BCLIMIT2" type="REAL" severity="ALARM" high="20.0" low="12.0"/>
+            </checks>
+		</parameter>
+		<parameter id="#103" location="STATION.POWERSUPPLY.PS_PROTECTION" description="Power Supply Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+				<point x="2" y="BYPASS" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING" severity="WARNING">
+                    <value>ON</value>
+					<value>BYPASS</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#104" location="STATION.POWERSUPPLY.PS_OUTPUT" description="Power Supply Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		
+		
+		<!-- Diesel Generator 1 -->
+		<parameter id="#200" location="STATION.DIESEL_GEN1.DG1_STATUS" description="Diesel Generator 1 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#201" location="STATION.DIESEL_GEN1.DG1_TENSION" description="Diesel Generator 1 Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="210"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="270" low="200"/>
+            </checks>
+		</parameter>
+		<parameter id="#202" location="STATION.DIESEL_GEN1.DG1_CURRENT" description="Diesel Generator 1 Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
+			<!-- You can have valid measured current only if the output is enabled and the 
+			switch is in position 1 -->
+			<validity>
+				<condition>
+                    <expression>DG1_OUTPUT == "ON" &amp;&amp; SWITCH_POSITION == 1</expression>
+                    <symbol name="DG1_OUTPUT" reference="#204" binding="ENG_VALUE" />
+					<symbol name="SWITCH_POSITION" reference="#500" binding="SOURCE_VALUE" />
+                </condition>
+			</validity>
+			<checks>
+                <limit name="BCLIMIT" type="REAL" severity="WARNING" high="17.5" low="14.0"/>
+				<limit name="BCLIMIT2" type="REAL" severity="ALARM" high="20.0" low="12.0"/>
+            </checks>
+		</parameter>
+		<parameter id="#203" location="STATION.DIESEL_GEN1.DG1_PROTECTION" description="Diesel Generator 1 Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+				<point x="2" y="BYPASS" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING" severity="WARNING">
+                    <value>ON</value>
+					<value>BYPASS</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#204" location="STATION.DIESEL_GEN1.DG1_OUTPUT" description="Diesel Generator 1 Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		
+		
+		<!-- Diesel Generator 2 -->
+		<parameter id="#300" location="STATION.DIESEL_GEN2.DG2_STATUS" description="Diesel Generator 2 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#301" location="STATION.DIESEL_GEN2.DG2_TENSION" description="Diesel Generator 2 Measured Tension" raw_type="REAL" eng_type="REAL" eng_unit="V">
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="210"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="270" low="200"/>
+            </checks>
+		</parameter>
+		<parameter id="#302" location="STATION.DIESEL_GEN2.DG2_CURRENT" description="Diesel Generator 2 Measured Current" raw_type="REAL" eng_type="REAL" eng_unit="A">
+			<!-- You can have valid measured current only if the output is enabled and the 
+			switch is in position 2 -->
+			<validity>
+				<condition>
+                    <expression>DG2_OUTPUT == "ON" &amp;&amp; SWITCH_POSITION == 2</expression>
+                    <symbol name="DG2_OUTPUT" reference="#304" binding="ENG_VALUE" />
+					<symbol name="SWITCH_POSITION" reference="#500" binding="SOURCE_VALUE" />
+                </condition>
+			</validity>
+			<checks>
+                <limit name="BCLIMIT" type="REAL" severity="WARNING" high="17.5" low="14.0"/>
+				<limit name="BCLIMIT2" type="REAL" severity="ALARM" high="20.0" low="12.0"/>
+            </checks>
+		</parameter>
+		<parameter id="#303" location="STATION.DIESEL_GEN2.DG2_PROTECTION" description="Diesel Generator 2 Overtension Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+				<point x="2" y="BYPASS" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING" severity="WARNING">
+                    <value>ON</value>
+					<value>BYPASS</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#304" location="STATION.DIESEL_GEN2.DG2_OUTPUT" description="Diesel Generator 2 Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		
+		<!-- Power Matrix -->
+		<parameter id="#400" location="STATION.MATRIX.MTX_STATUS" description="Matrix Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#401" location="STATION.MATRIX.MTX_INPUT1" description="Matrix Input 1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#402" location="STATION.MATRIX.MTX_INPUT2" description="Matrix Input 2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#403" location="STATION.MATRIX.MTX_OUTPUT" description="Matrix Output" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#404" location="STATION.MATRIX.MTX_WIRING" description="Matrix Internal Wiring" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="NONE" />
+                <point x="1" y="INPUT1-TO-OUTPUT" />
+                <point x="2" y="INPUT2-TO-OUTPUT" />
+            </calib_enum>
+		</parameter>
+        <parameter id="#405" location="STATION.MATRIX.MTX_DIAG1" description="Matrix Diagnostics 1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_range_enum default="UNKNOWN">
+                <point min="0" max="10" value="Minimal" />
+                <point min="11" max="80" value="Medium" />
+                <point min="81" max="97" value="High" />
+                <point min="98" max="100" value="Very High" />
+            </calib_range_enum>
+            <checks>
+                <expected severity="WARN" name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>Minimal</value>
+                    <value>Medium</value>
+                    <value>High</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#406" location="STATION.MATRIX.MTX_DIAG2" description="Matrix Diagnostics 2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_range_enum default="UNKNOWN">
+                <point min="0" max="10" value="Minimal" />
+                <point min="11" max="80" value="Medium" />
+                <point min="81" max="97" value="High" />
+                <point min="98" max="100" value="Very High" />
+            </calib_range_enum>
+            <checks>
+                <expected severity="WARN" name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>Minimal</value>
+                    <value>Medium</value>
+                    <value>High</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#407" location="STATION.MATRIX.MTX_DIAG3" description="Matrix Diagnostics 3" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_range_enum default="UNKNOWN">
+                <point min="0" max="10" value="Minimal" />
+                <point min="11" max="80" value="Medium" />
+                <point min="81" max="97" value="High" />
+                <point min="98" max="100" value="Very High" />
+            </calib_range_enum>
+            <checks>
+                <expected severity="WARN" name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>Minimal</value>
+                    <value>Medium</value>
+                    <value>High</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#408" location="STATION.MATRIX.MTX_DIAG4" description="Matrix Diagnostics 4" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_range_enum default="UNKNOWN">
+                <point min="0" max="10" value="Minimal" />
+                <point min="11" max="80" value="Medium" />
+                <point min="81" max="97" value="High" />
+                <point min="98" max="100" value="Very High" />
+            </calib_range_enum>
+            <checks>
+                <expected severity="WARN" name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>Minimal</value>
+                    <value>Medium</value>
+                    <value>High</value>
+                </expected>
+            </checks>
+        </parameter>
+		
+		<!-- Switch -->
+		<parameter id="#500" location="STATION.SWITCH.SW_POSITION" description="Switch Position" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="1" y="POSITION_1" />
+                <point x="2" y="POSITION_2" />
+            </calib_enum>
+            <setter activity="#550" set_argument="ARG1" />
+		</parameter>
+		
+		<!-- Splitter -->
+		<parameter id="#600" location="STATION.SPLITTER.SPT_STATUS" description="Splitter Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#601" location="STATION.SPLITTER.SPT_INPUT" description="Splitter Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#602" location="STATION.SPLITTER.SPT_OUTPUT1" description="Splitter Output 1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#603" location="STATION.SPLITTER.SPT_OUTPUT2" description="Splitter Output 2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#604" location="STATION.SPLITTER.SPT_OUTPUT3" description="Splitter Output 3" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#605" location="STATION.SPLITTER.SPT_POWER" description="Splitter Power Consuption" raw_type="REAL" eng_type="REAL" eng_unit="W" >
+			<validity>
+				<match parameter="#600" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BCLIMIT" type="REAL" severity="WARNING" high="2570.0" low="1070.0"/>
+				<limit name="BCLIMIT2" type="REAL" severity="ALARM" high="3000.0" low="800.0"/>
+				<delta name="DLIMIT" type="REAL" severity="WARNING" high="70" low="-20.0" absolute="true" />
+            </checks>
+		</parameter>
+		
+		
+		<!-- Ventilation Grid -->
+		<parameter id="#700" location="STATION.VENTILATION.VNT_STATUS" description="Ventilation Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#701" location="STATION.VENTILATION.VNT_INPUT" description="Ventilation Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#702" location="STATION.VENTILATION.VNT_FAN1_SPEED" description="Ventilation Speed Fan 1" raw_type="REAL" eng_type="REAL" eng_unit="RPM">
+			<validity>
+				<match parameter="#700" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="180"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="120"/>
+            </checks>
+		</parameter>
+		<parameter id="#703" location="STATION.VENTILATION.VNT_FAN2_SPEED" description="Ventilation Speed Fan 2" raw_type="REAL" eng_type="REAL" eng_unit="RPM">
+			<validity>
+				<match parameter="#700" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="180"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="120"/>
+            </checks>
+		</parameter>
+		<parameter id="#704" location="STATION.VENTILATION.VNT_FAN3_SPEED" description="Ventilation Speed Fan 3" raw_type="REAL" eng_type="REAL" eng_unit="RPM">
+			<validity>
+				<match parameter="#700" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="180"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="120"/>
+            </checks>
+		</parameter>
+		<parameter id="#705" location="STATION.VENTILATION.VNT_FAN4_SPEED" description="Ventilation Speed Fan 4" raw_type="REAL" eng_type="REAL" eng_unit="RPM">
+			<validity>
+				<match parameter="#700" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="180"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="120"/>
+            </checks>
+		</parameter>
+        <parameter id="#706" location="STATION.VENTILATION.VNT_FAN1_STATUS" description="Ventilation 1 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#707" location="STATION.VENTILATION.VNT_FAN1_INPUT" description="Ventilation 1 Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#708" location="STATION.VENTILATION.VNT_FAN2_STATUS" description="Ventilation 2 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#709" location="STATION.VENTILATION.VNT_FAN2_INPUT" description="Ventilation 2 Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#710" location="STATION.VENTILATION.VNT_FAN3_STATUS" description="Ventilation 3 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#711" location="STATION.VENTILATION.VNT_FAN3_INPUT" description="Ventilation 3 Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#712" location="STATION.VENTILATION.VNT_FAN4_STATUS" description="Ventilation 4 Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+        <parameter id="#713" location="STATION.VENTILATION.VNT_FAN4_INPUT" description="Ventilation 4 Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+        </parameter>
+
+		<!-- Thermal Units -->
+		<parameter id="#800" location="STATION.THERMAL.THM_STATUS" description="Thermal Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#801" location="STATION.THERMAL.THM_GSTATUS" description="Thermal Global Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="NOMINAL" />
+				<point x="2" y="DEGRADED" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>NOMINAL</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#802" location="STATION.THERMAL.THM_INPUT" description="Thermal Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#803" location="STATION.THERMAL.THM_A_STATUS" description="Thermal Unit A Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ON" />
+				<point x="2" y="ALARM" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#804" location="STATION.THERMAL.THM_A_TEMP" description="Thermal Unit A Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C">
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="39" />
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="43" />
+            </checks>
+		</parameter>
+		<parameter id="#805" location="STATION.THERMAL.THM_A_OVERRIDE" description="Thermal Unit A Override" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ON" />
+				<point x="2" y="ALARM" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+					<value>INACTIVE</value>
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#806" location="STATION.THERMAL.THM_A_PROTECTION" description="Thermal Unit A Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+		</parameter>
+		<parameter id="#807" location="STATION.THERMAL.THM_B_STATUS" description="Thermal Unit B Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ON" />
+				<point x="2" y="ALARM" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#808" location="STATION.THERMAL.THM_B_TEMP" description="Thermal Unit B Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C">
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="39" />
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" high="43" />
+            </checks>
+		</parameter>
+		<parameter id="#809" location="STATION.THERMAL.THM_B_OVERRIDE" description="Thermal Unit B Override" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="INACTIVE" />
+                <point x="1" y="ON" />
+				<point x="2" y="ALARM" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+					<value>INACTIVE</value>
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#810" location="STATION.THERMAL.THM_B_PROTECTION" description="Thermal Unit B Protection" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+		</parameter>
+		
+		<!-- Turbine -->
+		<parameter id="#900" location="STATION.TURBINE.TRB_STATUS" description="Turbine Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#901" location="STATION.TURBINE.TRB_INPUT" description="Turbine Input" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+			<checks>
+                <expected name="EXPCHK1" type="CHARACTER_STRING">
+                    <value>ON</value>
+                </expected>
+            </checks>
+		</parameter>
+		<parameter id="#902" location="STATION.TURBINE.TRB_OUTPUT" description="Turbine Output Power" raw_type="REAL" eng_type="REAL" eng_unit="W">
+			<validity>
+				<match parameter="#900" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="150" low="20"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="10"/>
+            </checks>
+		</parameter>
+		<parameter id="#903" location="STATION.TURBINE.TRB_RPM" description="Turbine Rotation" raw_type="REAL" eng_type="REAL" eng_unit="RPM">
+			<validity>
+				<match parameter="#900" operator="EQUAL" value_type="CHARACTER_STRING" value="ON" />
+			</validity>
+			<checks>
+                <limit name="BTENSLIMIT" type="REAL" severity="WARNING" high="250" low="180"/>
+				<limit name="BTENSLIMIT2" type="REAL" severity="ALARM" low="120"/>
+            </checks>
+		</parameter>
+    </parameters>
+
+    <events>
+        <event id="#170" location="STATION.POWERSUPPLY.STATUS_EVENT" description="Status event of powersupply unit changed" severity="INFO" type="POWERSUPPLY_EVENT"/>
+        <event id="#171" location="STATION.POWERSUPPLY.EMERGENCY_SHUTDOWN" description="Event from emergency shutdown of powersupply unit" severity="ALARM" type="POWERSUPPLY_EVENT"/>
+        <event id="#270" location="STATION.DIESEL_GEN1.STATUS_EVENT" description="Status event of generator 1 unit changed" severity="INFO" type="GENERATOR_EVENT"/>
+        <event id="#271" location="STATION.DIESEL_GEN1.EMERGENCY_SHUTDOWN" description="Event from emergency shutdown of generator 1 unit" severity="ALARM" type="GENERATOR_EVENT"/>
+        <event id="#370" location="STATION.DIESEL_GEN2.STATUS_EVENT" description="Status event of generator 2 unit changed" severity="INFO" type="GENERATOR_EVENT"/>
+        <event id="#371" location="STATION.DIESEL_GEN2.EMERGENCY_SHUTDOWN" description="Event from emergency shutdown of generator 2 unit" severity="ALARM" type="GENERATOR_EVENT"/>
+        <event id="#471" location="STATION.MATRIX.NO_WIRING_EVENT" description="Event raised when no wiring is set" severity="ALARM" type="MATRIX_EVENT" inhibition_period="5000">
+            <condition dialect="GROOVY">
+                <expression>MATRIX_WIRING == 0</expression>
+                <symbol name="MATRIX_WIRING" reference="#404" binding="SOURCE_VALUE"/>
+            </condition>
+        </event>
+        <event id="#970" location="STATION.TURBINE.STATUS_EVENT" description="Status event of turbine unit changed" severity="INFO" type="TURBINE_EVENT"/>
+        <event id="#971" location="STATION.TURBINE.RPM_BOOST" description="Event from RPM turbine unit" severity="WARN" type="TURBINE_EVENT"/>
+        <event id="#2001" location="STATION.THERMAL.PROTECTION_UNIT_A" description="Thermal Protection on Unit A" severity="WARN" type="THERMAL_EVT"/>
+		<event id="#2002" location="STATION.THERMAL.PROTECTION_UNIT_B" description="Thermal Protection on Unit B" severity="WARN" type="THERMAL_EVT"/>
+    </events>
+
+    <activities>
+        <activity id="#150" location="STATION.POWERSUPPLY.SET_OUTPUT" description="Command the output to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#151" location="STATION.POWERSUPPLY.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#152" location="STATION.POWERSUPPLY.SHUTDOWN" description="Shutdown the power supply" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+        </activity>
+        <activity id="#153" location="STATION.POWERSUPPLY.SET_PROTECTION" description="Command the protection to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                    <point x="BYPASS" y="2" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+        <activity id="#250" location="STATION.DIESEL_GEN1.SET_OUTPUT" description="Command the output to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#251" location="STATION.DIESEL_GEN1.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#252" location="STATION.DIESEL_GEN1.SHUTDOWN" description="Shutdown the generator 1" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+        </activity>
+        <activity id="#253" location="STATION.DIESEL_GEN1.SET_PROTECTION" description="Command the protection to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                    <point x="BYPASS" y="2" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+        <activity id="#350" location="STATION.DIESEL_GEN2.SET_OUTPUT" description="Command the output to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#351" location="STATION.DIESEL_GEN2.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#352" location="STATION.DIESEL_GEN2.SHUTDOWN" description="Shutdown the generator 2" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+        </activity>
+        <activity id="#353" location="STATION.DIESEL_GEN2.SET_PROTECTION" description="Command the protection to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                    <point x="BYPASS" y="2" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+        <activity id="#450" location="STATION.MATRIX.SET_OUTPUT" description="Command the output to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="4" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#451" location="STATION.MATRIX.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="4" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#452" location="STATION.MATRIX.SET_INPUT_STATUS" description="Command the input status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="4" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="0">
+                    <point x="INPUT1" y="1" />
+                    <point x="INPUT2" y="2" />
+                </decalib_ienum>
+            </argument>
+            <argument name="ARG2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#453" location="STATION.MATRIX.WIRING" description="Matrix wiring" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="4" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="0">
+                    <point x="OFF" y="0" />
+                    <point x="INPUT1" y="1" />
+                    <point x="INPUT2" y="2" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+        <activity id="#550" location="STATION.SWITCH.SW_CMD_POSITION" description="Command the switch to the desired position" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="5" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="POSITION_1" y="1" />
+                    <point x="POSITION_2" y="2" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+        <activity id="#650" location="STATION.SPLITTER.SET_INPUT" description="Command the input to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="6" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#651" location="STATION.SPLITTER.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="6" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#652" location="STATION.SPLITTER.SET_OUTPUT_STATUS" description="Command the output status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="6" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="0">
+                    <point x="OUTPUT1" y="1" />
+                    <point x="OUTPUT2" y="2" />
+                    <point x="OUTPUT3" y="3" />
+                </decalib_ienum>
+            </argument>
+            <argument name="ARG2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+        <activity id="#750" location="STATION.VENTILATION.SET_INPUT" description="Command the input to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="7" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#751" location="STATION.VENTILATION.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="7" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#752" location="STATION.VENTILATION.SET_FAN_STATUS" description="Command the fan status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="7" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="0">
+                    <point x="FAN1" y="1" />
+                    <point x="FAN2" y="2" />
+                    <point x="FAN3" y="3" />
+                    <point x="FAN4" y="4" />
+                </decalib_ienum>
+            </argument>
+            <argument name="ARG2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#753" location="STATION.VENTILATION.SELF_TEST" description="Start the self test" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="7" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="3" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="seconds" />
+        </activity>
+
+        <activity id="#850" location="STATION.THERMAL.SET_INPUT" description="Command the input to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="8" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#851" location="STATION.THERMAL.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="8" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#852" location="STATION.THERMAL.SET_UNIT_STATUS" description="Command the unit status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="8" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="2" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="0">
+                    <point x="UNITA" y="1" />
+                    <point x="UNITB" y="2" />
+                </decalib_ienum>
+            </argument>
+            <argument name="ARG2" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+        <activity id="#950" location="STATION.TURBINE.SET_INPUT" description="Command the input to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="9" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="0" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+        <activity id="#951" location="STATION.TURBINE.SET_STATUS" description="Command the status to the desired state" type="STATION CMD">
+            <argument name="EQUIPMENT_ID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="9" />
+            </argument>
+            <argument name="COMMAND_ID" raw_type="ENUMERATED" eng_type="SIGNED_INTEGER" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="1" />
+            </argument>
+            <argument name="ARG1" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="1">
+                    <point x="OFF" y="0" />
+                    <point x="ON" y="1" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+
+    </activities>
+</ns1:processing>

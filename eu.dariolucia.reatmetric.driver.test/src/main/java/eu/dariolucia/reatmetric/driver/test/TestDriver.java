@@ -42,8 +42,12 @@ import eu.dariolucia.reatmetric.core.api.IRawDataRenderer;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
+import eu.dariolucia.reatmetric.driver.test.definition.TestDriverConfiguration;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
@@ -106,11 +110,16 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
     public static final String EXECUTION_COMPLETED_STAGE = "Execution Completed";
     public static final String TRANSMISSION_STAGE = "Transmission";
 
+    private static final String CONFIGURATION_FILE = "configuration.xml";
+
     private volatile String name;
     private volatile IServiceCoreContext context;
     private volatile IProcessingModel model;
     private volatile ProcessingDefinition definitions;
     private volatile IDriverListener subscriber;
+
+    // Driver configuration
+    private volatile TestDriverConfiguration configuration;
 
     // For activity execution
     private final ExecutorService executor = Executors.newFixedThreadPool(1, (t) -> {
@@ -149,6 +158,13 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         this.subscriber = subscriber;
         try {
             this.definitions = ProcessingDefinition.loadAll(coreConfiguration.getDefinitionsLocation());
+
+            // Read the configuration
+            this.configuration = TestDriverConfiguration.load(new FileInputStream(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE));
+        } catch (IOException e) {
+            // You can ignore, assuming no offset will be used
+            LOG.log(Level.WARNING, "Test driver: no configuration file found at " + driverConfigurationDirectory + File.separator + CONFIGURATION_FILE + ", assuming no offset will be used");
+            this.configuration = new TestDriverConfiguration();
         } catch (ReatmetricException e) {
             throw new DriverException(e);
         }
@@ -159,7 +175,7 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
         this.rawDataSubscriber = this::eventReceived;
         this.context.getRawDataBroker().subscribe(this.rawDataSubscriber, null, new RawDataFilter(true, null, null, Collections.singletonList(STATION_EVENT), null, Collections.singletonList(Quality.GOOD)), null);
         // Decoder
-        this.decoder = new MonitoringDecoder(context.getProcessingModel(), context.getRawDataBroker());
+        this.decoder = new MonitoringDecoder(context.getProcessingModel(), context.getRawDataBroker(), this.configuration.getSystemEntityOffset());
         // CommandVerifier
         this.verifier = new CommandVerifier(this, context.getRawDataBroker());
 
@@ -182,7 +198,7 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
             int code = bb.getInt();
             equipmentId += code;
             //
-            this.context.getProcessingModel().raiseEvent(EventOccurrence.of(equipmentId, Instant.ofEpochMilli(genTime), Instant.now(), null, null, code, TestDriver.STATION_ROUTE, TestDriver.STATION_SOURCE, null));
+            this.context.getProcessingModel().raiseEvent(EventOccurrence.of(equipmentId + this.configuration.getSystemEntityOffset(), Instant.ofEpochMilli(genTime), Instant.now(), null, null, code, TestDriver.STATION_ROUTE, TestDriver.STATION_SOURCE, null));
         }
     }
 
@@ -292,7 +308,7 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
     private void execute(IActivityHandler.ActivityInvocation activityInvocation, IProcessingModel model) {
         Pair<Integer, byte[]> encodedCommand = null;
         try {
-            encodedCommand = encoder.encode(activityInvocation);
+            encodedCommand = encoder.encode(activityInvocation, this.configuration.getSystemEntityOffset());
             storeRawData(activityInvocation.getActivityOccurrenceId(), activityInvocation.getPath(), activityInvocation.getGenerationTime(), activityInvocation.getRoute(), activityInvocation.getType(), activityInvocation.getSource(), encodedCommand.getSecond());
             synchronized (this) {
                 // Record verification

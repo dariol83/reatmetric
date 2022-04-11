@@ -50,8 +50,8 @@ public class RemoteConfiguration {
 
     /**
      * Prefix added to the remote definitions in the processing model.
-     * This property is needed to derive the system entity paths of the remote processing model,
-     * starting from the paths of the local processing model.
+     * This property is needed to derive the system entity paths of the remote (lower level) processing model,
+     * starting from the paths of the local (higher level) processing model.
      * <p>
      *     For instance:
      *     <ul>

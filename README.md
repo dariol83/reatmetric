@@ -104,6 +104,24 @@ The automation drivers support 3 different languages so far, even though 2 are p
 
 The two buggy languages are encapsulated into experimental automation drivers.
 
+### Remote Driver
+
+The remote driver allows a hierarchical decomposition of the entire system into independent Reatmetric systems. An example 
+of configuration enabling such decomposition is located in the module eu.dariolucia.reatmetric.remoting.test. Two station
+simulations can be individually executed, and a high-level M&C system can connect to both systems and provide a unified 
+monitoring and control experience.
+
+The purpose of such capability is to distribute the processing across several nodes, while still being able to offer a 
+common M&C view of the whole system. The high level system can reflect only a subset of the processing elements of each
+sub-system. 
+
+Moreover, the approach is scalable and not limited to a 2-tiers deployments. 
+
+The UI module, when properly configured, allows the connection to each system with just two clicks.
+
+The only limitation of the design is that each system entity in the overall system deployment **must have** a unique System Entity ID,
+for the elements that must be accessible to any remote high-level system.
+
 ### Performance
 The performance are computed with reference to the following 2 platforms:
 
@@ -176,7 +194,6 @@ If you want to quickly try Reatmetric out, I suggest the following approach:
 - Build the complete tree with maven: mvn clean install
 - Create a folder called 'reatmetric' inside your home folder and decompress there the configuration zip inside eu.dariolucia.reatmetric.ui.test/src/main/resources
 - Update the configuration data as appropriate. There is no need to change the processing definition data
-- Go inside eu.dariolucia.reatmetric.ui.test/target/deps and remove jffi-1.2.19-native.jar
 - Go inside eu.dariolucia.reatmetric.ui.test/target and run the following line (assuming Java is in your path)
 
 (Windows)
@@ -191,7 +208,6 @@ If you want to try Reatmetric using a client-server deployment, I suggest the fo
 - Build the complete tree with maven: mvn clean install
 - Create a folder called 'reatmetric' inside your home folder and decompress there the configuration zip inside eu.dariolucia.reatmetric.ui.test/src/main/resources
 - Update the configuration data as appropriate. There is no need to change the processing definition data
-- Go inside eu.dariolucia.reatmetric.remoting.test/target/deps and remove jffi-1.2.19-native.jar
 - Go inside eu.dariolucia.reatmetric.remoting.test/target and run the following line (assuming Java is in your path)
 
 (Windows)
@@ -202,7 +218,6 @@ java --module-path="deps" -Dreatmetric.core.config=path to Reatmetric/configurat
 
 - Create a folder called 'reatmetric_remoting' inside your home folder
 - Inside the folder created in the previous step, create a remoting configuration, so that the UI can connect
-- Go inside eu.dariolucia.reatmetric.ui.remoting/target/deps and remove jffi-1.2.19-native.jar
 - Go inside eu.dariolucia.reatmetric.ui.remoting/target and run the following line (assuming Java is in your path)
 
 (Windows)

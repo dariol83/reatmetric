@@ -15,12 +15,17 @@
   -->
 
 <ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
-	<name>Test System</name>
-	<log-property-file>$HOME\reatmetric\log.properties</log-property-file>
-	<archive-location>$HOME\reatmetric\archive</archive-location>
-	<definitions-location>$HOME\reatmetric\processing</definitions-location>
+	<name>Test System Station 1</name>
+	<log-property-file>$HOME\reatmetric_station1\log.properties</log-property-file>
+	<archive-location>$HOME\reatmetric_station1\archive</archive-location>
+	<definitions-location>$HOME\reatmetric_station1\processing</definitions-location>
 	<!-- <init-resume /> -->
+	<scheduler-configuration>$HOME\reatmetric_station1\scheduler-configuration.xml</scheduler-configuration>
 	<driver name="Station Driver"
 			type="eu.dariolucia.reatmetric.driver.test.TestDriver"
-			configuration="$HOME\reatmetric\test" />
+			configuration="$HOME\reatmetric_station1\test" />
+	<driver name="Automation Driver"
+			type="eu.dariolucia.reatmetric.driver.automation.AutomationDriver"
+			configuration="$HOME\reatmetric_station1\automation" />
+	<autostart-connectors startup="true" reconnect="true" />
 </ns1:core>

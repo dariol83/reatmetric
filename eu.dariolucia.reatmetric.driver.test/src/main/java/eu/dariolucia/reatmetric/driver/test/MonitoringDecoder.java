@@ -37,9 +37,11 @@ public class MonitoringDecoder implements IRawDataSubscriber {
     private final Map<Integer, Consumer<RawData>> monitoringMap = new HashMap<>();
     private final Map<Integer, Function<RawData, LinkedHashMap<String, Pair<Integer, Object>>>> renderingMap = new HashMap<>();
     private final IProcessingModel model;
+    private final int systemEntityOffset;
 
-    public MonitoringDecoder(IProcessingModel model, IRawDataBroker broker) {
+    public MonitoringDecoder(IProcessingModel model, IRawDataBroker broker, int systemEntityOffset) {
         this.model = model;
+        this.systemEntityOffset = systemEntityOffset;
         // Initialise monitoring processing map
         monitoringMap.put(1, this::powerSupplyMon);
         monitoringMap.put(2, this::powerSupplyMon);
@@ -178,7 +180,7 @@ public class MonitoringDecoder implements IRawDataSubscriber {
     }
 
     private ParameterSample toParameterSample(Instant generationTime, Pair<Integer, Object> integerObjectPair) {
-        return ParameterSample.of(integerObjectPair.getFirst(), generationTime, Instant.now(), integerObjectPair.getSecond());
+        return ParameterSample.of(integerObjectPair.getFirst() + this.systemEntityOffset, generationTime, Instant.now(), integerObjectPair.getSecond());
     }
 
     private void processMonitoringData(RawData rd) {

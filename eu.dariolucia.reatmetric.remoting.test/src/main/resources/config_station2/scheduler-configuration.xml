@@ -1,0 +1,67 @@
+<ns1:scheduler xmlns:ns1="http://dariolucia.eu/reatmetric/scheduler" scheduler-enabled="true">
+	<bot-definition name="Bot Test 1" execute-on-init="false" enabled="true">
+		<bot-state name="Nominal Power Line">
+			<condition parameter="STATION2.POWERSUPPLY.PS_TENSION" operator="GT" value-type="REAL" value="200" />
+			<condition parameter="STATION2.POWERSUPPLY.PS_OUTPUT" operator="EQUAL" value-type="CHARACTER_STRING" value="ON" />
+			<action activity="STATION2.MATRIX.SET_INPUT_STATUS" route="STATION ROUTE" max-invocation-time="10">
+				<fixed-argument name="ARG1" value="INPUT1" raw-value="false" />
+				<fixed-argument name="ARG2" value="ON" raw-value="false" />
+				<resources>
+					<resource>station</resource>
+				</resources>
+			</action>
+			<action activity="STATION2.MATRIX.WIRING" route="STATION ROUTE" max-invocation-time="10">
+				<fixed-argument name="ARG1" value="INPUT1" raw-value="false" />
+				<resources>
+					<resource>station</resource>
+				</resources>
+			</action>
+		</bot-state>
+		<bot-state name="Degraded Power Line 1">
+			<condition parameter="STATION2.DIESEL_GEN1.DG1_TENSION" operator="GT" value-type="REAL" value="200" />
+			<condition parameter="STATION2.DIESEL_GEN1.DG1_OUTPUT" operator="EQUAL" value-type="CHARACTER_STRING" value="ON" />
+			<action activity="STATION2.MATRIX.SET_INPUT_STATUS" route="STATION ROUTE" max-invocation-time="10">
+				<fixed-argument name="ARG1" value="INPUT2" raw-value="false" />
+				<fixed-argument name="ARG2" value="ON" raw-value="false" />
+				<resources>
+					<resource>station</resource>
+				</resources>
+			</action>
+			<action activity="STATION2.MATRIX.WIRING" route="STATION ROUTE" max-invocation-time="10">
+				<fixed-argument name="ARG1" value="INPUT2" raw-value="false" />
+				<resources>
+					<resource>station</resource>
+				</resources>
+			</action>
+			<action activity="STATION2.SWITCH.SW_CMD_POSITION" route="STATION ROUTE" max-invocation-time="10">
+				<fixed-argument name="ARG1" value="POSITION_1" raw-value="false" />
+				<resources>
+					<resource>station</resource>
+				</resources>
+			</action>
+		</bot-state>
+		<bot-state name="Degraded Power Line 2">
+			<condition parameter="STATION2.DIESEL_GEN2.DG2_TENSION" operator="GT" value-type="REAL" value="200" />
+			<condition parameter="STATION2.DIESEL_GEN2.DG2_OUTPUT" operator="EQUAL" value-type="CHARACTER_STRING" value="ON" />
+			<action activity="STATION2.MATRIX.SET_INPUT_STATUS" route="STATION ROUTE" max-invocation-time="10">
+				<fixed-argument name="ARG1" value="INPUT2" raw-value="false" />
+				<fixed-argument name="ARG2" value="ON" raw-value="false" />
+				<resources>
+					<resource>station</resource>
+				</resources>
+			</action>
+			<action activity="STATION2.MATRIX.WIRING" route="STATION ROUTE" max-invocation-time="10">
+				<fixed-argument name="ARG1" value="INPUT2" raw-value="false" />
+				<resources>
+					<resource>station</resource>
+				</resources>
+			</action>
+			<action activity="STATION2.SWITCH.SW_CMD_POSITION" route="STATION ROUTE" max-invocation-time="10">
+				<fixed-argument name="ARG1" value="POSITION_2" raw-value="false" />
+				<resources>
+					<resource>station</resource>
+				</resources>
+			</action>
+		</bot-state>
+	</bot-definition>
+</ns1:scheduler>

@@ -26,9 +26,9 @@ public class CommandEncoder {
 
     private final AtomicInteger commandTagSequencer = new AtomicInteger(0);
 
-    public Pair<Integer, byte[]> encode(IActivityHandler.ActivityInvocation activityInvocation) {
+    public Pair<Integer, byte[]> encode(IActivityHandler.ActivityInvocation activityInvocation, int systemEntityOffset) {
         // Read the activityInvocation arguments and encode accordingly
-        int eqId = ((Number) activityInvocation.getArguments().get(TestDriver.EQUIPMENT_ID_ARGKEY)).intValue();
+        int eqId = ((Number) activityInvocation.getArguments().get(TestDriver.EQUIPMENT_ID_ARGKEY)).intValue() - systemEntityOffset;
         int commandId = ((Number) activityInvocation.getArguments().get(TestDriver.COMMAND_ID_ARGKEY)).intValue();
         Number arg1 = (Number) activityInvocation.getArguments().get(TestDriver.ARG_1_ARGKEY);
         if(arg1 == null) {
