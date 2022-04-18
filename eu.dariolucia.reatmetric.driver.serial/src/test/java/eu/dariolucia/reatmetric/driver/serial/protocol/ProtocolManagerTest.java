@@ -36,7 +36,7 @@ class ProtocolManagerTest {
     @Test
     public void testProtocolManager() {
         IMonitoringDataManager man = new MonitoringDataManagerStub();
-        ProtocolManager pm = new ProtocolManager(man);
+        ProtocolManager pm = new ProtocolManager(man,10);
 
         send("HELLO TestApp", pm);
         send("PING", pm);

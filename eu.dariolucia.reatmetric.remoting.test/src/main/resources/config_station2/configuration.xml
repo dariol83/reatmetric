@@ -25,7 +25,7 @@
 			type="eu.dariolucia.reatmetric.driver.test.TestDriver"
 			configuration="$HOME\reatmetric_station2\test" />
 	<driver name="Automation Driver"
-			type="eu.dariolucia.reatmetric.driver.automation.AutomationDriver"
+			type="eu.dariolucia.reatmetric.driver.automation.groovy.GroovyAutomationDriver"
 			configuration="$HOME\reatmetric_station2\automation" />
 	<autostart-connectors startup="true" reconnect="true" />
 </ns1:core>

@@ -28,7 +28,7 @@
 			type="eu.dariolucia.reatmetric.driver.remote.RemoteDriver"
 			configuration="$HOME\reatmetric_master\remote2" />
 	<driver name="Automation Driver"
-			type="eu.dariolucia.reatmetric.driver.automation.AutomationDriver"
+			type="eu.dariolucia.reatmetric.driver.automation.groovy.GroovyAutomationDriver"
 			configuration="$HOME\reatmetric_master\automation" />
 	<autostart-connectors startup="true" reconnect="true" />
 </ns1:core>

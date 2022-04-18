@@ -49,13 +49,13 @@ public class SerialConfiguration {
     private int timeout = 10; // Read timeout seconds
 
     @XmlAttribute(name = "baudrate")
-    private int baudrate = 9600; // bauds per second
+    private int baudrate = 4800; // bauds per second
 
     @XmlAttribute(name = "parity")
-    private ParityEnum parity = ParityEnum.NO; // parity
+    private ParityEnum parity = ParityEnum.EVEN; // parity
 
     @XmlAttribute(name = "data-bits")
-    private int dataBits = 8;
+    private int dataBits = 7;
 
     @XmlAttribute(name = "stop-bits")
     private StopBitsEnum stopBits = StopBitsEnum.ONE;

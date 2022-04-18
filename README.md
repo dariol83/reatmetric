@@ -26,6 +26,8 @@ ReatMetric is a modular framework, decomposed in modules following the Java modu
 - **eu.dariolucia.reatmetric.driver.automation.groovy**: this module provides a driver implementation of an automation system capable to execute Groovy scripts. Preferred choice.
 - **eu.dariolucia.reatmetric.driver.automation.js**: this module provides a driver implementation of an automation system capable to execute Javascript scripts. Experimental.
 - **eu.dariolucia.reatmetric.driver.automation.python**: this module provides a driver implementation of an automation system capable to execute Python scripts. Experimental.
+- **eu.dariolucia.reatmetric.driver.remote**: this module is driver that allows connection to a remote ReatMetric-based system (which is seen as a monitorable and controllable element).
+- **eu.dariolucia.reatmetric.driver.serial**: this module is driver that allows communication to a serial interface.
 - **eu.dariolucia.reatmetric.driver.spacecraft**: this module provides a driver implementation for the monitoring and control of a CCSDS/ECSS-PUS compliant spacecraft. Currently it includes support for the reception of TM/AOS frames via SLE RAF/RCF services, TM packet extraction, parameter decoding, PUS 9 time correlation, PUS 5 event mapping, PUS 1 command verification, PUS 11 on-board command scheduling (limited to 11,4 commands), telecommand encoding and CLTU transmission via SLE CLTU, full COP-1 support.
 - **eu.dariolucia.reatmetric.driver.test**: this module is a simple test driver that shows how to implement a simple custom driver.
 
@@ -106,7 +108,7 @@ The two buggy languages are encapsulated into experimental automation drivers.
 
 ### Remote Driver
 
-The remote driver allows a hierarchical decomposition of the entire system into independent Reatmetric systems. An example 
+The remote driver allows a hierarchical decomposition of the entire system into independent ReatMetric systems. An example 
 of configuration enabling such decomposition is located in the module eu.dariolucia.reatmetric.remoting.test. Two station
 simulations can be individually executed, and a high-level M&C system can connect to both systems and provide a unified 
 monitoring and control experience.
@@ -122,7 +124,18 @@ The UI module, when properly configured, allows the connection to each system wi
 The only limitation of the design is that each system entity in the overall system deployment **must have** a unique System Entity ID,
 for the elements that must be accessible to any remote high-level system.
 
-### Performance
+### Serial Driver
+
+The serial deriver allows serial communication to provide ReatMetric data (parameters and messages) via the serial port.
+The driver was developed to interface an Atari Portfolio (https://en.wikipedia.org/wiki/Atari_Portfolio) for parameter/messages 
+visualisation. Even if it is pretty useless in practice, the main objectives to write such driver were to learn how to handle
+USB ports using Java, and to demonstrate that it is still possible to have something that works and it is optimised to 
+exchange data with hardware that is more than 30 years old.
+
+The client-driven protocol implemented by the driver can be re-used in other drivers easily, as it is not strictly coupled to the 
+underlying communication interface. 
+
+## Performance
 The performance are computed with reference to the following 2 platforms:
 
 1) Zotac Magnus EN72070V: Intel Core i7-9750H, Hexa-core, 2.6 GHz without turbo boost; 32 GB DDR4 2666 MHz; Windows 10 Professional 64 bits; openJDK 11.
@@ -156,7 +169,7 @@ TM/TC setup:
 - TM frame: 1115 bytes with CLCW, no FEC;
 - TM packets: with packet CRC.
 
-Scenario 1 results:
+### Scenario 1 results
 - Processing start-up time (as per logs - first run, no cache): 26 seconds
 - Processing start-up time (as per logs - with cache): 10 seconds
 - Max TM rate: 23.1 Mbit/sec (SLE TML level - RAF complete mode - processing backpressure propagated to the data generator)
@@ -170,7 +183,7 @@ Scenario 1 results:
 ![Connector Performance](docs/images/reatmetric-test-all-in-a-box-01.PNG "Connector Performance")
 ![System Performance](docs/images/reatmetric-test-all-in-a-box-02.PNG "System Performance")
 
-Scenario 2 results:
+### Scenario 2 results
 - Processing start-up time (as per logs - first run, no cache): 113 seconds
 - Processing start-up time (as per logs - with cache): 56 seconds
 - Max TM rate: 4.6 Mbit/sec (peak: 7 Mbit/sec, no backlog: 2.5 Mbit/sec)
@@ -190,41 +203,47 @@ Scenario 2 results:
 
 ### All-in-one
 
-If you want to quickly try Reatmetric out, I suggest the following approach:
+If you want to quickly try ReatMetric out, I suggest the following approach:
 - Build the complete tree with maven: mvn clean install
 - Create a folder called 'reatmetric' inside your home folder and decompress there the configuration zip inside eu.dariolucia.reatmetric.ui.test/src/main/resources
 - Update the configuration data as appropriate. There is no need to change the processing definition data
 - Go inside eu.dariolucia.reatmetric.ui.test/target and run the following line (assuming Java is in your path)
 
 (Windows)
-java --module-path="deps" -Dreatmetric.core.config=path to Reatmetric\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+
+    java --module-path="deps" -Dreatmetric.core.config=<path to ReatMetric>\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
 
 (Linux)  
-java --module-path="deps" -Dreatmetric.core.config=path to Reatmetric/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+
+    java --module-path="deps" -Dreatmetric.core.config=<path to ReatMetric>/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
 
 ### With remoting
 
-If you want to try Reatmetric using a client-server deployment, I suggest the following approach:
+If you want to try ReatMetric using a client-server deployment, I suggest the following approach:
 - Build the complete tree with maven: mvn clean install
 - Create a folder called 'reatmetric' inside your home folder and decompress there the configuration zip inside eu.dariolucia.reatmetric.ui.test/src/main/resources
 - Update the configuration data as appropriate. There is no need to change the processing definition data
 - Go inside eu.dariolucia.reatmetric.remoting.test/target and run the following line (assuming Java is in your path)
 
 (Windows)
-java --module-path="deps" -Dreatmetric.core.config=path to Reatmetric\configuration.xml -m eu.dariolucia.reatmetric.remoting/eu.dariolucia.reatmetric.remoting.ReatmetricRemotingServer 19000
 
-(Linux)  
-java --module-path="deps" -Dreatmetric.core.config=path to Reatmetric/configuration.xml -m eu.dariolucia.reatmetric.remoting/eu.dariolucia.reatmetric.remoting.ReatmetricRemotingServer 19000
+    java --module-path="deps" -Dreatmetric.core.config=<path to ReatMetric>\configuration.xml -m eu.dariolucia.reatmetric.remoting/eu.dariolucia.reatmetric.remoting.ReatmetricRemotingServer 19000
+
+(Linux)
+  
+    java --module-path="deps" -Dreatmetric.core.config=<path to ReatMetric>/configuration.xml -m eu.dariolucia.reatmetric.remoting/eu.dariolucia.reatmetric.remoting.ReatmetricRemotingServer 19000
 
 - Create a folder called 'reatmetric_remoting' inside your home folder
 - Inside the folder created in the previous step, create a remoting configuration, so that the UI can connect
 - Go inside eu.dariolucia.reatmetric.ui.remoting/target and run the following line (assuming Java is in your path)
 
 (Windows)
-java --module-path="deps" -Djava.rmi.server.hostname=server IP to use for local connections -Dreatmetric.remoting.connector.config=path to Reatmetric remoting\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
 
-(Linux)  
-java --module-path="deps" -Djava.rmi.server.hostname=server IP to use for local connections -Dreatmetric.remoting.connector.config=path to Reatmetric remoting/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+    java --module-path="deps" -Djava.rmi.server.hostname=<server IP to use for local connections> -Dreatmetric.remoting.connector.config=<path to ReatMetric remoting>\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+
+(Linux) 
+ 
+    java --module-path="deps" -Djava.rmi.server.hostname=<server IP to use for local connections> -Dreatmetric.remoting.connector.config=<path to ReatMetric remoting>/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
 
 Example of remoting configuration:
 
@@ -235,11 +254,10 @@ Example of remoting configuration:
 ## Implement your driver
 
 ## Roadmap
-- Implementation of a serial-USB driver to interface an Atari Portfolio (https://en.wikipedia.org/wiki/Atari_Portfolio) for parameter/messages/events visualisation (I know, it is pretty useless in practice, but I want to learn how to handle USB ports using Java, and demonstrate that it is possible to have something that works and it is optimised to interface hardware that is more than 30 years old)
-- Optimisations and features for the JavaFX UI
+- Optimisations, features and bug-fixes for the JavaFX UI (separation of the mimics engine in a stand-alone project, support for custom views in the UI)
+- Documentation (javadoc, configuration examples, driver example)
 - Alternative _persist_ implementations (server-based - in addition to file-based - Apache Derby, PostgreSQL)
-- Web interface (at some point)
-
+- Web interface (?)
 
 ## Acknowledgements and Credits
 

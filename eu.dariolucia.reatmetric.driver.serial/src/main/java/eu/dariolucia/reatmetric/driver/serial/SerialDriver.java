@@ -51,6 +51,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
@@ -107,12 +108,12 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
         this.context = context;
         this.driverStatus = SystemStatus.NOMINAL;
         this.driverSubscriber = subscriber;
-        // Create the protocol manager
-        this.protocolManager = new ProtocolManager(this);
-
         try {
             // Read the configuration
             this.configuration = SerialConfiguration.load(new FileInputStream(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE));
+
+            // Create the protocol manager
+            this.protocolManager = new ProtocolManager(this, this.configuration.getTimeout());
 
             // Start reading from the configured serial port
             startReadingFromSerial();
@@ -181,6 +182,7 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
             while(this.serialReadingActive) {
                 try {
                     String command = br.readLine(); // End of line is also only CR
+                    LOG.log(Level.FINE, "Serial string received: " + command);
                     if (command == null) {
                         Thread.sleep(1000);
                         continue;
@@ -188,6 +190,7 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
                     // Process command
                     byte[] toSend = this.protocolManager.event(command);
                     // Send bytes
+                    LOG.log(Level.FINE, "Serial message to write: " + new String(toSend, StandardCharsets.US_ASCII));
                     comPort.writeBytes(toSend, toSend.length);
                 } catch (SerialPortTimeoutException e) {
                     // Nothing to report here, it could be normal

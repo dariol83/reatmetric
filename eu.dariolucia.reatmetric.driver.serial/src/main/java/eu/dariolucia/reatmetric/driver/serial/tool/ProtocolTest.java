@@ -102,7 +102,7 @@ public class ProtocolTest {
                         new OperationalMessage(new LongUniqueId(123), Instant.now(), "ID1", "This is an event that is very very long", "SRC1", Severity.ALARM, null, null),
                         new OperationalMessage(new LongUniqueId(124), Instant.now(), "ID2", "Second event that is very very long", "SRC1", Severity.WARN, null, null));
             }
-        });
+        }, 10);
 
         new Thread(new Runnable() {
             @Override

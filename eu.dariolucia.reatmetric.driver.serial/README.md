@@ -10,7 +10,8 @@ or write your own driver to match your needs.
 
 The protocol is fully synchronous, with the knowledge of the session kept on the server side (i.e. on this driver). 
 Interactions are always started by the client. The server always waits for client instructions. All messages are 
-US-ASCII encoded. The client **must** wait for the server to reply to its command, before sending the next command.
+US-ASCII encoded. The client **must** wait for the server to reply to its command and complete the response, before 
+sending the next command.
 
 Server-side, the protocol has two main states:
 

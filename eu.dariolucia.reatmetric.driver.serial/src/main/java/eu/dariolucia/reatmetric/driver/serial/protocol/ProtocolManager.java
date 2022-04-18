@@ -26,8 +26,12 @@ import eu.dariolucia.reatmetric.api.value.ValueUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ProtocolManager {
+
+    private static final Logger LOG = Logger.getLogger(ProtocolManager.class.getName());
 
     private static final String C_HELLO =               "HELLO";
     private static final String C_BYE =                 "BYE";
@@ -41,7 +45,7 @@ public class ProtocolManager {
     private static final String C_SET_LOG_LEN =         "SET_LOG_LEN";
     private static final String C_UPDATE_LOG =          "UPDATE_LOG";
 
-    private static final String EOL = "" + (char) 10;
+    private static final String EOL = "" + (char) 13;
     private static final byte[] S_ABORT =   "ABORT".concat(EOL).getBytes(StandardCharsets.US_ASCII);
     private static final byte[] S_HI =      "HI RTM".concat(EOL).getBytes(StandardCharsets.US_ASCII);
     private static final byte[] S_CYA =     "CYA".concat(EOL).getBytes(StandardCharsets.US_ASCII);
@@ -49,11 +53,10 @@ public class ProtocolManager {
     private static final byte[] S_OK =      "OK".concat(EOL).getBytes(StandardCharsets.US_ASCII);
     private static final byte[] S_KO =      "KO".concat(EOL).getBytes(StandardCharsets.US_ASCII);
 
-    private static final long RECEPTION_TIMEOUT_MS = 10000;
-
     private int valueLength =   15;
     private int maxLogs =       4;
     private int logLength =     26;
+    private final int timeoutSeconds;
 
     private enum ProtocolState {
         DEREGISTERED,
@@ -71,11 +74,13 @@ public class ProtocolManager {
 
     private final Map<String, Integer> path2id = new TreeMap<>();
 
-    public ProtocolManager(IMonitoringDataManager externalManager) {
+    public ProtocolManager(IMonitoringDataManager externalManager, int timeoutSeconds) {
         this.externalManager = externalManager;
+        this.timeoutSeconds = timeoutSeconds;
     }
 
     public synchronized byte[] event(String clientMessage) {
+        restartReceptionTimer();
         // Remove the CRLF
         String trimmedMessage = clientMessage.trim();
         // Split on space
@@ -369,7 +374,7 @@ public class ProtocolManager {
                 receptionTimeoutElapsed(this);
             }
         };
-        this.timer.schedule(this.currentRunningTimer, RECEPTION_TIMEOUT_MS);
+        this.timer.schedule(this.currentRunningTimer, timeoutSeconds * 1000);
     }
 
     private synchronized void receptionTimeoutElapsed(TimerTask timerTask) {
@@ -394,6 +399,7 @@ public class ProtocolManager {
         } else if(this.state == ProtocolState.REGISTERED) {
             restartReceptionTimer();
         }
+        LOG.log(Level.INFO, "Serial protocol manager state switched to " + newState);
     }
 
     public synchronized boolean isRegistered() {

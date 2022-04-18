@@ -25,12 +25,12 @@ END SUB
 SUB msghdlr SHARED
     CLS
     'set max log number
-    PRINT #1,"SET_MAX_LOG 04"
+    PRINT #1,"SET_MAX_LOG 07"
     'read answer, ignore
     LINE INPUT #1,lastline2$
 
     'set msg text max size
-    PRINT #1,"SET_LOG_LEN 17"
+    PRINT #1,"SET_LOG_LEN 26"
     'read answer, ignore
     LINE INPUT #1,lastline2$
 
@@ -71,7 +71,7 @@ SUB paramhdlr SHARED
     'open file indicated by user
     OPEN lastline$ FOR INPUT AS #2
     'read one line and send to server
-    WHILE LOC(2) < LOF(2)
+    WHILE NOT EOF(2)
         'read line
         LINE INPUT #2,lastline$
         IF LEN(lastline$) > 0 THEN
@@ -91,6 +91,7 @@ SUB paramhdlr SHARED
             END IF
         END IF
     WEND
+    CLOSE #2
 
     'if here, set value length
     PRINT #1,"SET_VALUE_LEN 22"
@@ -118,7 +119,7 @@ SUB paramhdlr SHARED
                 PRINT lastline2$
             END IF
         WEND 'end of response
-        'wait some time and repeat
+        'wait some time and repeat (200 is ca. 3 seconds)
         waittime% = 200
         CALL wait(waittime%)
     WEND  'loop until key is pressed
