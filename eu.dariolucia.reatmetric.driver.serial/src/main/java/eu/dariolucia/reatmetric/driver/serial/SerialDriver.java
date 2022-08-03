@@ -197,6 +197,12 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
                 } catch (Exception e) {
                     // An exception here means the reading had a problem: break the inner loop, close the com port
                     LOG.log(Level.SEVERE, "Error in reading/writing from device " + comPort + ": " + e.getMessage(), new Object[]{ this.name });
+                    // Wait a bit in case of problems
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException interruptedException) {
+                        //
+                    }
                     break;
                 }
             }

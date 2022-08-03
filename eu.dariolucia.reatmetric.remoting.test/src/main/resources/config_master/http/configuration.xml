@@ -1,0 +1,4 @@
+<ns1:httpserver xmlns:ns1="http://dariolucia.eu/reatmetric/driver/httpserver"
+ host="127.0.0.1"
+ port="8080">
+</ns1:httpserver>

@@ -30,5 +30,8 @@
 	<driver name="Automation Driver"
 			type="eu.dariolucia.reatmetric.driver.automation.groovy.GroovyAutomationDriver"
 			configuration="$HOME\reatmetric_master\automation" />
+	<driver name="HTTP Driver"
+			type="eu.dariolucia.reatmetric.driver.httpserver.HttpServerDriver"
+			configuration="$HOME\reatmetric_master\http" />
 	<autostart-connectors startup="true" reconnect="true" />
 </ns1:core>
