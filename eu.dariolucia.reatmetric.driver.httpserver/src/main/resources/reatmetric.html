@@ -5,7 +5,10 @@
         <script type="text/javascript">
     var reatmetric = new ReatMetric('127.0.0.1',8081,'Test System');
     var subEvtKey = null;
-    var subEvtIntervalId = null;
+    var subParamKey = null;
+    var subMsgKey = null;
+
+    var subIntervalId = null;
 
     async function showParameters() {
         var divToAttach = document.getElementById('div1');
@@ -39,23 +42,19 @@
         if(subEvtKey != null) {
             return;
         }
+        await unsubscribeFromParameters();
+        await unsubscribeFromMessages();
+
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
 
-        var filter = new Object();
-        filter.parentPath = 'STATION';
-        filter.eventPathList = null;
-        filter.sourceList = null;
-        filter.routeList = null;
-        filter.typeList = null;
-        filter.severityList = null;
-        filter.externalIdList = null;
+        var filter = reatmetric.eventFilter('STATION', null, null, null, null, null, null);
 
         subEvtKey = await reatmetric.registerToEvents(filter);
         console.log("Event subscription key: " + subEvtKey);
         if(subEvtKey != null) {
-            subEvtIntervalId = setInterval(evtRetrieve, 1000);
-            console.log("Event subscription interval: " + subEvtIntervalId);
+            subIntervalId = setInterval(evtRetrieve, 1000);
+            console.log("Event subscription interval: " + subIntervalId);
         }
     }
 
@@ -77,14 +76,110 @@
         }
     }
 
-    async function unsubscribeToEvents() {
+    async function unsubscribeFromEvents() {
         if(subEvtKey == null) {
             return;
         }
-        clearInterval(subEvtIntervalId);
-        subEvtIntervalId = null;
-        await reatmetric.deregisterToEvents(subEvtKey);
+        clearInterval(subIntervalId);
+        subIntervalId = null;
+        await reatmetric.deregisterFromEvents(subEvtKey);
         subEvtKey = null;
+    }
+
+    async function subscribeToParameters() {
+        if(subParamKey != null) {
+            return;
+        }
+        await unsubscribeFromEvents();
+        await unsubscribeFromMessages();
+
+        var divToAttach = document.getElementById('div1');
+        divToAttach.textContent = '';
+
+        var filter = reatmetric.parameterFilter('STATION', null, null, null, null, null);
+
+        subParamKey = await reatmetric.registerToStateParameters(filter);
+        console.log("Parameter subscription key: " + subParamKey);
+        if(subParamKey != null) {
+            subIntervalId = setInterval(paramRetrieve, 1000);
+            console.log("Parameter subscription interval: " + subIntervalId);
+        }
+    }
+
+    async function paramRetrieve() {
+        console.log("Retrieving parameters on key " + subParamKey);
+        var currentParameters = null;
+        if(subParamKey != null) {
+            currentParameters = await reatmetric.getStateParameters(subParamKey)
+        }
+        if(currentParameters != null) {
+            console.log("Retrieved " + currentParameters.length + " parameters");
+            var divToAttach = document.getElementById('div1');
+            for(var i = 0; i < currentParameters.length; ++i) {
+                var param = currentParameters[i];
+                var pNode = document.createElement('p');
+                pNode.textContent = param.alarm + " (" + param.gentime + "): " + param.path + " - Raw Value: " + param.raw + ", Eng. Value: " + param.eng;
+                divToAttach.appendChild(pNode);
+            }
+        }
+    }
+
+    async function unsubscribeFromParameters() {
+        if(subParamKey == null) {
+            return;
+        }
+        clearInterval(subIntervalId);
+        subIntervalId = null;
+        await reatmetric.deregisterFromStateParameters(subParamKey);
+        subParamKey = null;
+    }
+
+    async function subscribeToMessages() {
+        if(subMsgKey != null) {
+            return;
+        }
+        await unsubscribeFromEvents();
+        await unsubscribeFromParameters();
+
+        var divToAttach = document.getElementById('div1');
+        divToAttach.textContent = '';
+
+        var filter = reatmetric.messageFilter(null, null, null, null);
+
+        subMsgKey = await reatmetric.registerToMessages(filter);
+        console.log("Parameter subscription key: " + subMsgKey);
+        if(subMsgKey != null) {
+            subIntervalId = setInterval(msgRetrieve, 1000);
+            console.log("Parameter subscription interval: " + subIntervalId);
+        }
+    }
+
+    async function msgRetrieve() {
+        console.log("Retrieving parameters on key " + subParamKey);
+        var currentMessages = null;
+        if(subMsgKey != null) {
+            currentMessages = await reatmetric.getMessages(subMsgKey)
+        }
+        if(currentMessages != null) {
+            console.log("Retrieved " + currentMessages.length + " parameters");
+            var divToAttach = document.getElementById('div1');
+            for(var i = 0; i < currentMessages.length; ++i) {
+                var messg = currentMessages[i];
+                var pNode = document.createElement('p');
+                pNode.textContent = messg.severity + " (" + messg.gentime + "): " + messg.text + " - Source: " + messg.source;
+                divToAttach.appendChild(pNode);
+            }
+        }
+    }
+
+    async function unsubscribeFromMessages() {
+        if(subMsgKey == null) {
+            return;
+        }
+        clearInterval(subIntervalId);
+        subIntervalId = null;
+        await reatmetric.deregisterFromMessages(subMsgKey);
+        subMsgKey = null;
     }
 
         </script>
@@ -93,7 +188,11 @@
         <button type="button" onclick="showParameters()">Show Parameters</button>
         <button type="button" onclick="showEvents()">Show Events</button>
         <button type="button" onclick="subscribeToEvents()">Subscribe to events</button>
-        <button type="button" onclick="unsubscribeToEvents()">Unsubscribe to events</button>
+        <button type="button" onclick="unsubscribeFromEvents()">Unsubscribe to events</button>
+        <button type="button" onclick="subscribeToParameters()">Subscribe to parameters</button>
+        <button type="button" onclick="unsubscribeFromParameters()">Unsubscribe to events</button>
+        <button type="button" onclick="subscribeToMessages()">Subscribe to messages</button>
+        <button type="button" onclick="unsubscribeFromMessages()">Unsubscribe to messages</button>
         <hr/>
         <br/>
         <div id="div1">
@@ -101,5 +200,3 @@
         <br/>
     </body>
 </html>
-
-<!-- XPath $x("//*[@data-rtmt-binding-id]/@data-rtmt-binding-id") and iterate on values to get all the defined IDs -->
