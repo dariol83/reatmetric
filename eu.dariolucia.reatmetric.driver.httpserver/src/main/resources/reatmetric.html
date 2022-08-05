@@ -8,18 +8,60 @@
     var subParamKey = null;
     var subMsgKey = null;
 
+    var tableBodyVar = null;
+
+    var parameterMap = null;
+
     var subIntervalId = null;
+
+    function createTable(divToAttach, thTextArray) {
+        // Table and header
+        var tableNode = document.createElement('table');
+        divToAttach.appendChild(tableNode);
+        var theadNode = document.createElement('thead');
+        tableNode.appendChild(theadNode);
+        var trNode = document.createElement('tr');
+        theadNode.appendChild(trNode);
+
+        for(var colname of thTextArray) {
+            var thNode = document.createElement('th');
+            thNode.textContent = colname;
+            trNode.appendChild(thNode);
+        }
+
+        // Create tbody
+        var tbodyNode = document.createElement('tbody');
+        tableNode.appendChild(tbodyNode);
+        return tbodyNode;
+    }
+
+    function addRow(tbodyNode, obj, tdTextArrayKeys) {
+        var addedTds = new Object();
+        var pTrNode = document.createElement('tr');
+        for(var tdkey of tdTextArrayKeys) {
+            var tdNode = document.createElement('td');
+            tdNode.textContent = obj[tdkey];
+            pTrNode.appendChild(tdNode);
+            addedTds[tdkey] = tdNode;
+        }
+        tbodyNode.appendChild(pTrNode);
+        return addedTds;
+    }
 
     async function showParameters() {
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
+
+        var thTextArray = ['Path', 'External ID', 'Description', 'Unit'];
+        var tdTextArrayKeys = ['path', 'externalId', 'description', 'unit'];
+
         var params = await reatmetric.listParameters();
         if(params != null) {
+            // Create table node
+            var tbodyNode = createTable(divToAttach, thTextArray)
             for(var i = 0; i < params.length; ++i) {
                 var param = params[i];
-                var pNode = document.createElement('p');
-                pNode.textContent = param.path + " (" + param.externalId + "): " + param.description + " - Unit: " + param.unit;
-                divToAttach.appendChild(pNode);
+                addRow(tbodyNode, param, tdTextArrayKeys);
             }
         }
     }
@@ -27,13 +69,17 @@
     async function showEvents() {
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
+
+        var thTextArray = ['Path', 'External ID', 'Description', 'Severity'];
+        var tdTextArrayKeys = ['path', 'externalId', 'description', 'severity'];
+
         var events = await reatmetric.listEvents();
         if(events != null) {
+            // Create table node
+            var tbodyNode = createTable(divToAttach, thTextArray)
             for(var i = 0; i < events.length; ++i) {
                 var event = events[i];
-                var pNode = document.createElement('p');
-                pNode.textContent = event.path + " (" + event.externalId + "): " + event.description + " - Severity: " + event.severity;
-                divToAttach.appendChild(pNode);
+                addRow(tbodyNode, event, tdTextArrayKeys);
             }
         }
     }
@@ -47,6 +93,10 @@
 
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
+
+        // Create table node
+        var thTextArray = ['Severity', 'Gen. Time', 'Path', 'Route', 'Source'];
+        tableBodyVar = createTable(divToAttach, thTextArray)
 
         var filter = reatmetric.eventFilter('STATION', null, null, null, null, null, null);
 
@@ -64,14 +114,13 @@
         if(subEvtKey != null) {
             currentEvents = await reatmetric.getEvents(subEvtKey)
         }
+        var tdTextArrayKeys = ['severity', 'gentime', 'path', 'route', 'source'];
+
         if(currentEvents != null) {
             console.log("Retrieved " + currentEvents.length + " events");
-            var divToAttach = document.getElementById('div1');
             for(var i = 0; i < currentEvents.length; ++i) {
                 var event = currentEvents[i];
-                var pNode = document.createElement('p');
-                pNode.textContent = event.severity + " (" + event.gentime + "): " + event.path + " - Route: " + event.route + ", Source: " + event.source;
-                divToAttach.appendChild(pNode);
+                addRow(tableBodyVar, event, tdTextArrayKeys);
             }
         }
     }
@@ -98,6 +147,11 @@
 
         var filter = reatmetric.parameterFilter('STATION', null, null, null, null, null);
 
+        // Create table node
+        var thTextArray = ['Path', 'Gen. Time', 'Raw Value', 'Eng. Value', 'Validity', 'Alarm State'];
+        tableBodyVar = createTable(divToAttach, thTextArray)
+        parameterMap = [];
+
         subParamKey = await reatmetric.registerToStateParameters(filter);
         console.log("Parameter subscription key: " + subParamKey);
         if(subParamKey != null) {
@@ -107,19 +161,22 @@
     }
 
     async function paramRetrieve() {
-        console.log("Retrieving parameters on key " + subParamKey);
         var currentParameters = null;
         if(subParamKey != null) {
             currentParameters = await reatmetric.getStateParameters(subParamKey)
         }
         if(currentParameters != null) {
-            console.log("Retrieved " + currentParameters.length + " parameters");
-            var divToAttach = document.getElementById('div1');
+            var paramKeys = ['path', 'gentime', 'raw', 'eng', 'validity', 'alarm'];
             for(var i = 0; i < currentParameters.length; ++i) {
                 var param = currentParameters[i];
-                var pNode = document.createElement('p');
-                pNode.textContent = param.alarm + " (" + param.gentime + "): " + param.path + " - Raw Value: " + param.raw + ", Eng. Value: " + param.eng;
-                divToAttach.appendChild(pNode);
+                if(parameterMap[param['path']] != null) {
+                    for(var tdkey of paramKeys) {
+                        var theTdArray = parameterMap[param['path']];
+                        theTdArray[tdkey].textContent = param[tdkey];
+                    }
+                } else {
+                    parameterMap[param['path']] = addRow(tableBodyVar, param, paramKeys);
+                }
             }
         }
     }
@@ -132,6 +189,7 @@
         subIntervalId = null;
         await reatmetric.deregisterFromStateParameters(subParamKey);
         subParamKey = null;
+        parameterMap = null;
     }
 
     async function subscribeToMessages() {
@@ -144,10 +202,14 @@
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
 
+        // Create table node
+        var thTextArray = ['Severity', 'Gen. Time', 'Source', 'Message'];
+        tableBodyVar = createTable(divToAttach, thTextArray)
+
         var filter = reatmetric.messageFilter(null, null, null, null);
 
         subMsgKey = await reatmetric.registerToMessages(filter);
-        console.log("Parameter subscription key: " + subMsgKey);
+        console.log("Message subscription key: " + subMsgKey);
         if(subMsgKey != null) {
             subIntervalId = setInterval(msgRetrieve, 1000);
             console.log("Parameter subscription interval: " + subIntervalId);
@@ -155,19 +217,15 @@
     }
 
     async function msgRetrieve() {
-        console.log("Retrieving parameters on key " + subParamKey);
         var currentMessages = null;
         if(subMsgKey != null) {
             currentMessages = await reatmetric.getMessages(subMsgKey)
         }
         if(currentMessages != null) {
-            console.log("Retrieved " + currentMessages.length + " parameters");
-            var divToAttach = document.getElementById('div1');
+            var tdTextArrayKeys = ['severity', 'gentime', 'source', 'message'];
             for(var i = 0; i < currentMessages.length; ++i) {
                 var messg = currentMessages[i];
-                var pNode = document.createElement('p');
-                pNode.textContent = messg.severity + " (" + messg.gentime + "): " + messg.text + " - Source: " + messg.source;
-                divToAttach.appendChild(pNode);
+                addRow(tableBodyVar, messg, tdTextArrayKeys);
             }
         }
     }
@@ -183,19 +241,44 @@
     }
 
         </script>
+        <style>
+          .tableFixHead {
+            overflow-y: auto;
+            height: 85%;
+            font-size: 9px;
+          }
+          .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+            font-size: 9px;
+          }
+          table {
+            border-collapse: collapse;
+            width: 100%;
+          }
+          th,
+          td {
+            padding: 8px 16px;
+            border: 1px solid #ccc;
+            font-size: 9px;
+          }
+          th {
+            background: #eee;
+          }
+        </style>
     </head>
     <body>
         <button type="button" onclick="showParameters()">Show Parameters</button>
         <button type="button" onclick="showEvents()">Show Events</button>
         <button type="button" onclick="subscribeToEvents()">Subscribe to events</button>
-        <button type="button" onclick="unsubscribeFromEvents()">Unsubscribe to events</button>
+        <button type="button" onclick="unsubscribeFromEvents()">Unsubscribe from events</button>
         <button type="button" onclick="subscribeToParameters()">Subscribe to parameters</button>
-        <button type="button" onclick="unsubscribeFromParameters()">Unsubscribe to events</button>
+        <button type="button" onclick="unsubscribeFromParameters()">Unsubscribe from parameters</button>
         <button type="button" onclick="subscribeToMessages()">Subscribe to messages</button>
-        <button type="button" onclick="unsubscribeFromMessages()">Unsubscribe to messages</button>
+        <button type="button" onclick="unsubscribeFromMessages()">Unsubscribe from messages</button>
         <hr/>
         <br/>
-        <div id="div1">
+        <div id="div1" class="tableFixHead">
         </div>
         <br/>
     </body>
