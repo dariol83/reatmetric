@@ -1,4 +1,21 @@
-package eu.dariolucia.reatmetric.driver.httpserver.protocol;
+/*
+ * Copyright (c)  2022 Dario Lucia (https://www.dariolucia.eu)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *           http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package eu.dariolucia.reatmetric.driver.httpserver.protocol.subscriptions;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
@@ -6,14 +23,15 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.driver.httpserver.HttpServerDriver;
 
 import java.rmi.RemoteException;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class AbstractSubscriptionHandler<T extends AbstractDataItemFilter, K extends AbstractDataItem> {
+public abstract class AbstractHttpSubscription<T extends AbstractDataItemFilter, K extends AbstractDataItem> {
 
-    private static final Logger LOG = Logger.getLogger(AbstractSubscriptionHandler.class.getName());
+    private static final Logger LOG = Logger.getLogger(AbstractHttpSubscription.class.getName());
 
     private final T filter;
     private final HttpServerDriver driver;
@@ -21,10 +39,13 @@ public abstract class AbstractSubscriptionHandler<T extends AbstractDataItemFilt
 
     private volatile boolean initialised = false;
 
-    public AbstractSubscriptionHandler(T filter, HttpServerDriver driver) {
+    private volatile Instant lastAccess;
+
+    public AbstractHttpSubscription(T filter, HttpServerDriver driver) {
         this.filter = filter;
         this.driver = driver;
         this.key = UUID.randomUUID();
+        this.lastAccess = Instant.now();
     }
 
     public void dispose() {
@@ -60,19 +81,27 @@ public abstract class AbstractSubscriptionHandler<T extends AbstractDataItemFilt
 
     protected abstract void doRegister() throws RemoteException, ReatmetricException;
 
-    final public UUID getKey() {
+    public final UUID getKey() {
         return key;
     }
 
-    final protected HttpServerDriver getDriver() {
+    protected final HttpServerDriver getDriver() {
         return driver;
     }
 
-    final protected T getFilter() {
+    protected final T getFilter() {
         return filter;
     }
 
-    final protected boolean isInitialised() {
+    protected final boolean isInitialised() {
         return initialised;
+    }
+
+    public final Instant getLastAccess() {
+        return lastAccess;
+    }
+
+    protected final void access() {
+        lastAccess = Instant.now();
     }
 }

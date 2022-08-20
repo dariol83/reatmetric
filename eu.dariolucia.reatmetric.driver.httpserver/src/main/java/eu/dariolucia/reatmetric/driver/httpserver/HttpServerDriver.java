@@ -18,6 +18,7 @@
 package eu.dariolucia.reatmetric.driver.httpserver;
 
 import com.sun.net.httpserver.HttpServer;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
@@ -27,6 +28,7 @@ import eu.dariolucia.reatmetric.api.events.IEventDataSubscriber;
 import eu.dariolucia.reatmetric.api.messages.IOperationalMessageSubscriber;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
@@ -40,17 +42,15 @@ import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.httpserver.definition.HttpServerConfiguration;
-import eu.dariolucia.reatmetric.driver.httpserver.protocol.HttpRequestHandler;
+import eu.dariolucia.reatmetric.driver.httpserver.protocol.handlers.*;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
@@ -67,6 +67,7 @@ public class HttpServerDriver implements IDriver {
     public static final String PARAMETER_STREAM_PATH = "stream";
     public static final String EVENTS_PATH = "events";
     public static final String MESSAGES_PATH = "messages";
+    public static final String MODEL_PATH = "model";
 
     public static final String REGISTRATION_URL = "register";
     public static final String GET_URL = "get";
@@ -81,13 +82,17 @@ public class HttpServerDriver implements IDriver {
     // Driver specific properties
     private HttpServerConfiguration configuration;
     private HttpServer server;
-    private HttpRequestHandler handler;
+    // Handlers
+    private final Map<String, AbstractHttpRequestHandler> context2handlers = new ConcurrentHashMap<>();
+    // Handler cleanup for subscriptions
+    private volatile Timer cleanupTimer;
+    private volatile TimerTask cleanupJob;
     // Model information cache
     private final List<ParameterDescriptor> parameters = new LinkedList<>();
     private final List<EventDescriptor> events = new LinkedList<>();
 
     public HttpServerDriver() {
-        //
+        // Nothing to do here
     }
 
     // --------------------------------------------------------------------
@@ -107,11 +112,14 @@ public class HttpServerDriver implements IDriver {
             // Build parameters/events cache
             buildCache();
 
-            // Create a global handler for requests
-            this.handler = new HttpRequestHandler(this);
+            // Create handlers for requests
+            createHandlers();
 
             // Start the HTTP server
             startHttpServer();
+
+            // Schedule the cleanup job
+            startCleanupJob();
 
             // Inform that everything is fine
             this.driverStatus = SystemStatus.NOMINAL;
@@ -121,6 +129,40 @@ public class HttpServerDriver implements IDriver {
             subscriber.driverStatusUpdate(this.name, this.driverStatus);
             throw new DriverException(e);
         }
+    }
+
+    private void startCleanupJob() {
+        this.cleanupTimer = new Timer("ReatMetric HTTP Driver - Subscription cleanup job", true);
+        this.cleanupJob = new TimerTask() {
+            @Override
+            public void run() {
+                for(AbstractHttpRequestHandler h : new HashSet<>(context2handlers.values())) {
+                    try {
+                        h.cleanup();
+                    } catch (Exception e) {
+                        // Ignore and go ahead
+                    }
+                }
+            }
+        };
+        this.cleanupTimer.schedule(this.cleanupJob, AbstractHttpRequestHandler.SUBSCRIPTION_EXPIRATION_TIME, AbstractHttpRequestHandler.SUBSCRIPTION_EXPIRATION_TIME);
+    }
+
+    private void createHandlers() {
+        EventRequestHandler eh = new EventRequestHandler(this);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + EVENTS_PATH + "/" + REGISTRATION_URL, eh);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + EVENTS_PATH + "/" + LIST_URL, eh);
+
+        ParameterRequestHandler ph = new ParameterRequestHandler(this);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + PARAMETERS_PATH + "/" + PARAMETER_CURRENT_STATE_PATH + "/" + REGISTRATION_URL, ph);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + PARAMETERS_PATH + "/" + PARAMETER_STREAM_PATH + "/" + REGISTRATION_URL, ph);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + PARAMETERS_PATH + "/" + LIST_URL, ph);
+
+        MessageRequestHandler mh = new MessageRequestHandler(this);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + MESSAGES_PATH + "/" + REGISTRATION_URL, mh);
+
+        ModelRequestHandler moh = new ModelRequestHandler(this);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + MODEL_PATH, moh);
     }
 
     private void buildCache() throws ReatmetricException, RemoteException {
@@ -149,12 +191,9 @@ public class HttpServerDriver implements IDriver {
         this.server.setExecutor(null);
         this.server.start();
         // Add the context
-        this.server.createContext("/" + this.context.getSystemName() + "/" + PARAMETERS_PATH + "/" + PARAMETER_CURRENT_STATE_PATH + "/" + REGISTRATION_URL, this.handler);
-        this.server.createContext("/" + this.context.getSystemName() + "/" + PARAMETERS_PATH + "/" + PARAMETER_STREAM_PATH + "/" + REGISTRATION_URL, this.handler);
-        this.server.createContext("/" + this.context.getSystemName() + "/" + PARAMETERS_PATH + "/" + LIST_URL, this.handler);
-        this.server.createContext("/" + this.context.getSystemName() + "/" + EVENTS_PATH + "/" + REGISTRATION_URL, this.handler);
-        this.server.createContext("/" + this.context.getSystemName() + "/" + EVENTS_PATH + "/" + LIST_URL, this.handler);
-        this.server.createContext("/" + this.context.getSystemName() + "/" + MESSAGES_PATH + "/" + REGISTRATION_URL, this.handler);
+        for(Map.Entry<String, AbstractHttpRequestHandler> e : this.context2handlers.entrySet()) {
+            this.server.createContext(e.getKey(), e.getValue());
+        }
     }
 
     @Override
@@ -179,11 +218,23 @@ public class HttpServerDriver implements IDriver {
 
     @Override
     public void dispose() {
+        // Stop the cleanup task
+        if(this.cleanupJob != null) {
+            this.cleanupJob.cancel();
+            this.cleanupJob = null;
+        }
+        if(this.cleanupTimer != null) {
+            this.cleanupTimer.cancel();
+            this.cleanupTimer = null;
+        }
         // Stop the HTTP server
         this.server.stop(1);
         this.server = null;
-        this.handler.dispose();
-        this.handler = null;
+        // Dispose the handlers
+        for(AbstractHttpRequestHandler h : new HashSet<>(context2handlers.values())) {
+            h.dispose();
+        }
+        context2handlers.clear();
     }
 
     @Override
@@ -233,5 +284,43 @@ public class HttpServerDriver implements IDriver {
 
     public String getSystemName() {
         return this.context.getSystemName();
+    }
+
+    public AbstractSystemEntityDescriptor getDescriptorOf(String path) throws ReatmetricException, RemoteException {
+        if(path.isBlank()) {
+            // Return null descriptor
+            return null;
+        } else {
+            SystemEntityPath thePath = SystemEntityPath.fromString(path);
+            return context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(thePath);
+        }
+    }
+
+    public List<AbstractSystemEntityDescriptor> getChildrenDescriptorOf(String path) throws ReatmetricException, RemoteException {
+        if(path.isBlank()) {
+            // Return the root descriptor
+            return Collections.singletonList(context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(context.getServiceFactory().getSystemModelMonitorService().getRoot().getPath()));
+        } else {
+            SystemEntityPath thePath = SystemEntityPath.fromString(path);
+            List<AbstractSystemEntityDescriptor> toReturn = new LinkedList<>();
+            // Check if the element is a container first
+            AbstractSystemEntityDescriptor elemDesc = context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(thePath);
+            if(elemDesc.getType() == SystemEntityType.CONTAINER) {
+                List<SystemEntity> children = context.getServiceFactory().getSystemModelMonitorService().getContainedEntities(thePath);
+                for (SystemEntity se : children) {
+                    toReturn.add(context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(se.getPath()));
+                }
+            }
+            return toReturn;
+        }
+    }
+
+    public void setSystemElementEnablement(String path, boolean enable) throws ReatmetricException, RemoteException {
+        SystemEntityPath thePath = SystemEntityPath.fromString(path);
+        if(enable) {
+            context.getServiceFactory().getSystemModelMonitorService().enable(thePath);
+        } else {
+            context.getServiceFactory().getSystemModelMonitorService().disable(thePath);
+        }
     }
 }

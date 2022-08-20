@@ -3,6 +3,9 @@
 The HTTP Server Driver offers a JSON/REST API that can be used by third-party software/web applications, to retrieve monitoring
 information related to ReatMetric system.
 
+Examples can be found by running the Reatmetric Test system and the contents present in this folder, to be hosted by a web server.
+The IP and port of the test system are hardcoded in the HTML pages.
+
 When the driver is in use, the following API will be available to the specified IP and port.
 
 ### Parameter descriptor list
@@ -15,6 +18,7 @@ The request returns the list of parameters defined in the system, as an array of
 
 ~~~
     {
+         "type" : "PARAMETER",
          "path" : <string>,
          "externalId" : <integer>,
          "description" : <string> or null,

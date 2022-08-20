@@ -2,6 +2,8 @@ package eu.dariolucia.reatmetric.driver.httpserver.protocol;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.EventDescriptor;
@@ -9,6 +11,7 @@ import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.model.ContainerDescriptor;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
@@ -25,6 +28,10 @@ import java.util.stream.Collectors;
  * All the returned data is encoded in UTF-8
  */
 public class JsonParseUtil {
+
+    private JsonParseUtil() {
+        throw new IllegalAccessError("Not supposed to be invoked");
+    }
 
     public static ParameterDataFilter parseParameterDataFilter(InputStream requestBody) {
         DocumentContext parsed = JsonPath.parse(requestBody);
@@ -250,6 +257,7 @@ public class JsonParseUtil {
 
     private static void format(StringBuilder sb, EventDescriptor obj) {
         sb.append("{ ");
+        sb.append(String.format("\"type\" : \"%s\", ", obj.getType().name()));
         sb.append(String.format("\"path\" : \"%s\", ", obj.getPath().asString()));
         sb.append(String.format("\"externalId\" : %d, ", obj.getExternalId()));
         sb.append(String.format("\"description\" : %s, ", valueToString(obj.getDescription())));
@@ -261,6 +269,7 @@ public class JsonParseUtil {
 
     private static void format(StringBuilder sb, ParameterDescriptor obj) {
         sb.append("{ ");
+        sb.append(String.format("\"type\" : \"%s\", ", obj.getType().name()));
         sb.append(String.format("\"path\" : \"%s\", ", obj.getPath().asString()));
         sb.append(String.format("\"externalId\" : %d, ", obj.getExternalId()));
         sb.append(String.format("\"description\" : %s, ", valueToString(obj.getDescription())));
@@ -270,5 +279,61 @@ public class JsonParseUtil {
         sb.append(String.format("\"synthetic\" : %s, ", obj.isSynthetic()));
         sb.append(String.format("\"settable\" : %s", obj.isSettable()));
         sb.append(" }");
+    }
+
+    private static void format(StringBuilder sb, ActivityDescriptor obj) {
+        sb.append("{ ");
+        sb.append(String.format("\"type\" : \"%s\", ", obj.getType().name()));
+        sb.append(String.format("\"path\" : \"%s\", ", obj.getPath().asString()));
+        sb.append(String.format("\"externalId\" : %d, ", obj.getExternalId()));
+        sb.append(String.format("\"description\" : %s, ", valueToString(obj.getDescription())));
+        sb.append(String.format("\"activityType\" : \"%s\", ", obj.getActivityType()));
+        sb.append(String.format("\"defaultRoute\" : %s ", valueToString(obj.getDefaultRoute())));
+        // TODO complete with arguments and properties
+        sb.append(" }");
+    }
+
+    private static void format(StringBuilder sb, ContainerDescriptor obj) {
+        sb.append("{ ");
+        sb.append(String.format("\"type\" : \"%s\", ", obj.getType().name()));
+        sb.append(String.format("\"path\" : \"%s\" ", obj.getPath().asString()));
+        sb.append(" }");
+    }
+
+    public static byte[] formatModelElementResponse(AbstractSystemEntityDescriptor descriptor, List<AbstractSystemEntityDescriptor> children) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\n");
+        sb.append("\"element\" : ");
+        if(descriptor != null) {
+            formatDescriptor(sb, descriptor);
+        } else {
+            sb.append("null");
+        }
+        sb.append(",\n");
+        sb.append("\"children\" : [\n");
+        for(int i = 0; i < children.size(); ++i) {
+            formatDescriptor(sb, children.get(i));
+            if(i != children.size() - 1) {
+                sb.append(",");
+            }
+            sb.append("\n");
+        }
+        sb.append("]\n");
+        sb.append("}");
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static void formatDescriptor(StringBuilder sb, AbstractSystemEntityDescriptor descriptor) {
+        if(descriptor instanceof ParameterDescriptor) {
+            format(sb, (ParameterDescriptor) descriptor);
+        } else if(descriptor instanceof EventDescriptor) {
+            format(sb, (EventDescriptor) descriptor);
+        } else if(descriptor instanceof ActivityDescriptor) {
+            format(sb, (ActivityDescriptor) descriptor);
+        } else if(descriptor instanceof ContainerDescriptor) {
+            format(sb, (ContainerDescriptor) descriptor);
+        } else {
+            throw new IllegalArgumentException("Object " + descriptor + " not supported");
+        }
     }
 }

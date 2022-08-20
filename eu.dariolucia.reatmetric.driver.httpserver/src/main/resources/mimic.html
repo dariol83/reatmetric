@@ -1,0 +1,90 @@
+<html>
+    <head>
+        <script type="text/javascript" src="reatmetric.js">
+        </script>
+        <script type="text/javascript" src="ext/rtmt-mimics.js">
+        </script>
+        <script type="text/javascript">
+    // Mimics object
+    var mimicController = null;
+    var factoryObj = new RtmtMimics(document);
+
+    // Reatmetric objects
+    var reatmetric = new ReatMetric('127.0.0.1',8081,'Test System');
+    var subParamKey = null;
+    var subIntervalId = null;
+
+    reatmetric.exec = function (arg) {
+        alert("exec: " + arg);
+    }
+
+    reatmetric.and = function (arg) {
+        alert("and: " + arg);
+    }
+
+    reatmetric.set = function (arg) {
+        alert("set: " + arg);
+    }
+
+    async function subscribeToParameters(bindings) {
+        if(subParamKey != null) {
+            return;
+        }
+        console.log("Parameter subscription bindings: " + bindings);
+        var filter = reatmetric.parameterFilter(null, bindings, null, null, null, null);
+
+        subParamKey = await reatmetric.registerToStateParameters(filter);
+        console.log("Parameter subscription key: " + subParamKey);
+        if(subParamKey != null) {
+            subIntervalId = setInterval(paramRetrieve, 1000);
+            console.log("Parameter subscription interval: " + subIntervalId);
+        }
+    }
+
+    async function paramRetrieve() {
+        var currentParameters = null;
+        if(subParamKey != null) {
+            currentParameters = await reatmetric.getStateParameters(subParamKey)
+        }
+        if(currentParameters != null) {
+            var updates = new Object();
+            for(var i = 0; i < currentParameters.length; ++i) {
+                var param = currentParameters[i];
+                updates[param.path] = param;
+            }
+    		await mimicController.update(updates);
+        }
+    }
+
+    async function unsubscribeFromParameters() {
+        if(subParamKey == null) {
+            return;
+        }
+        clearInterval(subIntervalId);
+        subIntervalId = null;
+        await reatmetric.deregisterFromStateParameters(subParamKey);
+        subParamKey = null;
+    }
+
+    async function loadSVG(){
+        if(mimicController === null) {
+            mimicController = factoryObj.newMimic(
+                'ext/station.svg',
+                document.getElementById("div1"),
+                ["raw", "eng", "alarm", "validity"]);
+            await mimicController.initialise();
+            var bindings = mimicController.getBindings();
+            await subscribeToParameters(bindings);
+        }
+    }
+
+        </script>
+    </head>
+    <body onLoad="loadSVG()" onUnload="unsubscribeFromParameters()">
+        <hr/>
+        <br/>
+        <div id="div1">
+        </div>
+        <br/>
+    </body>
+</html>

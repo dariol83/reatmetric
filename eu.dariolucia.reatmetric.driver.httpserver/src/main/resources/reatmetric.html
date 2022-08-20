@@ -14,7 +14,7 @@
 
     var subIntervalId = null;
 
-    function createTable(divToAttach, thTextArray) {
+    function createTable(divToAttach, thTextArray, thWidthArray) {
         // Table and header
         var tableNode = document.createElement('table');
         divToAttach.appendChild(tableNode);
@@ -23,9 +23,11 @@
         var trNode = document.createElement('tr');
         theadNode.appendChild(trNode);
 
+        var wi = 0;
         for(var colname of thTextArray) {
             var thNode = document.createElement('th');
             thNode.textContent = colname;
+            thNode.setAttribute("width", thWidthArray[wi++] + "%");
             trNode.appendChild(thNode);
         }
 
@@ -53,12 +55,13 @@
         divToAttach.textContent = '';
 
         var thTextArray = ['Path', 'External ID', 'Description', 'Unit'];
+        var thWidthArray = [20, 10, 50, 20];
         var tdTextArrayKeys = ['path', 'externalId', 'description', 'unit'];
 
         var params = await reatmetric.listParameters();
         if(params != null) {
             // Create table node
-            var tbodyNode = createTable(divToAttach, thTextArray)
+            var tbodyNode = createTable(divToAttach, thTextArray, thWidthArray);
             for(var i = 0; i < params.length; ++i) {
                 var param = params[i];
                 addRow(tbodyNode, param, tdTextArrayKeys);
@@ -71,12 +74,13 @@
         divToAttach.textContent = '';
 
         var thTextArray = ['Path', 'External ID', 'Description', 'Severity'];
+        var thWidthArray = [20, 10, 50, 20];
         var tdTextArrayKeys = ['path', 'externalId', 'description', 'severity'];
 
         var events = await reatmetric.listEvents();
         if(events != null) {
             // Create table node
-            var tbodyNode = createTable(divToAttach, thTextArray)
+            var tbodyNode = createTable(divToAttach, thTextArray, thWidthArray);
             for(var i = 0; i < events.length; ++i) {
                 var event = events[i];
                 addRow(tbodyNode, event, tdTextArrayKeys);
@@ -96,7 +100,8 @@
 
         // Create table node
         var thTextArray = ['Severity', 'Gen. Time', 'Path', 'Route', 'Source'];
-        tableBodyVar = createTable(divToAttach, thTextArray)
+        var thWidthArray = [15, 20, 30, 20, 15];
+        tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
 
         var filter = reatmetric.eventFilter('STATION', null, null, null, null, null, null);
 
@@ -149,7 +154,8 @@
 
         // Create table node
         var thTextArray = ['Path', 'Gen. Time', 'Raw Value', 'Eng. Value', 'Validity', 'Alarm State'];
-        tableBodyVar = createTable(divToAttach, thTextArray)
+        var thWidthArray = [20, 20, 20, 20, 10, 10];
+        tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
         parameterMap = [];
 
         subParamKey = await reatmetric.registerToStateParameters(filter);
@@ -204,7 +210,8 @@
 
         // Create table node
         var thTextArray = ['Severity', 'Gen. Time', 'Source', 'Message'];
-        tableBodyVar = createTable(divToAttach, thTextArray)
+        var thWidthArray = [15, 20, 20, 45];
+        tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
 
         var filter = reatmetric.messageFilter(null, null, null, null);
 

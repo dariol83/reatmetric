@@ -1,4 +1,21 @@
-package eu.dariolucia.reatmetric.driver.httpserver.protocol;
+/*
+ * Copyright (c)  2022 Dario Lucia (https://www.dariolucia.eu)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *           http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
+package eu.dariolucia.reatmetric.driver.httpserver.protocol.subscriptions;
 
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
@@ -11,13 +28,13 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class HttpParameterStateSubscription extends AbstractSubscriptionHandler<ParameterDataFilter, ParameterData> implements IParameterDataSubscriber {
+public class HttpParameterStateSubscription extends AbstractHttpSubscription<ParameterDataFilter, ParameterData> implements IParameterDataSubscriber {
 
     private static final Logger LOG = Logger.getLogger(HttpParameterStateSubscription.class.getName());
 
     private final Map<String, ParameterData> data = new TreeMap<>();
 
-    HttpParameterStateSubscription(ParameterDataFilter filter, HttpServerDriver driver) {
+    public HttpParameterStateSubscription(ParameterDataFilter filter, HttpServerDriver driver) {
         super(filter, driver);
         LOG.log(Level.FINER, "HTTP Parameter State Subscription " + getKey() + " created");
     }
@@ -29,6 +46,7 @@ public class HttpParameterStateSubscription extends AbstractSubscriptionHandler<
 
     @Override
     public List<ParameterData> getUpdates() {
+        access();
         List<ParameterData> toReturn;
         synchronized (this.data) {
             toReturn = new ArrayList<>(this.data.values());

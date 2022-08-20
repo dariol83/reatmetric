@@ -1,0 +1,104 @@
+<html>
+    <head>
+        <script type="text/javascript" src="reatmetric.js">
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js">
+        </script>
+        <script type="text/javascript">
+    // Chart object
+    var myChart = null;
+
+    const data = {
+        labels: [],
+        datasets: [{
+          label: 'STATION.POWERSUPPLY.PS_TENSION',
+          backgroundColor: 'rgb(255, 99, 132)',
+          borderColor: 'rgb(255, 99, 132)',
+          data: [],
+        }]
+    };
+
+      const config = {
+        type: 'line',
+        data: data,
+        options: {}
+      };
+
+    // Reatmetric objects
+    var reatmetric = new ReatMetric('127.0.0.1',8081,'Test System');
+    var subParamKey = null;
+    var subIntervalId = null;
+
+    reatmetric.exec = function (arg) {
+        alert("exec: " + arg);
+    }
+
+    reatmetric.and = function (arg) {
+        alert("and: " + arg);
+    }
+
+    reatmetric.set = function (arg) {
+        alert("set: " + arg);
+    }
+
+    async function subscribeToParameters() {
+        if(subParamKey != null) {
+            return;
+        }
+        var filter = reatmetric.parameterFilter(null, ['STATION.POWERSUPPLY.PS_TENSION'], null, null, null, null);
+
+        subParamKey = await reatmetric.registerToStreamParameters(filter);
+        console.log("Parameter subscription key: " + subParamKey);
+        if(subParamKey != null) {
+            subIntervalId = setInterval(paramRetrieve, 1000);
+            console.log("Parameter subscription interval: " + subIntervalId);
+        }
+    }
+
+    async function paramRetrieve() {
+        var currentParameters = null;
+        if(subParamKey != null) {
+            currentParameters = await reatmetric.getStreamParameters(subParamKey)
+        }
+        if(currentParameters != null) {
+            var updates = new Object();
+            for(var i = 0; i < currentParameters.length; ++i) {
+                var param = currentParameters[i];
+                config.data.labels.push(param.gentime.substring("YYYY-MM-DDT".length, "YYYY-MM-DDT".length + 8));
+                config.data.datasets[0].data.push(param.eng);
+            }
+    		myChart.update();
+        }
+    }
+
+    async function unsubscribeFromParameters() {
+        if(subParamKey == null) {
+            return;
+        }
+        clearInterval(subIntervalId);
+        subIntervalId = null;
+        await reatmetric.deregisterFromStreamParameters(subParamKey);
+        subParamKey = null;
+    }
+
+    async function loadChart(){
+        if(myChart == null) {
+            myChart = new Chart(
+                document.getElementById('myChart'),
+                config
+            );
+            subscribeToParameters();
+        }
+    }
+
+        </script>
+    </head>
+    <body onLoad="loadChart()" onUnload="unsubscribeFromParameters()">
+        <hr/>
+        <br/>
+        <div>
+            <canvas id="myChart" width="800px" height="300px"></canvas>
+        </div>
+        <br/>
+    </body>
+</html>

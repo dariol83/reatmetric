@@ -19,10 +19,7 @@ package eu.dariolucia.reatmetric.processing.impl.processors;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.LongUniqueId;
-import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.api.model.Status;
-import eu.dariolucia.reatmetric.api.model.SystemEntity;
-import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.api.model.*;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelException;
 import eu.dariolucia.reatmetric.api.processing.input.VoidInputDataItem;
@@ -45,11 +42,14 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
 
     private final List<AbstractSystemEntityProcessor> childProcessors = new ArrayList<>();
 
+    private final ContainerDescriptor descriptor;
+
     public ContainerProcessor(Definition definition, ProcessingModelImpl processingModel) {
         super(definition, processingModel, SystemEntityType.CONTAINER);
         // Initialise the entity state
         this.systemEntityBuilder.setAlarmState(getInitialAlarmState());
         this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+        this.descriptor = new ContainerDescriptor(getPath());
     }
 
     public void addChildProcessor(AbstractSystemEntityProcessor processor) {
@@ -96,7 +96,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
 
     @Override
     public AbstractSystemEntityDescriptor getDescriptor() {
-        throw new UnsupportedOperationException("Containers are not supposed to have a descriptor");
+        return descriptor;
     }
 
     @Override
