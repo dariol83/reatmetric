@@ -68,7 +68,9 @@ public class HttpServerDriver implements IDriver {
     public static final String EVENTS_PATH = "events";
     public static final String MESSAGES_PATH = "messages";
     public static final String MODEL_PATH = "model";
+    public static final String CONNECTORS_PATH = "connectors";
 
+    // For subscriptions
     public static final String REGISTRATION_URL = "register";
     public static final String GET_URL = "get";
     public static final String DEREGISTRATION_URL = "deregister";
@@ -163,6 +165,9 @@ public class HttpServerDriver implements IDriver {
 
         ModelRequestHandler moh = new ModelRequestHandler(this);
         context2handlers.put("/" + this.context.getSystemName() + "/" + MODEL_PATH, moh);
+
+        ConnectorRequestHandler ch = new ConnectorRequestHandler(this);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + CONNECTORS_PATH, ch);
     }
 
     private void buildCache() throws ReatmetricException, RemoteException {
@@ -322,5 +327,9 @@ public class HttpServerDriver implements IDriver {
         } else {
             context.getServiceFactory().getSystemModelMonitorService().disable(thePath);
         }
+    }
+
+    public IServiceCoreContext getContext() {
+        return context;
     }
 }

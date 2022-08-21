@@ -4,6 +4,7 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.EventDescriptor;
@@ -17,6 +18,7 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
+import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -335,5 +337,38 @@ public class JsonParseUtil {
         } else {
             throw new IllegalArgumentException("Object " + descriptor + " not supported");
         }
+    }
+
+    public static byte[] formatConnectorList(List<Pair<TransportStatus, String>> cntList) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[\n");
+        for (int i = 0; i < cntList.size(); ++i) {
+            sb.append("  ");
+            format(sb, cntList.get(i));
+            if (i < cntList.size() - 1) {
+                sb.append(",");
+            }
+            sb.append("\n");
+        }
+        sb.append("]");
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static void format(StringBuilder sb, Pair<TransportStatus, String> obj) {
+        sb.append("{ ");
+        sb.append(String.format("\"name\" : \"%s\", ", obj.getFirst().getName()));
+        sb.append(String.format("\"description\" : \"%s\", ", obj.getSecond()));
+        sb.append(String.format("\"alarmState\" : \"%s\", ", obj.getFirst().getAlarmState().name()));
+        sb.append(String.format("\"status\" : \"%s\", ", obj.getFirst().getStatus().name()));
+        sb.append(String.format("\"rx\" : %d, ", obj.getFirst().getRxRate()));
+        sb.append(String.format("\"tx\" : %d, ", obj.getFirst().getTxRate()));
+        sb.append(String.format("\"autoreconnect\" : %s", obj.getFirst().isAutoReconnect()));
+        sb.append(" }");
+    }
+
+    public static byte[] formatConnector(Pair<TransportStatus, String> theConnector) {
+        StringBuilder sb = new StringBuilder();
+        format(sb, theConnector);
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 }
