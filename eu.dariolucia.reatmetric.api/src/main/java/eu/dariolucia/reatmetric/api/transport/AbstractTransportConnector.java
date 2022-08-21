@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
@@ -51,6 +52,8 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
     private volatile boolean initialised = false;
     private volatile boolean busy = false;
     private volatile boolean autoReconnect = false;
+
+    private volatile TransportStatus lastTransportStatus = null;
 
     protected AbstractTransportConnector(String name, String description) {
         this();
@@ -122,6 +125,11 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
     @Override
     public TransportConnectionStatus getConnectionStatus() {
         return connectionStatus;
+    }
+
+    @Override
+    public TransportStatus getLastTransportStatus() {
+        return lastTransportStatus;
     }
 
     @Override
@@ -232,6 +240,7 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
 
     private void notifySubscribers() {
         TransportStatus status = new TransportStatus(name, connectionStatus, lastTxRate, lastRxRate, lastAlarmState, autoReconnect);
+        this.lastTransportStatus = status;
         this.subscribers.forEach((s) -> {
             try {
                 if(LOG.isLoggable(Level.FINER)) {

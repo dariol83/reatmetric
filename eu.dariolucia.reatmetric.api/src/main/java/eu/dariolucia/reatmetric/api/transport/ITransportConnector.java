@@ -61,6 +61,13 @@ public interface ITransportConnector extends Remote {
     TransportConnectionStatus getConnectionStatus() throws RemoteException;
 
     /**
+     * Return the last generated transport connector status.
+     * @return the last generated connector status
+     * @throws RemoteException in case of issues on the remote side
+     */
+    TransportStatus getLastTransportStatus() throws RemoteException;
+
+    /**
      * Ask the connector to finalise its construction. This method shall be called before calling any of the other
      * {@link ITransportConnector} methods. As such, it is typically invoked by the driver responsible for the creation
      * of the connector. Failing to invoke this method may result in undefined behaviour.

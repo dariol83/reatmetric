@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.ITransportSubscriber;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
+import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
@@ -48,6 +49,11 @@ public class TransportConnectorDelegate implements ITransportConnector {
     @Override
     public TransportConnectionStatus getConnectionStatus() throws RemoteException {
         return delegate.getConnectionStatus();
+    }
+
+    @Override
+    public TransportStatus getLastTransportStatus() throws RemoteException {
+        return delegate.getLastTransportStatus();
     }
 
     @Override
