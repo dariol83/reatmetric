@@ -3,17 +3,78 @@ const RTMT_PARAMETER_CURRENT_STATE_PATH = "current";
 const RTMT_PARAMETER_STREAM_PATH = "stream";
 const RTMT_EVENTS_PATH = "events";
 const RTMT_MESSAGES_PATH = "messages";
+const RTMT_MODEL_PATH = "model";
 
 const RTMT_REGISTRATION_URL = "register";
 const RTMT_GET_URL = "get";
 const RTMT_DEREGISTRATION_URL = "deregister";
 const RTMT_LIST_URL = "list";
 
+const RTMT_ENABLE_URL = "enable";
+const RTMT_DISABLE_URL = "disable";
+
 class ReatMetric {
     constructor(host, port, name) {
         this.host = host;
         this.port = port;
         this.name = name;
+    }
+
+    /*********************************************************
+     * Model
+     *********************************************************/
+    async getDescriptor(path) {
+        var thePath = path.replaceAll('.', '/')
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath;
+        const response = await fetch(toFetch, {
+            method: 'GET', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+        const data = await response.json();
+        return data;
+    }
+
+    async enable(path) {
+        var thePath = path.replaceAll('.', '/')
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath + "/" + RTMT_ENABLE_URL;
+        const response = await fetch(toFetch, {
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+        const data = await response.json();
+        return;
+    }
+
+    async disable(path) {
+        var thePath = path.replaceAll('.', '/')
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath + "/" + RTMT_DISABLE_URL;
+        const response = await fetch(toFetch, {
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+        const data = await response.json();
+        return;
     }
 
     /*********************************************************
