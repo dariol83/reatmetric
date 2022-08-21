@@ -45,7 +45,7 @@ public class HttpMessageSubscription extends AbstractHttpSubscription<Operationa
 
     @Override
     protected void doDeregister() throws ReatmetricException, RemoteException {
-        getDriver().deregister(this);
+        deregister(this);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class HttpMessageSubscription extends AbstractHttpSubscription<Operationa
 
     @Override
     protected void doRegister() throws ReatmetricException, RemoteException {
-        getDriver().register(this, getFilter());
+        register(this, getFilter());
     }
 
     @Override
@@ -80,5 +80,13 @@ public class HttpMessageSubscription extends AbstractHttpSubscription<Operationa
                 this.data.subList(0, this.data.size() - MAX_QUEUE_SIZE).clear();
             }
         }
+    }
+
+    private void register(IOperationalMessageSubscriber sub, OperationalMessageFilter filter) throws ReatmetricException, RemoteException {
+        getDriver().getContext().getServiceFactory().getOperationalMessageMonitorService().subscribe(sub, filter);
+    }
+
+    private void deregister(IOperationalMessageSubscriber sub) throws ReatmetricException, RemoteException {
+        getDriver().getContext().getServiceFactory().getOperationalMessageMonitorService().unsubscribe(sub);
     }
 }

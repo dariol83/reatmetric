@@ -115,8 +115,11 @@ public abstract class AbstractHttpRequestHandler implements HttpHandler {
         Set<String> keys = new TreeSet<>(map.keySet());
         Instant limit = Instant.now().minus(SUBSCRIPTION_EXPIRATION_TIME, ChronoUnit.MILLIS);
         for(String k : keys) {
-            AbstractHttpSubscription s = map.get(k);
+            AbstractHttpSubscription<?,?> s = map.get(k);
             if(s.getLastAccess().isBefore(limit)) {
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.log(Level.FINE, String.format("%s UUID %s to be cleaned up, timeout expired", s.getClass().getSimpleName(), k));
+                }
                 map.remove(k);
                 s.dispose();
             }

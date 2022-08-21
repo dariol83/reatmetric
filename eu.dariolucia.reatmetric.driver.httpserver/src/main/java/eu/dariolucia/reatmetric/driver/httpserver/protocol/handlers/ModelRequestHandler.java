@@ -9,6 +9,9 @@ import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.EventDescriptor;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
+import eu.dariolucia.reatmetric.api.model.SystemEntity;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
@@ -68,7 +71,7 @@ public class ModelRequestHandler extends AbstractHttpRequestHandler {
         String effectivePath = path.substring(0, path.lastIndexOf(HTTP_PATH_SEPARATOR));
         if(operation.equals("enable")) {
             try {
-                getDriver().setSystemElementEnablement(effectivePath.replace(HTTP_PATH_SEPARATOR, "."), true);
+                setSystemElementEnablement(effectivePath.replace(HTTP_PATH_SEPARATOR, "."), true);
                 sendPositiveResponse(exchange, new byte[0]);
                 return HTTP_CODE_OK;
             } catch (ReatmetricException | RemoteException e) {
@@ -76,7 +79,7 @@ public class ModelRequestHandler extends AbstractHttpRequestHandler {
             }
         } else if(operation.equals("disable")) {
             try {
-                getDriver().setSystemElementEnablement(effectivePath.replace(HTTP_PATH_SEPARATOR, "."), false);
+                setSystemElementEnablement(effectivePath.replace(HTTP_PATH_SEPARATOR, "."), false);
                 sendPositiveResponse(exchange, new byte[0]);
                 return HTTP_CODE_OK;
             } catch (ReatmetricException | RemoteException e) {
@@ -90,8 +93,8 @@ public class ModelRequestHandler extends AbstractHttpRequestHandler {
     private int handleModelElementGetRequest(String path, HttpExchange exchange) throws IOException {
         path = path.replace(HTTP_PATH_SEPARATOR, ".");
         try {
-            AbstractSystemEntityDescriptor descriptor = getDriver().getDescriptorOf(path);
-            List<AbstractSystemEntityDescriptor> children = getDriver().getChildrenDescriptorOf(path);
+            AbstractSystemEntityDescriptor descriptor = getDescriptorOf(path);
+            List<AbstractSystemEntityDescriptor> children = getChildrenDescriptorOf(path);
             // Format the response
             byte[] body = JsonParseUtil.formatModelElementResponse(descriptor, children);
             // Send the response
@@ -108,5 +111,43 @@ public class ModelRequestHandler extends AbstractHttpRequestHandler {
     @Override
     public void dispose() {
         // Nothing to dispose
+    }
+
+    private AbstractSystemEntityDescriptor getDescriptorOf(String path) throws ReatmetricException, RemoteException {
+        if(path.isBlank()) {
+            // Return null descriptor
+            return null;
+        } else {
+            SystemEntityPath thePath = SystemEntityPath.fromString(path);
+            return getDriver().getContext().getServiceFactory().getSystemModelMonitorService().getDescriptorOf(thePath);
+        }
+    }
+
+    private List<AbstractSystemEntityDescriptor> getChildrenDescriptorOf(String path) throws ReatmetricException, RemoteException {
+        if(path.isBlank()) {
+            // Return the root descriptor
+            return Collections.singletonList(getDriver().getContext().getServiceFactory().getSystemModelMonitorService().getDescriptorOf(getDriver().getContext().getServiceFactory().getSystemModelMonitorService().getRoot().getPath()));
+        } else {
+            SystemEntityPath thePath = SystemEntityPath.fromString(path);
+            List<AbstractSystemEntityDescriptor> toReturn = new LinkedList<>();
+            // Check if the element is a container first
+            AbstractSystemEntityDescriptor elemDesc = getDriver().getContext().getServiceFactory().getSystemModelMonitorService().getDescriptorOf(thePath);
+            if(elemDesc.getType() == SystemEntityType.CONTAINER) {
+                List<SystemEntity> children = getDriver().getContext().getServiceFactory().getSystemModelMonitorService().getContainedEntities(thePath);
+                for (SystemEntity se : children) {
+                    toReturn.add(getDriver().getContext().getServiceFactory().getSystemModelMonitorService().getDescriptorOf(se.getPath()));
+                }
+            }
+            return toReturn;
+        }
+    }
+
+    private void setSystemElementEnablement(String path, boolean enable) throws ReatmetricException, RemoteException {
+        SystemEntityPath thePath = SystemEntityPath.fromString(path);
+        if(enable) {
+            getDriver().getContext().getServiceFactory().getSystemModelMonitorService().enable(thePath);
+        } else {
+            getDriver().getContext().getServiceFactory().getSystemModelMonitorService().disable(thePath);
+        }
     }
 }

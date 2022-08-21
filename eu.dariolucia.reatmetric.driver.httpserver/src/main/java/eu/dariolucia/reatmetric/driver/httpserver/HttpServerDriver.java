@@ -18,6 +18,7 @@
 package eu.dariolucia.reatmetric.driver.httpserver;
 
 import com.sun.net.httpserver.HttpServer;
+import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
@@ -92,6 +93,7 @@ public class HttpServerDriver implements IDriver {
     // Model information cache
     private final List<ParameterDescriptor> parameters = new LinkedList<>();
     private final List<EventDescriptor> events = new LinkedList<>();
+    private final List<ActivityDescriptor> activities = new LinkedList<>();
 
     public HttpServerDriver() {
         // Nothing to do here
@@ -186,6 +188,8 @@ public class HttpServerDriver implements IDriver {
                 this.events.add((EventDescriptor) context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(toProcess.getExternalId()));
             } else if (toProcess.getType() == SystemEntityType.PARAMETER) {
                 this.parameters.add((ParameterDescriptor) context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(toProcess.getExternalId()));
+            } else if (toProcess.getType() == SystemEntityType.ACTIVITY) {
+                this.activities.add((ActivityDescriptor) context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(toProcess.getExternalId()));
             }
         }
     }
@@ -255,28 +259,12 @@ public class HttpServerDriver implements IDriver {
         return server;
     }
 
-    public void register(IParameterDataSubscriber sub, ParameterDataFilter filter) throws ReatmetricException, RemoteException {
-        this.context.getServiceFactory().getParameterDataMonitorService().subscribe(sub, filter);
+    public IServiceCoreContext getContext() {
+        return context;
     }
 
-    public void deregister(IParameterDataSubscriber sub) throws ReatmetricException, RemoteException {
-        this.context.getServiceFactory().getParameterDataMonitorService().unsubscribe(sub);
-    }
-
-    public void register(IEventDataSubscriber sub, EventDataFilter filter) throws ReatmetricException, RemoteException {
-        this.context.getServiceFactory().getEventDataMonitorService().subscribe(sub, filter);
-    }
-
-    public void deregister(IEventDataSubscriber sub) throws ReatmetricException, RemoteException {
-        this.context.getServiceFactory().getEventDataMonitorService().unsubscribe(sub);
-    }
-
-    public void register(IOperationalMessageSubscriber sub, OperationalMessageFilter filter) throws ReatmetricException, RemoteException {
-        this.context.getServiceFactory().getOperationalMessageMonitorService().subscribe(sub, filter);
-    }
-
-    public void deregister(IOperationalMessageSubscriber sub) throws ReatmetricException, RemoteException {
-        this.context.getServiceFactory().getOperationalMessageMonitorService().unsubscribe(sub);
+    public String getSystemName() {
+        return this.context.getSystemName();
     }
 
     public List<ParameterDescriptor> getParameterList() {
@@ -287,49 +275,7 @@ public class HttpServerDriver implements IDriver {
         return Collections.unmodifiableList(this.events);
     }
 
-    public String getSystemName() {
-        return this.context.getSystemName();
-    }
-
-    public AbstractSystemEntityDescriptor getDescriptorOf(String path) throws ReatmetricException, RemoteException {
-        if(path.isBlank()) {
-            // Return null descriptor
-            return null;
-        } else {
-            SystemEntityPath thePath = SystemEntityPath.fromString(path);
-            return context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(thePath);
-        }
-    }
-
-    public List<AbstractSystemEntityDescriptor> getChildrenDescriptorOf(String path) throws ReatmetricException, RemoteException {
-        if(path.isBlank()) {
-            // Return the root descriptor
-            return Collections.singletonList(context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(context.getServiceFactory().getSystemModelMonitorService().getRoot().getPath()));
-        } else {
-            SystemEntityPath thePath = SystemEntityPath.fromString(path);
-            List<AbstractSystemEntityDescriptor> toReturn = new LinkedList<>();
-            // Check if the element is a container first
-            AbstractSystemEntityDescriptor elemDesc = context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(thePath);
-            if(elemDesc.getType() == SystemEntityType.CONTAINER) {
-                List<SystemEntity> children = context.getServiceFactory().getSystemModelMonitorService().getContainedEntities(thePath);
-                for (SystemEntity se : children) {
-                    toReturn.add(context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(se.getPath()));
-                }
-            }
-            return toReturn;
-        }
-    }
-
-    public void setSystemElementEnablement(String path, boolean enable) throws ReatmetricException, RemoteException {
-        SystemEntityPath thePath = SystemEntityPath.fromString(path);
-        if(enable) {
-            context.getServiceFactory().getSystemModelMonitorService().enable(thePath);
-        } else {
-            context.getServiceFactory().getSystemModelMonitorService().disable(thePath);
-        }
-    }
-
-    public IServiceCoreContext getContext() {
-        return context;
+    public List<ActivityDescriptor> getActivityList() {
+        return Collections.unmodifiableList(activities);
     }
 }

@@ -45,7 +45,7 @@ public class HttpEventSubscription extends AbstractHttpSubscription<EventDataFil
 
     @Override
     protected void doDeregister() throws ReatmetricException, RemoteException {
-        getDriver().deregister(this);
+        deregister(this);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class HttpEventSubscription extends AbstractHttpSubscription<EventDataFil
 
     @Override
     protected void doRegister() throws ReatmetricException, RemoteException {
-        getDriver().register(this, getFilter());
+        register(this, getFilter());
     }
 
     @Override
@@ -81,4 +81,13 @@ public class HttpEventSubscription extends AbstractHttpSubscription<EventDataFil
             }
         }
     }
+
+    private void register(IEventDataSubscriber sub, EventDataFilter filter) throws ReatmetricException, RemoteException {
+        getDriver().getContext().getServiceFactory().getEventDataMonitorService().subscribe(sub, filter);
+    }
+
+    private void deregister(IEventDataSubscriber sub) throws ReatmetricException, RemoteException {
+        getDriver().getContext().getServiceFactory().getEventDataMonitorService().unsubscribe(sub);
+    }
+
 }

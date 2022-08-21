@@ -41,7 +41,7 @@ public class HttpParameterStateSubscription extends AbstractHttpSubscription<Par
 
     @Override
     protected void doDeregister() throws ReatmetricException, RemoteException {
-        getDriver().deregister(this);
+        deregister(this);
     }
 
     @Override
@@ -58,7 +58,7 @@ public class HttpParameterStateSubscription extends AbstractHttpSubscription<Par
 
     @Override
     protected void doRegister() throws ReatmetricException, RemoteException {
-        getDriver().register(this, getFilter());
+        register(this, getFilter());
     }
 
     @Override
@@ -72,5 +72,13 @@ public class HttpParameterStateSubscription extends AbstractHttpSubscription<Par
             // Override/add the data
             dataItems.forEach(o -> this.data.put(o.getPath().toString(), o));
         }
+    }
+
+    private void register(IParameterDataSubscriber sub, ParameterDataFilter filter) throws ReatmetricException, RemoteException {
+        getDriver().getContext().getServiceFactory().getParameterDataMonitorService().subscribe(sub, filter);
+    }
+
+    private void deregister(IParameterDataSubscriber sub) throws ReatmetricException, RemoteException {
+        getDriver().getContext().getServiceFactory().getParameterDataMonitorService().unsubscribe(sub);
     }
 }
