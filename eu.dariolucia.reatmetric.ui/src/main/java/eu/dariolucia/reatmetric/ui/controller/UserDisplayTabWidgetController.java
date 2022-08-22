@@ -123,7 +123,6 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
     private volatile boolean liveTimeTracker = true;
     private volatile boolean live = false;
 
-    private HBox lineBox = null;
     private Stage independentStage;
 
     @Override
@@ -622,22 +621,12 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
     }
 
     private void addToPane(XYChart<?, ?> l) {
-        if (this.lineBox == null) {
-            this.lineBox = new HBox();
-            this.lineBox.setPrefHeight(300);
-            this.lineBox.setMinHeight(300);
-            this.lineBox.setPadding(new Insets(10, 10, 10, 10));
-            this.lineBox.setSpacing(10);
-            this.lineBox.prefWidthProperty().bind(this.innerBox.widthProperty());
-            this.innerBox.getChildren().add(this.lineBox);
-            this.lineBox.getChildren().add(l);
-            HBox.setHgrow(l, Priority.ALWAYS);
-        } else {
-            this.lineBox.getChildren().add(l);
-            HBox.setHgrow(l, Priority.ALWAYS);
-            this.lineBox.layout();
-            this.lineBox = null;
-        }
+        l.setPrefHeight(300);
+        l.setMinHeight(300);
+        l.setPadding(new Insets(10, 10, 10, 10));
+        l.prefWidthProperty().bind(this.innerBox.widthProperty());
+        this.innerBox.getChildren().add(l);
+        VBox.setVgrow(l, Priority.NEVER);
     }
 
     private AbstractChartManager initialiseTimeChart(XYChart<Instant, Number> l) {

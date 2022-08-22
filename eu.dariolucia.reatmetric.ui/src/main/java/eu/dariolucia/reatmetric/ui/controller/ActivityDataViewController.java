@@ -821,6 +821,12 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         }
     }
 
+    @Override
+    public void dispose() {
+        this.delegator.shutdown();
+        super.dispose();
+    }
+
     @FXML
     private void detachAttachItemAction(ActionEvent actionEvent) {
         if(DetachedTabUtil.isDetached((Stage) displayTitledPane.getScene().getWindow())) {

@@ -1096,6 +1096,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         } catch (RemoteException | ReatmetricException e) {
             e.printStackTrace();
         }
+        this.delegator.shutdown();
         // Clear cache
         externalId2descriptor.clear();
         path2descriptor.clear();

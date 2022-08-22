@@ -528,6 +528,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
     @Override
     public void dispose() {
         stopSubscription();
+        this.delegator.shutdown();
         this.mimicsManager.dispose();
         MimicsDisplayCoordinator.instance().deregister(this);
         super.dispose();

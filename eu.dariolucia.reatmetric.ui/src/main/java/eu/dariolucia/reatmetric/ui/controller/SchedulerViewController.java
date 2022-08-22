@@ -1099,6 +1099,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     @Override
     public void dispose() {
         stopSubscription();
+        this.delegator.shutdown();
         super.dispose();
     }
 

@@ -524,6 +524,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     @Override
     public void dispose() {
         stopSubscription();
+        this.delegator.shutdown();
         super.dispose();
     }
 
