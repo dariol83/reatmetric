@@ -19,11 +19,14 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.transport.TransportStatus;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -33,6 +36,22 @@ public class JsonParseUtil {
 
     private JsonParseUtil() {
         throw new IllegalAccessError("Not supposed to be invoked");
+    }
+
+    public static <T> T parseInput(InputStream requestBody, Class<T> inputClass) {
+        DocumentContext parsed = JsonPath.parse(requestBody);
+        String resultAccessor = "$['input']";
+        return parsed.read(resultAccessor);
+    }
+
+    public static Map<String, Object> parseMapInput(InputStream requestBody) {
+        DocumentContext parsed = JsonPath.parse(requestBody);
+        List<Map<String, Object>> list = parsed.read("$[*]");
+        Map<String, Object> toReturn = new LinkedHashMap<>();
+        for(Map<String, Object> e : list) {
+            toReturn.putAll(e);
+        }
+        return toReturn;
     }
 
     public static ParameterDataFilter parseParameterDataFilter(InputStream requestBody) {
@@ -369,6 +388,26 @@ public class JsonParseUtil {
     public static byte[] formatConnector(Pair<TransportStatus, String> theConnector) {
         StringBuilder sb = new StringBuilder();
         format(sb, theConnector);
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    public static byte[] formatConnectorProperties(Map<String, Object[]> string2descTypeValue) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[");
+        boolean atLeastOne = false;
+        for(Map.Entry<String, Object[]> e : string2descTypeValue.entrySet()) {
+            sb.append("\n{ ");
+            sb.append(String.format("\"name\" : \"%s\", ", e.getKey()));
+            sb.append(String.format("\"description\" : \"%s\", ", e.getValue()[0]));
+            sb.append(String.format("\"type\" : \"%s\", ", ((ValueTypeEnum) (e.getValue()[1])).name()));
+            sb.append(String.format("\"value\" : %s ", valueToString(e.getValue()[2])));
+            sb.append(" },");
+            atLeastOne = true;
+        }
+        if(atLeastOne) {
+            sb.deleteCharAt(sb.length() - 1);
+        }
+        sb.append("\n]");
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 }
