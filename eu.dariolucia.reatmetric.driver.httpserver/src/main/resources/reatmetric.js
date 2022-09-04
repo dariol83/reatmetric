@@ -3,6 +3,7 @@ const RTMT_PARAMETER_CURRENT_STATE_PATH = "current";
 const RTMT_PARAMETER_STREAM_PATH = "stream";
 const RTMT_EVENTS_PATH = "events";
 const RTMT_MESSAGES_PATH = "messages";
+const RTMT_CONNECTORS_PATH = "connectors";
 const RTMT_MODEL_PATH = "model";
 
 const RTMT_REGISTRATION_URL = "register";
@@ -355,6 +356,117 @@ class ReatMetric {
         return new MessageFilter(messageTextContains, idList, sourceList, severityList);
     }
 
+    /*********************************************************
+     * Connectors
+     *********************************************************/
+
+    async getConnectors() {
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH;
+        const response = await fetch(toFetch, {
+            method: 'GET', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+        if (response.status === 200) {
+            const data = await response.json();
+            return data;
+        } else {
+            return null;
+        }
+    }
+
+    async getConnector(name) {
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name;
+        const response = await fetch(toFetch, {
+            method: 'GET', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+        if (response.status === 200) {
+            const data = await response.json();
+            return data;
+        } else {
+            return null;
+        }
+    }
+
+    async connect(name) {
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/connect";
+        const response = await fetch(toFetch, {
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+    }
+
+    async disconnect(name) {
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/disconnect";
+        const response = await fetch(toFetch, {
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+    }
+
+    async abort(name) {
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/abort";
+        const response = await fetch(toFetch, {
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+    }
+
+    async getConnectorProperties(name) {
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/properties";
+        const response = await fetch(toFetch, {
+            method: 'GET', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+        if (response.status === 200) {
+            const data = await response.json();
+            return data;
+        } else {
+            return null;
+        }
+    }
 }
 
 class EventFilter {
