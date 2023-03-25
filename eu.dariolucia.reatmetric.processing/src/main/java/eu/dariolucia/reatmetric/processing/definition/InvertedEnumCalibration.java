@@ -25,6 +25,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +36,7 @@ public class InvertedEnumCalibration extends CalibrationDefinition implements Se
     private Long defaultValue;
 
     @XmlElement(name = "point", required = true)
-    private List<InvertedEnumCalibrationPoint> points;
+    private List<InvertedEnumCalibrationPoint> points = new LinkedList<>();
 
     public InvertedEnumCalibration() {
     }

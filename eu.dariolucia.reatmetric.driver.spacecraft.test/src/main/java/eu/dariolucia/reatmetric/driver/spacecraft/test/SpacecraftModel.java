@@ -104,8 +104,8 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     public static final String PUS_TYPE_FIELD_NAME = "I-PUS-TYPE";
     public static final String PUS_SUBTYPE_FIELD_NAME = "I-PUS-SUBTYPE";
     public static final int TM_FRAME_LENGTH = 1115;
-    public static final int PACKET_GENERATION_PERIOD_MS = 2;
-    public static final int CYCLE_MODULE_SLEEP = 3; // 10
+    public static final int PACKET_GENERATION_PERIOD_MS = 10;
+    public static final int CYCLE_MODULE_SLEEP = 1; // 10
     public static final int SETTER_APID = 10;
     public static final int SETTER_PUS = 69;
 
@@ -300,6 +300,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         int hkCounter = 0;
         int evtCounter = 0;
         int counter = 0;
+        Set<String> faultyPacketIds = new TreeSet<>();
         while (running) {
             try {
                 if(counter % CYCLE_MODULE_SLEEP == 0) {
@@ -310,6 +311,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             }
             TmPacketTemplate pkt = this.periodicPackets.get(hkCounter++);
             hkCounter = hkCounter % periodicPackets.size();
+            if(faultyPacketIds.contains(pkt.definition.getId())) {
+                continue;
+            }
             ++counter;
             if(counter == Integer.MAX_VALUE) {
                 counter = 0;
@@ -321,6 +325,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     synchronized (performanceSampler) {
                         ++packetsPerSecond;
                     }
+                } else {
+                    // Do not generate it anymore
+                    faultyPacketIds.add(pkt.definition.getId());
                 }
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "", e);
@@ -329,6 +336,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             if (Math.random() < 0.01) {
                 TmPacketTemplate evpkt = this.eventPackets.get(evtCounter++);
                 evtCounter = evtCounter % eventPackets.size();
+                if(faultyPacketIds.contains(evpkt.definition.getId())) {
+                    continue;
+                }
                 try {
                     SpacePacket spev = evpkt.generate();
                     if(spev != null) {
@@ -336,6 +346,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                         synchronized (performanceSampler) {
                             ++packetsPerSecond;
                         }
+                    } else {
+                        // Do not generate it anymore
+                        faultyPacketIds.add(pkt.definition.getId());
                     }
                 } catch (Exception e) {
                     LOG.log(Level.SEVERE, "", e);
@@ -695,13 +708,18 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 builder.addData(new byte[2]);
             }
             SpacePacket sp = builder.build();
-            forceIdentificationFields(sp);
-            if (pusConfiguration.getTmPecPresent() == PacketErrorControlType.ISO) {
-                short checksum = PusChecksumUtil.isoChecksum(sp.getPacket(), 0, sp.getLength() - 2);
-                ByteBuffer.wrap(sp.getPacket(), sp.getLength() - 2, 2).putShort(checksum);
-            } else if (pusConfiguration.getTmPecPresent() == PacketErrorControlType.CRC) {
-                short checksum = PusChecksumUtil.crcChecksum(sp.getPacket(), 0, sp.getLength() - 2);
-                ByteBuffer.wrap(sp.getPacket(), sp.getLength() - 2, 2).putShort(checksum);
+            try {
+                forceIdentificationFields(sp);
+                if (pusConfiguration.getTmPecPresent() == PacketErrorControlType.ISO) {
+                    short checksum = PusChecksumUtil.isoChecksum(sp.getPacket(), 0, sp.getLength() - 2);
+                    ByteBuffer.wrap(sp.getPacket(), sp.getLength() - 2, 2).putShort(checksum);
+                } else if (pusConfiguration.getTmPecPresent() == PacketErrorControlType.CRC) {
+                    short checksum = PusChecksumUtil.crcChecksum(sp.getPacket(), 0, sp.getLength() - 2);
+                    ByteBuffer.wrap(sp.getPacket(), sp.getLength() - 2, 2).putShort(checksum);
+                }
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Error while generating TM packet: " + this + ": " + e.getMessage(), e);
+                return null;
             }
             return sp;
         }
@@ -759,6 +777,16 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 ByteBuffer.wrap(sp.getPacket(), sp.getLength() - 2, 2).putShort(checksum);
             }
             return sp;
+        }
+
+        @Override
+        public String toString() {
+            return "TmPacketTemplate{" +
+                    "definition=" + definition.getId() +
+                    ", apid=" + apid +
+                    ", type=" + type +
+                    ", subtype=" + subtype +
+                    '}';
         }
     }
 }

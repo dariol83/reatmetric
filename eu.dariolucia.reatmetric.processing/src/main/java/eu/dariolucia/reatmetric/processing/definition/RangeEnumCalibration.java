@@ -67,7 +67,13 @@ public class RangeEnumCalibration extends CalibrationDefinition implements Seria
     @Override
     public Object calibrate(Object valueToCalibrate, IBindingResolver resolver, ValueTypeEnum expectedOutput) throws CalibrationException {
         // If the valueToCalibrate can become an integer number somehow, then calibrate, otherwise error
-        Number valueToUse = (Number) valueToCalibrate;
+        // To support a very old UNIX-way to process things, if the input is a boolean, then FALSE -> 0 and TRUE -> 1
+        Number valueToUse;
+        if(valueToCalibrate instanceof Boolean) {
+            valueToUse = Boolean.TRUE.equals(valueToCalibrate) ? 1 : 0;
+        } else {
+            valueToUse = (Number) valueToCalibrate;
+        }
         if(valueToCalibrate == null) {
             throw new CalibrationException("Cannot calibrate a null value using range enumeration calibration");
         }
