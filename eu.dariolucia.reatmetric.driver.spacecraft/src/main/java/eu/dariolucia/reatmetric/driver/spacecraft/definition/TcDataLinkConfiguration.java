@@ -65,7 +65,7 @@ public class TcDataLinkConfiguration {
     }
 
     public boolean isFecf() {
-        return false;
+        return this.fecf;
     }
 
     public void setFecf(boolean fecf) {
