@@ -411,6 +411,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     }
 
     private void processCltu(long cltuId, byte[] cltu) {
+        LOG.log(Level.INFO, "CLTU arrived: " + StringUtil.toHexDump(cltu));
         Date startTime = new Date();
         cltuProvider.cltuProgress(cltuId, CltuStatusEnum.PRODUCTION_STARTED, startTime, null, BUFFER_AVAILABLE);
         try {
