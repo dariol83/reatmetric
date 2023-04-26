@@ -348,6 +348,10 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     public IActivityHandler checkHandlerAvailability(String route, String type) throws ProcessingModelException {
+        // Check if the route is not null
+        if(route == null) {
+            throw new ProcessingModelException("No route defined in the request");
+        }
         // Check if the route exist
         IActivityHandler handler = route2activityHandler.get(route);
         if(handler == null) {
