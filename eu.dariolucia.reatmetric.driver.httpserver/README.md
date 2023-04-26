@@ -366,3 +366,86 @@ This request enables or disables the processing linked to the specified system e
 *Javascript library function*: async enable(path) : *void*
 
 *Javascript library function*: async disable(path) : *void*
+
+### Connectors
+
+**Connector list fetch**
+
+~~~
+    GET     http://<host>:<port>/<system name>/connectors
+~~~
+
+The request returns the list of connectors defined in the system, as an array of objects so defined:
+
+~~~
+    {
+        "name" : <string>,
+        "description" : <string>,
+        "alarmState" : <string>, // See AlarmState enum names
+        "status" : <string>, // See TransportConnectionStatus enum names
+        "rx" : <integer>, // RX data rate
+        "tx" : <integer>, // TX data rate
+        "autoreconnect" : <boolean> // true or false
+    }
+~~~
+
+*Javascript library function*: async getConnectors() : return a list of connector objects
+
+**Connector fetch**
+
+~~~
+    GET     http://<host>:<port>/<system name>/connectors/<connector name>
+~~~
+
+The request returns the connector status, using the same format defined for the connector list.
+
+*Javascript library function*: async getConnector(name) : return the connector object
+
+~~~
+    GET     http://<host>:<port>/<system name>/connectors/<connector name>/properties
+~~~
+
+The request returns the properties defined by the connector, as a JSON object (key-value map).
+
+*Javascript library function*: async getConnectorProperties(name) : return the connector properties
+
+**Connector operations**
+
+~~~
+    POST     http://<host>:<port>/<system name>/connectors/<connector name/connect
+~~~
+The request connects the connector. No body defined.
+
+*Javascript library function*: async connect(name) : *void*
+
+~~~
+    POST     http://<host>:<port>/<system name>/connectors/<connector name/disconnect
+~~~
+The request disconnects the connector. No body defined.
+
+*Javascript library function*: async disconnect(name) : *void*
+
+~~~
+    POST     http://<host>:<port>/<system name>/connectors/<connector name/abort
+~~~
+The request aborts the connector. No body defined.
+
+*Javascript library function*: async abort(name) : *void*
+
+~~~
+    POST     http://<host>:<port>/<system name>/connectors/<connector name/reconnect
+~~~
+The request sets the reconnection flag of the connector. The body is:
+
+~~~
+    {
+        "input" : <boolean> // true or false
+    }
+~~~
+
+~~~
+    POST     http://<host>:<port>/<system name>/connectors/<connector name/initialise
+~~~
+The request initialises the connector with the provided set of properties. The body is a JSON object (key-value map). 
+
+
