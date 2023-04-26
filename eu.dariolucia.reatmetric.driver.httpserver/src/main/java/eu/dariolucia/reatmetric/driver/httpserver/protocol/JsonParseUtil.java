@@ -2,7 +2,10 @@ package eu.dariolucia.reatmetric.driver.httpserver.protocol;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import eu.dariolucia.reatmetric.api.activity.AbstractActivityArgumentDescriptor;
+import eu.dariolucia.reatmetric.api.activity.ActivityArrayArgumentDescriptor;
 import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
+import eu.dariolucia.reatmetric.api.activity.ActivityPlainArgumentDescriptor;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.events.EventData;
@@ -31,6 +34,7 @@ import java.util.stream.Collectors;
 
 /**
  * All the returned data is encoded in UTF-8
+ *
  */
 public class JsonParseUtil {
 
@@ -309,8 +313,70 @@ public class JsonParseUtil {
         sb.append(String.format("\"externalId\" : %d, ", obj.getExternalId()));
         sb.append(String.format("\"description\" : %s, ", valueToString(obj.getDescription())));
         sb.append(String.format("\"activityType\" : \"%s\", ", obj.getActivityType()));
-        sb.append(String.format("\"defaultRoute\" : %s ", valueToString(obj.getDefaultRoute())));
-        // TODO complete with arguments and properties
+        sb.append(String.format("\"defaultRoute\" : %s, ", valueToString(obj.getDefaultRoute())));
+        sb.append(String.format("\"arguments\" : %s, ", formatArguments(obj.getArgumentDescriptors())));
+        sb.append(String.format("\"properties\" : %s", formatProperties(obj.getProperties())));
+        sb.append(" }");
+    }
+
+    private static String formatProperties(List<Pair<String, String>> properties) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{ ");
+        int i = 0;
+        for(Pair<String, String> add : properties) {
+            sb.append(String.format("\"%s\" : %s", add.getFirst(), valueToString(add.getSecond())));
+            if(i < properties.size() - 1) {
+                // Not the last, add comma
+                sb.append(", ");
+            }
+            ++i;
+        }
+        sb.append(" }");
+        return sb.toString();
+    }
+
+    private static String formatArguments(List<AbstractActivityArgumentDescriptor> argumentDescriptors) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[ ");
+        int i = 0;
+        for(AbstractActivityArgumentDescriptor add : argumentDescriptors) {
+            if(add instanceof ActivityPlainArgumentDescriptor) {
+                ActivityPlainArgumentDescriptor ap = (ActivityPlainArgumentDescriptor) add;
+                format(sb, ap);
+            } else if(add instanceof ActivityArrayArgumentDescriptor) {
+                ActivityArrayArgumentDescriptor ap = (ActivityArrayArgumentDescriptor) add;
+                format(sb, ap);
+            }
+            if(i < argumentDescriptors.size() - 1) {
+                // Not the last, add comma
+                sb.append(", ");
+            }
+            ++i;
+        }
+        sb.append(" ]");
+        return sb.toString();
+    }
+
+    private static void format(StringBuilder sb, ActivityArrayArgumentDescriptor ap) {
+        sb.append("{ ");
+        sb.append(String.format("\"name\" : \"%s\", ", ap.getName()));
+        sb.append(String.format("\"description\" : %s, ", valueToString(ap.getDescription())));
+        sb.append(String.format("\"type\" : \"array\", "));
+        sb.append(String.format("\"expansionArgument\" : %s, ", valueToString(ap.getExpansionArgument())));
+        sb.append(String.format("\"elements\" : %s, ", formatArguments(ap.getElements())));
+        sb.append(" }");
+    }
+
+    private static void format(StringBuilder sb, ActivityPlainArgumentDescriptor ap) {
+        sb.append("{ ");
+        sb.append(String.format("\"name\" : \"%s\", ", ap.getName()));
+        sb.append(String.format("\"description\" : %s, ", valueToString(ap.getDescription())));
+        sb.append(String.format("\"type\" : \"plain\", "));
+        sb.append(String.format("\"rawDataType\" : \"%s\", ", ap.getRawDataType().name()));
+        sb.append(String.format("\"engDataType\" : \"%s\", ", ap.getEngineeringDataType().name()));
+        sb.append(String.format("\"unit\" : %s, ", valueToString(ap.getUnit())));
+        sb.append(String.format("\"fixed\" : %s, ", ap.isFixed()));
+        sb.append(String.format("\"decalibrationPresent\" : %s", ap.isDecalibrationSet()));
         sb.append(" }");
     }
 

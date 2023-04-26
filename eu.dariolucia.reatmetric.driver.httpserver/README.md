@@ -53,6 +53,56 @@ The request returns the list of events defined in the system, as an array of obj
 
 *Javascript library function*: async listEvents() : return array of event descriptors.
 
+### Activity descriptor list
+
+~~~
+    GET     http://<host>:<port>/<system name>/activities/list
+~~~
+
+The request returns the list of activities defined in the system, as an array of objects so defined:
+
+~~~
+    {
+         "type" : "ACTIVITY",
+         "path" : <string>,
+         "externalId" : <integer>,
+         "description" : <string> or null,
+         "activityType" : <string>, 
+         "defaultRoute" : <string>, 
+         "arguments" : <array of argument descriptors>,
+         "properties" : JSON object // associative array
+    }
+~~~
+
+An argument descriptor can be plain or array. A plain argument descriptor is defined as:
+
+~~~
+    {
+         "name" : <string>,
+         "description" : <string> or null,
+         "type" : "plain", 
+         "rawDataType" : <string>, // See ValueTypeEnum enum names in eu.dariolucia.reatmetric.api.value
+         "engDataType" : <string>, // See ValueTypeEnum enum names in eu.dariolucia.reatmetric.api.value
+         "unit" : <string> or null,
+         "fixed" : <boolean>,
+         "decalibrationPresent" : <boolean>
+    }
+~~~
+
+An array argument descriptor is defined as:
+
+~~~
+    {
+         "name" : <string>,
+         "description" : <string> or null,
+         "type" : "array", 
+         "expansionArgument" : <string>,
+         "elements" : <array of argument descriptors>
+    }
+~~~
+
+*Javascript library function*: async listActivities() : return array of event descriptors.
+
 ### Parameter state subscription
 
 This type of interaction allows clients to request the creation of a specific parameter subscription, based on the provided filter. 
@@ -351,7 +401,7 @@ Defined as above ("Event descriptor list").
 
 **Activity**
 
-To be defined. 
+Defined as above ("Activity descriptor list").
 
 *Javascript library function*: async getDescriptor(path) : return the element-children information assigned to the provided path.
 
