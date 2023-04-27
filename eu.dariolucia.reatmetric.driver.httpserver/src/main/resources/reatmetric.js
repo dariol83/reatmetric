@@ -2,6 +2,7 @@ const RTMT_PARAMETERS_PATH = "parameters";
 const RTMT_PARAMETER_CURRENT_STATE_PATH = "current";
 const RTMT_PARAMETER_STREAM_PATH = "stream";
 const RTMT_EVENTS_PATH = "events";
+const RTMT_ACTIVITIES_PATH = "activities";
 const RTMT_MESSAGES_PATH = "messages";
 const RTMT_CONNECTORS_PATH = "connectors";
 const RTMT_MODEL_PATH = "model";
@@ -296,6 +297,84 @@ class ReatMetric {
     }
 
     /*********************************************************
+     * Activities
+     *********************************************************/
+
+    async listActivities() {
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_LIST_URL;
+        const response = await fetch(toFetch, {
+            method: 'GET', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+        const data = await response.json();
+        return data;
+    }
+
+    async registerToActivities(filter) {
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_REGISTRATION_URL;
+        const response = await fetch(toFetch, {
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: JSON.stringify(filter) // body data type must match "Content-Type" header
+        });
+        const data = await response.json();
+        return data.key;
+    }
+
+    async deregisterFromActivities(key) {
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
+        const response = await fetch(toFetch, {
+            method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+    }
+
+    async getActivities(key) {
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_GET_URL + "/" + key;
+        const response = await fetch(toFetch, {
+            method: 'GET', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, *cors, same-origin
+            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            redirect: 'follow', // manual, *follow, error
+            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+            body: null // body data type must match "Content-Type" header
+        });
+        if (response.status === 200) {
+            const data = await response.json();
+            return data;
+        } else {
+            return null;
+        }
+    }
+
+    activityFilter(parentPath, activityPathList, sourceList, routeList, typeList, stateList, externalIdList) {
+        return new ActivityFilter(parentPath, activityPathList, sourceList, routeList, typeList, stateList, externalIdList);
+    }
+
+    /*********************************************************
      * Operational Messages
      *********************************************************/
 
@@ -466,6 +545,18 @@ class ReatMetric {
         } else {
             return null;
         }
+    }
+}
+
+class ActivityFilter {
+    constructor(parentPath, activityPathList, sourceList, routeList, typeList, stateList, externalIdList) {
+        this.parentPath = parentPath;
+        this.activityPathList = activityPathList;
+        this.sourceList = sourceList;
+        this.routeList = routeList;
+        this.typeList = typeList;
+        this.stateList = stateList;
+        this.externalIdList = externalIdList;
     }
 }
 
