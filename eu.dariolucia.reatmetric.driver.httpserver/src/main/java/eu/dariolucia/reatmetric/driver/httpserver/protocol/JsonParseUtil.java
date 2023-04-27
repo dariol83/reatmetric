@@ -2,10 +2,7 @@ package eu.dariolucia.reatmetric.driver.httpserver.protocol;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import eu.dariolucia.reatmetric.api.activity.AbstractActivityArgumentDescriptor;
-import eu.dariolucia.reatmetric.api.activity.ActivityArrayArgumentDescriptor;
-import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
-import eu.dariolucia.reatmetric.api.activity.ActivityPlainArgumentDescriptor;
+import eu.dariolucia.reatmetric.api.activity.*;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.events.EventData;
@@ -21,12 +18,15 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
+import eu.dariolucia.reatmetric.api.processing.input.AbstractActivityArgument;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,6 +120,66 @@ public class JsonParseUtil {
         );
     }
 
+    public static ActivityOccurrenceDataFilter parseActivityOccurrenceDataFilter(InputStream requestBody) {
+        DocumentContext parsed = JsonPath.parse(requestBody);
+        String parentPathAccessor = "$['parentPath']";
+        String activityPathListAccessor = "$['activityPathList']";
+        String routeListAccessor = "$['routeList']";
+        String typeListAccessor = "$['typeList']";
+        String sourceListAccessor = "$['sourceList']";
+        String stateListAccessor = "$['stateList']";
+        String externalIdListAccessor = "$['externalIdList']";
+
+        String parentPath = parsed.read(parentPathAccessor);
+        List<String> activityPathList = parsed.read(activityPathListAccessor);
+        List<String> routes = parsed.read(routeListAccessor);
+        List<String> types = parsed.read(typeListAccessor);
+        List<String> sources = parsed.read(sourceListAccessor);
+        List<String> stateList = parsed.read(stateListAccessor);
+        List<Integer> externalIds = parsed.read(externalIdListAccessor);
+
+        SystemEntityPath path = parentPath == null ? null : SystemEntityPath.fromString(parentPath);
+        List<SystemEntityPath> activityPaths = activityPathList == null ? null : activityPathList.stream().map(SystemEntityPath::fromString).collect(Collectors.toList());
+        List<ActivityOccurrenceState> stateLists = stateList == null ? null : stateList.stream().map(ActivityOccurrenceState::valueOf).collect(Collectors.toList());
+        return new ActivityOccurrenceDataFilter(
+                path,
+                activityPaths,
+                routes,
+                types,
+                stateLists,
+                sources,
+                externalIds
+        );
+    }
+
+    public static ActivityRequest parseActivityRequest(InputStream requestBody) {
+        DocumentContext parsed = JsonPath.parse(requestBody);
+        String idAccessor = "$['id']";
+        String activityPathAccessor = "$['path']";
+        String routeAccessor = "$['route']";
+        String argumentListAccessor = "$['arguments']";
+        String sourceAccessor = "$['source']";
+        String propertyMapAccessor = "$['properties']";
+
+        int id = parsed.read(idAccessor);
+        String activityPath = parsed.read(activityPathAccessor);
+        String route = parsed.read(routeAccessor);
+        String source = parsed.read(sourceAccessor);
+
+        Object argumentsObject = parsed.read(argumentListAccessor);
+        List<AbstractActivityArgument> arguments = Collections.emptyList(); // TODO: parse argumentsObject contents
+        Map<String, String> properties = parsed.read(propertyMapAccessor);
+
+        return new ActivityRequest(
+                id,
+                SystemEntityPath.fromString(activityPath),
+                arguments,
+                properties,
+                route,
+                source
+        );
+    }
+
     public static OperationalMessageFilter parseOperationalMessageFilter(InputStream requestBody) {
         DocumentContext parsed = JsonPath.parse(requestBody);
         String messageTextContainsAccessor = "$['messageTextContains']";
@@ -173,6 +233,21 @@ public class JsonParseUtil {
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
+    public static byte[] formatActivities(List<ActivityOccurrenceData> updates) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[\n");
+        for (int i = 0; i < updates.size(); ++i) {
+            sb.append("  ");
+            ActivityOccurrenceData pd = updates.get(i);
+            format(sb, pd);
+            if (i < updates.size() - 1) {
+                sb.append(",");
+            }
+            sb.append("\n");
+        }
+        sb.append("]");
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
 
     public static byte[] formatMessages(List<OperationalMessage> updates) {
         StringBuilder sb = new StringBuilder();
@@ -223,6 +298,22 @@ public class JsonParseUtil {
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
+    public static byte[] formatActivityDescriptors(List<ActivityDescriptor> descriptors) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[\n");
+        for (int i = 0; i < descriptors.size(); ++i) {
+            sb.append("  ");
+            ActivityDescriptor pd = descriptors.get(i);
+            format(sb, pd);
+            if (i < descriptors.size() - 1) {
+                sb.append(",");
+            }
+            sb.append("\n");
+        }
+        sb.append("]");
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
     private static void format(StringBuilder sb, OperationalMessage obj) {
         sb.append("{ ");
         sb.append(String.format("\"internalId\" : %d, ", obj.getInternalId().asLong()));
@@ -247,6 +338,70 @@ public class JsonParseUtil {
         sb.append(String.format("\"source\" : %s, ", valueToString(obj.getSource())));
         sb.append(String.format("\"severity\" : \"%s\"", obj.getSeverity().name()));
         sb.append(" }");
+    }
+
+    private static void format(StringBuilder sb, ActivityOccurrenceData obj) {
+        sb.append("{ ");
+        sb.append(String.format("\"internalId\" : %d, ", obj.getInternalId().asLong()));
+        sb.append(String.format("\"gentime\" : %s, ", valueToString(obj.getGenerationTime())));
+        sb.append(String.format("\"externalId\" : %d, ", obj.getExternalId()));
+        sb.append(String.format("\"path\" : \"%s\", ", obj.getPath().asString()));
+        sb.append(String.format("\"name\" : %s, ", valueToString(obj.getName())));
+        sb.append(String.format("\"exectime\" : %s, ", valueToString(obj.getExecutionTime())));
+        sb.append(String.format("\"type\" : %s, ", valueToString(obj.getType())));
+        sb.append(String.format("\"route\" : %s, ", valueToString(obj.getRoute())));
+        sb.append(String.format("\"source\" : %s, ", valueToString(obj.getSource())));
+        sb.append(String.format("\"currentState\" : \"%s\", ", obj.getCurrentState().name()));
+        sb.append(String.format("\"result\" : %s, ", valueToString(obj.getResult())));
+        sb.append(String.format("\"arguments\" : %s, ", formatMap(obj.getArguments())));
+        sb.append(String.format("\"properties\" : %s, ", formatMap(obj.getProperties())));
+        sb.append(String.format("\"reports\" : %s ", formatActivityOccurrenceReports(obj.getProgressReports())));
+        sb.append(" }");
+    }
+
+    private static String formatActivityOccurrenceReports(List<ActivityOccurrenceReport> reports) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[ ");
+        int i = 0;
+        for(ActivityOccurrenceReport add : reports) {
+            format(sb, add);
+            if(i < reports.size() - 1) {
+                // Not the last, add comma
+                sb.append(", ");
+            }
+            ++i;
+        }
+        sb.append(" ]");
+        return sb.toString();
+    }
+
+    private static void format(StringBuilder sb, ActivityOccurrenceReport obj) {
+        sb.append("{ ");
+        sb.append(String.format("\"internalId\" : %d, ", obj.getInternalId().asLong()));
+        sb.append(String.format("\"gentime\" : %s, ", valueToString(obj.getGenerationTime())));
+        sb.append(String.format("\"name\" : %s, ", valueToString(obj.getName())));
+        sb.append(String.format("\"exectime\" : %s, ", valueToString(obj.getExecutionTime())));
+        sb.append(String.format("\"state\" : \"%s\", ", obj.getState().name()));
+        sb.append(String.format("\"transition\" : \"%s\", ", obj.getStateTransition().name()));
+        sb.append(String.format("\"status\" : \"%s\", ", obj.getStatus().name()));
+        sb.append(String.format("\"result\" : %s ", valueToString(obj.getResult())));
+        sb.append(" }");
+    }
+
+    private static String formatMap(Map<String, ? extends Object> map) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{ ");
+        int i = 0;
+        for(Map.Entry<String, ? extends Object> add : map.entrySet()) {
+            sb.append(String.format("\"%s\" : %s", add.getKey(), valueToString(add.getValue())));
+            if(i < map.size() - 1) {
+                // Not the last, add comma
+                sb.append(", ");
+            }
+            ++i;
+        }
+        sb.append(" }");
+        return sb.toString();
     }
 
     public static void format(StringBuilder sb, ParameterData obj) {

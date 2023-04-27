@@ -63,11 +63,11 @@ public class HttpServerDriver implements IDriver {
 
     public static final String CONFIGURATION_FILE = "configuration.xml";
 
-    // TODO: implement activity list GET     http://<host>:<port>/<system name>/activities/list
+    // TODO: implement JS activity list GET     http://<host>:<port>/<system name>/activities/list
     // TODO: implement activity invocation POST   http://<host>:<port>/<system name>/activities/invoke
-    // TODO: implement activity monitoring POST  http://<host>:<port>/<system name>/activities/register
-    // TODO: implement activity monitoring DELETE  http://<host>:<port>/<system name>/activities/deregister/<key>
-    // TODO: implement activity monitoring GET  http://<host>:<port>/<system name>/activities/get/<key>
+    // TODO: implement JS activity monitoring POST  http://<host>:<port>/<system name>/activities/register
+    // TODO: implement JS activity monitoring DELETE  http://<host>:<port>/<system name>/activities/deregister/<key>
+    // TODO: implement JS activity monitoring GET  http://<host>:<port>/<system name>/activities/get/<key>
 
     // TODO: implement parameter retrieval     http://<host>:<port>/<system name>/parameters/retrieve
     // TODO: implement event retrieval     http://<host>:<port>/<system name>/events/retrieve
@@ -78,6 +78,7 @@ public class HttpServerDriver implements IDriver {
     public static final String PARAMETER_CURRENT_STATE_PATH = "current";
     public static final String PARAMETER_STREAM_PATH = "stream";
     public static final String EVENTS_PATH = "events";
+    public static final String ACTIVITIES_PATH = "activities";
     public static final String MESSAGES_PATH = "messages";
     public static final String MODEL_PATH = "model";
     public static final String CONNECTORS_PATH = "connectors";
@@ -87,6 +88,7 @@ public class HttpServerDriver implements IDriver {
     public static final String GET_URL = "get";
     public static final String DEREGISTRATION_URL = "deregister";
     public static final String LIST_URL = "list";
+    public static final String INVOKE_URL = "invoke";
 
     // Driver generic properties
     private String name;
@@ -181,6 +183,11 @@ public class HttpServerDriver implements IDriver {
 
         ConnectorRequestHandler ch = new ConnectorRequestHandler(this);
         context2handlers.put("/" + this.context.getSystemName() + "/" + CONNECTORS_PATH, ch);
+
+        ActivityRequestHandler ah = new ActivityRequestHandler(this);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + ACTIVITIES_PATH + "/" + REGISTRATION_URL, ah);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + ACTIVITIES_PATH + "/" + LIST_URL, ah);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + ACTIVITIES_PATH + "/" + INVOKE_URL, ah);
     }
 
     private void buildCache() throws ReatmetricException, RemoteException {
