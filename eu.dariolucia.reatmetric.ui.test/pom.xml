@@ -116,5 +116,15 @@
             <artifactId>eu.dariolucia.reatmetric.processing</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.serial</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.httpserver</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
 </project>

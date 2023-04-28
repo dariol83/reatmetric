@@ -88,6 +88,25 @@
         }
     }
 
+    async function showActivities() {
+        var divToAttach = document.getElementById('div1');
+        divToAttach.textContent = '';
+
+        var thTextArray = ['Path', 'External ID', 'Description'];
+        var thWidthArray = [20, 10, 50];
+        var tdTextArrayKeys = ['path', 'externalId', 'description'];
+
+        var activities = await reatmetric.listActivities();
+        if(activities != null) {
+            // Create table node
+            var tbodyNode = createTable(divToAttach, thTextArray, thWidthArray);
+            for(var i = 0; i < activities.length; ++i) {
+                var activityItem = activities[i];
+                addRow(tbodyNode, activityItem, tdTextArrayKeys);
+            }
+        }
+    }
+
     async function subscribeToEvents() {
         if(subEvtKey != null) {
             return;
@@ -219,7 +238,7 @@
         console.log("Message subscription key: " + subMsgKey);
         if(subMsgKey != null) {
             subIntervalId = setInterval(msgRetrieve, 1000);
-            console.log("Parameter subscription interval: " + subIntervalId);
+            console.log("Message subscription interval: " + subIntervalId);
         }
     }
 
@@ -245,6 +264,26 @@
         subIntervalId = null;
         await reatmetric.deregisterFromMessages(subMsgKey);
         subMsgKey = null;
+    }
+
+    async function invokeActivity() {
+        var divToAttach = document.getElementById('div1');
+        divToAttach.textContent = '';
+
+        args = [];
+        args.push(reatmetric.plainArgument('ARG1','OFF',true));
+        // Add an array argument for testing purposes
+        /*
+        elem1 = reatmetric.plainArgument('ARGfake1','ON',true);
+        elem2 = reatmetric.plainArgument('ARGfake2',123,false);
+        rec1 = reatmetric.arrayArgumentRecord([elem1]);
+        rec2 = reatmetric.arrayArgumentRecord([elem2]);
+        args.push(reatmetric.arrayArgument('ARGarray', [rec1, rec2]));
+        */
+        var actRequest = reatmetric.activityRequest(151, 'STATION.POWERSUPPLY.SET_STATUS', args, 'STATION ROUTE', 'Web Page', { "aaa" : "bbb", "CCC" : "test" });
+
+        activityIdentifier = await reatmetric.invoke(actRequest);
+        console.log("Activity id: " + activityIdentifier);
     }
 
         </script>
@@ -277,6 +316,8 @@
     <body>
         <button type="button" onclick="showParameters()">Show Parameters</button>
         <button type="button" onclick="showEvents()">Show Events</button>
+        <button type="button" onclick="showActivities()">Show Activities</button>
+        <button type="button" onclick="invokeActivity()">Invoke STATION.POWERSUPPLY.SET_STATUS</button>
         <button type="button" onclick="subscribeToEvents()">Subscribe to events</button>
         <button type="button" onclick="unsubscribeFromEvents()">Unsubscribe from events</button>
         <button type="button" onclick="subscribeToParameters()">Subscribe to parameters</button>

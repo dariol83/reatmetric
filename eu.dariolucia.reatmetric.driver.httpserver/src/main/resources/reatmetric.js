@@ -11,11 +11,31 @@ const RTMT_REGISTRATION_URL = "register";
 const RTMT_GET_URL = "get";
 const RTMT_DEREGISTRATION_URL = "deregister";
 const RTMT_LIST_URL = "list";
+const RTMT_INVOKE_URL = "invoke";
 
 const RTMT_ENABLE_URL = "enable";
 const RTMT_DISABLE_URL = "disable";
 
 class ReatMetric {
+
+    fetchInit(method, body) {
+        return {
+                method: method, // *GET, POST, PUT, DELETE, etc.
+                mode: 'cors', // no-cors, *cors, same-origin
+                cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                redirect: 'follow', // manual, *follow, error
+                referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+                body: body // body data type must match "Content-Type" header
+        };
+    }
+
+    /*********************************************************
+     * Constructor
+     *********************************************************/
+
     constructor(host, port, name) {
         this.host = host;
         this.port = port;
@@ -28,17 +48,7 @@ class ReatMetric {
     async getDescriptor(path) {
         var thePath = path.replaceAll('.', '/')
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath;
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         const data = await response.json();
         return data;
     }
@@ -46,17 +56,7 @@ class ReatMetric {
     async enable(path) {
         var thePath = path.replaceAll('.', '/')
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath + "/" + RTMT_ENABLE_URL;
-        const response = await fetch(toFetch, {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('POST', null));
         const data = await response.json();
         return;
     }
@@ -64,17 +64,7 @@ class ReatMetric {
     async disable(path) {
         var thePath = path.replaceAll('.', '/')
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath + "/" + RTMT_DISABLE_URL;
-        const response = await fetch(toFetch, {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('POST', null));
         const data = await response.json();
         return;
     }
@@ -85,17 +75,7 @@ class ReatMetric {
 
     async listParameters() {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_LIST_URL;
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         const data = await response.json();
         return data;
     }
@@ -110,49 +90,19 @@ class ReatMetric {
 
     async registerToStateParameters(filter) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_CURRENT_STATE_PATH + "/" + RTMT_REGISTRATION_URL;
-        const response = await fetch(toFetch, {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: JSON.stringify(filter) // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
         const data = await response.json();
         return data.key;
     }
 
     async deregisterFromStateParameters(key) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH  + "/" + RTMT_PARAMETER_CURRENT_STATE_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
-        const response = await fetch(toFetch, {
-            method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('DELETE', null));
     }
 
     async getStateParameters(key) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_CURRENT_STATE_PATH  + "/" + RTMT_GET_URL + "/" + key;
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
             return data;
@@ -167,49 +117,19 @@ class ReatMetric {
 
     async registerToStreamParameters(filter) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_STREAM_PATH + "/" + RTMT_REGISTRATION_URL;
-        const response = await fetch(toFetch, {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: JSON.stringify(filter) // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
         const data = await response.json();
         return data.key;
     }
 
     async deregisterFromStreamParameters(key) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH  + "/" + RTMT_PARAMETER_STREAM_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
-        const response = await fetch(toFetch, {
-            method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('DELETE', null));
     }
 
     async getStreamParameters(key) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_STREAM_PATH  + "/" + RTMT_GET_URL + "/" + key;
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
             return data;
@@ -224,66 +144,26 @@ class ReatMetric {
 
     async listEvents() {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_LIST_URL;
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         const data = await response.json();
         return data;
     }
 
     async registerToEvents(filter) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_REGISTRATION_URL;
-        const response = await fetch(toFetch, {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: JSON.stringify(filter) // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
         const data = await response.json();
         return data.key;
     }
 
     async deregisterFromEvents(key) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
-        const response = await fetch(toFetch, {
-            method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('DELETE', null));
     }
 
     async getEvents(key) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_GET_URL + "/" + key;
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
             return data;
@@ -302,66 +182,26 @@ class ReatMetric {
 
     async listActivities() {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_LIST_URL;
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         const data = await response.json();
         return data;
     }
 
     async registerToActivities(filter) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_REGISTRATION_URL;
-        const response = await fetch(toFetch, {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: JSON.stringify(filter) // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
         const data = await response.json();
         return data.key;
     }
 
     async deregisterFromActivities(key) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
-        const response = await fetch(toFetch, {
-            method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('DELETE', null));
     }
 
     async getActivities(key) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_GET_URL + "/" + key;
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
             return data;
@@ -370,8 +210,31 @@ class ReatMetric {
         }
     }
 
+    async invoke(activityRequest) {
+        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_INVOKE_URL;
+        const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(activityRequest)));
+        const data = await response.json();
+        return data.id;
+    }
+
     activityFilter(parentPath, activityPathList, sourceList, routeList, typeList, stateList, externalIdList) {
         return new ActivityFilter(parentPath, activityPathList, sourceList, routeList, typeList, stateList, externalIdList);
+    }
+
+    activityRequest(activityId, activityPath, activityArguments, activityRoute, activitySource, activityProperties) {
+        return new ActivityRequest(activityId, activityPath, activityArguments, activityRoute, activitySource, activityProperties);
+    }
+
+    plainArgument(name, value, engineering) {
+        return new PlainActivityRequestArgument(name, value, engineering);
+    }
+
+    arrayArgument(name, records) {
+        return new ArrayActivityRequestArgument(name, records);
+    }
+
+    arrayArgumentRecord(elements) {
+        return new ArrayActivityRequestArgumentRecord(elements);
     }
 
     /*********************************************************
@@ -380,49 +243,19 @@ class ReatMetric {
 
     async registerToMessages(filter) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MESSAGES_PATH + "/" + RTMT_REGISTRATION_URL;
-        const response = await fetch(toFetch, {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: JSON.stringify(filter) // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
         const data = await response.json();
         return data.key;
     }
 
     async deregisterFromMessages(key) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MESSAGES_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
-        const response = await fetch(toFetch, {
-            method: 'DELETE', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('DELETE', null));
     }
 
     async getMessages(key) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MESSAGES_PATH + "/" + RTMT_GET_URL + "/" + key;
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
             return data;
@@ -441,17 +274,7 @@ class ReatMetric {
 
     async getConnectors() {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH;
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
             return data;
@@ -462,17 +285,7 @@ class ReatMetric {
 
     async getConnector(name) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name;
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
             return data;
@@ -483,62 +296,22 @@ class ReatMetric {
 
     async connect(name) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/connect";
-        const response = await fetch(toFetch, {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('POST', null));
     }
 
     async disconnect(name) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/disconnect";
-        const response = await fetch(toFetch, {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('POST', null));
     }
 
     async abort(name) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/abort";
-        const response = await fetch(toFetch, {
-            method: 'POST', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('POST', null));
     }
 
     async getConnectorProperties(name) {
         var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/properties";
-        const response = await fetch(toFetch, {
-            method: 'GET', // *GET, POST, PUT, DELETE, etc.
-            mode: 'cors', // no-cors, *cors, same-origin
-            cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            redirect: 'follow', // manual, *follow, error
-            referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-            body: null // body data type must match "Content-Type" header
-        });
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
             return data;
@@ -557,6 +330,43 @@ class ActivityFilter {
         this.typeList = typeList;
         this.stateList = stateList;
         this.externalIdList = externalIdList;
+    }
+}
+
+class ActivityRequest {
+    constructor(activityId, activityPath, activityArguments, activityRoute, activitySource, activityProperties) {
+        this.id = activityId;
+        this.path = activityPath;
+        this.arguments = activityArguments;
+        this.route = activityRoute;
+        this.source = activitySource;
+        this.properties = activityProperties;
+    }
+}
+
+class PlainActivityRequestArgument {
+    // string, object, boolean
+    constructor(name, value, engineering) {
+        this.name = name;
+        this.type = 'plain';
+        this.value = value;
+        this.engineering = engineering;
+    }
+}
+
+class ArrayActivityRequestArgument {
+    // string, array of records
+    constructor(name, records) {
+        this.name = name;
+        this.type = 'array';
+        this.records = records;
+    }
+}
+
+class ArrayActivityRequestArgumentRecord {
+    // string, array of records
+    constructor(elements) {
+        this.elements = elements;
     }
 }
 

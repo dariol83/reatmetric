@@ -18,18 +18,15 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
-import eu.dariolucia.reatmetric.api.processing.input.AbstractActivityArgument;
-import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
+import eu.dariolucia.reatmetric.api.processing.input.*;
 import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
 import java.io.InputStream;
+import java.io.ObjectStreamException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -165,11 +162,12 @@ public class JsonParseUtil {
         String activityPath = parsed.read(activityPathAccessor);
         String route = parsed.read(routeAccessor);
         String source = parsed.read(sourceAccessor);
-
-        Object argumentsObject = parsed.read(argumentListAccessor);
-        List<AbstractActivityArgument> arguments = Collections.emptyList(); // TODO: parse argumentsObject contents
+        // Parse arguments
+        List<Map<String, Object>> argumentsObject = parsed.read(argumentListAccessor);
+        List<AbstractActivityArgument> arguments = mapToElements(argumentsObject);
+        // Parse properties
         Map<String, String> properties = parsed.read(propertyMapAccessor);
-
+        // Build object
         return new ActivityRequest(
                 id,
                 SystemEntityPath.fromString(activityPath),
@@ -178,6 +176,33 @@ public class JsonParseUtil {
                 route,
                 source
         );
+    }
+
+    private static List<AbstractActivityArgument> mapToElements(Iterable<Map<String, Object>> elementsIterator) {
+        List<AbstractActivityArgument> arguments = new LinkedList<>();
+        for(Iterator<Map<String, Object>> it = elementsIterator.iterator(); it.hasNext();) {
+            Map<String, Object> arg = it.next(); // record, you need to fetch elements
+            String name = (String) arg.get("name");
+            if(Objects.equals(arg.get("type"), "plain")) {
+                boolean isEngineering = (boolean) arg.get("engineering");
+                PlainActivityArgument plainArgument = isEngineering ?
+                        PlainActivityArgument.ofEngineering(name, arg.get("value")) :
+                        PlainActivityArgument.ofSource(name, arg.get("value"));
+                arguments.add(plainArgument);
+            } else {
+                // assume array, must be parsed
+                List<ArrayActivityArgumentRecord> records = new LinkedList<>();
+                // Iterable on records
+                Iterable<Map<String, Object>> recordsIterator = (Iterable<Map<String, Object>>) arg.get("records");
+                for(Iterator<Map<String, Object>> it2 = recordsIterator.iterator(); it2.hasNext();) {
+                    Map<String, Object> recordItem = it2.next(); // record, you need to fetch elements
+                    List<AbstractActivityArgument> elems = mapToElements((Iterable<Map<String, Object>>) recordItem.get("elements"));
+                    records.add(new ArrayActivityArgumentRecord(elems));
+                }
+                arguments.add(new ArrayActivityArgument(name, records));
+            }
+        }
+        return arguments;
     }
 
     public static OperationalMessageFilter parseOperationalMessageFilter(InputStream requestBody) {

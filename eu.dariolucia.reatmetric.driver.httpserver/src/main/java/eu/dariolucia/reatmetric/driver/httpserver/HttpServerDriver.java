@@ -63,13 +63,7 @@ public class HttpServerDriver implements IDriver {
 
     public static final String CONFIGURATION_FILE = "configuration.xml";
 
-    // TODO: implement JS activity list GET     http://<host>:<port>/<system name>/activities/list
-    // TODO: implement activity invocation POST   http://<host>:<port>/<system name>/activities/invoke
-    // TODO: implement JS activity monitoring POST  http://<host>:<port>/<system name>/activities/register
-    // TODO: implement JS activity monitoring DELETE  http://<host>:<port>/<system name>/activities/deregister/<key>
-    // TODO: implement JS activity monitoring GET  http://<host>:<port>/<system name>/activities/get/<key>
-
-    // TODO: implement parameter retrieval     http://<host>:<port>/<system name>/parameters/retrieve
+    // TODO: implement parameter retrieval     http://<host>:<port>/<system name>/parameters/retrieve (including current value retrieval)
     // TODO: implement event retrieval     http://<host>:<port>/<system name>/events/retrieve
     // TODO: implement messages retrieval     http://<host>:<port>/<system name>/messages/retrieve
     // TODO: implement activity retrieval     http://<host>:<port>/<system name>/activities/retrieve
