@@ -18,6 +18,7 @@ import eu.dariolucia.reatmetric.driver.httpserver.protocol.subscriptions.*;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -57,9 +58,33 @@ public class MessageRequestHandler extends AbstractHttpRequestHandler {
                 handled = handleMessageGetRequest(exchange);
             } else if(path.contains(HttpServerDriver.DEREGISTRATION_URL) && exchange.getRequestMethod().equals(HTTP_METHOD_DELETE)) {
                 handled = handleMessageDeregistrationRequest(exchange);
+            } else if(path.startsWith(RETRIEVE_URL) && exchange.getRequestMethod().equals(HTTP_METHOD_POST)) {
+                // Retrieve requested messages from archive
+                handled = handleMessageRetrieveRequest(exchange);
             }
         }
         return handled;
+    }
+
+    private int handleMessageRetrieveRequest(HttpExchange exchange) throws IOException {
+        // Retrieve the filter from the body
+        OperationalMessageFilter filter = JsonParseUtil.parseOperationalMessageFilter(exchange.getRequestBody());
+        // Retrieve the retrieval properties from the request
+        Map<String, String> requestParams = JsonParseUtil.splitQuery(exchange.getRequestURI());
+        // Perform the retrieval
+        try {
+            Instant starttime = Instant.ofEpochMilli(Long.parseLong(requestParams.get(START_TIME_ARG)));
+            Instant endtime = Instant.ofEpochMilli(Long.parseLong(requestParams.get(END_TIME_ARG)));
+            List<OperationalMessage> data = getDriver().getContext().getServiceFactory().getOperationalMessageMonitorService().retrieve(starttime, endtime, filter);
+            // Format the updates
+            byte[] body = JsonParseUtil.formatMessages(data);
+            // Send the response
+            sendPositiveResponse(exchange, body);
+            return HTTP_CODE_OK;
+        } catch (ReatmetricException | RemoteException e) {
+            LOG.log(Level.SEVERE, "Error while processing request handleMessageRetrieveRequest(): " + e.getMessage(), e);
+            return HTTP_CODE_INTERNAL_ERROR;
+        }
     }
 
     private int handleMessageDeregistrationRequest(HttpExchange exchange) throws IOException {

@@ -132,6 +132,35 @@
         }
     }
 
+    async function retrieveEventHistory() {
+        await unsubscribeFromEvents();
+        await unsubscribeFromMessages();
+        await unsubscribeFromParameters();
+
+        var divToAttach = document.getElementById('div1');
+        divToAttach.textContent = '';
+
+        var filter = reatmetric.eventFilter('STATION', null, null, null, null, null, null);
+
+        // Create table node
+        var thTextArray = ['Severity', 'Gen. Time', 'Path', 'Route', 'Source'];
+        var thWidthArray = [15, 20, 30, 20, 15];
+        tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
+
+        var sTime = Date.now() - 3600 * 1000 * 24;
+        var eTime = Date.now();
+        var currentEvents = await reatmetric.retrieveEvents(sTime,eTime,filter);
+
+        var tdTextArrayKeys = ['severity', 'gentime', 'path', 'route', 'source'];
+        if(currentEvents != null) {
+            console.log("Retrieved " + currentEvents.length + " events");
+            for(var i = 0; i < currentEvents.length; ++i) {
+                var event = currentEvents[i];
+                addRow(tableBodyVar, event, tdTextArrayKeys);
+            }
+        }
+    }
+
     async function evtRetrieve() {
         console.log("Retrieving events on key " + subEvtKey);
         var currentEvents = null;
@@ -256,6 +285,35 @@
         }
     }
 
+    async function retrieveMessageHistory() {
+        await unsubscribeFromEvents();
+        await unsubscribeFromMessages();
+        await unsubscribeFromParameters();
+
+        var divToAttach = document.getElementById('div1');
+        divToAttach.textContent = '';
+
+        var filter = reatmetric.messageFilter(null, null, null, null);
+
+        // Create table node
+        var thTextArray = ['Severity', 'Gen. Time', 'Source', 'Message'];
+        var thWidthArray = [15, 20, 20, 45];
+        tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
+
+        var sTime = Date.now() - 300 * 1000;
+        var eTime = Date.now();
+        var currentMessages = await reatmetric.retrieveMessages(sTime,eTime,filter);
+
+        var tdTextArrayKeys = ['severity', 'gentime', 'source', 'message'];
+        if(currentMessages != null) {
+            console.log("Retrieved " + currentMessages.length + " messages");
+            for(var i = 0; i < currentMessages.length; ++i) {
+                var message = currentMessages[i];
+                addRow(tableBodyVar, message, tdTextArrayKeys);
+            }
+        }
+    }
+
     async function unsubscribeFromMessages() {
         if(subMsgKey == null) {
             return;
@@ -320,10 +378,12 @@
         <button type="button" onclick="invokeActivity()">Invoke STATION.POWERSUPPLY.SET_STATUS</button>
         <button type="button" onclick="subscribeToEvents()">Subscribe to events</button>
         <button type="button" onclick="unsubscribeFromEvents()">Unsubscribe from events</button>
+        <button type="button" onclick="retrieveEventHistory()">Retrieve events</button>
         <button type="button" onclick="subscribeToParameters()">Subscribe to parameters</button>
         <button type="button" onclick="unsubscribeFromParameters()">Unsubscribe from parameters</button>
         <button type="button" onclick="subscribeToMessages()">Subscribe to messages</button>
         <button type="button" onclick="unsubscribeFromMessages()">Unsubscribe from messages</button>
+        <button type="button" onclick="retrieveMessageHistory()">Retrieve messages</button>
         <hr/>
         <br/>
         <div id="div1" class="tableFixHead">

@@ -64,9 +64,6 @@ public class HttpServerDriver implements IDriver {
     public static final String CONFIGURATION_FILE = "configuration.xml";
 
     // TODO: implement parameter retrieval     http://<host>:<port>/<system name>/parameters/retrieve (including current value retrieval)
-    // TODO: implement event retrieval     http://<host>:<port>/<system name>/events/retrieve
-    // TODO: implement messages retrieval     http://<host>:<port>/<system name>/messages/retrieve
-    // TODO: implement activity retrieval     http://<host>:<port>/<system name>/activities/retrieve
 
     public static final String PARAMETERS_PATH = "parameters";
     public static final String PARAMETER_CURRENT_STATE_PATH = "current";
@@ -81,8 +78,15 @@ public class HttpServerDriver implements IDriver {
     public static final String REGISTRATION_URL = "register";
     public static final String GET_URL = "get";
     public static final String DEREGISTRATION_URL = "deregister";
+
+    // Other operations
     public static final String LIST_URL = "list";
     public static final String INVOKE_URL = "invoke";
+    public static final String RETRIEVE_URL = "retrieve";
+
+    public static final String START_TIME_ARG = "startTime";
+    public static final String END_TIME_ARG = "endTime";
+
 
     // Driver generic properties
     private String name;
@@ -163,14 +167,17 @@ public class HttpServerDriver implements IDriver {
         EventRequestHandler eh = new EventRequestHandler(this);
         context2handlers.put("/" + this.context.getSystemName() + "/" + EVENTS_PATH + "/" + REGISTRATION_URL, eh);
         context2handlers.put("/" + this.context.getSystemName() + "/" + EVENTS_PATH + "/" + LIST_URL, eh);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + EVENTS_PATH + "/" + RETRIEVE_URL, eh);
 
         ParameterRequestHandler ph = new ParameterRequestHandler(this);
         context2handlers.put("/" + this.context.getSystemName() + "/" + PARAMETERS_PATH + "/" + PARAMETER_CURRENT_STATE_PATH + "/" + REGISTRATION_URL, ph);
         context2handlers.put("/" + this.context.getSystemName() + "/" + PARAMETERS_PATH + "/" + PARAMETER_STREAM_PATH + "/" + REGISTRATION_URL, ph);
         context2handlers.put("/" + this.context.getSystemName() + "/" + PARAMETERS_PATH + "/" + LIST_URL, ph);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + PARAMETERS_PATH + "/" + RETRIEVE_URL, ph);
 
         MessageRequestHandler mh = new MessageRequestHandler(this);
         context2handlers.put("/" + this.context.getSystemName() + "/" + MESSAGES_PATH + "/" + REGISTRATION_URL, mh);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + MESSAGES_PATH + "/" + RETRIEVE_URL, mh);
 
         ModelRequestHandler moh = new ModelRequestHandler(this);
         context2handlers.put("/" + this.context.getSystemName() + "/" + MODEL_PATH, moh);
@@ -182,6 +189,7 @@ public class HttpServerDriver implements IDriver {
         context2handlers.put("/" + this.context.getSystemName() + "/" + ACTIVITIES_PATH + "/" + REGISTRATION_URL, ah);
         context2handlers.put("/" + this.context.getSystemName() + "/" + ACTIVITIES_PATH + "/" + LIST_URL, ah);
         context2handlers.put("/" + this.context.getSystemName() + "/" + ACTIVITIES_PATH + "/" + INVOKE_URL, ah);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + ACTIVITIES_PATH + "/" + RETRIEVE_URL, ah);
     }
 
     private void buildCache() throws ReatmetricException, RemoteException {

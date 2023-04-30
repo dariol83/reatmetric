@@ -23,7 +23,8 @@ import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
 import java.io.InputStream;
-import java.io.ObjectStreamException;
+import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
@@ -37,6 +38,18 @@ public class JsonParseUtil {
 
     private JsonParseUtil() {
         throw new IllegalAccessError("Not supposed to be invoked");
+    }
+
+    // Credits: StackOverflow - https://stackoverflow.com/questions/13592236/parse-a-uri-string-into-name-value-collection
+    public static Map<String, String> splitQuery(URI url) {
+        Map<String, String> queryPairs = new LinkedHashMap<>();
+        String query = url.getQuery();
+        String[] pairs = query.split("&", -1);
+        for (String pair : pairs) {
+            int idx = pair.indexOf("=");
+            queryPairs.put(URLDecoder.decode(pair.substring(0, idx), StandardCharsets.UTF_8), URLDecoder.decode(pair.substring(idx + 1), StandardCharsets.UTF_8));
+        }
+        return queryPairs;
     }
 
     public static <T> T parseInput(InputStream requestBody, Class<T> inputClass) {
@@ -290,7 +303,6 @@ public class JsonParseUtil {
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-
     public static byte[] formatParameterDescriptors(List<ParameterDescriptor> descriptors) {
         StringBuilder sb = new StringBuilder();
         sb.append("[\n");
@@ -344,10 +356,14 @@ public class JsonParseUtil {
         sb.append(String.format("\"internalId\" : %d, ", obj.getInternalId().asLong()));
         sb.append(String.format("\"gentime\" : %s, ", valueToString(obj.getGenerationTime())));
         sb.append(String.format("\"id\" : %s, ", valueToString(obj.getId())));
-        sb.append(String.format("\"message\" : \"%s\", ", obj.getMessage()));
+        sb.append(String.format("\"message\" : \"%s\", ", escapeMessage(obj.getMessage())));
         sb.append(String.format("\"source\" : %s, ", valueToString(obj.getSource())));
         sb.append(String.format("\"severity\" : \"%s\"", obj.getSeverity().name()));
         sb.append(" }");
+    }
+
+    private static String escapeMessage(String message) {
+        return message.replace("\\", "\\\\");
     }
 
     private static void format(StringBuilder sb, EventData obj) {
@@ -454,9 +470,9 @@ public class JsonParseUtil {
         } else if (obj instanceof Number) {
             return obj.toString();
         } else if (obj instanceof Instant) {
-            return "\"" + obj.toString() + "\"";
+            return "\"" + obj + "\"";
         } else {
-            return "\"" + obj.toString() + "\"";
+            return "\"" + obj + "\"";
         }
     }
 
@@ -541,7 +557,7 @@ public class JsonParseUtil {
         sb.append("{ ");
         sb.append(String.format("\"name\" : \"%s\", ", ap.getName()));
         sb.append(String.format("\"description\" : %s, ", valueToString(ap.getDescription())));
-        sb.append(String.format("\"type\" : \"array\", "));
+        sb.append("\"type\" : \"array\", ");
         sb.append(String.format("\"expansionArgument\" : %s, ", valueToString(ap.getExpansionArgument())));
         sb.append(String.format("\"elements\" : %s, ", formatArguments(ap.getElements())));
         sb.append(" }");
@@ -551,7 +567,7 @@ public class JsonParseUtil {
         sb.append("{ ");
         sb.append(String.format("\"name\" : \"%s\", ", ap.getName()));
         sb.append(String.format("\"description\" : %s, ", valueToString(ap.getDescription())));
-        sb.append(String.format("\"type\" : \"plain\", "));
+        sb.append("\"type\" : \"plain\", ");
         sb.append(String.format("\"rawDataType\" : \"%s\", ", ap.getRawDataType().name()));
         sb.append(String.format("\"engDataType\" : \"%s\", ", ap.getEngineeringDataType().name()));
         sb.append(String.format("\"unit\" : %s, ", valueToString(ap.getUnit())));

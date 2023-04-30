@@ -6,6 +6,8 @@ import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceData;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceDataFilter;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.events.EventData;
+import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.driver.httpserver.HttpServerDriver;
 import eu.dariolucia.reatmetric.driver.httpserver.protocol.JsonParseUtil;
@@ -14,10 +16,12 @@ import eu.dariolucia.reatmetric.driver.httpserver.protocol.subscriptions.HttpAct
 
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static eu.dariolucia.reatmetric.driver.httpserver.HttpServerDriver.*;
@@ -62,9 +66,33 @@ public class ActivityRequestHandler extends AbstractHttpRequestHandler {
                 handled = handleActivityGetRequest(exchange);
             } else if(path.contains(HttpServerDriver.DEREGISTRATION_URL) && exchange.getRequestMethod().equals(HTTP_METHOD_DELETE)) {
                 handled = handleActivityDeregistrationRequest(exchange);
+            } else if(path.startsWith(RETRIEVE_URL) && exchange.getRequestMethod().equals(HTTP_METHOD_POST)) {
+                // Retrieve requested activities from archive
+                handled = handleActivityRetrieveRequest(exchange);
             }
         }
         return handled;
+    }
+
+    private int handleActivityRetrieveRequest(HttpExchange exchange) throws IOException {
+        // Retrieve the filter from the body
+        ActivityOccurrenceDataFilter filter = JsonParseUtil.parseActivityOccurrenceDataFilter(exchange.getRequestBody());
+        // Retrieve the retrieval properties from the request
+        Map<String, String> requestParams = JsonParseUtil.splitQuery(exchange.getRequestURI());
+        // Perform the retrieval
+        try {
+            Instant starttime = Instant.ofEpochMilli(Long.parseLong(requestParams.get(START_TIME_ARG)));
+            Instant endtime = Instant.ofEpochMilli(Long.parseLong(requestParams.get(END_TIME_ARG)));
+            List<ActivityOccurrenceData> data = getDriver().getContext().getServiceFactory().getActivityOccurrenceDataMonitorService().retrieve(starttime, endtime, filter);
+            // Format the updates
+            byte[] body = JsonParseUtil.formatActivities(data);
+            // Send the response
+            sendPositiveResponse(exchange, body);
+            return HTTP_CODE_OK;
+        } catch (ReatmetricException | RemoteException e) {
+            LOG.log(Level.SEVERE, "Error while processing request handleActivityRetrieveRequest(): " + e.getMessage(), e);
+            return HTTP_CODE_INTERNAL_ERROR;
+        }
     }
 
     private int handleActivityInvokeRequest(HttpExchange exchange) throws IOException {

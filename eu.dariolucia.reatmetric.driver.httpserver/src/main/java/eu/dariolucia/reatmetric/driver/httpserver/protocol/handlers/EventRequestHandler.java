@@ -1,19 +1,26 @@
 package eu.dariolucia.reatmetric.driver.httpserver.protocol.handlers;
 
 import com.sun.net.httpserver.HttpExchange;
+import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.EventDescriptor;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.driver.httpserver.HttpServerDriver;
 import eu.dariolucia.reatmetric.driver.httpserver.protocol.JsonParseUtil;
 import eu.dariolucia.reatmetric.driver.httpserver.protocol.subscriptions.AbstractHttpSubscription;
 import eu.dariolucia.reatmetric.driver.httpserver.protocol.subscriptions.HttpEventSubscription;
 
 import java.io.IOException;
+import java.rmi.RemoteException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static eu.dariolucia.reatmetric.driver.httpserver.HttpServerDriver.*;
@@ -53,9 +60,33 @@ public class EventRequestHandler extends AbstractHttpRequestHandler {
                 handled = handleEventGetRequest(exchange);
             } else if(path.contains(HttpServerDriver.DEREGISTRATION_URL) && exchange.getRequestMethod().equals(HTTP_METHOD_DELETE)) {
                 handled = handleEventDeregistrationRequest(exchange);
+            } else if(path.startsWith(RETRIEVE_URL) && exchange.getRequestMethod().equals(HTTP_METHOD_POST)) {
+                // Retrieve requested events from archive
+                handled = handleEventRetrieveRequest(exchange);
             }
         }
         return handled;
+    }
+
+    private int handleEventRetrieveRequest(HttpExchange exchange) throws IOException {
+        // Retrieve the filter from the body
+        EventDataFilter filter = JsonParseUtil.parseEventDataFilter(exchange.getRequestBody());
+        // Retrieve the retrieval properties from the request
+        Map<String, String> requestParams = JsonParseUtil.splitQuery(exchange.getRequestURI());
+        // Perform the retrieval
+        try {
+            Instant starttime = Instant.ofEpochMilli(Long.parseLong(requestParams.get(START_TIME_ARG)));
+            Instant endtime = Instant.ofEpochMilli(Long.parseLong(requestParams.get(END_TIME_ARG)));
+            List<EventData> data = getDriver().getContext().getServiceFactory().getEventDataMonitorService().retrieve(starttime, endtime, filter);
+            // Format the updates
+            byte[] body = JsonParseUtil.formatEvents(data);
+            // Send the response
+            sendPositiveResponse(exchange, body);
+            return HTTP_CODE_OK;
+        } catch (ReatmetricException | RemoteException e) {
+            LOG.log(Level.SEVERE, "Error while processing request handleEventRetrieveRequest(): " + e.getMessage(), e);
+            return HTTP_CODE_INTERNAL_ERROR;
+        }
     }
 
     private int handleEventListGetRequest(HttpExchange exchange) throws IOException {
