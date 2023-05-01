@@ -239,6 +239,12 @@ public class JsonParseUtil {
         );
     }
 
+    public static byte[] formatParameter(ParameterData update) {
+        StringBuilder sb = new StringBuilder();
+        format(sb, update);
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
     public static byte[] formatParameters(List<ParameterData> updates) {
         StringBuilder sb = new StringBuilder();
         sb.append("[\n");

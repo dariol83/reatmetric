@@ -2,6 +2,7 @@ package eu.dariolucia.reatmetric.driver.httpserver.protocol.handlers;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
@@ -10,6 +11,7 @@ import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.EventDescriptor;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessage;
 import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
@@ -80,9 +82,50 @@ public class ParameterRequestHandler extends AbstractHttpRequestHandler {
             } else if(path.startsWith(RETRIEVE_URL) && exchange.getRequestMethod().equals(HTTP_METHOD_POST)) {
                 // Retrieve requested parameters from archive
                 handled = handleParameterRetrieveRequest(exchange);
+            } else if(path.startsWith(STATE_URL) && exchange.getRequestMethod().equals(HTTP_METHOD_GET)) {
+                // Retrieve requested parameters from archive
+                handled = handleParameterGetRequest(exchange);
             }
         }
         return handled;
+    }
+
+    private int handleParameterGetRequest(HttpExchange exchange) throws IOException {
+        // Retrieve the retrieval properties from the request
+        Map<String, String> requestParams = JsonParseUtil.splitQuery(exchange.getRequestURI());
+        // Perform the fetch
+        try {
+            List<AbstractDataItem> data;
+            String path = requestParams.get("path");
+            if(path != null) {
+                data = getDriver().getContext().getProcessingModel().getByPath(Collections.singletonList(SystemEntityPath.fromString(path)));
+            } else {
+                String idString = requestParams.get("id");
+                if(idString == null) {
+                    return HTTP_CODE_BAD_REQUEST;
+                }
+                try {
+                    int id = Integer.parseInt(idString);
+                    data = getDriver().getContext().getProcessingModel().getById(Collections.singletonList(id));
+                } catch (NumberFormatException e) {
+                    return HTTP_CODE_BAD_REQUEST;
+                }
+            }
+            // Filter out data that is not ParameterData and get the first one
+            Optional<ParameterData> pd = data.stream().filter(ParameterData.class::isInstance).map(ParameterData.class::cast).findFirst();
+            if(pd.isPresent()) {
+                // Format the updates
+                byte[] body = JsonParseUtil.formatParameter(pd.get());
+                // Send the response
+                sendPositiveResponse(exchange, body);
+                return HTTP_CODE_OK;
+            } else {
+                return HTTP_CODE_NOT_FOUND;
+            }
+        } catch (ReatmetricException | RemoteException e) {
+            LOG.log(Level.SEVERE, "Error while processing request handleParameterGetRequest(): " + e.getMessage(), e);
+            return HTTP_CODE_INTERNAL_ERROR;
+        }
     }
 
     private int handleParameterRetrieveRequest(HttpExchange exchange) throws IOException {
