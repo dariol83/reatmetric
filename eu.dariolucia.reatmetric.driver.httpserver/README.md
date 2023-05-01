@@ -221,6 +221,23 @@ server side queue. The array of objects is defined according to the structure de
 
 *Javascript library function*: async getStreamParameters(key) : return array of parameter data objects.
 
+### Parameter current state
+
+This operation allows to request the current state of a parameter, as currently stored in the processing model.
+
+~~~
+    GET     http://<host>:<port>/<system name>/parameters/state?path=<parameter path>
+~~~
+~~~
+    GET     http://<host>:<port>/<system name>/parameters/state?id=<parameter external ID>
+~~~
+
+The response returns in its body a single ParameterData object in JSON format (see above "Parameter state subscription").
+
+*Javascript library function*: async getParameterByPath(path) : return a parameter data object.
+
+*Javascript library function*: async getParameterByID(id) : return a parameter data object.
+
 ### Event stream subscription
 
 This type of interaction allows clients to request the creation of a specific event subscription, based on the provided filter.
@@ -566,6 +583,50 @@ This request enables or disables the processing linked to the specified system e
 *Javascript library function*: async enable(path) : *void*
 
 *Javascript library function*: async disable(path) : *void*
+
+### Retrieval operation
+
+These operations can be used to retrieve archived parameter data, event data, activity occurrences and messages.
+
+**Parameter**
+~~~
+    POST    http://<host>:<port>/<system name>/parameters/retrieve?startTime=<time in ms from UNIX epoch>&endTime=<time in ms from UNIX epoch>
+~~~
+
+The body of the request is a ParameterDataFilter in JSON format (see "Parameter state subscription").
+The request returns an array of ParameterData in JSON format (see "Parameter state subscription").
+
+*Javascript library function*: async retrieveParameters(startTime, endTime, filter) : return array of ParameterData objects.
+
+**Event**
+~~~
+    POST    http://<host>:<port>/<system name>/events/retrieve?startTime=<time in ms from UNIX epoch>&endTime=<time in ms from UNIX epoch>
+~~~
+
+The body of the request is a EventDataFilter in JSON format (see "Event stream subscription").
+The request returns an array of EventData in JSON format (see "Event stream subscription").
+
+*Javascript library function*: async retrieveEvents(startTime, endTime, filter) : return array of EventData objects.
+
+**Activities**
+~~~
+    POST    http://<host>:<port>/<system name>/activities/retrieve?startTime=<time in ms from UNIX epoch>&endTime=<time in ms from UNIX epoch>
+~~~
+
+The body of the request is a ActivityOccurrenceDataFilter in JSON format (see "Activity stream subscription").
+The request returns an array of ActivityOccurrenceData in JSON format (see "Activity stream subscription").
+
+*Javascript library function*: async retrieveActivities(startTime, endTime, filter) : return array of ActivityOccurrenceData objects.
+
+**Messages**
+~~~
+    POST    http://<host>:<port>/<system name>/messages/retrieve?startTime=<time in ms from UNIX epoch>&endTime=<time in ms from UNIX epoch>
+~~~
+
+The body of the request is a OperationalMessageDataFilter in JSON format (see "Message stream subscription").
+The request returns an array of OperationalMessageData in JSON format (see "Message stream subscription").
+
+*Javascript library function*: async retrieveMessages(startTime, endTime, filter) : return array of OperationalMessageData objects.
 
 ### Connectors
 
