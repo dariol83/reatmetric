@@ -525,7 +525,7 @@ server side queue. The array of objects is so defined.
 
 *Javascript library function*: async getMessages(key) : return array of operational message data objects.
 
-### Model entity descriptor retrieval
+### Model entity descriptor fetch
 
 ~~~
     GET     http://<host>:<port>/<system name>/model/<path of system element, with / separator instead of . separator>
@@ -584,7 +584,7 @@ This request enables or disables the processing linked to the specified system e
 
 *Javascript library function*: async disable(path) : *void*
 
-### Retrieval operation
+### Historical data retrieval
 
 These operations can be used to retrieve archived parameter data, event data, activity occurrences and messages.
 
