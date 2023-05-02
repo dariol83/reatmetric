@@ -147,6 +147,10 @@ public class Archive implements IArchive {
     }
 
     private void verifyParentFolderExistence() throws ArchiveException {
+        if(archiveFolder.startsWith("//")) {
+            // use network server
+            return;
+        }
         File dataFolder = new File(archiveFolder);
         if (!dataFolder.getParentFile().exists() && !dataFolder.getParentFile().mkdirs()) {
             throw new ArchiveException("Cannot create archive data parent folder " + archiveFolder);

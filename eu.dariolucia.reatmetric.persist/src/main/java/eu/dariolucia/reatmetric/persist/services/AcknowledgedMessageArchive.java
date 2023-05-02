@@ -40,6 +40,7 @@ public class AcknowledgedMessageArchive extends AbstractDataItemArchive<Acknowle
     private static final String STORE_STATEMENT = "MERGE INTO ACK_MESSAGE_TABLE USING SYSIBM.SYSDUMMY1 ON UniqueId = ? " +
             "WHEN MATCHED THEN UPDATE SET GenerationTime = ?, MessageId = ?, State = ?, UserName = ?, AcknowledgementTime = ?, AdditionalData = ? " +
             "WHEN NOT MATCHED THEN INSERT (UniqueId,GenerationTime,MessageId,State,UserName,AcknowledgementTime,AdditionalData) VALUES (?,?,?,?,?,?,?)";
+    // TODO: replace storeBuffer MERGE operation with INSERT (no ack time)/UPDATE (with ack time)
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM ACK_MESSAGE_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
     private static final String RETRIEVE_BY_ID_QUERY = "SELECT a.UniqueId, a.GenerationTime, a.State, a.UserName, a.AcknowledgementTime, a.AdditionalData, " +
             "b.UniqueId, b.GenerationTime, b.Id, b.Text, b.Source, b.Severity, b.LinkedEntityId, b.AdditionalData " +

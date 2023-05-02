@@ -110,7 +110,15 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
                 try {
                     storeConnection.rollback();
                 } catch (SQLException ex) {
-                    LOG.log(Level.SEVERE, this + " - exception on rollback", e);
+                    LOG.log(Level.SEVERE, this + " - exception on rollback", ex);
+                    // At this stage, close the connection and re-open it
+                    try {
+                        storeConnection.close();
+                        storeConnection = this.controller.createConnection(true);
+                    } catch (SQLException ex1) {
+                        // Well... log and give up
+                        LOG.log(Level.SEVERE, this + " - exception on connection re-instantiation", ex1);
+                    }
                 }
             }
             storedItemsInLastSamplingPeriod.addAndGet(drainingQueue.size());
