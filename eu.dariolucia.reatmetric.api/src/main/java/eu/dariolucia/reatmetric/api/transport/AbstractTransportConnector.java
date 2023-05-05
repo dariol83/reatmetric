@@ -202,6 +202,7 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
         }
         busy = true;
         try {
+            setReconnect(false); // Explicit invocation should stop reconnection
             LOG.log(Level.INFO, "Transport connector " + name + " disconnecting");
             doDisconnect();
         } finally {

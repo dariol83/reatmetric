@@ -190,6 +190,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
     @Override
     public void abort() {
         if (serviceInstance.getCurrentBindingState() != ServiceInstanceBindingStateEnum.UNBOUND) {
+            setReconnect(false);
             serviceInstance.peerAbort(PeerAbortReasonEnum.OPERATIONAL_REQUIREMENTS);
         }
     }
