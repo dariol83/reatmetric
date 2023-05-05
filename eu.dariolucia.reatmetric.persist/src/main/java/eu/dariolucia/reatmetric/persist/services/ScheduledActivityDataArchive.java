@@ -38,11 +38,8 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
 
     private static final Logger LOG = Logger.getLogger(ScheduledActivityDataArchive.class.getName());
 
-    private static final String STORE_STATEMENT = "MERGE INTO SCHEDULED_ACTIVITY_DATA_TABLE USING SYSIBM.SYSDUMMY1 ON UniqueId = ? " +
-            "WHEN MATCHED THEN UPDATE SET GenerationTime = ?, ActivityRequest = ?, Path = ?, ActivityOccurrence = ?, Resources = ?, Source = ?, ExternalId = ?, Trigger = ?, LatestInvocationTime = ?, StartTime = ?, Duration = ?, ConflictStrategy = ?, State = ?, AdditionalData = ? " +
-            "WHEN NOT MATCHED THEN INSERT (UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,Duration,ConflictStrategy,State,AdditionalData) VALUES (?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?,?)";
-
-    // TODO: replace storeBuffer MERGE operation with INSERT/UPDATE on fail: slower but safer with Derby on network server
+    private static final String INSERT_STATEMENT = "INSERT INTO SCHEDULED_ACTIVITY_DATA_TABLE(UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,Duration,ConflictStrategy,State,AdditionalData) VALUES (?,?,?, ?,?,?, ?,?,?, ?,?,?, ?,?,?)";
+    private static final String UPDATE_STATEMENT = "UPDATE SCHEDULED_ACTIVITY_DATA_TABLE SET GenerationTime = ?, ActivityRequest = ?, Path = ?, ActivityOccurrence = ?, Resources = ?, Source = ?, ExternalId = ?, Trigger = ?, LatestInvocationTime = ?, StartTime = ?, Duration = ?, ConflictStrategy = ?, State = ?, AdditionalData = ? WHERE UniqueId = ?";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM SCHEDULED_ACTIVITY_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
     private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,Duration,ConflictStrategy,State,AdditionalData " +
             "FROM SCHEDULED_ACTIVITY_DATA_TABLE " +
@@ -55,63 +52,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
 
     @Override
     protected void setItemPropertiesToStatement(PreparedStatement storeStatement, ScheduledActivityData item) throws SQLException {
-        storeStatement.setLong(1, item.getInternalId().asLong());
-        storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
-        storeStatement.setBlob(3, toInputstream(item.getRequest()));
-        storeStatement.setString(4, item.getRequest().getPath().asString());
-        if(item.getActivityOccurrence() != null) {
-            storeStatement.setLong(5, item.getActivityOccurrence().asLong());
-        } else {
-            storeStatement.setNull(5, Types.BIGINT);
-        }
-        String resources = formatResources(item.getResources());
-        storeStatement.setString(6, resources);
-        storeStatement.setString(7, item.getSource());
-        storeStatement.setString(8, item.getExternalId());
-        storeStatement.setBlob(9, toInputstream(item.getTrigger()));
-        if(item.getLatestInvocationTime() != null) {
-            storeStatement.setTimestamp(10, toTimestamp(item.getLatestInvocationTime()));
-        } else {
-            storeStatement.setNull(10, Types.TIMESTAMP);
-        }
-        storeStatement.setTimestamp(11, toTimestamp(item.getStartTime()));
-        storeStatement.setInt(12, (int) item.getDuration().toSeconds());
-        storeStatement.setShort(13, (short) item.getConflictStrategy().ordinal());
-        storeStatement.setShort(14, (short) item.getState().ordinal());
-        Object extension = item.getExtension();
-        if(extension == null) {
-            storeStatement.setNull(15, Types.BLOB);
-        } else {
-            storeStatement.setBlob(15, toInputstream(item.getExtension()));
-        }
-
-        storeStatement.setLong(16, item.getInternalId().asLong());
-        storeStatement.setTimestamp(17, toTimestamp(item.getGenerationTime()));
-        storeStatement.setBlob(18, toInputstream(item.getRequest()));
-        storeStatement.setString(19, item.getRequest().getPath().asString());
-        if(item.getActivityOccurrence() != null) {
-            storeStatement.setLong(20, item.getActivityOccurrence().asLong());
-        } else {
-            storeStatement.setNull(20, Types.BIGINT);
-        }
-        storeStatement.setString(21, resources);
-        storeStatement.setString(22, item.getSource());
-        storeStatement.setString(23, item.getExternalId());
-        storeStatement.setBlob(24, toInputstream(item.getTrigger()));
-        if(item.getLatestInvocationTime() != null) {
-            storeStatement.setTimestamp(25, toTimestamp(item.getLatestInvocationTime()));
-        } else {
-            storeStatement.setNull(25, Types.TIMESTAMP);
-        }
-        storeStatement.setTimestamp(26, toTimestamp(item.getStartTime()));
-        storeStatement.setInt(27, (int) item.getDuration().toSeconds());
-        storeStatement.setShort(28, (short) item.getConflictStrategy().ordinal());
-        storeStatement.setShort(29, (short) item.getState().ordinal());
-        if(extension == null) {
-            storeStatement.setNull(30, Types.BLOB);
-        } else {
-            storeStatement.setBlob(30, toInputstream(item.getExtension()));
-        }
+        throw new UnsupportedOperationException("This operation should not be called for this class implementation. This is a software bug.");
     }
 
     private String formatResources(Set<String> resources) {
@@ -127,10 +68,140 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
 
     @Override
     protected PreparedStatement createStoreStatement(Connection connection) throws SQLException {
-        if(LOG.isLoggable(Level.FINEST)) {
-            LOG.finest(this + " - preparing store statement: " + STORE_STATEMENT);
+        throw new UnsupportedOperationException("This operation should not be called for this class implementation. This is a software bug.");
+    }
+
+    @Override
+    protected void doStore(Connection connection, List<ScheduledActivityData> itemsToStore) throws SQLException {
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - request to store " + itemsToStore.size() + " items");
+            if (LOG.isLoggable(Level.FINEST)) {
+                for (ScheduledActivityData item : itemsToStore) {
+                    LOG.finest("Storing " + item);
+                }
+            }
         }
-        return connection.prepareStatement(STORE_STATEMENT);
+
+        // For each item, try to insert it if the ack state is pending: in case of issues, or if ack time is not null, run an update
+        for(ScheduledActivityData item : itemsToStore) {
+            boolean inserted = false;
+            if(item.getState() == SchedulingState.SCHEDULED) {
+                // Run INSERT
+                inserted = tryInsert(connection, item);
+            }
+            if(!inserted) {
+                // Run UPDATE
+                tryUpdate(connection, item);
+            }
+        }
+    }
+
+    private void tryUpdate(Connection connection, ScheduledActivityData item) throws SQLException {
+        try (PreparedStatement storeStatement = connection.prepareStatement(UPDATE_STATEMENT)) {
+            storeStatement.setTimestamp(1, toTimestamp(item.getGenerationTime()));
+            storeStatement.setBlob(2, toInputstream(item.getRequest()));
+            storeStatement.setString(3, item.getRequest().getPath().asString());
+            if(item.getActivityOccurrence() != null) {
+                storeStatement.setLong(4, item.getActivityOccurrence().asLong());
+            } else {
+                storeStatement.setNull(4, Types.BIGINT);
+            }
+            String resources = formatResources(item.getResources());
+            storeStatement.setString(5, resources);
+            storeStatement.setString(6, item.getSource());
+            storeStatement.setString(7, item.getExternalId());
+            storeStatement.setBlob(8, toInputstream(item.getTrigger()));
+            if(item.getLatestInvocationTime() != null) {
+                storeStatement.setTimestamp(9, toTimestamp(item.getLatestInvocationTime()));
+            } else {
+                storeStatement.setNull(9, Types.TIMESTAMP);
+            }
+            storeStatement.setTimestamp(10, toTimestamp(item.getStartTime()));
+            storeStatement.setInt(11, (int) item.getDuration().toSeconds());
+            storeStatement.setShort(12, (short) item.getConflictStrategy().ordinal());
+            storeStatement.setShort(13, (short) item.getState().ordinal());
+            Object extension = item.getExtension();
+            if(extension == null) {
+                storeStatement.setNull(14, Types.BLOB);
+            } else {
+                storeStatement.setBlob(14, toInputstream(item.getExtension()));
+            }
+            storeStatement.setLong(15, item.getInternalId().asLong());
+            storeStatement.addBatch();
+            int[] numUpdates = storeStatement.executeBatch();
+            if (LOG.isLoggable(Level.FINEST)) {
+                for (int i = 0; i < numUpdates.length; i++) {
+                    if (numUpdates[i] == -2) {
+                        LOG.finest("Batch job[" + i +
+                                "]: unknown number of rows updated");
+                    } else {
+                        LOG.finest("Batch job[" + i +
+                                "]: " + numUpdates[i] + " rows updated");
+                    }
+                }
+            }
+            connection.commit();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            connection.rollback();
+        }
+    }
+
+    private boolean tryInsert(Connection connection, ScheduledActivityData item) {
+        boolean inserted = false;
+        try (PreparedStatement storeStatement = connection.prepareStatement(INSERT_STATEMENT)) {
+            storeStatement.setLong(1, item.getInternalId().asLong());
+            storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
+            storeStatement.setBlob(3, toInputstream(item.getRequest()));
+            storeStatement.setString(4, item.getRequest().getPath().asString());
+            if(item.getActivityOccurrence() != null) {
+                storeStatement.setLong(5, item.getActivityOccurrence().asLong());
+            } else {
+                storeStatement.setNull(5, Types.BIGINT);
+            }
+            String resources = formatResources(item.getResources());
+            storeStatement.setString(6, resources);
+            storeStatement.setString(7, item.getSource());
+            storeStatement.setString(8, item.getExternalId());
+            storeStatement.setBlob(9, toInputstream(item.getTrigger()));
+            if(item.getLatestInvocationTime() != null) {
+                storeStatement.setTimestamp(10, toTimestamp(item.getLatestInvocationTime()));
+            } else {
+                storeStatement.setNull(10, Types.TIMESTAMP);
+            }
+            storeStatement.setTimestamp(11, toTimestamp(item.getStartTime()));
+            storeStatement.setInt(12, (int) item.getDuration().toSeconds());
+            storeStatement.setShort(13, (short) item.getConflictStrategy().ordinal());
+            storeStatement.setShort(14, (short) item.getState().ordinal());
+            if(item.getExtension() == null) {
+                storeStatement.setNull(15, Types.BLOB);
+            } else {
+                storeStatement.setBlob(15, toInputstream(item.getExtension()));
+            }
+            storeStatement.addBatch();
+            int[] numUpdates = storeStatement.executeBatch();
+            if (LOG.isLoggable(Level.FINEST)) {
+                for (int i = 0; i < numUpdates.length; i++) {
+                    if (numUpdates[i] == -2) {
+                        LOG.finest("Batch job[" + i +
+                                "]: unknown number of rows updated");
+                    } else {
+                        LOG.finest("Batch job[" + i +
+                                "]: " + numUpdates[i] + " rows updated");
+                    }
+                }
+            }
+            connection.commit();
+            inserted = true;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            try {
+                connection.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+        return inserted;
     }
 
     @Override
