@@ -154,6 +154,7 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
         }
         // Now open the selected one
         SerialPort comPort;
+        boolean reported = false;
         while(this.serialReadingActive) {
             // Open the interface
             try {
@@ -182,6 +183,8 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
             while(this.serialReadingActive) {
                 try {
                     String command = br.readLine(); // End of line is also only CR
+                    // Reset the reported flag only if you actually manage to get something out of the port
+                    reported = false;
                     LOG.log(Level.FINE, "Serial string received: " + command);
                     if (command == null) {
                         Thread.sleep(1000);
@@ -195,8 +198,11 @@ public class SerialDriver implements IDriver, IMonitoringDataManager {
                 } catch (SerialPortTimeoutException e) {
                     // Nothing to report here, it could be normal
                 } catch (Exception e) {
-                    // An exception here means the reading had a problem: break the inner loop, close the com port
-                    LOG.log(Level.SEVERE, "Error in reading/writing from device " + comPort + ": " + e.getMessage(), new Object[]{ this.name });
+                    if(!reported) {
+                        // An exception here means the reading had a problem: break the inner loop, close the com port
+                        LOG.log(Level.SEVERE, "Error in reading/writing from device " + comPort + ": " + e.getMessage(), new Object[]{this.name});
+                        reported = true;
+                    }
                     // Wait a bit in case of problems
                     try {
                         Thread.sleep(2000);
