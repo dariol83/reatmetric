@@ -252,10 +252,10 @@ public class Scheduler implements IScheduler, IInternalResolver {
         try {
             // This part retrieves everything but not the event-based scheduled activities, for which the generation time is set
             // to EPOCH.
-            List<ScheduledActivityData> scheduledItems = archive.retrieve(Instant.ofEpochSecond(3600 * 24 * 365 * 1000L),
+            List<ScheduledActivityData> scheduledItems = archive.retrieve(Instant.now().plusSeconds(3600 * 24 * 365), // End time: one year in the future
                     new ScheduledActivityDataFilter(null, null, null, null,
                             Arrays.asList(SchedulingState.SCHEDULED, SchedulingState.WAITING, SchedulingState.RUNNING), null),
-                    Instant.now().minusSeconds(36 * 3600));
+                    Instant.now().minusSeconds(36 * 3600L)); // Start time: 36 hours in the past
 
             restoreActivitiesFromList(scheduledItems);
 
