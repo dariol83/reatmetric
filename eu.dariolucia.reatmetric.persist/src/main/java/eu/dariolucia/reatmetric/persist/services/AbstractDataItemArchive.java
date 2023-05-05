@@ -298,6 +298,8 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
 
     protected abstract String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, K filter);
 
+    protected abstract String buildRetrieveQuery(Instant startTime, Instant endTime, boolean ascending, K filter);
+
     public synchronized List<T> retrieve(T startItem, int numRecords, RetrievalDirection direction, K filter) throws ArchiveException {
         if (LOG.isLoggable(Level.FINER)) {
             LOG.finer(this + " - retrieve(T,int,RetrievalDirection,K) called: startItem=" + startItem + ", numRecords=" + numRecords + ", direction=" + direction);
@@ -308,6 +310,51 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         } catch (SQLException e) {
             throw new ArchiveException(e);
         }
+    }
+
+    public synchronized List<T> retrieve(Instant startTime, Instant endTime, K filter) throws ArchiveException {
+        if (LOG.isLoggable(Level.FINER)) {
+            LOG.finer(this + " - retrieve(T,int,RetrievalDirection,K) called: startItem=" + startTime + ", endTime=" + endTime);
+        }
+        checkDisposed();
+        try {
+            return doRetrieve(retrieveConnection, startTime, endTime, filter);
+        } catch (SQLException e) {
+            throw new ArchiveException(e);
+        }
+    }
+
+    protected List<T> doRetrieve(Connection connection, Instant startTime, Instant endTime, K filter) throws SQLException {
+        if (startTime.isBefore(MINIMUM_TIME)) {
+            startTime = MINIMUM_TIME;
+        } else if (startTime.isAfter(MAXIMUM_TIME)) {
+            startTime = MAXIMUM_TIME;
+        }
+        if (endTime.isBefore(MINIMUM_TIME)) {
+            endTime = MINIMUM_TIME;
+        } else if (endTime.isAfter(MAXIMUM_TIME)) {
+            endTime = MAXIMUM_TIME;
+        }
+        String finalQuery = buildRetrieveQuery(startTime, endTime, startTime.isBefore(endTime), filter);
+        List<T> result = new LinkedList<>();
+        try (Statement prepStmt = connection.createStatement()) {
+            if (LOG.isLoggable(Level.FINER)) {
+                LOG.finer(this + " - retrieve statement: " + finalQuery);
+            }
+            try (ResultSet rs = prepStmt.executeQuery(finalQuery)) {
+                while (rs.next()) {
+                    try {
+                        T object = mapToItem(rs, filter);
+                        result.add(object);
+                    } catch (IOException | ClassNotFoundException e) {
+                        throw new SQLException(e);
+                    }
+                }
+            } finally {
+                connection.commit();
+            }
+        }
+        return result;
     }
 
     protected List<T> doRetrieve(Connection connection, T startItem, int numRecords, RetrievalDirection direction, K filter) throws SQLException {
@@ -367,6 +414,16 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             query.append("GenerationTime >= '").append(toTimestamp(startTime).toString()).append("' ");
         } else {
             query.append("GenerationTime <= '").append(toTimestamp(startTime).toString()).append("' ");
+        }
+    }
+
+    protected void addTimeRangeInfo(StringBuilder query, Instant startTime, Instant endTime, boolean ascending) {
+        if (ascending) { // startTime < endTime
+            query.append("GenerationTime >= '").append(toTimestamp(startTime).toString())
+                    .append("' AND GenerationTime <= '").append(toTimestamp(endTime).toString()).append("' ");
+        } else { // endTime < startTime
+            query.append("GenerationTime >= '").append(toTimestamp(endTime).toString())
+                    .append("' AND GenerationTime <= '").append(toTimestamp(startTime).toString()).append("' ");
         }
     }
 
@@ -435,6 +492,8 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
             return getLastIdQuery();
         }
     }
+
+
 
     public synchronized Instant retrieveLastGenerationTime() throws ArchiveException {
         return retrieveLastGenerationTime(getMainType());

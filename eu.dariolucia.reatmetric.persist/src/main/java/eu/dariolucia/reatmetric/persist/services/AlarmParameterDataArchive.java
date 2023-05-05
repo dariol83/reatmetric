@@ -113,6 +113,35 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
     }
 
     @Override
+    protected String buildRetrieveQuery(Instant startTime, Instant endTime, boolean ascending, AlarmParameterDataFilter filter) {
+        StringBuilder query = new StringBuilder("SELECT * FROM ALARM_PARAMETER_DATA_TABLE WHERE ");
+        // add time info
+        addTimeRangeInfo(query, startTime, endTime, ascending);
+        // process filter
+        if(filter != null && !filter.isClear()) {
+            if(filter.getParentPath() != null) {
+                query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+            }
+            if(filter.getParameterPathList() != null) {
+                query.append("AND Path IN (").append(toFilterListString(filter.getParameterPathList(), SystemEntityPath::asString, "'")).append(") ");
+            }
+            if(filter.getAlarmStateList() != null && !filter.getAlarmStateList().isEmpty()) {
+                query.append("AND CurrentAlarmState IN (").append(toEnumFilterListString(filter.getAlarmStateList())).append(") ");
+            }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
+            }
+        }
+        // order by and limit
+        if(ascending) {
+            query.append("ORDER BY GenerationTime ASC, UniqueId ASC");
+        } else {
+            query.append("ORDER BY GenerationTime DESC, UniqueId DESC");
+        }
+        return query.toString();
+    }
+
+    @Override
     protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, AlarmParameterDataFilter filter) {
         StringBuilder query = new StringBuilder("SELECT * FROM ALARM_PARAMETER_DATA_TABLE WHERE ");
         // add time info

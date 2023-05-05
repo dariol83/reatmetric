@@ -102,6 +102,16 @@ public class AcknowledgedMessageBrokerImpl implements IAcknowledgedMessageProvis
         }
     }
 
+    @Override
+    public List<AcknowledgedMessage> retrieve(Instant startTime, Instant endTime, AcknowledgedMessageFilter filter) throws ReatmetricException, RemoteException {
+        // Access the archive and query it
+        if(archive != null) {
+            return archive.retrieve(startTime, endTime, filter);
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
     // To be called by the object owning the instance
     void distribute(List<OperationalMessage> items) throws ReatmetricException {
         // Transform the list in messages to be acknowledged

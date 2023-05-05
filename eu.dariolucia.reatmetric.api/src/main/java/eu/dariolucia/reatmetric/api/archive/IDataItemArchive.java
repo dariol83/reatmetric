@@ -61,6 +61,19 @@ public interface IDataItemArchive<T extends AbstractDataItem, K extends Abstract
     List<T> retrieve(T startItem, int numRecords, RetrievalDirection direction, K filter) throws ArchiveException;
 
     /**
+     * Retrieve data items, between the provided startItem and the provided endTime (included), and matching the provided filter.
+     * The returned list is ordered according to generation time (ascending order if startItem < endTime, descending order
+     * if startItem > endTime).
+     *
+     * @param startTime the start time used as reference for the retrieval
+     * @param endTime the end time used as reference for the retrieval
+     * @param filter the filter, it can be null
+     * @return the list of retrieved items
+     * @throws ArchiveException in case of I/O problems, SQL problems or any other problem preventing the retrieval operation to be completed successfully
+     */
+    List<T> retrieve(Instant startTime, Instant endTime, K filter) throws ArchiveException;
+
+    /**
      * Retrieve the status of the data item matching the filter at the specified time. Not all data item archive services
      * support this operation. If the operation is not supported, the archive service is entitled to throw an {@link UnsupportedOperationException}.
      *

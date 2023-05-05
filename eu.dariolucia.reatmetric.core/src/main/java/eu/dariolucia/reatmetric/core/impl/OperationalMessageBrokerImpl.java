@@ -105,6 +105,16 @@ public class OperationalMessageBrokerImpl extends Handler implements IOperationa
         }
     }
 
+    @Override
+    public List<OperationalMessage> retrieve(Instant startTime, Instant endTime, OperationalMessageFilter filter) throws ReatmetricException, RemoteException {
+        // Access the archive and query it
+        if(archive != null) {
+            return archive.retrieve(startTime, endTime, filter);
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
     private void distribute(List<OperationalMessage> items, boolean store) throws ReatmetricException {
         if(store && archive != null) {
             archive.store(items);

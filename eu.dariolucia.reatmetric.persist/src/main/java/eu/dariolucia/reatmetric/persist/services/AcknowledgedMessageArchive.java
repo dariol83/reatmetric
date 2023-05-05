@@ -198,6 +198,33 @@ public class AcknowledgedMessageArchive extends AbstractDataItemArchive<Acknowle
     }
 
     @Override
+    protected String buildRetrieveQuery(Instant startTime, Instant endTime, boolean ascending, AcknowledgedMessageFilter filter) {
+        StringBuilder query = new StringBuilder("SELECT a.UniqueId, a.GenerationTime, a.State, a.UserName, a.AcknowledgementTime, a.AdditionalData, " +
+                "b.UniqueId, b.GenerationTime, b.Id, b.Text, b.Source, b.Severity, b.LinkedEntityId, b.AdditionalData " +
+                "FROM ACK_MESSAGE_TABLE as a JOIN OPERATIONAL_MESSAGE_TABLE as b " +
+                "ON (a.MessageId = b.UniqueId) " +
+                "WHERE a.");
+        // add time info
+        addTimeRangeInfo(query, startTime, endTime, ascending);
+        // process filter
+        if(filter != null && !filter.isClear()) {
+            if(filter.getUserList() != null && !filter.getUserList().isEmpty()) {
+                query.append("AND a.UserName IN (").append(toFilterListString(filter.getUserList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getStateList() != null && !filter.getStateList().isEmpty()) {
+                query.append("AND a.State IN (").append(toEnumFilterListString(filter.getStateList())).append(") ");
+            }
+        }
+        // order by and limit
+        if(ascending) {
+            query.append("ORDER BY a.GenerationTime ASC, a.UniqueId ASC");
+        } else {
+            query.append("ORDER BY a.GenerationTime DESC, a.UniqueId DESC");
+        }
+        return query.toString();
+    }
+
+    @Override
     protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, AcknowledgedMessageFilter filter) {
         StringBuilder query = new StringBuilder("SELECT a.UniqueId, a.GenerationTime, a.State, a.UserName, a.AcknowledgementTime, a.AdditionalData, " +
                 "b.UniqueId, b.GenerationTime, b.Id, b.Text, b.Source, b.Severity, b.LinkedEntityId, b.AdditionalData " +

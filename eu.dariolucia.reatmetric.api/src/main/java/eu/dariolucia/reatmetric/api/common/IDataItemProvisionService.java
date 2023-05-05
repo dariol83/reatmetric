@@ -103,34 +103,5 @@ public interface IDataItemProvisionService<T extends IDataItemSubscriber<K>, R e
      * @throws ReatmetricException if a problem arises with the retrieval operation
      * @throws RemoteException in case of remoting problem
      */
-    default List<K> retrieve(Instant startTime, Instant endTime, R filter) throws ReatmetricException, RemoteException {
-        if(startTime.isAfter(endTime)) {
-            throw new IllegalArgumentException("Start time is after end time");
-        }
-        List<K> data = new LinkedList<>();
-        boolean timeWindowCovered = false;
-
-        List<K> temp = retrieve(startTime, 100, RetrievalDirection.TO_FUTURE, filter);
-        while(temp != null && !temp.isEmpty() && !timeWindowCovered) {
-            // Add all items to the list that have gen. time < now
-            for(K pd : temp) {
-                if(pd.getGenerationTime().isBefore(endTime)) {
-                    data.add(pd);
-                } else if(pd.getGenerationTime().equals(endTime)) {
-                    data.add(pd);
-                    // Stop the retrieval
-                    timeWindowCovered = true;
-                    break;
-                } else {
-                    // Stop the retrieval
-                    timeWindowCovered = true;
-                    break;
-                }
-            }
-            if(!timeWindowCovered) {
-                temp = retrieve(temp.get(temp.size() - 1), 100, RetrievalDirection.TO_FUTURE, filter);
-            }
-        }
-        return data;
-    }
+    List<K> retrieve(Instant startTime, Instant endTime, R filter) throws ReatmetricException, RemoteException;
 }

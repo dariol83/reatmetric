@@ -124,6 +124,39 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
     }
 
     @Override
+    protected String buildRetrieveQuery(Instant startTime, Instant endTime, boolean ascending, RawDataFilter filter) {
+        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData");
+        query.append(" FROM RAW_DATA_TABLE WHERE ");
+        // add time info
+        addTimeRangeInfo(query, startTime, endTime, ascending);
+        // process filter
+        if(filter != null && !filter.isClear()) {
+            if(filter.getNameContains() != null) {
+                query.append("AND Name LIKE '%").append(filter.getNameContains()).append("%' ");
+            }
+            if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
+                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
+                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
+                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getQualityList() != null && !filter.getQualityList().isEmpty()) {
+                query.append("AND Quality IN (").append(toEnumFilterListString(filter.getQualityList())).append(") ");
+            }
+        }
+        // order by and limit
+        if(ascending) {
+            query.append("ORDER BY GenerationTime ASC, UniqueId ASC");
+        } else {
+            query.append("ORDER BY GenerationTime DESC, UniqueId DESC");
+        }
+        return query.toString();
+    }
+
+    @Override
     protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, RawDataFilter filter) {
         StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData");
         query.append(" FROM RAW_DATA_TABLE WHERE ");

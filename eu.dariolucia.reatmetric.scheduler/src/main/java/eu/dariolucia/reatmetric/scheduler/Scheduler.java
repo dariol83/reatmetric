@@ -890,6 +890,14 @@ public class Scheduler implements IScheduler, IInternalResolver {
         return archive.retrieve(startItem, numRecords, direction, filter);
     }
 
+    @Override
+    public List<ScheduledActivityData> retrieve(Instant startTime, Instant endTime, ScheduledActivityDataFilter filter) throws ReatmetricException, RemoteException {
+        if (archive == null) {
+            throw new ReatmetricException("Archive not available");
+        }
+        return archive.retrieve(startTime, endTime, filter);
+    }
+
     IUniqueId getNextId() {
         return new LongUniqueId(sequencer.incrementAndGet());
     }

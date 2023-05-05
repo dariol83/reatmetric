@@ -246,6 +246,35 @@
         parameterMap = null;
     }
 
+    async function retrieveParameterHistory() {
+        await unsubscribeFromEvents();
+        await unsubscribeFromMessages();
+        await unsubscribeFromParameters();
+
+        var divToAttach = document.getElementById('div1');
+        divToAttach.textContent = '';
+
+        var filter = reatmetric.parameterFilter(null, null, null, null, null, null);
+
+        // Create table node
+        var thTextArray = ['Path', 'Gen. Time', 'Raw Value', 'Eng. Value', 'Validity', 'Alarm State'];
+        var thWidthArray = [20, 20, 20, 20, 10, 10];
+        tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
+
+        var sTime = Date.now() - 3600 * 1000 * 5;
+        var eTime = Date.now();
+        var currentParameters = await reatmetric.retrieveParameters(sTime,eTime,filter);
+
+        var tdTextArrayKeys = ['path', 'gentime', 'raw', 'eng', 'validity', 'alarm'];
+        if(currentParameters != null) {
+            console.log("Retrieved " + currentParameters.length + " parameters");
+            for(var i = 0; i < currentParameters.length; ++i) {
+                var message = currentParameters[i];
+                addRow(tableBodyVar, message, tdTextArrayKeys);
+            }
+        }
+    }
+
     async function subscribeToMessages() {
         if(subMsgKey != null) {
             return;
@@ -384,6 +413,7 @@
         <button type="button" onclick="subscribeToMessages()">Subscribe to messages</button>
         <button type="button" onclick="unsubscribeFromMessages()">Unsubscribe from messages</button>
         <button type="button" onclick="retrieveMessageHistory()">Retrieve messages</button>
+        <button type="button" onclick="retrieveParameterHistory()">Retrieve parameters</button>
         <hr/>
         <br/>
         <div id="div1" class="tableFixHead">

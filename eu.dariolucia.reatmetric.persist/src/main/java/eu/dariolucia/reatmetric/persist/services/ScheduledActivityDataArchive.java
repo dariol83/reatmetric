@@ -215,6 +215,51 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
     }
 
     @Override
+    protected String buildRetrieveQuery(Instant startTime, Instant endTime, boolean ascending, ScheduledActivityDataFilter filter) {
+        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,Duration,ConflictStrategy,State,AdditionalData " +
+                "FROM SCHEDULED_ACTIVITY_DATA_TABLE " +
+                "WHERE ");
+        // add time info
+       addTimeRangeInfo(query, startTime, endTime, ascending);
+        // process filter
+        if(filter != null && !filter.isClear()) {
+            if(filter.getParentPath() != null) {
+                query.append("AND Path LIKE '").append(filter.getParentPath().asString()).append("%' ");
+            }
+            if(filter.getActivityPathList() != null && !filter.getActivityPathList().isEmpty()) {
+                query.append("AND Path IN (").append(toFilterListString(filter.getActivityPathList(), SystemEntityPath::asString, "'")).append(") ");
+            }
+            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
+                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getExternalIdList() != null && !filter.getExternalIdList().isEmpty()) {
+                query.append("AND ExternalId IN (").append(toFilterListString(filter.getExternalIdList(), o -> o, null)).append(") ");
+            }
+            if(filter.getSchedulingStateList() != null && !filter.getSchedulingStateList().isEmpty()) {
+                query.append("AND State IN (").append(toEnumFilterListString(filter.getSchedulingStateList())).append(") ");
+            }
+            if(filter.getResourceList() != null && !filter.getResourceList().isEmpty()) {
+                List<String> resourcesList = new ArrayList<>(filter.getResourceList());
+                query.append("AND (");
+                for(int i = 0; i < resourcesList.size(); ++i) {
+                    query.append("Resources LIKE '").append("% ").append(resourcesList.get(i)).append(" %'");
+                    if(i != resourcesList.size() - 1) {
+                        query.append(" OR ");
+                    }
+                }
+                query.append(")");
+            }
+        }
+        // order by and limit
+        if(ascending) {
+            query.append("ORDER BY GenerationTime ASC, UniqueId ASC");
+        } else {
+            query.append("ORDER BY GenerationTime DESC, UniqueId DESC");
+        }
+        return query.toString();
+    }
+
+    @Override
     protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, ScheduledActivityDataFilter filter) {
         StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,ActivityRequest,Path,ActivityOccurrence,Resources,Source,ExternalId,Trigger,LatestInvocationTime,StartTime,Duration,ConflictStrategy,State,AdditionalData " +
                 "FROM SCHEDULED_ACTIVITY_DATA_TABLE " +

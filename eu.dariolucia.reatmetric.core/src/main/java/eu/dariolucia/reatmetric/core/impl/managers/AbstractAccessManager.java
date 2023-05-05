@@ -109,6 +109,14 @@ public abstract class AbstractAccessManager<T extends AbstractDataItem, K extend
         }
     }
 
+    public List<T> retrieve(Instant startTime, Instant endTime, K filter) throws ReatmetricException {
+        if(archive != null) {
+            return archive.retrieve(startTime, endTime, filter);
+        } else {
+            throw new ReatmetricException(getName() + " - Archive not available");
+        }
+    }
+
     public void dispose() {
         for(AbstractAccessSubscriber<T, K, J> aas : this.subscribers.values()) {
             aas.terminate();

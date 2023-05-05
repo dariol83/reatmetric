@@ -102,6 +102,16 @@ public class RawDataBrokerImpl implements IRawDataBroker, IRawDataProvisionServi
     }
 
     @Override
+    public List<RawData> retrieve(Instant startTime, Instant endTime, RawDataFilter filter) throws ReatmetricException, RemoteException {
+        // Access the archive and query it
+        if(archive != null) {
+            return archive.retrieve(startTime, endTime, filter);
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
     public void distribute(List<RawData> items, boolean store) throws ReatmetricException {
         if(store && archive != null) {
             archive.store(items);

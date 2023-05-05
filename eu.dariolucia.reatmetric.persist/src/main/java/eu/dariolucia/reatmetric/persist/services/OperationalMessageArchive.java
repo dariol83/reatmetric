@@ -111,6 +111,35 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     }
 
     @Override
+    protected String buildRetrieveQuery(Instant startTime, Instant endTime, boolean ascending, OperationalMessageFilter filter) {
+        StringBuilder query = new StringBuilder("SELECT * FROM OPERATIONAL_MESSAGE_TABLE WHERE ");
+        // add time info
+        addTimeRangeInfo(query, startTime, endTime, ascending);
+        // process filter
+        if(filter != null && !filter.isClear()) {
+            if(filter.getMessageTextContains() != null) {
+                query.append("AND Text LIKE '%").append(filter.getMessageTextContains()).append("%' ");
+            }
+            if(filter.getIdList() != null && !filter.getIdList().isEmpty()) {
+                query.append("AND Id IN (").append(toFilterListString(filter.getIdList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
+                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getSeverityList() != null && !filter.getSeverityList().isEmpty()) {
+                query.append("AND Severity IN (").append(toEnumFilterListString(filter.getSeverityList())).append(") ");
+            }
+        }
+        // order by and limit
+        if(ascending) {
+            query.append("ORDER BY GenerationTime ASC, UniqueId ASC");
+        } else {
+            query.append("ORDER BY GenerationTime DESC, UniqueId DESC");
+        }
+        return query.toString();
+    }
+
+    @Override
     protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, OperationalMessageFilter filter) {
         StringBuilder query = new StringBuilder("SELECT * FROM OPERATIONAL_MESSAGE_TABLE WHERE ");
         // add time info
