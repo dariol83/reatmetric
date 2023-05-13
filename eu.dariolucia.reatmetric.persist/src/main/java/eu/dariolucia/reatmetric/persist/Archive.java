@@ -44,7 +44,6 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-// TODO: provide optimized implementation for retrieve start-end time, start with messages
 public class Archive implements IArchive {
 
     public static final String ARCHIVE_NAME = "Archive";

@@ -20,5 +20,5 @@ public enum DataUnitType {
     TC_PACKET,
     TC_FRAME,
     CLTU
-    // TODO: add TM_FRAME, CADU, TM_PACKET for TM data connectors
+    // TODO: add CADU, TM_PACKET for TM data connectors
 }

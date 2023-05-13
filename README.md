@@ -254,10 +254,12 @@ Example of remoting configuration:
 ## Implement your driver
 
 ## Roadmap
-- Optimisations, features and bug-fixes for the JavaFX UI (separation of the mimics engine in a stand-alone project, support for custom views in the UI)
+- Web interface (finalize HTTP driver)
+- TCP/IP CLTU (out), CADU (in) connector as part of the spacecraft driver, update of the spacecraft simulator interface  
+- Generic binary/ASCII UDP/TCP driver
+- Optimisations, features and bug-fixes for the JavaFX UI (support for custom views in the UI)
+- Use of JSON for AND and graph file configurations
 - Documentation (javadoc, configuration examples, driver example)
-- Alternative _persist_ implementations (server-based - in addition to file-based - Apache Derby, PostgreSQL)
-- Web interface (?)
 
 ## Acknowledgements and Credits
 
