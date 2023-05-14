@@ -166,7 +166,7 @@ class ActivityOccurrenceDataArchiveTest {
             assertEquals("routeA", items.get(0).getRoute());
             assertEquals("routeB", items.get(1).getRoute());
             // retrieve: expected 2
-            items = activityArchive.retrieve(t.plusMillis(2000), null, null);
+            items = activityArchive.retrieve(t.plusMillis(2000), (ActivityOccurrenceDataFilter) null, null);
             assertEquals(2, items.size());
             assertEquals(1L, items.get(0).getInternalId().asLong());
             assertEquals(0L, items.get(1).getInternalId().asLong());

@@ -44,6 +44,9 @@ public class TmDataLinkConfiguration {
     @XmlAttribute(name = "aos-insert-zone-length")
     private int aosTransferFrameInsertZoneLength = 0;
 
+    @XmlAttribute(name = "frame-length")
+    private int frameLength = -1;
+
     public TmDataLinkConfiguration() {
     }
 
@@ -103,4 +106,11 @@ public class TmDataLinkConfiguration {
         this.type = type;
     }
 
+    public void setFrameLength(int frameLength) {
+        this.frameLength = frameLength;
+    }
+
+    public int getFrameLength() {
+        return frameLength;
+    }
 }

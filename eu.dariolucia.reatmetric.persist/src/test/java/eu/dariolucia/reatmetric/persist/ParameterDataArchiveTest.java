@@ -77,7 +77,7 @@ class ParameterDataArchiveTest {
             ));
             Thread.sleep(2000);
             // Retrieve at t + 250 ms
-            List<ParameterData> params = parameterDataArchive.retrieve(t.plusMillis(250), null, null);
+            List<ParameterData> params = parameterDataArchive.retrieve(t.plusMillis(250), (ParameterDataFilter) null, null);
             assertEquals(3, params.size());
             for (ParameterData pd : params) {
                 if (pd.getPath().asString().equals("TEST.PARAM1")) {
