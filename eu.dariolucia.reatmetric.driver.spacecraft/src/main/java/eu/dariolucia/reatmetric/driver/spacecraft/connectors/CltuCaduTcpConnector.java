@@ -17,21 +17,33 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.connectors;
 
+import eu.dariolucia.ccsds.tmtc.coding.decoder.TmRandomizerDecoder;
+import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
+import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
+import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.rawdata.Quality;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.AbstractTransportConnector;
+import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.ForwardDataUnitProcessingStatus;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.IForwardDataUnitStatusSubscriber;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
 import java.rmi.RemoteException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -63,6 +75,8 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
 
     private final List<IForwardDataUnitStatusSubscriber> subscribers = new CopyOnWriteArrayList<>();
     private volatile Socket socket;
+
+    private volatile boolean closing;
 
     private final ExecutorService cltuForwarderExecutor = Executors.newSingleThreadExecutor(r -> {
        Thread t = new Thread(r, "CLTU/CADU - CLTU forward thread");
@@ -98,6 +112,8 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
     @Override
     protected synchronized void doConnect() throws TransportException {
         if(socket == null) {
+            closing = false;
+            updateConnectionStatus(TransportConnectionStatus.CONNECTING);
             try {
                 // Connect, start thread to read CADUs and send RawData to broker for processing (with TM frames)
                 socket = new Socket(this.host, this.port);
@@ -105,9 +121,13 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
                 readingTmThread = new Thread(() -> {
                     readTm(dataStream);
                 }, "CLTU/CADU - CADU reading thread");
+                updateConnectionStatus(TransportConnectionStatus.OPEN);
+                updateAlarmState(AlarmState.NOMINAL);
                 readingTmThread.setDaemon(true);
                 readingTmThread.start();
             } catch (IOException e) {
+                updateConnectionStatus(TransportConnectionStatus.ERROR);
+                updateAlarmState(AlarmState.ERROR);
                 throw new TransportException(e);
             }
         }
@@ -115,28 +135,92 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
     }
 
     private void readTm(InputStream inputStream) {
+        TmRandomizerDecoder derandomizer = new TmRandomizerDecoder();
         while(this.socket != null) {
             try {
                 byte[] cadu = inputStream.readNBytes(this.caduLength);
-                // TODO process CADU
-                // Remove ASM
-
+                Instant receptionTime = Instant.now();
+                // Remove ASM and correction codeblock
+                cadu = Arrays.copyOfRange(cadu, asmLength, asmLength + this.spacecraftConfig.getTmDataLinkConfigurations().getFrameLength());
                 // if randomisation == ON, derandomise
-
-                // get first frame-length bytes
-
+                if(this.spacecraftConfig.getTmDataLinkConfigurations().isDerandomize()) {
+                    cadu = derandomizer.apply(cadu);
+                }
                 // build transfer frame info with configuration from spacecraft
-
+                AbstractTransferFrame frame = null;
+                if(spacecraftConfig.getTmDataLinkConfigurations().getType() == TransferFrameType.TM) {
+                    frame = new TmTransferFrame(cadu, spacecraftConfig.getTmDataLinkConfigurations().isFecfPresent());
+                } else if(spacecraftConfig.getTmDataLinkConfigurations().getType() == TransferFrameType.AOS) {
+                    frame = new AosTransferFrame(cadu, spacecraftConfig.getTmDataLinkConfigurations().isFecfPresent(), spacecraftConfig.getTmDataLinkConfigurations().getAosTransferFrameInsertZoneLength(),
+                            AosTransferFrame.UserDataType.M_PDU, spacecraftConfig.getTmDataLinkConfigurations().isOcfPresent(), spacecraftConfig.getTmDataLinkConfigurations().isFecfPresent());
+                } else {
+                    throw new IllegalArgumentException("Transfer frame type " + spacecraftConfig.getTmDataLinkConfigurations().getType() + " not supported");
+                }
                 // distribute to raw data broker
+                if(spacecraftConfig.getTmDataLinkConfigurations().getProcessVcs() == null || spacecraftConfig.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
+                    Instant genTimeInstant = receptionTime.minusNanos(spacecraftConfig.getPropagationDelay() * 1000);
+                    RawData rd = null;
+                    if(frame.isValid()) {
+                        String route = String.valueOf(frame.getSpacecraftId()) + '.' + frame.getVirtualChannelId() + ".TCP." + host + '.' + port;
+                        rd = new RawData(context.getRawDataBroker().nextRawDataId(),
+                                genTimeInstant,
+                                Constants.N_TM_TRANSFER_FRAME,
+                                spacecraftConfig.getTmDataLinkConfigurations().getType() == TransferFrameType.TM ? Constants.T_TM_FRAME : Constants.T_AOS_FRAME,
+                                route,
+                                String.valueOf(frame.getSpacecraftId()),
+                                Quality.GOOD, null, frame.getFrame(), receptionTime, driverName, null);
+                    } else {
+                        String route = "TCP." + host + '.' + port;
+                        rd = new RawData(context.getRawDataBroker().nextRawDataId(),
+                                genTimeInstant,
+                                Constants.N_TM_TRANSFER_FRAME,
+                                Constants.T_BAD_TM,
+                                route,
+                                String.valueOf(frame.getSpacecraftId()),
+                                Quality.BAD, null, frame.getFrame(), receptionTime, driverName, null);
+                    }
+                    frame.setAnnotationValue(Constants.ANNOTATION_ROUTE, rd.getRoute());
+                    frame.setAnnotationValue(Constants.ANNOTATION_SOURCE, rd.getSource());
+                    frame.setAnnotationValue(Constants.ANNOTATION_GEN_TIME, rd.getGenerationTime());
+                    frame.setAnnotationValue(Constants.ANNOTATION_RCP_TIME, rd.getReceptionTime());
+                    frame.setAnnotationValue(Constants.ANNOTATION_UNIQUE_ID, rd.getInternalId());
+                    rd.setData(frame);
+                    try {
+                        context.getRawDataBroker().distribute(Collections.singletonList(rd));
+                    } catch (ReatmetricException e) {
+                        LOG.log(Level.SEVERE, "Error when distributing frame from TCP connection " + host + ":" + port + ": " + e.getMessage(), e);
+                        updateAlarmState(AlarmState.WARNING);
+                    }
+                }
             } catch (IOException e) {
-                LOG.log(Level.SEVERE, "Reading of CADU failed: connection error on read", e);
+                if(!closing) {
+                    LOG.log(Level.SEVERE, "Reading of CADU failed: connection error on read: " + e.getMessage(), e);
+                    updateAlarmState(AlarmState.ERROR);
+                    try {
+                        disconnect();
+                    } catch (TransportException ex) {
+                        // Ignore
+                    }
+                }
+            } catch (Exception e) {
+                if(!closing) {
+                    LOG.log(Level.SEVERE, "Processing of CADU failed: unknown error: " + e.getMessage(), e);
+                    updateAlarmState(AlarmState.ERROR);
+                    try {
+                        disconnect();
+                    } catch (TransportException ex) {
+                        // Ignore
+                    }
+                }
             }
         }
     }
 
     @Override
-    protected synchronized void doDisconnect() throws TransportException {
+    protected synchronized void doDisconnect() {
         if(socket != null) {
+            closing = true;
+            updateConnectionStatus(TransportConnectionStatus.DISCONNECTING);
             try {
                 socket.close();
             } catch (IOException e) {
@@ -148,6 +232,7 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
             readingTmThread = null;
         }
         // Done
+        updateConnectionStatus(TransportConnectionStatus.IDLE);
     }
 
     @Override
