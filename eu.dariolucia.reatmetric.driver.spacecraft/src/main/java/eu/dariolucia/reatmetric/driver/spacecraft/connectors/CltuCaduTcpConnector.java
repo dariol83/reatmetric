@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -63,8 +64,8 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
     private static final Logger LOG = Logger.getLogger(CltuCaduTcpConnector.class.getName());
 
     private volatile Instant lastSamplingTime;
-    private volatile long rxBytes; // injected bytes
-    private volatile long txBytes; // injected bytes
+    private final AtomicLong rxBytes = new AtomicLong(0); // received bytes
+    private final AtomicLong txBytes = new AtomicLong(0); // injected bytes
     private String driverName;
     private SpacecraftConfiguration spacecraftConfig;
     private IServiceCoreContext context;
@@ -94,10 +95,10 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
     protected Pair<Long, Long> computeBitrate() {
         Instant now = Instant.now();
         if(lastSamplingTime != null) {
-            long theRxBytes = rxBytes; // Not atomic, but ... who cares
-            long theTxBytes = txBytes; // Not atomic, but ... who cares
-            rxBytes = 0;
-            txBytes = 0;
+            long theRxBytes = rxBytes.get(); // Not atomic, but ... who cares
+            long theTxBytes = txBytes.get(); // Not atomic, but ... who cares
+            rxBytes.set(0);
+            txBytes.set(0);
             long msDiff = now.toEpochMilli() - lastSamplingTime.toEpochMilli();
             long rxRate = Math.round((theRxBytes * 8000.0) / (msDiff));
             long txRate = Math.round((theTxBytes * 8000.0) / (msDiff));
@@ -139,6 +140,7 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
         while(this.socket != null) {
             try {
                 byte[] cadu = inputStream.readNBytes(this.caduLength);
+                rxBytes.addAndGet(this.caduLength);
                 Instant receptionTime = Instant.now();
                 // Remove ASM and correction codeblock
                 cadu = Arrays.copyOfRange(cadu, asmLength, asmLength + this.spacecraftConfig.getTmDataLinkConfigurations().getFrameLength());
@@ -295,8 +297,12 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
                 informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASE_FAILED);
                 return;
             }
+            txBytes.addAndGet(cltu.length);
             // Sent
             informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASED);
+            // TODO: remove the next two from the announcement, it should be route dependent
+            informSubscribers(externalId, ForwardDataUnitProcessingStatus.ACCEPTED);
+            informSubscribers(externalId, ForwardDataUnitProcessingStatus.UPLINKED);
         });
     }
 

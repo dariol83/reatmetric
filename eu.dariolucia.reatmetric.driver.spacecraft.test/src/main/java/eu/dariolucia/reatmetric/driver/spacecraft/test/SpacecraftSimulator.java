@@ -44,8 +44,8 @@ public class SpacecraftSimulator {
     private static final Logger LOG = Logger.getLogger(SpacecraftSimulator.class.getName());
 
     public static void main(String[] args) throws IOException, JAXBException {
-        if (args.length != 4) {
-            System.err.println("Usage: SpacecraftSimulator <path to SLE configuration file> <path to TM/TC configuration file> <spacecraft configuration> <path to processing model>");
+        if (args.length < 4) {
+            System.err.println("Usage: SpacecraftSimulator <path to SLE configuration file> <path to TM/TC configuration file> <spacecraft configuration> <path to processing model> [TCP server port]");
             System.exit(1);
         }
         // Load the SLE configuration file
@@ -76,7 +76,8 @@ public class SpacecraftSimulator {
         rafServiceInstanceProvider.configure();
 
         // Create the spacecraft emulator
-        SpacecraftModel sm = new SpacecraftModel(args[1], args[2], cltuServiceInstanceProvider, rafServiceInstanceProvider, args[3]);
+        int tcpPort = args.length > 4 ? Integer.parseInt(args[4]) : -1;
+        SpacecraftModel sm = new SpacecraftModel(args[1], args[2], cltuServiceInstanceProvider, rafServiceInstanceProvider, args[3], tcpPort);
         sm.startProcessing();
 
         // Exit when the user presses Enter

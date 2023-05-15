@@ -51,6 +51,7 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
     exports eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket;
     exports eu.dariolucia.reatmetric.driver.spacecraft.activity;
     exports eu.dariolucia.reatmetric.driver.spacecraft.common;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.connectors;
     exports eu.dariolucia.reatmetric.driver.spacecraft.definition;
     exports eu.dariolucia.reatmetric.driver.spacecraft.definition.services;
 

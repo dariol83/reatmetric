@@ -36,9 +36,17 @@ import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.outgoing
 import eu.dariolucia.ccsds.sle.utl.si.*;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.*;
 import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstanceProvider;
+import eu.dariolucia.ccsds.tmtc.algorithm.BchCltuAlgorithm;
+import eu.dariolucia.ccsds.tmtc.algorithm.ReedSolomonAlgorithm;
 import eu.dariolucia.ccsds.tmtc.coding.ChannelDecoder;
+import eu.dariolucia.ccsds.tmtc.coding.ChannelEncoder;
 import eu.dariolucia.ccsds.tmtc.coding.decoder.CltuDecoder;
 import eu.dariolucia.ccsds.tmtc.coding.decoder.CltuRandomizerDecoder;
+import eu.dariolucia.ccsds.tmtc.coding.encoder.CltuEncoder;
+import eu.dariolucia.ccsds.tmtc.coding.encoder.ReedSolomonEncoder;
+import eu.dariolucia.ccsds.tmtc.coding.encoder.TmAsmEncoder;
+import eu.dariolucia.ccsds.tmtc.coding.encoder.TmRandomizerEncoder;
+import eu.dariolucia.ccsds.tmtc.coding.reader.SyncMarkerVariableLengthChannelReader;
 import eu.dariolucia.ccsds.tmtc.cop1.farm.FarmEngine;
 import eu.dariolucia.ccsds.tmtc.cop1.farm.FarmState;
 import eu.dariolucia.ccsds.tmtc.datalink.channel.VirtualChannelAccessMode;
@@ -59,8 +67,12 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.*;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 
 import javax.xml.bind.JAXBException;
+import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -70,6 +82,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -145,7 +158,19 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private Thread tmThread;
     private Thread generationThread;
 
-    public SpacecraftModel(String tmTcFilePath, String spacecraftFilePath, CltuServiceInstanceProvider cltuProvider, RafServiceInstanceProvider rafProvider, String processingModelPath) throws IOException, JAXBException {
+    private final int tcpPort;
+    private Thread tcpPortThread;
+    private volatile ServerSocket tcpServerSocket;
+    private volatile Socket tcpSocket;
+
+    private final ChannelEncoder<AbstractTransferFrame> caduEncoder;
+
+    public SpacecraftModel(String tmTcFilePath,
+                           String spacecraftFilePath,
+                           CltuServiceInstanceProvider cltuProvider,
+                           RafServiceInstanceProvider rafProvider,
+                           String processingModelPath,
+                           int tcpPort) throws IOException, JAXBException {
         this.cltuProvider = cltuProvider;
         this.rafProvider = rafProvider;
         this.rafProvider.register(this);
@@ -164,6 +189,16 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         initialiseSpacecraftDownlink();
         initialiseSpacePacketGeneration();
         this.resolver = new ProcessingModelBasedResolver(processingDefinition, new DefinitionValueBasedResolver(new DefaultNullBasedResolver(), true), spacecraftConfiguration.getTmPacketConfiguration().getParameterIdOffset(), encDecDefs);
+        this.tcpPort = tcpPort;
+        // Create encoder in case it is needed
+        int interleaving = this.spacecraftConfiguration.getTmDataLinkConfigurations().getFrameLength()/223;
+        boolean randomize = this.spacecraftConfiguration.getTmDataLinkConfigurations().isDerandomize();
+        this.caduEncoder = ChannelEncoder.create(true).addEncodingFunction(new ReedSolomonEncoder<>(ReedSolomonAlgorithm.TM_255_223, interleaving));
+        if(randomize) {
+            this.caduEncoder.addEncodingFunction(new TmRandomizerEncoder<>());
+        }
+        this.caduEncoder.addEncodingFunction(new TmAsmEncoder<>());
+        this.caduEncoder.configure();
         // Create performance samples
         performanceSampler.schedule(new TimerTask() {
             @Override
@@ -294,6 +329,55 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         tmThread.start();
         generationThread = new Thread(this::generatePackets);
         generationThread.start();
+        if(tcpPort > -1) {
+            tcpPortThread = new Thread(this::processTcpConnection);
+            tcpPortThread.start();
+        }
+    }
+
+    private void processTcpConnection() {
+        AtomicLong al = new AtomicLong(0);
+        while(running) {
+            try {
+                tcpServerSocket = new ServerSocket(tcpPort);
+                tcpSocket = tcpServerSocket.accept();
+                InputStream is = tcpSocket.getInputStream();
+                SyncMarkerVariableLengthChannelReader cltuReader = new SyncMarkerVariableLengthChannelReader(
+                        is,
+                        new byte[]{(byte) 0xEB, (byte) 0x90},
+                        new byte[]{(byte) 0xC5, (byte) 0xC5, (byte) 0xC5, (byte) 0xC5, (byte) 0xC5, (byte) 0xC5, (byte) 0xC5, 0x79},
+                        true,
+                        false,
+                        5000
+                );
+                while (running) {
+                    // Read until you can
+                    byte[] cltu = cltuReader.readNext();
+                    if(cltu != null) {
+                        // Forward CLTU
+                        this.cltuProcessor.execute(() -> processCltu(al.incrementAndGet(), cltu));
+                    } else {
+                        // Connection closed
+                        throw new IOException("Connection closed");
+                    }
+                }
+            } catch (IOException e) {
+                if(tcpSocket != null) {
+                    try {
+                        tcpSocket.close();
+                    } catch (IOException ex) {
+                        //
+                    }
+                    tcpSocket = null;
+                }
+                try {
+                    tcpServerSocket.close();
+                } catch (IOException ex) {
+                    //
+                }
+                tcpServerSocket = null;
+            }
+        }
     }
 
     private void generatePackets() {
@@ -431,6 +515,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         if (tmTransferFrame.getVirtualChannelId() == 0 && tmTransferFrame.getVirtualChannelFrameCount() == 0) {
             generateTimePacket(Instant.now());
         }
+        // Send to SLE
         if (rafProvider.getCurrentBindingState() == ServiceInstanceBindingStateEnum.ACTIVE) {
             try {
                 boolean result = rafProvider.transferData(tmTransferFrame.getFrame(), 0, 1, Instant.now(), false, StringUtil.toHexDump("ANTENNA-TEST".getBytes(StandardCharsets.ISO_8859_1)), false, new byte[0]);
@@ -438,6 +523,16 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     LOG.severe("Error transferring TF");
                 }
             } catch (Exception e) {
+                LOG.log(Level.SEVERE, "", e);
+            }
+        }
+        // Send to TCP
+        Socket sock = this.tcpSocket;
+        if(tcpPort > -1 && sock != null) {
+            byte[] cadu = this.caduEncoder.apply(tmTransferFrame);
+            try {
+                sock.getOutputStream().write(cadu);
+            } catch (IOException e) {
                 LOG.log(Level.SEVERE, "", e);
             }
         }
