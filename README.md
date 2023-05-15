@@ -262,4 +262,7 @@ Example of remoting configuration:
 - Documentation (javadoc, configuration examples, driver example)
 
 ## Acknowledgements and Credits
+A special mention goes to Theresa Köster from the University of Giessen, who evaluated ReatMetric (among other tools) 
+against the Flying Laptop operational simulator. With her contributions, ideas and suggestions, she helped greatly to 
+verify the TM/TC implementation compatibility of ReatMetric against a real, operational system.
 
