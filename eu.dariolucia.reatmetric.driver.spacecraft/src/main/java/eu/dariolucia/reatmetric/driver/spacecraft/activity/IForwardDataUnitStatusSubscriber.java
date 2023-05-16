@@ -20,6 +20,6 @@ import java.time.Instant;
 
 public interface IForwardDataUnitStatusSubscriber {
 
-    void informStatusUpdate(long externalId, ForwardDataUnitProcessingStatus status, Instant time);
+    void informStatusUpdate(long externalId, ForwardDataUnitProcessingStatus status, Instant time, String currentState, String nextState);
 
 }

@@ -485,21 +485,26 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
             // Look for the connector
             for(ITransportConnector c : transportConnectors) {
                 if(c.getName().equals(status.getName())) {
-                    executor.schedule(new TimerTask() {
-                        @Override
-                        public void run() {
-                            try {
-                                if(c.getConnectionStatus() != TransportConnectionStatus.OPEN && c.getConnectionStatus() != TransportConnectionStatus.CONNECTING) {
-                                    c.connect();
-                                }
-                            } catch (RemoteException | TransportException e) {
-                                LOG.log(Level.WARNING, "Cannot reconnect transport connector: " + e.getMessage(), e);
-                            }
-                        }
-                    }, 500);
+                    scheduleReconnectionOf(c);
                     return;
                 }
             }
         }
+    }
+
+    private void scheduleReconnectionOf(ITransportConnector c) {
+        executor.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    if(c.getConnectionStatus() != TransportConnectionStatus.OPEN && c.getConnectionStatus() != TransportConnectionStatus.CONNECTING) {
+                        c.connect();
+                    }
+                } catch (RemoteException | TransportException e) {
+                    LOG.log(Level.WARNING, "Cannot reconnect transport connector: " + e.getMessage(), e);
+                    scheduleReconnectionOf(c);
+                }
+            }
+        }, 1000);
     }
 }

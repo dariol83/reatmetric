@@ -195,7 +195,7 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
     protected abstract void doConnect() throws TransportException;
 
     @Override
-    public void disconnect() throws TransportException {
+    public final void disconnect() throws TransportException {
         checkPrepared();
         if(busy) {
             return;
@@ -204,6 +204,24 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
         try {
             setReconnect(false); // Explicit invocation should stop reconnection
             LOG.log(Level.INFO, "Transport connector " + name + " disconnecting");
+            doDisconnect();
+        } finally {
+            busy = false;
+        }
+    }
+
+    /**
+     * This method has the same effects as disconnect(), without clearing the autoreconnect flag.
+     * It must be invoked by implementations wishing to perform a clean-up of the connection status, without affecting
+     * the autoreconnect flag.
+     */
+    protected final void internalDisconnect() throws TransportException {
+        checkPrepared();
+        if(busy) {
+            return;
+        }
+        busy = true;
+        try {
             doDisconnect();
         } finally {
             busy = false;

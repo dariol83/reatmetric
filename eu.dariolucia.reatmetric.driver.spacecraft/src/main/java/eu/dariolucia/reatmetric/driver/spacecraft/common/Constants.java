@@ -70,6 +70,8 @@ public class Constants {
     public static final String ACTIVITY_PROPERTY_SUBSCHEDULE_TRACKING_ID = "linked-scheduled-activity-occurrence";
 
     // Activity stages
+
+    public static final String STAGE_ENDPOINT_RECEPTION = "Endpoint Reception";
     public static final String STAGE_GROUND_STATION_RECEPTION = "Ground Station Reception";
     public static final String STAGE_GROUND_STATION_UPLINK = "Ground Station Uplink";
     public static final String STAGE_GROUND_STATION_EXECUTION = "Ground Station Execution"; // for THROW-EVENT activities

@@ -177,11 +177,11 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     }
 
     @Override
-    public void informStatusUpdate(long id, ForwardDataUnitProcessingStatus status, Instant time) {
+    public void informStatusUpdate(long id, ForwardDataUnitProcessingStatus status, Instant time, String currentStep, String nextStep) {
         delegator.execute(() -> {
             RequestTracker tracker = this.cltuId2requestTracker.get(id);
             if (tracker != null) {
-                tracker.trackCltuStatus(id, status, time);
+                tracker.trackCltuStatus(id, status, time, currentStep, nextStep);
                 if (tracker.isLifecycleCompleted()) {
                     this.cltuId2requestTracker.remove(id);
                 }
@@ -558,7 +558,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             this.dataUnits.addAll(dataUnits);
         }
 
-        public void trackCltuStatus(Long id, ForwardDataUnitProcessingStatus status, Instant time) {
+        public void trackCltuStatus(Long id, ForwardDataUnitProcessingStatus status, Instant time, String currentStep, String nextStep) {
             //
             switch (status) {
                 case RELEASED: { // The CLTU/Frame was sent to the ground station
@@ -566,7 +566,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     if(released.size() == dataUnits.size()) { // All released
                         informServiceBroker(TcPhase.RELEASED, time, tcTrackers);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
-                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, nextStep, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                     }
                 }
                 break;
@@ -580,14 +580,15 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     accepted.add(id);
                     if(accepted.size() == dataUnits.size()) { // All CLTUs/Frames accepted, so command is all at the ground station
                         // Nothing to be done here with the service broker
-                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
-                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_UPLINK, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, currentStep, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
+                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, nextStep, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                     }
                 }
                 break;
-                case REJECTED: { // The CLTU/Frame was rejected by the ground station or discarded -> all related TC requests to be marked as failed in ground station reception
+                case REJECTED:  // The CLTU/Frame was rejected by the ground station or discarded -> all related TC requests to be marked as failed in ground station reception
+                case UPLINK_FAILED: { // The CLTU/Frame failed uplink -> all related TC requests to be marked as failed in ground station uplink
                     informServiceBroker(TcPhase.FAILED, time, tcTrackers);
-                    reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_RECEPTION, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
+                    reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, currentStep, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
                     lifecycleCompleted = true;
                 }
                 break;
@@ -595,7 +596,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     uplinked.add(id);
                     if(uplinked.size() == dataUnits.size()) { // All CLTUs/Frames uplinked, so command is all on its way
                         informServiceBroker(TcPhase.UPLINKED, time, tcTrackers);
-                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_UPLINK, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
+                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, currentStep, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                         if(!useAd) {
                             // Other stages are not in the scope of this class: send out a RECEIVED_ONBOARD success after uplink time + propagation delay on the service broker only
@@ -618,12 +619,6 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     if(!useAd) {
                         lifecycleCompleted = true;
                     }
-                }
-                break;
-                case UPLINK_FAILED: { // The CLTU/Frame failed uplink -> all related TC requests to be marked as failed in ground station uplink
-                    informServiceBroker(TcPhase.FAILED, time, tcTrackers);
-                    reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_GROUND_STATION_UPLINK, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
-                    lifecycleCompleted = true;
                 }
                 break;
             }

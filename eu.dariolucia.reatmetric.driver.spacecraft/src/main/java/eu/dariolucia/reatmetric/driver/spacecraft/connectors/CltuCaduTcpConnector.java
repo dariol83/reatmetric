@@ -197,22 +197,24 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
             } catch (IOException e) {
                 if(!closing) {
                     LOG.log(Level.SEVERE, "Reading of CADU failed: connection error on read: " + e.getMessage(), e);
-                    updateAlarmState(AlarmState.ERROR);
                     try {
-                        disconnect();
+                        internalDisconnect();
                     } catch (TransportException ex) {
                         // Ignore
                     }
+                    updateAlarmState(AlarmState.ERROR);
+                    updateConnectionStatus(TransportConnectionStatus.ERROR);
                 }
             } catch (Exception e) {
                 if(!closing) {
                     LOG.log(Level.SEVERE, "Processing of CADU failed: unknown error: " + e.getMessage(), e);
-                    updateAlarmState(AlarmState.ERROR);
                     try {
-                        disconnect();
+                        internalDisconnect();
                     } catch (TransportException ex) {
                         // Ignore
                     }
+                    updateAlarmState(AlarmState.ERROR);
+                    updateConnectionStatus(TransportConnectionStatus.ERROR);
                 }
             }
         }
@@ -235,6 +237,7 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
         }
         // Done
         updateConnectionStatus(TransportConnectionStatus.IDLE);
+        updateAlarmState(AlarmState.NOT_CHECKED);
     }
 
     @Override
@@ -278,31 +281,31 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
     public synchronized void sendCltu(byte[] cltu, long externalId) throws RemoteException {
         if(this.cltuForwarderExecutor.isShutdown()) {
             LOG.severe(String.format("Transmission of CLTU with external ID %d failed: CLTU/CADU connector disposed", externalId));
-            informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASE_FAILED);
+            informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASE_FAILED, Instant.now(), null, null);
             return;
         }
         this.cltuForwarderExecutor.submit(() -> {
             Socket sock = this.socket;
             if (sock == null) {
                 LOG.severe(String.format("Transmission of CLTU with external ID %d failed: CLTU/CADU connector is disconnected", externalId));
-                informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASE_FAILED);
+                informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASE_FAILED, Instant.now(), null, null);
                 return;
             }
             // Try to send CLTU
+            Instant sent = null;
             try {
                 LOG.log(Level.INFO, String.format("Sending CLTU with ID %d: %s", externalId, StringUtil.toHexDump(cltu)));
+                sent = Instant.now();
                 sock.getOutputStream().write(cltu);
             } catch (IOException e) {
                 LOG.log(Level.SEVERE, String.format("Transmission of CLTU with external ID %d failed: CLTU/CADU connector error on write", externalId), e);
-                informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASE_FAILED);
+                informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASE_FAILED, Instant.now(), null, null);
                 return;
             }
             txBytes.addAndGet(cltu.length);
             // Sent
-            informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASED);
-            // TODO: remove the next two from the announcement, it should be route dependent
-            informSubscribers(externalId, ForwardDataUnitProcessingStatus.ACCEPTED);
-            informSubscribers(externalId, ForwardDataUnitProcessingStatus.UPLINKED);
+            informSubscribers(externalId, ForwardDataUnitProcessingStatus.RELEASED, sent, null, Constants.STAGE_ENDPOINT_RECEPTION);
+            informSubscribers(externalId, ForwardDataUnitProcessingStatus.UPLINKED, Instant.now(), Constants.STAGE_ENDPOINT_RECEPTION, null);
         });
     }
 
@@ -311,11 +314,7 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
         return Collections.singletonList("CLTU/CADU @ " + this.host + ":" + this.port);
     }
 
-    private void informSubscribers(long externalId, ForwardDataUnitProcessingStatus status) {
-        informSubscribers(externalId, status, Instant.now());
-    }
-
-    private void informSubscribers(long externalId, ForwardDataUnitProcessingStatus status, Instant time) {
-        subscribers.forEach(o -> o.informStatusUpdate(externalId, status, time));
+    private void informSubscribers(long externalId, ForwardDataUnitProcessingStatus status, Instant time, String currentState, String nextState) {
+        subscribers.forEach(o -> o.informStatusUpdate(externalId, status, time, currentState, nextState));
     }
 }
