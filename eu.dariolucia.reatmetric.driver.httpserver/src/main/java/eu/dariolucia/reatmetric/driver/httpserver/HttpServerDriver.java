@@ -19,20 +19,12 @@ package eu.dariolucia.reatmetric.driver.httpserver;
 
 import com.sun.net.httpserver.HttpServer;
 import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
-import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.events.EventDescriptor;
-import eu.dariolucia.reatmetric.api.events.IEventDataSubscriber;
-import eu.dariolucia.reatmetric.api.messages.IOperationalMessageSubscriber;
-import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
-import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
-import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
-import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
@@ -67,6 +59,8 @@ public class HttpServerDriver implements IDriver {
     public static final String PARAMETER_CURRENT_STATE_PATH = "current";
     public static final String PARAMETER_STREAM_PATH = "stream";
     public static final String EVENTS_PATH = "events";
+
+    public static final String RAW_DATA_PATH = "rawdata";
     public static final String ACTIVITIES_PATH = "activities";
     public static final String MESSAGES_PATH = "messages";
     public static final String MODEL_PATH = "model";
@@ -190,6 +184,10 @@ public class HttpServerDriver implements IDriver {
         context2handlers.put("/" + this.context.getSystemName() + "/" + ACTIVITIES_PATH + "/" + LIST_URL, ah);
         context2handlers.put("/" + this.context.getSystemName() + "/" + ACTIVITIES_PATH + "/" + INVOKE_URL, ah);
         context2handlers.put("/" + this.context.getSystemName() + "/" + ACTIVITIES_PATH + "/" + RETRIEVE_URL, ah);
+
+        RawDataRequestHandler rh = new RawDataRequestHandler(this);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + RAW_DATA_PATH + "/" + REGISTRATION_URL, rh);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + RAW_DATA_PATH + "/" + RETRIEVE_URL, rh);
     }
 
     private void buildCache() throws ReatmetricException, RemoteException {

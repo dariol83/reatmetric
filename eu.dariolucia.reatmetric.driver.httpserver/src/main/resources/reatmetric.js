@@ -2,6 +2,7 @@ const RTMT_PARAMETERS_PATH = "parameters";
 const RTMT_PARAMETER_CURRENT_STATE_PATH = "current";
 const RTMT_PARAMETER_STREAM_PATH = "stream";
 const RTMT_EVENTS_PATH = "events";
+const RTMT_RAWDATA_PATH = "rawdata";
 const RTMT_ACTIVITIES_PATH = "activities";
 const RTMT_MESSAGES_PATH = "messages";
 const RTMT_CONNECTORS_PATH = "connectors";
@@ -44,9 +45,8 @@ class ReatMetric {
      * Constructor
      *********************************************************/
 
-    constructor(host, port, name) {
-        this.host = host;
-        this.port = port;
+    constructor(baseUrl, name) {
+        this.baseUrl = baseUrl;
         this.name = name;
     }
 
@@ -55,7 +55,7 @@ class ReatMetric {
      *********************************************************/
     async getDescriptor(path) {
         var thePath = path.replaceAll('.', '/')
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         const data = await response.json();
         return data;
@@ -63,7 +63,7 @@ class ReatMetric {
 
     async enable(path) {
         var thePath = path.replaceAll('.', '/')
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath + "/" + RTMT_ENABLE_URL;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath + "/" + RTMT_ENABLE_URL;
         const response = await fetch(toFetch, this.fetchInit('POST', null));
         const data = await response.json();
         return;
@@ -71,7 +71,7 @@ class ReatMetric {
 
     async disable(path) {
         var thePath = path.replaceAll('.', '/')
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath + "/" + RTMT_DISABLE_URL;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_MODEL_PATH + "/" + thePath + "/" + RTMT_DISABLE_URL;
         const response = await fetch(toFetch, this.fetchInit('POST', null));
         const data = await response.json();
         return;
@@ -82,14 +82,14 @@ class ReatMetric {
      *********************************************************/
 
     async listParameters() {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_LIST_URL;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_LIST_URL;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         const data = await response.json();
         return data;
     }
 
     async retrieveParameters(startTime, endTime, filter) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_RETRIEVE_URL + "?" +
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_RETRIEVE_URL + "?" +
         RTMT_STARTTIME_ARG + "=" + startTime + "&" +
         RTMT_ENDTIME_ARG + "=" + endTime;
         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
@@ -98,7 +98,7 @@ class ReatMetric {
     }
 
     async getParameterByPath(path) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_STATE_URL + "?" +
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_STATE_URL + "?" +
         RTMT_PATH_ARG + "=" + path;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         const data = await response.json();
@@ -106,7 +106,7 @@ class ReatMetric {
     }
 
     async getParameterByID(paramId) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_STATE_URL + "?" +
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_STATE_URL + "?" +
         RTMT_ID_ARG + "=" + paramId;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         const data = await response.json();
@@ -122,19 +122,19 @@ class ReatMetric {
      *********************************************************/
 
     async registerToStateParameters(filter) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_CURRENT_STATE_PATH + "/" + RTMT_REGISTRATION_URL;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_CURRENT_STATE_PATH + "/" + RTMT_REGISTRATION_URL;
         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
         const data = await response.json();
         return data.key;
     }
 
     async deregisterFromStateParameters(key) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH  + "/" + RTMT_PARAMETER_CURRENT_STATE_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_PARAMETERS_PATH  + "/" + RTMT_PARAMETER_CURRENT_STATE_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
         const response = await fetch(toFetch, this.fetchInit('DELETE', null));
     }
 
     async getStateParameters(key) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_CURRENT_STATE_PATH  + "/" + RTMT_GET_URL + "/" + key;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_CURRENT_STATE_PATH  + "/" + RTMT_GET_URL + "/" + key;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
@@ -149,19 +149,19 @@ class ReatMetric {
      *********************************************************/
 
     async registerToStreamParameters(filter) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_STREAM_PATH + "/" + RTMT_REGISTRATION_URL;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_STREAM_PATH + "/" + RTMT_REGISTRATION_URL;
         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
         const data = await response.json();
         return data.key;
     }
 
     async deregisterFromStreamParameters(key) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH  + "/" + RTMT_PARAMETER_STREAM_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_PARAMETERS_PATH  + "/" + RTMT_PARAMETER_STREAM_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
         const response = await fetch(toFetch, this.fetchInit('DELETE', null));
     }
 
     async getStreamParameters(key) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_STREAM_PATH  + "/" + RTMT_GET_URL + "/" + key;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_PARAMETERS_PATH + "/" + RTMT_PARAMETER_STREAM_PATH  + "/" + RTMT_GET_URL + "/" + key;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
@@ -176,26 +176,26 @@ class ReatMetric {
      *********************************************************/
 
     async listEvents() {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_LIST_URL;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_LIST_URL;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         const data = await response.json();
         return data;
     }
 
     async registerToEvents(filter) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_REGISTRATION_URL;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_REGISTRATION_URL;
         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
         const data = await response.json();
         return data.key;
     }
 
     async deregisterFromEvents(key) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
         const response = await fetch(toFetch, this.fetchInit('DELETE', null));
     }
 
     async getEvents(key) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_GET_URL + "/" + key;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_GET_URL + "/" + key;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
@@ -206,7 +206,7 @@ class ReatMetric {
     }
 
     async retrieveEvents(startTime, endTime, filter) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_RETRIEVE_URL + "?" +
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_EVENTS_PATH + "/" + RTMT_RETRIEVE_URL + "?" +
         RTMT_STARTTIME_ARG + "=" + startTime + "&" +
         RTMT_ENDTIME_ARG + "=" + endTime;
         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
@@ -219,30 +219,70 @@ class ReatMetric {
     }
 
     /*********************************************************
+     * Raw Data
+     *********************************************************/
+
+    async registerToRawData(filter) {
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_RAWDATA_PATH + "/" + RTMT_REGISTRATION_URL;
+        const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
+        const data = await response.json();
+        return data.key;
+    }
+
+    async deregisterFromRawData(key) {
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_RAWDATA_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
+        const response = await fetch(toFetch, this.fetchInit('DELETE', null));
+    }
+
+    async getRawData(key) {
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_RAWDATA_PATH + "/" + RTMT_GET_URL + "/" + key;
+        const response = await fetch(toFetch, this.fetchInit('GET', null));
+        if (response.status === 200) {
+            const data = await response.json();
+            return data;
+        } else {
+            return null;
+        }
+    }
+
+    async retrieveRawData(startTime, endTime, filter) {
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_RAWDATA_PATH + "/" + RTMT_RETRIEVE_URL + "?" +
+        RTMT_STARTTIME_ARG + "=" + startTime + "&" +
+        RTMT_ENDTIME_ARG + "=" + endTime;
+        const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
+        const data = await response.json();
+        return data;
+    }
+
+    rawDataFilter(contentSet, nameContains, sourceList, routeList, typeList, qualityList) {
+        return new RawDataFilter(contentSet, nameContains, sourceList, routeList, typeList, qualityList);
+    }
+
+    /*********************************************************
      * Activities
      *********************************************************/
 
     async listActivities() {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_LIST_URL;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_LIST_URL;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         const data = await response.json();
         return data;
     }
 
     async registerToActivities(filter) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_REGISTRATION_URL;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_REGISTRATION_URL;
         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
         const data = await response.json();
         return data.key;
     }
 
     async deregisterFromActivities(key) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
         const response = await fetch(toFetch, this.fetchInit('DELETE', null));
     }
 
     async getActivities(key) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_GET_URL + "/" + key;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_GET_URL + "/" + key;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
@@ -253,7 +293,7 @@ class ReatMetric {
     }
 
     async retrieveActivities(startTime, endTime, filter) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_RETRIEVE_URL + "?" +
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_RETRIEVE_URL + "?" +
         RTMT_STARTTIME_ARG + "=" + startTime + "&" +
         RTMT_ENDTIME_ARG + "=" + endTime;
         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
@@ -262,7 +302,7 @@ class ReatMetric {
     }
 
     async invoke(activityRequest) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_INVOKE_URL;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_ACTIVITIES_PATH + "/" + RTMT_INVOKE_URL;
         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(activityRequest)));
         const data = await response.json();
         return data.id;
@@ -293,19 +333,19 @@ class ReatMetric {
      *********************************************************/
 
     async registerToMessages(filter) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MESSAGES_PATH + "/" + RTMT_REGISTRATION_URL;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_MESSAGES_PATH + "/" + RTMT_REGISTRATION_URL;
         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
         const data = await response.json();
         return data.key;
     }
 
     async deregisterFromMessages(key) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MESSAGES_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_MESSAGES_PATH + "/" + RTMT_DEREGISTRATION_URL + "/" + key;
         const response = await fetch(toFetch, this.fetchInit('DELETE', null));
     }
 
     async getMessages(key) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MESSAGES_PATH + "/" + RTMT_GET_URL + "/" + key;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_MESSAGES_PATH + "/" + RTMT_GET_URL + "/" + key;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
@@ -316,7 +356,7 @@ class ReatMetric {
     }
 
     async retrieveMessages(startTime, endTime, filter) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_MESSAGES_PATH + "/" + RTMT_RETRIEVE_URL + "?" +
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_MESSAGES_PATH + "/" + RTMT_RETRIEVE_URL + "?" +
         RTMT_STARTTIME_ARG + "=" + startTime + "&" +
         RTMT_ENDTIME_ARG + "=" + endTime;
         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(filter)));
@@ -333,7 +373,7 @@ class ReatMetric {
      *********************************************************/
 
     async getConnectors() {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_CONNECTORS_PATH;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
@@ -344,7 +384,7 @@ class ReatMetric {
     }
 
     async getConnector(name) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name;
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name;
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
@@ -355,22 +395,22 @@ class ReatMetric {
     }
 
     async connect(name) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/connect";
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/connect";
         const response = await fetch(toFetch, this.fetchInit('POST', null));
     }
 
     async disconnect(name) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/disconnect";
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/disconnect";
         const response = await fetch(toFetch, this.fetchInit('POST', null));
     }
 
     async abort(name) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/abort";
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/abort";
         const response = await fetch(toFetch, this.fetchInit('POST', null));
     }
 
     async getConnectorProperties(name) {
-        var toFetch = "http://" + this.host + ":" + this.port + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/properties";
+        var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_CONNECTORS_PATH + "/" + name + "/properties";
         const response = await fetch(toFetch, this.fetchInit('GET', null));
         if (response.status === 200) {
             const data = await response.json();
@@ -439,6 +479,17 @@ class EventFilter {
         this.typeList = typeList;
         this.severityList = severityList;
         this.externalIdList = externalIdList;
+    }
+}
+
+class RawDataFilter {
+    constructor(contentSet, nameContains, sourceList, routeList, typeList, qualityList) {
+        this.contentSet = contentSet;
+        this.nameContains = nameContains;
+        this.sourceList = sourceList;
+        this.routeList = routeList;
+        this.typeList = typeList;
+        this.qualityList = qualityList;
     }
 }
 

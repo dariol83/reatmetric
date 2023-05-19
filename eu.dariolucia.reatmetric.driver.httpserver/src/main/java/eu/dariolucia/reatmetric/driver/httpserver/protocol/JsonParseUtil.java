@@ -19,9 +19,13 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.processing.input.*;
+import eu.dariolucia.reatmetric.api.rawdata.Quality;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
+import javax.xml.bind.DatatypeConverter;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -127,6 +131,33 @@ public class JsonParseUtil {
                 sources,
                 severities,
                 externalIds
+        );
+    }
+
+    public static RawDataFilter parseRawDataFilter(InputStream requestBody) {
+        DocumentContext parsed = JsonPath.parse(requestBody);
+        String nameContainsAccessor = "$['nameContains']";
+        String withDataAccessor = "$['contentSet']";
+        String routeListAccessor = "$['routeList']";
+        String typeListAccessor = "$['typeList']";
+        String sourceListAccessor = "$['sourceList']";
+        String qualityListAccessor = "$['qualityList']";
+
+        String nameContains = parsed.read(nameContainsAccessor);
+        boolean withData = parsed.read(withDataAccessor);
+        List<String> routes = parsed.read(routeListAccessor);
+        List<String> types = parsed.read(typeListAccessor);
+        List<String> sources = parsed.read(sourceListAccessor);
+        List<String> qualityList = parsed.read(qualityListAccessor);
+
+        List<Quality> qualities = qualityList == null ? null : qualityList.stream().map(Quality::valueOf).collect(Collectors.toList());
+        return new RawDataFilter(
+                withData,
+                nameContains,
+                routes,
+                types,
+                sources,
+                qualities
         );
     }
 
@@ -277,6 +308,22 @@ public class JsonParseUtil {
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
+    public static byte[] formatRawDatas(List<RawData> updates) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[\n");
+        for (int i = 0; i < updates.size(); ++i) {
+            sb.append("  ");
+            RawData pd = updates.get(i);
+            format(sb, pd);
+            if (i < updates.size() - 1) {
+                sb.append(",");
+            }
+            sb.append("\n");
+        }
+        sb.append("]");
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
     public static byte[] formatActivities(List<ActivityOccurrenceData> updates) {
         StringBuilder sb = new StringBuilder();
         sb.append("[\n");
@@ -384,6 +431,25 @@ public class JsonParseUtil {
         sb.append(String.format("\"route\" : %s, ", valueToString(obj.getRoute())));
         sb.append(String.format("\"source\" : %s, ", valueToString(obj.getSource())));
         sb.append(String.format("\"severity\" : \"%s\"", obj.getSeverity().name()));
+        sb.append(" }");
+    }
+
+    private static void format(StringBuilder sb, RawData obj) {
+        sb.append("{ ");
+        sb.append(String.format("\"internalId\" : %d, ", obj.getInternalId().asLong()));
+        sb.append(String.format("\"name\" : \"%s\", ", obj.getName()));
+        sb.append(String.format("\"gentime\" : %s, ", valueToString(obj.getGenerationTime())));
+        sb.append(String.format("\"rcptime\" : %s, ", valueToString(obj.getReceptionTime())));
+        sb.append(String.format("\"type\" : %s, ", valueToString(obj.getType())));
+        sb.append(String.format("\"route\" : %s, ", valueToString(obj.getRoute())));
+        sb.append(String.format("\"source\" : %s, ", valueToString(obj.getSource())));
+        sb.append(String.format("\"quality\" : \"%s\", ", obj.getQuality().name()));
+        if(obj.isContentsSet()) {
+            sb.append(String.format("\"data\" : \"%s\"", DatatypeConverter.printBase64Binary(obj.getContents())));
+        } else {
+            sb.append("\"data\" : null");
+        }
+
         sb.append(" }");
     }
 
@@ -678,4 +744,5 @@ public class JsonParseUtil {
         sb.append("\n]");
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
+
 }
