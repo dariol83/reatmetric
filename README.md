@@ -255,10 +255,8 @@ Example of remoting configuration:
 
 ## Roadmap
 - Web interface (finalize HTTP driver)
-- TCP/IP CLTU (out), CADU (in) connector as part of the spacecraft driver, update of the spacecraft simulator interface  
 - Generic binary/ASCII UDP/TCP driver
 - Optimisations, features and bug-fixes for the JavaFX UI (support for custom views in the UI)
-- Use of JSON for AND and graph file configurations
 - Documentation (javadoc, configuration examples, driver example)
 
 ## Acknowledgements and Credits
