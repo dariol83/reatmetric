@@ -20,6 +20,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.ChartPreset;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.PresetStorageManager;
@@ -219,7 +220,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
     }
 
     private void loadPreset(String name, String fpreset) {
-        Properties p = this.presetManager.load(name, user, fpreset, doGetComponentId());
+        ChartPreset p = this.presetManager.load(name, user, fpreset, doGetComponentId(), ChartPreset.class);
         if (p != null) {
             try {
                 addChartTabFromPreset(fpreset, p);
@@ -229,7 +230,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
         }
     }
 
-    private void addChartTabFromPreset(String tabName, Properties p) throws IOException {
+    private void addChartTabFromPreset(String tabName, ChartPreset p) throws IOException {
         final UserDisplayTabWidgetController t = createNewTab(tabName);
         // After adding the tab, you need to initialise it in a new round of the UI thread,
         // to allow the layouting of the tab and the correct definition of the parent elements,

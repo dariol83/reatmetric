@@ -27,6 +27,7 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.udd.*;
+import eu.dariolucia.reatmetric.ui.utils.ChartPreset;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.udd.IChartDisplayController;
 import eu.dariolucia.reatmetric.ui.utils.OrderedProperties;
@@ -681,26 +682,23 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
         UserDisplayCoordinator.instance().filterUpdated();
     }
 
-    public Properties getChartDescription() {
+    public ChartPreset getChartDescription() {
         // Iterate on the chart managers
-        Properties props = new OrderedProperties();
-        int incrementalId = 0;
+        ChartPreset props = new ChartPreset();
         for (AbstractChartManager acm : charts) {
             String chartType = acm.getChartType();
             List<String> items = acm.getCurrentEntityPaths();
-            // Add the type as incremental key (3 digits, padded) plus type, and value is the list of paths, split by comma
-            props.put(String.format("%03d", incrementalId) + "." + chartType, items.stream().reduce("", (a, b) -> a.isEmpty() ? b : a + "," + b));
-            ++incrementalId;
+            // Add the type, and value is the list of paths
+            props.addElement(chartType, items.toArray(new String[0]));
         }
         return props;
     }
 
-    public void loadPreset(Properties p) {
-        Set<String> chartSets = p.keySet().stream().map(Object::toString).collect(Collectors.toCollection(TreeSet::new));
-        for (String chartSet : chartSets) {
-            String chartType = chartSet.substring(4);
+    public void loadPreset(ChartPreset p) {
+        for (ChartPreset.Element chartSet : p.getElements()) {
+            String chartType = chartSet.getType();
             AbstractChartManager chartManager = null;
-            List<String> items = Arrays.asList(((String) p.get(chartSet)).split(","));
+            List<String> items = Arrays.asList(chartSet.getNames());
             switch (chartType) {
                 case "line": {
                     chartManager = addLineChart();

@@ -220,7 +220,7 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 	}
 
 	private void loadPreset(String name, String fpreset) {
-		AndPreset p = this.presetManager.loadAnd(name, user, fpreset, doGetComponentId());
+		AndPreset p = this.presetManager.load(name, user, fpreset, doGetComponentId(), AndPreset.class);
 		if(p != null) {
 			try {
 				addTabFromPreset(fpreset, p);
@@ -313,7 +313,7 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 		Optional<String> result = DialogUtils.input(t.getText(), "Save Preset", "Preset", "Please provide the name of the preset:");
 		result.ifPresent(s -> {
 			try {
-				this.presetManager.saveAnd(system.getName(), user, s, doGetComponentId(), pair.getSecond().getParameterDisplayDescription());
+				this.presetManager.save(system.getName(), user, s, doGetComponentId(), pair.getSecond().getParameterDisplayDescription());
 			} catch (RemoteException e) {
 				LOG.log(Level.SEVERE, "Cannot save preset, system not responding", e);
 			}

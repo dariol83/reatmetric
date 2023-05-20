@@ -28,41 +28,14 @@ import java.util.Properties;
 
 /**
  *
- * @author dario
+ * @author Dario Lucia
  */
 public class PresetStorageManager {
     
     private final String presetStorageLocation = System.getProperty("user.home") + File.separator + ReatmetricUI.APPLICATION_NAME + File.separator + "presets";
     
-    private final String fileExtension = "dat";
-    
-    public void save(String system, String user, String id, String viewId, Properties props) {
-        String locationKey = buildLocationKey(id);
-        File propsFile = locateFile(system, user, viewId, locationKey);
-        try {
-            propsFile.getParentFile().mkdirs();
-            props.store(new FileOutputStream(propsFile), ReatmetricUI.APPLICATION_NAME + " " + ReatmetricUI.APPLICATION_VERSION + " " + locationKey + " " + String.valueOf(new Date()));
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
-    }
+    private final String fileExtension = "json";
 
-    public Properties load(String system, String user, String id, String viewId) {
-        String locationKey = buildLocationKey(id);
-        File propsFile = locateFile(system, user, viewId, locationKey);
-        Properties toReturn = null;
-        if(propsFile != null && propsFile.exists() && propsFile.canRead()) {
-            try {
-                Properties p = new OrderedProperties();
-                p.load(new FileInputStream(propsFile));
-                toReturn = p;
-            } catch(IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return toReturn;
-    }
-    
     public List<String> getAvailablePresets(String system, String user, String viewId) {
         File folder = new File(this.presetStorageLocation + File.separator + system + File.separator + user + File.separator + viewId);
         if(!folder.exists()) {
@@ -86,15 +59,15 @@ public class PresetStorageManager {
         return new File(filePath);
     }
 
-    public AndPreset loadAnd(String system, String user, String id, String viewId) {
+    public <T extends IPreset> T load(String system, String user, String id, String viewId, Class<T> presetClass) {
         String locationKey = buildLocationKey(id);
         File propsFile = locateFile(system, user, viewId, locationKey);
-        AndPreset toReturn = null;
+        T toReturn = null;
         if(propsFile.exists() && propsFile.canRead()) {
             try {
-                toReturn = new AndPreset();
+                toReturn = presetClass.getDeclaredConstructor().newInstance();
                 toReturn.load(new FileInputStream(propsFile));
-            } catch(IOException e) {
+            } catch(Exception e) {
                 e.printStackTrace();
                 toReturn = null;
             }
@@ -102,7 +75,7 @@ public class PresetStorageManager {
         return toReturn;
     }
 
-    public void saveAnd(String system, String user, String id, String viewId, AndPreset preset) {
+    public void save(String system, String user, String id, String viewId, IPreset preset) {
         String locationKey = buildLocationKey(id);
         File propsFile = locateFile(system, user, viewId, locationKey);
         try {
@@ -114,4 +87,5 @@ public class PresetStorageManager {
             e.printStackTrace();
         }
     }
+
 }

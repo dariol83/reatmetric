@@ -26,11 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public class AndPreset implements IPreset {
-
-    public static final int TYPE_HEADING = 2;
-    public static final int TYPE_ELEMENT = 1;
-
+public class ChartPreset implements IPreset {
     private final List<Element> elements = new LinkedList<>();
 
     @Override
@@ -47,7 +43,7 @@ public class AndPreset implements IPreset {
         os.println("[");
         int idx = 0;
         for(Element e : elements) {
-            os.printf("{ type: %d, name: \"%s\", id: %d }", e.getType(), e.getPath(), e.getId());
+            os.printf("{ type: \"%s\", names: %s }", e.getType(), e.getNamesAsJSON());
             if(idx != elements.size() - 1) {
                 os.println(", ");
             } else {
@@ -58,15 +54,14 @@ public class AndPreset implements IPreset {
         os.println("]");
     }
 
-    public void addElement(int type, String name, int id) {
-        elements.add(new Element(type, name, id));
+    public void addElement(String type, String... names) {
+        elements.add(new Element(type, names));
     }
 
     private void addElement(Map<String, Object> e) {
-        int type = (int) e.get("type");
-        String name = (String) e.get("name");
-        int id = (int) e.get("id");
-        this.elements.add(new Element(type, name, id));
+        String type = (String) e.get("type");
+        List<String> names = (List<String>) e.get("names");
+        this.elements.add(new Element(type, names.toArray(new String[0])));
     }
 
     public List<Element> getElements() {
@@ -74,26 +69,38 @@ public class AndPreset implements IPreset {
     }
 
     public static class Element {
-        private final int type;
-        private final String path;
-        private final int id;
+        private final String type;
+        private final String[] names;
 
-        public Element(int type, String path, int id) {
+        public Element(String type, String[] names) {
             this.type = type;
-            this.path = path;
-            this.id = id;
+            this.names = names;
         }
 
-        public int getType() {
+        public String getType() {
             return type;
         }
 
-        public String getPath() {
-            return path;
+        public String[] getNames() {
+            return names;
         }
 
-        public int getId() {
-            return id;
+        public String getNamesAsJSON() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("[");
+            int idx = 0;
+            for(String n : names) {
+                sb.append("\"").append(n).append("\"");
+                if(idx != names.length - 1) {
+                    sb.append(", ");
+                } else {
+                    sb.append(" ");
+                }
+                ++idx;
+            }
+            sb.append("]");
+
+            return sb.toString();
         }
     }
 }
