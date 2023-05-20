@@ -18,10 +18,8 @@
 package eu.dariolucia.reatmetric.ui.utils;
 
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+
+import java.io.*;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedList;
@@ -86,5 +84,34 @@ public class PresetStorageManager {
     private File locateFile(String system, String user, String viewId, String locationKey) {
         String filePath = this.presetStorageLocation + File.separator + system + File.separator + user + File.separator + viewId + File.separator + locationKey + "." + this.fileExtension;
         return new File(filePath);
+    }
+
+    public AndPreset loadAnd(String system, String user, String id, String viewId) {
+        String locationKey = buildLocationKey(id);
+        File propsFile = locateFile(system, user, viewId, locationKey);
+        AndPreset toReturn = null;
+        if(propsFile.exists() && propsFile.canRead()) {
+            try {
+                toReturn = new AndPreset();
+                toReturn.load(new FileInputStream(propsFile));
+            } catch(IOException e) {
+                e.printStackTrace();
+                toReturn = null;
+            }
+        }
+        return toReturn;
+    }
+
+    public void saveAnd(String system, String user, String id, String viewId, AndPreset preset) {
+        String locationKey = buildLocationKey(id);
+        File propsFile = locateFile(system, user, viewId, locationKey);
+        try {
+            propsFile.getParentFile().mkdirs();
+            PrintStream ps = new PrintStream(new FileOutputStream(propsFile));
+            preset.save(ps);
+            ps.close();
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
     }
 }

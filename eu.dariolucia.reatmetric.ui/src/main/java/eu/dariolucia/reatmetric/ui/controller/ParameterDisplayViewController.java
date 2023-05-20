@@ -20,6 +20,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
+import eu.dariolucia.reatmetric.ui.utils.AndPreset;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.PresetStorageManager;
@@ -219,7 +220,7 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 	}
 
 	private void loadPreset(String name, String fpreset) {
-		Properties p = this.presetManager.load(name, user, fpreset, doGetComponentId());
+		AndPreset p = this.presetManager.loadAnd(name, user, fpreset, doGetComponentId());
 		if(p != null) {
 			try {
 				addTabFromPreset(fpreset, p);
@@ -229,7 +230,7 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 		}
 	}
 
-	private void addTabFromPreset(String tabName, Properties p) throws IOException {
+	private void addTabFromPreset(String tabName, AndPreset p) throws IOException {
 		final ParameterDisplayTabWidgetController t = createNewTab(tabName);
 		// After adding the tab, you need to initialise it in a new round of the UI thread,
 		// to allow the layouting of the tab and the correct definition of the parent elements,
@@ -312,7 +313,7 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 		Optional<String> result = DialogUtils.input(t.getText(), "Save Preset", "Preset", "Please provide the name of the preset:");
 		result.ifPresent(s -> {
 			try {
-				this.presetManager.save(system.getName(), user, s, doGetComponentId(), pair.getSecond().getParameterDisplayDescription());
+				this.presetManager.saveAnd(system.getName(), user, s, doGetComponentId(), pair.getSecond().getParameterDisplayDescription());
 			} catch (RemoteException e) {
 				LOG.log(Level.SEVERE, "Cannot save preset, system not responding", e);
 			}

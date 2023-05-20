@@ -35,6 +35,7 @@ open module eu.dariolucia.reatmetric.ui {
 
     // In order to activate JAXB implementation
     requires com.sun.xml.bind;
+    requires json.path;
 
     exports eu.dariolucia.reatmetric.ui;
 

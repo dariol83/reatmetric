@@ -672,15 +672,15 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         addParameters(list.toArray(new SystemEntity[list.size()]));
     }
 
-    public void addItemsFromPreset(Properties p) {
+    public void addItemsFromPreset(AndPreset p) {
         this.path2wrapper.clear();
         this.dataItemTableView.getItems().clear();
-        for (Object systemEntity : p.keySet()) {
-            SystemEntityPath sep = SystemEntityPath.fromString(systemEntity.toString());
-            int externalId = Integer.parseInt(p.getProperty(sep.toString()));
-            if(externalId == -1) {
+        for (AndPreset.Element systemEntity : p.getElements()) {
+            SystemEntityPath sep = SystemEntityPath.fromString(systemEntity.getPath());
+            int externalId = systemEntity.getId();
+            if(systemEntity.getType() == AndPreset.TYPE_HEADING) {
                 // Separator
-                RowSeparatorWrapper pdw = new RowSeparatorWrapper(systemEntity.toString());
+                RowSeparatorWrapper pdw = new RowSeparatorWrapper(systemEntity.getPath());
                 this.dataItemTableView.getItems().add(pdw);
             } else if (!this.path2wrapper.containsKey(sep)) {
                 // Add a fake item to initialise the entry
@@ -719,9 +719,12 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         super.dispose();
     }
 
-    public Properties getParameterDisplayDescription() {
-        Properties props = new OrderedProperties();
-        this.dataItemTableView.getItems().forEach((o) -> props.put(o.getPath().asString(), String.valueOf(o.get().getExternalId())));
+    public AndPreset getParameterDisplayDescription() {
+        AndPreset props = new AndPreset();
+        this.dataItemTableView.getItems().forEach((o) -> props.addElement(
+                o instanceof RowSeparatorWrapper ? AndPreset.TYPE_HEADING : AndPreset.TYPE_ELEMENT,
+                o.getPath().asString(),
+                o.get().getExternalId()));
         return props;
     }
 
@@ -828,4 +831,5 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
             return new ParameterData(null, Instant.EPOCH, -1, name, null, "", "", null, null, null, null, null, null);
         }
     }
+
 }
