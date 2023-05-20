@@ -43,7 +43,7 @@ public class AboutDialogController implements Initializable {
     private String buildAboutText() {
         StringBuilder sb = new StringBuilder();
         sb.append("<html><body><h2>ReatMetric UI " + ReatmetricUI.APPLICATION_VERSION).append("</h2>\n")
-                .append("<p>Copyright (c) 2019-2021 Dario Lucia</p>")
+                .append("<p>Copyright (c) 2019-2023 Dario Lucia</p>")
                 .append("<p>https://www.dariolucia.eu</p>")
                 .append("<p>https://github.com/dariol83/reatmetric</p>")
                 .append("<br /><p>Released under the Apache License 2.0</p>" +

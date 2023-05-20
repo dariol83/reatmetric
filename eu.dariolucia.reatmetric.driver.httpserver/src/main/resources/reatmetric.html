@@ -4,14 +4,11 @@
         </script>
         <script type="text/javascript">
     var reatmetric = new ReatMetric('http://127.0.0.1:8081','Test System');
-    var subEvtKey = null;
-    var subParamKey = null;
-    var subMsgKey = null;
+    var subscriptionKey = null;
+    var subscriptionActive = null;
 
     var tableBodyVar = null;
-
     var parameterMap = null;
-
     var subIntervalId = null;
 
     function createTable(divToAttach, thTextArray, thWidthArray) {
@@ -108,11 +105,9 @@
     }
 
     async function subscribeToEvents() {
-        if(subEvtKey != null) {
+        if(subscriptionKey != null) {
             return;
         }
-        await unsubscribeFromParameters();
-        await unsubscribeFromMessages();
 
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
@@ -124,9 +119,10 @@
 
         var filter = reatmetric.eventFilter('STATION', null, null, null, null, null, null);
 
-        subEvtKey = await reatmetric.registerToEvents(filter);
-        console.log("Event subscription key: " + subEvtKey);
-        if(subEvtKey != null) {
+        subscriptionKey = await reatmetric.registerToEvents(filter);
+        console.log("Event subscription key: " + subscriptionKey);
+        if(subscriptionKey != null) {
+            subscriptionActive = 'events';
             subIntervalId = setInterval(evtRetrieve, 1000);
             console.log("Event subscription interval: " + subIntervalId);
         }
@@ -136,6 +132,7 @@
         await unsubscribeFromEvents();
         await unsubscribeFromMessages();
         await unsubscribeFromParameters();
+        await unsubscribeFromRawData();
 
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
@@ -162,10 +159,10 @@
     }
 
     async function evtRetrieve() {
-        console.log("Retrieving events on key " + subEvtKey);
+        console.log("Retrieving events on key " + subscriptionKey);
         var currentEvents = null;
-        if(subEvtKey != null) {
-            currentEvents = await reatmetric.getEvents(subEvtKey)
+        if(subscriptionKey != null) {
+            currentEvents = await reatmetric.getEvents(subscriptionKey)
         }
         var tdTextArrayKeys = ['severity', 'gentime', 'path', 'route', 'source'];
 
@@ -179,21 +176,23 @@
     }
 
     async function unsubscribeFromEvents() {
-        if(subEvtKey == null) {
+        if(subscriptionKey == null || subscriptionActive == null) {
+            return;
+        }
+        if(subscriptionActive != 'events') {
             return;
         }
         clearInterval(subIntervalId);
         subIntervalId = null;
-        await reatmetric.deregisterFromEvents(subEvtKey);
-        subEvtKey = null;
+        await reatmetric.deregisterFromEvents(subscriptionKey);
+        subscriptionKey = null;
+        subscriptionActive = null;
     }
 
     async function subscribeToParameters() {
-        if(subParamKey != null) {
+        if(subscriptionKey != null) {
             return;
         }
-        await unsubscribeFromEvents();
-        await unsubscribeFromMessages();
 
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
@@ -206,9 +205,10 @@
         tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
         parameterMap = [];
 
-        subParamKey = await reatmetric.registerToStateParameters(filter);
-        console.log("Parameter subscription key: " + subParamKey);
-        if(subParamKey != null) {
+        subscriptionKey = await reatmetric.registerToStateParameters(filter);
+        console.log("Parameter subscription key: " + subscriptionKey);
+        if(subscriptionKey != null) {
+            subscriptionActive = 'parameters';
             subIntervalId = setInterval(paramRetrieve, 1000);
             console.log("Parameter subscription interval: " + subIntervalId);
         }
@@ -216,8 +216,8 @@
 
     async function paramRetrieve() {
         var currentParameters = null;
-        if(subParamKey != null) {
-            currentParameters = await reatmetric.getStateParameters(subParamKey)
+        if(subscriptionKey != null) {
+            currentParameters = await reatmetric.getStateParameters(subscriptionKey)
         }
         if(currentParameters != null) {
             var paramKeys = ['path', 'gentime', 'raw', 'eng', 'validity', 'alarm'];
@@ -236,13 +236,17 @@
     }
 
     async function unsubscribeFromParameters() {
-        if(subParamKey == null) {
+        if(subscriptionKey == null || subscriptionActive == null) {
+            return;
+        }
+        if(subscriptionActive != 'parameters') {
             return;
         }
         clearInterval(subIntervalId);
         subIntervalId = null;
-        await reatmetric.deregisterFromStateParameters(subParamKey);
-        subParamKey = null;
+        await reatmetric.deregisterFromStateParameters(subscriptionKey);
+        subscriptionKey = null;
+        subscriptionActive = null;
         parameterMap = null;
     }
 
@@ -250,6 +254,7 @@
         await unsubscribeFromEvents();
         await unsubscribeFromMessages();
         await unsubscribeFromParameters();
+        await unsubscribeFromRawData();
 
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
@@ -276,11 +281,9 @@
     }
 
     async function subscribeToMessages() {
-        if(subMsgKey != null) {
+        if(subscriptionKey != null) {
             return;
         }
-        await unsubscribeFromEvents();
-        await unsubscribeFromParameters();
 
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
@@ -292,9 +295,10 @@
 
         var filter = reatmetric.messageFilter(null, null, null, null);
 
-        subMsgKey = await reatmetric.registerToMessages(filter);
-        console.log("Message subscription key: " + subMsgKey);
-        if(subMsgKey != null) {
+        subscriptionKey = await reatmetric.registerToMessages(filter);
+        console.log("Message subscription key: " + subscriptionKey);
+        if(subscriptionKey != null) {
+            subscriptionActive = 'messages';
             subIntervalId = setInterval(msgRetrieve, 1000);
             console.log("Message subscription interval: " + subIntervalId);
         }
@@ -302,8 +306,8 @@
 
     async function msgRetrieve() {
         var currentMessages = null;
-        if(subMsgKey != null) {
-            currentMessages = await reatmetric.getMessages(subMsgKey)
+        if(subscriptionKey != null) {
+            currentMessages = await reatmetric.getMessages(subscriptionKey)
         }
         if(currentMessages != null) {
             var tdTextArrayKeys = ['severity', 'gentime', 'source', 'message'];
@@ -318,6 +322,7 @@
         await unsubscribeFromEvents();
         await unsubscribeFromMessages();
         await unsubscribeFromParameters();
+        await unsubscribeFromRawData();
 
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
@@ -344,13 +349,17 @@
     }
 
     async function unsubscribeFromMessages() {
-        if(subMsgKey == null) {
+        if(subscriptionKey == null || subscriptionActive == null) {
+            return;
+        }
+        if(subscriptionActive != 'messages') {
             return;
         }
         clearInterval(subIntervalId);
         subIntervalId = null;
-        await reatmetric.deregisterFromMessages(subMsgKey);
-        subMsgKey = null;
+        await reatmetric.deregisterFromMessages(subscriptionKey);
+        subscriptionKey = null;
+        subscriptionActive = null;
     }
 
     async function invokeActivity() {
@@ -359,18 +368,98 @@
 
         args = [];
         args.push(reatmetric.plainArgument('ARG1','OFF',true));
-        // Add an array argument for testing purposes
-        /*
-        elem1 = reatmetric.plainArgument('ARGfake1','ON',true);
-        elem2 = reatmetric.plainArgument('ARGfake2',123,false);
-        rec1 = reatmetric.arrayArgumentRecord([elem1]);
-        rec2 = reatmetric.arrayArgumentRecord([elem2]);
-        args.push(reatmetric.arrayArgument('ARGarray', [rec1, rec2]));
-        */
         var actRequest = reatmetric.activityRequest(151, 'STATION.POWERSUPPLY.SET_STATUS', args, 'STATION ROUTE', 'Web Page', { "aaa" : "bbb", "CCC" : "test" });
 
         activityIdentifier = await reatmetric.invoke(actRequest);
         console.log("Activity id: " + activityIdentifier);
+    }
+
+    async function subscribeToRawData() {
+        if(subscriptionKey != null) {
+            return;
+        }
+
+        var divToAttach = document.getElementById('div1');
+        divToAttach.textContent = '';
+
+        // Create table node
+        var thTextArray = ['Quality', 'Gen. Time', 'Name', 'Route', 'Source'];
+        var thWidthArray = [15, 20, 30, 20, 15];
+        tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
+
+        var filter = reatmetric.rawDataFilter(false, null, null, null, null, null);
+
+        subscriptionKey = await reatmetric.registerToRawData(filter);
+        console.log("Raw data subscription key: " + subscriptionKey);
+        if(subscriptionKey != null) {
+            subscriptionActive = 'rawdata';
+            subIntervalId = setInterval(rawDataRetrieve, 1000);
+            console.log("Raw data subscription interval: " + subIntervalId);
+        }
+    }
+
+    async function retrieveRawDataHistory() {
+        await unsubscribeFromEvents();
+        await unsubscribeFromMessages();
+        await unsubscribeFromParameters();
+        await unsubscribeFromRawData();
+
+        var divToAttach = document.getElementById('div1');
+        divToAttach.textContent = '';
+
+        var filter = reatmetric.rawDataFilter(false, null, null, null, null, null);
+
+        // Create table node
+        var thTextArray = ['Quality', 'Gen. Time', 'Name', 'Route', 'Source'];
+        var thWidthArray = [15, 20, 30, 20, 15];
+        tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
+
+        var sTime = Date.now() - 3600 * 1000 * 24;
+        var eTime = Date.now();
+        var currentEvents = await reatmetric.retrieveRawData(sTime,eTime,filter);
+
+        var tdTextArrayKeys = ['quality', 'gentime', 'name', 'route', 'source'];
+        if(currentEvents != null) {
+            console.log("Retrieved " + currentEvents.length + " raw data");
+            for(var i = 0; i < currentEvents.length; ++i) {
+                var event = currentEvents[i];
+                addRow(tableBodyVar, event, tdTextArrayKeys);
+            }
+        }
+    }
+
+    async function rawDataRetrieve() {
+        console.log("Retrieving raw data on key " + subscriptionKey);
+        var currentEvents = null;
+        if(subscriptionKey != null) {
+            currentEvents = await reatmetric.getRawData(subscriptionKey)
+        }
+        var tdTextArrayKeys = ['quality', 'gentime', 'name', 'route', 'source'];
+
+        if(currentEvents != null) {
+            console.log("Retrieved " + currentEvents.length + " raw data");
+            for(var i = 0; i < currentEvents.length; ++i) {
+                var event = currentEvents[i];
+                addRow(tableBodyVar, event, tdTextArrayKeys);
+            }
+        }
+    }
+
+    async function unsubscribeFromRawData() {
+        console.log("Unsubscribe raw data key " + subscriptionKey + " - subscriptionActive " + subscriptionActive);
+        if(subscriptionKey == null || subscriptionActive == null) {
+            return;
+        }
+        if(subscriptionActive != 'rawdata') {
+            return;
+        }
+        console.log("Unsubscribe raw data key " + subscriptionKey + " in progress");
+        clearInterval(subIntervalId);
+        subIntervalId = null;
+        await reatmetric.deregisterFromRawData(subscriptionKey);
+        subscriptionKey = null;
+        subscriptionActive = null;
+        console.log("Unsubscribe raw data done");
     }
 
         </script>
@@ -412,6 +501,8 @@
         <button type="button" onclick="unsubscribeFromParameters()">Unsubscribe from parameters</button>
         <button type="button" onclick="subscribeToMessages()">Subscribe to messages</button>
         <button type="button" onclick="unsubscribeFromMessages()">Unsubscribe from messages</button>
+        <button type="button" onclick="subscribeToRawData()">Subscribe to raw data</button>
+        <button type="button" onclick="unsubscribeFromRawData()">Unsubscribe from raw data</button>
         <button type="button" onclick="retrieveMessageHistory()">Retrieve messages</button>
         <button type="button" onclick="retrieveParameterHistory()">Retrieve parameters</button>
         <hr/>
