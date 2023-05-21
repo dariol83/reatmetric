@@ -112,12 +112,16 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
         // Load the archive
         if(configuration.getArchiveLocation() != null) {
             LOG.info("Loading archive at location " + configuration.getArchiveLocation());
-            ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
-            if(archiveLoader.findFirst().isPresent()) {
-                archive = archiveLoader.findFirst().get().buildArchive(configuration.getArchiveLocation());
-                archive.connect();
-            } else {
-                throw new ReatmetricException("Archive location configured, but no archive factory deployed");
+            try {
+                ServiceLoader<IArchiveFactory> archiveLoader = ServiceLoader.load(IArchiveFactory.class);
+                if (archiveLoader.findFirst().isPresent()) {
+                    archive = archiveLoader.findFirst().get().buildArchive(configuration.getArchiveLocation());
+                    archive.connect();
+                } else {
+                    LOG.severe("Archive location configured at " + configuration.getArchiveLocation() + ", but no archive factory deployed");
+                }
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, String.format("Error when connecting to archive at %s: %s", configuration.getArchiveLocation(), e.getMessage()), e);
             }
         }
         // Load the operational data broker
