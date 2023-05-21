@@ -113,7 +113,7 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 	}
 
 	@FXML
-	private void detachAttachItemAction(ActionEvent actionEvent) {
+	public void detachAttachItemAction(ActionEvent actionEvent) {
 		if(DetachedTabUtil.isDetached((Stage) displayTitledPane.getScene().getWindow())) {
 			DetachedTabUtil.attachTab((Stage) displayTitledPane.getScene().getWindow());
 			informDisplayAttached();
@@ -304,7 +304,7 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 
 	@FXML
 	public void saveButtonClicked(ActionEvent actionEvent) {
-		Tab t = this.tabPane.getSelectionModel().getSelectedItem();
+		final Tab t = this.tabPane.getSelectionModel().getSelectedItem();
 		if(t == null) {
 			return;
 		}
@@ -314,6 +314,7 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 		result.ifPresent(s -> {
 			try {
 				this.presetManager.save(system.getName(), user, s, doGetComponentId(), pair.getSecond().getParameterDisplayDescription());
+				t.setText(s);
 			} catch (RemoteException e) {
 				LOG.log(Level.SEVERE, "Cannot save preset, system not responding", e);
 			}

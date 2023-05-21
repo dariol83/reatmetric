@@ -18,6 +18,7 @@
 package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
+import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -26,11 +27,11 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
+import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
-import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -38,15 +39,21 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
+import javafx.scene.Group;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.Callback;
 
 import java.io.IOException;
 import java.net.URL;
@@ -91,6 +98,8 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
     @FXML
     private TableColumn<ParameterDataWrapper, String> nameCol;
     @FXML
+    private TableColumn<ParameterDataWrapper, String> descriptionCol;
+    @FXML
     private TableColumn<ParameterDataWrapper, String> engValueCol;
     @FXML
     private TableColumn<ParameterDataWrapper, String> sourceValueCol;
@@ -119,6 +128,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
     private volatile boolean live = false;
     private Stage independentStage;
 
+    private double zoomFactor = Font.getDefault().getSize() * 10;
 
     @Override
     protected Window retrieveWindow() {
@@ -154,6 +164,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         }
 
         this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().get().getName()));
+        this.descriptionCol.setCellValueFactory(o -> o.getValue().descriptionProperty());
         this.engValueCol.setCellValueFactory(o -> o.getValue().engValueProperty());
         this.sourceValueCol.setCellValueFactory(o -> o.getValue().rawValueProperty());
         this.validityCol.setCellValueFactory(o -> o.getValue().validityProperty());
@@ -163,15 +174,22 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         this.alarmStateCol.setCellValueFactory(o -> o.getValue().alarmStateProperty());
         this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(toStringParent(o.getValue().get().getPath())));
 
-        this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
-        this.recTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
+        Callback<TableColumn<ParameterDataWrapper, Instant>, TableCell<ParameterDataWrapper, Instant>> instantCellFactory = getInstantCellCallback();
+        this.genTimeCol.setCellFactory(instantCellFactory);
+        this.recTimeCol.setCellFactory(instantCellFactory);
+
+        Callback<TableColumn<ParameterDataWrapper, String>, TableCell<ParameterDataWrapper, String>> normalTextCellFactory = getNormalTextCellCallback();
+        this.descriptionCol.setCellFactory(normalTextCellFactory);
+        this.engValueCol.setCellFactory(normalTextCellFactory);
+        this.sourceValueCol.setCellFactory(normalTextCellFactory);
+        this.parentCol.setCellFactory(normalTextCellFactory);
 
         this.nameCol.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
                 TableRow<ParameterDataWrapper> currentRow = getTableRow();
-                if(currentRow.getItem() instanceof RowSeparatorWrapper) {
+                if(currentRow != null && currentRow.getItem() instanceof RowSeparatorWrapper) {
                     setText(item);
                     currentRow.setStyle("-fx-background-color: lightgray; -fx-font-weight: bold; -fx-border-color: black; -fx-border-insets: 0 -1 0 -1;");
                 } else {
@@ -180,8 +198,11 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                     } else {
                         setText("");
                     }
-                    currentRow.setStyle("");
+                    if(currentRow != null) {
+                        currentRow.setStyle("");
+                    }
                 }
+                setCellFontSize(this);
             }
         });
         this.validityCol.setCellFactory(column -> new TableCell<>() {
@@ -211,6 +232,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                     setText("");
                     setGraphic(null);
                 }
+                setCellFontSize(this);
             }
         });
         this.alarmStateCol.setCellFactory(column -> new TableCell<>() {
@@ -246,10 +268,50 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                     setText("");
                     setGraphic(null);
                 }
+                setCellFontSize(this);
             }
         });
 
         ParameterDisplayCoordinator.instance().register(this);
+    }
+
+    private Callback<TableColumn<ParameterDataWrapper, String>, TableCell<ParameterDataWrapper, String>> getNormalTextCellCallback() {
+        return column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(item);
+                setCellFontSize(this);
+            }
+        };
+    }
+
+    private Callback<TableColumn<ParameterDataWrapper, Instant>, TableCell<ParameterDataWrapper, Instant>> getInstantCellCallback() {
+        return column -> new TableCell<>() {
+            @Override
+            protected void updateItem(Instant item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(InstantCellFactory.DATE_TIME_FORMATTER.format(item));
+                } else {
+                    setText("");
+                }
+                setCellFontSize(this);
+            }
+        };
+    }
+
+    private void setCellFontSize(TableCell<ParameterDataWrapper, ?> item) {
+        double fontSize = zoomFactor/10;
+        Font oldFont = item.getFont();
+        Font newFont;
+        if(oldFont != null) {
+            newFont = Font.font(oldFont.getFamily(), item.getTableRow() != null && item.getTableRow().getItem() instanceof RowSeparatorWrapper ? FontWeight.BOLD : FontWeight.NORMAL, fontSize);
+        } else {
+            newFont = Font.font(Font.getDefault().getFamily(), item.getTableRow() != null && item.getTableRow().getItem() instanceof RowSeparatorWrapper ? FontWeight.BOLD : FontWeight.NORMAL, fontSize);
+        }
+        item.setFont(newFont);
+        item.setStyle("-fx-padding: 1px 0 2px 0");
     }
 
     private String toStringParent(SystemEntityPath path) {
@@ -594,7 +656,6 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                     pdw.set(pd);
                 }
             }
-            // this.dataItemTableView.refresh();
             updateSelectTime();
         });
     }
@@ -753,9 +814,35 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         }
     }
 
+    @FXML
+    public void minusZoomClick(ActionEvent mouseEvent) {
+        updateZoomFactor(-10);
+    }
+
+    @FXML
+    public void plusZoomClick(ActionEvent mouseEvent) {
+        updateZoomFactor(+10);
+    }
+
+    private void updateZoomFactor(double value) {
+        this.zoomFactor += value;
+        if (this.zoomFactor <= 30) {
+            this.zoomFactor = 30;
+        }
+        Font f = Font.font(Font.getDefault().getFamily(), FontWeight.NORMAL, this.zoomFactor/10);
+        Text text = new Text("AXq");
+        text.setFont(f);
+        new Scene(new Group(text));
+        double height = text.getLayoutBounds().getHeight();
+        dataItemTableView.setFixedCellSize(height + 4);
+        dataItemTableView.refresh();
+    }
+
     public static class ParameterDataWrapper {
 
         private final SystemEntityPath path;
+
+        private final SimpleStringProperty description = new SimpleStringProperty();
         private final SimpleObjectProperty<ParameterData> property = new SimpleObjectProperty<>();
 
         private final SimpleObjectProperty<Instant> generationTime = new SimpleObjectProperty<>();
@@ -774,6 +861,18 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
             validity.set(data.getValidity());
             alarmState.set(data.getAlarmState());
             this.path = path;
+            if(data.getExternalId() != -1) {
+                try {
+                    AbstractSystemEntityDescriptor descriptor = MainViewController.instance().getModelController().getDescriptorOf(data.getExternalId());
+                    if(descriptor instanceof ParameterDescriptor) {
+                        description.set(((ParameterDescriptor) descriptor).getDescription());
+                    }
+                } catch (ReatmetricException | RemoteException e) {
+                    description.set("");
+                }
+            } else {
+                description.set("");
+            }
         }
 
         public void set(ParameterData data) {
@@ -788,6 +887,10 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
 
         public ParameterData get() {
             return property.getValue();
+        }
+
+        public SimpleStringProperty descriptionProperty() {
+            return description;
         }
 
         public SimpleObjectProperty<Instant> generationTimeProperty() {

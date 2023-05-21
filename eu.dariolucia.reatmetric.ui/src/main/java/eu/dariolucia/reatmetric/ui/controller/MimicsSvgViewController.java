@@ -46,8 +46,8 @@ public class MimicsSvgViewController implements Initializable {
 
     private static final Image FIT_TO_AREA_IMG = new Image(MimicsSvgViewController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/picture.svg.png"));
     private static final Image REAL_SIZE_IMG = new Image(MimicsSvgViewController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/qr-code.svg.png"));
-    private static final Image MINUS_ZOOM_IMG = new Image(MimicsSvgViewController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/minus-circle.svg.png"));
-    private static final Image PLUS_ZOOM_IMG = new Image(MimicsSvgViewController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/plus-circle.svg.png"));
+    private static final Image MINUS_ZOOM_IMG = new Image(MimicsSvgViewController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/magnify-minus-outline.png"));
+    private static final Image PLUS_ZOOM_IMG = new Image(MimicsSvgViewController.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/magnify-plus-outline.png"));
 
     private static final String REATMETRIC_JS_BINDING = "reatmetric";
 

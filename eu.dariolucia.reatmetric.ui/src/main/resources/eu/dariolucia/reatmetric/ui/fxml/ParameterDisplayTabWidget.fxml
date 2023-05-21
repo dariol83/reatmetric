@@ -11,6 +11,7 @@
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
 
 <!--
   ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
@@ -32,6 +33,8 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.Cursor?>
+<?import javafx.scene.layout.Region?>
 <VBox VBox.vgrow="ALWAYS" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ParameterDisplayTabWidgetController">
  <children>
     <ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
@@ -76,7 +79,7 @@
            </Button>
            <Separator orientation="VERTICAL" />
           <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
-           <Separator orientation="VERTICAL" />
+          <Separator orientation="VERTICAL" />
           <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
               <graphic>
                   <ImageView pickOnBounds="true" preserveRatio="true">
@@ -89,18 +92,46 @@
                   <Tooltip text="Print the display" />
               </tooltip>
           </Button>
+           <Separator orientation="VERTICAL" />
+           <Region HBox.hgrow="ALWAYS" />
+           <Button mnemonicParsing="false" onAction="#minusZoomClick">
+               <graphic>
+                   <ImageView pickOnBounds="true" preserveRatio="true" >
+                       <image>
+                           <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/magnify-minus-outline.png" />
+                       </image>
+                   </ImageView>
+               </graphic>
+               <tooltip>
+                   <Tooltip text="Zoom out" />
+               </tooltip>
+           </Button>
+           <Button mnemonicParsing="false" onAction="#plusZoomClick">
+               <graphic>
+                   <ImageView pickOnBounds="true" preserveRatio="true" >
+                       <image>
+                           <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/magnify-plus-outline.png" />
+                       </image>
+                   </ImageView>
+               </graphic>
+               <tooltip>
+                   <Tooltip text="Zoom in" />
+               </tooltip>
+           </Button>
+
        </items>
     </ToolBar>
     <TableView fx:id="dataItemTableView" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" onDragDropped="#onDragDropped" onDragEntered="#onDragEntered" onDragExited="#onDragExited" onDragOver="#onDragOver" VBox.vgrow="ALWAYS">
       <columns>
-        <TableColumn fx:id="nameCol" editable="false" prefWidth="130.0" text="Name" />
-        <TableColumn fx:id="engValueCol" editable="false" prefWidth="100.0" text="Eng. Value" />
-          <TableColumn fx:id="sourceValueCol" editable="false" prefWidth="100.0" text="Source Value" />
-          <TableColumn fx:id="genTimeCol" editable="false" prefWidth="200.0" text="Gen. Time" />
-          <TableColumn fx:id="recTimeCol" editable="false" prefWidth="200.0" text="Rec. Time" />
-          <TableColumn fx:id="validityCol" editable="false" text="Validity" />
-          <TableColumn fx:id="alarmStateCol" editable="false" text="Alarm State" />
-          <TableColumn fx:id="parentCol" editable="false" prefWidth="130.0" text="Parent" />
+        <TableColumn fx:id="nameCol" editable="false" sortable="false" prefWidth="130.0" text="Name" />
+        <TableColumn fx:id="descriptionCol" editable="false" sortable="false" prefWidth="250.0" text="Description" />
+        <TableColumn fx:id="engValueCol" editable="false" sortable="false" prefWidth="100.0" text="Eng. Value" />
+        <TableColumn fx:id="sourceValueCol" editable="false" sortable="false" prefWidth="100.0" text="Source Value" />
+        <TableColumn fx:id="genTimeCol" editable="false" sortable="false" prefWidth="200.0" text="Gen. Time" />
+        <TableColumn fx:id="recTimeCol" editable="false" sortable="false" prefWidth="200.0" text="Rec. Time" />
+        <TableColumn fx:id="validityCol" editable="false" sortable="false" text="Validity" />
+        <TableColumn fx:id="alarmStateCol" editable="false" sortable="false" text="Alarm State" />
+        <TableColumn fx:id="parentCol" editable="false" sortable="false" prefWidth="130.0" text="Parent" />
       </columns>
        <contextMenu>
           <ContextMenu>
