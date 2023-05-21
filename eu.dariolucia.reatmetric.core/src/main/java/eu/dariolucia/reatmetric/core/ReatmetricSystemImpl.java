@@ -122,6 +122,7 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
                 }
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, String.format("Error when connecting to archive at %s: %s", configuration.getArchiveLocation(), e.getMessage()), e);
+                archive = null;
             }
         }
         // Load the operational data broker
