@@ -85,10 +85,15 @@ public class ParameterDataLogViewController extends AbstractDataItemLogViewContr
 		this.alarmStateCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getAlarmState()));
 		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));
 
-		this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
-		this.recTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
+		this.genTimeCol.setCellFactory(getInstantCellCallback());
+		this.recTimeCol.setCellFactory(getInstantCellCallback());
 
-		this.validityCol.setCellFactory(column -> new TableCell<>() {
+		this.nameCol.setCellFactory(getNormalTextCellCallback());
+		this.engValueCol.setCellFactory(getNormalTextCellCallback());
+		this.sourceValueCol.setCellFactory(getNormalTextCellCallback());
+		this.parentCol.setCellFactory(getNormalTextCellCallback());
+
+		this.validityCol.setCellFactory(zoomEnabledWrapper(column -> new TableCell<>() {
 			@Override
 			protected void updateItem(Validity item, boolean empty) {
 				super.updateItem(item, empty);
@@ -116,8 +121,8 @@ public class ParameterDataLogViewController extends AbstractDataItemLogViewContr
 					setGraphic(null);
 				}
 			}
-		});
-		this.alarmStateCol.setCellFactory(column -> new TableCell<>() {
+		}));
+		this.alarmStateCol.setCellFactory(zoomEnabledWrapper(column -> new TableCell<>() {
 			@Override
 			protected void updateItem(AlarmState item, boolean empty) {
 				super.updateItem(item, empty);
@@ -151,7 +156,7 @@ public class ParameterDataLogViewController extends AbstractDataItemLogViewContr
 					setGraphic(null);
 				}
 			}
-		});
+		}));
 
 		initialiseToolbarVisibility(displayTitledPane, toolbar, toggleShowToolbarItem);
 	}

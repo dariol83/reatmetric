@@ -25,6 +25,7 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
+import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.utils.TableViewUtil;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
@@ -33,10 +34,16 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
+import javafx.scene.Group;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.stage.Popup;
 import javafx.stage.Window;
+import javafx.util.Callback;
 
 import java.io.IOException;
 import java.net.URL;
@@ -112,6 +119,9 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
     // Temporary object queue
     protected DataProcessingDelegator<T> delegator;
 
+    private double zoomFactor = Font.getDefault().getSize() * 10;
+
+
     /**
      * Initializes the controller class.
      */
@@ -172,12 +182,86 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         dataItemList = dataItemTableView.getItems();
         filteredItemList = new FilteredList<>(dataItemList, p -> true);
         dataItemTableView.setItems(filteredItemList);
+
+        Platform.runLater(() -> updateZoomFactor(0));
     }
 
     protected Consumer<List<T>> buildIncomingDataDelegatorAction() {
         return (List<T> t) -> addDataItems(t, true);
     }
-    
+
+    protected Callback<TableColumn<T, String>, TableCell<T, String>> getNormalTextCellCallback() {
+        return column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(item);
+                setCellFontSize(this);
+            }
+        };
+    }
+
+    protected Callback<TableColumn<T, Instant>, TableCell<T, Instant>> getInstantCellCallback() {
+        return column -> new TableCell<>() {
+            @Override
+            protected void updateItem(Instant item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(InstantCellFactory.DATE_TIME_FORMATTER.format(item));
+                } else {
+                    setText("");
+                }
+                setCellFontSize(this);
+            }
+        };
+    }
+
+    protected <K> Callback<TableColumn<T, K>, TableCell<T, K>> zoomEnabledWrapper(Callback<TableColumn<T, K>, TableCell<T, K>> delegated) {
+        return param -> {
+            TableCell<T, K> item = delegated.call(param);
+            setCellFontSize(item);
+            return item;
+        };
+    }
+
+    @FXML
+    public void minusZoomClick(ActionEvent mouseEvent) {
+        updateZoomFactor(-10);
+    }
+
+    @FXML
+    public void plusZoomClick(ActionEvent mouseEvent) {
+        updateZoomFactor(+10);
+    }
+
+    private void updateZoomFactor(double value) {
+        this.zoomFactor += value;
+        if (this.zoomFactor <= 30) {
+            this.zoomFactor = 30;
+        }
+        Font f = Font.font(Font.getDefault().getFamily(), FontWeight.NORMAL, this.zoomFactor/10);
+        Text text = new Text("AXqg");
+        text.setFont(f);
+        new Scene(new Group(text));
+        double height = text.getLayoutBounds().getHeight();
+        System.out.println("updateZoomFactor for " + getClass().getSimpleName() + ": height text is " + height + " - Font is " + f);
+        dataItemTableView.setFixedCellSize(height + 4);
+        dataItemTableView.refresh();
+    }
+
+    protected void setCellFontSize(TableCell<?, ?> item) {
+        double fontSize = zoomFactor/10;
+        Font oldFont = item.getFont();
+        Font newFont;
+        if(oldFont != null) {
+            newFont = Font.font(oldFont.getFamily(), FontWeight.NORMAL, fontSize);
+        } else {
+            newFont = Font.font(Font.getDefault().getFamily(), FontWeight.NORMAL, fontSize);
+        }
+        item.setFont(newFont);
+        item.setStyle("-fx-padding: 1px 0 2px 0");
+    }
+
     @FXML
     protected void liveToggleSelected(ActionEvent e) {
         if (this.liveTgl.isSelected()) {

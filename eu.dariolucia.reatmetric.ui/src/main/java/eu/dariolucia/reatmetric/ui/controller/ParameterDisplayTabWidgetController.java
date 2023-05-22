@@ -32,6 +32,7 @@ import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -273,6 +274,8 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         });
 
         ParameterDisplayCoordinator.instance().register(this);
+
+        Platform.runLater(() -> updateZoomFactor(0));
     }
 
     private Callback<TableColumn<ParameterDataWrapper, String>, TableCell<ParameterDataWrapper, String>> getNormalTextCellCallback() {

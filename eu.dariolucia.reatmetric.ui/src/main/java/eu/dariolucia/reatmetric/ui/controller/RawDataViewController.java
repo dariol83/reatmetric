@@ -37,6 +37,7 @@ import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 
 import java.io.IOException;
 import java.net.URL;
@@ -132,9 +133,9 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
         this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getReceptionTime()));
         this.sourceCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getSource()));
 
-        this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
-        this.recTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
-        this.qualityCol.setCellFactory(column -> new TableCell<>() {
+        this.genTimeCol.setCellFactory(getInstantCellCallback());
+        this.recTimeCol.setCellFactory(getInstantCellCallback());
+        Callback<TableColumn<RawData, Quality>, TableCell<RawData, Quality>> qualityColFactory = column -> new TableCell<>() {
             @Override
             protected void updateItem(Quality item, boolean empty) {
                 super.updateItem(item, empty);
@@ -156,7 +157,13 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
                     setGraphic(null);
                 }
             }
-        });
+        };
+        this.qualityCol.setCellFactory(zoomEnabledWrapper(qualityColFactory));
+
+        this.nameCol.setCellFactory(getNormalTextCellCallback());
+        this.typeCol.setCellFactory(getNormalTextCellCallback());
+        this.routeCol.setCellFactory(getNormalTextCellCallback());
+        this.sourceCol.setCellFactory(getNormalTextCellCallback());
 
         try {
             URL rawDataDetailsUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/RawDataDetailsWidget.fxml");

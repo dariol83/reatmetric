@@ -96,9 +96,16 @@ public class AlarmParameterDataViewController
 				.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getLastNominalValueTime()));
 		this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));
 
-		this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
-		this.recTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
-		this.currentAlarmStateCol.setCellFactory(column -> new TableCell<>() {
+		this.genTimeCol.setCellFactory(getInstantCellCallback());
+		this.recTimeCol.setCellFactory(getInstantCellCallback());
+		this.lastNomValueTimeCol.setCellFactory(getInstantCellCallback());
+
+		this.nameCol.setCellFactory(getNormalTextCellCallback());
+		this.currentValueCol.setCellFactory(getNormalTextCellCallback());
+		this.lastNomValueCol.setCellFactory(getNormalTextCellCallback());
+		this.parentCol.setCellFactory(getNormalTextCellCallback());
+
+		this.currentAlarmStateCol.setCellFactory(zoomEnabledWrapper(column -> new TableCell<>() {
 			@Override
 			protected void updateItem(AlarmState item, boolean empty) {
 				super.updateItem(item, empty);
@@ -132,7 +139,7 @@ public class AlarmParameterDataViewController
 					setGraphic(null);
 				}
 			}
-		});
+		}));
 
 		initialiseToolbarVisibility(displayTitledPane, toolbar, toggleShowToolbarItem);
 	}

@@ -92,8 +92,12 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
         this.sourceCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getSource()));
         this.messageCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getMessage()));
 
-        this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
-        this.severityCol.setCellFactory(column -> new TableCell<>() {
+        this.genTimeCol.setCellFactory(getInstantCellCallback());
+        this.idCol.setCellFactory(getNormalTextCellCallback());
+        this.sourceCol.setCellFactory(getNormalTextCellCallback());
+        this.messageCol.setCellFactory(getNormalTextCellCallback());
+
+        this.severityCol.setCellFactory(zoomEnabledWrapper(column -> new TableCell<>() {
             @Override
             protected void updateItem(Severity item, boolean empty) {
                 super.updateItem(item, empty);
@@ -115,7 +119,7 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
                     setGraphic(null);
                 }
             }
-        });
+        }));
 
         dataItemTableView.getSelectionModel().selectedItemProperty().addListener(o -> {
             if(dataItemTableView.getSelectionModel().getSelectedItem() != null && dataItemTableView.getSelectionModel().getSelectedItem().getLinkedEntityId() != null) {

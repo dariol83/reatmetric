@@ -314,6 +314,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
         result.ifPresent(s -> {
             try {
                 this.presetManager.save(system.getName(), user, s, doGetComponentId(), pair.getSecond().getChartDescription());
+                t.setText(s);
             } catch (RemoteException e) {
                 LOG.log(Level.SEVERE, "Cannot save preset, system not responding", e);
             }

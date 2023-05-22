@@ -27,6 +27,7 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -34,13 +35,19 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
+import javafx.scene.Group;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.Callback;
 
 import java.io.IOException;
 import java.net.URL;
@@ -146,6 +153,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     private final Map<IUniqueId, TreeItem<ActivityOccurrenceDataWrapper>> activityMap = new HashMap<>();
     private final Map<IUniqueId, Map<String, TreeItem<ActivityOccurrenceDataWrapper>>> activityProgressMap = new HashMap<>();
 
+    private double zoomFactor = Font.getDefault().getSize() * 10;
+
     @Override
     protected Window retrieveWindow() {
         return liveTgl.getScene().getWindow();
@@ -215,10 +224,18 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         this.execTimeCol.setCellValueFactory(o -> o.getValue().getValue().executionTimeProperty());
         this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getParentPathAsString()));
 
-        this.genTimeCol.setCellFactory(InstantCellFactory.instantTreeCellFactory());
-        this.execTimeCol.setCellFactory(InstantCellFactory.instantTreeCellFactory());
+        this.genTimeCol.setCellFactory(getInstantCellCallback());
+        this.execTimeCol.setCellFactory(getInstantCellCallback());
 
-        this.stateCol.setCellFactory(column -> new TreeTableCell<>() {
+        this.nameCol.setCellFactory(getNormalTextCellCallback());
+        this.occIdCol.setCellFactory(getNormalTextCellCallback());
+        this.sourceCol.setCellFactory(getNormalTextCellCallback());
+        this.routeCol.setCellFactory(getNormalTextCellCallback());
+        this.typeCol.setCellFactory(getNormalTextCellCallback());
+        this.resultCol.setCellFactory(getNormalTextCellCallback());
+        this.parentCol.setCellFactory(getNormalTextCellCallback());
+
+        this.stateCol.setCellFactory(zoomEnabledWrapper(column -> new TreeTableCell<>() {
             @Override
             protected void updateItem(ActivityOccurrenceState item, boolean empty) {
                 super.updateItem(item, empty);
@@ -253,8 +270,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                     setGraphic(null);
                 }
             }
-        });
-        this.statusCol.setCellFactory(column -> new TreeTableCell<>() {
+        }));
+        this.statusCol.setCellFactory(zoomEnabledWrapper(column -> new TreeTableCell<>() {
             @Override
             protected void updateItem(ActivityReportState item, boolean empty) {
                 super.updateItem(item, empty);
@@ -294,10 +311,85 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                     setGraphic(null);
                 }
             }
-        });
+        }));
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
         this.dataItemTableView.setShowRoot(false);
         this.dataItemTableView.setRoot(new FilterableTreeItem<>(null, false));
+
+        Platform.runLater(() -> updateZoomFactor(0));
+    }
+
+
+    protected <K> Callback<TreeTableColumn<ActivityOccurrenceDataWrapper, K>, TreeTableCell<ActivityOccurrenceDataWrapper, K>> getNormalTextCellCallback() {
+        return column -> new TreeTableCell<>() {
+            @Override
+            protected void updateItem(K item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(Objects.toString(item, ""));
+                setCellFontSize(this);
+            }
+        };
+    }
+
+    protected Callback<TreeTableColumn<ActivityOccurrenceDataWrapper, Instant>, TreeTableCell<ActivityOccurrenceDataWrapper, Instant>> getInstantCellCallback() {
+        return column -> new TreeTableCell<>() {
+            @Override
+            protected void updateItem(Instant item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(InstantCellFactory.DATE_TIME_FORMATTER.format(item));
+                } else {
+                    setText("");
+                }
+                setCellFontSize(this);
+            }
+        };
+    }
+
+    protected <T, K> Callback<TreeTableColumn<T, K>, TreeTableCell<T, K>> zoomEnabledWrapper(Callback<TreeTableColumn<T, K>, TreeTableCell<T, K>> delegated) {
+        return param -> {
+            TreeTableCell<T, K> item = delegated.call(param);
+            setCellFontSize(item);
+            return item;
+        };
+    }
+
+    @FXML
+    public void minusZoomClick(ActionEvent mouseEvent) {
+        updateZoomFactor(-10);
+    }
+
+    @FXML
+    public void plusZoomClick(ActionEvent mouseEvent) {
+        updateZoomFactor(+10);
+    }
+
+    private void updateZoomFactor(double value) {
+        this.zoomFactor += value;
+        if (this.zoomFactor <= 30) {
+            this.zoomFactor = 30;
+        }
+        Font f = Font.font(Font.getDefault().getFamily(), FontWeight.NORMAL, this.zoomFactor/10);
+        Text text = new Text("AXqg");
+        text.setFont(f);
+        new Scene(new Group(text));
+        double height = text.getLayoutBounds().getHeight();
+        System.out.println("updateZoomFactor for " + getClass().getSimpleName() + ": height text is " + height + " - Font is " + f);
+        dataItemTableView.setFixedCellSize(height + 4);
+        dataItemTableView.refresh();
+    }
+
+    protected void setCellFontSize(TreeTableCell<?, ?> item) {
+        double fontSize = zoomFactor/10;
+        Font oldFont = item.getFont();
+        Font newFont;
+        if(oldFont != null) {
+            newFont = Font.font(oldFont.getFamily(), FontWeight.NORMAL, fontSize);
+        } else {
+            newFont = Font.font(Font.getDefault().getFamily(), FontWeight.NORMAL, fontSize);
+        }
+        item.setFont(newFont);
+        item.setStyle("-fx-padding: 1px 0 2px 0");
     }
 
     protected void applyFilter(ActivityOccurrenceDataFilter selectedFilter) {

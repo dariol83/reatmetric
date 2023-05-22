@@ -16,17 +16,17 @@
   ~ limitations under the License.
   -->
 
+<?import eu.dariolucia.reatmetric.ui.widgets.EnhancedTitledPane?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.Region?>
 
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.image.Image?>
-<?import eu.dariolucia.reatmetric.ui.widgets.EnhancedTitledPane?>
-
-<EnhancedTitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" text="Parameter Log" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ParameterDataLogViewController">
+<EnhancedTitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Parameter Log" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ParameterDataLogViewController">
    <content>
-      <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0">
+      <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
          <children>
             <ToolBar fx:id="toolbar" maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
                <items>
@@ -111,6 +111,32 @@
                        </graphic>
                        <tooltip>
                            <Tooltip text="Print the display" />
+                       </tooltip>
+                   </Button>
+                   <Separator orientation="VERTICAL" />
+                   <Region HBox.hgrow="ALWAYS" />
+                   <Button mnemonicParsing="false" onAction="#minusZoomClick">
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true" >
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/magnify-minus-outline.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Zoom out" />
+                       </tooltip>
+                   </Button>
+                   <Button mnemonicParsing="false" onAction="#plusZoomClick">
+                       <graphic>
+                           <ImageView pickOnBounds="true" preserveRatio="true" >
+                               <image>
+                                   <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/magnify-plus-outline.png" />
+                               </image>
+                           </ImageView>
+                       </graphic>
+                       <tooltip>
+                           <Tooltip text="Zoom in" />
                        </tooltip>
                    </Button>
                </items>

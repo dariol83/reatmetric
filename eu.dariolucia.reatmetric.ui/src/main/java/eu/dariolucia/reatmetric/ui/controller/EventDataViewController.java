@@ -92,9 +92,16 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
         this.qualifierCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getQualifier()));
         this.parentCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getPath().getParent().asString()));
 
-        this.genTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
-        this.recTimeCol.setCellFactory(InstantCellFactory.instantCellFactory());
-        this.severityCol.setCellFactory(column -> new TableCell<>() {
+        this.genTimeCol.setCellFactory(getInstantCellCallback());
+        this.recTimeCol.setCellFactory(getInstantCellCallback());
+        this.nameCol.setCellFactory(getNormalTextCellCallback());
+        this.typeCol.setCellFactory(getNormalTextCellCallback());
+        this.routeCol.setCellFactory(getNormalTextCellCallback());
+        this.parentCol.setCellFactory(getNormalTextCellCallback());
+        this.sourceCol.setCellFactory(getNormalTextCellCallback());
+        this.qualifierCol.setCellFactory(getNormalTextCellCallback());
+
+        this.severityCol.setCellFactory(zoomEnabledWrapper(column -> new TableCell<>() {
             @Override
             protected void updateItem(Severity item, boolean empty) {
                 super.updateItem(item, empty);
@@ -119,7 +126,7 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
                     setGraphic(null);
                 }
             }
-        });
+        }));
 
         initialiseToolbarVisibility(displayTitledPane, toolbar, toggleShowToolbarItem);
     }
