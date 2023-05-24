@@ -194,13 +194,16 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     @Override
     public void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
         if(spacePacket.isTelemetryPacket() && spacePacket.getApid() == 0) {
+            Instant onboardTime = extractOnboardTime(spacePacket);
+            if (LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, "Time packet received: onboard time information " + onboardTime);
+            }
             // This is a time packet, so apply C.4 Spacecraft time correlation procedures, ECSS-E-70-41A
             // 1. Locate the correct frame: get the TmFrameDescriptor associated to the packet (extension), the ERT and retrieve the previous frame that respects the generation period
             RawData frame = locateFrame((TmFrameDescriptor) packetRawData.getExtension(), this.generationPeriod);
             // 2. If the frame is located, then compute the time couple: (Earth reception time - propagation delay - onboard delay, on board time)
             if (frame != null) {
                 Instant utcTime = frame.getReceptionTime().minusNanos(this.propagationDelay * 1000).minusNanos(configuration().getOnBoardDelay() * 1000);
-                Instant onboardTime = extractOnboardTime(spacePacket);
                 // 3. Add the time couple: this method triggers a best-fit correlation taking into account the available time couples
                 addTimeCouple(onboardTime, utcTime);
             } else {
