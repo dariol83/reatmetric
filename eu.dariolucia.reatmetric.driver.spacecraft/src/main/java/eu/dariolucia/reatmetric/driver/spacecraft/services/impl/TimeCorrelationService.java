@@ -108,7 +108,7 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
         }
     }
 
-    private void subscribeToRawDataBroker() {
+    protected void subscribeToRawDataBroker() {
         // Subscribe to raw data to receive the frames of the spacecraft on VC 0
         RawDataFilter frameFilter = new RawDataFilter(true,
                 null,
@@ -129,10 +129,12 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
      * returns the corresponding ground-correlated UTC time.
      *
      * @param obt the OBT in UTC time scale
+     * @param frame the transfer frame delivery the (first part of the) packet; can be null
+     * @param spacePacket the space packet for which the UTC time shall be derived; can be null
      * @return the corresponding ground correlated time in UTC time scale
      */
     @Override
-    public Instant toUtc(Instant obt) {
+    public Instant toUtc(Instant obt, AbstractTransferFrame frame, SpacePacket spacePacket) {
         Pair<BigDecimal, BigDecimal> coeffs = this.obt2gtCoefficients;
         if(coeffs == null) {
             return obt;
@@ -158,7 +160,11 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
         }
         BigDecimal utcBd = convertToBigDecimal(utc);
         BigDecimal converted = utcBd.subtract(coeffs.getSecond()).divide(coeffs.getFirst(), 9, RoundingMode.HALF_UP); // 9 digits after dot
-        return convertToInstant(converted);
+        Instant toReturn = convertToInstant(converted);
+        if(LOG.isLoggable(Level.INFO)) {
+            LOG.log(Level.INFO, String.format("UTC time %s converted to OBT time %s", utc, toReturn));
+        }
+        return toReturn;
     }
 
     private Instant convertToInstant(BigDecimal converted) {
@@ -226,9 +232,8 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
         }
     }
 
-    private void addTimeCouple(Instant onboardTime, Instant utcTime) {
-        if(LOG.isLoggable(Level.FINE))
-        {
+    protected void addTimeCouple(Instant onboardTime, Instant utcTime) {
+        if(LOG.isLoggable(Level.FINE)) {
             LOG.log(Level.FINE, String.format("Adding time couple: OBT=%s, UTC=%s", onboardTime.toString(), utcTime.toString()));
         }
         // Iterate on the time couples (they are max 2): if utcTime is before of any of the two second members of each pair, then forget about this time couple
@@ -355,6 +360,22 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
         }
         // No frame available
         return null;
+    }
+
+    protected int getSpacecraftId() {
+        return spacecraftId;
+    }
+
+    protected int getGenerationPeriod() {
+        return generationPeriod;
+    }
+
+    protected long getPropagationDelay() {
+        return propagationDelay;
+    }
+
+    protected Instant getEpoch() {
+        return epoch;
     }
 
     @Override

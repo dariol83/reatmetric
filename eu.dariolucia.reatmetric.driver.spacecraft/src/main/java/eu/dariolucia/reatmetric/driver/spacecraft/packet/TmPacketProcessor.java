@@ -59,7 +59,7 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
 
     private static final ITimeCorrelation IDENTITY_TIME_CORRELATION = new ITimeCorrelation() {
         @Override
-        public Instant toUtc(Instant obt) {
+        public Instant toUtc(Instant obt, AbstractTransferFrame frame, SpacePacket spacePacket) {
             return obt;
         }
 
@@ -340,7 +340,8 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
     }
 
     public Instant extractPacketGenerationTime(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {
-        // 1. extract OBT according to PUS configuration (per APID)
+        Instant frameGenerationTime = (Instant) abstractTransferFrame.getAnnotationValue(Constants.ANNOTATION_GEN_TIME);
+        // Extract OBT according to PUS configuration (per APID)
         if(spacePacket.isSecondaryHeaderFlag()) {
             TmPusConfiguration conf = configuration.getPusConfigurationFor(spacePacket.getApid());
             if (conf != null) {
@@ -349,12 +350,12 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
                 Instant generationTime = pusHeader.getAbsoluteTime();
                 // 2. apply time correlation
                 if(generationTime != null) {
-                    return timeCorrelation.toUtc(generationTime);
+                    return timeCorrelation.toUtc(generationTime, abstractTransferFrame, spacePacket);
                 }
             }
         }
         // In case the packet time cannot be derived, then use the frame generation time, which is the best approximation possible
-        return (Instant) abstractTransferFrame.getAnnotationValue(Constants.ANNOTATION_GEN_TIME);
+        return frameGenerationTime;
     }
 
     public Quality checkPacketQuality(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {

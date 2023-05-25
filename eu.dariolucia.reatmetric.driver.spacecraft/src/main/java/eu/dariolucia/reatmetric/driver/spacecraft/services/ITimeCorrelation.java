@@ -16,6 +16,8 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.services;
 
+import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
+import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 
 import java.time.Instant;
@@ -23,7 +25,7 @@ import java.util.LinkedHashMap;
 
 public interface ITimeCorrelation {
 
-    default Instant toUtc(Instant obt) {
+    default Instant toUtc(Instant obt, AbstractTransferFrame frame, SpacePacket spacePacket) {
         return obt;
     }
 

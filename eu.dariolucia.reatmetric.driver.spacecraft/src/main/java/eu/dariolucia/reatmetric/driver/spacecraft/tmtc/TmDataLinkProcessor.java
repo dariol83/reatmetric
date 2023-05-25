@@ -193,6 +193,8 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
             receptionTime = Instant.now();
         }
         SpacePacket sp = new SpacePacket(packet, qualityIndicator);
+        // Annotate with reception time
+        sp.setAnnotationValue(Constants.ANNOTATION_RCP_TIME, receptionTime);
         // Annotate with the VC ID
         sp.setAnnotationValue(Constants.ANNOTATION_VCID, (int) firstFrame.getVirtualChannelId());
         String route = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_ROUTE);

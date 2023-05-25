@@ -34,6 +34,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.services.OnboardOperationsSchedulingServiceConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.ITimeCorrelation;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
 import java.io.*;
@@ -185,6 +186,11 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
         String subscheduleName = configuration().getSubscheduleIdName();
         String numCommandsName = configuration().getNumCommandsName();
         PlainActivityArgument subschedule = null;
+        // time-correlate the targetTime to OBT
+        ITimeCorrelation timeCorrelationService = serviceBroker().locate(eu.dariolucia.reatmetric.driver.spacecraft.services.ITimeCorrelation.class);
+        if(timeCorrelationService != null) {
+            targetTime = timeCorrelationService.toObt(targetTime);
+        }
         if(configuration().isArrayUsed()) {
             // Assume 1, 2 or 3 parameters: sub-schedule ID if subscheduleName is not null; num-elements if numCommandsName is not null; array definition (mandatory)
             PlainActivityArgument numElements = null;
