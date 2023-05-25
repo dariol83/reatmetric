@@ -135,6 +135,6 @@ public class DirectLinkTimeCorrelationService extends TimeCorrelationService imp
 
     @Override
     public IServicePacketFilter getSubscriptionFilter() {
-        return (rd, sp, pusType, pusSubtype, destination, source) -> sp.getApid() != 0 && pusType != null && (pusType == 3 || pusType == 9);
+        return (rd, sp, pusType, pusSubtype, destination, source) -> sp.getApid() != 0 && pusType != null && (pusType == 3 || pusType == 5);
     }
 }
