@@ -23,6 +23,7 @@ import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
@@ -30,8 +31,8 @@ import eu.dariolucia.reatmetric.ui.udd.*;
 import eu.dariolucia.reatmetric.ui.utils.ChartPreset;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.udd.IChartDisplayController;
-import eu.dariolucia.reatmetric.ui.utils.OrderedProperties;
 import eu.dariolucia.reatmetric.ui.utils.UserDisplayCoordinator;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -46,7 +47,6 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
@@ -58,7 +58,6 @@ import java.net.URL;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 /**
  * FXML Controller class
@@ -200,8 +199,6 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
                 List<EventData> emessages = ReatmetricUI.selectedSystem().getSystem()
                         .getEventDataMonitorService().retrieve(minTime, maxTime, edf);
                 messages.addAll(emessages);
-
-                // messages.removeIf(eventData -> eventData.getGenerationTime().isAfter(maxTime));
 
                 setData(minTime, maxTime, messages, clear);
             } catch (Exception e) {
@@ -673,13 +670,20 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
         Set<SystemEntityPath> selectedParameters = new LinkedHashSet<>();
         Set<SystemEntityPath> selectedEvents = new LinkedHashSet<>();
         for (AbstractChartManager acm : this.charts) {
-            selectedParameters.addAll(acm.getPlottedParameters());
-            selectedEvents.addAll(acm.getPlottedEvents());
+            if(acm.getSystemElementType() == SystemEntityType.PARAMETER) {
+                selectedParameters.addAll(acm.getPlottedSystemEntities());
+            } else if(acm.getSystemElementType() == SystemEntityType.EVENT) {
+                selectedEvents.addAll(acm.getPlottedSystemEntities());
+            }
         }
         this.currentParameterFilter = new ParameterDataFilter(null, new LinkedList<>(selectedParameters), null, null, null, null);
         this.currentEventFilter = new EventDataFilter(null, new LinkedList<>(selectedEvents), null, null, null, null, null);
         // Update the subscriptions
         UserDisplayCoordinator.instance().filterUpdated();
+        // If not live, fetch the data to refresh the dataset
+        if(!live) {
+            Platform.runLater(() -> fetchRecords(this.currentMin, this.currentMax, true));
+        }
     }
 
     public ChartPreset getChartDescription() {

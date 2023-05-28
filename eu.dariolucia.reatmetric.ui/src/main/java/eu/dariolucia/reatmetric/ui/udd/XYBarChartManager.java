@@ -31,7 +31,6 @@ import javafx.scene.input.*;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class XYBarChartManager extends AbstractChartManager<String, Number> {
 
@@ -75,17 +74,17 @@ public class XYBarChartManager extends AbstractChartManager<String, Number> {
     }
 
 	private void addParameter(SystemEntityPath content) {
-		if(this.object2series.containsKey(content)) {
+		if(containsSerie(content)) {
         	return;
         }
 		
 		XYChart.Series<String, Number> series = new XYChart.Series<>();
         series.setName(content.getLastPathElement());
-        this.object2series.put(content, series);
+        addSerie(content, series);
 		setSerieVisible(series.getName(), true);
         this.chart.getData().add(series);
 
-        addPlottedParameter(content);
+        addPlottedSystemEntities(content);
 	}
 
 	@Override
@@ -93,7 +92,7 @@ public class XYBarChartManager extends AbstractChartManager<String, Number> {
 		for(AbstractDataItem item : datas) {
 			if (item instanceof ParameterData) {
 				ParameterData pd = (ParameterData) item;
-				XYChart.Series<String, Number> s = object2series.get(pd.getPath());
+				XYChart.Series<String, Number> s = getSerie(pd.getPath());
 				if (s != null && pd.getEngValue() != null) {
 					// if not a number, remove the parameter from the plot
 					if(pd.getEngValue() instanceof Number) {
@@ -107,8 +106,9 @@ public class XYBarChartManager extends AbstractChartManager<String, Number> {
 						}
 						applySerieVisibility(s, isSerieVisible(s.getName()));
 					} else {
-						object2series.remove(pd.getPath());
+						removeSerie(pd.getPath());
 						chart.getData().remove(s);
+						removeSerieVisibility(s.getName());
 					}
 				}
 			}
@@ -125,6 +125,11 @@ public class XYBarChartManager extends AbstractChartManager<String, Number> {
 		for(String item : items) {
 			addParameter(SystemEntityPath.fromString(item));
 		}
+	}
+
+	@Override
+	public SystemEntityType getSystemElementType() {
+		return SystemEntityType.PARAMETER;
 	}
 
 	@Override

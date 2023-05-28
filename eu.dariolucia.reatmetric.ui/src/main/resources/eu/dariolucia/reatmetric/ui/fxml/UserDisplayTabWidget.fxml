@@ -34,7 +34,7 @@
 	<children>
 		<ToolBar maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
 			<items>
-				<MenuButton mnemonicParsing="false" text="Add">
+				<MenuButton mnemonicParsing="false" text="Add" prefHeight="25.0" prefWidth="91.0">
                 <items>
                 	<MenuItem mnemonicParsing="false" onAction="#addLineChartMenuItemSelected" text="Line Chart" />
                 	<MenuItem mnemonicParsing="false" onAction="#addAreaChartMenuItemSelected" text="Area Chart" />

@@ -31,16 +31,16 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class XYScatterChartManager extends AbstractChartManager<Instant, Number> {
 
 	private final ScatterChart<Instant, Number> chart;
 	private final Map<SystemEntityPath, Integer> event2position = new TreeMap<>();
-
 	private final AtomicInteger eventCounter = new AtomicInteger(0);
 
 	public XYScatterChartManager(Consumer<AbstractChartManager<Instant, Number>> informer, ScatterChart<Instant, Number> n) {
@@ -86,19 +86,19 @@ public class XYScatterChartManager extends AbstractChartManager<Instant, Number>
     }
 
 	private void addEvent(SystemEntityPath content) {
-		if(this.object2series.containsKey(content)) {
+		if(containsSerie(content)) {
         	return;
         }
 
-		XYChart.Series<Instant, Number> series = new ScatterChart.Series<>();
+		XYChart.Series<Instant, Number> series = new XYChart.Series<>();
         series.setName(content.getLastPathElement());
-        this.object2series.put(content, series);
+        addSerie(content, series);
         this.event2position.put(content, eventCounter.incrementAndGet());
 		// Workaround to fix ScatterChart bug: https://stackoverflow.com/questions/30171290/javafx-scatterchart-does-not-display-legend-symbol-when-initialized-with-empty-d
 		series.getData().add(new XYChart.Data<>(Instant.EPOCH, eventCounter.get()));
 		setSerieVisible(series.getName(), true);
         this.chart.getData().add(series);
-        addPlottedEvent(content);
+        addPlottedSystemEntities(content);
 	}
 
 	@Override
@@ -106,9 +106,9 @@ public class XYScatterChartManager extends AbstractChartManager<Instant, Number>
 		for(AbstractDataItem item : datas) {
 			if(item instanceof EventData) {
 				EventData pd = (EventData) item;
-				XYChart.Series<Instant, Number> s = object2series.get(pd.getPath());
+				XYChart.Series<Instant, Number> s = getSerie(pd.getPath());
 				if (s != null) {
-					XYChart.Data<Instant, Number> data = new ScatterChart.Data<>(pd.getGenerationTime(), event2position.get(pd.getPath()));
+					XYChart.Data<Instant, Number> data = new XYChart.Data<>(pd.getGenerationTime(), event2position.get(pd.getPath()));
 					s.getData().add(data);
 					Tooltip.install(data.getNode(), new Tooltip(pd.getGenerationTime().toString()));
 					if(pd.getGenerationTime().isAfter(maxGenerationTimeOnChart)) {
@@ -129,6 +129,11 @@ public class XYScatterChartManager extends AbstractChartManager<Instant, Number>
 	public void setBoundaries(Instant min, Instant max) {
 		((InstantAxis) this.chart.getXAxis()).setLowerBound(min);
 		((InstantAxis) this.chart.getXAxis()).setUpperBound(max);
+	}
+
+	@Override
+	public SystemEntityType getSystemElementType() {
+		return SystemEntityType.EVENT;
 	}
 
 	@Override

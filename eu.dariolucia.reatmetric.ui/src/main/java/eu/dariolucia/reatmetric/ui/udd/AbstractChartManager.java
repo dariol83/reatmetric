@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.ui.udd;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
@@ -43,9 +44,9 @@ public abstract class AbstractChartManager<T, K> {
 	private static File SAVE_IMAGE_INITIAL_DIR = null;
 
 	private final Consumer<AbstractChartManager<T, K>> changeListener;
-
 	private final Set<SystemEntityPath> systemEntities = new TreeSet<>();
-	protected final Map<SystemEntityPath, XYChart.Series<T, K>> object2series = new LinkedHashMap<>();
+	private final Map<SystemEntityPath, XYChart.Series<T, K>> object2series = new LinkedHashMap<>();
+	private final Map<String, Boolean> serie2visibility = new TreeMap<>();
 
 	protected volatile boolean live = true;
 	protected volatile Instant maxGenerationTimeOnChart = Instant.EPOCH;
@@ -54,20 +55,27 @@ public abstract class AbstractChartManager<T, K> {
 		changeListener = informer;
 	}
 
-	public Set<SystemEntityPath> getPlottedParameters() {
+	protected void addSerie(SystemEntityPath item, XYChart.Series<T, K> serie) {
+		this.object2series.put(item, serie);
+	}
+
+	protected XYChart.Series<T, K> getSerie(SystemEntityPath item) {
+		return this.object2series.get(item);
+	}
+
+	protected boolean containsSerie(SystemEntityPath item) {
+		return this.object2series.containsKey(item);
+	}
+
+	protected XYChart.Series<T, K> removeSerie(SystemEntityPath item) {
+		return this.object2series.remove(item);
+	}
+
+	public Set<SystemEntityPath> getPlottedSystemEntities() {
 		return this.systemEntities;
 	}
 
-	public Set<SystemEntityPath> getPlottedEvents() {
-		return this.systemEntities;
-	}
-
-	protected void addPlottedParameter(SystemEntityPath path) {
-		this.systemEntities.add(path);
-		notifyObservers();
-	}
-
-	protected void addPlottedEvent(SystemEntityPath path) {
+	protected void addPlottedSystemEntities(SystemEntityPath path) {
 		this.systemEntities.add(path);
 		notifyObservers();
 	}
@@ -85,8 +93,6 @@ public abstract class AbstractChartManager<T, K> {
 			}
 		});
 	}
-
-	private final Map<String, Boolean> serie2visibility = new TreeMap<>();
 
 	protected boolean isSerieVisible(String name) {
 		Boolean visible = serie2visibility.get(name);
@@ -121,19 +127,7 @@ public abstract class AbstractChartManager<T, K> {
 			final XYChart.Series<T, K> fserie = serie;
 			final MenuItem deleteSerieItem = new MenuItem(fserie.getName());
 			deleteSerieItem.setOnAction(event -> {
-				chart.getData().remove(fserie);
-				SystemEntityPath toRemove = null;
-				for (Map.Entry<SystemEntityPath, XYChart.Series<T, K>> pEntry : object2series.entrySet()) {
-					if(pEntry.getValue().equals(fserie)) {
-						toRemove = pEntry.getKey();
-						break;
-					}
-				}
-				if(toRemove != null) {
-					object2series.remove(toRemove);
-					removeSerieVisibility(fserie.getName());
-				}
-				chart.getData().remove(fserie);
+				deleteSerieFrom(chart, fserie);
 			});
 			deleteSeriesItem.getItems().add(deleteSerieItem);
 		}
@@ -234,6 +228,23 @@ public abstract class AbstractChartManager<T, K> {
 		menu.show(chart.getScene().getWindow(), originEvent.getScreenX(), originEvent.getScreenY());
 	}
 
+	private void deleteSerieFrom(XYChart<T, K> chart, XYChart.Series<T, K> fserie) {
+		chart.getData().remove(fserie);
+		SystemEntityPath toRemove = null;
+		for (Map.Entry<SystemEntityPath, XYChart.Series<T, K>> pEntry : object2series.entrySet()) {
+			if(pEntry.getValue().equals(fserie)) {
+				toRemove = pEntry.getKey();
+				break;
+			}
+		}
+		if(toRemove != null) {
+			object2series.remove(toRemove);
+			removeSerieVisibility(fserie.getName());
+		}
+		chart.getData().remove(fserie);
+		notifyObservers();
+	}
+
 	protected void applySerieVisibility(XYChart.Series<T, K> fserie, boolean newVisibility) {
 		if(fserie.getNode() != null) {
 			fserie.getNode().setVisible(newVisibility);
@@ -270,6 +281,8 @@ public abstract class AbstractChartManager<T, K> {
 		return object2series.keySet().stream().map(SystemEntityPath::asString).collect(Collectors.toList());
 	}
     public abstract void addItems(List<String> items);
+
+	public abstract SystemEntityType getSystemElementType();
 
 	public Instant getLatestReceivedGenerationTime() {
 		return maxGenerationTimeOnChart;

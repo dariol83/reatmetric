@@ -34,7 +34,6 @@ import javafx.scene.input.TransferMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class XYTimeChartManager extends AbstractChartManager<Instant, Number> {
 
@@ -83,17 +82,17 @@ public class XYTimeChartManager extends AbstractChartManager<Instant, Number> {
     }
 
 	private void addParameter(SystemEntityPath content) {
-		if(this.object2series.containsKey(content)) {
+		if(containsSerie(content)) {
         	return;
         }
 		
 		XYChart.Series<Instant, Number> series = new XYChart.Series<>();
         series.setName(content.getLastPathElement());
-        this.object2series.put(content, series);
+        addSerie(content, series);
 		setSerieVisible(series.getName(), true);
 		this.chart.getData().add(series);
         
-        addPlottedParameter(content);
+        addPlottedSystemEntities(content);
 	}
 
 	@Override
@@ -101,13 +100,12 @@ public class XYTimeChartManager extends AbstractChartManager<Instant, Number> {
 		for(AbstractDataItem item : datas) {
 			if(item instanceof ParameterData) {
 				ParameterData pd = (ParameterData) item;
-				XYChart.Series<Instant, Number> s = object2series.get(pd.getPath());
+				XYChart.Series<Instant, Number> s = getSerie(pd.getPath());
 				if (s != null && pd.getEngValue() != null) {
 					// if not a number, remove the parameter from the plot
 					if(pd.getEngValue() instanceof Number) {
 						XYChart.Data<Instant, Number> data = new XYChart.Data<>(pd.getGenerationTime(), (Number) pd.getEngValue());
 						s.getData().add(data);
-						// data.getNode().setVisible(false);
 						Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
 								(pd.getGenerationTime().toString())));
 						if(pd.getGenerationTime().isAfter(maxGenerationTimeOnChart)) {
@@ -115,7 +113,8 @@ public class XYTimeChartManager extends AbstractChartManager<Instant, Number> {
 						}
 						applySerieVisibility(s, isSerieVisible(s.getName()));
 					} else {
-						object2series.remove(pd.getPath());
+						removeSerie(pd.getPath());
+						removeSerieVisibility(s.getName());
 						chart.getData().remove(s);
 					}
 				}
@@ -138,6 +137,11 @@ public class XYTimeChartManager extends AbstractChartManager<Instant, Number> {
 	public void setBoundaries(Instant min, Instant max) {
     	((InstantAxis) this.chart.getXAxis()).setLowerBound(min);
 		((InstantAxis) this.chart.getXAxis()).setUpperBound(max);
+	}
+
+	@Override
+	public SystemEntityType getSystemElementType() {
+		return SystemEntityType.PARAMETER;
 	}
 
 	@Override
