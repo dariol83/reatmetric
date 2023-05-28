@@ -336,6 +336,8 @@ public class TestDefinitionGenerator {
                 ep.setLocation(new FixedAbsoluteLocation(offset));
                 pd1.getStructure().getEncodedItems().add(ep);
                 d.getPacketDefinitions().add(pd1);
+                // Increment counter
+                ++sid;
             }
         }
 
