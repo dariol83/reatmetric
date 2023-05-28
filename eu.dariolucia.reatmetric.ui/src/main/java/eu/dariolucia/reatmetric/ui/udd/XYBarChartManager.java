@@ -27,6 +27,7 @@ import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.input.*;
+import javafx.scene.layout.VBox;
 
 import java.time.Instant;
 import java.util.List;
@@ -48,6 +49,9 @@ public class XYBarChartManager extends AbstractChartManager<String, Number> {
 	}
 
 	protected void onDragOver(DragEvent event) {
+		if(deleted) {
+			return;
+		}
         if (event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.PARAMETER))) {
             event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
         }
@@ -63,6 +67,9 @@ public class XYBarChartManager extends AbstractChartManager<String, Number> {
     }
     
     private void onDragDropped(DragEvent event) {
+		if(deleted) {
+			return;
+		}
         Dragboard db = event.getDragboard();
         boolean success = false;
         if (db.hasContent(SystemEntityDataFormats.PARAMETER)) {
@@ -74,6 +81,9 @@ public class XYBarChartManager extends AbstractChartManager<String, Number> {
     }
 
 	private void addParameter(SystemEntityPath content) {
+		if(deleted) {
+			return;
+		}
 		if(containsSerie(content)) {
         	return;
         }
@@ -89,6 +99,9 @@ public class XYBarChartManager extends AbstractChartManager<String, Number> {
 
 	@Override
 	public void plot(List<AbstractDataItem> datas) {
+		if(deleted) {
+			return;
+		}
 		for(AbstractDataItem item : datas) {
 			if (item instanceof ParameterData) {
 				ParameterData pd = (ParameterData) item;
@@ -122,6 +135,9 @@ public class XYBarChartManager extends AbstractChartManager<String, Number> {
 
 	@Override
 	public void addItems(List<String> items) {
+		if(deleted) {
+			return;
+		}
 		for(String item : items) {
 			addParameter(SystemEntityPath.fromString(item));
 		}
@@ -130,6 +146,12 @@ public class XYBarChartManager extends AbstractChartManager<String, Number> {
 	@Override
 	public SystemEntityType getSystemElementType() {
 		return SystemEntityType.PARAMETER;
+	}
+
+	@Override
+	protected void removeChartFromParent() {
+		VBox parent = (VBox) this.chart.getParent();
+		parent.getChildren().remove(this.chart);
 	}
 
 	@Override

@@ -30,6 +30,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import javafx.scene.layout.VBox;
 
 import java.time.Instant;
 import java.util.List;
@@ -56,6 +57,9 @@ public class XYTimeChartManager extends AbstractChartManager<Instant, Number> {
 	}
 
 	protected void onDragOver(DragEvent event) {
+		if(deleted) {
+			return;
+		}
         if (event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.PARAMETER))) {
             event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
         }
@@ -71,6 +75,9 @@ public class XYTimeChartManager extends AbstractChartManager<Instant, Number> {
     }
     
     private void onDragDropped(DragEvent event) {
+		if(deleted) {
+			return;
+		}
         Dragboard db = event.getDragboard();
         boolean success = false;
         if (db.hasContent(SystemEntityDataFormats.PARAMETER)) {
@@ -82,6 +89,9 @@ public class XYTimeChartManager extends AbstractChartManager<Instant, Number> {
     }
 
 	private void addParameter(SystemEntityPath content) {
+		if(deleted) {
+			return;
+		}
 		if(containsSerie(content)) {
         	return;
         }
@@ -97,6 +107,9 @@ public class XYTimeChartManager extends AbstractChartManager<Instant, Number> {
 
 	@Override
 	public void plot(List<AbstractDataItem> datas) {
+		if(deleted) {
+			return;
+		}
 		for(AbstractDataItem item : datas) {
 			if(item instanceof ParameterData) {
 				ParameterData pd = (ParameterData) item;
@@ -145,7 +158,16 @@ public class XYTimeChartManager extends AbstractChartManager<Instant, Number> {
 	}
 
 	@Override
+	protected void removeChartFromParent() {
+		VBox parent = (VBox) this.chart.getParent();
+		parent.getChildren().remove(this.chart);
+	}
+
+	@Override
 	public void addItems(List<String> items) {
+		if(deleted) {
+			return;
+		}
 		for(String item : items) {
 			addParameter(SystemEntityPath.fromString(item));
 		}

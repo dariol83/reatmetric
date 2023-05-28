@@ -609,10 +609,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
 
         // Add to list
         AbstractChartManager udd = new XYBarChartManager(o -> updateFilter(), l);
-        // l.setPrefHeight(200);
         addToPane(l);
-        // l.prefWidthProperty().bind(this.innerBox.widthProperty());
-        // this.innerBox.getChildren().add(l);
         this.charts.add(udd);
         this.innerBox.getParent().layout();
         return udd;
@@ -667,6 +664,8 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
     }
 
     protected void updateFilter() {
+        // Remove all deleted charts if any
+        this.charts.removeIf(AbstractChartManager::isDeleted);
         Set<SystemEntityPath> selectedParameters = new LinkedHashSet<>();
         Set<SystemEntityPath> selectedEvents = new LinkedHashSet<>();
         for (AbstractChartManager acm : this.charts) {
@@ -687,6 +686,8 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
     }
 
     public ChartPreset getChartDescription() {
+        // Remove all deleted charts if any
+        this.charts.removeIf(AbstractChartManager::isDeleted);
         // Iterate on the chart managers
         ChartPreset props = new ChartPreset();
         for (AbstractChartManager acm : charts) {

@@ -20,6 +20,8 @@ package eu.dariolucia.reatmetric.ui.udd;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
+import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
@@ -43,7 +45,7 @@ public abstract class AbstractChartManager<T, K> {
 
 	private static File SAVE_IMAGE_INITIAL_DIR = null;
 
-	private final Consumer<AbstractChartManager<T, K>> changeListener;
+	private final Consumer<AbstractChartManager<T, K>> filterChangeListener;
 	private final Set<SystemEntityPath> systemEntities = new TreeSet<>();
 	private final Map<SystemEntityPath, XYChart.Series<T, K>> object2series = new LinkedHashMap<>();
 	private final Map<String, Boolean> serie2visibility = new TreeMap<>();
@@ -51,8 +53,10 @@ public abstract class AbstractChartManager<T, K> {
 	protected volatile boolean live = true;
 	protected volatile Instant maxGenerationTimeOnChart = Instant.EPOCH;
 
+	protected volatile boolean deleted = false;
+
 	public AbstractChartManager(Consumer<AbstractChartManager<T, K>> informer) {
-		changeListener = informer;
+		this.filterChangeListener = informer;
 	}
 
 	protected void addSerie(SystemEntityPath item, XYChart.Series<T, K> serie) {
@@ -81,8 +85,8 @@ public abstract class AbstractChartManager<T, K> {
 	}
 
 	protected void notifyObservers() {
-		if(changeListener != null) {
-			changeListener.accept(this);
+		if(filterChangeListener != null) {
+			filterChangeListener.accept(this);
 		}
 	}
 
@@ -132,17 +136,21 @@ public abstract class AbstractChartManager<T, K> {
 			deleteSeriesItem.getItems().add(deleteSerieItem);
 		}
 
-		/*
 		final MenuItem deleteItem = new MenuItem("Delete chart");
 		deleteItem.setOnAction(event -> {
-			ObservableList<XYChart.Series<T, K>> data = chart.getData();
-			for(XYChart.Series<T, K> ser : data) {
-				String param = ser.getName();
-				parameter2chartSeries.get(param).remove(ser);
+			if (DialogUtils.confirm("Delete chart", "About to delete " + getChartType() + " chart?", "Do you want to delete the selected chart")) {
+				// Mark as deleted
+				this.deleted = true;
+				// Delete all, update filter
+				this.object2series.clear();
+				this.systemEntities.clear();
+				this.serie2visibility.clear();
+				// Notify parent for filter cleanup
+				notifyObservers();
+				// Remove from chart parent
+				removeChartFromParent();
 			}
-			vboxChartContainer.getChildren().remove(chart);
 		});
-		*/
 
 		final MenuItem copyItem = new MenuItem("Copy to clipboard");
 		copyItem.setOnAction(event -> {
@@ -224,8 +232,12 @@ public abstract class AbstractChartManager<T, K> {
 			}
 		});
 
-		final ContextMenu menu = new ContextMenu(visibilityItem, deleteSeriesItem, new SeparatorMenuItem(), /* deleteItem, */ new SeparatorMenuItem(), exportItem, exportCsvItem, copyItem);
+		final ContextMenu menu = new ContextMenu(visibilityItem, deleteSeriesItem, new SeparatorMenuItem(), deleteItem, new SeparatorMenuItem(), exportItem, exportCsvItem, copyItem);
 		menu.show(chart.getScene().getWindow(), originEvent.getScreenX(), originEvent.getScreenY());
+	}
+
+	public boolean isDeleted() {
+		return deleted;
 	}
 
 	private void deleteSerieFrom(XYChart<T, K> chart, XYChart.Series<T, K> fserie) {
@@ -283,6 +295,8 @@ public abstract class AbstractChartManager<T, K> {
     public abstract void addItems(List<String> items);
 
 	public abstract SystemEntityType getSystemElementType();
+
+	protected abstract void removeChartFromParent();
 
 	public Instant getLatestReceivedGenerationTime() {
 		return maxGenerationTimeOnChart;

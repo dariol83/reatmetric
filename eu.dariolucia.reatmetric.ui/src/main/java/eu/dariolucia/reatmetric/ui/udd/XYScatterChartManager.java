@@ -29,6 +29,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import javafx.scene.layout.VBox;
 
 import java.time.Instant;
 import java.util.List;
@@ -60,6 +61,9 @@ public class XYScatterChartManager extends AbstractChartManager<Instant, Number>
 	}
 
 	protected void onDragOver(DragEvent event) {
+		if(deleted) {
+			return;
+		}
         if (event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.EVENT))) {
             event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
         }
@@ -75,6 +79,9 @@ public class XYScatterChartManager extends AbstractChartManager<Instant, Number>
     }
     
     private void onDragDropped(DragEvent event) {
+		if(deleted) {
+			return;
+		}
         Dragboard db = event.getDragboard();
         boolean success = false;
         if (db.hasContent(SystemEntityDataFormats.EVENT)) {
@@ -86,6 +93,9 @@ public class XYScatterChartManager extends AbstractChartManager<Instant, Number>
     }
 
 	private void addEvent(SystemEntityPath content) {
+		if(deleted) {
+			return;
+		}
 		if(containsSerie(content)) {
         	return;
         }
@@ -103,6 +113,9 @@ public class XYScatterChartManager extends AbstractChartManager<Instant, Number>
 
 	@Override
 	public void plot(List<AbstractDataItem> datas) {
+		if(deleted) {
+			return;
+		}
 		for(AbstractDataItem item : datas) {
 			if(item instanceof EventData) {
 				EventData pd = (EventData) item;
@@ -137,7 +150,16 @@ public class XYScatterChartManager extends AbstractChartManager<Instant, Number>
 	}
 
 	@Override
+	protected void removeChartFromParent() {
+		VBox parent = (VBox) this.chart.getParent();
+		parent.getChildren().remove(this.chart);
+	}
+
+	@Override
 	public void addItems(List<String> items) {
+		if(deleted) {
+			return;
+		}
 		for(String item : items) {
 			addEvent(SystemEntityPath.fromString(item));
 		}
