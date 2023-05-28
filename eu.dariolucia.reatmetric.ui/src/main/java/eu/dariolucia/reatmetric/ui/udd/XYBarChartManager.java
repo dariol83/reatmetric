@@ -25,31 +25,27 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
-import javafx.scene.control.Tooltip;
-import javafx.scene.input.DragEvent;
-import javafx.scene.input.Dragboard;
-import javafx.scene.input.TransferMode;
+import javafx.scene.control.*;
+import javafx.scene.input.*;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class XYBarChartManager extends AbstractChartManager {
+public class XYBarChartManager extends AbstractChartManager<String, Number> {
 
 	private final BarChart<String, Number> chart;
-	private final Map<SystemEntityPath, XYChart.Series<String, Number>> parameter2series = new LinkedHashMap<>();
-	private volatile Instant maxGenerationTimeOnChart = Instant.EPOCH;
 
-	public XYBarChartManager(Consumer<AbstractChartManager> informer, BarChart<String, Number> n) {
+	public XYBarChartManager(Consumer<AbstractChartManager<String, Number>> informer, BarChart<String, Number> n) {
     	super(informer);
 		this.chart = n;
 		this.chart.setOnDragOver(this::onDragOver);
 		this.chart.setOnDragEntered(this::onDragEntered);
 		this.chart.setOnDragExited(this::onDragExited);
 		this.chart.setOnDragDropped(this::onDragDropped);
+
+		addMenu(this.chart);
 	}
 
 	protected void onDragOver(DragEvent event) {
@@ -79,13 +75,14 @@ public class XYBarChartManager extends AbstractChartManager {
     }
 
 	private void addParameter(SystemEntityPath content) {
-		if(this.parameter2series.containsKey(content)) {
+		if(this.object2series.containsKey(content)) {
         	return;
         }
 		
 		XYChart.Series<String, Number> series = new XYChart.Series<>();
         series.setName(content.getLastPathElement());
-        this.parameter2series.put(content, series);
+        this.object2series.put(content, series);
+		setSerieVisible(series.getName(), true);
         this.chart.getData().add(series);
 
         addPlottedParameter(content);
@@ -96,19 +93,21 @@ public class XYBarChartManager extends AbstractChartManager {
 		for(AbstractDataItem item : datas) {
 			if (item instanceof ParameterData) {
 				ParameterData pd = (ParameterData) item;
-				XYChart.Series<String, Number> s = parameter2series.get(pd.getPath());
+				XYChart.Series<String, Number> s = object2series.get(pd.getPath());
 				if (s != null && pd.getEngValue() != null) {
 					// if not a number, remove the parameter from the plot
 					if(pd.getEngValue() instanceof Number) {
 						XYChart.Data<String, Number> data = new XYChart.Data<>(pd.getPath().getLastPathElement(), (Number) pd.getEngValue());
+						s.getData().clear();
 						s.getData().add(data);
 						Tooltip.install(data.getNode(), new Tooltip(pd.getEngValue() + "\n" +
 								(pd.getGenerationTime().toString())));
 						if(pd.getGenerationTime().isAfter(maxGenerationTimeOnChart)) {
 							maxGenerationTimeOnChart = pd.getGenerationTime();
 						}
+						applySerieVisibility(s, isSerieVisible(s.getName()));
 					} else {
-						parameter2series.remove(pd.getPath());
+						object2series.remove(pd.getPath());
 						chart.getData().remove(s);
 					}
 				}
@@ -116,20 +115,9 @@ public class XYBarChartManager extends AbstractChartManager {
 		}
 	}
 
-	@Override
-	public void clear() {
-		this.parameter2series.values().forEach(a -> a.getData().clear());
-		this.maxGenerationTimeOnChart = Instant.EPOCH;
-	}
-
     @Override
     public String getChartType() {
         return "bar";
-    }
-
-    @Override
-    public List<String> getCurrentEntityPaths() {
-        return parameter2series.keySet().stream().map(SystemEntityPath::asString).collect(Collectors.toList());
     }
 
 	@Override
@@ -142,10 +130,5 @@ public class XYBarChartManager extends AbstractChartManager {
 	@Override
 	public void setBoundaries(Instant min, Instant max) {
 		// Nothing to do
-	}
-
-	@Override
-	public Instant getLatestReceivedGenerationTime() {
-		return maxGenerationTimeOnChart;
 	}
 }

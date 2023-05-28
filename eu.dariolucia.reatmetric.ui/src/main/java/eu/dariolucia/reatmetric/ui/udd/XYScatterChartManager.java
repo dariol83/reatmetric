@@ -36,20 +36,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class XYScatterChartManager extends AbstractChartManager {
+public class XYScatterChartManager extends AbstractChartManager<Instant, Number> {
 
 	private final ScatterChart<Instant, Number> chart;
-	private final Map<SystemEntityPath, ScatterChart.Series<Instant, Number>> event2series = new LinkedHashMap<>();
 	private final Map<SystemEntityPath, Integer> event2position = new TreeMap<>();
 
 	private final AtomicInteger eventCounter = new AtomicInteger(0);
-	private volatile Instant maxGenerationTimeOnChart = Instant.EPOCH;
 
-	public XYScatterChartManager(Consumer<AbstractChartManager> informer, ScatterChart<Instant, Number> n) {
+	public XYScatterChartManager(Consumer<AbstractChartManager<Instant, Number>> informer, ScatterChart<Instant, Number> n) {
 		this(informer, n, true);
 	}
 
-    public XYScatterChartManager(Consumer<AbstractChartManager> informer, ScatterChart<Instant, Number> n, boolean registerDnD) {
+    public XYScatterChartManager(Consumer<AbstractChartManager<Instant, Number>> informer, ScatterChart<Instant, Number> n, boolean registerDnD) {
     	super(informer);
 		this.chart = n;
 		if(registerDnD) {
@@ -57,6 +55,7 @@ public class XYScatterChartManager extends AbstractChartManager {
 			this.chart.setOnDragEntered(this::onDragEntered);
 			this.chart.setOnDragExited(this::onDragExited);
 			this.chart.setOnDragDropped(this::onDragDropped);
+			addMenu(this.chart);
 		}
 	}
 
@@ -87,18 +86,18 @@ public class XYScatterChartManager extends AbstractChartManager {
     }
 
 	private void addEvent(SystemEntityPath content) {
-		if(this.event2series.containsKey(content)) {
+		if(this.object2series.containsKey(content)) {
         	return;
         }
 
-		ScatterChart.Series<Instant, Number> series = new ScatterChart.Series<>();
+		XYChart.Series<Instant, Number> series = new ScatterChart.Series<>();
         series.setName(content.getLastPathElement());
-        this.event2series.put(content, series);
+        this.object2series.put(content, series);
         this.event2position.put(content, eventCounter.incrementAndGet());
 		// Workaround to fix ScatterChart bug: https://stackoverflow.com/questions/30171290/javafx-scatterchart-does-not-display-legend-symbol-when-initialized-with-empty-d
 		series.getData().add(new XYChart.Data<>(Instant.EPOCH, eventCounter.get()));
+		setSerieVisible(series.getName(), true);
         this.chart.getData().add(series);
-		// ((CategoryAxis) this.chart.getYAxis()).getCategories().add(content.getPath().asString());
         addPlottedEvent(content);
 	}
 
@@ -107,34 +106,23 @@ public class XYScatterChartManager extends AbstractChartManager {
 		for(AbstractDataItem item : datas) {
 			if(item instanceof EventData) {
 				EventData pd = (EventData) item;
-				ScatterChart.Series<Instant, Number> s = event2series.get(pd.getPath());
+				XYChart.Series<Instant, Number> s = object2series.get(pd.getPath());
 				if (s != null) {
-					ScatterChart.Data<Instant, Number> data = new ScatterChart.Data<>(pd.getGenerationTime(), event2position.get(pd.getPath()));
+					XYChart.Data<Instant, Number> data = new ScatterChart.Data<>(pd.getGenerationTime(), event2position.get(pd.getPath()));
 					s.getData().add(data);
-					// data.getNode().setVisible(false);
 					Tooltip.install(data.getNode(), new Tooltip(pd.getGenerationTime().toString()));
 					if(pd.getGenerationTime().isAfter(maxGenerationTimeOnChart)) {
 						maxGenerationTimeOnChart = pd.getGenerationTime();
 					}
+					applySerieVisibility(s, isSerieVisible(s.getName()));
 				}
 			}
 		}
 	}
 
 	@Override
-	public void clear() {
-		this.event2series.values().forEach(a -> a.getData().clear());
-		this.maxGenerationTimeOnChart = Instant.EPOCH;
-	}
-
-	@Override
 	public String getChartType() {
 		return "scatter";
-	}
-
-	@Override
-	public List<String> getCurrentEntityPaths() {
-		return event2series.keySet().stream().map(SystemEntityPath::asString).collect(Collectors.toList());
 	}
 
 	@Override
@@ -148,10 +136,5 @@ public class XYScatterChartManager extends AbstractChartManager {
 		for(String item : items) {
 			addEvent(SystemEntityPath.fromString(item));
 		}
-	}
-
-	@Override
-	public Instant getLatestReceivedGenerationTime() {
-		return maxGenerationTimeOnChart;
 	}
 }

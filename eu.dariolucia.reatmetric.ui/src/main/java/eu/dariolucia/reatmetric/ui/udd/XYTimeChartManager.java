@@ -32,23 +32,19 @@ import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class XYTimeChartManager extends AbstractChartManager {
+public class XYTimeChartManager extends AbstractChartManager<Instant, Number> {
 
 	private final XYChart<Instant, Number> chart;
-	private final Map<SystemEntityPath, XYChart.Series<Instant, Number>> parameter2series = new LinkedHashMap<>();
-	private volatile Instant maxGenerationTimeOnChart = Instant.EPOCH;
 
-	public XYTimeChartManager(Consumer<AbstractChartManager> informer, XYChart<Instant, Number> n) {
+	public XYTimeChartManager(Consumer<AbstractChartManager<Instant, Number>> informer, XYChart<Instant, Number> n) {
 		this(informer, n, true);
 	}
 
-    public XYTimeChartManager(Consumer<AbstractChartManager> informer, XYChart<Instant, Number> n, boolean registerDnD) {
+    public XYTimeChartManager(Consumer<AbstractChartManager<Instant, Number>> informer, XYChart<Instant, Number> n, boolean registerDnD) {
     	super(informer);
 		this.chart = n;
 		if(registerDnD) {
@@ -56,6 +52,7 @@ public class XYTimeChartManager extends AbstractChartManager {
 			this.chart.setOnDragEntered(this::onDragEntered);
 			this.chart.setOnDragExited(this::onDragExited);
 			this.chart.setOnDragDropped(this::onDragDropped);
+			addMenu(this.chart);
 		}
 	}
 
@@ -86,14 +83,15 @@ public class XYTimeChartManager extends AbstractChartManager {
     }
 
 	private void addParameter(SystemEntityPath content) {
-		if(this.parameter2series.containsKey(content)) {
+		if(this.object2series.containsKey(content)) {
         	return;
         }
 		
 		XYChart.Series<Instant, Number> series = new XYChart.Series<>();
         series.setName(content.getLastPathElement());
-        this.parameter2series.put(content, series);
-        this.chart.getData().add(series);
+        this.object2series.put(content, series);
+		setSerieVisible(series.getName(), true);
+		this.chart.getData().add(series);
         
         addPlottedParameter(content);
 	}
@@ -103,7 +101,7 @@ public class XYTimeChartManager extends AbstractChartManager {
 		for(AbstractDataItem item : datas) {
 			if(item instanceof ParameterData) {
 				ParameterData pd = (ParameterData) item;
-				XYChart.Series<Instant, Number> s = parameter2series.get(pd.getPath());
+				XYChart.Series<Instant, Number> s = object2series.get(pd.getPath());
 				if (s != null && pd.getEngValue() != null) {
 					// if not a number, remove the parameter from the plot
 					if(pd.getEngValue() instanceof Number) {
@@ -115,19 +113,14 @@ public class XYTimeChartManager extends AbstractChartManager {
 						if(pd.getGenerationTime().isAfter(maxGenerationTimeOnChart)) {
 							maxGenerationTimeOnChart = pd.getGenerationTime();
 						}
+						applySerieVisibility(s, isSerieVisible(s.getName()));
 					} else {
-						parameter2series.remove(pd.getPath());
+						object2series.remove(pd.getPath());
 						chart.getData().remove(s);
 					}
 				}
 			}
 		}
-	}
-
-	@Override
-	public void clear() {
-		this.parameter2series.values().forEach(a -> a.getData().clear());
-		this.maxGenerationTimeOnChart = Instant.EPOCH;
 	}
 
 	@Override
@@ -142,11 +135,6 @@ public class XYTimeChartManager extends AbstractChartManager {
 	}
 
 	@Override
-	public List<String> getCurrentEntityPaths() {
-		return parameter2series.keySet().stream().map(SystemEntityPath::asString).collect(Collectors.toList());
-	}
-
-	@Override
 	public void setBoundaries(Instant min, Instant max) {
     	((InstantAxis) this.chart.getXAxis()).setLowerBound(min);
 		((InstantAxis) this.chart.getXAxis()).setUpperBound(max);
@@ -157,10 +145,5 @@ public class XYTimeChartManager extends AbstractChartManager {
 		for(String item : items) {
 			addParameter(SystemEntityPath.fromString(item));
 		}
-	}
-
-	@Override
-	public Instant getLatestReceivedGenerationTime() {
-		return maxGenerationTimeOnChart;
 	}
 }
