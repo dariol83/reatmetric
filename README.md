@@ -30,6 +30,7 @@ ReatMetric is a modular framework, decomposed in modules following the Java modu
 - **eu.dariolucia.reatmetric.driver.serial**: this module is driver that allows communication to a serial interface.
 - **eu.dariolucia.reatmetric.driver.spacecraft**: this module provides a driver implementation for the monitoring and control of a CCSDS/ECSS-PUS compliant spacecraft. Currently it includes support for the reception of TM/AOS frames via SLE RAF/RCF services, TM packet extraction, parameter decoding, PUS 9 time correlation, PUS 5 event mapping, PUS 1 command verification, PUS 11 on-board command scheduling (limited to 11,4 commands), telecommand encoding and CLTU transmission via SLE CLTU, full COP-1 support.
 - **eu.dariolucia.reatmetric.driver.test**: this module is a simple test driver that shows how to implement a simple custom driver.
+- **eu.dariolucia.reatmetric.driver.httpserver**: this module provides a simple, well documented REST/JSON API for monitoring, control and retrieval of data via a HTTP interface.
 
 ### Dependencies
 The ReatMetric modules are based on a very limited set of dependencies:
@@ -126,7 +127,7 @@ for the elements that must be accessible to any remote high-level system.
 
 ### Serial Driver
 
-The serial deriver allows serial communication to provide ReatMetric data (parameters and messages) via the serial port.
+The serial driver allows serial communication to provide ReatMetric data (parameters and messages) via the serial port.
 The driver was developed to interface an Atari Portfolio (https://en.wikipedia.org/wiki/Atari_Portfolio) for parameter/messages 
 visualisation. Even if it is pretty useless in practice, the main objectives to write such driver were to learn how to handle
 USB ports using Java, and to demonstrate that it is still possible to have something that works and it is optimised to 
@@ -134,6 +135,11 @@ exchange data with hardware that is more than 30 years old.
 
 The client-driven protocol implemented by the driver can be re-used in other drivers easily, as it is not strictly coupled to the 
 underlying communication interface. 
+
+### HTTP Server Driver
+
+The HTTP server driver allows interactions to the system by exposing a REST/JSON API on HTTP. The driver comes together with a Javascript library,
+which can be used in web pages to remotely connect to ReatMetric and request interactions. Several HTML pages using the library are provided as example.
 
 ## Performance
 The performance are computed with reference to the following 2 platforms:
