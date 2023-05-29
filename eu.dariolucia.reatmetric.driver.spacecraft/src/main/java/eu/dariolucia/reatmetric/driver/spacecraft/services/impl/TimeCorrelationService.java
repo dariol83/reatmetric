@@ -50,6 +50,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * This class implements the ECSS PUS 9 time reporting service.
@@ -238,24 +239,68 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
         }
         // Iterate on the time couples (they are max 2): if utcTime is before of any of the two second members of each pair, then forget about this time couple
         for(Pair<Instant, Instant> couple : timeCouples) {
-            if(utcTime.isBefore(couple.getSecond())) {
+            if(utcTime.isBefore(couple.getSecond())) { // old time couple
                 return;
             }
         }
         // Check is OK, add time couple
         this.timeCouples.add(Pair.of(onboardTime, utcTime));
-        if(this.timeCouples.size() > 2) {
+        if(this.timeCouples.size() > configuration().getNumTimeCouples()) {
+            // while loop not needed, time couples are added once per time
             this.timeCouples.remove(0);
         }
         updateCoefficients();
     }
 
     private void updateCoefficients() {
+        if(timeCouples.size() == 2) {
+            directInterpolation();
+        } else if(timeCouples.size() > 2) {
+            linearRegression();
+        }
+    }
+
+    private void linearRegression() {
+        Instant mostRecentTimeCouple = timeCouples.get(timeCouples.size() - 1).getSecond();
+        // Convert data set
+        List<Pair<BigDecimal, BigDecimal>> converted = timeCouples.stream().map(this::convert).collect(Collectors.toList());
+        // Get the coefficients
+        this.obt2gtCoefficients = LinearRegressor.calculate(converted);
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.log(Level.FINE, String.format("Time coefficient generated (LR): m=%s, q=%s",
+                    obt2gtCoefficients.getFirst().toPlainString(),
+                    obt2gtCoefficients.getFirst().toPlainString()));
+        }
+        // Distribute the coefficients: generation time is the UTC generation time of the most recent time couple
+        distributeCoefficients(this.obt2gtCoefficients, mostRecentTimeCouple);
+    }
+
+    private void directInterpolation() {
         // Use the two time couples, if available
         if(timeCouples.size() >= 2) {
             Pair<Instant, Instant> firstTimeCouple = timeCouples.get(0);
             Pair<Instant, Instant> secondTimeCouple = timeCouples.get(1);
             // Order so that firstTimeCouple.getFirst() is lower than secondTimeCouple.getFirst()
+
+            // For my (code) descendants: I wrote this code in 2022 and added the comment below in 2023.
+
+            // I already predict the purist's comment: that does not work with wrap around of the OBT!!
+            //
+            // Right, but let's do some math...
+            // A typical time format for nowadays mission is CUC 4,2 or CUC 4,3.
+            // This CUC uses 4 bytes for the number of seconds since epoch. Assuming that the epoch is the launch year
+            // the satellite, the onboard clock will wrap around after 4.294.967.295 seconds, so after 1.193.046 hours,
+            // so after 49.710 days, so after 135 years assuming that all years are leap years. Even assuming that the
+            // epoch is 2000, the wrap-around will be in 2135. And even assuming you use the CCSDS epoch, you have time
+            // until 2093.
+            //
+            // Therefore... if you use this code and care about the wrap-around problem, you must definitely have great
+            // expectations about your own life and the life of your mission. A suggestion: leave the issue to the new
+            // generations and go on with your life.
+            //
+            // The of course, you always have the chance to consider this corner case that won't happen during your
+            // life, to make the code uglier and more complex, showing the basic attitude of many people that complicate
+            // problems and solutions, instead of being pragmatic.
             if(firstTimeCouple.getFirst().isAfter(secondTimeCouple.getFirst())) {
                 // Swap
                 Pair<Instant, Instant> temp = firstTimeCouple;
@@ -273,7 +318,7 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
             BigDecimal m = (fTc.getSecond().subtract(sTc.getSecond())).divide(divisor, 9, RoundingMode.HALF_UP);
             BigDecimal q = sTc.getSecond().subtract(m.multiply(sTc.getFirst()));
             if(LOG.isLoggable(Level.FINE)) {
-                LOG.log(Level.FINE, String.format("Time coefficient generated: m=%s, q=%s", m.toPlainString(), q.toPlainString()));
+                LOG.log(Level.FINE, String.format("Time coefficient generated (DI): m=%s, q=%s", m.toPlainString(), q.toPlainString()));
             }
             this.obt2gtCoefficients = Pair.of(m, q);
             // Distribute the coefficients: generation time is the UTC generation time of the most recent time couple
