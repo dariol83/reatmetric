@@ -262,6 +262,7 @@ Example of remoting configuration:
 ## Implement your driver
 
 ## Roadmap
+- SCOS-2000 MIB conversion service
 - Web interface (finalize HTTP driver)
 - Generic binary/ASCII UDP/TCP driver
 - Optimisations, features and bug-fixes for the JavaFX UI (support for custom views in the UI)
