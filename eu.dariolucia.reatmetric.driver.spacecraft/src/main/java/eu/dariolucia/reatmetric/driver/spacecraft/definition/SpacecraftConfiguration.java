@@ -22,6 +22,7 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.*;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.Provider;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,11 +31,18 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SpacecraftConfiguration {
 
+    private static final String HOME_VAR = "$HOME";
+    private static final String HOME_DIR = System.getProperty("user.home");
     public static SpacecraftConfiguration load(InputStream is) throws IOException {
         try {
             JAXBContext jc = JAXBContext.newInstance(SpacecraftConfiguration.class);
             Unmarshaller u = jc.createUnmarshaller();
             SpacecraftConfiguration o = (SpacecraftConfiguration) u.unmarshal(is);
+            if(o.getPacketServiceConfiguration() != null) {
+                for (ServiceConfiguration sc : o.getPacketServiceConfiguration().getServices()) {
+                    sc.setConfiguration(sc.getConfiguration().replace(HOME_VAR, HOME_DIR));
+                }
+            }
             return o;
         } catch (JAXBException e) {
             throw new IOException(e);

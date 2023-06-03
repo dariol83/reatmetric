@@ -27,7 +27,7 @@ public class ServiceConfiguration {
     private String type;
 
     @XmlAttribute(name = "configuration", required = true)
-    private String configuration;
+    private String configuration = "";
 
     public String getType() {
         return type;

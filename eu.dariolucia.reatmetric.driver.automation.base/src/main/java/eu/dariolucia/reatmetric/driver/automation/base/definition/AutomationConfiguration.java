@@ -28,11 +28,17 @@ import java.io.InputStream;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class AutomationConfiguration {
 
+    private static final String HOME_VAR = "$HOME";
+    private static final String HOME_DIR = System.getProperty("user.home");
+
     public static AutomationConfiguration load(InputStream is) throws IOException {
         try {
             JAXBContext jc = JAXBContext.newInstance(AutomationConfiguration.class);
             Unmarshaller u = jc.createUnmarshaller();
             AutomationConfiguration o = (AutomationConfiguration) u.unmarshal(is);
+            if(o.getScriptFolder() != null) {
+                o.setScriptFolder(o.getScriptFolder().replace(HOME_VAR, HOME_DIR));
+            }
             return o;
         } catch (JAXBException e) {
             throw new IOException(e);
