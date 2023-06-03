@@ -98,6 +98,8 @@ In order to test the driver, a simplified telemetry generator and telecommand pr
 The simulator supports the generation of housekeeping telemetry packets, time packets, on-board events and command verifications reports. It also has support for telecommands received in AD and BD mode, BC frames and 
 basic support for time-tagged commands. 
 
+If you have MIB file in the ESA SCOS-2000 format (e.g. https://issues.cosmos.esa.int/solarorbiterwiki/download/attachments/23757668/MOC-applicable%20MIB%20egos-mcs-s2k-icd-0001-version7.0-FINAL.pdf?version=1&modificationDate=1522940882000&api=v2), it is possible to convert it to the ReatMetric format. I wrote a converter myself: as I am unsure about the ESA MIB licensing (even if the standard is freely available, see link above), I feel unsure to provide the source code directly, but I am working to make it available as a (web) service in the short term. In the meantime, if you need support to convert a MIB, please contact me directly.
+
 ### Automation Driver
 
 The automation drivers support 3 different languages so far, even though 2 are probably buggy:
@@ -260,6 +262,7 @@ Example of remoting configuration:
 ## Implement your driver
 
 ## Roadmap
+- SCOS-2000 MIB conversion service
 - Web interface (finalize HTTP driver)
 - Generic binary/ASCII UDP/TCP driver
 - Optimisations, features and bug-fixes for the JavaFX UI (support for custom views in the UI)
