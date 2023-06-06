@@ -97,6 +97,8 @@ public class ActivityRequestHandler extends AbstractHttpRequestHandler {
 
     private int handleActivityInvokeRequest(HttpExchange exchange) throws IOException {
         // Retrieve the request from the body
+        // TODO: the arguments must be "converted" from JSON arguments to what ReatMetric expects as type. This means
+        //  that the activity descriptor must be used to "sanitize" the constructed ActivityRequest
         ActivityRequest request = JsonParseUtil.parseActivityRequest(exchange.getRequestBody());
         // Start activity
         try {
