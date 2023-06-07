@@ -193,7 +193,7 @@ public class JsonParseUtil {
         );
     }
 
-    public static ActivityRequest parseActivityRequest(InputStream requestBody) {
+    public static ActivityRequest parseActivityRequest(InputStream requestBody, Map<String, ActivityDescriptor> descriptors) {
         DocumentContext parsed = JsonPath.parse(requestBody);
         String idAccessor = "$['id']";
         String activityPathAccessor = "$['path']";
@@ -207,8 +207,9 @@ public class JsonParseUtil {
         String route = parsed.read(routeAccessor);
         String source = parsed.read(sourceAccessor);
         // Parse arguments
+        ActivityDescriptor ad = descriptors.get(activityPath);
         List<Map<String, Object>> argumentsObject = parsed.read(argumentListAccessor);
-        List<AbstractActivityArgument> arguments = mapToElements(argumentsObject);
+        List<AbstractActivityArgument> arguments = mapToElements(argumentsObject, ad);
         // Parse properties
         Map<String, String> properties = parsed.read(propertyMapAccessor);
         // Build object
@@ -222,16 +223,18 @@ public class JsonParseUtil {
         );
     }
 
-    private static List<AbstractActivityArgument> mapToElements(Iterable<Map<String, Object>> elementsIterator) {
+    private static List<AbstractActivityArgument> mapToElements(Iterable<Map<String, Object>> elementsIterator, ActivityDescriptor ad) {
         List<AbstractActivityArgument> arguments = new LinkedList<>();
         for(Iterator<Map<String, Object>> it = elementsIterator.iterator(); it.hasNext();) {
             Map<String, Object> arg = it.next(); // record, you need to fetch elements
             String name = (String) arg.get("name");
             if(Objects.equals(arg.get("type"), "plain")) {
                 boolean isEngineering = (boolean) arg.get("engineering");
+                Object value = arg.get("value");
+                value = sanitizeArgumentValue(value, name, isEngineering, ad);
                 PlainActivityArgument plainArgument = isEngineering ?
-                        PlainActivityArgument.ofEngineering(name, arg.get("value")) :
-                        PlainActivityArgument.ofSource(name, arg.get("value"));
+                        PlainActivityArgument.ofEngineering(name, value) :
+                        PlainActivityArgument.ofSource(name, value);
                 arguments.add(plainArgument);
             } else {
                 // assume array, must be parsed
@@ -240,13 +243,49 @@ public class JsonParseUtil {
                 Iterable<Map<String, Object>> recordsIterator = (Iterable<Map<String, Object>>) arg.get("records");
                 for(Iterator<Map<String, Object>> it2 = recordsIterator.iterator(); it2.hasNext();) {
                     Map<String, Object> recordItem = it2.next(); // record, you need to fetch elements
-                    List<AbstractActivityArgument> elems = mapToElements((Iterable<Map<String, Object>>) recordItem.get("elements"));
+                    List<AbstractActivityArgument> elems = mapToElements((Iterable<Map<String, Object>>) recordItem.get("elements"), ad);
                     records.add(new ArrayActivityArgumentRecord(elems));
                 }
                 arguments.add(new ArrayActivityArgument(name, records));
             }
         }
         return arguments;
+    }
+
+    private static Object sanitizeArgumentValue(Object value, String argName, boolean isEngineering, ActivityDescriptor ad) {
+        if(ad == null) {
+            return value;
+        }
+        // Look for argument descriptor
+        Queue<AbstractActivityArgumentDescriptor> descQueue = new LinkedList<>(ad.getArgumentDescriptors());
+        while(!descQueue.isEmpty()) {
+            AbstractActivityArgumentDescriptor abstractDescriptor = descQueue.poll();
+            if(abstractDescriptor instanceof ActivityPlainArgumentDescriptor) {
+                ActivityPlainArgumentDescriptor plainArg = (ActivityPlainArgumentDescriptor) abstractDescriptor;
+                if(plainArg.getName().equals(argName)) {
+                    // Sanitize what you can: integer to long if type is UNSIGNED/SIGNED_INTEGER
+                    if(value instanceof Integer) {
+                        if(isEngineering &&
+                            (plainArg.getEngineeringDataType() == ValueTypeEnum.UNSIGNED_INTEGER || plainArg.getEngineeringDataType() == ValueTypeEnum.SIGNED_INTEGER)) {
+                            // Map to Long
+                            return ((Integer) value).longValue();
+                        }
+                        if(!isEngineering &&
+                                (plainArg.getRawDataType() == ValueTypeEnum.UNSIGNED_INTEGER || plainArg.getRawDataType() == ValueTypeEnum.SIGNED_INTEGER)) {
+                            // Map to Long
+                            return ((Integer) value).longValue();
+                        }
+                    }
+                    // There is no point to go ahead with other descriptors, just return the value
+                    return value;
+                }
+            } else if(abstractDescriptor instanceof ActivityArrayArgumentDescriptor) {
+                // Get the inside items and add to queue
+                descQueue.addAll(((ActivityArrayArgumentDescriptor) abstractDescriptor).getElements());
+            }
+        }
+        // If you are here, just return the value
+        return value;
     }
 
     public static OperationalMessageFilter parseOperationalMessageFilter(InputStream requestBody) {

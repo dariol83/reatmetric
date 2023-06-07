@@ -367,8 +367,11 @@
         divToAttach.textContent = '';
 
         args = [];
-        args.push(reatmetric.plainArgument('ARG1','OFF',true));
-        var actRequest = reatmetric.activityRequest(151, 'STATION.POWERSUPPLY.SET_STATUS', args, 'STATION ROUTE', 'Web Page', { "aaa" : "bbb", "CCC" : "test" });
+        args.push(reatmetric.plainArgument('arg1','PARAM1',true));
+        args.push(reatmetric.plainArgument('arg2',0.0092,true));
+        args.push(reatmetric.plainArgument('arg3',123434321,true));
+        args.push(reatmetric.plainArgument('arg4',-47,true));
+        var actRequest = reatmetric.activityRequest(1111001, 'STATION.AUTOMATION.SCRIPT2', args, 'Groovy Automation Engine', 'Web Page', { "aaa" : "bbb", "CCC" : "test" });
 
         activityIdentifier = await reatmetric.invoke(actRequest);
         console.log("Activity id: " + activityIdentifier);
@@ -493,7 +496,7 @@
         <button type="button" onclick="showParameters()">Show Parameters</button>
         <button type="button" onclick="showEvents()">Show Events</button>
         <button type="button" onclick="showActivities()">Show Activities</button>
-        <button type="button" onclick="invokeActivity()">Invoke STATION.POWERSUPPLY.SET_STATUS</button>
+        <button type="button" onclick="invokeActivity()">Invoke STATION.AUTOMATION.SCRIPT2</button>
         <button type="button" onclick="subscribeToEvents()">Subscribe to events</button>
         <button type="button" onclick="unsubscribeFromEvents()">Unsubscribe from events</button>
         <button type="button" onclick="retrieveEventHistory()">Retrieve events</button>

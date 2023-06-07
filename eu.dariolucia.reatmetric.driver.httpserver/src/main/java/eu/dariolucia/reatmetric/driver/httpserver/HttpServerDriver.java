@@ -98,6 +98,7 @@ public class HttpServerDriver implements IDriver {
     private final List<ParameterDescriptor> parameters = new LinkedList<>();
     private final List<EventDescriptor> events = new LinkedList<>();
     private final List<ActivityDescriptor> activities = new LinkedList<>();
+    private final Map<String, ActivityDescriptor> activityMap = new HashMap<>();
 
     public HttpServerDriver() {
         // Nothing to do here
@@ -207,7 +208,9 @@ public class HttpServerDriver implements IDriver {
             } else if (toProcess.getType() == SystemEntityType.PARAMETER) {
                 this.parameters.add((ParameterDescriptor) context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(toProcess.getExternalId()));
             } else if (toProcess.getType() == SystemEntityType.ACTIVITY) {
-                this.activities.add((ActivityDescriptor) context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(toProcess.getExternalId()));
+                ActivityDescriptor ad = (ActivityDescriptor) context.getServiceFactory().getSystemModelMonitorService().getDescriptorOf(toProcess.getExternalId());
+                this.activities.add(ad);
+                this.activityMap.put(ad.getPath().asString(), ad);
             }
         }
     }
@@ -295,5 +298,9 @@ public class HttpServerDriver implements IDriver {
 
     public List<ActivityDescriptor> getActivityList() {
         return Collections.unmodifiableList(activities);
+    }
+
+    public Map<String, ActivityDescriptor> getActivityMap() {
+        return Collections.unmodifiableMap(activityMap);
     }
 }
