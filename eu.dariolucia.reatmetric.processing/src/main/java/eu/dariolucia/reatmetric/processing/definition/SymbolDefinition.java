@@ -16,8 +16,8 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import javax.xml.bind.annotation.*;
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import jakarta.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.io.Serializable;
 
 @XmlAccessorType(XmlAccessType.FIELD)

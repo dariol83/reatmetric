@@ -16,7 +16,7 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
-import javax.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.*;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;

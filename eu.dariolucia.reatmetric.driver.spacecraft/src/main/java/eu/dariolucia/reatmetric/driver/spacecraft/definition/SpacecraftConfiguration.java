@@ -16,10 +16,10 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.annotation.*;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Unmarshaller;
+import jakarta.xml.bind.annotation.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.Provider;

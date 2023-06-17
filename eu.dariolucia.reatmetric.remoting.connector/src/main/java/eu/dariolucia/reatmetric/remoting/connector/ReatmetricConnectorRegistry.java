@@ -22,7 +22,7 @@ import eu.dariolucia.reatmetric.remoting.connector.configuration.ConnectorConfig
 import eu.dariolucia.reatmetric.remoting.connector.configuration.RemotingConnectorConfiguration;
 import eu.dariolucia.reatmetric.remoting.connector.proxy.ReatmetricProxy;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;

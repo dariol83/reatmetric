@@ -3,7 +3,7 @@ open module eu.dariolucia.reatmetric.remoting {
     requires java.rmi;
 
     // In order to activate JAXB implementation
-    requires com.sun.xml.bind;
+    requires jakarta.xml.bind;
 
     requires eu.dariolucia.reatmetric.api;
 

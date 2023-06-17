@@ -18,7 +18,7 @@ package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
 import eu.dariolucia.ccsds.encdec.time.AbsoluteTimeDescriptor;
 
-import javax.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.*;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class TmPusConfiguration {

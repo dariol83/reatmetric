@@ -16,7 +16,7 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
-import javax.xml.bind.annotation.adapters.XmlAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 public class IntToStringAdapter extends XmlAdapter<String, Integer> {
     @Override

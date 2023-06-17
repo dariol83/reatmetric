@@ -1,7 +1,7 @@
 open module eu.dariolucia.reatmetric.driver.test {
     requires java.logging;
     requires java.rmi;
-    requires java.xml.bind;
+    requires jakarta.xml.bind;
 
     requires eu.dariolucia.reatmetric.api;
     requires eu.dariolucia.reatmetric.core;

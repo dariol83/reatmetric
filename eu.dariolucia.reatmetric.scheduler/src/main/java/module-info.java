@@ -2,7 +2,7 @@ open module eu.dariolucia.reatmetric.scheduler {
 
     requires java.logging;
     requires java.rmi;
-    requires java.xml.bind;
+    requires jakarta.xml.bind;
 
     requires eu.dariolucia.reatmetric.api;
 

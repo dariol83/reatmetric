@@ -18,7 +18,7 @@ import eu.dariolucia.reatmetric.api.processing.IProcessingModelFactory;
 
 open module eu.dariolucia.reatmetric.processing {
     requires java.logging;
-    requires java.xml.bind;
+    requires jakarta.xml.bind;
     requires java.scripting;
 
     requires eu.dariolucia.reatmetric.api;

@@ -25,7 +25,7 @@ import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import eu.dariolucia.reatmetric.scheduler.IInternalResolver;
 import eu.dariolucia.reatmetric.scheduler.ScheduledTask;
 
-import javax.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.*;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.*;

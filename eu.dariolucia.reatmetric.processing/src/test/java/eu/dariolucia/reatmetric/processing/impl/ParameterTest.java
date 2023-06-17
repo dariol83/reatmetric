@@ -33,7 +33,7 @@ import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;

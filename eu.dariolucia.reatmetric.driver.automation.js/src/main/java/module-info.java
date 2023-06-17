@@ -2,7 +2,7 @@ import eu.dariolucia.reatmetric.driver.automation.js.JsAutomationDriver;
 
 open module eu.dariolucia.reatmetric.driver.automation.js {
     requires java.logging;
-    requires java.xml.bind;
+    requires jakarta.xml.bind;
     requires java.scripting;
     requires java.rmi;
 

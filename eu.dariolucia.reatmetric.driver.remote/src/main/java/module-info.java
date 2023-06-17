@@ -2,7 +2,7 @@ import eu.dariolucia.reatmetric.driver.remote.RemoteDriver;
 
 open module eu.dariolucia.reatmetric.driver.remote {
     requires java.logging;
-    requires java.xml.bind;
+    requires jakarta.xml.bind;
     requires java.rmi;
 
     requires eu.dariolucia.reatmetric.api;

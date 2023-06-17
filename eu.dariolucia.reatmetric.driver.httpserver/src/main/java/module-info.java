@@ -1,6 +1,6 @@
 open module eu.dariolucia.reatmetric.driver.httpserver {
     requires java.logging;
-    requires java.xml.bind;
+    requires jakarta.xml.bind;
 
     requires jdk.httpserver;
     requires json.path;

@@ -2,7 +2,7 @@ import eu.dariolucia.reatmetric.driver.automation.groovy.GroovyAutomationDriver;
 
 open module eu.dariolucia.reatmetric.driver.automation.groovy {
     requires java.logging;
-    requires java.xml.bind;
+    requires jakarta.xml.bind;
     requires java.scripting;
     requires java.rmi;
 

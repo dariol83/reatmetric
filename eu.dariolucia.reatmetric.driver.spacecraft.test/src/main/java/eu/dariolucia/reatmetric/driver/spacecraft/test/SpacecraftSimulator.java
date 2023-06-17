@@ -23,7 +23,7 @@ import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.CltuServiceInstanceProvider;
 import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstanceProvider;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;

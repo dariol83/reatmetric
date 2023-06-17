@@ -19,9 +19,9 @@ package eu.dariolucia.reatmetric.scheduler.definition;
 import eu.dariolucia.reatmetric.api.processing.input.AbstractActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.PlainActivityArgument;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAttribute;
 import java.io.Serializable;
 
 @XmlAccessorType(XmlAccessType.FIELD)

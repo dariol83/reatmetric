@@ -30,8 +30,9 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
     uses eu.dariolucia.reatmetric.driver.spacecraft.services.IService;
 
     requires java.logging;
-    requires java.xml.bind;
+    requires jakarta.xml.bind;
     requires java.rmi;
+    requires jasn1;
 
     requires eu.dariolucia.reatmetric.api;
     requires eu.dariolucia.reatmetric.core;
