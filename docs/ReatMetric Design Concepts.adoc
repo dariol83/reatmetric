@@ -1,0 +1,194 @@
+= ReatMetric Design & Concepts
+Dario Lucia <dario.lucia@gmail.com>
+:toc:
+:homepage: https://github.com/dariol83/reatmetric
+
+ReatMetric is a Java-based software infrastructure for the implementation of Monitoring & Control (M&C) systems,
+with a strong focus on the space domain. ReatMetric components provide a simple but efficient implementation of the
+typical functions used in an M&C system.
+
+== System Overview
+
+=== Introduction
+
+A Monitoring and Control (abbreviated as M&C) system is an application used to:
+
+* retrieve and process information of the status of hardware and software devices in a given context,
+* allow control and commanding of such devices,
+* present such information to human users, operators and other software systems,
+* detect non-nominal situation and raise alarms accordingly,
+* schedule operations and activities to be executed on the devices,
+* record the most important data for later analysis.
+
+ReatMetric is designed as a modular M&C framework, whereas each module follows the Java Platform Module System
+(https://en.wikipedia.org/wiki/Java_Platform_Module_System). Each module provide a specific set of functionalities,
+data structures and interfaces that can be used by other modules. While some modules provide data structures and
+interfaces that are at the foundation of the framework, other modules can be replaced in isolation.
+
+The modules that form the foundation of the ReatMetric system are shown in the following figure.
+
+=== Monitoring and Control Concepts
+
+In the ReatMetric world, the environment to be monitored and controlled is seen as a hierarchical decomposition,
+starting from a top level object, further decomposed into groups, systems, sub-systems, devices and so on. For instance,
+the monitoring of a domotic system for a home automation system could be hierarchically arranged as follows:
+
+* My house
+** Blinders
+*** Bedroom 1
+**** Window Roller 1
+***** Engine (device)
+***** Control Panel (device)
+**** Window Roller 2
+***** ...
+*** Bedroom 2
+**** Window Roller
+***** ...
+*** Kitchen
+**** Window Roller
+***** ...
+*** Bathroom
+**** Window Roller
+***** ...
+** Appliances
+*** Kitchen
+**** Dishwasher (device)
+**** Oven (device)
+**** Microwave (device)
+**** Fridge (device)
+*** Bathroom
+**** Washing Machine (device)
+**** Dryer (device)
+*** ...
+** Heating System
+*** ...
+** Light System
+*** ...
+** Network
+*** ...
+
+The arrangement of the hierarchy is sometimes obvious to design, while in other cases can be more a matter of taste. In
+the example above, for instance, the hierarchy is a functional hierarchy, based on the functional elements present in
+the domotic system. However, a hierarchical breakdown based on the rooms of the house could have been an alternative.
+What it is not a matter of taste are the physical objects (labelled as 'device'), which are ultimately monitored and
+controlled. Such objects are characterised by having:
+
+* A readable state - i.e. a set of _parameters_ - with related values, which you can actively monitor and, in some cases,
+also change. For instance, a television has the following state parameters: if it is on or off, selected input source,
+selected program, current volume, if is muted or not, version of the installed firmware... Some parameters can be also
+set (e.g. changing the program or muting/unmuting the device), while some others are read-only (e.g. the version of the
+installed firmware).
+* A commanding interface - i.e. a set of defined _activities_ - that specify what you can do with the device. For
+instance, an oven can have a way to request the start of the self-cleaning. Depending on the protocol exposed by the
+device, the lifecycle of activity executions can be monitored (e.g. the device informs that the operation has been
+accepted and, after a while, that the operation has been completed - with success or with error).
+* A way to signal when something happened - i.e. an _event_ - which is relevant for the functioning purpose of the device.
+For instance, a television might signal when a new version of the firmware is detected.
+
+ReatMetric concepts are derived as described above. As it is a M&C framework oriented to the space domain, such concepts
+are a re-elaboration of the M&C concepts reported in the ECSS standard ECSS-E-ST-70C
+(https://esastar-publication.sso.esa.int/api/filemanagement/download?url=emits.sso.esa.int/emits-doc/ESOC/1-6223/ECSS-E-ST-70-31C(31July2008).pdf).
+ReatMetric manages a hierarchical tree composed of so-called _System Entities_. A _System Entity_ (at any level of the
+hierarchy) is characterised by _parameters_, _activities_ and _events_. Some system entities are mapped to actual devices,
+while others are introduced only as 'containers', to partition large systems in subsystems.
+
+=== Parameters
+A _parameter_ is a property containing a value. A parameter defines a so-called raw type and an engineering type:
+
+* The raw type is the type of the value that will be reported for that parameter, for further processing. For instance,
+the status of the mute/unmute parameter of a television might be reported by the television interface as 0 if the TV is
+muted, and 1 if it is unmuted. In such case, the raw type of the 'muted status' parameter is an unsigned integer. The
+value as reported by the TV takes the name of _source value_.
+* The engineering type is the type of the value that will be reported after the processing. For instance, it might be
+desirable to have a mapping between the value 0 to the string 'MUTED' and the value 1 to the string 'UNMUTED'. The
+function mapping the source value to the engineering value takes the name of _calibration function_.
+
+The value of a parameter might be considered valid depending on certain conditions. For instance, the current value of
+the TV volume level should be irrelevant, if the TV is muted. The parameter mapping the TV volume level will have
+therefore a _validity condition_, linked to the parameter value of the mute/unmute parameter. Parameters that are not
+valid are not calibrated.
+
+Each parameter may define a set of _monitoring checks_, i.e. conditions that are evaluated again the engineering value of the
+parameter every time a new engineering value of that parameter is available. If the value is not satisfying the defined
+check, the parameter _alarm state_ will change to a non-nominal state. Each check may define an applicability condition,
+which is evaluated to understand if the related check must be verified or not. Parameters that are not valid are never
+checked.
+
+There is a type of parameters, for which the _source value_ is not retrieved by devices, but it is computed internally
+by ReatMetric, based on an arithmetic/algorithmic expression. Such parameters are called _synthetic parameters_: the
+source value of synthetic parameters is recomputed every time one of the dependant parameters is updated.
+
+=== Activities
+An _activity_ is the definition of an operation that can be performed by a given system entity. An activity is
+characterized by a set of named arguments, each having a raw type and an engineering type. As per parameters, a
+de-calibration function may be present for each argument, to convert the argument value provided as engineering value
+into a source value, which can be delivered to the device.
+
+Once invoked, an _activity occurrence_ is created and dispatched to the specific ReatMetric driver for implementation.
+An activity lifecycle in ReatMetric is defined by the following states:
+
+* CREATION:
+* RELEASE:
+* TRANSMISSION:
+* SCHEDULING:
+* EXECUTION:
+* VERIFICATION:
+* COMPLETED:
+
+=== Events
+
+
+=== Connectors and Routes
+
+
+=== Raw Data
+
+
+== Foundation Modules
+
+=== API
+
+=== Processing
+
+=== Persist
+
+=== Scheduler
+
+=== Core
+
+=== Remoting
+
+=== Remoting Connector
+
+== Driver Modules
+
+=== Automation
+
+=== HTTP Server
+
+=== Remote
+
+=== Spacecraft
+
+=== Serial
+
+== User Interface
+
+== Extending ReatMetric
+
+=== Implement a new driver
+
+=== Generate a new custom package
+
+
+
+
+
+
+
+
+
+
+
+
+
