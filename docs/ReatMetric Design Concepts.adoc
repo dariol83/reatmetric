@@ -27,6 +27,8 @@ interfaces that are at the foundation of the framework, other modules can be rep
 
 The modules that form the foundation of the ReatMetric system are shown in the following figure.
 
+image::docimg/Figure_1.png[ReatMetric Foundation Modules and dependencies]
+
 === Monitoring and Control Concepts
 
 In the ReatMetric world, the environment to be monitored and controlled is seen as a hierarchical decomposition,
@@ -119,24 +121,68 @@ by ReatMetric, based on an arithmetic/algorithmic expression. Such parameters ar
 source value of synthetic parameters is recomputed every time one of the dependant parameters is updated.
 
 === Activities
-An _activity_ is the definition of an operation that can be performed by a given system entity. An activity is
-characterized by a set of named arguments, each having a raw type and an engineering type. As per parameters, a
-de-calibration function may be present for each argument, to convert the argument value provided as engineering value
-into a source value, which can be delivered to the device.
+An _activity_ is the definition of an operation that can be performed by a given system entity. It is an abstract
+representation of an action.
+
+An activity is characterized by a set of named arguments, each having a raw type and an engineering type. As per
+parameters, a de-calibration function may be present for each argument, to convert the argument value provided as
+engineering value into a source value, which is then provided to the underlying layer that implements the execution of
+such activity. Properties can also be defined.
 
 Once invoked, an _activity occurrence_ is created and dispatched to the specific ReatMetric driver for implementation.
-An activity lifecycle in ReatMetric is defined by the following states:
+Upon its creation, an activity occurrence starts its lifecycle. Such lifecycle in ReatMetric is defined by the following
+_states_:
 
-* CREATION:
-* RELEASE:
-* TRANSMISSION:
-* SCHEDULING:
-* EXECUTION:
-* VERIFICATION:
-* COMPLETED:
+* CREATION: this state is assigned upon creation of the activity occurrence.
+* RELEASE: this state is reached when the activity occurrence is prepared for release.
+* TRANSMISSION: this state is reached as soon as the activity occurrence leaves the ReatMetric system.
+* SCHEDULING: this state is reached when the activity occurrence will be executed by the final destination at a given
+point in time.
+* EXECUTION: this state is reached when the activity occurrence is under execution by the final destination
+* VERIFICATION: this state is reached when the effects of the activity occurrence can be verified at parameter level in
+the ReatMetric processing model.
+* COMPLETED: this state is reached when no further state updates are expected. The activity occurrence lifecycle is
+considered complete.
+
+In order to transition from one state to the other, _verification stages_ about the progress of the activity occurrence
+are announced to the ReatMetric processing model, internally by ReatMetric itself and by the specific driver that
+manages the implementation of the activity occurrence. A verification stage can be considered as a concrete step in the
+progress of an activity occurrence. Each verification stage is announced and further updated by means of _reports_.
+Typically, such reports depend on the way the transmission protocol is defined and in the specific lifecycle of the
+activity implementation. Each report specifies: the name of the verification stage, the activity state it belongs to;
+the estimated/exact execution time of the activity occurrence; the activity state the activity occurrence shall
+transition to, upon processing the report (if the report is successful); an optional result.
+
+The report of a verification stage can have one of the following states:
+
+* UNKNOWN: The stage state is unknown and no better prediction can be done
+* EXPECTED: The stage should be concluded, but no confirmation of the stage was received yet
+* PENDING: The stage is reported as currently open and the system is waiting for its confirmation
+* TIMEOUT: The timeout linked to the stage expired
+* OK: The stage is reported as successfully executed
+* FAIL: The stage is reported as failed, but this failure is not fatal for the execution of the activity occurrence
+* FATAL: The stage is reported as failed, the activity occurrence shall be considered completed
+* ERROR: This specific state is reported in relation to a verification expression, linked to the activity occurrence
+state VERIFICATION when the expression cannot be evaluated due to expression's errors
+
+An important state of an activity occurrence lifecycle is represented by the VERIFICATION state: in such state,
+ReatMetric will evaluate a specific expression. Such expression, if defined, is based on parameters and activity
+occurrence arguments, and it is used to verify that the effects of the activity occurrence execution are actually
+visible in the monitored system, regardless of any execution report possibly generated by the end system.
 
 === Events
+An _event_ is used to indicate the occurrence of a situation. Differently from activity occurrences and parameters,
+events do not have a state as such, because their lifetime is, theoretically speaking, istantaneous. For instance, an
+event could be raised by a television to indicate the presence of a new firmware version. It could be that the same
+information is delivered by a parameter as well (e.g. a parameter named "Latest available firmware version"): the change
+in value of this specific parameter triggers the event. In more correct terms, the object generated by ReatMetric should
+be called _event report_ rather than just _event_: the terminology has been used to align it to the ECSS standard.
 
+An event has a qualifier and a source, and it is defined by a severity and a type. Events in ReatMetric can include a
+generic report object, which contains additional information about the raised event.
+
+In ReatMetric events can be reported by the drivers (so called _reported events_), or can be detected autonomously by the ReatMetric processing model,
+by evaluating conditions upon change of parameters (so called _TM-based events_).
 
 === Connectors and Routes
 
