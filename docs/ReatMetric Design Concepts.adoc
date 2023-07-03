@@ -181,14 +181,53 @@ be called _event report_ rather than just _event_: the terminology has been used
 An event has a qualifier and a source, and it is defined by a severity and a type. Events in ReatMetric can include a
 generic report object, which contains additional information about the raised event.
 
-In ReatMetric events can be reported by the drivers (so called _reported events_), or can be detected autonomously by the ReatMetric processing model,
-by evaluating conditions upon change of parameters (so called _TM-based events_).
+In ReatMetric events can be reported by the drivers (so-called _reported events_), or can be detected autonomously by
+the ReatMetric processing model, by evaluating conditions upon change of parameters (so-called _TM-based events_).
 
 === Connectors and Routes
+In order to receive data from monitored devices and to send commands to such devices, ReatMetric needs to establish data
+connections to them. Typically, a device allows a connection using a specific network/transport protocol, which is used
+to exchange data using an application protocol. For instance:
 
+- you can connect using a TCP/IP connection, which it is used to exchange binary or ASCII-based Protocol Data Units (PDUs);
+- you can connect using a TCP/IP connection, which it is used to exchange HTTP(s) requests/responses;
+- you can query the device using SNMP GET requests and send commands via SNMP SET requests;
+- you can connect via a serial port, which it is used to exchange binary or ASCII-based PDUs.
+
+The way of connecting and exchanging messages to the device is device-dependent. Even the number of connections is
+device-dependent. Some devices might deliver monitoring data using a TCP/IP port and receive control requests and
+commands using a separate TCP/IP port.
+
+In ReatMetric, a _connector_ is used to represent and manage a logical connection between the ReatMetric system and the
+target device. For every device, you may have one or more connectors. Via the connector interface, you can start, stop,
+abort, initialise and monitor the logical connection to the target device. A logical connection can be mapped to a
+single physical connection to the device, or to multiple physical connections, even to different devices.
+This depends on the way the support to the device is implemented (see section <<_drivers>>).
+
+The state of a logical connection determines the availability of a so-called _route_. A route is a uniquely identified
+path from the ReatMetric system to the target device. Every parameter or event received from a given route reports also
+the incoming route as part of its state. In the same way, when an activity occurrence is dispatched, the outgoing route
+must be indicated. If the route is not available, then the dispatch of the activity occurrence fails.
+
+Even if there is typically a logical link between a _connector_ and a specific _route_, this link is not enforced by
+ReatMetric. In fact:
+
+- A connector can manage one or more logical connections;
+- A logical connection is mapped to zero or more physical connections;
+- A route can be logically mapped to one or more logical connections.
+
+For the ReatMetric architecture, all this management happens inside the so-called _drivers_ (see section <<_drivers>>).
 
 === Raw Data
+In ReatMetric, a _raw data_ is an semi-opaque data object, with the meaning that ReatMetric does not know the internal
+structure or data of the object, but only some meta-data attributes, such as the originating source, the route, the
+generation and reception time, and so on. Any module in the ReatMetric architecture can store and retrieve _raw data_.
 
+For instance, _raw data_ can be used to distribute and store low level PDUs that are exchanged at connection level between
+ReatMetric and the target devices. In the same way, it can be used to store changes of state or internal states of modules
+and drivers, as required.
+
+=== Drivers
 
 == Foundation Modules
 
