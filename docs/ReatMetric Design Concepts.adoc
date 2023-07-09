@@ -3,11 +3,10 @@ Dario Lucia <dario.lucia@gmail.com>
 :toc:
 :homepage: https://github.com/dariol83/reatmetric
 
+== System Overview
 ReatMetric is a Java-based software infrastructure for the implementation of Monitoring & Control (M&C) systems,
 with a strong focus on the space domain. ReatMetric components provide a simple but efficient implementation of the
 typical functions used in an M&C system.
-
-== System Overview
 
 === Introduction
 
@@ -184,7 +183,7 @@ generic report object, which contains additional information about the raised ev
 In ReatMetric events can be reported by the drivers (so-called _reported events_), or can be detected autonomously by
 the ReatMetric processing model, by evaluating conditions upon change of parameters (so-called _TM-based events_).
 
-=== Connectors and Routes
+=== Connectors, activity handlers and routes
 In order to receive data from monitored devices and to send commands to such devices, ReatMetric needs to establish data
 connections to them. Typically, a device allows a connection using a specific network/transport protocol, which is used
 to exchange data using an application protocol. For instance:
@@ -206,15 +205,17 @@ This depends on the way the support to the device is implemented (see section <<
 
 The state of a logical connection determines the availability of a so-called _route_. A route is a uniquely identified
 path from the ReatMetric system to the target device. Every parameter or event received from a given route reports also
-the incoming route as part of its state. In the same way, when an activity occurrence is dispatched, the outgoing route
-must be indicated. If the route is not available, then the dispatch of the activity occurrence fails.
+the incoming route as part of its state. In the same way, when an activity occurrence is dispatched to an _activity
+handler_, the outgoing route must be indicated. If the route is not available, then the dispatch of the activity
+occurrence fails.
 
 Even if there is typically a logical link between a _connector_ and a specific _route_, this link is not enforced by
-ReatMetric. In fact:
+ReatMetric directly. In fact:
 
 - A connector can manage one or more logical connections;
 - A logical connection is mapped to zero or more physical connections;
-- A route can be logically mapped to one or more logical connections.
+- A route is declared as managed by an activity handler;
+- A route can be logically mapped to one or more logical connections by the activity handler that manages the route.
 
 For the ReatMetric architecture, all this management happens inside the so-called _drivers_ (see section <<_drivers>>).
 
@@ -223,11 +224,49 @@ In ReatMetric, a _raw data_ is an semi-opaque data object, with the meaning that
 structure or data of the object, but only some meta-data attributes, such as the originating source, the route, the
 generation and reception time, and so on. Any module in the ReatMetric architecture can store and retrieve _raw data_.
 
-For instance, _raw data_ can be used to distribute and store low level PDUs that are exchanged at connection level between
-ReatMetric and the target devices. In the same way, it can be used to store changes of state or internal states of modules
-and drivers, as required.
+For instance, _raw data_ can be used to distribute and optioanlly store low level PDUs that are exchanged at connection
+level between ReatMetric and the target devices. In the same way, it can be used to store changes of state or internal
+states of modules and drivers, as required.
+
+=== ReatMetric Main Interface
 
 === Drivers
+A _driver_ is the object that connect ReatMetric with an external device or system. A driver is responsible for:
+
+- Managing and providing a set of activity handlers, which are the entry point for activity dispatching by the ReatMetric
+system;
+- Managing and providing a set of connectors, which are used to manage the connections between ReatMetric and the external
+device or system;
+- Managing the specific protocols and formats to retrieve parameters and events from the external device or system, and
+ingest such data into the ReatMetric processing model;
+- Managing and providing the raw data interpreters, i.e. renderers that can be used to display raw data internals, as
+made visible by the driver;
+- Providing internal state information, for debug and monitoring purposes.
+
+The lifecycle of a driver is pretty simple:
+
+- A driver is instantiated and initialised by the ReatMetric Core module, by invoking the initialise(...) method. This
+method contains several arguments, among others the name and configuration of the drivers, and the _context_ of the
+ReatMetric Core instance.
+- The driver is enquired to know the available activity handlers, raw data renderers and transport connectors. Each of
+this elements is then used accordingly by the relevant ReatMetric modules, i.e. the activity handlers are used by the
+processing model when dispatching activity occurrences; the renderers are used by the MMI; the transport connectors are
+used by the ReatMetric Core and by the MMI to activate and manage the external connections.
+- At ReatMetric Core instance shutdown, the dispose() method is invoked, to perform clean-up activities and to release
+the resources.
+
+Once a driver is disposed, it is never re-used. Therefore, the initialise(...) and dispose() methods are called only
+once during a single ReatMetric Core instance lifecycle.
+
+In the initialise(...) method, a reference to a context object is provided. Such object allows the driver to reach the
+different functions made available by the ReatMetric system:
+
+- The archive, if available;
+- The scheduler, if available;
+- The processing model;
+- The raw data broker;
+- The operational message broker;
+- The ReatMetric system main interface.
 
 == Foundation Modules
 

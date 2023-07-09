@@ -21,21 +21,62 @@ import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
+import eu.dariolucia.reatmetric.core.configuration.DriverConfiguration;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 
 import java.util.List;
 
+/**
+ * This interface describes the functions of a ReatMetric driver.
+ */
 public interface IDriver extends IDebugInfoProvider {
 
+    /**
+     * Initialise the driver with the provided information. This method is called once per ReatMetric Core instantiation.
+     *
+     * @param name the name of the driver, as specified in the ReatMetric Core configuration {@link DriverConfiguration#getName()}
+     * @param driverConfigurationDirectory the directory containing the configuration of the driver, as specified in the ReatMetric Core configuration {@link DriverConfiguration#getConfiguration()}
+     * @param context the context of the ReatMetric Core system
+     * @param coreConfiguration the configuration of the ReatMetric Core system
+     * @param subscriber the subscriber to the driver state change
+     * @throws DriverException in case of issues during the initialisation of the driver
+     */
     void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException;
 
+    /**
+     * Return the current driver status.
+     *
+     * @return the current driver status, shall not be null
+     */
     SystemStatus getDriverStatus();
 
+    /**
+     * Return the list of {@link IRawDataRenderer} that can be used to report detailed information of {@link eu.dariolucia.reatmetric.api.rawdata.RawData}
+     * distributed and stored by this driver.
+     *
+     * @return the list of renderers, shall not be null
+     */
     List<IRawDataRenderer> getRawDataRenderers();
 
+    /**
+     * Return the list of {@link IActivityHandler} managed by this driver.
+     *
+     * @return the list of activity handlers, shall not be null
+     */
     List<IActivityHandler> getActivityHandlers();
 
+    /**
+     * Return the list of {@link ITransportConnector} managed by this driver.
+     *
+     * @return the list of transport connectors, shall not be null
+     */
     List<ITransportConnector> getTransportConnectors();
 
+    /**
+     * Dispose the driver and release all resources. This method is called at the shutdown of the ReatMetric Core instance that
+     * instantiated the driver.
+     *
+     * @throws DriverException in case of issues during the disposal of the driver resources
+     */
     void dispose() throws DriverException;
 }
