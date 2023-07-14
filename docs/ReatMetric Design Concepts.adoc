@@ -413,9 +413,17 @@ criteria defined for the current state. If all criteria evaluate again to true, 
 Otherwise, the bot will start again evaluating the states one by one, according to the definition order, until it will
 find a new matching state and perform the transition. If there is no matching state, no transition will be performed.
 
-The function can be better understood with an example. Let's assume that a device is powered up by three independent power
-supplies (a primary and two emergency power supplies, selected by a switch) on two inputs, for redundancy purposes.
-The input to be used to power up the internal battery must be selected
+The function can be better understood with an example. Let's assume that a device could be powered up by three
+independent power supplies (a primary power source and two emergency power sources, selected by a switch). There is a
+second switch that selects which powerline must be used to power up the device. Each power source output can be enabled
+or disabled, and they should be disabled if not used.
+
+A bot can be configured to automatically handle the necessary commands to enable/disable outputs and change switch
+positions, depending on the status of the power sources.
+
+
+
+
 
 
 === Core
