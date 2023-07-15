@@ -1,0 +1,30 @@
+==== Overview
+The eu.dariolucia.reatmetric.persist module is the implementation of a storage system for ReatMetric data such as parameters,
+events, activity occurrences, raw data and operational messages. The implementation is based on the Apache Derby RDBMS,
+and it can be used in file-based and client-server deployments, depending on the way the argument "archiveLocation" is
+provided:
+
+* If the path to a folder is provided, then the file-based archive is used;
+* If a '//<server>[:<port>]/<databaseName>[;user=<value>;password=<value>[;...]]' string is provided, then a client
+connection to the server is established. The server must have been already started in advance.
+
+Including this module in a ReatMetric system is not mandatory: if not present, the system will work as usual, but it will
+not store any data. In the same way, it will not be possible to retrieve any historical data, but only monitor the live
+state of the external devices/systems.
+
+This module can be deployed outside a ReatMetric system, if a means to access the stored data outside the ReatMetric
+system is desirable, keeping in mind that:
+
+* File-based archives can be accessed only by a single system at once;
+* Archives in a client-server deployment can be accessed in parallel by more than a single system.
+
+This module has one internal dependency:
+
+* On eu.dariolucia.reatmetric.api
+
+This module has one external dependency:
+
+* On Apache Derby.
+
+==== Configuration
+To be written

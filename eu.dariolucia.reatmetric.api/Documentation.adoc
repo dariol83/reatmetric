@@ -1,0 +1,14 @@
+==== Overview
+The eu.dariolucia.reatmetric.api module provides the definition of all interfaces and data structures that are used by
+ReatMetric and exposed to the 'outside world'. Unless you are coding a driver, importing this module ensures that all
+ReatMetric interfaces and data structure are available for you to use. For instance, the MMI implementation provided
+by the eu.dariolucia.reatmetric.ui module depends only on this module and not on a specific ReatMetric implementation.
+
+The facade interface to a ReatMetric system is specified by the IReatMetricSystem Java interface: such interface
+provides all necessary methods to initialise, access and dispose ReatMetric functions. An implementation of such
+interface is provided by the eu.dariolucia.reatmetric.core module.
+
+Each class in this module is provided with Javadocs, to help developers in the understanding of the ReatMetric API.
+Therefore, for guidelines and help about its usage it is recommended to check the Javadocs.
+
+This module has no internal or external dependencies.
