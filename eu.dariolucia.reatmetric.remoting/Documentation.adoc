@@ -1,0 +1,27 @@
+==== Overview
+The eu.dariolucia.reatmetric.remoting module provides an application to publish a IReatmetricSystem implementation on a
+RMI registry, in order to make it accessible via Java RMI to the ReatMetric UI application and to other external
+applications via Java RMI. In this way, a ReatMetric system can run as a back-end application, regardless of the
+presence of a connected user interface.
+
+The application requires one mandatory parameter and one optional parameter:
+
+* The first, mandatory, parameter indicates the TCP/IP port, the application will use to register the RMI Naming Service;
+* The second, optional, parameter specifies the name of the ReatMetric system that must be registered to the RMI Naming
+Service. If no name is provided, then the application registers all ReatMetric systems that are found.
+
+This module looks up an implementation of the IReatmetricRegistry using the Java ServiceLoader. This means that, if this
+application needs to be used in conjunction with the eu.dariolucia.reatmetric.core implementation, all the prerequisites
+in terms of system variable and configurations of such module must be respected. The module then registers the
+IReatmetricSystem instance using the system name of the instance.
+
+This module has one internal dependency:
+
+* On eu.dariolucia.reatmetric.api
+
+This module has one external dependencies:
+
+* On JAXB library, since the configuration is defined in XML files.
+
+==== Configuration
+None.

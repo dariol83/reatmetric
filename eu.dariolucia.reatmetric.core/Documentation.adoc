@@ -1,0 +1,132 @@
+==== Overview
+The eu.dariolucia.reatmetric.core module provides an implementation of the IReatmetricSystem and IReatmetricRegister
+interfaces specified in the API module. A IReatmetricRegister provides a list of systems, which are available to be
+used: the implementation provided by this module returns always a single IReatmetricSystem implementation.
+The IReatmetricSystem is the main access interface to the functionalities provided by a ReatMetric system
+with respect to users and external world.
+
+This module defines (and implements in some parts) an internal API, which is needed to develop plug-ins and extensions
+to the system:
+
+* It provides the specification of the IDriver interface (and related interfaces), which must be implemented in order to
+extend the monitoring and control support to specific devices and systems;
+* It provides the specification and implementation of the IOperationalMessageBroker and IRawDataBroker,
+which provide means, for internal drivers and functions, to generate, distribute and store operational messages (including
+managing their acknowledgements) and raw data.
+* It provides the specification of the IRawDataRenderer, which is a support object to be provided by drivers. An
+implementation provides the generic extraction of information from raw data objects handled by the driver.
+* It provides the specification and an implementation of the IServiceCoreContext interface, which is the context object
+provided to the drivers upon system initialisation. From such object, a driver can access all system core functions.
+
+When the IReatmetricSystem implementation is instantiated by the IReatmetricRegister implementation, the system is
+initialised in the following steps:
+
+. The 'core' configuration file is loaded from the location specified in the VM property _reatmetric.core.config_;
+. The path to the logging configuration file is retrieved from the core configuration and applied;
+. If the use of the archive is specified in the core configuration, then the archive is initialised via the standard
+Java ServiceLoader. An implementation of the IArchive interface must be present as registered Java service in the Java VM;
+. The brokers (for operational/acknowledged messages and raw data) are initialised.
+. The processing model is initialised according to the configuration path specified in the core configuration. The path
+shall point to a folder containing all the definition files that must be loaded;
+. If the use of the scheduler is specified in the core configuration, then the scheduler implementation is instantiated
+via the standard Java ServiceLoader, via interface ISchedulerFactory. An implementation of the ISchedulerFactory
+interface must be present as registered Java service in the Java VM;
+. The specified list of drivers is loaded, one by one, in the order declared in the core configuration file. For each driver,
+the connectors, activity handlers and raw data renderers are retrieved and registered;
+. If the scheduler is instantiated, then it is initialised.
+. The connectors to be started automatically upon system start-up are started.
+. The final system status is derived: if a driver could not be initialised or it is in a non-nominal condition, the system
+status can be set to WARNING or ALARM (the highest severity value is used). If everything is OK, the system status is set
+to NOMINAL. It must be clarified that the system status refers to the internal status of the initialisation only, and it has
+nothing to do with e.g. failed connections to external devices. A system status set to WARNING or ALARM means that one or
+more drivers are not properly working as expected and their configuration shall be checked.
+
+This module has two internal dependency:
+
+* On eu.dariolucia.reatmetric.api
+* On eu.dariolucia.reatmetric.processing
+
+This module has one external dependencies:
+
+* On JAXB library, since the configuration is defined in XML files.
+
+==== Configuration
+The documentation of the eu.dariolucia.reatmetric.core module is contained in the package
+eu.dariolucia.reatmetric.core.configuration. It is an XML file using namespace definition
+_http://dariolucia.eu/reatmetric/core/configuration_.
+
+A commented example of such file is presented below.
+
+[source,xml]
+----
+<ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
+    <!-- Name of the system (a string).
+    This element is optional.
+    -->
+	<name>Test System</name>
+    <!-- Path to the java.util.logging configuration file.
+    This element is optional.
+    -->
+	<log-property-file>$HOME\reatmetric\log.properties</log-property-file>
+    <!-- Archive configuration location: the string depends on the IArchive implementation
+    and it might not be necessary a path to a folder. It could be a JDBC connection string,
+    for instance, or any other string that is needed to configure the specific IArchive
+    implementation.
+    This element is optional. If not present, no archive is used.
+    -->
+	<archive-location>$HOME\reatmetric\archive</archive-location>
+    <!-- Processing model definition location: path to the folder containing the XML files
+    with the definitions for the processing model.
+    This element is mandatory.
+    -->
+	<definitions-location>$HOME\reatmetric\processing</definitions-location>
+    <!-- Processing model init strategy:
+    -   If no element is provided, the processing model is not initialised from any
+        archived data
+    -   If the init-resume element is provided, each parameter state in the processing model
+        is initialised with the latest parameter state present in the archive, up to
+        'look-back-time' seconds in the past.
+    -   If the init-from-time element is provided, each parameter state in the processing
+        model is initialised with the parameter state at the time specified by 'time', up
+        to 'look-back-time' seconds in the past. If the 'archive-location' attribute is
+        present, then a new IArchive implementation, configured with the string in the
+        'archive-location' attribute is instantiated, and it is used as source of the
+        archived data.
+    -->
+    <!-- <init-from-time look-back-time="3600" time="2023-02-09T12:32:32Z"
+            archive-location="$HOME\reatmetric\another_archive" /> -->
+    <init-resume look-back-time="3600" />
+    <!-- Scheduler configuration location: the string depends on the IScheduler implementation
+    and it might not be necessary a path to a folder. It could be any other string that is
+    needed to configure the specific IScheduler implementation.
+    This element is optional. If not present, no scheduler is used.
+    -->
+    <scheduler-configuration>$HOME\reatmetric\scheduler</scheduler-configuration>
+    <!-- List of <driver> elements. Each driver must be configured with a name (any string),
+    a type (the qualified class name of the driver) and a configuration string, which can be
+    a path to a folder or any other string, depending on the driver implementation.
+    -->
+    <driver name="Driver 1"
+			type="my.driver.for.device1.MyDriver1"
+			configuration="$HOME\reatmetric\driver1" />
+    <driver name="Driver 2"
+			type="my.driver.for.device1.MyDriver2"
+			configuration="$HOME\reatmetric\driver2" />
+    <driver name="Driver 1 Test"
+			type="my.driver.for.device1.MyDriver1"
+			configuration="$HOME\reatmetric\driver1_test" />
+    <!-- The autostart-connectors element indicates whether the connectors made available
+    by the different drivers shall be started automatically after the initialisation of
+    the system, and if automated reconnection shall be configured by default.
+    It is possible to exclude specific connectors from this behaviour, by listing them
+    using element 'startup-exclusion' and 'reconnect-exclusion'.
+    This element is optional. If not present, connectors are not automatically started
+    and automated reconnection behavior is not set.
+    -->
+    <autostart-connectors startup="true" reconnect="true">
+        <startup-exclusion>Connector 1 Name</startup-exclusion>
+        <startup-exclusion>Connector 2 Name</startup-exclusion>
+        <reconnect-exclusion>Connector 2 Name</reconnect-exclusion>
+    </autostart-connectors>
+</ns1:core>
+----

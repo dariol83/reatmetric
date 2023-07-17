@@ -282,14 +282,10 @@ include::../eu.dariolucia.reatmetric.persist/Documentation.adoc[]
 include::../eu.dariolucia.reatmetric.scheduler/Documentation.adoc[]
 
 === Core
-==== Overview
-==== Configuration
-To be written
+include::../eu.dariolucia.reatmetric.core/Documentation.adoc[]
 
 === Remoting
-==== Overview
-==== Configuration
-To be written
+include::../eu.dariolucia.reatmetric.remoting/Documentation.adoc[]
 
 === Remoting Connector
 ==== Overview
