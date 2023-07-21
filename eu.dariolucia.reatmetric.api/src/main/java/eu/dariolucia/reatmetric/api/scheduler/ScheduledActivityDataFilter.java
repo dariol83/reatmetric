@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package eu.dariolucia.reatmetric.api.scheduler;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;

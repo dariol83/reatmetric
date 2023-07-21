@@ -75,12 +75,21 @@
          </children>
       </HBox>
       <Separator prefWidth="200.0" />
+
+
+
       <HBox fillHeight="false" spacing="8.0">
          <children>
-            <RadioButton fx:id="absoluteTimeRadio" mnemonicParsing="false" prefWidth="150.0" selected="true" text="Absolute Time">
+            <RadioButton fx:id="nowTimeRadio" mnemonicParsing="false" prefWidth="150.0" selected="true" text="Now">
                <toggleGroup>
                   <ToggleGroup fx:id="triggerToggle" />
                </toggleGroup></RadioButton>
+         </children>
+      </HBox>
+      <Separator prefWidth="200.0" />
+      <HBox fillHeight="false" spacing="8.0">
+         <children>
+            <RadioButton fx:id="absoluteTimeRadio" mnemonicParsing="false" prefWidth="150.0" selected="true" text="Absolute Time" toggleGroup="$triggerToggle" />
             <HBox HBox.hgrow="ALWAYS">
                <children>
                   <DatePicker fx:id="absoluteDatePicker" prefWidth="200.0">

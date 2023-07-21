@@ -57,17 +57,13 @@ public class Scheduler implements IScheduler, IInternalResolver {
     private static final Logger LOG = Logger.getLogger(Scheduler.class.getName());
 
     private final SchedulerConfiguration configuration;
-
     private final IScheduledActivityDataArchive archive;
     private final IActivityExecutionService executionService;
     private final IEventDataProvisionService eventService;
     private final IActivityOccurrenceDataProvisionService activityService;
     private final IParameterDataProvisionService parameterService;
-
     private final List<ISchedulerSubscriber> schedulerSubscribers = new CopyOnWriteArrayList<>();
-
     private final Map<IScheduledActivityDataSubscriber, ScheduledActivityDataFilter> subscriberIndex = new LinkedHashMap<>();
-
     private final AtomicLong sequencer = new AtomicLong(0);
 
     /**
@@ -481,7 +477,7 @@ public class Scheduler implements IScheduler, IInternalResolver {
         // Create ScheduledTask
         ScheduledTask st = new ScheduledTask(this, timer, dispatcher, request, originalId);
         id2scheduledTask.put(st.getId(), st);
-        // Prepare execution event depending on trigger (absolute, relative, event)
+        // Prepare execution event depending on trigger (absolute, relative, event, now)
         st.armTrigger();
         // Store and distribute
         ScheduledActivityData data = st.getCurrentData();
@@ -558,6 +554,9 @@ public class Scheduler implements IScheduler, IInternalResolver {
             AbsoluteTimeSchedulingTrigger trigger = (AbsoluteTimeSchedulingTrigger) sr.getTrigger();
             Duration duration = sr.getExpectedDuration();
             return Pair.of(trigger.getReleaseTime(), duration);
+        } else if (sr.getTrigger() instanceof NowSchedulingTrigger) {
+            Duration duration = sr.getExpectedDuration();
+            return Pair.of(Instant.now(), duration);
         } else if (sr.getTrigger() instanceof RelativeTimeSchedulingTrigger) {
             Instant triggerTime = computePredecessorsLatestEndTime(((RelativeTimeSchedulingTrigger) sr.getTrigger()).getPredecessors());
             triggerTime = triggerTime.plusSeconds(((RelativeTimeSchedulingTrigger) sr.getTrigger()).getDelayTime());

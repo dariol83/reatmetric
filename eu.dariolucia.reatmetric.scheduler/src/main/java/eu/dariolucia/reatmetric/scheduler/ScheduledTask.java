@@ -161,7 +161,19 @@ public class ScheduledTask {
                     }
                 }
             } else if(request.getTrigger() instanceof EventBasedSchedulingTrigger) {
-                scheduler.updateEventFilter(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent(),  false);
+                scheduler.updateEventFilter(((EventBasedSchedulingTrigger) request.getTrigger()).getEvent(), false);
+            } else if(request.getTrigger() instanceof NowSchedulingTrigger) {
+                // Like an AbsoluteTimeSchedulingTrigger to be executed now
+                timingHandler = new TimerTask() {
+                    @Override
+                    public void run() {
+                        if(this == timingHandler) {
+                            runTask(false);
+                        }
+                    }
+                };
+                // Execute now
+                timer.schedule(timingHandler, 0L);
             } else {
                 throw new SchedulingException("Cannot update trigger evaluation for task " + this.taskId + ", trigger type " + request.getTrigger() + " not recognised");
             }
@@ -195,7 +207,7 @@ public class ScheduledTask {
             // Check if the protection time is OK
             if(lastEventTriggerInvocation == null || lastEventTriggerInvocation.plusMillis(((EventBasedSchedulingTrigger) request.getTrigger()).getProtectionTime()).isBefore(now)) {
                 lastEventTriggerInvocation = now;
-                SchedulingRequest newRequest = generateImmediateRequest(now);
+                SchedulingRequest newRequest = generateImmediateRequest();
                 CreationConflictStrategy newConflictStrategy = CreationConflictStrategy.ADD_ANYWAY; // It will be handled by the ConflictStrategy of the request
                 scheduler.internalScheduleRequest(newRequest, newConflictStrategy);
             }
@@ -205,11 +217,10 @@ public class ScheduledTask {
     /**
      * To be called from the dispatcher thread.
      *
-     * @param now time to start
      */
-    private SchedulingRequest generateImmediateRequest(Instant now) {
+    private SchedulingRequest generateImmediateRequest() {
         return new SchedulingRequest(request.getRequest(), request.getResources(), request.getSource(), request.getExternalId() + "-" + DATE_TIME_FORMATTER_SECONDS.format(Instant.now()),
-                new AbsoluteTimeSchedulingTrigger(now), request.getLatestInvocationTime(), request.getConflictStrategy(), request.getExpectedDuration());
+                new NowSchedulingTrigger(), request.getLatestInvocationTime(), request.getConflictStrategy(), request.getExpectedDuration());
     }
 
     /**

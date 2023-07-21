@@ -16,11 +16,13 @@
 
 package eu.dariolucia.reatmetric.api.scheduler;
 
-import eu.dariolucia.reatmetric.api.common.IDataItemSubscriber;
-
 /**
- * This interface is a specialisation of the {@link IDataItemSubscriber}, for scheduled activities.
+ * This class allows the scheduling of an activity invocation, to be triggered as soon as it reaches the scheduler.
  */
-public interface IScheduledActivityDataSubscriber extends IDataItemSubscriber<ScheduledActivityData> {
-    
+public class NowSchedulingTrigger extends AbstractSchedulingTrigger {
+
+    @Override
+    public String toString() {
+        return "[now]";
+    }
 }

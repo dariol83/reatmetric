@@ -48,6 +48,8 @@ public class ActivitySchedulingDialogController implements Initializable {
     @FXML
     public RadioButton absoluteTimeRadio;
     @FXML
+    public RadioButton nowTimeRadio;
+    @FXML
     public ToggleGroup triggerToggle;
     @FXML
     public RadioButton relativeTimeRadio;
@@ -111,6 +113,7 @@ public class ActivitySchedulingDialogController implements Initializable {
                 validate();
             }
         };
+        nowTimeRadio.selectedProperty().addListener(changeListener);
         absoluteTimeRadio.selectedProperty().addListener(changeListener);
         relativeTimeRadio.selectedProperty().addListener(changeListener);
         eventDrivenRadio.selectedProperty().addListener(changeListener);
@@ -157,7 +160,9 @@ public class ActivitySchedulingDialogController implements Initializable {
         } else {
             latestExecutionCheckbox.setSelected(false);
         }
-        if(request.getTrigger() instanceof AbsoluteTimeSchedulingTrigger) {
+        if(request.getTrigger() instanceof NowSchedulingTrigger) {
+            nowTimeRadio.setSelected(true);
+        } else if(request.getTrigger() instanceof AbsoluteTimeSchedulingTrigger) {
             AbsoluteTimeSchedulingTrigger tr = (AbsoluteTimeSchedulingTrigger) request.getTrigger();
             absoluteDatePicker.setValue(LocalDate.ofInstant(tr.getReleaseTime(), ZoneId.of("UTC")));
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss")
@@ -377,7 +382,9 @@ public class ActivitySchedulingDialogController implements Initializable {
     }
 
     private AbstractSchedulingTrigger buildTrigger() {
-        if(absoluteTimeRadio.isSelected()) {
+        if(nowTimeRadio.isSelected()) {
+            return new NowSchedulingTrigger();
+        } if(absoluteTimeRadio.isSelected()) {
             Instant execTime = LocalDateTime.of(this.absoluteDatePicker.getValue(), getAbsoluteTime()).toInstant(ZoneOffset.UTC);
             return new AbsoluteTimeSchedulingTrigger(execTime);
         } else if(relativeTimeRadio.isSelected()) {
