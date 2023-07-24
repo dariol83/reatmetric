@@ -20,8 +20,7 @@ package eu.dariolucia.reatmetric.api.messages;
 import eu.dariolucia.reatmetric.api.common.IDataItemSubscriber;
 
 /**
- *
- * @author dario
+ * This interface is a specialisation of the {@link IDataItemSubscriber}, for operational messages.
  */
 public interface IOperationalMessageSubscriber extends IDataItemSubscriber<OperationalMessage> {
     

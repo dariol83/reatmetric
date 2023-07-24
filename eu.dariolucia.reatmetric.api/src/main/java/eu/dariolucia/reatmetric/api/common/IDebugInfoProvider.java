@@ -23,6 +23,10 @@ import java.util.List;
  */
 public interface IDebugInfoProvider {
 
+    /**
+     * Fetch a new list of {@link DebugInformation} objects, with the current debug information.
+     * @return the {@link DebugInformation} list with current values
+     */
     List<DebugInformation> currentDebugInfo();
 
 }

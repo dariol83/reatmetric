@@ -27,8 +27,9 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
+ * This class allows to filter/subscribe/retrieve acknowledged messages.
  *
- * @author dario
+ * Objects of this class are immutable.
  */
 public final class AcknowledgedMessageFilter extends AbstractDataItemFilter<AcknowledgedMessage> implements Serializable {
 
@@ -41,6 +42,12 @@ public final class AcknowledgedMessageFilter extends AbstractDataItemFilter<Ackn
 
     private final Set<AcknowledgementState> stateList;
 
+    /**
+     * The constructor of the acknowledged message filter.
+     *
+     * @param userList the list of users to select. It can be null: if so, all users are selected
+     * @param stateList the list of acknowledged message states to select. It can be null: if so, all states are selected.
+     */
     public AcknowledgedMessageFilter(Collection<String> userList, Collection<AcknowledgementState> stateList) {
         if(userList != null) {
             this.userList = Collections.unmodifiableSet(new LinkedHashSet<>(userList));
@@ -54,10 +61,26 @@ public final class AcknowledgedMessageFilter extends AbstractDataItemFilter<Ackn
         }
     }
 
+    /**
+     * The set of users to select: an acknowledged message is selected if its user is not null and if it is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified users
+     */
     public Set<String> getUserList() {
         return userList;
     }
 
+    /**
+     * The set of acknowledged message states to select: an acknowledged message is selected if its state is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified states
+     */
     public Set<AcknowledgementState> getStateList() {
         return stateList;
     }

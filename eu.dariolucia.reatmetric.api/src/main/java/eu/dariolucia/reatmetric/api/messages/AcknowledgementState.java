@@ -16,7 +16,16 @@
 
 package eu.dariolucia.reatmetric.api.messages;
 
+/**
+ * Acknowledgement state of an acknowledged message.
+ */
 public enum AcknowledgementState {
+    /**
+     * The message is not acknowledged yet
+     */
     PENDING,
+    /**
+     * The message was acknowledged
+     */
     ACKNOWLEDGED
 }

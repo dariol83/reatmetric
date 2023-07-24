@@ -20,9 +20,21 @@ import java.io.Serializable;
 
 /**
  * This class provides debug information of a specific aspect of the component/driver/system.
+ *
+ * Objects of this class are immutable.
  */
 public final class DebugInformation implements Serializable {
 
+    /**
+     * Create a new {@link DebugInformation} object with the provided properties.
+     *
+     * @param element the name of the element, for which the debug information is provided
+     * @param name the name of the property
+     * @param measure the object of the measurement: it can be null, a {@link Number}, a {@link String} or an {@link Enum} value
+     * @param maximum the maximum value that the property can have: it can be null or a {@link Number}
+     * @param unit the unit of the measurement, it can be null
+     * @return the {@link DebugInformation} object
+     */
     public static DebugInformation of(String element, String name, Object measure, Object maximum, String unit) {
         return new DebugInformation(element, name, measure, maximum, unit);
     }

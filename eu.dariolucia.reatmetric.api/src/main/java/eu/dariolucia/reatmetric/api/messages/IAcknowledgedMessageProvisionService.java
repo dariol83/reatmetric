@@ -18,12 +18,11 @@
 package eu.dariolucia.reatmetric.api.messages;
 
 import eu.dariolucia.reatmetric.api.common.IDataItemProvisionService;
+import eu.dariolucia.reatmetric.api.common.IDataItemStateProvisionService;
 
 /**
- *
- * @author dario
+ * This interface is a specialisation of the {@link IDataItemStateProvisionService}, for acknowledged messages.
  */
 public interface IAcknowledgedMessageProvisionService extends IDataItemProvisionService<IAcknowledgedMessageSubscriber, AcknowledgedMessageFilter, AcknowledgedMessage> {
-
 
 }

@@ -22,6 +22,11 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import java.io.Serializable;
 import java.time.Instant;
 
+/**
+ * This class represents an {@link OperationalMessage} with an acknowledgement status.
+ *
+ * Objects of this class are immutable.
+ */
 public class AcknowledgedMessage extends AbstractDataItem implements Serializable {
 
     /**
@@ -37,6 +42,17 @@ public class AcknowledgedMessage extends AbstractDataItem implements Serializabl
 
     private final String user;
 
+    /**
+     * Create a new instance of the object.
+     *
+     * @param internalId the internal ID of this object
+     * @param generationTime the generation time of the acknowledged message
+     * @param message the {@link OperationalMessage} linked to this acknowledged message
+     * @param state the acknowledgement status (PENDING or ACKNOWLEDGED)
+     * @param acknowledgementTime the acknowledgement time: can be null if the acknowledgement status is PENDING
+     * @param user the user who acknowledged the message: can be null if the acknowledgement status is PENDING
+     * @param extension the extension object
+     */
     public AcknowledgedMessage(IUniqueId internalId, Instant generationTime, OperationalMessage message, AcknowledgementState state, Instant acknowledgementTime, String user, Object extension) {
         super(internalId, generationTime, extension);
         this.message = message;
@@ -61,6 +77,12 @@ public class AcknowledgedMessage extends AbstractDataItem implements Serializabl
         return user;
     }
 
+    /**
+     * Calling this method creates an 'acknowledged' version of the object.
+     *
+     * @param user the user who acknowledged the message
+     * @return the new {@link AcknowledgedMessage}
+     */
     public AcknowledgedMessage ack(String user) {
         return new AcknowledgedMessage(getInternalId(), getGenerationTime(), getMessage(), AcknowledgementState.ACKNOWLEDGED, Instant.now(), user, getExtension());
     }

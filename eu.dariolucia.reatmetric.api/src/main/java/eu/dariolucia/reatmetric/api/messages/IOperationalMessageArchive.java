@@ -24,6 +24,9 @@ import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * This interface is a specialisation of the {@link IDataItemArchive}, for operational messages.
+ */
 public interface IOperationalMessageArchive extends IDataItemArchive<OperationalMessage, OperationalMessageFilter> {
 
 }

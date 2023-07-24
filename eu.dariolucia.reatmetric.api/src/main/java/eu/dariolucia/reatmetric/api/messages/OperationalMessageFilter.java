@@ -24,8 +24,9 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
+ * This class allows to filter/subscribe/retrieve operational messages.
  *
- * @author dario
+ * Objects of this class are immutable.
  */
 public final class OperationalMessageFilter extends AbstractDataItemFilter<OperationalMessage> implements Serializable {
     

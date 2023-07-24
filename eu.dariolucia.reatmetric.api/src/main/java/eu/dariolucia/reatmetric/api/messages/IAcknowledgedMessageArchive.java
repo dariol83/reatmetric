@@ -19,7 +19,7 @@ package eu.dariolucia.reatmetric.api.messages;
 import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
 
 /**
- *
+ * This interface is a specialisation of the {@link IDataItemArchive}, for acknowledged messages.
  */
 public interface IAcknowledgedMessageArchive extends IDataItemArchive<AcknowledgedMessage, AcknowledgedMessageFilter> {
 
