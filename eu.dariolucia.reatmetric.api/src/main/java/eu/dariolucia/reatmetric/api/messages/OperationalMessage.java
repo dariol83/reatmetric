@@ -105,7 +105,7 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
     /**
      * Return the linked system entity ID related to this operational message.
      *
-     * @return
+     * @return the system entity ID linked to this operational message
      */
     public Integer getLinkedEntityId() {
         return linkedEntityId;

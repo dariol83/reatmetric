@@ -17,14 +17,13 @@
 
 package eu.dariolucia.reatmetric.api.messages.input;
 
-import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.processing.input.AbstractInputDataItem;
 
-import java.time.Instant;
-
 /**
- * Request for operational messages.
+ * Request for operational messages distribution and storage via the {@link eu.dariolucia.reatmetric.api.messages.IOperationalMessageCollectorService} interface.
+ *
+ * Objects of this class are immutable.
  */
 public final class OperationalMessageRequest extends AbstractInputDataItem {
 
@@ -33,6 +32,16 @@ public final class OperationalMessageRequest extends AbstractInputDataItem {
 	 */
 	private static final long serialVersionUID = 1L;
 
+    /**
+     * Build a new {@link OperationalMessageRequest}.
+     * @param id the id of the message to raise
+     * @param message the message text
+     * @param source the source of the message
+     * @param severity the severity of the message
+     * @param linkedEntityId the linked entity ID, can be null
+     * @param extension the extension object
+     * @return an instance of the {@link OperationalMessageRequest} class initialised with the provided attributes
+     */
     public static OperationalMessageRequest of(String id, String message, String source, Severity severity, Integer linkedEntityId, Object extension) {
         return new OperationalMessageRequest(id, message, source, severity, linkedEntityId, extension);
     }

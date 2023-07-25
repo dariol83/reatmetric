@@ -21,11 +21,34 @@ package eu.dariolucia.reatmetric.api.messages;
  * Severity type for operational messages.
  */
 public enum Severity {
+    /**
+     * The message reports an alarm situation and immediate action is required.
+     */
     ALARM,
+    /**
+     * The message reports a non-nominal situation, which shall be immediately taken care of, as it will lead to
+     * system misbehaviour.
+     */
     ERROR,
+    /**
+     * The message reports a non-nominal situation, which might be taken care of, as it might lead to system
+     * misbehaviour.
+     */
     WARN,
+    /**
+     * An information message.
+     */
     INFO,
+    /**
+     * No severity information reported.
+     */
     NONE,
+    /**
+     * The severity cannot be determined.
+     */
     UNKNOWN,
+    /**
+     * The message is a chat message.
+     */
     CHAT
 }

@@ -43,6 +43,14 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter<Opera
     
     private final Set<Severity> severityList;
 
+    /**
+     * The constructor of the operational message filter.
+     *
+     * @param messageTextContains the text that must be contained in the message. It can be null.
+     * @param idList the message ids to select. It can be null: if so, all ids are selected.
+     * @param sourceList the sources to select. It can be null: if so, all sources are selected.
+     * @param severityList the severities to select. It can be null: if so, all severities are selected.
+     */
     public OperationalMessageFilter(String messageTextContains, Collection<String> idList, Collection<String> sourceList, Collection<Severity> severityList) {
         this.messageTextContains = messageTextContains;
         if(idList != null) {
@@ -62,18 +70,49 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter<Opera
         }
     }
 
+    /**
+     * The text that must be contained in the message.
+     *
+     * It can be null.
+     *
+     * @return the text
+     */
     public String getMessageTextContains() {
         return messageTextContains;
     }
 
+    /**
+     * The set of sources to select: an operational message is selected if its source is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified sources
+     */
     public Set<String> getSourceList() {
         return sourceList;
     }
 
+    /**
+     * The set of IDs to select: an operational message is selected if its ID is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified IDs
+     */
     public Set<String> getIdList() {
         return idList;
     }
 
+    /**
+     * The set of severities to select: an operational message is selected if its severity is one of those
+     * specified in the filter.
+     *
+     * It can be null.
+     *
+     * @return the specified severity
+     */
     public Set<Severity> getSeverityList() {
         return severityList;
     }
