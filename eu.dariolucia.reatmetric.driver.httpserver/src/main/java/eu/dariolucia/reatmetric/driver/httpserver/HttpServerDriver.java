@@ -65,6 +65,7 @@ public class HttpServerDriver implements IDriver {
     public static final String MESSAGES_PATH = "messages";
     public static final String MODEL_PATH = "model";
     public static final String CONNECTORS_PATH = "connectors";
+    public static final String SCHEDULER_PATH = "scheduler";
 
     // For subscriptions
     public static final String REGISTRATION_URL = "register";
@@ -189,6 +190,9 @@ public class HttpServerDriver implements IDriver {
         RawDataRequestHandler rh = new RawDataRequestHandler(this);
         context2handlers.put("/" + this.context.getSystemName() + "/" + RAW_DATA_PATH + "/" + REGISTRATION_URL, rh);
         context2handlers.put("/" + this.context.getSystemName() + "/" + RAW_DATA_PATH + "/" + RETRIEVE_URL, rh);
+
+        SchedulerRequestHandler sh = new SchedulerRequestHandler(this);
+        context2handlers.put("/" + this.context.getSystemName() + "/" + SCHEDULER_PATH, sh);
     }
 
     private void buildCache() throws ReatmetricException, RemoteException {

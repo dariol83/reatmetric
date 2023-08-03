@@ -22,14 +22,18 @@ import eu.dariolucia.reatmetric.api.processing.input.*;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
+import eu.dariolucia.reatmetric.api.scheduler.*;
+import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
-
 import jakarta.xml.bind.DatatypeConverter;
+
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -221,6 +225,99 @@ public class JsonParseUtil {
                 route,
                 source
         );
+    }
+
+    public static SchedulingRequest parseSchedulingRequest(InputStream requestBody, Map<String, ActivityDescriptor> descriptors) throws IOException {
+        DocumentContext parsed = JsonPath.parse(requestBody);
+        String requestAccessor = "$['request']";
+        String resourcesListAccessor = "$['resources']";
+        String sourceAccessor = "$['source']";
+        String externalIdAccessor = "$['externalId']";
+        String triggerAccessor = "$['trigger']";
+        String latestInvocationTimeAccessor = "$['latest']"; // number of ms since 1st Jan 1970, 00:00:00
+        String conflictAccessor = "$['conflict']";
+        String durationAccessor = "$['duration']"; // in milliseconds
+
+        List<String> resources = parsed.read(resourcesListAccessor);
+        String source = parsed.read(sourceAccessor);
+        String externalId = parsed.read(externalIdAccessor);
+        long latestInvocationTimeNb = parsed.read(latestInvocationTimeAccessor);
+        Instant latestInvocationTime = Instant.ofEpochMilli(latestInvocationTimeNb);
+        ConflictStrategy conflictStrategy = ConflictStrategy.valueOf(parsed.read(conflictAccessor));
+        long duration = parsed.read(durationAccessor);
+        AbstractSchedulingTrigger trigger = parseTrigger(parsed.read(triggerAccessor));
+        // Parse the request
+        Map<String, Object> requestMap = parsed.read(requestAccessor);
+        ActivityRequest request = parseActivityRequestFromMap(descriptors, requestMap);
+        return new SchedulingRequest(request, new LinkedHashSet<>(resources), source, externalId, trigger, latestInvocationTime, conflictStrategy, Duration.ofMillis(duration));
+    }
+
+    private static ActivityRequest parseActivityRequestFromMap(Map<String, ActivityDescriptor> descriptors, Map<String, Object> requestMap) {
+        int activityId = (Integer) requestMap.get("id");
+        String activityPath = (String) requestMap.get("path");
+        String route = (String) requestMap.get("route");
+        String activitySource = (String) requestMap.get("source");
+        // Parse arguments
+        ActivityDescriptor ad = descriptors.get(activityPath);
+        List<Map<String, Object>> argumentsObject = (List<Map<String, Object>>) requestMap.get("arguments");
+        List<AbstractActivityArgument> arguments = mapToElements(argumentsObject, ad);
+        // Parse properties
+        Map<String, String> properties = (Map<String, String>) requestMap.get("properties");
+        // Build object
+        ActivityRequest request = new ActivityRequest(
+                activityId,
+                SystemEntityPath.fromString(activityPath),
+                arguments,
+                properties,
+                route,
+                activitySource
+        );
+        return request;
+    }
+
+    public static List<SchedulingRequest> parseSchedulingRequestList(InputStream requestBody, Map<String, ActivityDescriptor> descriptors) throws IOException {
+        DocumentContext parsed = JsonPath.parse(requestBody);
+        List<Map<String, Object>> list = parsed.read("$[*]");
+        List<SchedulingRequest> schedulingRequestList = new LinkedList<>();
+        for(Map<String, Object> item : list) {
+            List<String> resources = (List<String>) item.get("resources");
+            String source = (String) item.get("source");
+            String externalId = (String) item.get("externalId");
+            long latestInvocationTimeNb = ((Number) item.get("latest")).longValue();
+            Instant latestInvocationTime = Instant.ofEpochMilli(latestInvocationTimeNb);
+            ConflictStrategy conflictStrategy = ConflictStrategy.valueOf((String) item.get("conflict"));
+            long duration = ((Number) item.get("duration")).longValue();
+            AbstractSchedulingTrigger trigger = parseTrigger((Map<String, Object>) item.get("trigger"));
+            // Parse the request
+            Map<String, Object> requestMap = (Map<String, Object>) item.get("request");
+            ActivityRequest request = parseActivityRequestFromMap(descriptors, requestMap);
+            SchedulingRequest sr = new SchedulingRequest(request, new LinkedHashSet<>(resources), source, externalId, trigger, latestInvocationTime, conflictStrategy, Duration.ofMillis(duration));
+            schedulingRequestList.add(sr);
+        }
+        return schedulingRequestList;
+    }
+
+    private static AbstractSchedulingTrigger parseTrigger(Map<String, Object> read) throws IOException {
+        String type = (String) read.get("type");
+        switch (type) {
+            case "now":
+                return new NowSchedulingTrigger();
+            case "absolute":
+                long timeNb = ((Number) read.get("time")).longValue();
+                Instant releaseTime = Instant.ofEpochMilli(timeNb);
+                return new AbsoluteTimeSchedulingTrigger(releaseTime);
+            case "relative":
+                List<String> predecessors = (List<String>) read.get("predecessors");
+                int delay = ((Number) read.get("delay")).intValue(); // in milliseconds
+                return new RelativeTimeSchedulingTrigger(new LinkedHashSet<>(predecessors), delay);
+            case "event":
+                String evPath = (String) read.get("path");
+                int protectionTime = ((Number) read.get("protection")).intValue(); // in seconds
+                boolean enabled = (Boolean) read.get("enabled");
+                return new EventBasedSchedulingTrigger(SystemEntityPath.fromString(evPath), protectionTime, enabled);
+            default:
+                throw new IOException("Cannot derive trigger type: " + read);
+        }
     }
 
     private static List<AbstractActivityArgument> mapToElements(Iterable<Map<String, Object>> elementsIterator, ActivityDescriptor ad) {
@@ -784,4 +881,147 @@ public class JsonParseUtil {
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
+    public static byte[] formatScheduledActivityData(ScheduledActivityData item) {
+        StringBuilder sb = new StringBuilder();
+        format(sb, item);
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private static void format(StringBuilder sb, ScheduledActivityData item) {
+        sb.append("{ ");
+        sb.append(String.format("\"internalId\" : %d, ", item.getInternalId().asLong()));
+        sb.append(String.format("\"gentime\" : %s, ", valueToString(item.getGenerationTime())));
+        sb.append(String.format("\"request\" : "));
+        format(sb, item.getRequest());
+        sb.append(", ");
+        sb.append(String.format("\"activity\" : %s, ", item.getActivityOccurrence() != null ? item.getActivityOccurrence().asLong() : "null" ));
+        sb.append(String.format("\"resources\" : %s, ", listArray(item.getResources())));
+        sb.append(String.format("\"source\" : \"%s\", ", item.getSource()));
+        sb.append(String.format("\"externalId\" : %s, ", valueToString(item.getExternalId())));
+        sb.append(String.format("\"trigger\" : "));
+        format(sb, item.getTrigger());
+        sb.append(", ");
+        sb.append(String.format("\"latest\" : %s, ", valueToString(item.getLatestInvocationTime())));
+        sb.append(String.format("\"startTime\" : %s, ", valueToString(item.getStartTime())));
+        sb.append(String.format("\"duration\" : %d, ", item.getDuration() == null ? -1 : item.getDuration().toMillis()));
+        sb.append(String.format("\"conflict\" : \"%s\", ", item.getConflictStrategy().name()));
+        sb.append(String.format("\"state\" : \"%s\"", item.getState().name()));
+        sb.append(" }");
+    }
+
+    private static void format(StringBuilder sb, ActivityRequest request) {
+        sb.append("{ ");
+        sb.append(String.format("\"id\" : %d, ", request.getId()));
+        sb.append(String.format("\"path\" : \"%s\", ", request.getPath().asString()));
+        sb.append(String.format("\"route\" : %s, ", valueToString(request.getRoute())));
+        sb.append(String.format("\"arguments\" : %s, ", formatActivityArguments(request.getArguments())));
+        sb.append(String.format("\"source\" : %s, ", valueToString(request.getSource())));
+        sb.append(String.format("\"properties\" : %s ", formatMap(request.getProperties())));
+        sb.append(" }");
+    }
+
+    private static String formatActivityArguments(List<AbstractActivityArgument> arguments) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[ ");
+        int i = 0;
+        for(AbstractActivityArgument add : arguments) {
+            if(add instanceof PlainActivityArgument) {
+                PlainActivityArgument ap = (PlainActivityArgument) add;
+                format(sb, ap);
+            } else if(add instanceof ArrayActivityArgument) {
+                ArrayActivityArgument ap = (ArrayActivityArgument) add;
+                format(sb, ap);
+            }
+            if(i < arguments.size() - 1) {
+                // Not the last, add comma
+                sb.append(", ");
+            }
+            ++i;
+        }
+        sb.append(" ]");
+        return sb.toString();
+    }
+
+    private static void format(StringBuilder sb, ArrayActivityArgument ap) {
+        sb.append("{ ");
+        sb.append(String.format("\"name\" : \"%s\", ", ap.getName()));
+        sb.append("\"type\" : \"array\", ");
+        sb.append("\"records\" : ");
+        sb.append("[ ");
+        for(int i = 0; i < ap.getRecords().size(); ++i) {
+            ArrayActivityArgumentRecord record = ap.getRecords().get(i);
+            sb.append("{ ");
+            sb.append(String.format("\"elements\" : %s ", formatActivityArguments(record.getElements())));
+            sb.append(" }");
+            if(i < ap.getRecords().size() - 1) {
+                // Not the last, add comma
+                sb.append(", ");
+            } else {
+                sb.append(" ");
+            }
+        }
+        sb.append("]");
+
+        sb.append(" }");
+    }
+
+    private static void format(StringBuilder sb, PlainActivityArgument ap) {
+        sb.append("{ ");
+        sb.append(String.format("\"name\" : \"%s\", ", ap.getName()));
+        sb.append("\"type\" : \"plain\", ");
+        sb.append(String.format("\"value\" : %s, ", valueToString(ap.isEngineering() ? ap.getEngValue() : ap.getRawValue())));
+        sb.append(String.format("\"engineering\" : %s ", ap.isEngineering()));
+        sb.append(" }");
+    }
+
+    private static void format(StringBuilder sb, AbstractSchedulingTrigger trigger) {
+        if(trigger instanceof NowSchedulingTrigger) {
+            sb.append("{ \"type\" : \"now\" }");
+        } else if(trigger instanceof AbsoluteTimeSchedulingTrigger) {
+            sb.append("{ \"type\" : \"absolute\", ");
+            sb.append(String.format("\"startTime\" : %s }", valueToString(((AbsoluteTimeSchedulingTrigger) trigger).getReleaseTime())));
+        } else if(trigger instanceof RelativeTimeSchedulingTrigger) {
+            sb.append("{ \"type\" : \"relative\", ");
+            sb.append(String.format("\"predecessors\" : %s, ", listArray(((RelativeTimeSchedulingTrigger) trigger).getPredecessors())));
+            sb.append(String.format("\"delay\" : %s }", valueToString(((RelativeTimeSchedulingTrigger) trigger).getDelayTime())));
+        } else if(trigger instanceof EventBasedSchedulingTrigger) {
+            sb.append("{ \"type\" : \"event\", ");
+            sb.append(String.format("\"path\" : %s, ", valueToString(((EventBasedSchedulingTrigger) trigger).getEvent().asString())));
+            sb.append(String.format("\"protection\" : %s, ", valueToString(((EventBasedSchedulingTrigger) trigger).getProtectionTime())));
+            sb.append(String.format("\"enabled\" : %s }", ((EventBasedSchedulingTrigger) trigger).isEnabled() ? "true" : "false"));
+        } else {
+            throw new RuntimeException("Software bug, trigger type not supported: " + trigger);
+        }
+    }
+
+    private static String listArray(Collection<String> resources) {
+        if(resources == null) {
+            return "null";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("[ ");
+        for(String s : resources) {
+            sb.append(s + ", ");
+        }
+        if(resources.size() > 0) {
+            sb.delete(sb.length() - 2, sb.length()).append(" ");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    public static byte[] formatSchedulerState(boolean schedulerStatus, List<ScheduledActivityData> items) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{ ");
+        sb.append(String.format("\"enabled\" : %s, ", schedulerStatus));
+        sb.append("\"items\" : [ ");
+        for(int i = 0; i < items.size(); ++i) {
+            format(sb, items.get(i));
+            if(i != items.size() - 1) {
+                sb.append(", ");
+            }
+        }
+        sb.append(" ] }");
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
 }

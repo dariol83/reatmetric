@@ -789,4 +789,156 @@ The request sets the reconnection flag of the connector. The body is:
 ~~~
 The request initialises the connector with the provided set of properties. The body is a JSON object (key-value map). 
 
+### Scheduler
+
+**Scheduler state fetch**
+
+~~~
+    GET     http://<host>:<port>/<system name>/scheduler
+~~~
+
+The request returns a JSON structure containing the status of the scheduler (enabled, disabled) and 
+the list of the scheduled items, so defined:
+
+~~~
+    {
+        "enabled" : <boolean>, // true or false
+        "items" : <array of ScheduledActivityData>
+    }
+~~~
+
+The structure of a ScheduledActivityData is defined as follows:
+
+~~~
+    {
+        "internalId" : <integer>,
+        "gentime" : <time string>, // Format as YYYY-MM-DD'T'hh:mm:ss.SSSZ
+        "request" : <JSON object of type ActivityRequest - see previous sections>,  
+        "activity" : <long> or null, // activity occurrence ID if the activity request was dispatched, otherwise null 
+        "resources" : <array of string>,
+        "source" : <string> or null,
+        "externalId" : <string> or null, 
+        "trigger" : <JSON object - see below>, 
+        "latest" : <time string> or null, // Format as YYYY-MM-DD'T'hh:mm:ss.SSSZ
+        "startTime" : <time string> or null, // Format as YYYY-MM-DD'T'hh:mm:ss.SSSZ
+        "duration" : <integer>, // Estimated duration of the activity in milliseconds, -1 if unknown
+        "conflict" : <string>, // See ConflictStrategy enum names in eu.dariolucia.reatmetric.api.scheduler
+        "state" : <string> // See SchedulingState enum names in eu.dariolucia.reatmetric.api.scheduler     
+    }
+~~~
+
+The structure of a scheduling trigger is defined as follows:
+
+~~~
+    // Trigger execution as soon as the request is submitted
+    { 
+        "type" : "now" 
+    } 
+    
+    // Trigger execution at the specified time
+    { 
+        "type" : "absolute", 
+        "startTime" : <time string> 
+    } 
+    
+    // Trigger execution as soon as predecessors are completed, plus optional delay
+    { 
+        "type" : "relative", 
+        "predecessors" : <array of string>, // external IDs of the predecessors  
+        "delay" : <integer> or null // in seconds
+    } 
+    
+    // Trigger execution as soon as event is raised, if enabled
+    { 
+        "type" : "event",
+        "path" : <string>, // path of the event
+        "protection" : <integer> or null, // in milliseconds 
+        "enabled" : <boolean>
+    } 
+~~~
+
+*Javascript library function*: async getSchedulerState() : return the scheduler state
+
+**Scheduled item state fetch**
+
+~~~
+    GET     http://<host>:<port>/<system name>/scheduler/<scheduled item internal ID>
+~~~
+
+The request returns the scheduler item status, using the same format defined for the scheduler state as ScheduledActivityData.
+
+*Javascript library function*: async getScheduledItem(ID) : return the scheduler item object
+
+**Scheduler operations**
+
+~~~
+    POST     http://<host>:<port>/<system name>/scheduler/enable
+~~~
+The request enables the scheduler. No body defined.
+
+*Javascript library function*: async enableScheduler() : *void*
+
+~~~
+    POST     http://<host>:<port>/<system name>/scheduler/disable
+~~~
+The request disables the scheduler. No body defined.
+
+*Javascript library function*: async disableScheduler() : *void*
+
+~~~
+    POST     http://<host>:<port>/<system name>/scheduler/<scheduled item internal ID>/remove
+~~~
+The request removes the indicated scheduled item. No body defined.
+
+*Javascript library function*: async removeScheduledItem(ID) : *void*
+
+~~~
+    POST     http://<host>:<port>/<system name>/scheduler/<scheduled item internal ID>/update?conflict=<creation conflict strategy>
+~~~
+The request updates the indicated scheduled item with the SchedulingRequest information provided in the body. The 
+creation conflict strategy is one of the values defined by the CreationConflictStrategy enumeration in the eu.dariolucia.reatmetric.api.scheduler 
+package.
+
+The body is:
+
+~~~
+    {
+        "request" : <JSON object of type ActivityRequest - see previous sections>,  
+        "resources" : <array of string>,
+        "source" : <string> or null,
+        "externalId" : <string> or null,
+        "trigger" : <JSON object - see previous section>, 
+        "latest" : <time string> or null, // Format as YYYY-MM-DD'T'hh:mm:ss.SSSZ
+        "conflict" : <string>, // See ConflictStrategy enum names in eu.dariolucia.reatmetric.api.scheduler
+        "duration" : <integer> // Estimated duration of the activity in milliseconds, -1 if unknown     
+    }
+~~~
+
+*Javascript library function*: async updateScheduledItem(ID, updatedRequest, creationConflictStrategy) : *void*
+
+~~~
+    POST     http://<host>:<port>/<system name>/scheduler/schedule?conflict=<creation conflict strategy>
+~~~
+The request requests the scheduling of an activity. The body is a SchedulingRequest object.
+
+The response returns in its body an id value according to the structure defined below.
+
+~~~
+    {
+         "id" : <integer> // The scheduled item internal id
+    }
+~~~
+
+*Javascript library function*: async schedule(newRequest, creationConflictStrategy) : the ID of the newly created scheduled item
+
+~~~
+    POST     http://<host>:<port>/<system name>/scheduler/load?conflict=<creation conflict strategy>&startTime=<time in ms from UNIX epoch>&endTime=<time in ms from UNIX epoch>&source=<source>
+~~~
+The request updates the schedule by removing all scheduled items previously scheduled by the same source and populating such interval with the new
+scheduling requests. The body is an array of SchedulingRequests.
+
+*Javascript library function*: async loadScheduleIncrement(startTime, endTime, source, schedulingRequests, creationConflictStrategy) : *void*
+
+
+
 
