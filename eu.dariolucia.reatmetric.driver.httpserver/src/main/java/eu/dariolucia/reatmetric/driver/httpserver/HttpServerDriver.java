@@ -18,6 +18,9 @@
 package eu.dariolucia.reatmetric.driver.httpserver;
 
 import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsParameters;
+import com.sun.net.httpserver.HttpsServer;
 import eu.dariolucia.reatmetric.api.activity.ActivityDescriptor;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
@@ -37,13 +40,17 @@ import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.httpserver.definition.HttpServerConfiguration;
 import eu.dariolucia.reatmetric.driver.httpserver.protocol.handlers.*;
 
+import javax.net.ssl.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -83,9 +90,7 @@ public class HttpServerDriver implements IDriver {
 
 
     // Driver generic properties
-    private String name;
     private IServiceCoreContext context;
-    private IDriverListener driverSubscriber;
     private SystemStatus driverStatus;
     // Driver specific properties
     private HttpServerConfiguration configuration;
@@ -111,10 +116,8 @@ public class HttpServerDriver implements IDriver {
 
     @Override
     public void initialise(String name, String driverConfigurationDirectory, IServiceCoreContext context, ServiceCoreConfiguration coreConfiguration, IDriverListener subscriber) throws DriverException {
-        this.name = name;
         this.context = context;
         this.driverStatus = SystemStatus.NOMINAL;
-        this.driverSubscriber = subscriber;
         try {
             // Read the configuration
             this.configuration = HttpServerConfiguration.load(new FileInputStream(driverConfigurationDirectory + File.separator + CONFIGURATION_FILE));
@@ -133,10 +136,10 @@ public class HttpServerDriver implements IDriver {
 
             // Inform that everything is fine
             this.driverStatus = SystemStatus.NOMINAL;
-            subscriber.driverStatusUpdate(this.name, this.driverStatus);
+            subscriber.driverStatusUpdate(name, this.driverStatus);
         } catch (Exception e) {
             this.driverStatus = SystemStatus.ALARM;
-            subscriber.driverStatusUpdate(this.name, this.driverStatus);
+            subscriber.driverStatusUpdate(name, this.driverStatus);
             throw new DriverException(e);
         }
     }
@@ -221,7 +224,56 @@ public class HttpServerDriver implements IDriver {
 
     private void startHttpServer() throws IOException {
         InetSocketAddress address = new InetSocketAddress(this.configuration.getHost(), this.configuration.getPort());
-        this.server = HttpServer.create(address, 10);
+        if(this.configuration.isHttps()) {
+            // SO: https://stackoverflow.com/questions/2308479/simple-java-https-server
+            try {
+                SSLContext sslContext = SSLContext.getInstance(this.configuration.getSslProtocol());
+                HttpsServer secureServer = HttpsServer.create();
+
+                // Initialise the keystore
+                char[] kspassword = this.configuration.getKeyStorePassword().toCharArray();
+                KeyStore ks = KeyStore.getInstance(this.configuration.getKeyStoreType());
+                FileInputStream fis = new FileInputStream(this.configuration.getKeyStoreLocation());
+                ks.load(fis, kspassword);
+
+                // To generate a keystore
+                // $ keytool -genkeypair -keyalg RSA -alias self_signed -keypass <this.configuration.getKeyManagerPassword()> \
+                // -keystore <this.configuration.getKeyStoreLocation()> -storepass <this.configuration.getKeyStorePassword()>
+
+                // Set up the key manager factory
+                char[] kmpassword = this.configuration.getKeyManagerPassword().toCharArray();
+                KeyManagerFactory kmf = KeyManagerFactory.getInstance(this.configuration.getKeyManagerAlgorithm());
+                kmf.init(ks, kmpassword);
+
+                // Set up the trust manager factory
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance(this.configuration.getTrustManagerAlgorithm());
+                tmf.init(ks);
+
+                // Set up the HTTPS context and parameters
+                sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+
+                secureServer.setHttpsConfigurator(new HttpsConfigurator(sslContext) {
+                    @Override
+                    public void configure(HttpsParameters params) {
+                        SSLContext c = getSSLContext();
+                        SSLEngine engine = c.createSSLEngine();
+                        params.setNeedClientAuth(false);
+                        params.setCipherSuites(engine.getEnabledCipherSuites());
+                        params.setProtocols(engine.getEnabledProtocols());
+                        // get the default parameters
+                        SSLParameters sslparams = c.getDefaultSSLParameters();
+                        params.setSSLParameters(sslparams);
+                    }
+                });
+                this.server = secureServer;
+            } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException | UnrecoverableKeyException |
+                     CertificateException e) {
+                LOG.log(Level.SEVERE, "Configuration of HTTPS server failed, falling back to HTTP server: " + e.getMessage(), e);
+                this.server = HttpServer.create(address, 10);
+            }
+        } else {
+            this.server = HttpServer.create(address, 10);
+        }
         this.server.setExecutor(null);
         this.server.start();
         // Add the context

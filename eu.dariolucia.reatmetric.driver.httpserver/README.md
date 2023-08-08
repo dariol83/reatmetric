@@ -886,14 +886,14 @@ The request disables the scheduler. No body defined.
 *Javascript library function*: async disableScheduler() : *void*
 
 ~~~
-    POST     http://<host>:<port>/<system name>/scheduler/<scheduled item internal ID>/remove
+    DELETE     http://<host>:<port>/<system name>/scheduler/<scheduled item internal ID>
 ~~~
 The request removes the indicated scheduled item. No body defined.
 
 *Javascript library function*: async removeScheduledItem(ID) : *void*
 
 ~~~
-    POST     http://<host>:<port>/<system name>/scheduler/<scheduled item internal ID>/update?conflict=<creation conflict strategy>
+    POST     http://<host>:<port>/<system name>/scheduler/<scheduled item internal ID>?conflict=<creation conflict strategy>
 ~~~
 The request updates the indicated scheduled item with the SchedulingRequest information provided in the body. The 
 creation conflict strategy is one of the values defined by the CreationConflictStrategy enumeration in the eu.dariolucia.reatmetric.api.scheduler 

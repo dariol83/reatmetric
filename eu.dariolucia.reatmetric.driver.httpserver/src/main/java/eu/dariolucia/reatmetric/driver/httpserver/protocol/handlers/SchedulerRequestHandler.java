@@ -28,9 +28,7 @@ public class SchedulerRequestHandler extends AbstractHttpRequestHandler {
     private static final String ENABLE_PATH = "enable";
     private static final String DISABLE_PATH = "disable";
     private static final String LOAD_PATH = "load";
-    private static final String UPDATE_PATH = "update";
     private static final String SCHEDULE_PATH = "schedule";
-    private static final String REMOVE_PATH = "remove";
     private static final String CREATION_CONFLICT_ARG = "conflict";
     private static final String SOURCE_ARG = "source";
 
@@ -61,6 +59,9 @@ public class SchedulerRequestHandler extends AbstractHttpRequestHandler {
             } else if(!path.isBlank() && exchange.getRequestMethod().equals(HTTP_METHOD_GET)) {
                 // Fetch single scheduled item status
                 handled = handleScheduledItemStateGetRequest(path, exchange);
+            } else if(!path.isBlank() && exchange.getRequestMethod().equals(HTTP_METHOD_DELETE)) {
+                // Delete scheduled item
+                handled = handleDeleteScheduledItemRequest(path, exchange);
             } else if(!path.isBlank() && exchange.getRequestMethod().equals(HTTP_METHOD_POST)) {
                 // Check the path value:
                 switch (path) {
@@ -75,8 +76,8 @@ public class SchedulerRequestHandler extends AbstractHttpRequestHandler {
                         handled = handleSchedulerScheduleRequest(exchange);
                         break;
                     default:
-                        // path is a number and an operation (remove, update)
-                        handled = handleScheduledItemOperationRequest(path, exchange);
+                        // path is a number?conflict=... -> update scheduled item
+                        handled = handleUpdateScheduledItemRequest(path, exchange);
                         break;
                 }
             }
@@ -132,7 +133,7 @@ public class SchedulerRequestHandler extends AbstractHttpRequestHandler {
                     break;
                 default:
                     if (LOG.isLoggable(Level.FINE)) {
-                        LOG.log(Level.FINE, "Scheduler enable POST request for path " + path + " issue: connector not found");
+                        LOG.log(Level.FINE, "Scheduler POST request for path " + path + " issue: operation not found");
                     }
                     return HTTP_CODE_NOT_FOUND;
             }
@@ -142,32 +143,36 @@ public class SchedulerRequestHandler extends AbstractHttpRequestHandler {
             return HTTP_CODE_OK;
         } catch (RemoteException | ReatmetricException e) {
             if (LOG.isLoggable(Level.FINE)) {
-                LOG.log(Level.FINE, "Scheduler enable POST request for path " + path + " exception: " + e.getMessage(), e);
+                LOG.log(Level.FINE, "Scheduler POST request for path " + path + " exception: " + e.getMessage(), e);
             }
             return HTTP_CODE_INTERNAL_ERROR;
         }
     }
 
-    private int handleScheduledItemOperationRequest(String path, HttpExchange exchange) throws IOException {
-        IUniqueId id = new LongUniqueId(Long.parseLong(path.substring(0, path.lastIndexOf(HTTP_PATH_SEPARATOR))));
-        String action = path.substring(path.lastIndexOf(HTTP_PATH_SEPARATOR) + 1);
+    private int handleDeleteScheduledItemRequest(String path, HttpExchange exchange) throws IOException {
+        try {
+            // Perform operation
+            IUniqueId id = new LongUniqueId(Long.parseLong(path));
+            getDriver().getContext().getScheduler().remove(id);
+            // Send the response
+            sendPositiveResponse(exchange, new byte[0]);
+            return HTTP_CODE_OK;
+        } catch (RemoteException | ReatmetricException e) {
+            if (LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Scheduler DELETE request for path " + path + " exception: " + e.getMessage(), e);
+            }
+            return HTTP_CODE_INTERNAL_ERROR;
+        }
+    }
+
+    private int handleUpdateScheduledItemRequest(String path, HttpExchange exchange) throws IOException {
+        IUniqueId id = new LongUniqueId(Long.parseLong(path.substring(0, path.indexOf(HTTP_QUERY_SEPARATOR))));
         Map<String, String> properties = JsonParseUtil.splitQuery(exchange.getRequestURI());
         try {
-            switch (action) {
-                case REMOVE_PATH:
-                    getDriver().getContext().getScheduler().remove(id);
-                    break;
-                case UPDATE_PATH:
-                    SchedulingRequest schedRequest = JsonParseUtil.parseSchedulingRequest(exchange.getRequestBody(), getDriver().getActivityMap());
-                    CreationConflictStrategy conflictStrategy = CreationConflictStrategy.valueOf(properties.get(CREATION_CONFLICT_ARG));
-                    getDriver().getContext().getScheduler().update(id, schedRequest, conflictStrategy);
-                    break;
-                default:
-                    if (LOG.isLoggable(Level.FINE)) {
-                        LOG.log(Level.FINE, "Scheduler POST request for path " + path + " issue: connector not found");
-                    }
-                    return HTTP_CODE_NOT_FOUND;
-            }
+            // Perform request
+            SchedulingRequest schedRequest = JsonParseUtil.parseSchedulingRequest(exchange.getRequestBody(), getDriver().getActivityMap());
+            CreationConflictStrategy conflictStrategy = CreationConflictStrategy.valueOf(properties.get(CREATION_CONFLICT_ARG));
+            getDriver().getContext().getScheduler().update(id, schedRequest, conflictStrategy);
 
             // Send the response
             sendPositiveResponse(exchange, new byte[0]);

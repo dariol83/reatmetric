@@ -45,6 +45,7 @@ public abstract class AbstractHttpRequestHandler implements HttpHandler {
     public static final String HTTP_METHOD_GET = "GET";
     public static final String HTTP_METHOD_DELETE = "DELETE";
     public static final String HTTP_PATH_SEPARATOR = "/";
+    public static final String HTTP_QUERY_SEPARATOR = "?";
 
     public static final int SUBSCRIPTION_EXPIRATION_TIME = 60000; // 60 seconds
 

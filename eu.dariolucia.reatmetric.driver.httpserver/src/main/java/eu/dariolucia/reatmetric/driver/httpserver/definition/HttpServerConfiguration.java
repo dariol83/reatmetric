@@ -46,6 +46,29 @@ public class HttpServerConfiguration {
     @XmlAttribute(name = "port")
     private int port = 8080;
 
+    @XmlAttribute(name = "https")
+    private boolean https = false;
+
+    @XmlAttribute(name = "keystore-password")
+    private String keyStorePassword = "";
+
+    @XmlAttribute(name = "keystore-type")
+    private String keyStoreType = "JKS";
+
+    @XmlAttribute(name = "keystore-location")
+    private String keyStoreLocation = "";
+
+    @XmlAttribute(name = "keymanager-password")
+    private String keyManagerPassword = "";
+
+    @XmlAttribute(name = "keymanager-algorithm")
+    private String keyManagerAlgorithm = "SunX509";
+
+    @XmlAttribute(name = "trustmanager-algorithm")
+    private String trustManagerAlgorithm = "SunX509";
+
+    @XmlAttribute(name = "ssl-protocol")
+    private String sslProtocol = "TLS";
 
     public String getHost() {
         return host;
@@ -61,5 +84,69 @@ public class HttpServerConfiguration {
 
     public void setPort(int port) {
         this.port = port;
+    }
+
+    public boolean isHttps() {
+        return https;
+    }
+
+    public void setHttps(boolean https) {
+        this.https = https;
+    }
+
+    public String getKeyStorePassword() {
+        return keyStorePassword;
+    }
+
+    public void setKeyStorePassword(String keyStorePassword) {
+        this.keyStorePassword = keyStorePassword;
+    }
+
+    public String getKeyManagerPassword() {
+        return keyManagerPassword;
+    }
+
+    public void setKeyManagerPassword(String keyManagerPassword) {
+        this.keyManagerPassword = keyManagerPassword;
+    }
+
+    public String getKeyStoreType() {
+        return keyStoreType;
+    }
+
+    public void setKeyStoreType(String keyStoreType) {
+        this.keyStoreType = keyStoreType;
+    }
+
+    public String getKeyStoreLocation() {
+        return keyStoreLocation;
+    }
+
+    public void setKeyStoreLocation(String keyStoreLocation) {
+        this.keyStoreLocation = keyStoreLocation;
+    }
+
+    public String getKeyManagerAlgorithm() {
+        return keyManagerAlgorithm;
+    }
+
+    public void setKeyManagerAlgorithm(String keyManagerAlgorithm) {
+        this.keyManagerAlgorithm = keyManagerAlgorithm;
+    }
+
+    public String getTrustManagerAlgorithm() {
+        return trustManagerAlgorithm;
+    }
+
+    public void setTrustManagerAlgorithm(String trustManagerAlgorithm) {
+        this.trustManagerAlgorithm = trustManagerAlgorithm;
+    }
+
+    public String getSslProtocol() {
+        return sslProtocol;
+    }
+
+    public void setSslProtocol(String sslProtocol) {
+        this.sslProtocol = sslProtocol;
     }
 }

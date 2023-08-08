@@ -7,6 +7,7 @@ const RTMT_ACTIVITIES_PATH = "activities";
 const RTMT_MESSAGES_PATH = "messages";
 const RTMT_CONNECTORS_PATH = "connectors";
 const RTMT_MODEL_PATH = "model";
+const RTMT_SCHEDULER_PATH = "scheduler";
 
 const RTMT_REGISTRATION_URL = "register";
 const RTMT_GET_URL = "get";
@@ -20,10 +21,14 @@ const RTMT_STARTTIME_ARG = "startTime";
 const RTMT_ENDTIME_ARG = "endTime";
 const RTMT_ID_ARG = "id";
 const RTMT_PATH_ARG = "path";
+const RTMT_CONFLICT_ARG = "conflict";
+const RTMT_SOURCE_ARG = "source";
 
 
 const RTMT_ENABLE_URL = "enable";
 const RTMT_DISABLE_URL = "disable";
+const RTMT_SCHEDULE_URL = "schedule";
+const RTMT_LOAD_URL = "load";
 
 class ReatMetric {
 
@@ -419,6 +424,84 @@ class ReatMetric {
             return null;
         }
     }
+
+    /*********************************************************
+     * Scheduler
+     *********************************************************/
+
+     async getSchedulerState() {
+         var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH;
+         const response = await fetch(toFetch, this.fetchInit('GET', null));
+         if (response.status === 200) {
+             const data = await response.json();
+             return data;
+         } else {
+             return null;
+         }
+     }
+
+     async getScheduledItem(id) {
+         var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH + "/" + id;
+         const response = await fetch(toFetch, this.fetchInit('GET', null));
+         if (response.status === 200) {
+             const data = await response.json();
+             return data;
+         } else {
+             return null;
+         }
+     }
+
+     async enableScheduler() {
+          var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH + "/" + RTMT_ENABLE_URL;
+          const response = await fetch(toFetch, this.fetchInit('POST', null));
+          const data = await response.json();
+          return;
+     }
+
+     async disableScheduler() {
+          var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH + "/" + RTMT_DISABLE_URL;
+          const response = await fetch(toFetch, this.fetchInit('POST', null));
+          const data = await response.json();
+          return;
+     }
+
+     async removeScheduledItem(id) {
+         var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH + "/" + id;
+         const response = await fetch(toFetch, this.fetchInit('DELETE', null));
+         const data = await response.json();
+         return;
+     }
+
+     async updateScheduledItem(id, updatedRequest, creationConflictStrategy) {
+         var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH + "/" + id +
+            "?" + RTMT_CONFLICT_ARG + "=" + creationConflictStrategy;
+         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(updatedRequest)));
+         const data = await response.json();
+         return;
+     }
+
+     async schedule(newRequest, creationConflictStrategy) {
+         var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH + "/" + RTMT_SCHEDULE_URL +
+            "?" + RTMT_CONFLICT_ARG + "=" + creationConflictStrategy;
+         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(newRequest)));
+         if (response.status === 200) {
+             const data = await response.json();
+             return data.id;
+         } else {
+             return null;
+         }
+     }
+
+     async loadScheduleIncrement(startTime, endTime, source, schedulingRequests, creationConflictStrategy) {
+         var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH + "/" + RTMT_LOAD_URL +
+            "?" + RTMT_CONFLICT_ARG + "=" + creationConflictStrategy +
+            "&" + RTMT_STARTTIME_ARG + "=" + startTime +
+            "&" + RTMT_ENDTIME_ARG + "=" + endTime +
+            "&" + RTMT_SOURCE_ARG + "=" + source;
+         const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(schedulingRequests)));
+         const data = await response.json();
+         return;
+     }
 }
 
 class ActivityFilter {
@@ -441,6 +524,49 @@ class ActivityRequest {
         this.route = activityRoute;
         this.source = activitySource;
         this.properties = activityProperties;
+    }
+}
+
+class SchedulingRequest {
+    constructor(request, resources, source, externalId, trigger, latest, conflict, duration) {
+        this.request = request;
+        this.resources = resources;
+        this.source = source;
+        this.externalId = externalId;
+        this.trigger = trigger;
+        this.latest = latest;
+        this.conflict = conflict;
+        this.duration = duration;
+    }
+}
+
+class NowTrigger {
+    constructor() {
+        this.type = "now";
+    }
+}
+
+class AbsoluteTrigger {
+    constructor(startTime) {
+        this.type = "absolute";
+        this.startTime = startTime;
+    }
+}
+
+class RelativeTrigger {
+    constructor(predecessors, delay) {
+        this.type = "relative";
+        this.predecessors = predecessors;
+        this.delay = delay;
+    }
+}
+
+class EventTrigger {
+    constructor(path, protection, enabled) {
+        this.type = "event";
+        this.path = path;
+        this.protection = protection;
+        this.enabled = enabled;
     }
 }
 
