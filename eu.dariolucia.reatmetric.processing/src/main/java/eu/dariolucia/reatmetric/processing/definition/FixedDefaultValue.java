@@ -21,6 +21,9 @@ import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import java.io.Serializable;
 
+/**
+ * This class is used to provide a fixed value (to be used for initialisation of parameters and activity arguments).
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 public class FixedDefaultValue extends AbstractDefaultValue implements Serializable {
 
@@ -35,6 +38,13 @@ public class FixedDefaultValue extends AbstractDefaultValue implements Serializa
         this.value = value;
     }
 
+    /**
+     * The value as string literal (to be interpreted depending on the {@link DefaultValueType} specified.
+     * <p></p>
+     * Attribute: value (mandatory)
+     *
+     * @return the value as string literal
+     */
     public String getValue() {
         return value;
     }

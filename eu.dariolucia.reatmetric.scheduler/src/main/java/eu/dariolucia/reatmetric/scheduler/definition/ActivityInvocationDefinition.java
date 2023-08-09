@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.processing.input.AbstractActivityArgument;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.AbsoluteTimeSchedulingTrigger;
 import eu.dariolucia.reatmetric.api.scheduler.ConflictStrategy;
+import eu.dariolucia.reatmetric.api.scheduler.NowSchedulingTrigger;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import eu.dariolucia.reatmetric.scheduler.IInternalResolver;
 import eu.dariolucia.reatmetric.scheduler.ScheduledTask;
@@ -126,11 +127,10 @@ public class ActivityInvocationDefinition implements Serializable {
     private transient List<AbstractActivityArgument> argumentsList;
 
     public SchedulingRequest build(IInternalResolver resolver, String source) {
-        Instant now = Instant.now();
-        ActivityDescriptor descriptor = resolver.resolveDescriptor(activity);
+        ActivityDescriptor descriptor = resolver.resolveDescriptor(getActivity());
         if(descriptor != null) {
-            ActivityRequest ar = new ActivityRequest(descriptor.getExternalId(), descriptor.getPath(), getArgumentsList(), getPropertiesMap(), route, source);
-            return new SchedulingRequest(ar, new HashSet<>(getResources()), source, source + "-" + SEQUENCER.incrementAndGet(), new AbsoluteTimeSchedulingTrigger(now), now.plusSeconds(maxInvocationTime), getConflictStrategy(), descriptor.getExpectedDuration());
+            ActivityRequest ar = new ActivityRequest(descriptor.getExternalId(), descriptor.getPath(), getArgumentsList(), getPropertiesMap(), getRoute(), source);
+            return new SchedulingRequest(ar, new HashSet<>(getResources()), source, source + "-" + SEQUENCER.incrementAndGet(), new NowSchedulingTrigger(), Instant.now().plusSeconds(getMaxInvocationTime()), getConflictStrategy(), descriptor.getExpectedDuration());
         } else {
             return null;
         }

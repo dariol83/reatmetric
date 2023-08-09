@@ -25,6 +25,17 @@ import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
 import java.io.Serializable;
 
+/**
+ * Instances of this class define a condition that can be evaluated to a true/false result. Such evaluation is used to
+ * derive the validity status of parameters and the applicability status of {@link CalibrationDefinition} and {@link CheckDefinition}
+ * objects.
+ *
+ * A {@link ValidityCondition} object defines either a {@link ExpressionDefinition} condition or a {@link MatcherDefinition}
+ * matcher, for simpler cases. In case both are defined, the {@link ExpressionDefinition} condition is used.
+ *
+ * If neither the condition nor the matcher are specified, the evaluation of the {@link ValidityCondition} always returns
+ * true.
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ValidityCondition implements Serializable {
 
@@ -45,6 +56,13 @@ public class ValidityCondition implements Serializable {
     public ValidityCondition() {
     }
 
+    /**
+     * The expression as {@link ExpressionDefinition} to be used for the evaluation of the validity status. It must return a boolean value.
+     * <p></p>
+     * Element: condition
+     *
+     * @return the expression to be used for the evaluation of the validity status, or null
+     */
     public ExpressionDefinition getCondition() {
         return condition;
     }
@@ -53,6 +71,13 @@ public class ValidityCondition implements Serializable {
         this.condition = condition;
     }
 
+    /**
+     * The matcher as {@link MatcherDefinition} to be used for the evaluation of the validity status.
+     * <p></p>
+     * Element: matcher
+     *
+     * @return the matcher to be used for the evaluation of the validity status, or null
+     */
     public MatcherDefinition getMatch() {
         return match;
     }
@@ -61,6 +86,13 @@ public class ValidityCondition implements Serializable {
         this.match = match;
     }
 
+    /**
+     * Method internally invoked by the processing model. It evaluates the validity status.
+     *
+     * @param resolver the {@link IBindingResolver} instance to retrieve the status of required parameters/events
+     * @return true if the evaluation is positive (i.e valid), false otherwise (i.e. invalid)
+     * @throws ValidityException in case of issues when evaluating the condition/matcher
+     */
     public boolean execute(IBindingResolver resolver) throws ValidityException {
         if(condition != null) {
             try {

@@ -21,6 +21,10 @@ import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import java.io.Serializable;
 
+/**
+ * This abstract class is used to provide a default value to be used for initialisation of activity
+ * arguments.
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 public abstract class AbstractDefaultValue implements Serializable {
 
@@ -34,6 +38,13 @@ public abstract class AbstractDefaultValue implements Serializable {
         this.type = type;
     }
 
+    /**
+     * The type of the default value (raw or engineering) to be set.
+     * <p></p>
+     * Attribute: type (mandatory)
+     *
+     * @return the {@link DefaultValueType} of the default value
+     */
     public DefaultValueType getType() {
         return type;
     }

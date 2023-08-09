@@ -25,6 +25,10 @@ import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlIDREF;
 import java.io.Serializable;
 
+/**
+ * This class is used to provide a default value to be used for initialisation of activity
+ * arguments, by reading it from the provided parameter.
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ReferenceDefaultValue extends AbstractDefaultValue implements Serializable {
 
@@ -44,6 +48,13 @@ public class ReferenceDefaultValue extends AbstractDefaultValue implements Seria
         this.targetValueType = targetValueType;
     }
 
+    /**
+     * The {@link ParameterProcessingDefinition} from which the value must be read.
+     * <p></p>
+     * Attribute: parameter (mandatory)
+     *
+     * @return the {@link ParameterProcessingDefinition} from which the value must be read
+     */
     public ParameterProcessingDefinition getParameter() {
         return parameter;
     }
@@ -52,6 +63,13 @@ public class ReferenceDefaultValue extends AbstractDefaultValue implements Seria
         this.parameter = parameter;
     }
 
+    /**
+     * The target parameter value to be read: raw or engineering
+     * <p></p>
+     * Attribute: target_value_type (mandatory)
+     *
+     * @return the {@link DefaultValueType} to read from the target parameter
+     */
     public DefaultValueType getTargetValueType() {
         return targetValueType;
     }

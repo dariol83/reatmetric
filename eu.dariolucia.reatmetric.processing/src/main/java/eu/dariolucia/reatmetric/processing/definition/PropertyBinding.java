@@ -16,16 +16,53 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
+/**
+ * This enumeration describes the type of property that shall be bound to {@link SymbolDefinition}.
+ */
 public enum PropertyBinding {
+    /**
+     * The location of the system entity (as string)
+     */
     PATH,
+    /**
+     * The generation time (as Java {@link java.time.Instant})
+     */
     GEN_TIME,
+    /**
+     * The reception time (as Java {@link java.time.Instant})
+     */
     RCT_TIME,
+    /**
+     * The route (as string)
+     */
     ROUTE,
+    /**
+     * The raw/source value (only for parameters)
+     */
     SOURCE_VALUE,
+    /**
+     * The engineering value (only for parameters)
+     */
     ENG_VALUE,
+    /**
+     * The alarm state (as {@link eu.dariolucia.reatmetric.api.model.AlarmState}, only for parameters)
+     */
     ALARM_STATE,
+    /**
+     * The validity (as {@link eu.dariolucia.reatmetric.api.parameters.Validity}, only for parameters)
+     */
     VALIDITY,
+    /**
+     * The qualifier (as string, only for events)
+     */
     QUALIFIER,
+    /**
+     * The source (as string)
+     */
     SOURCE,
+    /**
+     * The bound object (i.e. {@link eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding} for parameters,
+     * {@link eu.dariolucia.reatmetric.api.processing.scripting.IEventBinding} for events
+     */
     OBJECT
 }

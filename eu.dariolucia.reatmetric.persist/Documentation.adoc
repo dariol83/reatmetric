@@ -8,6 +8,12 @@ provided:
 * If a '//<server>[:<port>]/<databaseName>[;user=<value>;password=<value>[;...]]' string is provided, then a client
 connection to the server is established. The server must have been already started in advance.
 
+In case the path to a folder is provided:
+
+* If the folder exists, it is expected to contain an Apache Derby database. If not, an error is returned;
+* If the folder does not exist, an Apache Derby database is created and configured according to the database schema defined
+by this module.
+
 Including this module in a ReatMetric system is not mandatory: if not present, the system will work as usual, but it will
 not store any data. In the same way, it will not be possible to retrieve any historical data, but only monitor the live
 state of the external devices/systems.
@@ -27,4 +33,4 @@ This module has one external dependency:
 * On Apache Derby.
 
 ==== Configuration
-To be written
+None.

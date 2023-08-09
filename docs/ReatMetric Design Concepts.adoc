@@ -288,9 +288,7 @@ include::../eu.dariolucia.reatmetric.core/Documentation.adoc[]
 include::../eu.dariolucia.reatmetric.remoting/Documentation.adoc[]
 
 === Remoting Connector
-==== Overview
-==== Configuration
-To be written
+include::../eu.dariolucia.reatmetric.remoting.connector/Documentation.adoc[]
 
 == Driver Modules
 === Automation

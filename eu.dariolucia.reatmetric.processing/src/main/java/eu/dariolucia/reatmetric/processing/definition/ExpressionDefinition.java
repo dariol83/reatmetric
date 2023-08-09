@@ -36,6 +36,18 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This class is used to define an expression, which is characterized by:
+ * <ul>
+ *     <li>a string, defining the expression itself</li>
+ *     <li>a list of {@link SymbolDefinition}, binding a given name to a system entity property in the processing model</li>
+ *     <li>a dialect, which is limited to Groovy in this implementation</li>
+ * </ul>
+ *
+ * In general, an expression can return any value. Some specific applications, e.g. the use of expressions for
+ * the computation of a {@link ValidityCondition}, might restrict the returned value type to specific ones (e.g.
+ * boolean).
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ExpressionDefinition implements Serializable {
 
@@ -62,6 +74,13 @@ public class ExpressionDefinition implements Serializable {
         this.dialect = dialect;
     }
 
+    /**
+     * The expression to be evaluated.
+     * <p></p>
+     * Element: expression
+     *
+     * @return the expression
+     */
     public String getExpression() {
         return expression;
     }
@@ -70,6 +89,14 @@ public class ExpressionDefinition implements Serializable {
         this.expression = expression;
     }
 
+    /**
+     * The list of {@link SymbolDefinition} that appear in the specified expression, for which a binding to a
+     * processing model system entity (and related property) is needed. Such binding is then resolved at runtime.
+     * <p></p>
+     * Elements: symbol
+     *
+     * @return the list of {@link SymbolDefinition}
+     */
     public List<SymbolDefinition> getSymbols() {
         return symbols;
     }
@@ -78,6 +105,14 @@ public class ExpressionDefinition implements Serializable {
         this.symbols = symbols;
     }
 
+    /**
+     * The dialect/language of the expression. Only {@link ExpressionDialect#GROOVY} is supported in this
+     * implementation.
+     * <p></p>
+     * Attribute: dialect
+     *
+     * @return the expression dialect ({@link ExpressionDialect#GROOVY})
+     */
     public ExpressionDialect getDialect() {
         return dialect;
     }

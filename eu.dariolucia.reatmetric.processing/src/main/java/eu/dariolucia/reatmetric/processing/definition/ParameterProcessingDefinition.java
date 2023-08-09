@@ -16,14 +16,30 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
+import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
-
-import javax.script.ScriptException;
 import jakarta.xml.bind.annotation.*;
+
 import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * This class defines the main characteristics (raw value type, engineering value type) and the processing to be applied
+ * to a specific parameter:
+ * <ol>
+ *     <li>Validity computation, in case a {@link ValidityCondition} is defined</li>
+ *     <li>Value computation, according to a specified {@link ExpressionDefinition} (if present)</li>
+ *     <li>Calibration computation, in case a {@link CalibrationDefinition} is defined </li>
+ *     <li>Check computation, in case one or more {@link CheckDefinition} are defined</li>
+ * </ol>
+ *
+ * This class also contains information about:
+ * <ul>
+ *     <li>The way to set the value of the parameter using a specified activity via a {@link ParameterSetterDefinition}</li>
+ *     <li>The list of events to be triggered based on parameter specific transitions via {@link ParameterTriggerDefinition} </li>
+ * </ul>
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ParameterProcessingDefinition extends AbstractProcessingDefinition implements Serializable {
 
@@ -36,9 +52,6 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlAttribute(name = "eng_unit")
     private String unit = "";
 
-    /**
-     * Min repetition period for log generation in case of alarms, in milliseconds
-     */
     @XmlAttribute(name = "log_repetition_period")
     private int logRepetitionPeriod = 0;
 
@@ -79,6 +92,14 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlElement(name="trigger")
     private List<ParameterTriggerDefinition> triggers = new LinkedList<>();
 
+    /**
+     * The raw value type of the parameter. This information is used to check the input as provided when injecting
+     * {@link eu.dariolucia.reatmetric.api.processing.input.ParameterSample} objects into the Processing model.
+     * <p></p>
+     * Attribute: raw_type (mandatory)
+     *
+     * @return the raw value type of the parameter
+     */
     public ValueTypeEnum getRawType() {
         return rawType;
     }
@@ -87,6 +108,13 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.rawType = rawType;
     }
 
+    /**
+     * The engineering value type of the parameter. It must match the output of the assigned calibration, if provided.
+     * <p></p>
+     * Attribute: eng_type (mandatory)
+     *
+     * @return the engineering value type of the parameter
+     */
     public ValueTypeEnum getEngineeringType() {
         return engineeringType;
     }
@@ -95,6 +123,13 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.engineeringType = engineeringType;
     }
 
+    /**
+     * The unit of the engineering value.
+     * <p></p>
+     * Attribute: unit
+     *
+     * @return the unit of the engineering value, or null if no unit can be specified
+     */
     public String getUnit() {
         return unit;
     }
@@ -103,6 +138,14 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.unit = unit;
     }
 
+    /**
+     * The {@link ValidityCondition} that is used to derive the {@link eu.dariolucia.reatmetric.api.parameters.Validity} of a
+     * parameter. It can be null.
+     * <p></p>
+     * Element: validity
+     *
+     * @return the defined {@link ValidityCondition} or null
+     */
     public ValidityCondition getValidity() {
         return validity;
     }
@@ -111,6 +154,24 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.validity = validity;
     }
 
+    /**
+     * The ordered list of {@link CalibrationDefinition} to be applied to the injected raw value, in order to compute
+     * the engineering value. Only one calibration is applied, i.e. the first one that results as applicable. If no
+     * calibration is defined, then the raw value is directly translated into the engineering value.
+     * <p></p>
+     * Elements:
+     * <ul>
+     *     <li>calib_xy for {@link XYCalibration}</li>
+     *     <li>calib_poly for {@link PolyCalibration}</li>
+     *     <li>calib_log for {@link LogCalibration}</li>
+     *     <li>calib_enum for {@link EnumCalibration}</li>
+     *     <li>calib_range_enum for {@link RangeEnumCalibration}</li>
+     *     <li>calib_expression for {@link ExpressionCalibration}</li>
+     *     <li>calib_external for {@link ExternalCalibration}</li>
+     * </ul>
+     *
+     * @return the list of calibrations (list can be empty)
+     */
     public List<CalibrationDefinition> getCalibrations() {
         return calibrations;
     }
@@ -119,6 +180,20 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.calibrations = calibrations;
     }
 
+    /**
+     * The ordered list of {@link CheckDefinition} to be verified against the engineering value (computed after calibration).
+     * <p></p>
+     * Elements: checks/
+     * <ul>
+     *     <li>limit for {@link LimitCheck}</li>
+     *     <li>delta for {@link DeltaCheck}</li>
+     *     <li>expected for {@link ExpectedCheck}</li>
+     *     <li>expression for {@link ExpressionCheck}</li>
+     *     <li>external for {@link ExternalCheck}</li>
+     * </ul>
+     *
+     * @return the list of checks (list can be empty)
+     */
     public List<CheckDefinition> getChecks() {
         return checks;
     }
@@ -127,6 +202,14 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.checks = checks;
     }
 
+    /**
+     * The expression ({@link ExpressionDefinition} defining how the raw value shall be computed. The presence of such
+     * expression automatically defines this parameter as 'synthetic' and no externally injected sample will be processed.
+     * <p></p>
+     * Element: expression
+     *
+     * @return the expression definition, or null
+     */
     public ExpressionDefinition getExpression() {
         return expression;
     }
@@ -135,6 +218,14 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.expression = expression;
     }
 
+    /**
+     * The ordered list of {@link ParameterTriggerDefinition} that drives the reporting of events in the processing model,
+     * depending on the outcome of the processing of the parameter.
+     * <p></p>
+     * Elements: triggers/trigger
+     *
+     * @return the list of triggers (list can be empty)
+     */
     public List<ParameterTriggerDefinition> getTriggers() {
         return triggers;
     }
@@ -143,6 +234,13 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.triggers = triggers;
     }
 
+    /**
+     * The value to be used, as initial, default value, for the parameter state. It can be null.
+     * <p></p>
+     * Element: default_value
+     *
+     * @return the default value, or null
+     */
     public FixedDefaultValue getDefaultValue() {
         return defaultValue;
     }
@@ -151,6 +249,15 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.defaultValue = defaultValue;
     }
 
+    /**
+     * The reference to the activity that will be used by the processing model, when requesting to set the parameter
+     * value via the {@link eu.dariolucia.reatmetric.api.processing.IProcessingModel#setParameterValue(SetParameterRequest)}
+     * method. It can be null.
+     * <p></p>
+     * Element: setter
+     *
+     * @return the {@link ParameterTriggerDefinition} object, or null.
+     */
     public ParameterSetterDefinition getSetter() {
         return setter;
     }
@@ -162,6 +269,8 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     /**
      * The minimum log generation period in milliseconds. If an alarm generates a log within the minimum repetition period window,
      * the log message is skipped and a counter increased.
+     * <p></p>
+     * Attribute: log_repetition_period
      *
      * @return the minimum log repetition period in milliseconds
      */
@@ -173,6 +282,11 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         this.logRepetitionPeriod = logRepetitionPeriod;
     }
 
+    /**
+     * Internally used by the processing model.
+     *
+     * @return the list of expected values (raw values)
+     */
     public List<Object> buildExpectedValuesRaw() {
         if(getSetter() == null) {
             // Return null
@@ -221,6 +335,11 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
         }
     }
 
+    /**
+     * Internally used by the processing model.
+     *
+     * @return the list of expected values (eng. values)
+     */
     public List<Object> buildExpectedValuesEng() {
         if(getSetter() == null) {
             // Return null

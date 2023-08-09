@@ -1,0 +1,52 @@
+==== Overview
+The eu.dariolucia.reatmetric.remoting.connector module provides an implementation of the IReatmetricSystem and
+IReatmetricRegister interfaces specified in the API module, which are in reality stubs, connecting to remotely activated
+IReatMetric systems via the Remoting module, using Java RMI. The IReatmetricRegister of this implementation provides a
+list of systems, as defined in the related configuration file.
+
+When the IReatmetricRegister of this module is instantiated, the system is initialised in the following steps:
+
+. The 'connector' configuration file is loaded from the location specified in the VM property _reatmetric.remoting.connector.config_;
+. For each system entry in the configuration file, a corresponding stub implementation of a IReatmetricSystem is instantiated and
+made available for retrieval with the _availableSystems()_ method.
+
+This module can be therefore used by external applications and libraries, which have the need to connect to the services
+provided by a ReatMetric system in an efficient way, using Java RMI.
+
+This module has one internal dependency:
+
+* On eu.dariolucia.reatmetric.api
+
+This module has one external dependencies:
+
+* On JAXB library, since the configuration is defined in XML files.
+
+==== Configuration
+The configuration structure of the eu.dariolucia.reatmetric.remoting.connector module is defined in the package
+eu.dariolucia.reatmetric.remoting.connector.configuration. It is an XML file using namespace definition
+_http://dariolucia.eu/reatmetric/remoting/connector/configuration_.
+
+A commented example of such file is presented below.
+
+[source,xml]
+----
+<ns1:connectors xmlns:ns1="http://dariolucia.eu/reatmetric/remoting/connector/configuration">
+    <!-- Declare a ReatMetric system, remotely exposed with the given remote name (Test System),
+    on the specified host and port, as a local ReatMetric system, with the provided
+    local name (Prime System). -->
+	<connector local-name="Test System" remote-name="Test System" host="10.0.8.1" port="19000" />
+    <!-- Declare a ReatMetric system, remotely exposed with the given remote name (Test System),
+    on the specified host and port, as a local ReatMetric system, with the provided
+    local name (Backup System). -->
+	<connector local-name="Backup System" remote-name="Test System" host="10.0.8.2" port="19000" />
+</ns1:connectors>
+----
+
+When instantiated, the implementation looks for a system variable, containing the absolute path of the XML file with the
+configuration. It is therefore mandatory to include such variable when starting up the application containing this
+module, or to set up such variable programmatically, before loading the corresponding service via the ServiceLoader.
+
+Example:
+----
+java -Dreatmetric.remoting.connector.config=/home/reatmetric/rm.remoting.connector.config.xml ...
+----

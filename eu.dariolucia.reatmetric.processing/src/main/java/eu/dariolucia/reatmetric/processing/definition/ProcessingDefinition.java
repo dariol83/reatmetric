@@ -29,6 +29,13 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * This class is the entry point of the configuration of the ReatMetric Processing module. It defines all aspects
+ * related to the processing of parameters, events and activities and their organisation in a hierarchical tree.
+ *
+ * Root element: processing
+ * Namespace: http://dariolucia.eu/reatmetric/processing/definition
+ */
 @XmlRootElement(name = "processing", namespace = "http://dariolucia.eu/reatmetric/processing/definition")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ProcessingDefinition implements Serializable {
@@ -54,6 +61,19 @@ public class ProcessingDefinition implements Serializable {
         }
     }
 
+    /**
+     * This method loads a {@link ProcessingDefinition} object from the provided {@link InputStream}.
+     * After loading, depending on whether the definitions are mirrored or whether a path prefix is defined, the
+     * properties are propagated to all elements in the tree:
+     * <ul>
+     *     <li>The 'mirroring' properties is set to all elements</li>
+     *     <li>The 'path prefix' is prepended to the 'location' of all elements</li>
+     * </ul>
+     *
+     * @param is    the input stream
+     * @return the {@link ProcessingDefinition} object
+     * @throws JAXBException
+     */
     public static ProcessingDefinition load(InputStream is) throws JAXBException {
         JAXBContext jc = JAXBContext.newInstance(ProcessingDefinition.class);
         Unmarshaller u = jc.createUnmarshaller();
@@ -83,7 +103,9 @@ public class ProcessingDefinition implements Serializable {
     }
 
     /**
-     * Read and aggregate all files present in the provided location. File names with a leading dot are ignored.
+     * Read and aggregate all files present in the provided folder location. File names with a leading dot are ignored.
+     * The attribute 'synthetic_parameter_processing_enabled' is set to true in the returned object, if at least one
+     * file contains such attribute set to true.
      *
      * @param definitionsLocation the folder containing the definition files
      * @return the aggregated definitions
@@ -144,6 +166,13 @@ public class ProcessingDefinition implements Serializable {
         this.activityDefinitions = activityDefinitions;
     }
 
+    /**
+     * The list of defined {@link ParameterProcessingDefinition} objects.
+     * <p></p>
+     * Element name: parameters/parameter
+     *
+     * @return the list of defined {@link ParameterProcessingDefinition} objects
+     */
     public List<ParameterProcessingDefinition> getParameterDefinitions() {
         return parameterDefinitions;
     }
@@ -152,6 +181,13 @@ public class ProcessingDefinition implements Serializable {
         this.parameterDefinitions = parameterDefinitions;
     }
 
+    /**
+     * The list of defined {@link EventProcessingDefinition} objects.
+     * <p></p>
+     * Element name: events/event
+     *
+     * @return the list of defined {@link EventProcessingDefinition} objects
+     */
     public List<EventProcessingDefinition> getEventDefinitions() {
         return eventDefinitions;
     }
@@ -160,6 +196,13 @@ public class ProcessingDefinition implements Serializable {
         this.eventDefinitions = eventDefinitions;
     }
 
+    /**
+     * The list of defined {@link ActivityProcessingDefinition} objects.
+     * <p></p>
+     * Element name: activities/activity
+     *
+     * @return the list of defined {@link ActivityProcessingDefinition} objects
+     */
     public List<ActivityProcessingDefinition> getActivityDefinitions() {
         return activityDefinitions;
     }
@@ -169,6 +212,13 @@ public class ProcessingDefinition implements Serializable {
         return this;
     }
 
+    /**
+     * Whether the synthetic parameters defined in this hierarchy must be processed.
+     * <p></p>
+     * Attribute: synthetic_parameter_processing_enabled
+     *
+     * @return true if synthetic parameters must be processed, false otherwise
+     */
     public boolean isSyntheticParameterProcessingEnabled() {
         return syntheticParameterProcessingEnabled;
     }
@@ -178,8 +228,10 @@ public class ProcessingDefinition implements Serializable {
     }
 
     /**
-     * If a definition is marked as mirrored, it means that the processing object can be updated with a full state
-     * from an external processing model: updatable objects are not processed by the processing model.
+     * If a definition is marked as mirrored, it means that the processing object can only be updated with a full state
+     * from an external processing model: mirrored objects are not processed by the processing model.
+     * <p></p>
+     * Attribute: mirrored
      *
      * @return true if mirrored, otherwise false
      */
@@ -191,6 +243,13 @@ public class ProcessingDefinition implements Serializable {
         this.mirrored = mirrored;
     }
 
+    /**
+     * If a path prefix is provided, all definition locations in this hierarchy are prepended with the specified path.
+     * <p></p>
+     * Attribute: path_prefix
+     *
+     * @return the path prefix, or null
+     */
     public String getPathPrefix() {
         return pathPrefix;
     }
@@ -199,17 +258,21 @@ public class ProcessingDefinition implements Serializable {
         this.pathPrefix = pathPrefix;
     }
 
+    private transient String cacheFolder;
+
     /**
-     * The next transient field is used to provide the location folder where the cache file for the topological sorting will
+     * This transient field is used to provide the location folder where the cache file for the topological sorting will
      * be stored:
      * <ul>
      * <li>If it is not set, the topological sorting will be created from the definitions but not cached.</li>
      * <li>If it is set and the cache file is not present, the topological sorting will be created from the definitions and a cache file created.</li>
      * <li>If it is set and the cache file is present, the topological sort will be loaded from the cache file.</li>
      * </ul>
+     *
+     * This method is used by the ReatMetric Processing module, and it is not supposed to be invoked by external users.
+     *
+     * @return the cache folder
      */
-    private transient String cacheFolder;
-
     public String getCacheFolder() {
         return cacheFolder;
     }

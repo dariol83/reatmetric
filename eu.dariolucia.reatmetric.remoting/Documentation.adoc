@@ -19,9 +19,7 @@ This module has one internal dependency:
 
 * On eu.dariolucia.reatmetric.api
 
-This module has one external dependencies:
-
-* On JAXB library, since the configuration is defined in XML files.
+This module has no external dependencies.
 
 ==== Configuration
 None.

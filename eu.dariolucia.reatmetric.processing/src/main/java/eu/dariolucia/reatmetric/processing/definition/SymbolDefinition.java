@@ -20,6 +20,10 @@ import jakarta.xml.bind.annotation.*;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.io.Serializable;
 
+/**
+ * This class is used to map a name, appearing in expressions, to a system entity and a related property, whose value is
+ * then used during expression evaluation.
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SymbolDefinition implements Serializable {
 
@@ -42,6 +46,13 @@ public class SymbolDefinition implements Serializable {
         this.binding = binding;
     }
 
+    /**
+     * The name of the symbol, as it appears in the expression.
+     * <p></p>
+     * Attribute: name (mandatory)
+     *
+     * @return the name of the symbol
+     */
     public String getName() {
         return name;
     }
@@ -50,6 +61,13 @@ public class SymbolDefinition implements Serializable {
         this.name = name;
     }
 
+    /**
+     * The ID, {@link AbstractProcessingDefinition#getId()}, of the system element, the symbol refers to.
+     * <p></p>
+     * Attribute: reference (mandatory)
+     *
+     * @return the ID of the system element, the symbol refers to
+     */
     public int getReference() {
         return reference;
     }
@@ -58,6 +76,13 @@ public class SymbolDefinition implements Serializable {
         this.reference = reference;
     }
 
+    /**
+     * The property of the referenced system element, whose value must be used in the evaluation of the expression.
+     * <p></p>
+     * Attribute: binding (default: {@link PropertyBinding#OBJECT})
+     *
+     * @return the property of the referenced system element
+     */
     public PropertyBinding getBinding() {
         return binding;
     }

@@ -22,55 +22,55 @@ import java.time.Instant;
 import java.util.function.Function;
 
 /**
- * @author dario
+ * Enumeration specifying the types supported as values in the ReatMetric systems and the related Java mapping.
  */
 public enum ValueTypeEnum {
     /**
-     * Boolean
+     * Boolean, mapped to Java Boolean primitive type
      */
     BOOLEAN(1, Boolean.class, o -> Boolean.toString(o), Boolean::parseBoolean),
     /**
-     * Enumerated value
+     * Enumerated value, mapped to Java Integer primitive type
      */
     ENUMERATED(2, Integer.class, String::valueOf, Integer::parseInt),
     /**
-     * Unsigned integer
+     * Unsigned integer, mapped to Java Long primitive type
      */
     UNSIGNED_INTEGER(3, Long.class, String::valueOf, Long::parseLong),
     /**
-     * Signed integer (two complement)
+     * Signed integer (two complement), mapped to Java Long primitive type
      */
     SIGNED_INTEGER(4, Long.class, String::valueOf, Long::parseLong),
     /**
-     * Real number
+     * Real number, mapped to Java Double primitive type
      */
     REAL(5, Double.class, String::valueOf, Double::parseDouble),
     /**
-     * Sequence of bits
+     * Sequence of bits, mapped to ReatMetric {@link BitString} class
      */
     BIT_STRING(6, BitString.class, BitString::toString, BitString::parse),
     /**
-     * Sequence of bytes (8 bits)
+     * Sequence of bytes (8 bits), mapped to Java byte[] class
      */
     OCTET_STRING(7, byte[].class, StringUtil::toHexDump, StringUtil::toByteArray),
     /**
-     * Sequence of ASCII characters
+     * Sequence of ASCII characters, mapped to Java {@link String} class
      */
     CHARACTER_STRING(8, String.class, Function.identity(), Function.identity()),
     /**
-     * Absolute time
+     * Absolute time, mapped to Java {@link Instant} class
      */
     ABSOLUTE_TIME(9, Instant.class, Instant::toString, Instant::parse),
     /**
-     * Relative time
+     * Relative time, mapped to Java {@link Duration} class
      */
     RELATIVE_TIME(10, Duration.class, Duration::toString, Duration::parse),
     /**
-     * Array
+     * Array, mapped to ReatMetric {@link Array} class
      */
     ARRAY(11, Array.class, Array::toString, Array::parse),
     /**
-     * Extension
+     * Extension, mapped to Java Object class
      */
     EXTENSION(12, Object.class, null, null);
 

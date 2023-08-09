@@ -20,6 +20,9 @@ import jakarta.xml.bind.annotation.*;
 import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import java.io.Serializable;
 
+/**
+ * Abstract parent class for {@link ParameterProcessingDefinition}, {@link EventProcessingDefinition} and {@link ActivityProcessingDefinition}.
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
 public abstract class AbstractProcessingDefinition implements Serializable {
 
@@ -47,6 +50,13 @@ public abstract class AbstractProcessingDefinition implements Serializable {
         this.location = location;
     }
 
+    /**
+     * The ID of the system entity.
+     * <p></p>
+     * Attribute: id (mandatory)
+     *
+     * @return the ID of the definition
+     */
     public int getId() {
         return id;
     }
@@ -55,6 +65,13 @@ public abstract class AbstractProcessingDefinition implements Serializable {
         this.id = id;
     }
 
+    /**
+     * The description of the system entity. It can be empty.
+     * <p></p>
+     * Attribute: description
+     *
+     * @return the description of the definition
+     */
     public String getDescription() {
         return description;
     }
@@ -63,6 +80,14 @@ public abstract class AbstractProcessingDefinition implements Serializable {
         this.description = description;
     }
 
+    /**
+     * The location of the system entity in the hierarchical tree. The value must be a {@link eu.dariolucia.reatmetric.api.model.SystemEntityPath}
+     * convertable string.
+     * <p></p>
+     * Attribute: location (mandatory)
+     *
+     * @return the location of the system entity in the hierarchical tree
+     */
     public String getLocation() {
         return location;
     }

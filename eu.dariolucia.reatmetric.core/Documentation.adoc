@@ -51,9 +51,12 @@ This module has one external dependencies:
 * On JAXB library, since the configuration is defined in XML files.
 
 ==== Configuration
-The documentation of the eu.dariolucia.reatmetric.core module is contained in the package
+The configuration structure of the eu.dariolucia.reatmetric.core module is defined in the package
 eu.dariolucia.reatmetric.core.configuration. It is an XML file using namespace definition
 _http://dariolucia.eu/reatmetric/core/configuration_.
+
+The elements that can contain a path support the special value $HOME, which is replaced at runtime with the contents
+of the _user.home_ system variable.
 
 A commented example of such file is presented below.
 
@@ -129,4 +132,13 @@ A commented example of such file is presented below.
         <reconnect-exclusion>Connector 2 Name</reconnect-exclusion>
     </autostart-connectors>
 </ns1:core>
+----
+
+When instantiated, the implementation looks for a system variable, containing the absolute path of the XML file with the
+configuration. It is therefore mandatory to include such variable when starting up the application containing this
+module, or to set up such variable programmatically, before loading the corresponding service via the ServiceLoader.
+
+Example:
+----
+java -Dreatmetric.core.config=/home/reatmetric/rm.core.config.xml ...
 ----

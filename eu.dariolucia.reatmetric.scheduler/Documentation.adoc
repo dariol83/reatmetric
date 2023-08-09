@@ -120,4 +120,104 @@ With reference to the example, as soon as the bot enters the "Degraded 1" state,
 the emergency power source 1 stays active, no matter what happens to the primary power source status.
 
 ==== Configuration
-To be written
+The configuration structure of the eu.dariolucia.reatmetric.scheduler module is defined in the package
+eu.dariolucia.reatmetric.scheduler.definition. It is an XML file using namespace definition
+_http://dariolucia.eu/reatmetric/scheduler_.
+
+A commented example of such file is presented below.
+
+[source,xml]
+----
+<ns1:scheduler xmlns:ns1="http://dariolucia.eu/reatmetric/scheduler" scheduler-enabled="true">
+    <!-- Define a new bot with name 'Bot Test 1', which is enabled by default and will execute the configured
+    actions for the state upon initialisation -->
+    <bot-definition name="Bot Test 1" execute-on-init="false" enabled="true">
+        <!-- Define a bot state -->
+        <bot-state name="Nominal Power Line">
+            <!-- First condition to be checked: STATION.POWERSUPPLY.PS_TENSION > 200
+            Attribute 'value-type' is used to interpret the content of the 'value' attribute.
+            Check the literals defined for enumeration
+            eu.dariolucia.reatmetric.api.value.ValueTypeEnum -->
+            <condition parameter="STATION.POWERSUPPLY.PS_TENSION" operator="GT" value-type="REAL" value="200"/>
+            <!-- Second condition to be checked (ANDed with the first condition):
+            STATION.POWERSUPPLY.PS_OUTPUT == ON -->
+            <condition parameter="STATION.POWERSUPPLY.PS_OUTPUT" operator="EQUAL" value-type="CHARACTER_STRING" value="ON"/>
+            <!-- List of actions to be added to the schedule (in the specified order, with
+            trigger 'Now') upon entering this state.
+            Attribute 'max-invocation-time' is in seconds, it defines the latestExecutionTime
+            for activity dispatch, in case the activity cannot be dispatched due to resource
+            conflicts and it has to wait.
+            Attribute 'conflict-strategy' defines the strategy to be used in case of conflict
+            upon activity dispatch. Default value is 'WAIT'. -->
+            <action activity="STATION.MATRIX.SET_INPUT_STATUS" route="STATION ROUTE" max-invocation-time="10" conflict-strategy="WAIT">
+                <!-- Attribute 'raw-value' indicates if the provided value is raw or engineered
+                (i.e. decalibration will be applied by the processing model, if defined -->
+                <fixed-argument name="ARG1" value="INPUT1" raw-value="false"/>
+                <fixed-argument name="ARG2" value="ON" raw-value="false"/>
+                <!-- Properties: way to provide custom/driver specific properties, required for
+                activity implementation. -->
+                <property key="p1" value="v1" />
+                <property key="p2" value="v2" />
+                <!-- List of resources -->
+                <resources>
+                    <resource>station</resource>
+                </resources>
+            </action>
+            <action activity="STATION.MATRIX.WIRING" route="STATION ROUTE" max-invocation-time="10" conflict-strategy="WAIT">
+                <fixed-argument name="ARG1" value="INPUT1" raw-value="false"/>
+                <resources>
+                    <resource>station</resource>
+                </resources>
+            </action>
+        </bot-state>
+        <!-- Define a bot state -->
+        <bot-state name="Degraded Power Line 1">
+            <condition parameter="STATION.DIESEL_GEN1.DG1_TENSION" operator="GT" value-type="REAL" value="200"/>
+            <condition parameter="STATION.DIESEL_GEN1.DG1_OUTPUT" operator="EQUAL" value-type="CHARACTER_STRING" value="ON"/>
+            <action activity="STATION.MATRIX.SET_INPUT_STATUS" route="STATION ROUTE" max-invocation-time="10">
+                <fixed-argument name="ARG1" value="INPUT2" raw-value="false"/>
+                <fixed-argument name="ARG2" value="ON" raw-value="false"/>
+                <resources>
+                    <resource>station</resource>
+                </resources>
+            </action>
+            <action activity="STATION.MATRIX.WIRING" route="STATION ROUTE" max-invocation-time="10">
+                <fixed-argument name="ARG1" value="INPUT2" raw-value="false"/>
+                <resources>
+                    <resource>station</resource>
+                </resources>
+            </action>
+            <action activity="STATION.SWITCH.SW_CMD_POSITION" route="STATION ROUTE" max-invocation-time="10">
+                <fixed-argument name="ARG1" value="POSITION_1" raw-value="false"/>
+                <resources>
+                    <resource>station</resource>
+                </resources>
+            </action>
+        </bot-state>
+        <!-- Define a bot state -->
+        <bot-state name="Degraded Power Line 2">
+            <condition parameter="STATION.DIESEL_GEN2.DG2_TENSION" operator="GT" value-type="REAL" value="200"/>
+            <condition parameter="STATION.DIESEL_GEN2.DG2_OUTPUT" operator="EQUAL" value-type="CHARACTER_STRING" value="ON"/>
+            <action activity="STATION.MATRIX.SET_INPUT_STATUS" route="STATION ROUTE" max-invocation-time="10">
+                <fixed-argument name="ARG1" value="INPUT2" raw-value="false"/>
+                <fixed-argument name="ARG2" value="ON" raw-value="false"/>
+                <resources>
+                    <resource>station</resource>
+                </resources>
+            </action>
+            <action activity="STATION.MATRIX.WIRING" route="STATION ROUTE" max-invocation-time="10">
+                <fixed-argument name="ARG1" value="INPUT2" raw-value="false"/>
+                <resources>
+                    <resource>station</resource>
+                </resources>
+            </action>
+            <action activity="STATION.SWITCH.SW_CMD_POSITION" route="STATION ROUTE" max-invocation-time="10">
+                <fixed-argument name="ARG1" value="POSITION_2" raw-value="false"/>
+                <resources>
+                    <resource>station</resource>
+                </resources>
+            </action>
+        </bot-state>
+    </bot-definition>
+</ns1:scheduler>
+----
