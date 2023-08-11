@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
+package eu.dariolucia.reatmetric.driver.socket.configuration;
 
-package eu.dariolucia.reatmetric.api.model;
+import eu.dariolucia.reatmetric.api.value.StringUtil;
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
-import eu.dariolucia.reatmetric.api.common.IDataItemSubscriber;
+public class ByteArrayToStringAdapter extends XmlAdapter<String, byte[]> {
+    @Override
+    public String marshal(byte[] s) {
+        return StringUtil.toHexDump(s);
+    }
 
-/**
- * This interface is a specialisation of the {@link IDataItemSubscriber}, for updates in the processing model.
- */
-public interface ISystemModelSubscriber extends IDataItemSubscriber<SystemEntity> {
-    
+    @Override
+    public byte[] unmarshal(String v) {
+        return StringUtil.toByteArray(v);
+    }
 }

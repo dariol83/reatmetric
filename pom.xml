@@ -109,6 +109,7 @@
         <module>eu.dariolucia.reatmetric.driver.serial</module>
         <module>eu.dariolucia.reatmetric.driver.remote</module>
         <module>eu.dariolucia.reatmetric.driver.httpserver</module>
+        <module>eu.dariolucia.reatmetric.driver.socket</module>
         <module>eu.dariolucia.reatmetric.ui</module>
         <module>eu.dariolucia.reatmetric.ui.test</module>
         <module>eu.dariolucia.reatmetric.ui.remoting</module>
