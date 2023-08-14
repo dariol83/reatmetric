@@ -17,9 +17,36 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration;
 
+import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlID;
+
+import java.util.Map;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public abstract class MessageDefinition {
+public abstract class MessageDefinition<T> {
+
+    @XmlID
+    @XmlAttribute
+    private String id; // Unique identifier for the file
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public abstract void initialise() throws ReatmetricException;
+
+    public abstract Map<String, Object> decode(String id, T messageToProcess) throws ReatmetricException;
+
+    public abstract String identify(T messageToIdentify) throws ReatmetricException;
+
+    public abstract T encode(String id, Map<String, Object> data) throws ReatmetricException;
 }

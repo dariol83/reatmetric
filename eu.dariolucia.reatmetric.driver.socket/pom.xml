@@ -45,6 +45,11 @@
             <artifactId>jaxb-runtime</artifactId>
             <version>${jaxb.version}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.ccsds</groupId>
+            <artifactId>eu.dariolucia.ccsds.encdec</artifactId>
+            <version>${ccsds.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

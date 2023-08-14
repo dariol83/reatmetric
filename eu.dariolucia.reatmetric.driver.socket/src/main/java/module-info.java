@@ -7,5 +7,7 @@ open module eu.dariolucia.reatmetric.driver.socket {
     requires eu.dariolucia.reatmetric.api;
     requires eu.dariolucia.reatmetric.core;
 
+    requires eu.dariolucia.ccsds.encdec;
+
     provides eu.dariolucia.reatmetric.core.api.IDriver with SocketDriver;
 }

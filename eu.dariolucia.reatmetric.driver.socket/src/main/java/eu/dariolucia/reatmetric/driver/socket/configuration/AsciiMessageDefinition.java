@@ -21,20 +21,144 @@ import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
 
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class AsciiMessageDefinition extends MessageDefinition {
+public class AsciiMessageDefinition extends MessageDefinition<String> {
+
+    public static final String VAR_PREFIX = "${{";
+
+    public static final String VAR_POSTFIX = "}}$";
 
     @XmlElement(name = "template")
-    private List<MessageTemplate> messageTemplates = new LinkedList<>();
+    private String template; // This is a template message, something like "asdas asd asd as ${{param1}}$ sad ${{param2}}$" // NOSONAR
 
-    public List<MessageTemplate> getMessageTemplates() {
-        return messageTemplates;
+    @XmlElement(name = "symbol")
+    private List<SymbolTypeFormat> symbols; // Map symbol to type/format for correct formatting
+
+    public String getTemplate() {
+        return template;
     }
 
-    public void setMessageTemplates(List<MessageTemplate> messageTemplates) {
-        this.messageTemplates = messageTemplates;
+    public void setTemplate(String template) {
+        this.template = template;
     }
+
+    public List<SymbolTypeFormat> getSymbols() {
+        return symbols;
+    }
+
+    public void setSymbols(List<SymbolTypeFormat> symbols) {
+        this.symbols = symbols;
+    }
+
+    /* ***************************************************************
+     * Internal operations
+     * ***************************************************************/
+
+    private transient final List<String> literals = new ArrayList<>();
+    private transient final List<String> variables = new ArrayList<>();
+    private transient final Map<String, SymbolTypeFormat> variable2type = new TreeMap<>();
+
+    @Override
+    public void initialise() {
+        int currentStart = 0;
+        while(currentStart < template.length()) {
+            // Tokenize and build internals
+            int varStartIndex = template.indexOf(VAR_PREFIX);
+            if (varStartIndex == -1) {
+                // Not found: add last literal and go out
+                literals.add(template.substring(currentStart));
+                return;
+            }
+            int varEndIndex = template.indexOf(VAR_POSTFIX, varStartIndex);
+            // Add the literal before (can be an empty string) and the string name
+            literals.add(template.substring(currentStart, varStartIndex));
+            String variableName = template.substring(varStartIndex + VAR_PREFIX.length(), varEndIndex);
+            currentStart = varEndIndex + VAR_POSTFIX.length();
+            variables.add(variableName);
+            // Lookup for symbol
+            Optional<SymbolTypeFormat> format = getSymbols().stream().filter(o -> o.getName().equals(variableName)).findFirst();
+            if(format.isPresent()) {
+               variable2type.put(variableName, format.get());
+            } else {
+                // TODO problem
+                throw new RuntimeException("Cannot find any format configuration for symbol " + variableName);
+            }
+        }
+    }
+
+    @Override
+    public Map<String, Object> decode(String id, String messageToProcess) {
+        Map<String, Object> valueMap = new LinkedHashMap<>();
+        // Start from the literals
+        int currentStart = 0;
+        int literalIndex = 0;
+        int variableIndex = 0;
+        while(currentStart < messageToProcess.length()) {
+            // Move forward by literal
+            currentStart += literals.get(literalIndex).length();
+            literalIndex++;
+            // Extract from current start to ...
+            String valueString = null;
+            if(literalIndex < literals.size()) {
+                // ... the start of the next literal
+                valueString = messageToProcess.substring(currentStart, messageToProcess.indexOf(literals.get(literalIndex)));
+            } else {
+                // ... the end of the string
+                valueString = messageToProcess.substring(currentStart);
+            }
+            // Update the position in the string
+            currentStart += valueString.length();
+
+            // Process the read value
+            if(variableIndex < variables.size()) {
+                String variableName = variables.get(variableIndex++);
+                SymbolTypeFormat stf = variable2type.get(variableName);
+                Object value = null;
+                // Read/parse value
+                if (stf != null) {
+                    value = stf.parse(valueString);
+                    // Add to map
+                    valueMap.put(variableName, value);
+                } else {
+                    // TODO: log and ignore
+                }
+            }
+        }
+        return valueMap;
+    }
+
+    @Override
+    public String identify(String messageToIdentify) {
+        int currentStart = 0;
+        for(String literal : literals) {
+            if(literal.isEmpty()) {
+                continue;
+            }
+            int idx = messageToIdentify.indexOf(literal, currentStart);
+            if(idx == -1) {
+                return null;
+            } else {
+                currentStart = idx + literal.length();
+            }
+        }
+        return getId();
+    }
+
+    @Override
+    public String encode(String id, Map<String, Object> data) {
+        String result = template;
+        for(Map.Entry<String, Object> e : data.entrySet()) {
+            SymbolTypeFormat stf = variable2type.get(e.getKey());
+            result = result.replace(VAR_PREFIX + e.getKey() + VAR_POSTFIX, stf.dump(e.getValue()));
+        }
+        return result;
+    }
+
+    // Move the stuff below to the protocol
+
+    // private List<SymbolMapping> parameterMappings; // Defines which values must be mapped to which parameters in case of inbound message
+
+    // private List<EventMapping> eventMapping; // Events to be raised in case of reception of this message
 }

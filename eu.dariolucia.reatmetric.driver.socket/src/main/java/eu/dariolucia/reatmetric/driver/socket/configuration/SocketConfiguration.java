@@ -48,6 +48,7 @@ public class SocketConfiguration {
     @XmlElement(name = "connection")
     private List<ConnectionConfiguration> connections = new LinkedList<>();
 
+    @XmlElementWrapper(name = "messages")
     @XmlElements({
             @XmlElement(name="ascii",type= AsciiMessageDefinition.class),
             @XmlElement(name="binary",type= BinaryMessageDefinition.class)

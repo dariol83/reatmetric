@@ -17,9 +17,88 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration;
 
+import eu.dariolucia.ccsds.encdec.definition.Definition;
+import eu.dariolucia.ccsds.encdec.identifier.IPacketIdentifier;
+import eu.dariolucia.ccsds.encdec.identifier.PacketAmbiguityException;
+import eu.dariolucia.ccsds.encdec.identifier.PacketNotIdentifiedException;
+import eu.dariolucia.ccsds.encdec.identifier.impl.FieldGroupBasedPacketIdentifier;
+import eu.dariolucia.ccsds.encdec.structure.*;
+import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketDecoder;
+import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketEncoder;
+import eu.dariolucia.ccsds.encdec.structure.resolvers.PathLocationBasedResolver;
+import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAttribute;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class BinaryMessageDefinition extends MessageDefinition {
+public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
+
+    @XmlAttribute(required = true)
+    private String location;
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    /* ***************************************************************
+     * Internal operations
+     * ***************************************************************/
+
+    private IPacketIdentifier identifier;
+    private IPacketEncoder encoder;
+    private IPacketDecoder decoder;
+
+    @Override
+    public void initialise() throws ReatmetricException {
+        try {
+            Definition definition = Definition.load(new FileInputStream(getLocation()));
+            identifier = new FieldGroupBasedPacketIdentifier(definition, false);
+            decoder = new DefaultPacketDecoder(definition);
+            encoder = new DefaultPacketEncoder(definition);
+        } catch (IOException e) {
+            throw new ReatmetricException(e);
+        }
+    }
+
+    @Override
+    public Map<String, Object> decode(String id, byte[] messageToProcess) throws ReatmetricException {
+        try {
+            DecodingResult result = decoder.decode(id, messageToProcess);
+            return result.getDecodedItemsAsMap();
+        } catch (DecodingException e) {
+            throw new ReatmetricException(e);
+        }
+    }
+
+    @Override
+    public String identify(byte[] messageToIdentify) throws ReatmetricException {
+        try {
+            return identifier.identify(messageToIdentify);
+        } catch (PacketNotIdentifiedException e) {
+            return null;
+        } catch (PacketAmbiguityException e) {
+            throw new ReatmetricException(e);
+        }
+    }
+
+    @Override
+    public byte[] encode(String id, Map<String, Object> data) throws ReatmetricException {
+        try {
+            return encoder.encode(id, new PathLocationBasedResolver(data));
+        } catch (EncodingException e) {
+            throw new ReatmetricException(e);
+        }
+    }
 }
