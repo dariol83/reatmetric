@@ -32,10 +32,13 @@ import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -43,6 +46,17 @@ public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
 
     @XmlAttribute(required = true)
     private String location;
+
+    @XmlElement(name = "type-marker")
+    private List<String> markers = new LinkedList<>();
+
+    public List<String> getMarkers() {
+        return markers;
+    }
+
+    public void setMarkers(List<String> markers) {
+        this.markers = markers;
+    }
 
     public String getLocation() {
         return location;
@@ -64,7 +78,7 @@ public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
     public void initialise() throws ReatmetricException {
         try {
             Definition definition = Definition.load(new FileInputStream(getLocation()));
-            identifier = new FieldGroupBasedPacketIdentifier(definition, false);
+            identifier = new FieldGroupBasedPacketIdentifier(definition, false, markers);
             decoder = new DefaultPacketDecoder(definition);
             encoder = new DefaultPacketEncoder(definition);
         } catch (IOException e) {

@@ -22,4 +22,12 @@ import jakarta.xml.bind.annotation.XmlAccessorType;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ProtocolConfiguration {
+    // TODO
+    // List of routes. For each route
+
+        // List of inbound messages from a connection and what to do with each (parameters, events)
+
+        // List of outbound messages to a connection - commands - with dispatch strategy
+        // (activity-driver, automated with period) and ways of acknowledging
+        // (activity-driver, automated with period) and ways of acknowledging
 }
