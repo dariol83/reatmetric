@@ -19,14 +19,16 @@ package eu.dariolucia.reatmetric.driver.socket.configuration;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
-
-import java.io.InputStream;
+import jakarta.xml.bind.annotation.XmlAttribute;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class DatagramDecoding implements IDecodingStrategy {
+public class EventMapping {
 
-    @Override
-    public byte[] readMessage(InputStream is, ConnectionConfiguration configuration) {
-        throw new UnsupportedOperationException("This operation shall never be called");
-    }
+    @XmlAttribute(required = true)
+    private int entity;
+
+    // TODO: add qualifier
+    // - FixedQualifier --> String
+    // - ParameterQualifier --> Name of the parameter that contains the qualifier (converted to a string)
+
 }

@@ -19,9 +19,29 @@ package eu.dariolucia.reatmetric.driver.socket.configuration;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
+
+import java.util.LinkedList;
+import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ProtocolConfiguration {
+
+    @XmlAttribute(name = "entity-offset")
+    private int entityOffset = 0;
+
+    @XmlElement(name = "route")
+    private List<RouteConfiguration> routes = new LinkedList<>();
+
+    public List<RouteConfiguration> getRoutes() {
+        return routes;
+    }
+
+    public void setRoutes(List<RouteConfiguration> routes) {
+        this.routes = routes;
+    }
+
     // TODO
     // List of routes. For each route
 

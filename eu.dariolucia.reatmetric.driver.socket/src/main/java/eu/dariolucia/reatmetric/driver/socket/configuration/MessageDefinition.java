@@ -17,9 +17,7 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration;
 
-import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;

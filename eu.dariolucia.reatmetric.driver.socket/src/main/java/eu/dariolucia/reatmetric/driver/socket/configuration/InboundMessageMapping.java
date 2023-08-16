@@ -19,14 +19,32 @@ package eu.dariolucia.reatmetric.driver.socket.configuration;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
 
-import java.io.InputStream;
+import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class DatagramDecoding implements IDecodingStrategy {
+public class InboundMessageMapping extends MessageMapping {
 
-    @Override
-    public byte[] readMessage(InputStream is, ConnectionConfiguration configuration) {
-        throw new UnsupportedOperationException("This operation shall never be called");
+    @XmlElement(name = "inject")
+    private List<ParameterMapping> parameterMappings;
+
+    @XmlElement(name = "raise")
+    private List<EventMapping> eventMappings;
+
+    public List<ParameterMapping> getParameterMappings() {
+        return parameterMappings;
+    }
+
+    public void setParameterMappings(List<ParameterMapping> parameterMappings) {
+        this.parameterMappings = parameterMappings;
+    }
+
+    public List<EventMapping> getEventMappings() {
+        return eventMappings;
+    }
+
+    public void setEventMappings(List<EventMapping> eventMappings) {
+        this.eventMappings = eventMappings;
     }
 }
