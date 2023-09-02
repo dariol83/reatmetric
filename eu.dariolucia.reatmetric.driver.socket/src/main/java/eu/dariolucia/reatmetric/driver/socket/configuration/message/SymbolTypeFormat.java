@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.message;
 
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
@@ -98,4 +98,8 @@ public class SymbolTypeFormat {
             return ValueUtil.toString(type, value);
         }
     }
+
+    // TODO: add optional format string for enumerated, ints and double with the C pattern %d, %.2f, etc... for output
+
+    // TODO: add indication for fields (enum/integers) that are autoincrements (for output)
 }

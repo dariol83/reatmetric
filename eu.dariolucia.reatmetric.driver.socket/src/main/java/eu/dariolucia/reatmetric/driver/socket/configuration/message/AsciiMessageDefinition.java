@@ -15,7 +15,7 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.message;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
@@ -60,8 +60,13 @@ public class AsciiMessageDefinition extends MessageDefinition<String> {
     private transient final List<String> variables = new ArrayList<>();
     private transient final Map<String, SymbolTypeFormat> variable2type = new TreeMap<>();
 
+    // TODO: remember symbols with autoincrement
+
     @Override
     public void initialise() {
+        // Sanitize the template to have proper blank characters
+        this.template = template.replace("\\n", "\n")
+                .replace("\\r", "\r").replace("\\t", "\t");
         int currentStart = 0;
         while(currentStart < template.length()) {
             // Tokenize and build internals
@@ -82,7 +87,6 @@ public class AsciiMessageDefinition extends MessageDefinition<String> {
             if(format.isPresent()) {
                variable2type.put(variableName, format.get());
             } else {
-                // TODO problem
                 throw new RuntimeException("Cannot find any format configuration for symbol " + variableName);
             }
         }
@@ -153,12 +157,9 @@ public class AsciiMessageDefinition extends MessageDefinition<String> {
             SymbolTypeFormat stf = variable2type.get(e.getKey());
             result = result.replace(VAR_PREFIX + e.getKey() + VAR_POSTFIX, stf.dump(e.getValue()));
         }
+
+        // TODO: apply replacement for symbols with autoincrement
+
         return result;
     }
-
-    // Move the stuff below to the protocol
-
-    // private List<SymbolMapping> parameterMappings; // Defines which values must be mapped to which parameters in case of inbound message
-
-    // private List<EventMapping> eventMapping; // Events to be raised in case of reception of this message
 }

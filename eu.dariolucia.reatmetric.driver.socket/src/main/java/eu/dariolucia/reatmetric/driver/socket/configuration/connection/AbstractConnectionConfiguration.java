@@ -1,42 +1,36 @@
 /*
- * Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *          http://www.apache.org/licenses/LICENSE-2.0
+ *           http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.connection;
 
-import eu.dariolucia.reatmetric.driver.socket.connection.IConnectionHandler;
-import eu.dariolucia.reatmetric.driver.socket.connection.TcpClientConnectionHandler;
-import eu.dariolucia.reatmetric.driver.socket.connection.TcpServerConnectionHandler;
-import eu.dariolucia.reatmetric.driver.socket.connection.UdpConnectionHandler;
+import eu.dariolucia.reatmetric.driver.socket.configuration.decoding.*;
 import jakarta.xml.bind.annotation.*;
 
+import java.io.IOException;
+
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ConnectionConfiguration {
+public abstract class AbstractConnectionConfiguration {
 
     @XmlID
     @XmlAttribute(name = "name", required = true)
     private String name;
 
     @XmlAttribute
-    private ConnectionType type = ConnectionType.TCP;
-
-    @XmlAttribute
     private InitType init = InitType.CONNECTOR;
-
-    @XmlAttribute
-    private RoleType role = RoleType.CLIENT;
 
     @XmlAttribute(required = true)
     private ProtocolType protocol;
@@ -66,12 +60,6 @@ public class ConnectionConfiguration {
     @XmlAttribute(name = "rx-buffer")
     private int rxBuffer = 0; // use OS default
 
-    @XmlAttribute(name = "tcp-keep-alive")
-    private boolean tcpKeepAlive = false;
-
-    @XmlAttribute(name = "tcp-no-delay")
-    private boolean tcpNoDelay = false;
-
     @XmlElements({
             @XmlElement(name="datagramDecoding",type= DatagramDecoding.class),
             @XmlElement(name="fixedLengthDecoding",type= FixedLengthDecoding.class),
@@ -81,7 +69,7 @@ public class ConnectionConfiguration {
     })
     private IDecodingStrategy decodingStrategy;
 
-    public ConnectionConfiguration() {
+    public AbstractConnectionConfiguration() {
         //
     }
 
@@ -93,13 +81,7 @@ public class ConnectionConfiguration {
         this.name = name;
     }
 
-    public ConnectionType getType() {
-        return type;
-    }
-
-    public void setType(ConnectionType type) {
-        this.type = type;
-    }
+    public abstract ConnectionType getType();
 
     public InitType getInit() {
         return init;
@@ -107,14 +89,6 @@ public class ConnectionConfiguration {
 
     public void setInit(InitType init) {
         this.init = init;
-    }
-
-    public RoleType getRole() {
-        return role;
-    }
-
-    public void setRole(RoleType role) {
-        this.role = role;
     }
 
     public ProtocolType getProtocol() {
@@ -181,22 +155,6 @@ public class ConnectionConfiguration {
         this.rxBuffer = rxBuffer;
     }
 
-    public boolean isTcpKeepAlive() {
-        return tcpKeepAlive;
-    }
-
-    public void setTcpKeepAlive(boolean tcpKeepAlive) {
-        this.tcpKeepAlive = tcpKeepAlive;
-    }
-
-    public boolean isTcpNoDelay() {
-        return tcpNoDelay;
-    }
-
-    public void setTcpNoDelay(boolean tcpNoDelay) {
-        this.tcpNoDelay = tcpNoDelay;
-    }
-
     public IDecodingStrategy getDecodingStrategy() {
         return decodingStrategy;
     }
@@ -209,30 +167,13 @@ public class ConnectionConfiguration {
      * Channel operations
      * ***************************************************************/
 
-    private transient IConnectionHandler handler;
+    public abstract void openConnection() throws IOException;
 
-    /**
-     * Factory method that returns an instance of the IConnectionHandler used to control the connection.
-     *
-     * @return the connection handler
-     */
-    public IConnectionHandler getConnectionHandler() {
-        if(handler != null) {
-            return handler;
-        }
-        if(type == ConnectionType.TCP) {
-            if(role == RoleType.CLIENT) {
-                handler = new TcpClientConnectionHandler(this);
-            } else if(role == RoleType.SERVER) {
-                handler = new TcpServerConnectionHandler(this);
-            } else {
-                throw new IllegalStateException("Role " + role + " for handler type TCP not supported");
-            }
-        } else if(type == ConnectionType.UDP) {
-            handler = new UdpConnectionHandler(this);
-        } else {
-            throw new IllegalStateException("Handler type " + type + " not supported");
-        }
-        return handler;
-    }
+    public abstract void closeConnection() throws IOException;
+
+    public abstract boolean writeMessage(byte[] message) throws IOException;
+
+    public abstract byte[] readMessage() throws IOException;
+
+    public abstract boolean isOpen();
 }

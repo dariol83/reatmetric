@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,13 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 
-public enum RadixEnum {
-    BIN(2),
-    OCT(8),
-    DEC(10),
-    HEX(16);
-
-    private int radix;
-
-    RadixEnum(int radix) {
-        this.radix = radix;
-    }
-
-    public int getRadix() {
-        return radix;
-    }
+public enum OutboundMessageType {
+    /** Send command when a linked activity is requested */
+    ACTIVITY_DRIVEN,
+    /** Send command upon connector activation */
+    CONNECTOR_START,
+    /** Send command periodically when connector is up */
+    PERIODIC
 }

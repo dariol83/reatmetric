@@ -15,7 +15,7 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.message;
 
 import eu.dariolucia.ccsds.encdec.definition.Definition;
 import eu.dariolucia.ccsds.encdec.identifier.IPacketIdentifier;
@@ -26,9 +26,7 @@ import eu.dariolucia.ccsds.encdec.structure.*;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketDecoder;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketEncoder;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.PathLocationBasedResolver;
-import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
@@ -36,7 +34,6 @@ import jakarta.xml.bind.annotation.XmlElement;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;

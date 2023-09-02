@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,24 @@
  * limitations under the License.
  *
  */
+package eu.dariolucia.reatmetric.driver.socket.configuration.connection;
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
-public enum ProtocolType {
-    BINARY,
-    ASCII
+public enum AsciiEncoding {
+    ISO(StandardCharsets.ISO_8859_1),
+    US_ASCII(StandardCharsets.US_ASCII),
+    UTF8(StandardCharsets.UTF_8),
+    UTF16(StandardCharsets.UTF_16);
+
+    private final Charset charset;
+
+    AsciiEncoding(Charset charset) {
+        this.charset = charset;
+    }
+
+    public Charset getCharset() {
+        return charset;
+    }
 }

@@ -15,7 +15,7 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
@@ -28,11 +28,31 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ProtocolConfiguration {
 
+    @XmlAttribute(name = "name", required = true)
+    private String name;
+
     @XmlAttribute(name = "entity-offset")
     private int entityOffset = 0;
 
     @XmlElement(name = "route")
     private List<RouteConfiguration> routes = new LinkedList<>();
+
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getEntityOffset() {
+        return entityOffset;
+    }
+
+    public void setEntityOffset(int entityOffset) {
+        this.entityOffset = entityOffset;
+    }
 
     public List<RouteConfiguration> getRoutes() {
         return routes;
@@ -42,12 +62,13 @@ public class ProtocolConfiguration {
         this.routes = routes;
     }
 
-    // TODO
-    // List of routes. For each route
+    /* ***************************************************************
+     * Internal operations
+     * ***************************************************************/
 
-        // List of inbound messages from a connection and what to do with each (parameters, events)
-
-        // List of outbound messages to a connection - commands - with dispatch strategy
-        // (activity-driver, automated with period) and ways of acknowledging
-        // (activity-driver, automated with period) and ways of acknowledging
+    public void initialise() {
+        for(RouteConfiguration r : getRoutes()) {
+            r.initialise(this);
+        }
+    }
 }

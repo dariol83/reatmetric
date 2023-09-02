@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.decoding;
 
+import eu.dariolucia.reatmetric.driver.socket.configuration.ByteArrayToStringAdapter;
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
@@ -40,8 +42,24 @@ public class BinaryDelimiterDecoding implements IDecodingStrategy {
     @XmlJavaTypeAdapter(ByteArrayToStringAdapter.class)
     private byte[] endSequence;
 
+    public byte[] getStartSequence() {
+        return startSequence;
+    }
+
+    public void setStartSequence(byte[] startSequence) {
+        this.startSequence = startSequence;
+    }
+
+    public byte[] getEndSequence() {
+        return endSequence;
+    }
+
+    public void setEndSequence(byte[] endSequence) {
+        this.endSequence = endSequence;
+    }
+
     @Override
-    public byte[] readMessage(InputStream is, ConnectionConfiguration configuration) throws IOException {
+    public byte[] readMessage(InputStream is, AbstractConnectionConfiguration configuration) throws IOException {
         // Allocate a temporary buffer
         ByteArrayOutputStream buff = new ByteArrayOutputStream();
         // Reset internals

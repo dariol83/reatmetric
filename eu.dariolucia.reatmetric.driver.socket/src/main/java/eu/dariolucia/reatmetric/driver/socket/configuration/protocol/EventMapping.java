@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,28 +15,27 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ParameterMapping {
-
-    @XmlAttribute(required = true)
-    private String name;
+public class EventMapping {
 
     @XmlAttribute(required = true)
     private int entity;
 
-    public String getName() {
-        return name;
-    }
+    @XmlAttribute(name = "source")
+    private String source = "";
 
-    public void setName(String name) {
-        this.name = name;
-    }
+
+    @XmlAttribute(name = "qualifier")
+    private String qualifier;
+
+    @XmlAttribute(name = "qualifier-reference")
+    private String qualifierReference;
 
     public int getEntity() {
         return entity;
@@ -44,5 +43,29 @@ public class ParameterMapping {
 
     public void setEntity(int entity) {
         this.entity = entity;
+    }
+
+    public String getQualifier() {
+        return qualifier;
+    }
+
+    public void setQualifier(String qualifier) {
+        this.qualifier = qualifier;
+    }
+
+    public String getQualifierReference() {
+        return qualifierReference;
+    }
+
+    public void setQualifierReference(String qualifierReference) {
+        this.qualifierReference = qualifierReference;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
     }
 }

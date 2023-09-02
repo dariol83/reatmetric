@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,10 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
+import eu.dariolucia.reatmetric.driver.socket.configuration.message.MessageDefinition;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlIDREF;
 
@@ -26,11 +28,7 @@ public class MessageMapping {
     private MessageDefinition<?> messageDefinition;
 
     @XmlAttribute(name = "secondary-id")
-    private String secondaryId = null;
-
-    @XmlIDREF
-    @XmlAttribute(name = "connection")
-    private ConnectionConfiguration connectionConfiguration;
+    private String secondaryId = "";
 
     public String getSecondaryId() {
         return secondaryId;
@@ -40,14 +38,6 @@ public class MessageMapping {
         this.secondaryId = secondaryId;
     }
 
-    public ConnectionConfiguration getConnectionConfiguration() {
-        return connectionConfiguration;
-    }
-
-    public void setConnectionConfiguration(ConnectionConfiguration connectionConfiguration) {
-        this.connectionConfiguration = connectionConfiguration;
-    }
-
     public MessageDefinition<?> getMessageDefinition() {
         return messageDefinition;
     }
@@ -55,4 +45,22 @@ public class MessageMapping {
     public void setMessageDefinition(MessageDefinition<?> messageDefinition) {
         this.messageDefinition = messageDefinition;
     }
-}
+
+    /* ***************************************************************
+     * Internal operations
+     * ***************************************************************/
+
+    private transient AbstractConnectionConfiguration connectionConfiguration;
+    private transient int entityOffset;
+
+    public void initialise(AbstractConnectionConfiguration defaultConnection, int entityOffset) {
+        this.entityOffset = entityOffset;
+        if(this.connectionConfiguration != null) {
+            this.connectionConfiguration = defaultConnection;
+        }
+    }
+
+    protected int getEntityOffset() {
+        return entityOffset;
+    }
+ }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,23 +15,32 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.connection;
+package eu.dariolucia.reatmetric.driver.socket.configuration.connection;
 
-import eu.dariolucia.reatmetric.driver.socket.configuration.ConnectionConfiguration;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.*;
 import java.util.Arrays;
 
-public class UdpConnectionHandler extends AbstractConnectionHandler {
+@XmlAccessorType(XmlAccessType.FIELD)
+public class UdpConnectionConfiguration extends AbstractConnectionConfiguration {
+
+    public UdpConnectionConfiguration() {
+        //
+    }
+
+    @Override
+    public ConnectionType getType() {
+        return ConnectionType.UDP;
+    }
+
+    /* ***************************************************************
+     * Channel operations
+     * ***************************************************************/
 
     private volatile DatagramSocket socket;
-
-    public UdpConnectionHandler(ConnectionConfiguration configuration) {
-        super(configuration);
-    }
 
     @Override
     public synchronized void openConnection() throws IOException {
@@ -39,21 +48,21 @@ public class UdpConnectionHandler extends AbstractConnectionHandler {
             return;
         }
         DatagramSocket s = new DatagramSocket();
-        if(getConfiguration().getLocalPort() != 0) {
-            s.bind(new InetSocketAddress(getConfiguration().getLocalPort()));
+        if(getLocalPort() != 0) {
+            s.bind(new InetSocketAddress(getLocalPort()));
         }
-        if(getConfiguration().getTxBuffer() > 0) {
-            s.setSendBufferSize(getConfiguration().getTxBuffer());
+        if(getTxBuffer() > 0) {
+            s.setSendBufferSize(getTxBuffer());
         }
-        if(getConfiguration().getRxBuffer() > 0) {
-            s.setReceiveBufferSize(getConfiguration().getRxBuffer());
+        if(getRxBuffer() > 0) {
+            s.setReceiveBufferSize(getRxBuffer());
         }
-        s.connect(InetAddress.getByName(getConfiguration().getHost()), getConfiguration().getRemotePort());
+        s.connect(InetAddress.getByName(getHost()), getRemotePort());
         this.socket = s;
     }
 
     @Override
-    public synchronized void closeConnection() throws IOException {
+    public synchronized void closeConnection() {
         if(this.socket == null) {
             return;
         }
@@ -101,4 +110,5 @@ public class UdpConnectionHandler extends AbstractConnectionHandler {
     public synchronized boolean isOpen() {
         return this.socket != null;
     }
+
 }

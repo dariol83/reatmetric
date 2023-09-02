@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.decoding;
 
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
@@ -33,8 +34,16 @@ public class FixedLengthDecoding implements IDecodingStrategy {
     @XmlAttribute(required = true)
     private int length;
 
+    public int getLength() {
+        return length;
+    }
+
+    public void setLength(int length) {
+        this.length = length;
+    }
+
     @Override
-    public byte[] readMessage(InputStream is, ConnectionConfiguration configuration) throws IOException {
+    public byte[] readMessage(InputStream is, AbstractConnectionConfiguration configuration) throws IOException {
         return is.readNBytes(length);
     }
 }

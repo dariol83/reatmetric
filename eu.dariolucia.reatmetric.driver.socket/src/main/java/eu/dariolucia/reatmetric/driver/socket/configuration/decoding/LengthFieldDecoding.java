@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.decoding;
 
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
@@ -57,8 +58,72 @@ public class LengthFieldDecoding implements IDecodingStrategy {
     @XmlAttribute
     private boolean considerFieldLength = false;
 
+    public int getHeaderNbBytesToSkip() {
+        return headerNbBytesToSkip;
+    }
+
+    public void setHeaderNbBytesToSkip(int headerNbBytesToSkip) {
+        this.headerNbBytesToSkip = headerNbBytesToSkip;
+    }
+
+    public int getFieldLength() {
+        return fieldLength;
+    }
+
+    public void setFieldLength(int fieldLength) {
+        this.fieldLength = fieldLength;
+    }
+
+    public boolean isBigEndian() {
+        return bigEndian;
+    }
+
+    public void setBigEndian(boolean bigEndian) {
+        this.bigEndian = bigEndian;
+    }
+
+    public long getFieldMask() {
+        return fieldMask;
+    }
+
+    public void setFieldMask(long fieldMask) {
+        this.fieldMask = fieldMask;
+    }
+
+    public int getFieldRightShift() {
+        return fieldRightShift;
+    }
+
+    public void setFieldRightShift(int fieldRightShift) {
+        this.fieldRightShift = fieldRightShift;
+    }
+
+    public int getFieldValueOffset() {
+        return fieldValueOffset;
+    }
+
+    public void setFieldValueOffset(int fieldValueOffset) {
+        this.fieldValueOffset = fieldValueOffset;
+    }
+
+    public boolean isConsiderSkippedBytes() {
+        return considerSkippedBytes;
+    }
+
+    public void setConsiderSkippedBytes(boolean considerSkippedBytes) {
+        this.considerSkippedBytes = considerSkippedBytes;
+    }
+
+    public boolean isConsiderFieldLength() {
+        return considerFieldLength;
+    }
+
+    public void setConsiderFieldLength(boolean considerFieldLength) {
+        this.considerFieldLength = considerFieldLength;
+    }
+
     @Override
-    public byte[] readMessage(InputStream is, ConnectionConfiguration configuration) throws IOException {
+    public byte[] readMessage(InputStream is, AbstractConnectionConfiguration configuration) throws IOException {
         ByteArrayOutputStream buff = new ByteArrayOutputStream();
         // Read (and skip) the headerNbBytesToSkip bytes
         buff.write(is.readNBytes(this.headerNbBytesToSkip));

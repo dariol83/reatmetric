@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.decoding;
 
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 
@@ -26,7 +27,7 @@ import java.io.InputStream;
 public class DatagramDecoding implements IDecodingStrategy {
 
     @Override
-    public byte[] readMessage(InputStream is, ConnectionConfiguration configuration) {
+    public byte[] readMessage(InputStream is, AbstractConnectionConfiguration configuration) {
         throw new UnsupportedOperationException("This operation shall never be called");
     }
 }

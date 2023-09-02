@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,13 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.decoding;
 
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -31,13 +33,21 @@ import java.io.InputStream;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class AsciiDelimiterDecoding implements IDecodingStrategy {
 
-    @XmlAttribute(required = true)
+    @XmlElement(name="delimiter")
     private String delimiterCharacters;
+
+    public String getDelimiterCharacters() {
+        return delimiterCharacters;
+    }
+
+    public void setDelimiterCharacters(String delimiterCharacters) {
+        this.delimiterCharacters = delimiterCharacters;
+    }
 
     private transient byte[] delimiterSequence;
 
     @Override
-    public byte[] readMessage(InputStream is, ConnectionConfiguration configuration) throws IOException {
+    public byte[] readMessage(InputStream is, AbstractConnectionConfiguration configuration) throws IOException {
         // First of all, convert the delimiterCharacters into the equivalent byte array
         convertDelimiter(configuration);
         // Allocate a temporary buffer
@@ -74,9 +84,11 @@ public class AsciiDelimiterDecoding implements IDecodingStrategy {
         return buff.toByteArray();
     }
 
-    private void convertDelimiter(ConnectionConfiguration configuration) {
+    private void convertDelimiter(AbstractConnectionConfiguration configuration) {
         if(this.delimiterSequence == null) {
-            this.delimiterSequence = delimiterCharacters.getBytes(configuration.getAsciiEncoding().getCharset());
+            String delimiterCharactersReplaced = delimiterCharacters.replace("\\n", "\n")
+                    .replace("\\r", "\r").replace("\\t", "\t");
+            this.delimiterSequence = delimiterCharactersReplaced.getBytes(configuration.getAsciiEncoding().getCharset());
         }
     }
 }

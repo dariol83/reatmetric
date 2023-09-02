@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,35 +15,69 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.connection;
+package eu.dariolucia.reatmetric.driver.socket.configuration.connection;
 
-import eu.dariolucia.reatmetric.driver.socket.configuration.ConnectionConfiguration;
+import jakarta.xml.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.*;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 
-public class TcpServerConnectionHandler extends AbstractConnectionHandler {
+@XmlAccessorType(XmlAccessType.FIELD)
+public class TcpServerConnectionConfiguration extends AbstractConnectionConfiguration {
+
+    @XmlAttribute(name = "tcp-keep-alive")
+    private boolean tcpKeepAlive = false;
+
+    @XmlAttribute(name = "tcp-no-delay")
+    private boolean tcpNoDelay = false;
+
+    public TcpServerConnectionConfiguration() {
+        //
+    }
+
+    @Override
+    public ConnectionType getType() {
+        return ConnectionType.TCP;
+    }
+
+    public boolean isTcpKeepAlive() {
+        return tcpKeepAlive;
+    }
+
+    public void setTcpKeepAlive(boolean tcpKeepAlive) {
+        this.tcpKeepAlive = tcpKeepAlive;
+    }
+
+    public boolean isTcpNoDelay() {
+        return tcpNoDelay;
+    }
+
+    public void setTcpNoDelay(boolean tcpNoDelay) {
+        this.tcpNoDelay = tcpNoDelay;
+    }
+
+    /* ***************************************************************
+     * Channel operations
+     * ***************************************************************/
 
     private volatile ServerSocket server;
     private volatile Socket socket;
     private volatile InputStream inputStream;
     private volatile OutputStream outputStream;
 
-    public TcpServerConnectionHandler(ConnectionConfiguration configuration) {
-        super(configuration);
-    }
-
     @Override
     public synchronized void openConnection() throws IOException {
         if(this.server != null) {
             return;
         }
-        this.server = new ServerSocket(getConfiguration().getLocalPort(), 1);
-        this.server.setSoTimeout(getConfiguration().getTimeout());
-        if(getConfiguration().getRxBuffer() > 0) {
-            this.server.setReceiveBufferSize(getConfiguration().getRxBuffer());
+        this.server = new ServerSocket(getLocalPort(), 1);
+        this.server.setSoTimeout(getTimeout());
+        if(getRxBuffer() > 0) {
+            this.server.setReceiveBufferSize(getRxBuffer());
         }
         initConnection(true);
         // Now, at next operation we accept the connection and we cache it
@@ -54,14 +88,14 @@ public class TcpServerConnectionHandler extends AbstractConnectionHandler {
         if(this.socket == null) {
             try {
                 this.socket = this.server.accept();
-                this.socket.setSoTimeout(getConfiguration().getTimeout());
-                this.socket.setKeepAlive(getConfiguration().isTcpKeepAlive());
-                this.socket.setTcpNoDelay(getConfiguration().isTcpNoDelay());
-                if (getConfiguration().getTxBuffer() > 0) {
-                    this.socket.setSendBufferSize(getConfiguration().getTxBuffer());
+                this.socket.setSoTimeout(getTimeout());
+                this.socket.setKeepAlive(isTcpKeepAlive());
+                this.socket.setTcpNoDelay(isTcpNoDelay());
+                if (getTxBuffer() > 0) {
+                    this.socket.setSendBufferSize(getTxBuffer());
                 }
-                if (getConfiguration().getRxBuffer() > 0) {
-                    this.socket.setReceiveBufferSize(getConfiguration().getRxBuffer());
+                if (getRxBuffer() > 0) {
+                    this.socket.setReceiveBufferSize(getRxBuffer());
                 }
                 this.inputStream = this.socket.getInputStream();
                 this.outputStream = this.socket.getOutputStream();
@@ -109,7 +143,7 @@ public class TcpServerConnectionHandler extends AbstractConnectionHandler {
             InputStream is = this.inputStream;
             if(is != null) {
                 try {
-                    return getConfiguration().getDecodingStrategy().readMessage(is, getConfiguration());
+                    return getDecodingStrategy().readMessage(is, this);
                 } catch (SocketTimeoutException e) {
                     return null;
                 }
@@ -125,4 +159,5 @@ public class TcpServerConnectionHandler extends AbstractConnectionHandler {
     public synchronized boolean isOpen() {
         return this.server != null;
     }
+
 }

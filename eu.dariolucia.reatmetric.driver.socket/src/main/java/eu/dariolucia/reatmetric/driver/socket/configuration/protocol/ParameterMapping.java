@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2021 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,34 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.socket.configuration;
+package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class EventMapping {
+public class ParameterMapping {
+
+    @XmlAttribute(required = true)
+    private String name;
 
     @XmlAttribute(required = true)
     private int entity;
 
-    // TODO: add qualifier
-    // - FixedQualifier --> String
-    // - ParameterQualifier --> Name of the parameter that contains the qualifier (converted to a string)
+    public String getName() {
+        return name;
+    }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getEntity() {
+        return entity;
+    }
+
+    public void setEntity(int entity) {
+        this.entity = entity;
+    }
 }
