@@ -111,7 +111,7 @@ public class RouteConfiguration {
             return Pair.of(parameterSamples, eventOccurrences);
         } else {
             // No mapping? Message ignored
-            // TODO: check if it is needed for command verification
+            // TODO: use for command verification if used by any outstanding command, as per command definition
             return null;
         }
     }

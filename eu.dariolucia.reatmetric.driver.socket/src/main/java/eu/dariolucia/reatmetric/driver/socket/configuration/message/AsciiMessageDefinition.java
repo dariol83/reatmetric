@@ -22,9 +22,13 @@ import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
 
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class AsciiMessageDefinition extends MessageDefinition<String> {
+
+    private final static Logger LOG = Logger.getLogger(AsciiMessageDefinition.class.getName());
 
     public static final String VAR_PREFIX = "${{";
 
@@ -59,8 +63,6 @@ public class AsciiMessageDefinition extends MessageDefinition<String> {
     private transient final List<String> literals = new ArrayList<>();
     private transient final List<String> variables = new ArrayList<>();
     private transient final Map<String, SymbolTypeFormat> variable2type = new TreeMap<>();
-
-    // TODO: remember symbols with autoincrement
 
     @Override
     public void initialise() {
@@ -122,11 +124,13 @@ public class AsciiMessageDefinition extends MessageDefinition<String> {
                 Object value = null;
                 // Read/parse value
                 if (stf != null) {
-                    value = stf.parse(valueString);
+                    value = stf.decode(valueString);
                     // Add to map
                     valueMap.put(variableName, value);
                 } else {
-                    // TODO: log and ignore
+                    if(LOG.isLoggable(Level.WARNING)) {
+                        LOG.log(Level.WARNING, String.format("Cannot find field '%s' for ASCII message %s", variableName, getId()));
+                    }
                 }
             }
         }
@@ -155,11 +159,8 @@ public class AsciiMessageDefinition extends MessageDefinition<String> {
         String result = template;
         for(Map.Entry<String, Object> e : data.entrySet()) {
             SymbolTypeFormat stf = variable2type.get(e.getKey());
-            result = result.replace(VAR_PREFIX + e.getKey() + VAR_POSTFIX, stf.dump(e.getValue()));
+            result = result.replace(VAR_PREFIX + e.getKey() + VAR_POSTFIX, stf.encode(e.getValue()));
         }
-
-        // TODO: apply replacement for symbols with autoincrement
-
         return result;
     }
 }

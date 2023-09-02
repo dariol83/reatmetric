@@ -35,6 +35,9 @@ public class SymbolTypeFormat {
     @XmlAttribute
     private RadixEnum radix = RadixEnum.DEC;
 
+    @XmlAttribute(name = "encode-format")
+    private String format = null;
+
     public String getName() {
         return name;
     }
@@ -59,7 +62,15 @@ public class SymbolTypeFormat {
         this.radix = radix;
     }
 
-    public Object parse(String valueString) {
+    public String getFormat() {
+        return format;
+    }
+
+    public void setFormat(String format) {
+        this.format = format;
+    }
+
+    public Object decode(String valueString) {
         if(type == ValueTypeEnum.ENUMERATED) {
             // Check the radix
             if (radix == RadixEnum.DEC) {
@@ -79,27 +90,37 @@ public class SymbolTypeFormat {
         }
     }
 
-    public String dump(Object value) {
+    public String encode(Object value) {
         if(type == ValueTypeEnum.ENUMERATED) {
-            // Check the radix
-            if (radix == RadixEnum.DEC) {
-                return ValueUtil.toString(type, value);
+            if(format != null) {
+                // Use format
+                return String.format(format, value);
             } else {
-                return Integer.toString((Integer) value, radix.getRadix());
+                // Check the radix
+                if (radix == RadixEnum.DEC) {
+                    return ValueUtil.toString(type, value);
+                } else {
+                    return Integer.toString((Integer) value, radix.getRadix());
+                }
             }
         } else if(type == ValueTypeEnum.UNSIGNED_INTEGER || type == ValueTypeEnum.SIGNED_INTEGER) {
-            // Check the radix
-            if (radix == RadixEnum.DEC) {
-                return ValueUtil.toString(type, value);
+            if (format != null) {
+                // Use format
+                return String.format(format, value);
             } else {
-                return Long.toString((Long)value, radix.getRadix());
+                // Check the radix
+                if (radix == RadixEnum.DEC) {
+                    return ValueUtil.toString(type, value);
+                } else {
+                    return Long.toString((Long) value, radix.getRadix());
+                }
             }
+        } else if(type == ValueTypeEnum.REAL && format != null) {
+            // Use format
+            return String.format(format, value);
         } else {
             return ValueUtil.toString(type, value);
         }
     }
 
-    // TODO: add optional format string for enumerated, ints and double with the C pattern %d, %.2f, etc... for output
-
-    // TODO: add indication for fields (enum/integers) that are autoincrements (for output)
 }

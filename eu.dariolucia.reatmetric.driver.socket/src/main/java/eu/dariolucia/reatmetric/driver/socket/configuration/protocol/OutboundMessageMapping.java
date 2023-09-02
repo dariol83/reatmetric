@@ -17,6 +17,7 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
@@ -48,6 +49,9 @@ public class OutboundMessageMapping extends MessageMapping {
 
     @XmlElement(name = "argument")
     private List<ArgumentMapping> argumentMappings;
+
+    @XmlElement(name = "auto-increment")
+    private List<AutoIncrementField> autoIncrementFields;
 
     public OutboundMessageType getType() {
         return type;
@@ -81,11 +85,19 @@ public class OutboundMessageMapping extends MessageMapping {
         this.argumentMappings = argumentMappings;
     }
 
+    public List<AutoIncrementField> getAutoIncrementFields() {
+        return autoIncrementFields;
+    }
+
+    public void setAutoIncrementFields(List<AutoIncrementField> autoIncrementFields) {
+        this.autoIncrementFields = autoIncrementFields;
+    }
+
     /* ***************************************************************
      * Internal operations
      * ***************************************************************/
 
-    private final transient Map<String, ArgumentMapping> id2argumentMapping = new TreeMap<>();
+    private final Map<String, ArgumentMapping> id2argumentMapping = new TreeMap<>();
 
     @Override
     public void initialise(AbstractConnectionConfiguration defaultConnection, int entityOffset) {
@@ -96,8 +108,9 @@ public class OutboundMessageMapping extends MessageMapping {
         }
     }
 
-    public byte[] encodeCommand(IActivityHandler.ActivityInvocation request, AsciiEncoding asciiEncoding) throws ReatmetricException {
+    public Pair<byte[], Map<String, Object>> encodeCommand(IActivityHandler.ActivityInvocation request, AsciiEncoding asciiEncoding) throws ReatmetricException {
         Map<String, Object> mappedArguments = new TreeMap<>();
+        // Add and map arguments
         if(getType() == OutboundMessageType.ACTIVITY_DRIVEN && getEntity() + getEntityOffset() == request.getActivityId()) {
             Map<String, Object> activityArguments = request.getArguments();
             for(Map.Entry<String, Object> argEntry : activityArguments.entrySet()) {
@@ -109,19 +122,27 @@ public class OutboundMessageMapping extends MessageMapping {
                 }
             }
         }
+        // Add auto-increment fields
+        for(AutoIncrementField aif : getAutoIncrementFields()) {
+            if(!mappedArguments.containsKey(aif.getField())) {
+                mappedArguments.put(aif.getField(), aif.next());
+            }
+        }
+        // Encode
         if(getMessageDefinition() instanceof AsciiMessageDefinition) {
             AsciiMessageDefinition amd = (AsciiMessageDefinition) getMessageDefinition();
             String encoded = amd.encode(getSecondaryId(), mappedArguments);
-            return encoded.getBytes(asciiEncoding.getCharset());
+            byte[] data = encoded.getBytes(asciiEncoding.getCharset());
+            return Pair.of(data, mappedArguments);
         } else if(getMessageDefinition() instanceof BinaryMessageDefinition) {
             BinaryMessageDefinition bmd = (BinaryMessageDefinition) getMessageDefinition();
-            return bmd.encode(getSecondaryId(), mappedArguments);
+            byte[] data = bmd.encode(getSecondaryId(), mappedArguments);
+            return Pair.of(data, mappedArguments);
         } else {
             throw new ReatmetricException("Unknown message definition type: " + getMessageDefinition());
         }
 
-        // TODO: instead of returning above, re-decode the full message to extract the actual arguments (including
-        //  autocounters) and return a pair. The way of acknowledgement (for activity driven only) must specify a
+        // TODO: The way of acknowledgement (for activity driven only) must specify a
         //  timeout, a value to report on timeout (OK, fail, timeout), a series of positive/negative messages (id, sec. id),
         //  with optional reference to a specific parameter to be equal to a specific actual argument (to correlate
         //  request/response) and optional matching on one parameter value.
