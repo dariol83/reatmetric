@@ -47,11 +47,18 @@ public class OutboundMessageMapping extends MessageMapping {
     @XmlAttribute
     private int period = 0;
 
+    // If this is true, it means that the execution of this command must complete, before sending the next one
+    @XmlAttribute
+    private boolean lock = true;
+
     @XmlElement(name = "argument")
     private List<ArgumentMapping> argumentMappings;
 
     @XmlElement(name = "auto-increment")
     private List<AutoIncrementField> autoIncrementFields;
+
+    @XmlElement(name = "verification")
+    private VerificationConfiguration verification = null;
 
     public OutboundMessageType getType() {
         return type;
@@ -91,6 +98,22 @@ public class OutboundMessageMapping extends MessageMapping {
 
     public void setAutoIncrementFields(List<AutoIncrementField> autoIncrementFields) {
         this.autoIncrementFields = autoIncrementFields;
+    }
+
+    public VerificationConfiguration getVerification() {
+        return verification;
+    }
+
+    public void setVerification(VerificationConfiguration verification) {
+        this.verification = verification;
+    }
+
+    public boolean isLock() {
+        return lock;
+    }
+
+    public void setLock(boolean lock) {
+        this.lock = lock;
     }
 
     /* ***************************************************************
@@ -145,13 +168,13 @@ public class OutboundMessageMapping extends MessageMapping {
         // TODO: The way of acknowledgement (for activity driven only) must specify a
         //  timeout, a value to report on timeout (OK, fail, timeout), a series of positive/negative messages (id, sec. id),
         //  with optional reference to a specific parameter to be equal to a specific actual argument (to correlate
-        //  request/response) and optional matching on one parameter value.
+        //  request/response) and optional matching on one parameter value (against fixed or another argument value).
         //  Possible phases for this driver commands are:
         //  - ROUTING -> ACCEPTED -> EXECUTION (TCP send OK, ACK from equipment, EXEC from equipment)
         //  - ROUTING -> ACCEPTED (TCP send OK, ACK from equipment)
         //  - ROUTING -> EXECUTION (TCP send OK, EXEC from equipment)
         //  - ROUTING (TCP send OK means all fine)
-        //  Use a way to define the expected messages for each phase and timeout for each phase.
+        //  Use a way to define the expected messages for each phase.
 
     }
 }
