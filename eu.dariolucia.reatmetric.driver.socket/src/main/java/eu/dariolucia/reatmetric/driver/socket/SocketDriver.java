@@ -19,13 +19,20 @@ package eu.dariolucia.reatmetric.driver.socket;
 
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.AbstractDriver;
-import eu.dariolucia.reatmetric.core.api.IDriver;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
+import eu.dariolucia.reatmetric.driver.socket.configuration.SocketConfiguration;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -34,6 +41,9 @@ import java.util.logging.Logger;
 public class SocketDriver extends AbstractDriver {
 
     private static final Logger LOG = Logger.getLogger(SocketDriver.class.getName());
+    private SocketConfiguration configuration;
+    private SocketDriverConnector connector;
+    private SocketActivityHandler activityHandler;
 
     @Override
     public List<DebugInformation> currentDebugInfo() {
@@ -42,11 +52,50 @@ public class SocketDriver extends AbstractDriver {
 
     @Override
     protected SystemStatus startProcessing() throws DriverException {
-        return null;
+        // Create the transport connector
+        createTransportConnector();
+        // Create the activity handler
+        createActivityHandler();
+        // TODO: create a sink (new interface) for parameters/events forwarding and for activity verification and
+        //  for raw data, to be set on RouteConfiguration objects
+        // TODO: raw data renderer
+        return SystemStatus.NOMINAL;
+    }
+
+    private void createActivityHandler() {
+        this.activityHandler = new SocketActivityHandler(this.configuration, this.connector);
+    }
+
+    private void createTransportConnector() {
+        this.connector = new SocketDriverConnector(this.configuration);
+    }
+
+    @Override
+    public List<ITransportConnector> getTransportConnectors() {
+        return Collections.singletonList(this.connector);
+    }
+
+    @Override
+    public List<IActivityHandler> getActivityHandlers() {
+        return Collections.singletonList(this.activityHandler);
     }
 
     @Override
     protected SystemStatus processConfiguration(String driverConfiguration, ServiceCoreConfiguration coreConfiguration, IServiceCoreContext context) throws DriverException {
-        return null;
+        if(LOG.isLoggable(Level.INFO)) {
+            LOG.info(String.format("Loading driver configuration at %s", driverConfiguration));
+        }
+        try {
+            this.configuration = SocketConfiguration.load(new FileInputStream(driverConfiguration));
+            return SystemStatus.NOMINAL;
+        } catch (IOException e) {
+            throw new DriverException(e);
+        }
+    }
+
+    @Override
+    public void dispose() throws DriverException {
+        super.dispose();
+        // TODO
     }
 }

@@ -18,6 +18,7 @@
 package eu.dariolucia.reatmetric.driver.socket.configuration.connection;
 
 import eu.dariolucia.reatmetric.driver.socket.configuration.decoding.*;
+import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.RouteConfiguration;
 import jakarta.xml.bind.annotation.*;
 
 import java.io.IOException;
@@ -28,6 +29,9 @@ public abstract class AbstractConnectionConfiguration {
     @XmlID
     @XmlAttribute(name = "name", required = true)
     private String name;
+
+    @XmlAttribute(name = "source", required = true)
+    private String source;
 
     @XmlAttribute
     private InitType init = InitType.CONNECTOR;
@@ -69,9 +73,8 @@ public abstract class AbstractConnectionConfiguration {
     })
     private IDecodingStrategy decodingStrategy;
 
-    public AbstractConnectionConfiguration() {
-        //
-    }
+    @XmlElement(required = true)
+    private RouteConfiguration route;
 
     public String getName() {
         return name;
@@ -163,6 +166,22 @@ public abstract class AbstractConnectionConfiguration {
         this.decodingStrategy = decodingStrategy;
     }
 
+    public RouteConfiguration getRoute() {
+        return route;
+    }
+
+    public void setRoute(RouteConfiguration route) {
+        this.route = route;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
     /* ***************************************************************
      * Channel operations
      * ***************************************************************/
@@ -173,7 +192,7 @@ public abstract class AbstractConnectionConfiguration {
 
     public abstract boolean writeMessage(byte[] message) throws IOException;
 
-    public abstract byte[] readMessage() throws IOException;
+    public abstract byte[] readMessage() throws IOException; // TODO: remove
 
     public abstract boolean isOpen();
 }

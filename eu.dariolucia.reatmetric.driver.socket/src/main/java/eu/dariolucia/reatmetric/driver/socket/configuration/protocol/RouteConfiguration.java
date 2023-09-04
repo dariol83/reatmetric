@@ -21,6 +21,9 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.TcpClientConnectionConfiguration;
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.TcpServerConnectionConfiguration;
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.UdpConnectionConfiguration;
 import jakarta.xml.bind.annotation.*;
 
 import java.time.Instant;
@@ -35,9 +38,12 @@ public class RouteConfiguration {
     @XmlAttribute(required = true)
     private String name;
 
-    @XmlIDREF
-    @XmlAttribute(required = true)
-    private AbstractConnectionConfiguration defaultConnection = null;
+    @XmlAttribute(name = "entity-offset")
+    private int entityOffset = 0;
+
+    @XmlElementWrapper(name = "activity-types")
+    @XmlElement(name="type")
+    private List<String> activityTypes = new LinkedList<>();
 
     @XmlElement(name = "inbound")
     private List<InboundMessageMapping> inboundMessageMappings = new LinkedList<>();
@@ -69,31 +75,39 @@ public class RouteConfiguration {
         this.outboundMessageMappings = outboundMessageMappings;
     }
 
-    public AbstractConnectionConfiguration getDefaultConnection() {
-        return defaultConnection;
+    public int getEntityOffset() {
+        return entityOffset;
     }
 
-    public void setDefaultConnection(AbstractConnectionConfiguration defaultConnection) {
-        this.defaultConnection = defaultConnection;
+    public void setEntityOffset(int entityOffset) {
+        this.entityOffset = entityOffset;
+    }
+
+    public List<String> getActivityTypes() {
+        return activityTypes;
+    }
+
+    public void setActivityTypes(List<String> activityTypes) {
+        this.activityTypes = activityTypes;
     }
 
     /* ***************************************************************
      * Internal operations
      * ***************************************************************/
 
-    private transient ProtocolConfiguration protocolConfiguration;
+    private transient AbstractConnectionConfiguration parentConnection;
 
     // <MessageDefinition ID>_<secondary ID> as key
     private transient Map<String, InboundMessageMapping> messageId2mapping = new TreeMap<>();
 
-    public void initialise(ProtocolConfiguration protocolConfiguration) {
-        this.protocolConfiguration = protocolConfiguration;
+    public void initialise(AbstractConnectionConfiguration parentConnection) {
+        this.parentConnection = parentConnection;
         for(InboundMessageMapping m : getInboundMessages()) {
-            m.initialise(getDefaultConnection(), protocolConfiguration.getEntityOffset());
+            m.initialise(parentConnection, getEntityOffset());
             messageId2mapping.put(m.getMessageDefinition().getId() + "_" + m.getSecondaryId(), m);
         }
         for(OutboundMessageMapping m : getOutboundMessages()) {
-            m.initialise(getDefaultConnection(), protocolConfiguration.getEntityOffset());
+            m.initialise(parentConnection, getEntityOffset());
         }
     }
 
@@ -116,4 +130,7 @@ public class RouteConfiguration {
         }
     }
 
+    public AbstractConnectionConfiguration getParentConnection() {
+        return parentConnection;
+    }
 }

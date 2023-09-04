@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration;
 
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.TcpClientConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.TcpServerConnectionConfiguration;
@@ -23,7 +24,7 @@ import eu.dariolucia.reatmetric.driver.socket.configuration.connection.UdpConnec
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.AsciiMessageDefinition;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.BinaryMessageDefinition;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.MessageDefinition;
-import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.ProtocolConfiguration;
+import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.RouteConfiguration;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
@@ -44,13 +45,16 @@ public class SocketConfiguration {
             SocketConfiguration sc = (SocketConfiguration) u.unmarshal(is);
             sc.initialise();
             return sc;
-        } catch (JAXBException e) {
+        } catch (JAXBException | ReatmetricException e) {
             throw new IOException(e);
         }
     }
 
     @XmlAttribute(name = "name", required = true)
     private String name;
+
+    @XmlAttribute(name = "description")
+    private String description = "";
 
     @XmlElementWrapper(name = "connections")
     @XmlElements({
@@ -67,11 +71,44 @@ public class SocketConfiguration {
     })
     private List<MessageDefinition<?>> messageDefinitions = null;
 
-    @XmlElementWrapper(name = "protocols")
-    @XmlElement(name = "protocol")
-    private List<ProtocolConfiguration> protocols = new LinkedList<>();
+    public String getName() {
+        return name;
+    }
 
-    private void initialise() {
-        // TODO
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public List<AbstractConnectionConfiguration> getConnections() {
+        return connections;
+    }
+
+    public void setConnections(List<AbstractConnectionConfiguration> connections) {
+        this.connections = connections;
+    }
+
+    public List<MessageDefinition<?>> getMessageDefinitions() {
+        return messageDefinitions;
+    }
+
+    public void setMessageDefinitions(List<MessageDefinition<?>> messageDefinitions) {
+        this.messageDefinitions = messageDefinitions;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    private void initialise() throws ReatmetricException {
+        for(AbstractConnectionConfiguration conn : getConnections()) {
+            conn.getRoute().initialise(conn);
+        }
+        for(MessageDefinition<?> md : getMessageDefinitions()) {
+            md.initialise();
+        }
     }
 }

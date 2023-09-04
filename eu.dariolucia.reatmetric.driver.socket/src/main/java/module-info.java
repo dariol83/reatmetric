@@ -2,6 +2,7 @@ import eu.dariolucia.reatmetric.driver.socket.SocketDriver;
 
 open module eu.dariolucia.reatmetric.driver.socket {
     requires java.logging;
+    requires java.rmi;
     requires jakarta.xml.bind;
 
     requires eu.dariolucia.reatmetric.api;
