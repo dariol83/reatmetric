@@ -42,6 +42,8 @@ public class UdpConnectionConfiguration extends AbstractConnectionConfiguration 
 
     private volatile DatagramSocket socket;
 
+    // TODO: change implementation
+
     @Override
     public synchronized void openConnection() throws IOException {
         if(this.socket != null) {
@@ -85,6 +87,7 @@ public class UdpConnectionConfiguration extends AbstractConnectionConfiguration 
         }
     }
 
+    /* // TODO remove
     @Override
     public byte[] readMessage() throws IOException {
         if(isOpen()) {
@@ -105,7 +108,7 @@ public class UdpConnectionConfiguration extends AbstractConnectionConfiguration 
             throw new IOException("Channel is not open");
         }
     }
-
+    */
     @Override
     public synchronized boolean isOpen() {
         return this.socket != null;

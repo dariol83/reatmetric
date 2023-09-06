@@ -26,9 +26,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class TcpClientConnectionConfiguration extends AbstractConnectionConfiguration {
+
+    private static final Logger LOG = Logger.getLogger(TcpClientConnectionConfiguration.class.getName());
 
     @XmlAttribute(name = "tcp-keep-alive")
     private boolean tcpKeepAlive = false;
@@ -68,39 +73,151 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
     private volatile Socket socket;
     private volatile InputStream inputStream;
     private volatile OutputStream outputStream;
+    private volatile boolean active;
+
+    private volatile boolean running;
+    private volatile Thread readingThread;
 
     @Override
-    public synchronized void openConnection() throws IOException {
-        if(this.socket != null) {
+    public synchronized void openConnection() {
+        if(this.running) {
             return;
         }
-        Socket s = new Socket();
-        if(getLocalPort() != 0) {
-            s.bind(new InetSocketAddress(getLocalPort()));
-        }
-        s.setKeepAlive(isTcpKeepAlive());
-        s.setTcpNoDelay(isTcpNoDelay());
-        if(getTxBuffer() > 0) {
-            s.setSendBufferSize(getTxBuffer());
-        }
-        if(getRxBuffer() > 0) {
-            s.setReceiveBufferSize(getRxBuffer());
-        }
-        s.connect(new InetSocketAddress(getHost(), getRemotePort()), getTimeout());
-        this.socket = s;
-        this.inputStream = this.socket.getInputStream();
-        this.outputStream = this.socket.getOutputStream();
+        this.running = true;
+        this.readingThread = new Thread(this::connectionLoop);
+        this.readingThread.setDaemon(true);
+        this.readingThread.start();
     }
 
-    @Override
-    public synchronized void closeConnection() throws IOException {
-        if(this.socket == null) {
-            return;
+    private void connectionLoop() {
+        boolean suppressFailure = false;
+        while(running) {
+            try {
+                establishConnection();
+                // Reset suppression of error messages
+                suppressFailure = false;
+                try {
+                    readAndForward();
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, String.format("%s: error while reading from connection to %s:%d: %s", getName(), getHost(), getRemotePort(), e.getMessage()), e);
+                    // Cleanup and retry immediately
+                    cleanup();
+                }
+            } catch (Exception e) {
+                if(!suppressFailure) {
+                    LOG.log(Level.WARNING, String.format("%s: cannot establish connection to %s:%d: %s", getName(), getHost(), getRemotePort(), e.getMessage()), e);
+                    // Suppress failure, avoid spamming
+                    suppressFailure = true;
+                }
+                // Wait and retry (hardcoded for now)
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException ex) {
+                    // Ignore
+                }
+            }
         }
-        this.socket.close();
+        cleanup();
+    }
+
+    private void readAndForward() throws IOException {
+        // If you are here, it means that the socket exists
+        InputStream is = this.inputStream;
+        if(is == null) {
+            throw new IOException("No input stream from socket");
+        }
+        try {
+            // Read the message
+            byte[] message = getDecodingStrategy().readMessage(is, this);
+            // At this stage, whatever other exception you might have, it is not related to the connection, so log and go ahead
+            try {
+                // If the protocol is ASCII, convert it to string and forward it to the route
+                if (getProtocol() == ProtocolType.ASCII) {
+                    String messageString = new String(message, getAsciiEncoding().getCharset());
+                    getRoute().onAsciiMessageReceived(messageString);
+                } else {
+                    // Otherwise inform the route directly
+                    getRoute().onBinaryMessageReceived(message);
+                }
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Unexpected exception while processing message from connection " + getName() + ": " + e.getMessage());
+            }
+        } catch (SocketTimeoutException e) {
+            // Just return, this method will be immediately called again
+        }
+        // If you have any other exception, then it is bad and the connection will be cleared
+    }
+
+    private void establishConnection() throws IOException {
+        // If there is no socket
+        if(this.socket == null) {
+            try {
+                Socket s = new Socket();
+                if (getLocalPort() != 0) {
+                    s.bind(new InetSocketAddress(getLocalPort()));
+                }
+                s.setSoTimeout(getTimeout());
+                s.setKeepAlive(isTcpKeepAlive());
+                s.setTcpNoDelay(isTcpNoDelay());
+                if (getTxBuffer() > 0) {
+                    s.setSendBufferSize(getTxBuffer());
+                }
+                if (getRxBuffer() > 0) {
+                    s.setReceiveBufferSize(getRxBuffer());
+                }
+                s.connect(new InetSocketAddress(getHost(), getRemotePort()), getTimeout());
+                this.socket = s;
+                this.inputStream = this.socket.getInputStream();
+                this.outputStream = this.socket.getOutputStream();
+                this.active = true;
+            } catch (IOException e) {
+                cleanup();
+                throw e;
+            }
+        }
+    }
+
+    private void cleanup() {
+        // Clean-up
+        if(this.inputStream != null) {
+            try {
+                this.inputStream.close();
+            } catch (IOException e) {
+                // Ignore
+            }
+        }
+        if(this.outputStream != null) {
+            try {
+                this.outputStream.close();
+            } catch (IOException e) {
+                // Ignore
+            }
+        }
+        if(this.socket != null) {
+            try {
+                this.socket.close();
+            } catch (IOException e) {
+                // Ignore
+            }
+        }
         this.socket = null;
         this.inputStream = null;
         this.outputStream = null;
+        this.active = false;
+    }
+
+    @Override
+    public synchronized void closeConnection() {
+        if(this.running) {
+            this.running = false;
+            this.readingThread.interrupt();
+            try {
+                this.readingThread.join();
+            } catch (InterruptedException e) {
+                // Ignore
+            }
+            this.readingThread = null;
+        }
     }
 
     @Override
@@ -120,22 +237,8 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
     }
 
     @Override
-    public byte[] readMessage() throws IOException {
-        if(isOpen()) {
-            InputStream is = this.inputStream;
-            if(is != null) {
-                return getDecodingStrategy().readMessage(is, this);
-            } else {
-                return null;
-            }
-        } else {
-            return null;
-        }
-    }
-
-    @Override
-    public synchronized boolean isOpen() {
-        return this.socket != null;
+    public boolean isOpen() {
+        return this.running;
     }
 
 }

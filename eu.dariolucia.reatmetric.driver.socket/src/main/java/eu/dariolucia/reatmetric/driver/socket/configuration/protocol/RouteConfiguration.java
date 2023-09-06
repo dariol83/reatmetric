@@ -17,13 +17,13 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 
-import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
-import eu.dariolucia.reatmetric.driver.socket.configuration.connection.TcpClientConnectionConfiguration;
-import eu.dariolucia.reatmetric.driver.socket.configuration.connection.TcpServerConnectionConfiguration;
-import eu.dariolucia.reatmetric.driver.socket.configuration.connection.UdpConnectionConfiguration;
+import eu.dariolucia.reatmetric.driver.socket.configuration.message.AsciiMessageDefinition;
+import eu.dariolucia.reatmetric.driver.socket.configuration.message.BinaryMessageDefinition;
+import eu.dariolucia.reatmetric.driver.socket.configuration.message.MessageDefinition;
 import jakarta.xml.bind.annotation.*;
 
 import java.time.Instant;
@@ -111,8 +111,7 @@ public class RouteConfiguration {
         }
     }
 
-    public Pair<List<ParameterSample>, List<EventOccurrence>> onMessageReceived(String messageId, String secondaryId, Map<String, Object> decodedMessage) {
-        Instant now = Instant.now();
+    public void onMessageReceived(Instant time, String messageId, String secondaryId, Map<String, Object> decodedMessage) {
         if(secondaryId == null) {
             secondaryId = "";
         }
@@ -120,17 +119,79 @@ public class RouteConfiguration {
         // If there is an InboundMessageMapping for the message
         InboundMessageMapping inboundMessageMapping = messageId2mapping.get(key);
         if(inboundMessageMapping != null) {
-            List<ParameterSample> parameterSamples = inboundMessageMapping.mapParameters(decodedMessage, getName(), now);
-            List<EventOccurrence> eventOccurrences = inboundMessageMapping.mapEvents(decodedMessage, getName(), now);
-            return Pair.of(parameterSamples, eventOccurrences);
-        } else {
-            // No mapping? Message ignored
-            // TODO: use for command verification if used by any outstanding command, as per command definition
-            return null;
+            List<ParameterSample> parameterSamples = inboundMessageMapping.mapParameters(decodedMessage, getName(), time);
+            List<EventOccurrence> eventOccurrences = inboundMessageMapping.mapEvents(decodedMessage, getName(), time);
+            // TODO: inject
         }
+        // No mapping? Message ignored
+        // TODO: use for command verification if used by any outstanding command, as per command definition
     }
 
     public AbstractConnectionConfiguration getParentConnection() {
         return parentConnection;
+    }
+
+    public void onBinaryMessageReceived(byte[] message) {
+        Instant receivedTime = Instant.now();
+        String identifier = null;
+        String secondaryIdentifier = null;
+        BinaryMessageDefinition definition = null;
+        // You received a binary message: get the message definition, identify the message
+        for(InboundMessageMapping template : getInboundMessages()) {
+            MessageDefinition<?> def = template.getMessageDefinition();
+            if(def instanceof BinaryMessageDefinition) {
+                BinaryMessageDefinition bmd = (BinaryMessageDefinition) def;
+                try {
+                    secondaryIdentifier = bmd.identify(message);
+                    if (secondaryIdentifier != null) {
+                        identifier = def.getId();
+                        definition = bmd;
+                        break;
+                    }
+                } catch (ReatmetricException e) {
+                    // TODO: Log
+                }
+            }
+        }
+        //
+        if(identifier != null) {
+            // Register the raw data
+            // TODO
+            // Decode the message and forward everything to onMessageReceived
+            try {
+                Map<String, Object> decodedMessage = definition.decode(secondaryIdentifier, message);
+                onMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage);
+            } catch (ReatmetricException e) {
+                // TODO: Log
+            }
+        }
+    }
+
+    public void onAsciiMessageReceived(String message) {
+        Instant receivedTime = Instant.now();
+        String identifier = null;
+        String secondaryIdentifier = null;
+        AsciiMessageDefinition definition = null;
+        // You received a ASCII message: get the message definition, identify the message
+        for(InboundMessageMapping template : getInboundMessages()) {
+            MessageDefinition<?> def = template.getMessageDefinition();
+            if(def instanceof AsciiMessageDefinition) {
+                AsciiMessageDefinition amd = (AsciiMessageDefinition) def;
+                secondaryIdentifier = amd.identify(message);
+                if (secondaryIdentifier != null) {
+                    identifier = def.getId();
+                    definition = amd;
+                    break;
+                }
+            }
+        }
+        //
+        if(identifier != null) {
+            // Register the raw data
+            // TODO
+            // Decode the message and forward everything to onMessageReceived
+            Map<String, Object> decodedMessage = definition.decode(null, message);
+            onMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage);
+        }
     }
 }

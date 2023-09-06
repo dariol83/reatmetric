@@ -47,11 +47,10 @@ public abstract class AbstractConnectionConfiguration {
     @XmlAttribute(required = true)
     private String host;
 
-    // Special value: 0 in case of role == CLIENT to indicate auto-assignment
+    // Special value: 0 to indicate auto-assignment
     @XmlAttribute(required = true)
     private int localPort;
 
-    // Special value: 0 in case of role == SERVER
     @XmlAttribute(required = true)
     private int remotePort;
 
@@ -191,8 +190,6 @@ public abstract class AbstractConnectionConfiguration {
     public abstract void closeConnection() throws IOException;
 
     public abstract boolean writeMessage(byte[] message) throws IOException;
-
-    public abstract byte[] readMessage() throws IOException; // TODO: remove
 
     public abstract boolean isOpen();
 }

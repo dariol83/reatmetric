@@ -19,12 +19,10 @@ package eu.dariolucia.reatmetric.driver.socket.configuration;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.TcpClientConnectionConfiguration;
-import eu.dariolucia.reatmetric.driver.socket.configuration.connection.TcpServerConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.UdpConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.AsciiMessageDefinition;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.BinaryMessageDefinition;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.MessageDefinition;
-import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.RouteConfiguration;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
@@ -58,8 +56,7 @@ public class SocketConfiguration {
 
     @XmlElementWrapper(name = "connections")
     @XmlElements({
-            @XmlElement(name="tcp-server",type= TcpServerConnectionConfiguration.class),
-            @XmlElement(name="tcp-client",type= TcpClientConnectionConfiguration.class),
+            @XmlElement(name="tcp",type= TcpClientConnectionConfiguration.class),
             @XmlElement(name="udp",type= UdpConnectionConfiguration.class)
     })
     private List<AbstractConnectionConfiguration> connections = new LinkedList<>();
