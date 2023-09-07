@@ -22,9 +22,13 @@ import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.RouteConfig
 import jakarta.xml.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public abstract class AbstractConnectionConfiguration {
+
+    private static final Logger LOG = Logger.getLogger(AbstractConnectionConfiguration.class.getName());
 
     @XmlID
     @XmlAttribute(name = "name", required = true)
@@ -185,11 +189,63 @@ public abstract class AbstractConnectionConfiguration {
      * Channel operations
      * ***************************************************************/
 
-    public abstract void openConnection() throws IOException;
+    private volatile boolean active;
+    private volatile boolean running;
+    private volatile Thread readingThread;
 
-    public abstract void closeConnection() throws IOException;
+    public synchronized void openConnection() {
+        if(this.running) {
+            return;
+        }
+        this.running = true;
+        this.readingThread = new Thread(this::connectionLoop);
+        this.readingThread.setDaemon(true);
+        this.readingThread.start();
+    }
+
+    protected abstract void connectionLoop();
+
+    public synchronized void closeConnection() {
+        if(this.running) {
+            this.running = false;
+            this.readingThread.interrupt();
+            try {
+                this.readingThread.join();
+            } catch (InterruptedException e) {
+                // Ignore
+            }
+            this.readingThread = null;
+        }
+    }
 
     public abstract boolean writeMessage(byte[] message) throws IOException;
 
-    public abstract boolean isOpen();
+    public synchronized boolean isOpen() {
+        return this.running;
+    }
+
+    protected void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    protected void forwardToRoute(byte[] message) {
+        if(isOpen() && message != null) {
+            try {
+                // If the protocol is ASCII, convert it to string and forward it to the route
+                if (getProtocol() == ProtocolType.ASCII) {
+                    String messageString = new String(message, getAsciiEncoding().getCharset());
+                    getRoute().onAsciiMessageReceived(messageString);
+                } else {
+                    // Otherwise inform the route directly
+                    getRoute().onBinaryMessageReceived(message);
+                }
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "Unexpected exception while processing message from connection " + getName() + ": " + e.getMessage());
+            }
+        }
+    }
 }

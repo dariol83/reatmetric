@@ -50,32 +50,15 @@ public class SocketDriverConnector extends AbstractTransportConnector {
     protected void doConnect() {
         updateAlarmState(AlarmState.NOT_APPLICABLE);
         updateConnectionStatus(TransportConnectionStatus.CONNECTING);
-        int failedConnections = 0;
-        int connectionsToOpen = 0;
         for(AbstractConnectionConfiguration con : configuration.getConnections()) {
             if(con.getInit() == InitType.CONNECTOR) {
-                ++connectionsToOpen;
-                try {
-                    con.openConnection();
-                    // TODO: start an internal reading thread in the connection class. Read data goes to RouteConfiguration
-                } catch (IOException e) {
-                    ++failedConnections;
-                    LOG.log(Level.WARNING, "Cannot open connection '" + con.getName() + "'");
-                }
+                con.openConnection();
             }
         }
-        if(failedConnections == 0) {
-            updateConnectionStatus(TransportConnectionStatus.OPEN);
-            updateAlarmState(AlarmState.NOMINAL);
-        } else if(failedConnections < connectionsToOpen) {
-            // At least one connection is open
-            updateConnectionStatus(TransportConnectionStatus.OPEN);
-            updateAlarmState(AlarmState.WARNING);
-        } else {
-            // All connections failed
-            updateConnectionStatus(TransportConnectionStatus.ERROR);
-            updateAlarmState(AlarmState.ALARM);
-        }
+        // Check
+        updateConnectionStatus(TransportConnectionStatus.OPEN);
+        // TODO: introduce a way to report a reasonable/real status, i.e. callback to indicate that a connection is active/not active
+        updateAlarmState(AlarmState.NOMINAL);
     }
 
     @Override
@@ -84,11 +67,7 @@ public class SocketDriverConnector extends AbstractTransportConnector {
         updateConnectionStatus(TransportConnectionStatus.DISCONNECTING);
         for(AbstractConnectionConfiguration con : configuration.getConnections()) {
             if(con.getInit() == InitType.CONNECTOR) {
-                try {
-                    con.closeConnection();
-                } catch (IOException e) {
-                    LOG.log(Level.WARNING, "Cannot close connection '" + con.getName() + "'");
-                }
+                con.closeConnection();
             }
         }
         updateConnectionStatus(TransportConnectionStatus.IDLE);

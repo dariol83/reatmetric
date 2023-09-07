@@ -41,10 +41,6 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
     @XmlAttribute(name = "tcp-no-delay")
     private boolean tcpNoDelay = false;
 
-    public TcpClientConnectionConfiguration() {
-        //
-    }
-
     @Override
     public ConnectionType getType() {
         return ConnectionType.TCP;
@@ -73,25 +69,11 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
     private volatile Socket socket;
     private volatile InputStream inputStream;
     private volatile OutputStream outputStream;
-    private volatile boolean active;
-
-    private volatile boolean running;
-    private volatile Thread readingThread;
 
     @Override
-    public synchronized void openConnection() {
-        if(this.running) {
-            return;
-        }
-        this.running = true;
-        this.readingThread = new Thread(this::connectionLoop);
-        this.readingThread.setDaemon(true);
-        this.readingThread.start();
-    }
-
-    private void connectionLoop() {
+    protected void connectionLoop() {
         boolean suppressFailure = false;
-        while(running) {
+        while(isOpen()) {
             try {
                 establishConnection();
                 // Reset suppression of error messages
@@ -130,18 +112,7 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
             // Read the message
             byte[] message = getDecodingStrategy().readMessage(is, this);
             // At this stage, whatever other exception you might have, it is not related to the connection, so log and go ahead
-            try {
-                // If the protocol is ASCII, convert it to string and forward it to the route
-                if (getProtocol() == ProtocolType.ASCII) {
-                    String messageString = new String(message, getAsciiEncoding().getCharset());
-                    getRoute().onAsciiMessageReceived(messageString);
-                } else {
-                    // Otherwise inform the route directly
-                    getRoute().onBinaryMessageReceived(message);
-                }
-            } catch (Exception e) {
-                LOG.log(Level.WARNING, "Unexpected exception while processing message from connection " + getName() + ": " + e.getMessage());
-            }
+            forwardToRoute(message);
         } catch (SocketTimeoutException e) {
             // Just return, this method will be immediately called again
         }
@@ -169,7 +140,7 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
                 this.socket = s;
                 this.inputStream = this.socket.getInputStream();
                 this.outputStream = this.socket.getOutputStream();
-                this.active = true;
+                setActive(true);
             } catch (IOException e) {
                 cleanup();
                 throw e;
@@ -203,21 +174,7 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
         this.socket = null;
         this.inputStream = null;
         this.outputStream = null;
-        this.active = false;
-    }
-
-    @Override
-    public synchronized void closeConnection() {
-        if(this.running) {
-            this.running = false;
-            this.readingThread.interrupt();
-            try {
-                this.readingThread.join();
-            } catch (InterruptedException e) {
-                // Ignore
-            }
-            this.readingThread = null;
-        }
+        setActive(false);
     }
 
     @Override
@@ -235,10 +192,4 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
             return false;
         }
     }
-
-    @Override
-    public boolean isOpen() {
-        return this.running;
-    }
-
 }
