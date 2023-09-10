@@ -238,7 +238,7 @@ public abstract class AbstractConnectionConfiguration {
                 // If the protocol is ASCII, convert it to string and forward it to the route
                 if (getProtocol() == ProtocolType.ASCII) {
                     String messageString = new String(message, getAsciiEncoding().getCharset());
-                    getRoute().onAsciiMessageReceived(messageString);
+                    getRoute().onAsciiMessageReceived(messageString, message);
                 } else {
                     // Otherwise inform the route directly
                     getRoute().onBinaryMessageReceived(message);

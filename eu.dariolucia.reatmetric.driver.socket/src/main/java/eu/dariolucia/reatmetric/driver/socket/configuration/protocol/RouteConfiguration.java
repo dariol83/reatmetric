@@ -20,6 +20,9 @@ package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.api.rawdata.Quality;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.driver.socket.SocketDriver;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.AsciiMessageDefinition;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.BinaryMessageDefinition;
@@ -27,10 +30,7 @@ import eu.dariolucia.reatmetric.driver.socket.configuration.message.MessageDefin
 import jakarta.xml.bind.annotation.*;
 
 import java.time.Instant;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class RouteConfiguration {
@@ -98,7 +98,9 @@ public class RouteConfiguration {
     private transient AbstractConnectionConfiguration parentConnection;
 
     // <MessageDefinition ID>_<secondary ID> as key
-    private transient Map<String, InboundMessageMapping> messageId2mapping = new TreeMap<>();
+    private final transient Map<String, InboundMessageMapping> messageId2mapping = new TreeMap<>();
+
+    private transient IDataProcessor dataProcessor;
 
     public void initialise(AbstractConnectionConfiguration parentConnection) {
         this.parentConnection = parentConnection;
@@ -111,7 +113,13 @@ public class RouteConfiguration {
         }
     }
 
-    public void onMessageReceived(Instant time, String messageId, String secondaryId, Map<String, Object> decodedMessage) {
+    public void onMessageReceived(Instant time, String messageId, String secondaryId, Map<String, Object> decodedMessage, byte[] rawMessage) {
+        // Forward raw data
+        RawData rawData = new RawData(dataProcessor.getNextRawDataId(), time, secondaryId != null ? secondaryId : messageId,
+                "", getName(), getParentConnection().getSource(),
+                Quality.GOOD, null, rawMessage, time, null, null);
+        dataProcessor.forwardRawData(rawData);
+        //
         if(secondaryId == null) {
             secondaryId = "";
         }
@@ -121,7 +129,9 @@ public class RouteConfiguration {
         if(inboundMessageMapping != null) {
             List<ParameterSample> parameterSamples = inboundMessageMapping.mapParameters(decodedMessage, getName(), time);
             List<EventOccurrence> eventOccurrences = inboundMessageMapping.mapEvents(decodedMessage, getName(), time);
-            // TODO: inject
+            // Inject
+            dataProcessor.forwardParameters(parameterSamples);
+            dataProcessor.forwardEvents(eventOccurrences);
         }
         // No mapping? Message ignored
         // TODO: use for command verification if used by any outstanding command, as per command definition
@@ -155,19 +165,17 @@ public class RouteConfiguration {
         }
         //
         if(identifier != null) {
-            // Register the raw data
-            // TODO
             // Decode the message and forward everything to onMessageReceived
             try {
                 Map<String, Object> decodedMessage = definition.decode(secondaryIdentifier, message);
-                onMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage);
+                onMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, message);
             } catch (ReatmetricException e) {
                 // TODO: Log
             }
         }
     }
 
-    public void onAsciiMessageReceived(String message) {
+    public void onAsciiMessageReceived(String message, byte[] rawMessage) {
         Instant receivedTime = Instant.now();
         String identifier = null;
         String secondaryIdentifier = null;
@@ -187,11 +195,13 @@ public class RouteConfiguration {
         }
         //
         if(identifier != null) {
-            // Register the raw data
-            // TODO
             // Decode the message and forward everything to onMessageReceived
             Map<String, Object> decodedMessage = definition.decode(null, message);
-            onMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage);
+            onMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, rawMessage);
         }
+    }
+
+    public void setDataProcessor(SocketDriver dataProcessor) {
+        this.dataProcessor = dataProcessor;
     }
 }
