@@ -17,6 +17,7 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration.connection;
 
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.driver.socket.configuration.decoding.*;
 import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.RouteConfiguration;
 import jakarta.xml.bind.annotation.*;

@@ -72,7 +72,8 @@ public class SocketActivityHandler implements IActivityHandler {
 
     @Override
     public void executeActivity(ActivityInvocation activityInvocation) throws ActivityHandlingException {
-        // TODO
+        // Simply forward this information to the connector
+        this.connector.executeActivity(activityInvocation);
     }
 
     @Override

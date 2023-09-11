@@ -32,7 +32,6 @@ import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.SocketConfiguration;
-import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.IDataProcessor;
 
 import java.io.FileInputStream;
@@ -63,11 +62,10 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
         createTransportConnector();
         // Create the activity handler
         createActivityHandler();
-        // Forward the forwarder interface for parameters/events forwarding and for activity verification and
+        // Forward the data processor interface for parameters/events forwarding and for activity verification and
         // for raw data, to be set on RouteConfiguration objects
-        for(AbstractConnectionConfiguration acc : configuration.getConnections()) {
-            acc.getRoute().setDataProcessor(this);
-        }
+        configuration.getConnections().forEach(o -> o.getRoute().setDataProcessor(this));
+        // Done
         return SystemStatus.NOMINAL;
     }
 
@@ -128,7 +126,7 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
     }
 
     @Override
-    public void forwardActivityProgress(List<ActivityProgress> progressReports) {
+    public void forwardActivityProgress(ActivityProgress progressReport) {
 
     }
 

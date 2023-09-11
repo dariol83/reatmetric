@@ -19,6 +19,8 @@ package eu.dariolucia.reatmetric.driver.socket;
 
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.transport.AbstractTransportConnector;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
@@ -59,10 +61,11 @@ public class SocketDriverConnector extends AbstractTransportConnector {
         updateConnectionStatus(TransportConnectionStatus.OPEN);
         // TODO: introduce a way to report a reasonable/real status, i.e. callback to indicate that a connection is active/not active
         updateAlarmState(AlarmState.NOMINAL);
+        // TODO: activate auto-sending of configured commands
     }
 
     @Override
-    protected void doDisconnect() throws TransportException {
+    protected void doDisconnect() {
         updateAlarmState(AlarmState.NOT_APPLICABLE);
         updateConnectionStatus(TransportConnectionStatus.DISCONNECTING);
         for(AbstractConnectionConfiguration con : configuration.getConnections()) {
@@ -82,5 +85,27 @@ public class SocketDriverConnector extends AbstractTransportConnector {
     @Override
     public void abort() throws TransportException, RemoteException {
         disconnect();
+    }
+
+    public void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        if(getConnectionStatus() != TransportConnectionStatus.OPEN) {
+            throw new ActivityHandlingException("Connector " + getName() + " not started");
+        }
+        // Get the route
+        String route = activityInvocation.getRoute();
+        // Retrieve the connection linked to this route
+        AbstractConnectionConfiguration connection = null;
+        for(AbstractConnectionConfiguration con : configuration.getConnections()) {
+            if(con.getName().equals(route)) {
+                connection = con;
+                break;
+            }
+        }
+        if(connection == null) {
+            // No connection, error
+            throw new ActivityHandlingException("No route " + route + " found on connector " + getName());
+        }
+        // OK, forward
+        connection.getRoute().dispatchActivity(activityInvocation);
     }
 }

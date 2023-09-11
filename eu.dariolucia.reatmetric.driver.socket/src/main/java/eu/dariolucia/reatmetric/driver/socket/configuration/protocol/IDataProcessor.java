@@ -33,7 +33,7 @@ public interface IDataProcessor {
 
     void forwardEvents(List<EventOccurrence> events);
 
-    void forwardActivityProgress(List<ActivityProgress> progressReports);
+    void forwardActivityProgress(ActivityProgress progressReport);
 
     IUniqueId getNextRawDataId();
 }

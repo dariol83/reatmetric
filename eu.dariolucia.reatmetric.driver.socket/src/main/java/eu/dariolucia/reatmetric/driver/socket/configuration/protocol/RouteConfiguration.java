@@ -17,7 +17,14 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
+import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
@@ -29,6 +36,7 @@ import eu.dariolucia.reatmetric.driver.socket.configuration.message.BinaryMessag
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.MessageDefinition;
 import jakarta.xml.bind.annotation.*;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 
@@ -203,5 +211,89 @@ public class RouteConfiguration {
 
     public void setDataProcessor(SocketDriver dataProcessor) {
         this.dataProcessor = dataProcessor;
+    }
+
+    public void dispatchActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        // TODO: introduce single thread per route and a global (driver based) Timer for timeout computation
+        Instant time = Instant.now();
+        // Get the mapped OutboundMessageMapping
+        OutboundMessageMapping mapping = getOutboundMessageFor(activityInvocation);
+        if(mapping == null) {
+            throw new ActivityHandlingException("No outbound message found, mapped to activity invocation for " + activityInvocation.getPath() + " (" + activityInvocation.getActivityId() + ")");
+        }
+
+        // Notify attempt to dispatch
+        reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.PENDING,
+                ActivityOccurrenceState.TRANSMISSION);
+        // TODO: Encode command
+        byte[] encodedCommand = encodeCommand(activityInvocation, mapping);
+        // TODO: Register to verification if acceptance/execution stages are defined
+        registerToVerifier(time, activityInvocation, mapping, encodedCommand);
+        // TODO: If connector is on demand, start connector, mark connector as used +1
+        acquireConnectionUsage();
+        // TODO: Write command to connector
+        try {
+            writeToConnection(mapping, encodedCommand);
+            // TODO: If all nominal, announce the opening of the next stage
+            reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                    ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK,
+                    ActivityOccurrenceState.TRANSMISSION); // TODO: check if acceptance/execution stages are defined. If not, move to verification
+
+            // TODO: If no stages for verification are present, deregister from verifier and release connection if on demand
+            if(mapping.getVerification() == null) {
+                deregisterFromVerifier(time, activityInvocation, mapping, encodedCommand);
+                releaseConnectionUsage();
+            }
+        } catch (IOException e) {
+            reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                    ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL,
+                    ActivityOccurrenceState.TRANSMISSION);
+            // TODO: If failure, then deregister verification
+            deregisterFromVerifier(time, activityInvocation, mapping, encodedCommand);
+            // TODO: Close connector if on demand and used -1 = 0
+            releaseConnectionUsage();
+
+        }
+
+    }
+
+    private void releaseConnectionUsage() {
+        // TODO
+    }
+
+    private void deregisterFromVerifier(Instant time, IActivityHandler.ActivityInvocation activityInvocation, OutboundMessageMapping mapping, byte[] encodedCommand) {
+        // TODO
+    }
+
+    private void writeToConnection(OutboundMessageMapping mapping, byte[] encodedCommand) throws IOException {
+        // TODO
+    }
+
+    private void acquireConnectionUsage() {
+        // TODO
+    }
+
+    private void registerToVerifier(Instant time, IActivityHandler.ActivityInvocation activityInvocation, OutboundMessageMapping mapping, byte[] encodedCommand) {
+        // TODO
+    }
+
+    private byte[] encodeCommand(IActivityHandler.ActivityInvocation activityInvocation, OutboundMessageMapping mapping) {
+        // TODO:
+        return null;
+    }
+
+    private OutboundMessageMapping getOutboundMessageFor(IActivityHandler.ActivityInvocation activityInvocation) {
+        // Slow, consider adding a map
+        for(OutboundMessageMapping omm : getOutboundMessages()) {
+            if(omm.getEntity() == activityInvocation.getActivityId()) {
+                return omm;
+            }
+        }
+        return null;
+    }
+
+    public void reportActivityState(int activityId, IUniqueId activityOccurrenceId, Instant time, ActivityOccurrenceState state, String releaseReportName, ActivityReportState status, ActivityOccurrenceState nextState) {
+        dataProcessor.forwardActivityProgress(ActivityProgress.of(activityId, activityOccurrenceId, releaseReportName, time, state, null, status, nextState, null));
     }
 }
