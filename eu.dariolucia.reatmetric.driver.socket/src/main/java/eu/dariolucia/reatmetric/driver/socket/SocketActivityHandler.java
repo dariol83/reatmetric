@@ -32,12 +32,10 @@ import java.util.stream.Collectors;
 
 public class SocketActivityHandler implements IActivityHandler {
 
-
     private final SocketConfiguration configuration;
     private final SocketDriverConnector connector;
     private final List<String> supportedRoutes;
     private final List<String> supportedActivityTypes;
-    private IProcessingModel model;
 
     public SocketActivityHandler(SocketConfiguration configuration, SocketDriverConnector connector) {
         this.configuration = configuration;
@@ -52,12 +50,12 @@ public class SocketActivityHandler implements IActivityHandler {
 
     @Override
     public void registerModel(IProcessingModel model) {
-        this.model = model;
+        // Not needed
     }
 
     @Override
     public void deregisterModel(IProcessingModel model) {
-        this.model = null;
+        // Not needed
     }
 
     @Override

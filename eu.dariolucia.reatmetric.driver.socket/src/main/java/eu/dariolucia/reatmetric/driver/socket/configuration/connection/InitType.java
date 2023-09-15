@@ -19,6 +19,5 @@ package eu.dariolucia.reatmetric.driver.socket.configuration.connection;
 
 public enum InitType {
     CONNECTOR,
-    ON_DEMAND,
-    CUSTOM
+    ON_DEMAND
 }

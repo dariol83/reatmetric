@@ -43,13 +43,14 @@ public class OutboundMessageMapping extends MessageMapping {
     @XmlAttribute
     private int entity = -1;
 
-    // If the type is "periodic", here you specify the period in seconds
+    // If the type is "periodic", here you specify the period in seconds. You cannot have periodic commands on on-demand
+    // driven connections
     @XmlAttribute
     private int period = 0;
 
-    // If this is true, it means that the execution of this command must complete, before sending the next one
-    @XmlAttribute
-    private boolean lock = true;
+    // Delay after sending the command in ms
+    @XmlAttribute(name="post-send-delay")
+    private int postSentDelay = 0;
 
     @XmlElement(name = "argument")
     private List<ArgumentMapping> argumentMappings;
@@ -108,12 +109,12 @@ public class OutboundMessageMapping extends MessageMapping {
         this.verification = verification;
     }
 
-    public boolean isLock() {
-        return lock;
+    public int getPostSentDelay() {
+        return postSentDelay;
     }
 
-    public void setLock(boolean lock) {
-        this.lock = lock;
+    public void setPostSentDelay(int postSentDelay) {
+        this.postSentDelay = postSentDelay;
     }
 
     /* ***************************************************************
@@ -130,7 +131,7 @@ public class OutboundMessageMapping extends MessageMapping {
             id2argumentMapping.put(am.getName(), am);
         }
         // Sanitize verification
-        if(verification != null && verification.getAcceptance() == null && verification.getExecution() == null) {
+        if(verification != null && verification.getAcceptance().isEmpty() && verification.getExecution().isEmpty()) {
             verification = null;
         }
     }

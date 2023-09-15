@@ -24,6 +24,9 @@ import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 
 import java.util.List;
+import java.util.Timer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 public interface IDataProcessor {
 
@@ -36,4 +39,10 @@ public interface IDataProcessor {
     void forwardActivityProgress(ActivityProgress progressReport);
 
     IUniqueId getNextRawDataId();
+
+    Timer getTimerService();
+
+    <V> Future<V> execute(Callable<V> task);
+
+    Future<?> execute(Runnable task);
 }

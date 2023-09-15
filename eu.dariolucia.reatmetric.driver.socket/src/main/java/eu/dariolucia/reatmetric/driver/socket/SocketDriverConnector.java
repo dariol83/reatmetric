@@ -61,7 +61,7 @@ public class SocketDriverConnector extends AbstractTransportConnector {
         updateConnectionStatus(TransportConnectionStatus.OPEN);
         // TODO: introduce a way to report a reasonable/real status, i.e. callback to indicate that a connection is active/not active
         updateAlarmState(AlarmState.NOMINAL);
-        // TODO: activate auto-sending of configured commands
+        // TODO: activate auto-sending of configured commands for connector-driven routes
     }
 
     @Override
@@ -75,6 +75,7 @@ public class SocketDriverConnector extends AbstractTransportConnector {
         }
         updateConnectionStatus(TransportConnectionStatus.IDLE);
         updateAlarmState(AlarmState.NOMINAL);
+        // TODO: stop auto-sending of configured commands for connector-driven routes
     }
 
     @Override

@@ -32,12 +32,15 @@ import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.SocketConfiguration;
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.IDataProcessor;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Timer;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,6 +53,8 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
     private SocketConfiguration configuration;
     private SocketDriverConnector connector;
     private SocketActivityHandler activityHandler;
+    private Timer globalDriverTimer;
+    private ExecutorService actionThreadPool;
 
     @Override
     public List<DebugInformation> currentDebugInfo() {
@@ -58,6 +63,14 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
 
     @Override
     protected SystemStatus startProcessing() {
+        // Init data
+        this.globalDriverTimer = new Timer(getName() + " Timer Service");
+        this.actionThreadPool = Executors.newSingleThreadExecutor((r) -> {
+           Thread t = new Thread(r);
+           t.setDaemon(true);
+           t.setName(getName() + " Worker Thread");
+           return t;
+        });
         // Create the transport connector
         createTransportConnector();
         // Create the activity handler
@@ -101,9 +114,17 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
     }
 
     @Override
-    public void dispose() throws DriverException {
-        super.dispose();
-        // TODO
+    public void dispose() {
+        this.configuration.getConnections().forEach(AbstractConnectionConfiguration::dispose);
+        this.globalDriverTimer.cancel();
+        this.actionThreadPool.shutdownNow();
+        try {
+            this.actionThreadPool.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            // Nothing
+        }
+        this.globalDriverTimer = null;
+        this.actionThreadPool = null;
     }
 
     @Override
@@ -117,21 +138,42 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
 
     @Override
     public void forwardParameters(List<ParameterSample> samples) {
-
+        if(samples != null && !samples.isEmpty()) {
+            getContext().getProcessingModel().injectParameters(samples);
+        }
     }
 
     @Override
     public void forwardEvents(List<EventOccurrence> events) {
-
+        if(events != null && !events.isEmpty()) {
+            for (EventOccurrence eo : events) {
+                getContext().getProcessingModel().raiseEvent(eo);
+            }
+        }
     }
 
     @Override
     public void forwardActivityProgress(ActivityProgress progressReport) {
-
+        getContext().getProcessingModel().reportActivityProgress(progressReport);
     }
 
     @Override
     public IUniqueId getNextRawDataId() {
         return getContext().getRawDataBroker().nextRawDataId();
+    }
+
+    @Override
+    public Timer getTimerService() {
+        return this.globalDriverTimer;
+    }
+
+    @Override
+    public <V> Future<V> execute(Callable<V> task) {
+        return this.actionThreadPool.submit(task);
+    }
+
+    @Override
+    public Future<?> execute(Runnable task) {
+        return this.actionThreadPool.submit(task);
     }
 }

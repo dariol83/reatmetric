@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
@@ -31,6 +32,7 @@ import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.driver.socket.SocketDriver;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.InitType;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.AsciiMessageDefinition;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.BinaryMessageDefinition;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.MessageDefinition;
@@ -39,15 +41,26 @@ import jakarta.xml.bind.annotation.*;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class RouteConfiguration {
+
+    private static final Logger LOG = Logger.getLogger(RouteConfiguration.class.getName());
 
     @XmlAttribute(required = true)
     private String name;
 
     @XmlAttribute(name = "entity-offset")
     private int entityOffset = 0;
+
+    // If this is true, it means that the execution of this command must complete, before sending the next one
+    @XmlAttribute
+    private boolean commandLock = true;
 
     @XmlElementWrapper(name = "activity-types")
     @XmlElement(name="type")
@@ -99,6 +112,14 @@ public class RouteConfiguration {
         this.activityTypes = activityTypes;
     }
 
+    public boolean isCommandLock() {
+        return commandLock;
+    }
+
+    public void setCommandLock(boolean commandLock) {
+        this.commandLock = commandLock;
+    }
+
     /* ***************************************************************
      * Internal operations
      * ***************************************************************/
@@ -109,6 +130,12 @@ public class RouteConfiguration {
     private final transient Map<String, InboundMessageMapping> messageId2mapping = new TreeMap<>();
 
     private transient IDataProcessor dataProcessor;
+
+    private final transient Map<String, List<CommandTracker>> progressMessageId2commandTracker = new TreeMap<>();
+    private final transient List<CommandTracker> activeCommandTrackers = new LinkedList<>();
+    private final transient AtomicInteger connectionUsage = new AtomicInteger(0);
+    private final transient Semaphore connectionSequencer = new Semaphore(1);
+    private final transient List<TimerTask> periodCommandTasks = new CopyOnWriteArrayList<>();
 
     public void initialise(AbstractConnectionConfiguration parentConnection) {
         this.parentConnection = parentConnection;
@@ -121,7 +148,7 @@ public class RouteConfiguration {
         }
     }
 
-    public void onMessageReceived(Instant time, String messageId, String secondaryId, Map<String, Object> decodedMessage, byte[] rawMessage) {
+    private void internalMessageReceived(Instant time, String messageId, String secondaryId, Map<String, Object> decodedMessage, byte[] rawMessage) {
         // Forward raw data
         RawData rawData = new RawData(dataProcessor.getNextRawDataId(), time, secondaryId != null ? secondaryId : messageId,
                 "", getName(), getParentConnection().getSource(),
@@ -141,8 +168,31 @@ public class RouteConfiguration {
             dataProcessor.forwardParameters(parameterSamples);
             dataProcessor.forwardEvents(eventOccurrences);
         }
-        // No mapping? Message ignored
-        // TODO: use for command verification if used by any outstanding command, as per command definition
+        // No mapping? Message ignored for injection, check for verification
+        internalVerifyAcknowledgement(time, messageId, secondaryId, decodedMessage, rawMessage, getName());
+    }
+
+    private void internalVerifyAcknowledgement(Instant time, String messageId, String secondaryId, Map<String, Object> decodedMessage, byte[] rawMessage, String route) {
+        // Get the list of trackers registered on this message
+        if(secondaryId == null) {
+            secondaryId = "";
+        }
+        String key = messageId + "_" + secondaryId;
+        List<CommandTracker> trackerList = this.progressMessageId2commandTracker.get(key);
+        List<CommandTracker> toBeRemoved = new LinkedList<>();
+        for(CommandTracker tracker : trackerList) {
+            // Send message to tracker: if verification is completed, timeout timer is cancelled and true is returned
+            boolean verificationCompleted = tracker.messageReceived(dataProcessor, time, messageId, secondaryId, decodedMessage, route);
+            if(verificationCompleted) {
+                // Add tracker for removal
+                toBeRemoved.add(tracker);
+            }
+        }
+        // Remove fully verified trackers
+        for(CommandTracker tracker : toBeRemoved) {
+            releaseConnectionUsage();
+            deregisterFromVerifier(tracker);
+        }
     }
 
     public AbstractConnectionConfiguration getParentConnection() {
@@ -151,6 +201,10 @@ public class RouteConfiguration {
 
     public void onBinaryMessageReceived(byte[] message) {
         Instant receivedTime = Instant.now();
+        this.dataProcessor.execute(() -> internalBinaryMessageReceived(message, receivedTime));
+    }
+
+    private void internalBinaryMessageReceived(byte[] message, Instant receivedTime) {
         String identifier = null;
         String secondaryIdentifier = null;
         BinaryMessageDefinition definition = null;
@@ -167,7 +221,8 @@ public class RouteConfiguration {
                         break;
                     }
                 } catch (ReatmetricException e) {
-                    // TODO: Log
+                    LOG.log(Level.SEVERE, "Error detected when identifying binary message with definition " +
+                            def.getId() + " on route "  + getName() + ": " + e.getMessage(), e);
                 }
             }
         }
@@ -176,19 +231,26 @@ public class RouteConfiguration {
             // Decode the message and forward everything to onMessageReceived
             try {
                 Map<String, Object> decodedMessage = definition.decode(secondaryIdentifier, message);
-                onMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, message);
+                internalMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, message);
             } catch (ReatmetricException e) {
-                // TODO: Log
+                LOG.log(Level.SEVERE, "Error detected when identifying binary message " + secondaryIdentifier +
+                        " with definition " + definition.getId() + " on route " + getName() + ": " + e.getMessage(), e);
             }
+        } else {
+            LOG.log(Level.WARNING, "Binary message not identified on route " + getName());
         }
     }
 
     public void onAsciiMessageReceived(String message, byte[] rawMessage) {
-        Instant receivedTime = Instant.now();
+        final Instant receivedTime = Instant.now();
+        this.dataProcessor.execute(() -> internalAsciiMessageReceived(message, rawMessage, receivedTime));
+    }
+
+    private void internalAsciiMessageReceived(String message, byte[] rawMessage, Instant receivedTime) {
         String identifier = null;
         String secondaryIdentifier = null;
         AsciiMessageDefinition definition = null;
-        // You received a ASCII message: get the message definition, identify the message
+        // You received an ASCII message: get the message definition, identify the message
         for(InboundMessageMapping template : getInboundMessages()) {
             MessageDefinition<?> def = template.getMessageDefinition();
             if(def instanceof AsciiMessageDefinition) {
@@ -205,7 +267,9 @@ public class RouteConfiguration {
         if(identifier != null) {
             // Decode the message and forward everything to onMessageReceived
             Map<String, Object> decodedMessage = definition.decode(null, message);
-            onMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, rawMessage);
+            internalMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, rawMessage);
+        } else {
+            LOG.log(Level.WARNING, "ASCII message not identified on route " + getName());
         }
     }
 
@@ -214,73 +278,239 @@ public class RouteConfiguration {
     }
 
     public void dispatchActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
-        // TODO: introduce single thread per route and a global (driver based) Timer for timeout computation
         Instant time = Instant.now();
         // Get the mapped OutboundMessageMapping
         OutboundMessageMapping mapping = getOutboundMessageFor(activityInvocation);
         if(mapping == null) {
             throw new ActivityHandlingException("No outbound message found, mapped to activity invocation for " + activityInvocation.getPath() + " (" + activityInvocation.getActivityId() + ")");
         }
+        // Encode command
+        Pair<byte[], Map<String, Object>> encodedCommand = null;
+        try {
+            encodedCommand = encodeCommand(activityInvocation, mapping);
+        } catch (ReatmetricException e) {
+            throw new ActivityHandlingException("Error while encoding command " + activityInvocation.getActivityId() + ": " + e.getMessage(), e);
+        }
+        Pair<byte[], Map<String, Object>> finalCommand = encodedCommand;
+        // If the connection is one of those requiring a single command active at a time, then put the command in the dispatch
+        // phase only if you actually can
+        if(isCommandLock()) {
+            try {
+                connectionSequencer.acquire();
+            } catch (InterruptedException e) {
+                throw new ActivityHandlingException("Waiting dispatch interrupted for activity " + activityInvocation.getActivityOccurrenceId() + " on route " + getName(), e);
+            }
+        }
+        // At this stage, the work can be done fully asynchronously
+        this.dataProcessor.execute(() -> internalDispatch(activityInvocation, time, mapping, finalCommand));
+    }
 
+    public void startDispatchingOfPeriodicCommands() {
+        if(getParentConnection().getInit() == InitType.CONNECTOR) {
+            // Schedule execution of all the periodic commands
+            for (OutboundMessageMapping omm : getOutboundMessages()) {
+                if (omm.getType() == OutboundMessageType.PERIODIC) {
+                    TimerTask periodTask = new TimerTask() {
+                        @Override
+                        public void run() {
+                            dataProcessor.execute(() -> internalPeriodicDispatch(omm));
+                        }
+                    };
+                    this.periodCommandTasks.add(periodTask);
+                    this.dataProcessor.getTimerService().schedule(periodTask, omm.getPeriod() * 1000L, omm.getPeriod() * 1000L);
+                }
+            }
+        } // ignore the ON-DEMAND connections
+    }
+
+    private void internalPeriodicDispatch(OutboundMessageMapping mapping) {
+        if(!getParentConnection().isOpen()) {
+            return;
+        }
+        // Encode command
+        Pair<byte[], Map<String, Object>> encodedCommand;
+        try {
+            encodedCommand = encodeCommand(null, mapping);
+        } catch (ReatmetricException e) {
+            // TODO: log, move on
+            return;
+        }
+        // If you want a lock, wait
+        if(isCommandLock()) {
+            try {
+                connectionSequencer.acquire();
+            } catch (InterruptedException e) {
+                // TODO: log, do nothing
+                return;
+            }
+        }
+        acquireConnectionUsage();
+        try {
+            writeToConnection(encodedCommand.getFirst());
+            waitForPostDelay(mapping);
+        } catch (IOException e) {
+            // TODO: log, move on
+        } finally {
+            releaseConnectionUsage();
+            if(isCommandLock()) {
+                connectionSequencer.release();
+            }
+        }
+    }
+
+    public void stopDispatchingOfPeriodicCommands() {
+        if(getParentConnection().getInit() == InitType.CONNECTOR) {
+            this.periodCommandTasks.forEach(TimerTask::cancel);
+            this.periodCommandTasks.clear();
+        }
+    }
+
+    private void internalDispatch(IActivityHandler.ActivityInvocation activityInvocation, Instant time, OutboundMessageMapping mapping, Pair<byte[], Map<String, Object>> encodedCommand) {
         // Notify attempt to dispatch
         reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
                 ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.PENDING,
                 ActivityOccurrenceState.TRANSMISSION);
-        // TODO: Encode command
-        byte[] encodedCommand = encodeCommand(activityInvocation, mapping);
-        // TODO: Register to verification if acceptance/execution stages are defined
-        registerToVerifier(time, activityInvocation, mapping, encodedCommand);
-        // TODO: If connector is on demand, start connector, mark connector as used +1
-        acquireConnectionUsage();
-        // TODO: Write command to connector
+        // Register to verification if acceptance/execution stages are defined
+        CommandTracker tracker = registerToVerifier(time, activityInvocation, mapping, encodedCommand);
         try {
-            writeToConnection(mapping, encodedCommand);
-            // TODO: If all nominal, announce the opening of the next stage
+            // If connection is on demand, start connector if connectionUsage = 0, mark connector as connectionUsage +1.
+            acquireConnectionUsage();
+            // If no connection at this stage, bye
+            if(!getParentConnection().isOpen()) {
+                throw new IOException("Connection of route " + getName() + " not open");
+            }
+            // Write command to connector
+            writeToConnection(encodedCommand.getFirst());
+            // If all nominal, announce the opening of the next stage
+            ActivityOccurrenceState nextStage = ActivityOccurrenceState.VERIFICATION;
+            // Check if acceptance/execution stages are defined. If not, move to verification
+            if(mapping.getVerification() != null && !mapping.getVerification().getExecution().isEmpty()) {
+                nextStage = ActivityOccurrenceState.EXECUTION;
+            }
+            if(mapping.getVerification() != null && !mapping.getVerification().getAcceptance().isEmpty()) {
+                nextStage = ActivityOccurrenceState.TRANSMISSION;
+            }
             reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
                     ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK,
-                    ActivityOccurrenceState.TRANSMISSION); // TODO: check if acceptance/execution stages are defined. If not, move to verification
-
-            // TODO: If no stages for verification are present, deregister from verifier and release connection if on demand
+                    nextStage);
+            // If no stages for verification are present, deregister from verifier and release connection if on demand
             if(mapping.getVerification() == null) {
-                deregisterFromVerifier(time, activityInvocation, mapping, encodedCommand);
+                // Wait post send delay
+                waitForPostDelay(mapping);
                 releaseConnectionUsage();
+                deregisterFromVerifier(tracker);
+            } else {
+                tracker.announceVerificationStages(this.dataProcessor);
+                // Wait post send delay
+                waitForPostDelay(mapping);
             }
         } catch (IOException e) {
             reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
                     ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL,
                     ActivityOccurrenceState.TRANSMISSION);
-            // TODO: If failure, then deregister verification
-            deregisterFromVerifier(time, activityInvocation, mapping, encodedCommand);
-            // TODO: Close connector if on demand and used -1 = 0
+            // connectionUsage -1, close connector if on demand and connectionUsage = 0
             releaseConnectionUsage();
-
+            // If failure, then deregister verification
+            deregisterFromVerifier(tracker);
         }
-
     }
 
-    private void releaseConnectionUsage() {
-        // TODO
-    }
-
-    private void deregisterFromVerifier(Instant time, IActivityHandler.ActivityInvocation activityInvocation, OutboundMessageMapping mapping, byte[] encodedCommand) {
-        // TODO
-    }
-
-    private void writeToConnection(OutboundMessageMapping mapping, byte[] encodedCommand) throws IOException {
-        // TODO
+    private void waitForPostDelay(OutboundMessageMapping mapping) {
+        if(mapping.getPostSentDelay() > 0) {
+            try {
+                Thread.sleep(mapping.getPostSentDelay());
+            } catch (InterruptedException e) {
+                // Nothing to do
+            }
+        }
     }
 
     private void acquireConnectionUsage() {
-        // TODO
+        int usages = this.connectionUsage.getAndIncrement();
+        // On demand and first use? Start it.
+        if(usages == 0 && getParentConnection().getInit() == InitType.ON_DEMAND) {
+            getParentConnection().openConnection();
+            getParentConnection().waitForActive(2000);
+        }
     }
 
-    private void registerToVerifier(Instant time, IActivityHandler.ActivityInvocation activityInvocation, OutboundMessageMapping mapping, byte[] encodedCommand) {
-        // TODO
+    private void releaseConnectionUsage() {
+        int usages = this.connectionUsage.decrementAndGet();
+        // On demand and last use? Close it.
+        if(usages == 0 && getParentConnection().getInit() == InitType.ON_DEMAND) {
+            getParentConnection().closeConnection();
+        }
     }
 
-    private byte[] encodeCommand(IActivityHandler.ActivityInvocation activityInvocation, OutboundMessageMapping mapping) {
-        // TODO:
-        return null;
+    private void deregisterFromVerifier(CommandTracker tracker) {
+        activeCommandTrackers.remove(tracker);
+        if(tracker.getMapping().getVerification() != null) {
+            Set<String> progressMessagesId = tracker.getProgressMessageIds();
+            // Remove trackers
+            for (String s : progressMessagesId) {
+                List<CommandTracker> trackers = this.progressMessageId2commandTracker.computeIfAbsent(s, (a) -> new LinkedList<>());
+                trackers.remove(tracker);
+            }
+            // Stop timeout
+            stopTimeoutTimer(tracker);
+        }
+        // If command lock and no more commands pending, then be ready for the next one
+        if(isCommandLock() && activeCommandTrackers.isEmpty()) {
+            connectionSequencer.release();
+        }
+    }
+
+    private void stopTimeoutTimer(CommandTracker tracker) {
+        if(tracker != null && tracker.getMapping().getVerification() != null) {
+            tracker.cancelTimeoutTimer(dataProcessor, false);
+        }
+    }
+
+    private void writeToConnection(byte[] encodedCommand) throws IOException {
+        getParentConnection().writeMessage(encodedCommand);
+    }
+
+    private CommandTracker registerToVerifier(Instant time, IActivityHandler.ActivityInvocation activityInvocation, OutboundMessageMapping mapping, Pair<byte[], Map<String, Object>> encodedCommand) {
+        CommandTracker tracker = new CommandTracker(time, activityInvocation, mapping, encodedCommand, getName());
+        // Register in the tracker list
+        activeCommandTrackers.add(tracker);
+        if(mapping.getVerification() != null) {
+            // Get the list of messages potentially affecting the verification of this command and register this tracker there
+            Set<String> progressMessagesId = tracker.getProgressMessageIds();
+            for(String s : progressMessagesId) {
+                List<CommandTracker> trackers = this.progressMessageId2commandTracker.computeIfAbsent(s, (a) -> new LinkedList<>());
+                trackers.add(tracker);
+            }
+            // Start the timer for timeout
+            startTimeoutTimer(tracker);
+        }
+        return tracker;
+    }
+
+    private void startTimeoutTimer(CommandTracker tracker) {
+        TimerTask timeoutTask = new TimerTask() {
+            @Override
+            public void run() {
+                dataProcessor.execute(() -> timeout(tracker));
+            }
+        };
+        tracker.registerTimeoutTask(timeoutTask);
+        this.dataProcessor.getTimerService().schedule(timeoutTask, tracker.getMapping().getVerification().getTimeout() * 1000L);
+    }
+
+    private void timeout(CommandTracker tracker) {
+        if(tracker.isAlive()) {
+            // Cancel the timeout timer, marked as expired
+            tracker.cancelTimeoutTimer(dataProcessor, true);
+            // Release connection
+            releaseConnectionUsage();
+            // Remove from verifier
+            deregisterFromVerifier(tracker);
+        }
+    }
+
+    private Pair<byte[], Map<String, Object>> encodeCommand(IActivityHandler.ActivityInvocation activityInvocation, OutboundMessageMapping mapping) throws ReatmetricException {
+        return mapping.encodeCommand(activityInvocation, getParentConnection().getAsciiEncoding());
     }
 
     private OutboundMessageMapping getOutboundMessageFor(IActivityHandler.ActivityInvocation activityInvocation) {
@@ -294,6 +524,6 @@ public class RouteConfiguration {
     }
 
     public void reportActivityState(int activityId, IUniqueId activityOccurrenceId, Instant time, ActivityOccurrenceState state, String releaseReportName, ActivityReportState status, ActivityOccurrenceState nextState) {
-        dataProcessor.forwardActivityProgress(ActivityProgress.of(activityId, activityOccurrenceId, releaseReportName, time, state, null, status, nextState, null));
+        this.dataProcessor.forwardActivityProgress(ActivityProgress.of(activityId, activityOccurrenceId, releaseReportName, time, state, null, status, nextState, null));
     }
 }

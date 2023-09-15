@@ -58,6 +58,8 @@ public class StageConfiguration {
     @XmlAttribute(name="result", required = true)
     private ActivityReportState result;
 
+    // TODO: add IDREF to AbstractConnectionConfiguration, in case the message has to be expected from other connections
+
     public MessageDefinition<?> getMessage() {
         return message;
     }

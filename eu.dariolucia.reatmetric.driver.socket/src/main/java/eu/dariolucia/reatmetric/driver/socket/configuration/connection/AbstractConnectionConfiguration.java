@@ -17,12 +17,13 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration.connection;
 
-import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.driver.socket.configuration.decoding.*;
 import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.RouteConfiguration;
 import jakarta.xml.bind.annotation.*;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -190,7 +191,7 @@ public abstract class AbstractConnectionConfiguration {
      * Channel operations
      * ***************************************************************/
 
-    private volatile boolean active;
+    private final AtomicBoolean active = new AtomicBoolean(false);
     private volatile boolean running;
     private volatile Thread readingThread;
 
@@ -202,12 +203,18 @@ public abstract class AbstractConnectionConfiguration {
         this.readingThread = new Thread(this::connectionLoop);
         this.readingThread.setDaemon(true);
         this.readingThread.start();
+        if(getInit() == InitType.CONNECTOR) {
+            getRoute().startDispatchingOfPeriodicCommands();
+        }
     }
 
     protected abstract void connectionLoop();
 
     public synchronized void closeConnection() {
         if(this.running) {
+            if(getInit() == InitType.CONNECTOR) {
+                getRoute().stopDispatchingOfPeriodicCommands();
+            }
             this.running = false;
             this.readingThread.interrupt();
             try {
@@ -226,11 +233,14 @@ public abstract class AbstractConnectionConfiguration {
     }
 
     protected void setActive(boolean active) {
-        this.active = active;
+        synchronized (this.active) {
+            this.active.set(active);
+            this.active.notifyAll();
+        }
     }
 
     public boolean isActive() {
-        return active;
+        return active.get();
     }
 
     protected void forwardToRoute(byte[] message) {
@@ -248,5 +258,28 @@ public abstract class AbstractConnectionConfiguration {
                 LOG.log(Level.WARNING, "Unexpected exception while processing message from connection " + getName() + ": " + e.getMessage());
             }
         }
+    }
+
+    public boolean waitForActive(int msTimeout) {
+        long endTime = Instant.now().toEpochMilli() + msTimeout;
+        synchronized (this.active) {
+            while(!active.get()) {
+                long toWait = endTime - Instant.now().toEpochMilli();
+                if(toWait <= 0) {
+                    return active.get();
+                } else {
+                    try {
+                        this.active.wait(toWait);
+                    } catch (InterruptedException e) {
+                        // Nothing to do, leave
+                    }
+                }
+            }
+        }
+        return active.get();
+    }
+
+    public void dispose() {
+        // TODO
     }
 }
