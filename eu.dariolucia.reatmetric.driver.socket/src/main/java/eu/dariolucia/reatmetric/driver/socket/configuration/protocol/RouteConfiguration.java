@@ -132,7 +132,7 @@ public class RouteConfiguration {
     private transient IDataProcessor dataProcessor;
 
     private final transient Map<String, List<CommandTracker>> progressMessageId2commandTracker = new TreeMap<>();
-    private final transient List<CommandTracker> activeCommandTrackers = new LinkedList<>();
+    private final transient List<CommandTracker> activeCommandTrackers = new CopyOnWriteArrayList<>();
     private final transient AtomicInteger connectionUsage = new AtomicInteger(0);
     private final transient Semaphore connectionSequencer = new Semaphore(1);
     private final transient List<TimerTask> periodCommandTasks = new CopyOnWriteArrayList<>();
@@ -332,7 +332,7 @@ public class RouteConfiguration {
         try {
             encodedCommand = encodeCommand(null, mapping);
         } catch (ReatmetricException e) {
-            // TODO: log, move on
+            LOG.log(Level.SEVERE, "Cannot encode command " + mapping.getMessageDefinition().getId() + " on route " + getName() + " for periodic dispatch: " + e.getMessage(), e);
             return;
         }
         // If you want a lock, wait
@@ -340,7 +340,7 @@ public class RouteConfiguration {
             try {
                 connectionSequencer.acquire();
             } catch (InterruptedException e) {
-                // TODO: log, do nothing
+                LOG.log(Level.FINE, "Command lock interrupted on dispatch of periodic command " + mapping.getMessageDefinition().getId() + " on route " + getName());
                 return;
             }
         }
@@ -349,7 +349,7 @@ public class RouteConfiguration {
             writeToConnection(encodedCommand.getFirst());
             waitForPostDelay(mapping);
         } catch (IOException e) {
-            // TODO: log, move on
+            LOG.log(Level.SEVERE, "Cannot transmit command " + mapping.getMessageDefinition().getId() + " on route " + getName() + " for periodic dispatch: " + e.getMessage(), e);
         } finally {
             releaseConnectionUsage();
             if(isCommandLock()) {
@@ -525,5 +525,19 @@ public class RouteConfiguration {
 
     public void reportActivityState(int activityId, IUniqueId activityOccurrenceId, Instant time, ActivityOccurrenceState state, String releaseReportName, ActivityReportState status, ActivityOccurrenceState nextState) {
         this.dataProcessor.forwardActivityProgress(ActivityProgress.of(activityId, activityOccurrenceId, releaseReportName, time, state, null, status, nextState, null));
+    }
+
+    public void dispose() {
+        Instant time = Instant.now();
+        dataProcessor.execute(() -> internalDispose(time));
+    }
+
+    private void internalDispose(Instant time) {
+        List<CommandTracker> trackersToClose = new ArrayList<>(activeCommandTrackers);
+        for(CommandTracker ct : trackersToClose) {
+            ct.closeVerification(this.dataProcessor, time);
+            releaseConnectionUsage();
+            deregisterFromVerifier(ct);
+        }
     }
 }

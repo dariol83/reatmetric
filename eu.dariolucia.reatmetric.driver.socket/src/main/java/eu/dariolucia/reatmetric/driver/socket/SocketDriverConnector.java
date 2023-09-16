@@ -26,14 +26,13 @@ import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.driver.socket.configuration.SocketConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.IConnectionStatusListener;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.InitType;
 
-import java.io.IOException;
 import java.rmi.RemoteException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class SocketDriverConnector extends AbstractTransportConnector {
+public class SocketDriverConnector extends AbstractTransportConnector implements IConnectionStatusListener {
 
     private static final Logger LOG = Logger.getLogger(SocketDriverConnector.class.getName());
 
@@ -59,9 +58,7 @@ public class SocketDriverConnector extends AbstractTransportConnector {
         }
         // Check
         updateConnectionStatus(TransportConnectionStatus.OPEN);
-        // TODO: introduce a way to report a reasonable/real status, i.e. callback to indicate that a connection is active/not active
-        updateAlarmState(AlarmState.NOMINAL);
-        // TODO: activate auto-sending of configured commands for connector-driven routes
+        deriveAlarmState();
     }
 
     @Override
@@ -74,8 +71,7 @@ public class SocketDriverConnector extends AbstractTransportConnector {
             }
         }
         updateConnectionStatus(TransportConnectionStatus.IDLE);
-        updateAlarmState(AlarmState.NOMINAL);
-        // TODO: stop auto-sending of configured commands for connector-driven routes
+        deriveAlarmState();
     }
 
     @Override
@@ -108,5 +104,42 @@ public class SocketDriverConnector extends AbstractTransportConnector {
         }
         // OK, forward
         connection.getRoute().dispatchActivity(activityInvocation);
+    }
+
+    @Override
+    public void onConnectionStatusUpdate(AbstractConnectionConfiguration connection, boolean activeStatus) {
+        deriveAlarmState();
+    }
+
+    private synchronized void deriveAlarmState() {
+        // Recompute state
+        if(getConnectionStatus().equals(TransportConnectionStatus.OPEN)) {
+            int numConnections = 0;
+            int activeConnections = 0;
+            for(AbstractConnectionConfiguration con : configuration.getConnections()) {
+                if(con.getInit() == InitType.CONNECTOR) {
+                    ++numConnections;
+                    if(con.isActive()) {
+                        ++activeConnections;
+                    }
+                }
+            }
+            if(numConnections > 0) {
+                if(activeConnections == 0) {
+                    updateAlarmState(AlarmState.ALARM);
+                } else if(activeConnections < numConnections) {
+                    updateAlarmState(AlarmState.WARNING);
+                } else {
+                    updateAlarmState(AlarmState.NOMINAL);
+                }
+            } else {
+                // No connections? This must be an error
+                updateAlarmState(AlarmState.ERROR);
+            }
+        } else if(getConnectionStatus().equals(TransportConnectionStatus.IDLE)) {
+            updateAlarmState(AlarmState.NOMINAL);
+        } else {
+            updateAlarmState(AlarmState.NOT_APPLICABLE);
+        }
     }
 }

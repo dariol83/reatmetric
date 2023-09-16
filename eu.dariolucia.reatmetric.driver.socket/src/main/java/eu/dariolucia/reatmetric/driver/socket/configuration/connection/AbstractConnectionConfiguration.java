@@ -195,6 +195,12 @@ public abstract class AbstractConnectionConfiguration {
     private volatile boolean running;
     private volatile Thread readingThread;
 
+    private volatile IConnectionStatusListener listener;
+
+    public void setListener(IConnectionStatusListener listener) {
+        this.listener = listener;
+    }
+
     public synchronized void openConnection() {
         if(this.running) {
             return;
@@ -233,9 +239,14 @@ public abstract class AbstractConnectionConfiguration {
     }
 
     protected void setActive(boolean active) {
+        boolean oldActive;
         synchronized (this.active) {
+            oldActive = this.active.get();
             this.active.set(active);
             this.active.notifyAll();
+        }
+        if(oldActive != active) {
+            listener.onConnectionStatusUpdate(this, active);
         }
     }
 
@@ -280,6 +291,8 @@ public abstract class AbstractConnectionConfiguration {
     }
 
     public void dispose() {
-        // TODO
+        // In doubt, close the connection and inform the route that it has to cleanup
+        closeConnection();
+        getRoute().dispose();
     }
 }

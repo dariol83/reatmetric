@@ -117,7 +117,7 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
     public void dispose() {
         this.configuration.getConnections().forEach(AbstractConnectionConfiguration::dispose);
         this.globalDriverTimer.cancel();
-        this.actionThreadPool.shutdownNow();
+        this.actionThreadPool.shutdown();
         try {
             this.actionThreadPool.awaitTermination(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {

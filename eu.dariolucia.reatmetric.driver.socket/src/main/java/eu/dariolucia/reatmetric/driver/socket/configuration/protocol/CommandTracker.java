@@ -2,13 +2,10 @@ package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 
 import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
-import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
-import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.OutboundMessageMapping;
-import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.StageConfiguration;
 
 import java.time.Instant;
 import java.util.*;
@@ -299,6 +296,21 @@ public class CommandTracker {
             cancelTimeoutTimer(dataProcessor, false);
             // You are done
             return true;
+        }
+    }
+
+    public void closeVerification(IDataProcessor dataProcessor, Instant time) {
+        cancelTimeoutTimer(dataProcessor, false);
+        // Report all open stage as UNKNOWN, close verification
+        if(this.currentlyOpenStage != null) {
+            if(this.currentlyOpenStage.equals(ACCEPTANCE_STAGE_NAME)) {
+                processAcceptanceDefault(dataProcessor, time, ActivityReportState.UNKNOWN);
+                if(!mapping.getVerification().getExecution().isEmpty()) {
+                    processExecutionDefault(dataProcessor, time, ActivityReportState.UNKNOWN);
+                }
+            } else if(this.currentlyOpenStage.equals(EXECUTION_STAGE_NAME)) {
+                processExecutionDefault(dataProcessor, time, ActivityReportState.UNKNOWN);
+            }
         }
     }
 }
