@@ -41,58 +41,81 @@ public class AsciiDeviceSingleConnection {
     public static void main(String[] args) {
         // Create the device subsystems
         {
-            DeviceSubsystem ds = DEVICE.createSubsystem("SUB1");
-            ds.addParameter("Status", ValueTypeEnum.ENUMERATED, 0)
-                .addParameter("Frequency", ValueTypeEnum.UNSIGNED_INTEGER, 3000)
-                .addParameter("Temperature", ValueTypeEnum.REAL, 22.1)
-                .addParameter("Offset", ValueTypeEnum.SIGNED_INTEGER, 0L)
-                .addParameter("Mode", ValueTypeEnum.ENUMERATED, 0)
-                .addParameter("Sweep", ValueTypeEnum.ENUMERATED, 0);
-            ds.addHandler("RST", (command, args1, parameterSetter) -> true);
-            ds.addHandler("SWP", (command, args1, parameterSetter) -> {
-                int times = Integer.parseInt(args1[0]);
-                parameterSetter.apply("Sweep", 1);
-                for(int i = 0; i < times; ++i) {
-                    long offset = ((Number) ds.get("Offset")).longValue();
-                    offset += 100L;
-                    parameterSetter.apply("Offset", offset);
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException e) {
-                        return false;
-                    }
-                }
-                parameterSetter.apply("Sweep", 0);
-                return true;
-            });
+            createSubsystemA("SUB1");
         }
         {
-            DeviceSubsystem ds = DEVICE.createSubsystem("SUB2");
-            ds.addParameter("Status", ValueTypeEnum.ENUMERATED, 0)
-                    .addParameter("Frequency", ValueTypeEnum.UNSIGNED_INTEGER, 3000)
-                    .addParameter("Temperature", ValueTypeEnum.REAL, 22.1)
-                    .addParameter("Offset", ValueTypeEnum.SIGNED_INTEGER, 0L)
-                    .addParameter("Mode", ValueTypeEnum.ENUMERATED, 0)
-                    .addParameter("Sweep", ValueTypeEnum.ENUMERATED, 0);
-            ds.addHandler("RST", (command, args1, parameterSetter) -> true);
-            ds.addHandler("SWP", (command, args1, parameterSetter) -> {
-                int times = Integer.parseInt(args1[0]);
-                parameterSetter.apply("Sweep", 1);
-                for(int i = 0; i < times; ++i) {
-                    long offset = ((Number) ds.get("Offset")).longValue();
-                    offset += 100L;
-                    parameterSetter.apply("Offset", offset);
-                    try {
-                        Thread.sleep(2000);
-                    } catch (InterruptedException e) {
-                        return false;
-                    }
-                }
-                parameterSetter.apply("Sweep", 0);
-                return true;
-            });
+            createSubsystemA("SUB2");
         }
         // Define socket interface
         // TODO
+    }
+
+    private static void createSubsystemA(String name) {
+        DeviceSubsystem ds = DEVICE.createSubsystem(name);
+        ds.addParameter("Status", ValueTypeEnum.ENUMERATED, 1)
+            .addParameter("Frequency", ValueTypeEnum.UNSIGNED_INTEGER, 3000L)
+            .addParameter("Temperature", ValueTypeEnum.REAL, 22.1)
+            .addParameter("Offset", ValueTypeEnum.SIGNED_INTEGER, 0L)
+            .addParameter("Mode", ValueTypeEnum.ENUMERATED, 0)
+            .addParameter("Sweep", ValueTypeEnum.ENUMERATED, 0);
+        ds.addHandler("RST", (command, args1, parameterSetter) -> {
+            parameterSetter.apply("Status", 0);
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                return false;
+            }
+            parameterSetter.apply("Status", 1);
+            return true;
+        });
+        ds.addHandler("SWP", (command, args1, parameterSetter) -> {
+            int times = Integer.parseInt(args1[0]);
+            parameterSetter.apply("Sweep", 1);
+            for(int i = 0; i < times; ++i) {
+                long offset = ((Number) ds.get("Offset")).longValue();
+                offset += 100L;
+                parameterSetter.apply("Offset", offset);
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    return false;
+                }
+            }
+            parameterSetter.apply("Sweep", 0);
+            return true;
+        });
+        ds.addHandler("RBT", (command, args1, parameterSetter) -> {
+            int delay = Integer.parseInt(args1[0]);
+            int running = Integer.parseInt(args1[0]);
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException e) {
+                return false;
+            }
+            int status = (int) ds.get("Status");
+            long frequency = (long) ds.get("Frequency");
+            double temperature = (double) ds.get("Temperature");
+            long offset = (long) ds.get("Offset");
+            int mode = (int) ds.get("Mode");
+            int sweep = (int) ds.get("Sweep");
+            parameterSetter.apply("Status", 0);
+            parameterSetter.apply("Frequency", 0L);
+            parameterSetter.apply("Temperature", 0.0);
+            parameterSetter.apply("Offset", 0L);
+            parameterSetter.apply("Mode", 0);
+            parameterSetter.apply("Sweep", 0);
+            try {
+                Thread.sleep(running);
+            } catch (InterruptedException e) {
+                return false;
+            }
+            parameterSetter.apply("Status", status);
+            parameterSetter.apply("Frequency", frequency);
+            parameterSetter.apply("Temperature", temperature);
+            parameterSetter.apply("Offset", offset);
+            parameterSetter.apply("Mode", mode);
+            parameterSetter.apply("Sweep", sweep);
+            return true;
+        });
     }
 }
