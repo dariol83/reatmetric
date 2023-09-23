@@ -30,6 +30,22 @@ import java.util.*;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class InboundMessageMapping extends MessageMapping {
 
+    // TODO: add a way (OutboundMessageLink) to specify that the mapping is linked to an outboundmessagemapping,
+    //  with optionally a specific argument matching a value expressed here.
+    //  When such message is sent and a message is received, this mapping is effectively used only if it is linked
+    //  to that command.
+    //  This feature covers the situation when a request is asking for a given response, the request contains an ID of a
+    //  device to query, but the response does not have such ID. The correlation to the ID, and therefore to the mapping
+    //  to be used, must be derived by the fact that a previous command was sent.
+    //  This approach of course works only for full synchronous protocols.
+
+    // Example:
+    // Request:"STATUS DEVICE X", where X can be A or B.
+    // Response:"P1,P2,P3". If there are two devices A and B with the same parameter message structure, I need to create
+    // two InboundMessageMapping objects, one linked to the command "STATUS DEVICE X", with X = A, and the other
+    // to the same command, with X = B.
+    // When "P1,P2,P3" is received
+
     @XmlElement(name = "inject")
     private List<ParameterMapping> parameterMappings;
 

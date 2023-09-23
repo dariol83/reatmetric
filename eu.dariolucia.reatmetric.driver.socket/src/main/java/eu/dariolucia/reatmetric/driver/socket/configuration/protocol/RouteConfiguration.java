@@ -126,10 +126,13 @@ public class RouteConfiguration {
 
     private transient AbstractConnectionConfiguration parentConnection;
 
+    // TODO: change below to List<InboundMessageMapping> to support link to previously sent commands
     // <MessageDefinition ID>_<secondary ID> as key
     private final transient Map<String, InboundMessageMapping> messageId2mapping = new TreeMap<>();
 
     private transient IDataProcessor dataProcessor;
+
+    // TODO: add a map storing the last sent command for each OutboundMessageMapping
 
     private final transient Map<String, List<CommandTracker>> progressMessageId2commandTracker = new TreeMap<>();
     private final transient List<CommandTracker> activeCommandTrackers = new CopyOnWriteArrayList<>();

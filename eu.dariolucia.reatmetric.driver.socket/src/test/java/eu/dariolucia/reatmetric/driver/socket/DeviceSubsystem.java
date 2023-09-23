@@ -119,6 +119,10 @@ public class DeviceSubsystem {
         this.executor.shutdown();
     }
 
+    public ValueTypeEnum getTypeOf(String key) {
+        return id2type.get(key);
+    }
+
     public interface IHandler {
         boolean handle(String command, String[] args, BiFunction<String, Object, Boolean> parameterSetter);
     }
