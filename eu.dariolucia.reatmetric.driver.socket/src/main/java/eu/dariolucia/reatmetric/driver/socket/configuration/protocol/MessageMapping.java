@@ -20,9 +20,15 @@ package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.MessageDefinition;
 import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlID;
 import jakarta.xml.bind.annotation.XmlIDREF;
 
 public class MessageMapping {
+
+    @XmlID
+    @XmlAttribute(name = "id", required = true)
+    private String id;
+
     @XmlIDREF
     @XmlAttribute(name = "message", required = true)
     private MessageDefinition<?> messageDefinition;
@@ -46,12 +52,20 @@ public class MessageMapping {
         this.messageDefinition = messageDefinition;
     }
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
     /* ***************************************************************
      * Internal operations
      * ***************************************************************/
 
-    private transient AbstractConnectionConfiguration connectionConfiguration;
-    private transient int entityOffset;
+    private AbstractConnectionConfiguration connectionConfiguration;
+    private int entityOffset;
 
     public void initialise(AbstractConnectionConfiguration defaultConnection, int entityOffset) {
         this.entityOffset = entityOffset;

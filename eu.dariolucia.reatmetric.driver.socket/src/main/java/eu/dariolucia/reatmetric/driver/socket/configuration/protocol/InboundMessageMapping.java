@@ -30,7 +30,13 @@ import java.util.*;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class InboundMessageMapping extends MessageMapping {
 
-    // TODO: add a way (OutboundMessageLink) to specify that the mapping is linked to an outboundmessagemapping,
+    @XmlElement(name = "inject")
+    private List<ParameterMapping> parameterMappings = new LinkedList<>();
+
+    @XmlElement(name = "raise")
+    private List<EventMapping> eventMappings = new LinkedList<>();
+
+    //  The attribute "command" is a way (OutboundMessageLink) to specify that the mapping is linked to an OutboundMessageMapping,
     //  with optionally a specific argument matching a value expressed here.
     //  When such message is sent and a message is received, this mapping is effectively used only if it is linked
     //  to that command.
@@ -46,11 +52,8 @@ public class InboundMessageMapping extends MessageMapping {
     // to the same command, with X = B.
     // When "P1,P2,P3" is received
 
-    @XmlElement(name = "inject")
-    private List<ParameterMapping> parameterMappings;
-
-    @XmlElement(name = "raise")
-    private List<EventMapping> eventMappings;
+    @XmlElement(name = "command")
+    private OutboundMessageMappingReference command = null;
 
     public List<ParameterMapping> getParameterMappings() {
         return parameterMappings;
@@ -68,11 +71,19 @@ public class InboundMessageMapping extends MessageMapping {
         this.eventMappings = eventMappings;
     }
 
+    public OutboundMessageMappingReference getCommand() {
+        return command;
+    }
+
+    public void setCommand(OutboundMessageMappingReference command) {
+        this.command = command;
+    }
+
     /* ***************************************************************
      * Internal operations
      * ***************************************************************/
 
-    private transient Map<String, ParameterMapping> id2parameterMapping = new TreeMap<>();
+    private Map<String, ParameterMapping> id2parameterMapping = new TreeMap<>();
 
     @Override
     public void initialise(AbstractConnectionConfiguration defaultConnection, int entityOffset) {

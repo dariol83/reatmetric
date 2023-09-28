@@ -41,6 +41,7 @@ import jakarta.xml.bind.annotation.*;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -124,27 +125,24 @@ public class RouteConfiguration {
      * Internal operations
      * ***************************************************************/
 
-    private transient AbstractConnectionConfiguration parentConnection;
+    private AbstractConnectionConfiguration parentConnection;
 
-    // TODO: change below to List<InboundMessageMapping> to support link to previously sent commands
     // <MessageDefinition ID>_<secondary ID> as key
-    private final transient Map<String, InboundMessageMapping> messageId2mapping = new TreeMap<>();
+    private final Map<String, List<InboundMessageMapping>> messageId2mapping = new TreeMap<>();
 
-    private transient IDataProcessor dataProcessor;
-
-    // TODO: add a map storing the last sent command for each OutboundMessageMapping
-
-    private final transient Map<String, List<CommandTracker>> progressMessageId2commandTracker = new TreeMap<>();
-    private final transient List<CommandTracker> activeCommandTrackers = new CopyOnWriteArrayList<>();
-    private final transient AtomicInteger connectionUsage = new AtomicInteger(0);
-    private final transient Semaphore connectionSequencer = new Semaphore(1);
-    private final transient List<TimerTask> periodCommandTasks = new CopyOnWriteArrayList<>();
+    private IDataProcessor dataProcessor;
+    private final Map<OutboundMessageMapping, CommandTracker> outboundMessage2lastCommand = new ConcurrentHashMap<>();
+    private final Map<String, List<CommandTracker>> progressMessageId2commandTracker = new TreeMap<>();
+    private final List<CommandTracker> activeCommandTrackers = new CopyOnWriteArrayList<>();
+    private final AtomicInteger connectionUsage = new AtomicInteger(0);
+    private final Semaphore connectionSequencer = new Semaphore(1);
+    private final List<TimerTask> periodCommandTasks = new CopyOnWriteArrayList<>();
 
     public void initialise(AbstractConnectionConfiguration parentConnection) {
         this.parentConnection = parentConnection;
         for(InboundMessageMapping m : getInboundMessages()) {
             m.initialise(parentConnection, getEntityOffset());
-            messageId2mapping.put(m.getMessageDefinition().getId() + "_" + m.getSecondaryId(), m);
+            messageId2mapping.computeIfAbsent(m.getMessageDefinition().getId() + "_" + m.getSecondaryId(), k -> new LinkedList<>()).add(m);
         }
         for(OutboundMessageMapping m : getOutboundMessages()) {
             m.initialise(parentConnection, getEntityOffset());
@@ -163,16 +161,38 @@ public class RouteConfiguration {
         }
         String key = messageId + "_" + secondaryId;
         // If there is an InboundMessageMapping for the message
-        InboundMessageMapping inboundMessageMapping = messageId2mapping.get(key);
-        if(inboundMessageMapping != null) {
-            List<ParameterSample> parameterSamples = inboundMessageMapping.mapParameters(decodedMessage, getName(), time);
-            List<EventOccurrence> eventOccurrences = inboundMessageMapping.mapEvents(decodedMessage, getName(), time);
-            // Inject
-            dataProcessor.forwardParameters(parameterSamples);
-            dataProcessor.forwardEvents(eventOccurrences);
+        List<InboundMessageMapping> inboundMessageMappingsForMessage = messageId2mapping.get(key);
+        if(inboundMessageMappingsForMessage != null) {
+            for(InboundMessageMapping imm : inboundMessageMappingsForMessage) {
+                if(imm.getCommand() != null) {
+                    OutboundMessageMapping omm = imm.getCommand().getOutboundMapping();
+                    // Get the last sent command, if any, linked to this
+                    CommandTracker lastCommand = outboundMessage2lastCommand.get(omm);
+                    // At this stage, if the command is there and no specific argument is specified or the argument matches...
+                    if(imm.getCommand().match(lastCommand)) {
+                        // ... inject the message according to this definition
+                        performInjection(time, decodedMessage, imm);
+                    }
+                } else {
+                    // No link to command: mapping is OK, map parameters and events, and inject everything
+                    performInjection(time, decodedMessage, imm);
+                }
+            }
         }
         // No mapping? Message ignored for injection, check for verification
         internalVerifyAcknowledgement(time, messageId, secondaryId, decodedMessage, rawMessage, getName());
+    }
+
+    private void performInjection(Instant time, Map<String, Object> decodedMessage, InboundMessageMapping imm) {
+        List<ParameterSample> parameterSamples = imm.mapParameters(decodedMessage, getName(), time);
+        List<EventOccurrence> eventOccurrences = imm.mapEvents(decodedMessage, getName(), time);
+        injectAndRaise(parameterSamples, eventOccurrences);
+    }
+
+    private void injectAndRaise(List<ParameterSample> parameterSamples, List<EventOccurrence> eventOccurrences) {
+        // Inject
+        dataProcessor.forwardParameters(parameterSamples);
+        dataProcessor.forwardEvents(eventOccurrences);
     }
 
     private void internalVerifyAcknowledgement(Instant time, String messageId, String secondaryId, Map<String, Object> decodedMessage, byte[] rawMessage, String route) {
@@ -224,8 +244,7 @@ public class RouteConfiguration {
                         break;
                     }
                 } catch (ReatmetricException e) {
-                    LOG.log(Level.SEVERE, "Error detected when identifying binary message with definition " +
-                            def.getId() + " on route "  + getName() + ": " + e.getMessage(), e);
+                    LOG.log(Level.SEVERE, String.format("Error detected when identifying binary message with definition %s on route %s: %s", def.getId(), getName(), e.getMessage()), e);
                 }
             }
         }
@@ -236,11 +255,12 @@ public class RouteConfiguration {
                 Map<String, Object> decodedMessage = definition.decode(secondaryIdentifier, message);
                 internalMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, message);
             } catch (ReatmetricException e) {
-                LOG.log(Level.SEVERE, "Error detected when identifying binary message " + secondaryIdentifier +
-                        " with definition " + definition.getId() + " on route " + getName() + ": " + e.getMessage(), e);
+                LOG.log(Level.SEVERE, String.format("Error detected when identifying binary message %s with definition %s on route %s: %s", secondaryIdentifier, definition.getId(), getName(), e.getMessage()), e);
             }
         } else {
-            LOG.log(Level.WARNING, "Binary message not identified on route " + getName());
+            if(LOG.isLoggable(Level.WARNING)) {
+                LOG.log(Level.WARNING, String.format("Binary message not identified on route %s", getName()));
+            }
         }
     }
 
@@ -384,9 +404,12 @@ public class RouteConfiguration {
             }
             // Write command to connector
             writeToConnection(encodedCommand.getFirst());
-            // If all nominal, announce the opening of the next stage
+            // If all nominal...
+            // ... register the command as last command sent for the given outbound message mapping
+            outboundMessage2lastCommand.put(mapping, tracker);
+            // ... announce the opening of the next stage
             ActivityOccurrenceState nextStage = ActivityOccurrenceState.VERIFICATION;
-            // Check if acceptance/execution stages are defined. If not, move to verification
+            // ... check if acceptance/execution stages are defined. If not, move to verification
             if(mapping.getVerification() != null && !mapping.getVerification().getExecution().isEmpty()) {
                 nextStage = ActivityOccurrenceState.EXECUTION;
             }
@@ -451,7 +474,7 @@ public class RouteConfiguration {
             Set<String> progressMessagesId = tracker.getProgressMessageIds();
             // Remove trackers
             for (String s : progressMessagesId) {
-                List<CommandTracker> trackers = this.progressMessageId2commandTracker.computeIfAbsent(s, (a) -> new LinkedList<>());
+                List<CommandTracker> trackers = this.progressMessageId2commandTracker.computeIfAbsent(s, a -> new LinkedList<>());
                 trackers.remove(tracker);
             }
             // Stop timeout
@@ -481,7 +504,7 @@ public class RouteConfiguration {
             // Get the list of messages potentially affecting the verification of this command and register this tracker there
             Set<String> progressMessagesId = tracker.getProgressMessageIds();
             for(String s : progressMessagesId) {
-                List<CommandTracker> trackers = this.progressMessageId2commandTracker.computeIfAbsent(s, (a) -> new LinkedList<>());
+                List<CommandTracker> trackers = this.progressMessageId2commandTracker.computeIfAbsent(s, a -> new LinkedList<>());
                 trackers.add(tracker);
             }
             // Start the timer for timeout
