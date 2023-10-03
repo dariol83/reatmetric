@@ -1,0 +1,168 @@
+<!--
+  ~ Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~           http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+
+<ns1:socket xmlns:ns1="http://dariolucia.eu/reatmetric/driver/socket"
+    name="Single ASCII"
+    description="Driver configuration for single ASCII TCP connection">
+    <connections>
+        <tcp name="Device TCP Connection" source="Device 1" protocol="ASCII" init="CONNECTOR"
+             host="127.0.0.1" remote-port="34212" local-port="0" ascii-encoding="UTF-8">
+            <asciiDelimiterDecoding><delimiter>}</delimiter></asciiDelimiterDecoding>
+            <route name="Device 1 Route" entity-offset="0" command-lock="true">
+                <activity-types>
+                    <type>DEV1-ASCII-CMD</type>
+                </activity-types>
+
+                <!-- Common -->
+                <inbound id="ACK_MP" message="ACK" />
+                <inbound id="NOK_MP" message="NOK" />
+                <!-- First Subsystem -->
+                <inbound id="TLM_SUB1_MP" message="TLM">
+                    <inject name="status_val" entity="10" />
+                    <inject name="freq_val" entity="11" />
+                    <inject name="temp_val" entity="12" />
+                    <inject name="offset_val" entity="13" />
+                    <inject name="mode_val" entity="14" />
+                    <inject name="sweep_val" entity="15" />
+                    <command outbound-mapping="POLL_SUB1_MP" argument="device_subsystem" value="SUB1" type="CHARACTER_STRING" />
+                </inbound>
+                <!-- Second Subsystem -->
+                <inbound id="TLM_SUB2_MP" message="TLM">
+                    <inject name="status_val" entity="20" />
+                    <inject name="freq_val" entity="21" />
+                    <inject name="temp_val" entity="22" />
+                    <inject name="offset_val" entity="23" />
+                    <inject name="mode_val" entity="24" />
+                    <inject name="sweep_val" entity="25" />
+                    <command outbound-mapping="POLL_SUB2_MP" argument="device_subsystem" value="SUB2" type="CHARACTER_STRING" />
+                </inbound>
+
+                <!-- Common -->
+                <outbound id="SET_MP" message="SET" type="ACTIVITY_DRIVEN" entity="1">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="parameter" field="parameter" />
+                    <argument name="new_value" field="new_value" />
+                    <verification timeout="10">
+                        <execution message="ACK" value-field="device_subsystem" reference-argument="device_subsystem" result="OK" />
+                        <execution message="NOK" result="FAIL" />
+                    </verification>
+                </outbound>
+                <!-- First Subsystem -->
+                <outbound id="POLL_SUB1_MP" message="POLL_SUB1" type="PERIODIC" period="1" />
+                <outbound id="CMD_SUB1_RST_MP" message="CMD" type="ACTIVITY_DRIVEN" entity="16">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="command_code" field="command_code" />
+                    <argument name="arg1" field="arg1" />
+                    <argument name="arg2" field="arg2" />
+                    <verification timeout="10">
+                        <execution message="ACK" value-field="device_subsystem" reference-argument="device_subsystem" result="OK" />
+                        <execution message="NOK" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB1_SWP_MP" message="CMD" type="ACTIVITY_DRIVEN" entity="17">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="command_code" field="command_code" />
+                    <argument name="arg1" field="arg1" />
+                    <argument name="arg2" field="arg2" />
+                    <verification timeout="10">
+                        <execution message="ACK" value-field="device_subsystem" reference-argument="device_subsystem" result="OK" />
+                        <execution message="NOK" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB1_RBT_MP" message="CMD" type="ACTIVITY_DRIVEN" entity="18">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="command_code" field="command_code" />
+                    <argument name="arg1" field="arg1" />
+                    <argument name="arg2" field="arg2" />
+                    <verification timeout="10">
+                        <execution message="ACK" value-field="device_subsystem" reference-argument="device_subsystem" result="OK" />
+                        <execution message="NOK" result="FAIL" />
+                    </verification>
+                </outbound>
+                <!-- Second Subsystem -->
+                <outbound id="POLL_SUB2_MP" message="POLL_SUB2" type="PERIODIC" period="1" />
+                <outbound id="CMD_SUB2_RST_MP" message="CMD" type="ACTIVITY_DRIVEN" entity="26">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="command_code" field="command_code" />
+                    <argument name="arg1" field="arg1" />
+                    <argument name="arg2" field="arg2" />
+                    <verification timeout="10">
+                        <execution message="ACK" value-field="device_subsystem" reference-argument="device_subsystem" result="OK" />
+                        <execution message="NOK" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB2_SWP_MP" message="CMD" type="ACTIVITY_DRIVEN" entity="27">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="command_code" field="command_code" />
+                    <argument name="arg1" field="arg1" />
+                    <argument name="arg2" field="arg2" />
+                    <verification timeout="10">
+                        <execution message="ACK" value-field="device_subsystem" reference-argument="device_subsystem" result="OK" />
+                        <execution message="NOK" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB2_RBT_MP" message="CMD" type="ACTIVITY_DRIVEN" entity="28">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="command_code" field="command_code" />
+                    <argument name="arg1" field="arg1" />
+                    <argument name="arg2" field="arg2" />
+                    <verification timeout="10">
+                        <execution message="ACK" value-field="device_subsystem" reference-argument="device_subsystem" result="OK" />
+                        <execution message="NOK" result="FAIL" />
+                    </verification>
+                </outbound>
+            </route>
+        </tcp>
+    </connections>
+    <messages>
+        <ascii id="POLL_SUB1">
+            <template>{ST,SUB1}</template>
+        </ascii>
+        <ascii id="POLL_SUB2">
+            <template>{ST,SUB2}</template>
+        </ascii>
+        <ascii id="CMD">
+            <template>{CMD,${{device_subsystem}},${{command_code}},${{arg1}},${{arg2}}}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" />
+            <symbol name="command_code" type="CHARACTER_STRING" />
+            <symbol name="arg1" type="CHARACTER_STRING" />
+            <symbol name="arg2" type="CHARACTER_STRING" />
+        </ascii>
+        <ascii id="SET">
+            <template>{SET,${{device_subsystem}},${{parameter}},${{new_value}}}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" />
+            <symbol name="parameter" type="CHARACTER_STRING" />
+            <symbol name="new_value" type="CHARACTER_STRING" />
+        </ascii>
+        <ascii id="TLM">
+            <template>{TLM,${{status_val}},${{freq_val}},${{temp_val}},${{offset_val}},${{mode_val}},${{sweep_val}}}</template>
+            <symbol name="status_val" type="ENUMERATED" />
+            <symbol name="freq_val" type="UNSIGNED_INTEGER" />
+            <symbol name="temp_val" type="REAL" />
+            <symbol name="offset_val" type="SIGNED_INTEGER" />
+            <symbol name="mode_val" type="ENUMERATED" />
+            <symbol name="sweep_val" type="ENUMERATED" />
+        </ascii>
+        <ascii id="ACK">
+            <template>{ACK,${{device_subsystem}}}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" />
+        </ascii>
+        <ascii id="NOK">
+            <template>{NOK}</template>
+        </ascii>
+    </messages>
+</ns1:socket>

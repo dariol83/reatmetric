@@ -54,10 +54,10 @@ public abstract class AbstractConnectionConfiguration {
     private String host;
 
     // Special value: 0 to indicate auto-assignment
-    @XmlAttribute(required = true)
+    @XmlAttribute(name="local-port", required = true)
     private int localPort;
 
-    @XmlAttribute(required = true)
+    @XmlAttribute(name="remote-port", required = true)
     private int remotePort;
 
     @XmlAttribute(name = "timeout")

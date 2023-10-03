@@ -60,7 +60,7 @@ public class RouteConfiguration {
     private int entityOffset = 0;
 
     // If this is true, it means that the execution of this command must complete, before sending the next one
-    @XmlAttribute
+    @XmlAttribute(name = "command-lock")
     private boolean commandLock = true;
 
     @XmlElementWrapper(name = "activity-types")

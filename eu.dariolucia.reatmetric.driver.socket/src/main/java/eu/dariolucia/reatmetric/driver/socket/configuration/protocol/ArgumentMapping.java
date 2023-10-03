@@ -32,6 +32,7 @@ public class ArgumentMapping {
     @XmlAttribute(required = true)
     private String field;
 
+    // TODO: add a formatting string in case the item must be stringified
     public String getName() {
         return name;
     }
