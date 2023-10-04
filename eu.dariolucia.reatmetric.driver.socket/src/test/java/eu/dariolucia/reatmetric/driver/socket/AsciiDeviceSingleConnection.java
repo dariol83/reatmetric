@@ -210,7 +210,7 @@ public class AsciiDeviceSingleConnection {
         });
         ds.addHandler("RBT", (command, args1, parameterSetter) -> {
             int delay = Integer.parseInt(args1[0]);
-            int running = Integer.parseInt(args1[0]);
+            int running = Integer.parseInt(args1[1]);
             try {
                 Thread.sleep(delay);
             } catch (InterruptedException e) {

@@ -85,6 +85,8 @@ public class SymbolTypeFormat {
             } else {
                 return Long.parseLong(valueString, radix.getRadix());
             }
+        } else if(type == ValueTypeEnum.DERIVED) {
+            return ValueUtil.tryParse(valueString);
         } else {
             return ValueUtil.parse(type, valueString);
         }
@@ -122,5 +124,4 @@ public class SymbolTypeFormat {
             return ValueUtil.toString(type, value);
         }
     }
-
 }

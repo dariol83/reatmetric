@@ -36,9 +36,15 @@ public class ValueUtil {
     }
 
     public static String toString(ValueTypeEnum type, Object valueObject) {
-        if(type != ValueTypeEnum.EXTENSION || valueObject == null) {
-            return valueObject == null ? null : type.toString(valueObject);
-        } else {
+        if(valueObject == null) {
+            return null;
+        }
+        if(type == ValueTypeEnum.DERIVED) {
+            // Try to derive type from valueObject class
+            type = ValueTypeEnum.fromClass(valueObject.getClass());
+        }
+        // And now go ahead
+        if(type == ValueTypeEnum.EXTENSION) {
             IValueExtensionHandler handler = CLASS2HANDLER.get(valueObject.getClass());
             if(handler == null) {
                 // Try not to fail: use toString()
@@ -46,6 +52,8 @@ public class ValueUtil {
             } else {
                 return handler.toString(valueObject);
             }
+        } else {
+            return type.toString(valueObject);
         }
     }
 
@@ -141,6 +149,8 @@ public class ValueUtil {
     public static Object parse(ValueTypeEnum type, String valueAsString) {
         if(type == ValueTypeEnum.EXTENSION) {
             throw new IllegalArgumentException("Cannot parse an extension using this method, use parseExtension(Class<?>,String)");
+        } else if(type == ValueTypeEnum.DERIVED) {
+            throw new IllegalArgumentException("Cannot parse a derived value using this method");
         } else if(valueAsString == null) {
             return null;
         } else {
@@ -162,6 +172,7 @@ public class ValueUtil {
     }
 
     public static Object deserialize(byte[] dump) {
+        // DERIVED cannot be returned/used
         // Type
         ValueTypeEnum type = ValueTypeEnum.fromCode(dump[0] & 0x7F);
         boolean nullValue = (dump[0] & 0x80) != 0;
@@ -238,6 +249,7 @@ public class ValueUtil {
     }
 
     public static byte[] serialize(Object valueObject) {
+        // DERIVED cannot be returned/used
         if(valueObject == null) {
             return new byte[]{(byte) (ValueTypeEnum.EXTENSION.getCode() | 0x80)}; // Not really important
         }
@@ -473,6 +485,9 @@ public class ValueUtil {
         if(type == ValueTypeEnum.EXTENSION) {
             return result;
         }
+        if(type == ValueTypeEnum.DERIVED) {
+            return result;
+        }
         if(result.getClass().equals(type.getAssignedClass())) {
             return result;
         }
@@ -538,8 +553,8 @@ public class ValueUtil {
             // Absence of value is considered a type match
             return true;
         }
-        if(type == ValueTypeEnum.EXTENSION) {
-            // Type EXTENSION cannot be used to evaluate type match: the method returns true, because it is in the hand of the person using the extension to check properly
+        if(type == ValueTypeEnum.EXTENSION || type == ValueTypeEnum.DERIVED) {
+            // Type EXTENSION and DERIVED cannot be used to evaluate type match: the method returns true, because it is in the hand of the person using the extension to check properly
             return true;
         } else {
             return type.getAssignedClass().isAssignableFrom(value.getClass());

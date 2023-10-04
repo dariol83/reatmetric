@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.api.value;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -72,12 +73,17 @@ public enum ValueTypeEnum {
     /**
      * Extension, mapped to Java Object class
      */
-    EXTENSION(12, Object.class, null, null);
+    EXTENSION(12, Object.class, null, null),
+    /**
+     * Derived, only used for activity arguments and in those situation when the value type should be derived from the
+     * actual object
+     */
+    DERIVED(13, Object.class, null, null);
 
-    private int code;
-    private Class<?> assignedClass;
-    private Function<?, String> toString;
-    private Function<String, ?> toObject;
+    private final int code;
+    private final Class<?> assignedClass;
+    private final Function<?, String> toString;
+    private final Function<String, ?> toObject;
 
     <T> ValueTypeEnum(int code, Class<T> assignedClass, Function<T, String> toString, Function<String, T> toObject) {
         this.code = code;
@@ -106,16 +112,16 @@ public enum ValueTypeEnum {
 
     @SuppressWarnings("unchecked")
     public <T> T parse(String s) {
-        if (this == EXTENSION) {
-            throw new IllegalStateException("Extension values cannot be parsed by this class");
+        if (this == EXTENSION || this == DERIVED) {
+            throw new IllegalStateException("Extension and derived values cannot be parsed by this class");
         }
         return (T) toObject.apply(s);
     }
 
     @SuppressWarnings("unchecked")
     public String toString(Object object) {
-        if (this == EXTENSION) {
-            throw new IllegalStateException("Extension values cannot be formatted as string by this class");
+        if (this == EXTENSION || this == DERIVED) {
+            throw new IllegalStateException("Extension and derived values cannot be formatted as string by this class");
         }
         return ((Function<Object, String>) toString).apply(object);
     }

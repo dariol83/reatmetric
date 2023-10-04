@@ -78,7 +78,7 @@
         <activity id="#1" location="COMMANDS.SET_PARAMETER" description="Set a parameter to a specific value" type="DEV1-ASCII-CMD">
             <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
             <argument name="parameter" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
-            <argument name="new_value" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
+            <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
         </activity>
 
         <activity id="#16" location="SUB1.RESET" description="Reset the subsystem" type="DEV1-ASCII-CMD">

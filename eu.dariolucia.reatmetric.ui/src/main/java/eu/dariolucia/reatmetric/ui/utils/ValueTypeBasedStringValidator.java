@@ -44,6 +44,10 @@ public class ValueTypeBasedStringValidator implements Predicate<String> {
                     (type == ValueTypeEnum.ENUMERATED || type == ValueTypeEnum.UNSIGNED_INTEGER || type == ValueTypeEnum.SIGNED_INTEGER || type == ValueTypeEnum.REAL || type == ValueTypeEnum.ABSOLUTE_TIME || type == ValueTypeEnum.RELATIVE_TIME)) {
                 return false;
             }
+            if(type == ValueTypeEnum.DERIVED) {
+                // DERIVED values are always OK
+                return true;
+            }
             try {
                 ValueUtil.parse(type, o);
                 return true;
