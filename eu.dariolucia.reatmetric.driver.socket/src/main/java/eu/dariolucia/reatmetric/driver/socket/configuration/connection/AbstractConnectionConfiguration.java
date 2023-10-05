@@ -191,11 +191,11 @@ public abstract class AbstractConnectionConfiguration {
      * Channel operations
      * ***************************************************************/
 
-    private final AtomicBoolean active = new AtomicBoolean(false);
-    private volatile boolean running;
-    private volatile Thread readingThread;
+    private transient final AtomicBoolean active = new AtomicBoolean(false);
+    private transient volatile boolean running;
+    private transient volatile Thread readingThread;
 
-    private volatile IConnectionStatusListener listener;
+    private transient volatile IConnectionStatusListener listener;
 
     public void setListener(IConnectionStatusListener listener) {
         this.listener = listener;

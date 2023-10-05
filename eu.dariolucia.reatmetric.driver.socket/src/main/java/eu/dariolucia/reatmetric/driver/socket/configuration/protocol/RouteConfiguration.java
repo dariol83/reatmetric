@@ -125,18 +125,18 @@ public class RouteConfiguration {
      * Internal operations
      * ***************************************************************/
 
-    private AbstractConnectionConfiguration parentConnection;
+    private transient AbstractConnectionConfiguration parentConnection;
 
     // <MessageDefinition ID>_<secondary ID> as key
-    private final Map<String, List<InboundMessageMapping>> messageId2mapping = new TreeMap<>();
+    private transient final Map<String, List<InboundMessageMapping>> messageId2mapping = new TreeMap<>();
 
-    private IDataProcessor dataProcessor;
-    private final Map<OutboundMessageMapping, CommandTracker> outboundMessage2lastCommand = new ConcurrentHashMap<>();
-    private final Map<String, List<CommandTracker>> progressMessageId2commandTracker = new TreeMap<>();
-    private final List<CommandTracker> activeCommandTrackers = new CopyOnWriteArrayList<>();
-    private final AtomicInteger connectionUsage = new AtomicInteger(0);
-    private final Semaphore connectionSequencer = new Semaphore(1);
-    private final List<TimerTask> periodCommandTasks = new CopyOnWriteArrayList<>();
+    private transient IDataProcessor dataProcessor;
+    private transient final Map<OutboundMessageMapping, CommandTracker> outboundMessage2lastCommand = new ConcurrentHashMap<>();
+    private transient final Map<String, List<CommandTracker>> progressMessageId2commandTracker = new TreeMap<>();
+    private transient final List<CommandTracker> activeCommandTrackers = new CopyOnWriteArrayList<>();
+    private transient final AtomicInteger connectionUsage = new AtomicInteger(0);
+    private transient final Semaphore connectionSequencer = new Semaphore(1);
+    private transient final List<TimerTask> periodCommandTasks = new CopyOnWriteArrayList<>();
 
     public void initialise(AbstractConnectionConfiguration parentConnection) {
         this.parentConnection = parentConnection;
@@ -255,7 +255,7 @@ public class RouteConfiguration {
                 Map<String, Object> decodedMessage = definition.decode(secondaryIdentifier, message);
                 internalMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, message);
             } catch (ReatmetricException e) {
-                LOG.log(Level.SEVERE, String.format("Error detected when identifying binary message %s with definition %s on route %s: %s", secondaryIdentifier, definition.getId(), getName(), e.getMessage()), e);
+                LOG.log(Level.SEVERE, String.format("Error detected when decoding binary message %s with definition %s on route %s: %s", secondaryIdentifier, definition.getId(), getName(), e.getMessage()), e);
             }
         } else {
             if(LOG.isLoggable(Level.WARNING)) {
@@ -289,8 +289,12 @@ public class RouteConfiguration {
         //
         if(identifier != null) {
             // Decode the message and forward everything to onMessageReceived
-            Map<String, Object> decodedMessage = definition.decode(null, message);
-            internalMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, rawMessage);
+            try {
+                Map<String, Object> decodedMessage = definition.decode(secondaryIdentifier, message);
+                internalMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, rawMessage);
+            } catch (ReatmetricException e) {
+                LOG.log(Level.SEVERE, String.format("Error detected when decoding ASCII message '%s' with definition %s on route %s: %s", message, definition.getId(), getName(), e.getMessage()), e);
+            }
         } else {
             LOG.log(Level.WARNING, "ASCII message not identified on route " + getName());
         }

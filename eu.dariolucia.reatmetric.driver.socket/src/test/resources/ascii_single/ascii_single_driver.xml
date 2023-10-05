@@ -124,44 +124,43 @@
             <template>{ST,SUB2}</template>
         </ascii>
         <ascii id="CMD_SWP">
-            <template>{CMD,${{device_subsystem}},SWP,${{times}},}</template>
-            <symbol name="device_subsystem" type="CHARACTER_STRING" />
+            <template>{CMD,${{device_subsystem}}$,SWP,${{times}}$,}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
             <symbol name="times" type="UNSIGNED_INTEGER" />
         </ascii>
         <ascii id="CMD_RST">
-            <template>{CMD,${{device_subsystem}},RST,,}</template>
-            <symbol name="device_subsystem" type="CHARACTER_STRING" />
+            <template>{CMD,${{device_subsystem}}$,RST,,}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
         </ascii>
         <ascii id="CMD_RBT">
-            <template>{CMD,${{device_subsystem}},RBT,${{delay}},${{running}}}</template>
-            <symbol name="device_subsystem" type="CHARACTER_STRING" />
+            <template>{CMD,${{device_subsystem}}$,RBT,${{delay}}$,${{running}}$}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
             <symbol name="delay" type="UNSIGNED_INTEGER" />
             <symbol name="running" type="UNSIGNED_INTEGER" />
         </ascii>
         <ascii id="SET">
-            <template>{SET,${{device_subsystem}},${{parameter}},${{new_value}}}</template>
-            <symbol name="device_subsystem" type="CHARACTER_STRING" />
+            <template>{SET,${{device_subsystem}}$,${{parameter}}$,${{new_value}}$}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
             <symbol name="parameter" type="CHARACTER_STRING" />
             <symbol name="new_value" type="DERIVED">
-                <!-- TODO: -->
-                <type id="ENUMERATION" encode-format="%d" />
+                <type id="ENUMERATED" encode-format="%d" />
                 <type id="UNSIGNED_INTEGER" encode-format="%d" />
                 <type id="SIGNED_INTEGER" encode-format="%d" />
                 <type id="REAL" encode-format="%.1f" />
             </symbol>
         </ascii>
         <ascii id="TLM">
-            <template>{TLM,${{status_val}},${{freq_val}},${{temp_val}},${{offset_val}},${{mode_val}},${{sweep_val}}}</template>
-            <symbol name="status_val" type="ENUMERATED" />
-            <symbol name="freq_val" type="UNSIGNED_INTEGER" />
-            <symbol name="temp_val" type="REAL" />
-            <symbol name="offset_val" type="SIGNED_INTEGER" />
-            <symbol name="mode_val" type="ENUMERATED" />
-            <symbol name="sweep_val" type="ENUMERATED" />
+            <template>{TLM,${{status_val}}$,${{freq_val}}$,${{temp_val}}$,${{offset_val}}$,${{mode_val}}$,${{sweep_val}}$}</template>
+            <symbol name="status_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+            <symbol name="freq_val" type="UNSIGNED_INTEGER" encode-null="" decode-empty-null="true" />
+            <symbol name="temp_val" type="REAL" encode-null="" decode-empty-null="true" />
+            <symbol name="offset_val" type="SIGNED_INTEGER" encode-null="" decode-empty-null="true" />
+            <symbol name="mode_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+            <symbol name="sweep_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
         </ascii>
         <ascii id="ACK">
-            <template>{ACK,${{device_subsystem}}}</template>
-            <symbol name="device_subsystem" type="CHARACTER_STRING" />
+            <template>{ACK,${{device_subsystem}}$}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
         </ascii>
         <ascii id="NOK">
             <template>{NOK}</template>

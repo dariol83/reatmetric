@@ -67,9 +67,9 @@ public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
      * Internal operations
      * ***************************************************************/
 
-    private IPacketIdentifier identifier;
-    private IPacketEncoder encoder;
-    private IPacketDecoder decoder;
+    private transient IPacketIdentifier identifier;
+    private transient IPacketEncoder encoder;
+    private transient IPacketDecoder decoder;
 
     @Override
     public void initialise() throws ReatmetricException {
@@ -84,9 +84,9 @@ public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
     }
 
     @Override
-    public Map<String, Object> decode(String id, byte[] messageToProcess) throws ReatmetricException {
+    public Map<String, Object> decode(String secondaryId, byte[] messageToProcess) throws ReatmetricException {
         try {
-            DecodingResult result = decoder.decode(id, messageToProcess);
+            DecodingResult result = decoder.decode(secondaryId, messageToProcess);
             return result.getDecodedItemsAsMap();
         } catch (DecodingException e) {
             throw new ReatmetricException(e);
@@ -105,9 +105,9 @@ public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
     }
 
     @Override
-    public byte[] encode(String id, Map<String, Object> data) throws ReatmetricException {
+    public byte[] encode(String secondaryId, Map<String, Object> data) throws ReatmetricException {
         try {
-            return encoder.encode(id, new PathLocationBasedResolver(data));
+            return encoder.encode(secondaryId, new PathLocationBasedResolver(data));
         } catch (EncodingException e) {
             throw new ReatmetricException(e);
         }

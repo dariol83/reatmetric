@@ -19,10 +19,9 @@ package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.MessageDefinition;
-import jakarta.xml.bind.annotation.XmlAttribute;
-import jakarta.xml.bind.annotation.XmlID;
-import jakarta.xml.bind.annotation.XmlIDREF;
+import jakarta.xml.bind.annotation.*;
 
+@XmlAccessorType(XmlAccessType.FIELD)
 public class MessageMapping {
 
     @XmlID
@@ -43,7 +42,6 @@ public class MessageMapping {
     public void setSecondaryId(String secondaryId) {
         this.secondaryId = secondaryId;
     }
-
     public MessageDefinition<?> getMessageDefinition() {
         return messageDefinition;
     }

@@ -29,6 +29,7 @@ import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlElement;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -53,10 +54,10 @@ public class OutboundMessageMapping extends MessageMapping {
     private int postSentDelay = 0;
 
     @XmlElement(name = "argument")
-    private List<ArgumentMapping> argumentMappings;
+    private List<ArgumentMapping> argumentMappings = new LinkedList<>();
 
     @XmlElement(name = "auto-increment")
-    private List<AutoIncrementField> autoIncrementFields;
+    private List<AutoIncrementField> autoIncrementFields = new LinkedList<>();
 
     @XmlElement(name = "verification")
     private VerificationConfiguration verification = null;
@@ -121,7 +122,7 @@ public class OutboundMessageMapping extends MessageMapping {
      * Internal operations
      * ***************************************************************/
 
-    private final Map<String, ArgumentMapping> id2argumentMapping = new TreeMap<>();
+    private transient final Map<String, ArgumentMapping> id2argumentMapping = new TreeMap<>();
 
     @Override
     public void initialise(AbstractConnectionConfiguration defaultConnection, int entityOffset) {

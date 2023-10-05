@@ -17,11 +17,16 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration.message;
 
+import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
+
+import java.util.LinkedList;
+import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SymbolTypeFormat {
@@ -35,8 +40,21 @@ public class SymbolTypeFormat {
     @XmlAttribute
     private RadixEnum radix = RadixEnum.DEC;
 
+    /**
+     * In case of value types that are not DERIVED, it is possible to define a specific
+     * encoding format.
+     */
     @XmlAttribute(name = "encode-format")
     private String format = null;
+
+    @XmlAttribute(name = "encode-null")
+    private String encodeNull = null;
+
+    @XmlAttribute(name = "decode-empty-null")
+    private boolean decodeEmpty = false;
+
+    @XmlElement(name = "type")
+    private List<EncodeTypeFormat> encodeTypeFormatList = new LinkedList<>();
 
     public String getName() {
         return name;
@@ -70,7 +88,38 @@ public class SymbolTypeFormat {
         this.format = format;
     }
 
+    public List<EncodeTypeFormat> getEncodeTypeFormatList() {
+        return encodeTypeFormatList;
+    }
+
+    public void setEncodeTypeFormatList(List<EncodeTypeFormat> encodeTypeFormatList) {
+        this.encodeTypeFormatList = encodeTypeFormatList;
+    }
+
+    public String getEncodeNull() {
+        return encodeNull;
+    }
+
+    public void setEncodeNull(String encodeNull) {
+        this.encodeNull = encodeNull;
+    }
+
+    public boolean isDecodeEmpty() {
+        return decodeEmpty;
+    }
+
+    public void setDecodeEmpty(boolean decodeEmpty) {
+        this.decodeEmpty = decodeEmpty;
+    }
+
+    /* ***************************************************************
+     * Internal operations
+     * ***************************************************************/
+
     public Object decode(String valueString) {
+        if(valueString.isEmpty() && isDecodeEmpty()) {
+            return null;
+        }
         if(type == ValueTypeEnum.ENUMERATED) {
             // Check the radix
             if (radix == RadixEnum.DEC) {
@@ -86,42 +135,56 @@ public class SymbolTypeFormat {
                 return Long.parseLong(valueString, radix.getRadix());
             }
         } else if(type == ValueTypeEnum.DERIVED) {
-            return ValueUtil.tryParse(valueString);
+            Pair<Object, ValueTypeEnum> attemptedParse = ValueUtil.tryParse(valueString);
+            if(attemptedParse == null) {
+                return null;
+            } else {
+                return attemptedParse.getFirst();
+            }
         } else {
             return ValueUtil.parse(type, valueString);
         }
     }
 
     public String encode(Object value) {
-        if(type == ValueTypeEnum.ENUMERATED) {
-            if(format != null) {
-                // Use format
-                return String.format(format, value);
-            } else {
+        // Null value? Then if encode-null is provided, return it
+        if(value == null && getEncodeNull() != null) {
+            return getEncodeNull();
+        }
+        // DERIVED type? Then check the type and go ahead with the encoding
+        if(type == ValueTypeEnum.DERIVED) {
+            // Derive the type
+            ValueTypeEnum derived = ValueTypeEnum.fromClass(value.getClass());
+            for(EncodeTypeFormat etf : encodeTypeFormatList) {
+                if(etf.getId() == derived) {
+                    return etf.encodeValue(value);
+                }
+            }
+            return ValueUtil.toString(derived, value);
+        }
+        // Not DERIVED --> Check format
+        if(format != null) {
+            // Use format
+            return String.format(format, value);
+        } else {
+            if (type == ValueTypeEnum.ENUMERATED) {
                 // Check the radix
                 if (radix == RadixEnum.DEC) {
                     return ValueUtil.toString(type, value);
                 } else {
                     return Integer.toString((Integer) value, radix.getRadix());
                 }
-            }
-        } else if(type == ValueTypeEnum.UNSIGNED_INTEGER || type == ValueTypeEnum.SIGNED_INTEGER) {
-            if (format != null) {
-                // Use format
-                return String.format(format, value);
-            } else {
+            } else if (type == ValueTypeEnum.UNSIGNED_INTEGER || type == ValueTypeEnum.SIGNED_INTEGER) {
                 // Check the radix
                 if (radix == RadixEnum.DEC) {
                     return ValueUtil.toString(type, value);
                 } else {
                     return Long.toString((Long) value, radix.getRadix());
                 }
+            } else {
+                // Standard output
+                return ValueUtil.toString(type, value);
             }
-        } else if(type == ValueTypeEnum.REAL && format != null) {
-            // Use format
-            return String.format(format, value);
-        } else {
-            return ValueUtil.toString(type, value);
         }
     }
 }

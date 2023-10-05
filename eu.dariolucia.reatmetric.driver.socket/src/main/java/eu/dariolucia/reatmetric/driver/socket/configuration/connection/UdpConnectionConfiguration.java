@@ -40,8 +40,8 @@ public class UdpConnectionConfiguration extends AbstractConnectionConfiguration 
      * Channel operations
      * ***************************************************************/
 
-    private volatile DatagramSocket socket;
-    private final byte[] buffer = new byte[65536];
+    private transient volatile DatagramSocket socket;
+    private transient final byte[] buffer = new byte[65536];
 
     @Override
     protected void connectionLoop() {

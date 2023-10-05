@@ -83,7 +83,7 @@ public class InboundMessageMapping extends MessageMapping {
      * Internal operations
      * ***************************************************************/
 
-    private Map<String, ParameterMapping> id2parameterMapping = new TreeMap<>();
+    private transient Map<String, ParameterMapping> id2parameterMapping = new TreeMap<>();
 
     @Override
     public void initialise(AbstractConnectionConfiguration defaultConnection, int entityOffset) {

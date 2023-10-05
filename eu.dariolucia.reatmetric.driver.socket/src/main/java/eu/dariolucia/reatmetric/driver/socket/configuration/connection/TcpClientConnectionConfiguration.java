@@ -66,9 +66,9 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
      * Channel operations
      * ***************************************************************/
 
-    private volatile Socket socket;
-    private volatile InputStream inputStream;
-    private volatile OutputStream outputStream;
+    private transient volatile Socket socket;
+    private transient volatile InputStream inputStream;
+    private transient volatile OutputStream outputStream;
 
     @Override
     protected void connectionLoop() {

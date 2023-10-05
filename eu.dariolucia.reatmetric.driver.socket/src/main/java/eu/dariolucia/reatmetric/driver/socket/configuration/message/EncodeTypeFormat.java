@@ -17,34 +17,44 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration.message;
 
-import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
-import jakarta.xml.bind.annotation.XmlID;
 
-import java.util.Map;
-
+/**
+ * This class is used to specify how to encode a specific type in the case of DERIVED fields.
+ */
 @XmlAccessorType(XmlAccessType.FIELD)
-public abstract class MessageDefinition<T> {
+public class EncodeTypeFormat {
 
-    @XmlID
-    @XmlAttribute
-    private String id; // Unique identifier for the file
+    @XmlAttribute(required = true)
+    private ValueTypeEnum id;
 
-    public String getId() {
+    @XmlAttribute(name = "encode-format", required = true)
+    private String encodeFormat;
+
+    public ValueTypeEnum getId() {
         return id;
     }
 
-    public void setId(String id) {
+    public void setId(ValueTypeEnum id) {
         this.id = id;
     }
 
-    public abstract void initialise() throws ReatmetricException;
+    public String getEncodeFormat() {
+        return encodeFormat;
+    }
 
-    public abstract Map<String, Object> decode(String secondaryId, T messageToProcess) throws ReatmetricException;
+    public void setEncodeFormat(String encodeFormat) {
+        this.encodeFormat = encodeFormat;
+    }
 
-    public abstract String identify(T messageToIdentify) throws ReatmetricException;
+    /* ***************************************************************
+     * Internal operations
+     * ***************************************************************/
 
-    public abstract T encode(String secondaryId, Map<String, Object> data) throws ReatmetricException;
+    public String encodeValue(Object o) {
+        return String.format(encodeFormat, o);
+    }
 }

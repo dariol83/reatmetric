@@ -17,6 +17,7 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration.message;
 
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
@@ -66,75 +67,84 @@ public class AsciiMessageDefinition extends MessageDefinition<String> {
 
     @Override
     public void initialise() {
-        // Sanitize the template to have proper blank characters
-        this.template = template.replace("\\n", "\n")
-                .replace("\\r", "\r").replace("\\t", "\t");
-        int currentStart = 0;
-        while(currentStart < template.length()) {
-            // Tokenize and build internals
-            int varStartIndex = template.indexOf(VAR_PREFIX);
-            if (varStartIndex == -1) {
-                // Not found: add last literal and go out
-                literals.add(template.substring(currentStart));
-                return;
+        try {
+            // Sanitize the template to have proper blank characters
+            this.template = template.replace("\\n", "\n")
+                    .replace("\\r", "\r").replace("\\t", "\t");
+            int currentStart = 0;
+            while (currentStart < template.length()) {
+                // Tokenize and build internals
+                int varStartIndex = template.indexOf(VAR_PREFIX, currentStart);
+                if (varStartIndex == -1) {
+                    // Not found: add last literal and go out
+                    literals.add(template.substring(currentStart));
+                    return;
+                }
+                int varEndIndex = template.indexOf(VAR_POSTFIX, varStartIndex);
+                // Add the literal before (can be an empty string) and the string name
+                literals.add(template.substring(currentStart, varStartIndex));
+                String variableName = template.substring(varStartIndex + VAR_PREFIX.length(), varEndIndex);
+                currentStart = varEndIndex + VAR_POSTFIX.length();
+                variables.add(variableName);
+                // Lookup for symbol
+                Optional<SymbolTypeFormat> format = getSymbols().stream().filter(o -> o.getName().equals(variableName)).findFirst();
+                if (format.isPresent()) {
+                    variable2type.put(variableName, format.get());
+                } else {
+                    throw new RuntimeException("Cannot find any format configuration for symbol " + variableName);
+                }
             }
-            int varEndIndex = template.indexOf(VAR_POSTFIX, varStartIndex);
-            // Add the literal before (can be an empty string) and the string name
-            literals.add(template.substring(currentStart, varStartIndex));
-            String variableName = template.substring(varStartIndex + VAR_PREFIX.length(), varEndIndex);
-            currentStart = varEndIndex + VAR_POSTFIX.length();
-            variables.add(variableName);
-            // Lookup for symbol
-            Optional<SymbolTypeFormat> format = getSymbols().stream().filter(o -> o.getName().equals(variableName)).findFirst();
-            if(format.isPresent()) {
-               variable2type.put(variableName, format.get());
-            } else {
-                throw new RuntimeException("Cannot find any format configuration for symbol " + variableName);
-            }
+        } catch (RuntimeException e) {
+            LOG.log(Level.SEVERE, "Error when processing ASCII message definition " + getId() + " \"" + getTemplate() + "\": " + e.getMessage());
+            throw e;
         }
     }
 
     @Override
-    public Map<String, Object> decode(String id, String messageToProcess) {
-        Map<String, Object> valueMap = new LinkedHashMap<>();
-        // Start from the literals
-        int currentStart = 0;
-        int literalIndex = 0;
-        int variableIndex = 0;
-        while(currentStart < messageToProcess.length()) {
-            // Move forward by literal
-            currentStart += literals.get(literalIndex).length();
-            literalIndex++;
-            // Extract from current start to ...
-            String valueString = null;
-            if(literalIndex < literals.size()) {
-                // ... the start of the next literal
-                valueString = messageToProcess.substring(currentStart, messageToProcess.indexOf(literals.get(literalIndex)));
-            } else {
-                // ... the end of the string
-                valueString = messageToProcess.substring(currentStart);
-            }
-            // Update the position in the string
-            currentStart += valueString.length();
-
-            // Process the read value
-            if(variableIndex < variables.size()) {
-                String variableName = variables.get(variableIndex++);
-                SymbolTypeFormat stf = variable2type.get(variableName);
-                Object value = null;
-                // Read/parse value
-                if (stf != null) {
-                    value = stf.decode(valueString);
-                    // Add to map
-                    valueMap.put(variableName, value);
+    public Map<String, Object> decode(String secondaryId, String messageToProcess) throws ReatmetricException {
+        try {
+            Map<String, Object> valueMap = new LinkedHashMap<>();
+            // Start from the literals
+            int currentStart = 0;
+            int literalIndex = 0;
+            int variableIndex = 0;
+            while (currentStart < messageToProcess.length()) {
+                // Move forward by literal
+                currentStart += literals.get(literalIndex).length();
+                literalIndex++;
+                // Extract from current start to ...
+                String valueString = null;
+                if (literalIndex < literals.size()) {
+                    // ... the start of the next literal
+                    valueString = messageToProcess.substring(currentStart, messageToProcess.indexOf(literals.get(literalIndex), currentStart));
                 } else {
-                    if(LOG.isLoggable(Level.WARNING)) {
-                        LOG.log(Level.WARNING, String.format("Cannot find field '%s' for ASCII message %s", variableName, getId()));
+                    // ... the end of the string
+                    valueString = messageToProcess.substring(currentStart);
+                }
+                // Update the position in the string
+                currentStart += valueString.length();
+
+                // Process the read value
+                if (variableIndex < variables.size()) {
+                    String variableName = variables.get(variableIndex++);
+                    SymbolTypeFormat stf = variable2type.get(variableName);
+                    Object value = null;
+                    // Read/parse value
+                    if (stf != null) {
+                        value = stf.decode(valueString);
+                        // Add to map
+                        valueMap.put(variableName, value);
+                    } else {
+                        if (LOG.isLoggable(Level.WARNING)) {
+                            LOG.log(Level.WARNING, String.format("Cannot find field '%s' for ASCII message %s", variableName, getId()));
+                        }
                     }
                 }
             }
+            return valueMap;
+        } catch (RuntimeException e) {
+            throw new ReatmetricException(e.getMessage(), e);
         }
-        return valueMap;
     }
 
     @Override
@@ -155,7 +165,7 @@ public class AsciiMessageDefinition extends MessageDefinition<String> {
     }
 
     @Override
-    public String encode(String id, Map<String, Object> data) {
+    public String encode(String secondaryId, Map<String, Object> data) {
         String result = template;
         for(Map.Entry<String, Object> e : data.entrySet()) {
             SymbolTypeFormat stf = variable2type.get(e.getKey());
