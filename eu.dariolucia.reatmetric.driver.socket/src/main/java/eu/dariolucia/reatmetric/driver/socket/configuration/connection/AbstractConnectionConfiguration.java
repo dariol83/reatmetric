@@ -207,6 +207,7 @@ public abstract class AbstractConnectionConfiguration {
         }
         this.running = true;
         this.readingThread = new Thread(this::connectionLoop);
+        this.readingThread.setName("ReatMetric Socket Connector " + getName() + " Reading Thread");
         this.readingThread.setDaemon(true);
         this.readingThread.start();
         if(getInit() == InitType.CONNECTOR) {
@@ -216,19 +217,26 @@ public abstract class AbstractConnectionConfiguration {
 
     protected abstract void connectionLoop();
 
-    public synchronized void closeConnection() {
-        if(this.running) {
-            if(getInit() == InitType.CONNECTOR) {
-                getRoute().stopDispatchingOfPeriodicCommands();
+    public void closeConnection() {
+        Thread oldReadingThread = null;
+        synchronized (this) {
+            if (this.running) {
+                if (getInit() == InitType.CONNECTOR) {
+                    getRoute().stopDispatchingOfPeriodicCommands();
+                }
+                this.running = false;
+                oldReadingThread = this.readingThread;
+                oldReadingThread.interrupt();
+                this.readingThread = null;
             }
-            this.running = false;
-            this.readingThread.interrupt();
+        }
+        // Cleanup
+        if(oldReadingThread != null) {
             try {
-                this.readingThread.join();
+                oldReadingThread.join();
             } catch (InterruptedException e) {
                 // Ignore
             }
-            this.readingThread = null;
         }
     }
 

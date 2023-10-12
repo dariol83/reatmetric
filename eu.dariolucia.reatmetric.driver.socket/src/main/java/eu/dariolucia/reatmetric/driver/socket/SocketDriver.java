@@ -88,6 +88,7 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
 
     private void createTransportConnector() {
         this.connector = new SocketDriverConnector(this.configuration);
+        this.connector.prepare();
     }
 
     @Override
