@@ -126,10 +126,8 @@ public class RouteConfiguration {
      * ***************************************************************/
 
     private transient AbstractConnectionConfiguration parentConnection;
-
     // <MessageDefinition ID>_<secondary ID> as key
     private transient final Map<String, List<InboundMessageMapping>> messageId2mapping = new TreeMap<>();
-
     private transient IDataProcessor dataProcessor;
     private transient final Map<OutboundMessageMapping, CommandTracker> outboundMessage2lastCommand = new ConcurrentHashMap<>();
     private transient final Map<String, List<CommandTracker>> progressMessageId2commandTracker = new TreeMap<>();
@@ -137,6 +135,7 @@ public class RouteConfiguration {
     private transient final AtomicInteger connectionUsage = new AtomicInteger(0);
     private transient final Semaphore connectionSequencer = new Semaphore(1);
     private transient final List<TimerTask> periodCommandTasks = new CopyOnWriteArrayList<>();
+    private transient String driverName;
 
     public void initialise(AbstractConnectionConfiguration parentConnection) {
         this.parentConnection = parentConnection;
@@ -153,7 +152,7 @@ public class RouteConfiguration {
         // Forward raw data
         RawData rawData = new RawData(dataProcessor.getNextRawDataId(), time, secondaryId != null ? secondaryId : messageId,
                 "", getName(), getParentConnection().getSource(),
-                Quality.GOOD, null, rawMessage, time, null, null);
+                Quality.GOOD, null, rawMessage, time, driverName, null);
         dataProcessor.forwardRawData(rawData);
         //
         if(secondaryId == null) {
@@ -253,6 +252,9 @@ public class RouteConfiguration {
             // Decode the message and forward everything to onMessageReceived
             try {
                 Map<String, Object> decodedMessage = definition.decode(secondaryIdentifier, message);
+                if(LOG.isLoggable(Level.FINER)) {
+                    LOG.log(Level.FINER, "Binary message (" + identifier + ", " + secondaryIdentifier + ") received on route " + getName());
+                }
                 internalMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, message);
             } catch (ReatmetricException e) {
                 LOG.log(Level.SEVERE, String.format("Error detected when decoding binary message %s with definition %s on route %s: %s", secondaryIdentifier, definition.getId(), getName(), e.getMessage()), e);
@@ -271,15 +273,14 @@ public class RouteConfiguration {
 
     private void internalAsciiMessageReceived(String message, byte[] rawMessage, Instant receivedTime) {
         String identifier = null;
-        String secondaryIdentifier = null;
         AsciiMessageDefinition definition = null;
         // You received an ASCII message: get the message definition, identify the message
         for(InboundMessageMapping template : getInboundMessages()) {
             MessageDefinition<?> def = template.getMessageDefinition();
             if(def instanceof AsciiMessageDefinition) {
                 AsciiMessageDefinition amd = (AsciiMessageDefinition) def;
-                secondaryIdentifier = amd.identify(message);
-                if (secondaryIdentifier != null) {
+                identifier = amd.identify(message);
+                if (identifier != null) {
                     identifier = def.getId();
                     definition = amd;
                     break;
@@ -290,8 +291,11 @@ public class RouteConfiguration {
         if(identifier != null) {
             // Decode the message and forward everything to onMessageReceived
             try {
-                Map<String, Object> decodedMessage = definition.decode(secondaryIdentifier, message);
-                internalMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, rawMessage);
+                Map<String, Object> decodedMessage = definition.decode(null, message);
+                if(LOG.isLoggable(Level.FINER)) {
+                    LOG.log(Level.FINER, "ASCII message (" + identifier + ") received on route " + getName() + ": " + message);
+                }
+                internalMessageReceived(receivedTime, identifier, null, decodedMessage, rawMessage);
             } catch (ReatmetricException e) {
                 LOG.log(Level.SEVERE, String.format("Error detected when decoding ASCII message '%s' with definition %s on route %s: %s", message, definition.getId(), getName(), e.getMessage()), e);
             }
@@ -302,9 +306,13 @@ public class RouteConfiguration {
 
     public void setDataProcessor(SocketDriver dataProcessor) {
         this.dataProcessor = dataProcessor;
+        this.driverName = dataProcessor.getHandlerName();
     }
 
     public void dispatchActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.log(Level.FINER, "Dispatching activity " + activityInvocation.getPath() + " (" + activityInvocation.getActivityOccurrenceId() + ") on route " + getName());
+        }
         Instant time = Instant.now();
         // Get the mapped OutboundMessageMapping
         OutboundMessageMapping mapping = getOutboundMessageFor(activityInvocation);
@@ -340,6 +348,7 @@ public class RouteConfiguration {
                     TimerTask periodTask = new TimerTask() {
                         @Override
                         public void run() {
+                            // TODO: check if the connection is unlocked. Only in that case, add the internalPeriodicDispatch.
                             dataProcessor.execute(() -> internalPeriodicDispatch(omm));
                         }
                     };
@@ -351,6 +360,7 @@ public class RouteConfiguration {
     }
 
     private void internalPeriodicDispatch(OutboundMessageMapping mapping) {
+        Instant time = Instant.now();
         if(!getParentConnection().isOpen()) {
             return;
         }
@@ -363,6 +373,12 @@ public class RouteConfiguration {
             return;
         }
         // If you want a lock, wait
+        // TODO: here there is a problem: if we are in a single thread that processes activity requests and incoming
+        //  telemetry, a semaphore inside the code executed by the single thread is not working.
+        //  If the command is locked, the internal manager thread must be released
+        //  and the execution of the method repeated at a later time (to be added in a external queue of runnables, to be re-injected
+        //  at release of the sequencer.
+        //  The semaphore must be replaced with an indication (AtomicBoolean) if the connection is busy by a command or not.
         if(isCommandLock()) {
             try {
                 connectionSequencer.acquire();
@@ -371,9 +387,14 @@ public class RouteConfiguration {
                 return;
             }
         }
+        // TODO:: move part above outside of the internal thread
         acquireConnectionUsage();
         try {
             writeToConnection(encodedCommand.getFirst());
+            // ... create a dummy tracker
+            CommandTracker tracker = registerToVerifier(time, null, mapping, encodedCommand);
+            // ... register the command as last command sent for the given outbound message mapping
+            outboundMessage2lastCommand.put(mapping, tracker);
             waitForPostDelay(mapping);
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "Cannot transmit command " + mapping.getMessageDefinition().getId() + " on route " + getName() + " for periodic dispatch: " + e.getMessage(), e);
@@ -410,6 +431,9 @@ public class RouteConfiguration {
             writeToConnection(encodedCommand.getFirst());
             // If all nominal...
             // ... register the command as last command sent for the given outbound message mapping
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.log(Level.FINER, "Encoded activity " + activityInvocation.getPath() + " (" + activityInvocation.getActivityOccurrenceId() + ") written on route " + getName());
+            }
             outboundMessage2lastCommand.put(mapping, tracker);
             // ... announce the opening of the next stage
             ActivityOccurrenceState nextStage = ActivityOccurrenceState.VERIFICATION;
@@ -513,6 +537,9 @@ public class RouteConfiguration {
             }
             // Start the timer for timeout
             startTimeoutTimer(tracker);
+        } else {
+            // No verification, no active tracking
+            activeCommandTrackers.remove(tracker);
         }
         return tracker;
     }

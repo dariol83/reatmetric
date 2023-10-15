@@ -93,7 +93,7 @@ public class SocketDriverConnector extends AbstractTransportConnector implements
         // Retrieve the connection linked to this route
         AbstractConnectionConfiguration connection = null;
         for(AbstractConnectionConfiguration con : configuration.getConnections()) {
-            if(con.getName().equals(route)) {
+            if(con.getRoute() != null && con.getRoute().getName().equals(route)) {
                 connection = con;
                 break;
             }

@@ -30,6 +30,8 @@ import java.util.concurrent.Future;
 
 public interface IDataProcessor {
 
+    String getHandlerName();
+
     void forwardRawData(RawData data);
 
     void forwardParameters(List<ParameterSample> samples);

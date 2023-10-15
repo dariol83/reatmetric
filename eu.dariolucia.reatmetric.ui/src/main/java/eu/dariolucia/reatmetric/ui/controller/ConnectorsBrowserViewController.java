@@ -136,6 +136,7 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
                         name2connector.put(tc.getName(), tc);
                         controller.setConnector(tc);
                         tc.register(this);
+                        status(tc.getLastTransportStatus());
                     } catch (RemoteException e) {
                         LOG.log(Level.SEVERE, "Remote exception when registering to connector", e);
                     }

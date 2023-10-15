@@ -463,7 +463,10 @@ public class ReatmetricSystemImpl implements IReatmetricSystem, IServiceCoreCont
             toReturn.addAll(this.archive.currentDebugInfo());
         }
         for(IDriver d : this.drivers) {
-            toReturn.addAll(d.currentDebugInfo());
+            List<DebugInformation> debugInformations = d.currentDebugInfo();
+            if(debugInformations != null) {
+                toReturn.addAll(debugInformations);
+            }
         }
         // System specific information
         long totalMemory = Runtime.getRuntime().totalMemory();

@@ -27,6 +27,7 @@ import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -82,9 +83,9 @@ public class AsciiDeviceSingleConnection {
             PrintStream outputStream = new PrintStream(connection.getOutputStream());
             BufferedReader inputStream = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String request = readRequest(inputStream);
-            System.out.println(">> Received: " + request);
+            System.out.println(new Date() + " >> Received: " + request);
             String response = processRequest(request);
-            System.out.println("<< Sending: " + request);
+            System.out.println(new Date() + " << Sending: " + response);
             outputStream.print(response);
             outputStream.flush();
         }

@@ -14,7 +14,7 @@
   ~ limitations under the License.
   -->
 
-<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition" path_prefix="DEVICE1.">
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition" path_prefix="STATION.DEVICE1.">
     <parameters>
         <!-- Subsystem 1 -->
 		<parameter id="#10" location="SUB1.STATUS" description="Subsystem Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
@@ -88,18 +88,15 @@
             <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
                 <default_fixed type="RAW" value="RST" />
             </argument>
-            <argument name="arg1" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
-            <argument name="arg2" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
         </activity>
-        <activity id="#17" location="SUB1.SWEEP" description="Start sweep sequence" type="DEV1-ASCII-CMD">
+        <activity id="#17" location="SUB1.START_SWEEP" description="Start sweep sequence" type="DEV1-ASCII-CMD">
             <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
                 <default_fixed type="RAW" value="SUB1" />
             </argument>
             <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
                 <default_fixed type="RAW" value="SWP" />
             </argument>
-            <argument name="arg1" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
-            <argument name="arg2" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
+            <argument name="times" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
         <activity id="#18" location="SUB1.REBOOT" description="Reboot subsystem" type="DEV1-ASCII-CMD">
             <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
@@ -108,8 +105,8 @@
             <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
                 <default_fixed type="RAW" value="RBT" />
             </argument>
-            <argument name="arg1" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
-            <argument name="arg2" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
+            <argument name="delay" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+            <argument name="running" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
 
         <activity id="#26" location="SUB2.RESET" description="Reset the subsystem" type="DEV1-ASCII-CMD">
@@ -119,18 +116,15 @@
             <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
                 <default_fixed type="RAW" value="RST" />
             </argument>
-            <argument name="arg1" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
-            <argument name="arg2" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
         </activity>
-        <activity id="#27" location="SUB2.SWEEP" description="Start sweep sequence" type="DEV1-ASCII-CMD">
+        <activity id="#27" location="SUB2.START_SWEEP" description="Start sweep sequence" type="DEV1-ASCII-CMD">
             <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
                 <default_fixed type="RAW" value="SUB2" />
             </argument>
             <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
                 <default_fixed type="RAW" value="SWP" />
             </argument>
-            <argument name="arg1" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
-            <argument name="arg2" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
+            <argument name="times" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
         <activity id="#28" location="SUB2.REBOOT" description="Reboot subsystem" type="DEV1-ASCII-CMD">
             <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
@@ -139,8 +133,8 @@
             <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
                 <default_fixed type="RAW" value="RBT" />
             </argument>
-            <argument name="arg1" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
-            <argument name="arg2" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
+            <argument name="delay" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+            <argument name="running" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
 
     </activities>

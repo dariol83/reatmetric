@@ -58,7 +58,7 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
 
     @Override
     public List<DebugInformation> currentDebugInfo() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
@@ -80,6 +80,11 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
         configuration.getConnections().forEach(o -> o.getRoute().setDataProcessor(this));
         // Done
         return SystemStatus.NOMINAL;
+    }
+
+    @Override
+    public String getHandlerName() {
+        return getName();
     }
 
     private void createActivityHandler() {

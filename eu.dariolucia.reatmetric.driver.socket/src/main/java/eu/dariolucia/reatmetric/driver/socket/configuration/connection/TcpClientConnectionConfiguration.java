@@ -81,9 +81,16 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
                 try {
                     readAndForward();
                 } catch (Exception e) {
+                    e.printStackTrace();
                     LOG.log(Level.WARNING, String.format("%s: error while reading from connection to %s:%d: %s", getName(), getHost(), getRemotePort(), e.getMessage()), e);
-                    // Cleanup and retry immediately
+                    // Cleanup
                     cleanup();
+                    // Wait and retry (hardcoded for now)
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ex) {
+                        // Ignore
+                    }
                 }
             } catch (Exception e) {
                 if(!suppressFailure) {

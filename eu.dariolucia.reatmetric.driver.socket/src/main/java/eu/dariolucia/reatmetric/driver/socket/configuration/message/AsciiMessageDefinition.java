@@ -165,12 +165,21 @@ public class AsciiMessageDefinition extends MessageDefinition<String> {
     }
 
     @Override
-    public String encode(String secondaryId, Map<String, Object> data) {
+    public String encode(String secondaryId, Map<String, Object> data) throws ReatmetricException {
         String result = template;
-        for(Map.Entry<String, Object> e : data.entrySet()) {
-            SymbolTypeFormat stf = variable2type.get(e.getKey());
-            result = result.replace(VAR_PREFIX + e.getKey() + VAR_POSTFIX, stf.encode(e.getValue()));
+        try {
+            for(Map.Entry<String, SymbolTypeFormat> e : variable2type.entrySet()) {
+                Object value = data.get(e.getKey());
+                result = result.replace(VAR_PREFIX + e.getKey() + VAR_POSTFIX, e.getValue().encode(value));
+            }
+            return result;
+        } catch (Exception e) {
+            throw new ReatmetricException("Error while encoding ASCII message " + getId(), e);
         }
-        return result;
+    }
+
+    @Override
+    public String toString() {
+        return getId() + ":'" + template + "'";
     }
 }

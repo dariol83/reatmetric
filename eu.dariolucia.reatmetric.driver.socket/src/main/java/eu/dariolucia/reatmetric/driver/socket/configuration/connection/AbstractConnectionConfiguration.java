@@ -253,7 +253,7 @@ public abstract class AbstractConnectionConfiguration {
             this.active.set(active);
             this.active.notifyAll();
         }
-        if(oldActive != active) {
+        if(oldActive != active && listener != null) {
             listener.onConnectionStatusUpdate(this, active);
         }
     }

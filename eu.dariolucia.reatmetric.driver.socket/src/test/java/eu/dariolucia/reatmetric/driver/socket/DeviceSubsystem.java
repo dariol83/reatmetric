@@ -58,7 +58,7 @@ public class DeviceSubsystem {
     }
 
     public synchronized Map<String, Object> poll() {
-        return Map.copyOf(this.id2value);
+        return new LinkedHashMap<>(this.id2value);
     }
 
     public synchronized Object get(String name) {

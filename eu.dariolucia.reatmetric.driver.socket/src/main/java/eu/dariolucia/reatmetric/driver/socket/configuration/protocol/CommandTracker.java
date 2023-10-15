@@ -30,10 +30,14 @@ public class CommandTracker {
         this.mapping = mapping;
         this.encodedCommand = encodedCommand;
         this.route = route;
-        long id = activityInvocation.getActivityId();
-        id <<= 32;
-        id |= (activityInvocation.getActivityOccurrenceId().asLong() & 0x00000000FFFFFFFFL);
-        this.id = id;
+        if(activityInvocation != null) {
+            long idToCompute = activityInvocation.getActivityId();
+            idToCompute <<= 32;
+            idToCompute |= (activityInvocation.getActivityOccurrenceId().asLong() & 0x00000000FFFFFFFFL);
+            this.id = idToCompute;
+        } else {
+            this.id = -1;
+        }
     }
 
     public long getId() {
@@ -113,7 +117,7 @@ public class CommandTracker {
                     if(this.currentlyOpenStage.equals(ACCEPTANCE_STAGE_NAME)) {
                         if(!mapping.getVerification().getExecution().isEmpty()) {
                             dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                                    ACCEPTANCE_STAGE_NAME, now, ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.TIMEOUT, null, null));
+                                    ACCEPTANCE_STAGE_NAME, now, ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.TIMEOUT, ActivityOccurrenceState.TRANSMISSION, null));
                             dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
                                     EXECUTION_STAGE_NAME, now, ActivityOccurrenceState.EXECUTION, null, ActivityReportState.TIMEOUT, ActivityOccurrenceState.VERIFICATION, null));
                         } else {
@@ -137,12 +141,12 @@ public class CommandTracker {
         Instant now = Instant.now();
         if(!mapping.getVerification().getAcceptance().isEmpty()) {
             dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                    ACCEPTANCE_STAGE_NAME, now, ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.PENDING, null, null));
+                    ACCEPTANCE_STAGE_NAME, now, ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION, null));
             this.currentlyOpenStage = ACCEPTANCE_STAGE_NAME;
         }
         if(!mapping.getVerification().getExecution().isEmpty()) {
             dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                    EXECUTION_STAGE_NAME, now, ActivityOccurrenceState.EXECUTION, null, ActivityReportState.PENDING, null, null));
+                    EXECUTION_STAGE_NAME, now, ActivityOccurrenceState.EXECUTION, null, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null));
             if(this.currentlyOpenStage == null) {
                 this.currentlyOpenStage = EXECUTION_STAGE_NAME;
             }
@@ -239,7 +243,7 @@ public class CommandTracker {
 
     private boolean processExecutionDefault(IDataProcessor dataProcessor, Instant time, ActivityReportState executionStatus) {
         dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                EXECUTION_STAGE_NAME, time, ActivityOccurrenceState.EXECUTION, time, executionStatus, null, null));
+                EXECUTION_STAGE_NAME, time, ActivityOccurrenceState.EXECUTION, time, executionStatus, ActivityOccurrenceState.EXECUTION, null));
         return false;
     }
 
@@ -263,7 +267,7 @@ public class CommandTracker {
 
     private boolean processAcceptanceDefault(IDataProcessor dataProcessor, Instant time, ActivityReportState acceptanceStatus) {
         dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                    ACCEPTANCE_STAGE_NAME, time, ActivityOccurrenceState.TRANSMISSION, time, acceptanceStatus, null, null));
+                    ACCEPTANCE_STAGE_NAME, time, ActivityOccurrenceState.TRANSMISSION, time, acceptanceStatus, ActivityOccurrenceState.TRANSMISSION, null));
         return false;
     }
 
