@@ -33,6 +33,7 @@ import java.util.logging.Logger;
 abstract public class AbstractTransportConnector implements ITransportConnector {
 
     private static final Logger LOG = Logger.getLogger(AbstractTransportConnector.class.getName());
+    public static final String LOGTEMPLATE_CONNECTION_ALARM_STATE_CHANGED = "Connection %s alarm state changed to %s";
 
     private volatile String name;
     private volatile String description;
@@ -286,6 +287,26 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
         boolean toNotify = !Objects.equals(state, this.lastAlarmState);
         this.lastAlarmState = state;
         if(toNotify) {
+            switch (state) {
+                case ALARM:
+                case ERROR:
+                    if(LOG.isLoggable(Level.SEVERE)) {
+                        LOG.log(Level.SEVERE, String.format(LOGTEMPLATE_CONNECTION_ALARM_STATE_CHANGED, getName(), state), new Object[] { getName() });
+                    }
+                    break;
+                case WARNING:
+                case VIOLATED:
+                case UNKNOWN:
+                    if(LOG.isLoggable(Level.WARNING)) {
+                        LOG.log(Level.WARNING, String.format(LOGTEMPLATE_CONNECTION_ALARM_STATE_CHANGED, getName(), state), new Object[] { getName() });
+                    }
+                    break;
+                default:
+                    if(LOG.isLoggable(Level.INFO)) {
+                        LOG.log(Level.INFO, String.format(LOGTEMPLATE_CONNECTION_ALARM_STATE_CHANGED, getName(), state), new Object[] { getName() });
+                    }
+                    break;
+            }
             notifySubscribers();
         }
     }

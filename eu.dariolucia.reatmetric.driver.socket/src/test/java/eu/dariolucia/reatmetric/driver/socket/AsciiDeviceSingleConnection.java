@@ -49,10 +49,10 @@ public class AsciiDeviceSingleConnection {
     public static void main(String[] args) throws IOException {
         // Create the device subsystems
         {
-            createSubsystemA("SUB1");
+            createSubsystemA("SUB1", 11.1);
         }
         {
-            createSubsystemA("SUB2");
+            createSubsystemA("SUB2", 22.2);
         }
         // Define socket interface
         try (ServerSocket server = new ServerSocket(34212)) {
@@ -123,7 +123,7 @@ public class AsciiDeviceSingleConnection {
             return nok();
         } else {
             try {
-                ds.invoke(command, arguments, true);
+                ds.invoke(command, arguments, true); // TODO: Start in a separate thread
                 return String.format("{ACK,%s}", subsystem);
             } catch (Exception e) {
                 return nok();
@@ -175,11 +175,11 @@ public class AsciiDeviceSingleConnection {
         return sb.toString();
     }
 
-    private static void createSubsystemA(String name) {
+    private static void createSubsystemA(String name, double temperature) {
         DeviceSubsystem ds = DEVICE.createSubsystem(name);
         ds.addParameter("Status", ValueTypeEnum.ENUMERATED, 1)
             .addParameter("Frequency", ValueTypeEnum.UNSIGNED_INTEGER, 3000L)
-            .addParameter("Temperature", ValueTypeEnum.REAL, 22.1)
+            .addParameter("Temperature", ValueTypeEnum.REAL, temperature)
             .addParameter("Offset", ValueTypeEnum.SIGNED_INTEGER, 0L)
             .addParameter("Mode", ValueTypeEnum.ENUMERATED, 0)
             .addParameter("Sweep", ValueTypeEnum.ENUMERATED, 0);
@@ -219,7 +219,7 @@ public class AsciiDeviceSingleConnection {
             }
             int status = (int) ds.get("Status");
             long frequency = (long) ds.get("Frequency");
-            double temperature = (double) ds.get("Temperature");
+            double temperature1 = (double) ds.get("Temperature");
             long offset = (long) ds.get("Offset");
             int mode = (int) ds.get("Mode");
             int sweep = (int) ds.get("Sweep");
@@ -236,7 +236,7 @@ public class AsciiDeviceSingleConnection {
             }
             parameterSetter.apply("Status", status);
             parameterSetter.apply("Frequency", frequency);
-            parameterSetter.apply("Temperature", temperature);
+            parameterSetter.apply("Temperature", temperature1);
             parameterSetter.apply("Offset", offset);
             parameterSetter.apply("Mode", mode);
             parameterSetter.apply("Sweep", sweep);

@@ -140,13 +140,17 @@ public class CommandTracker {
     public void announceVerificationStages(IDataProcessor dataProcessor) {
         Instant now = Instant.now();
         if(!mapping.getVerification().getAcceptance().isEmpty()) {
-            dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                    ACCEPTANCE_STAGE_NAME, now, ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION, null));
+            if(activityInvocation != null) {
+                dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                        ACCEPTANCE_STAGE_NAME, now, ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION, null));
+            }
             this.currentlyOpenStage = ACCEPTANCE_STAGE_NAME;
         }
         if(!mapping.getVerification().getExecution().isEmpty()) {
-            dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                    EXECUTION_STAGE_NAME, now, ActivityOccurrenceState.EXECUTION, null, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null));
+            if(activityInvocation != null) {
+                dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                        EXECUTION_STAGE_NAME, now, ActivityOccurrenceState.EXECUTION, null, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null));
+            }
             if(this.currentlyOpenStage == null) {
                 this.currentlyOpenStage = EXECUTION_STAGE_NAME;
             }
@@ -242,14 +246,18 @@ public class CommandTracker {
     }
 
     private boolean processExecutionDefault(IDataProcessor dataProcessor, Instant time, ActivityReportState executionStatus) {
-        dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                EXECUTION_STAGE_NAME, time, ActivityOccurrenceState.EXECUTION, time, executionStatus, ActivityOccurrenceState.EXECUTION, null));
+        if(getActivityInvocation() != null) {
+            dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                    EXECUTION_STAGE_NAME, time, ActivityOccurrenceState.EXECUTION, time, executionStatus, ActivityOccurrenceState.EXECUTION, null));
+        }
         return false;
     }
 
     private boolean processExecutionFail(IDataProcessor dataProcessor, Instant time, ActivityReportState executionStatus) {
-        dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                EXECUTION_STAGE_NAME, time, ActivityOccurrenceState.EXECUTION, time, executionStatus, ActivityOccurrenceState.VERIFICATION, null));
+        if(getActivityInvocation() != null) {
+            dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                    EXECUTION_STAGE_NAME, time, ActivityOccurrenceState.EXECUTION, time, executionStatus, ActivityOccurrenceState.VERIFICATION, null));
+        }
         // Stop timer
         cancelTimeoutTimer(dataProcessor, false);
         // You are done
@@ -257,8 +265,10 @@ public class CommandTracker {
     }
 
     private boolean processExecutionOK(IDataProcessor dataProcessor, Instant time, ActivityReportState executionStatus) {
-        dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                EXECUTION_STAGE_NAME, time, ActivityOccurrenceState.EXECUTION, time, executionStatus, ActivityOccurrenceState.VERIFICATION, null));
+        if(getActivityInvocation() != null) {
+            dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                    EXECUTION_STAGE_NAME, time, ActivityOccurrenceState.EXECUTION, time, executionStatus, ActivityOccurrenceState.VERIFICATION, null));
+        }
         // Stop timer
         cancelTimeoutTimer(dataProcessor, false);
         // You are done
@@ -266,20 +276,26 @@ public class CommandTracker {
     }
 
     private boolean processAcceptanceDefault(IDataProcessor dataProcessor, Instant time, ActivityReportState acceptanceStatus) {
-        dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+        if(getActivityInvocation() != null) {
+            dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
                     ACCEPTANCE_STAGE_NAME, time, ActivityOccurrenceState.TRANSMISSION, time, acceptanceStatus, ActivityOccurrenceState.TRANSMISSION, null));
+        }
         return false;
     }
 
     private boolean processAcceptanceFail(IDataProcessor dataProcessor, Instant time, ActivityReportState acceptanceStatus) {
         if(!mapping.getVerification().getExecution().isEmpty()) {
-            dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                    ACCEPTANCE_STAGE_NAME, time, ActivityOccurrenceState.TRANSMISSION, null, acceptanceStatus, ActivityOccurrenceState.EXECUTION, null));
-            dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                    EXECUTION_STAGE_NAME, time, ActivityOccurrenceState.EXECUTION, null, ActivityReportState.UNKNOWN, ActivityOccurrenceState.VERIFICATION, null));
+            if(getActivityInvocation() != null) {
+                dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                        ACCEPTANCE_STAGE_NAME, time, ActivityOccurrenceState.TRANSMISSION, null, acceptanceStatus, ActivityOccurrenceState.EXECUTION, null));
+                dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                        EXECUTION_STAGE_NAME, time, ActivityOccurrenceState.EXECUTION, null, ActivityReportState.UNKNOWN, ActivityOccurrenceState.VERIFICATION, null));
+            }
         } else {
-            dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                    ACCEPTANCE_STAGE_NAME, time, ActivityOccurrenceState.TRANSMISSION, time, acceptanceStatus, ActivityOccurrenceState.VERIFICATION, null));
+            if(getActivityInvocation() != null) {
+                dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                        ACCEPTANCE_STAGE_NAME, time, ActivityOccurrenceState.TRANSMISSION, time, acceptanceStatus, ActivityOccurrenceState.VERIFICATION, null));
+            }
         }
         // Stop timer
         cancelTimeoutTimer(dataProcessor, false);
@@ -289,13 +305,17 @@ public class CommandTracker {
 
     private boolean processAcceptanceOK(IDataProcessor dataProcessor, Instant time, ActivityReportState acceptanceStatus) {
         if(!mapping.getVerification().getExecution().isEmpty()) {
-            dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                    ACCEPTANCE_STAGE_NAME, time, ActivityOccurrenceState.TRANSMISSION, null, acceptanceStatus, ActivityOccurrenceState.EXECUTION, null));
+            if(getActivityInvocation() != null) {
+                dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                        ACCEPTANCE_STAGE_NAME, time, ActivityOccurrenceState.TRANSMISSION, null, acceptanceStatus, ActivityOccurrenceState.EXECUTION, null));
+            }
             this.currentlyOpenStage = EXECUTION_STAGE_NAME;
             return false;
         } else {
-            dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
-                    ACCEPTANCE_STAGE_NAME, time, ActivityOccurrenceState.TRANSMISSION, time, acceptanceStatus, ActivityOccurrenceState.VERIFICATION, null));
+            if(getActivityInvocation() != null) {
+                dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                        ACCEPTANCE_STAGE_NAME, time, ActivityOccurrenceState.TRANSMISSION, time, acceptanceStatus, ActivityOccurrenceState.VERIFICATION, null));
+            }
             // Stop timer
             cancelTimeoutTimer(dataProcessor, false);
             // You are done
@@ -316,5 +336,15 @@ public class CommandTracker {
                 processExecutionDefault(dataProcessor, time, ActivityReportState.UNKNOWN);
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return "CommandTracker{" +
+                "mapping=" + mapping +
+                ", route='" + route + '\'' +
+                ", id=" + id +
+                ", currentlyOpenStage='" + currentlyOpenStage + '\'' +
+                '}';
     }
 }

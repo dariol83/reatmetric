@@ -40,6 +40,7 @@ public class SocketDriverConnector extends AbstractTransportConnector implements
     public SocketDriverConnector(SocketConfiguration configuration) {
         super(configuration.getName(), configuration.getDescription());
         this.configuration = configuration;
+        this.configuration.getConnections().forEach(o -> o.setListener(this));
     }
 
     @Override
@@ -76,7 +77,7 @@ public class SocketDriverConnector extends AbstractTransportConnector implements
 
     @Override
     protected void doDispose() {
-        // Nothing specific to do
+        this.configuration.getConnections().forEach(o -> o.setListener(null));
     }
 
     @Override

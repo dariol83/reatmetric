@@ -42,6 +42,9 @@ public class OutboundMessageMappingReference {
     @XmlAttribute
     private ValueTypeEnum type;
 
+    @XmlAttribute(name = "last-command")
+    private boolean lastCommand = true;
+
     public OutboundMessageMapping getOutboundMapping() {
         return outboundMapping;
     }
@@ -72,6 +75,14 @@ public class OutboundMessageMappingReference {
 
     public void setType(ValueTypeEnum type) {
         this.type = type;
+    }
+
+    public boolean isLastCommand() {
+        return lastCommand;
+    }
+
+    public void setLastCommand(boolean lastCommand) {
+        this.lastCommand = lastCommand;
     }
 
     /* ***************************************************************

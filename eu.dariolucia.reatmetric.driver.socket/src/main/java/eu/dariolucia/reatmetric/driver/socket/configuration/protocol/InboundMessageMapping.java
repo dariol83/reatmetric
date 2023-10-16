@@ -121,4 +121,13 @@ public class InboundMessageMapping extends MessageMapping {
         }
         return occurrences;
     }
+
+    @Override
+    public String toString() {
+        return "InboundMessageMapping{" +
+                "id=" + getId() +
+                ", secondaryId=" + getSecondaryId() +
+                ", message=" + getMessageDefinition() +
+                '}';
+    }
 }

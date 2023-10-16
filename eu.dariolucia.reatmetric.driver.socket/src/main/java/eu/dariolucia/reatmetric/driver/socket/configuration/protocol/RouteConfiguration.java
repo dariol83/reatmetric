@@ -59,7 +59,7 @@ public class RouteConfiguration {
     @XmlAttribute(name = "entity-offset")
     private int entityOffset = 0;
 
-    // If this is true, it means that the execution of this command must complete, before sending the next one
+    // If this is true, it means that the execution of this command must complete, before freeing up the connection to send the next one
     @XmlAttribute(name = "command-lock")
     private boolean commandLock = true;
 
@@ -125,17 +125,39 @@ public class RouteConfiguration {
      * Internal operations
      * ***************************************************************/
 
-    private transient AbstractConnectionConfiguration parentConnection;
+    @XmlTransient
+    private AbstractConnectionConfiguration parentConnection;
     // <MessageDefinition ID>_<secondary ID> as key
-    private transient final Map<String, List<InboundMessageMapping>> messageId2mapping = new TreeMap<>();
-    private transient IDataProcessor dataProcessor;
-    private transient final Map<OutboundMessageMapping, CommandTracker> outboundMessage2lastCommand = new ConcurrentHashMap<>();
-    private transient final Map<String, List<CommandTracker>> progressMessageId2commandTracker = new TreeMap<>();
-    private transient final List<CommandTracker> activeCommandTrackers = new CopyOnWriteArrayList<>();
-    private transient final AtomicInteger connectionUsage = new AtomicInteger(0);
-    private transient final Semaphore connectionSequencer = new Semaphore(1);
-    private transient final List<TimerTask> periodCommandTasks = new CopyOnWriteArrayList<>();
-    private transient String driverName;
+
+    @XmlTransient
+    private final Map<String, List<InboundMessageMapping>> messageId2mapping = new TreeMap<>();
+
+    @XmlTransient
+    private IDataProcessor dataProcessor;
+
+    @XmlTransient
+    private final Map<OutboundMessageMapping, CommandTracker> outboundMessage2lastCommand = new ConcurrentHashMap<>();
+
+    @XmlTransient
+    private volatile CommandTracker lastDispatchedCommand = null;
+
+    @XmlTransient
+    private final Map<String, List<CommandTracker>> progressMessageId2commandTracker = new TreeMap<>();
+
+    @XmlTransient
+    private final List<CommandTracker> activeCommandTrackers = new CopyOnWriteArrayList<>();
+
+    @XmlTransient
+    private final AtomicInteger connectionUsage = new AtomicInteger(0);
+
+    @XmlTransient
+    private final Semaphore connectionSequencer = new Semaphore(1);
+
+    @XmlTransient
+    private final List<TimerTask> periodCommandTasks = new CopyOnWriteArrayList<>();
+
+    @XmlTransient
+    private String driverName;
 
     public void initialise(AbstractConnectionConfiguration parentConnection) {
         this.parentConnection = parentConnection;
@@ -164,11 +186,18 @@ public class RouteConfiguration {
         if(inboundMessageMappingsForMessage != null) {
             for(InboundMessageMapping imm : inboundMessageMappingsForMessage) {
                 if(imm.getCommand() != null) {
+                    // Just check the last command of the given type, if any
                     OutboundMessageMapping omm = imm.getCommand().getOutboundMapping();
-                    // Get the last sent command, if any, linked to this
-                    CommandTracker lastCommand = outboundMessage2lastCommand.get(omm);
+                    CommandTracker lastCommand = null;
+                    if(imm.getCommand().isLastCommand()) {
+                        // Check the really last sent command
+                        lastCommand = lastDispatchedCommand;
+                    } else {
+                        // Get the last sent command, if any, linked to this
+                        lastCommand = outboundMessage2lastCommand.get(omm);
+                    }
                     // At this stage, if the command is there and no specific argument is specified or the argument matches...
-                    if(imm.getCommand().match(lastCommand)) {
+                    if (imm.getCommand().match(lastCommand)) {
                         // ... inject the message according to this definition
                         performInjection(time, decodedMessage, imm);
                     }
@@ -206,6 +235,9 @@ public class RouteConfiguration {
             // Send message to tracker: if verification is completed, timeout timer is cancelled and true is returned
             boolean verificationCompleted = tracker.messageReceived(dataProcessor, time, messageId, secondaryId, decodedMessage, route);
             if(verificationCompleted) {
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.log(Level.FINE, String.format("Verification lifecycle for command %s on route %s completed", tracker.getId(), route));
+                }
                 // Add tracker for removal
                 toBeRemoved.add(tracker);
             }
@@ -317,27 +349,26 @@ public class RouteConfiguration {
         // Get the mapped OutboundMessageMapping
         OutboundMessageMapping mapping = getOutboundMessageFor(activityInvocation);
         if(mapping == null) {
-            throw new ActivityHandlingException("No outbound message found, mapped to activity invocation for " + activityInvocation.getPath() + " (" + activityInvocation.getActivityId() + ")");
+            throw new ActivityHandlingException(String.format("No outbound message found, mapped to activity invocation for %s (%d)", activityInvocation.getPath(), activityInvocation.getActivityId()));
         }
         // Encode command
-        Pair<byte[], Map<String, Object>> encodedCommand = null;
+        Pair<byte[], Map<String, Object>> encodedCommand;
         try {
             encodedCommand = encodeCommand(activityInvocation, mapping);
         } catch (ReatmetricException e) {
-            throw new ActivityHandlingException("Error while encoding command " + activityInvocation.getActivityId() + ": " + e.getMessage(), e);
+            throw new ActivityHandlingException(String.format("Error while encoding command %d: %s", activityInvocation.getActivityId(), e.getMessage()), e);
         }
-        Pair<byte[], Map<String, Object>> finalCommand = encodedCommand;
         // If the connection is one of those requiring a single command active at a time, then put the command in the dispatch
         // phase only if you actually can
         if(isCommandLock()) {
             try {
                 connectionSequencer.acquire();
             } catch (InterruptedException e) {
-                throw new ActivityHandlingException("Waiting dispatch interrupted for activity " + activityInvocation.getActivityOccurrenceId() + " on route " + getName(), e);
+                throw new ActivityHandlingException(String.format("Waiting dispatch interrupted for activity %s on route %s", activityInvocation.getActivityOccurrenceId(), getName()), e);
             }
         }
         // At this stage, the work can be done fully asynchronously
-        this.dataProcessor.execute(() -> internalDispatch(activityInvocation, time, mapping, finalCommand));
+        this.dataProcessor.execute(() -> internalDispatch(activityInvocation, time, mapping, encodedCommand));
     }
 
     public void startDispatchingOfPeriodicCommands() {
@@ -348,8 +379,7 @@ public class RouteConfiguration {
                     TimerTask periodTask = new TimerTask() {
                         @Override
                         public void run() {
-                            // TODO: check if the connection is unlocked. Only in that case, add the internalPeriodicDispatch.
-                            dataProcessor.execute(() -> internalPeriodicDispatch(omm));
+                            dispatchPeriodicCommand(omm);
                         }
                     };
                     this.periodCommandTasks.add(periodTask);
@@ -359,7 +389,10 @@ public class RouteConfiguration {
         } // ignore the ON-DEMAND connections
     }
 
-    private void internalPeriodicDispatch(OutboundMessageMapping mapping) {
+    private void dispatchPeriodicCommand(OutboundMessageMapping mapping) {
+        if(LOG.isLoggable(Level.FINEST)) {
+            LOG.log(Level.FINEST, "Dispatching periodic command " + mapping.getId() + " (" + mapping.getMessageDefinition().getId() + ") on route " + getName());
+        }
         Instant time = Instant.now();
         if(!getParentConnection().isOpen()) {
             return;
@@ -373,12 +406,6 @@ public class RouteConfiguration {
             return;
         }
         // If you want a lock, wait
-        // TODO: here there is a problem: if we are in a single thread that processes activity requests and incoming
-        //  telemetry, a semaphore inside the code executed by the single thread is not working.
-        //  If the command is locked, the internal manager thread must be released
-        //  and the execution of the method repeated at a later time (to be added in a external queue of runnables, to be re-injected
-        //  at release of the sequencer.
-        //  The semaphore must be replaced with an indication (AtomicBoolean) if the connection is busy by a command or not.
         if(isCommandLock()) {
             try {
                 connectionSequencer.acquire();
@@ -387,22 +414,42 @@ public class RouteConfiguration {
                 return;
             }
         }
-        // TODO:: move part above outside of the internal thread
-        acquireConnectionUsage();
+        dataProcessor.execute(() -> internalPeriodicDispatch(time, mapping, encodedCommand));
+    }
+
+    private void internalPeriodicDispatch(Instant time, OutboundMessageMapping mapping, Pair<byte[], Map<String, Object>> encodedCommand) {
+        // ... create a dummy tracker
+        CommandTracker tracker = registerToVerifier(time, null, mapping, encodedCommand);
         try {
+            // If connection is on demand, start connector if connectionUsage = 0, mark connector as connectionUsage +1.
+            acquireConnectionUsage();
+            // Connection should be open: write command to connector
             writeToConnection(encodedCommand.getFirst());
-            // ... create a dummy tracker
-            CommandTracker tracker = registerToVerifier(time, null, mapping, encodedCommand);
+            // If all nominal...
             // ... register the command as last command sent for the given outbound message mapping
             outboundMessage2lastCommand.put(mapping, tracker);
-            waitForPostDelay(mapping);
+            lastDispatchedCommand = tracker;
+            finaliseVerificationInitialisation(mapping, tracker);
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "Cannot transmit command " + mapping.getMessageDefinition().getId() + " on route " + getName() + " for periodic dispatch: " + e.getMessage(), e);
-        } finally {
+            // connectionUsage -1, close connector if on demand and connectionUsage = 0
             releaseConnectionUsage();
-            if(isCommandLock()) {
-                connectionSequencer.release();
-            }
+            // If failure, then deregister verification
+            deregisterFromVerifier(tracker);
+        }
+    }
+
+    private void finaliseVerificationInitialisation(OutboundMessageMapping mapping, CommandTracker tracker) {
+        // If no stages for verification are present, deregister from verifier and release connection if on demand
+        if(mapping.getVerification() == null) {
+            // Wait post send delay
+            waitForPostDelay(mapping);
+            releaseConnectionUsage();
+            deregisterFromVerifier(tracker);
+        } else {
+            tracker.announceVerificationStages(this.dataProcessor);
+            // Wait post send delay
+            waitForPostDelay(mapping);
         }
     }
 
@@ -435,6 +482,7 @@ public class RouteConfiguration {
                 LOG.log(Level.FINER, "Encoded activity " + activityInvocation.getPath() + " (" + activityInvocation.getActivityOccurrenceId() + ") written on route " + getName());
             }
             outboundMessage2lastCommand.put(mapping, tracker);
+            lastDispatchedCommand = tracker;
             // ... announce the opening of the next stage
             ActivityOccurrenceState nextStage = ActivityOccurrenceState.VERIFICATION;
             // ... check if acceptance/execution stages are defined. If not, move to verification
@@ -448,16 +496,7 @@ public class RouteConfiguration {
                     ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK,
                     nextStage);
             // If no stages for verification are present, deregister from verifier and release connection if on demand
-            if(mapping.getVerification() == null) {
-                // Wait post send delay
-                waitForPostDelay(mapping);
-                releaseConnectionUsage();
-                deregisterFromVerifier(tracker);
-            } else {
-                tracker.announceVerificationStages(this.dataProcessor);
-                // Wait post send delay
-                waitForPostDelay(mapping);
-            }
+            finaliseVerificationInitialisation(mapping, tracker);
         } catch (IOException e) {
             reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
                     ActivityOccurrenceState.TRANSMISSION, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL,

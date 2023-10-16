@@ -171,4 +171,15 @@ public class OutboundMessageMapping extends MessageMapping {
             throw new ReatmetricException("Unknown message definition type: " + getMessageDefinition());
         }
     }
+
+    @Override
+    public String toString() {
+        return "OutboundMessageMapping{" +
+                "id=" + getId() +
+                ", message=" + getMessageDefinition() +
+                ", type=" + type +
+                ", entity=" + entity +
+                ", period=" + period +
+                '}';
+    }
 }

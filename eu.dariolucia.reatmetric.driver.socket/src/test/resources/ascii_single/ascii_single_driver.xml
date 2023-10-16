@@ -62,7 +62,12 @@
                     </verification>
                 </outbound>
                 <!-- First Subsystem -->
-                <outbound id="POLL_SUB1_MP" message="POLL_SUB1" type="PERIODIC" period="1" />
+                <outbound id="POLL_SUB1_MP" message="POLL_SUB1" type="PERIODIC" period="1">
+					<verification timeout="3">
+                        <execution message="TLM" result="OK" />
+                        <execution message="NOK" result="FAIL" />
+                    </verification>
+				</outbound>
                 <outbound id="CMD_SUB1_RST_MP" message="CMD_RST" type="ACTIVITY_DRIVEN" entity="16">
                     <argument name="device_subsystem" field="device_subsystem" />
                     <verification timeout="10">
@@ -88,7 +93,12 @@
                     </verification>
                 </outbound>
                 <!-- Second Subsystem -->
-                <outbound id="POLL_SUB2_MP" message="POLL_SUB2" type="PERIODIC" period="1" />
+                <outbound id="POLL_SUB2_MP" message="POLL_SUB2" type="PERIODIC" period="1">
+					<verification timeout="3">
+                        <execution message="TLM" result="OK" />
+                        <execution message="NOK" result="FAIL" />
+                    </verification>
+				</outbound>
                 <outbound id="CMD_SUB2_RST_MP" message="CMD_RST" type="ACTIVITY_DRIVEN" entity="26">
                     <argument name="device_subsystem" field="device_subsystem" />
                     <verification timeout="10">
