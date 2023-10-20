@@ -17,16 +17,266 @@
 
 package eu.dariolucia.reatmetric.driver.socket;
 
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Map;
+
 /**
  * TODO: this device has a protocol supporting two ASCII connections, one for monitoring (asynch), one for commanding, fully
- * synchronous (request, response)
+ * synchronous (request, ack message, execution message)
  * Command messages are:
- * - Send command to device subsystem: CMD [device subsystem name] [command code] [argument 1] [argument 2] on command connection
- * - Set device subsystem value: SET [device subsystem name] [parameter name] [parameter value] on command connection
+ * - Request telemetry data for subsystems: REQ [list of device subsystem names separated by space]\n on monitoring connection
+ * - Send command to device subsystem: CMD [device subsystem name] [command code] [arguments]\n on command connection
+ * - Set device subsystem value: SET [device subsystem name] [parameter name] [parameter value]\n on command connection
  * Response messages are:
- * - Telemetry data: TLM [list of parameter values separated by space] on monitoring connection, 1 per second per device subsystem
- * - Positive ACK of command/set: ACK [device sybsystem name] on command connection
- * - Negative ACK: NOK on command connections
+ * - Telemetry data: TLM [device subsystem name] [list of parameter values separated by space]\n on monitoring connection, 1 per second per device subsystem
+ * - Positive ACK of command/set: ACK [device sybsystem name]\n on command connection
+ * - Positive EXE of command/set: EXE [device sybsystem name]\n on command connection
+ * - Negative ACK: NOK on command connections for failed ACKs and failed EXE
  */
 public class AsciiDeviceDoubleConnection {
+
+    private static final int PORT_TLM = 35212;
+    private static final int PORT_CMD = 35213;
+    private static final Device DEVICE = new Device("DEVICE2");
+
+    public static void main(String[] args) throws IOException {
+        // Create the device subsystems
+        {
+            createSubsystem("SUB1", 11.1);
+        }
+        {
+            createSubsystem("SUB2", 22.2);
+        }
+        // Define socket interfaces
+        new Thread(() -> {
+            try (ServerSocket server = new ServerSocket(PORT_CMD)) {
+                while (server.isBound()) {
+                    Socket connection = server.accept();
+                    System.out.println("!! Connection received CMD port");
+                    Thread t = new Thread(() -> {
+                        try {
+                            handleCommandConnection(connection);
+                        } catch (IOException e) {
+                            try {
+                                connection.close();
+                            } catch (IOException ex) {
+                                // Nothing
+                            }
+                            System.out.println("!! Connection CMD closed");
+                        }
+                    });
+                    t.setDaemon(true);
+                    t.start();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+
+        new Thread(() -> {
+            try (ServerSocket server = new ServerSocket(PORT_TLM)) {
+                while (server.isBound()) {
+                    Socket connection = server.accept();
+                    System.out.println("!! Connection received TLM port");
+                    Thread t = new Thread(() -> {
+                        try {
+                            handleTelemetryConnection(connection);
+                        } catch (IOException e) {
+                            try {
+                                connection.close();
+                            } catch (IOException ex) {
+                                // Nothing
+                            }
+                            System.out.println("!! Connection TLM closed");
+                        }
+                    });
+                    t.setDaemon(true);
+                    t.start();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    private static void handleCommandConnection(Socket connection) throws IOException {
+        // Read request, write response
+        while(true) {
+            PrintStream outputStream = new PrintStream(connection.getOutputStream());
+            BufferedReader inputStream = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            String request = readRequest(inputStream);
+            System.out.println(new Date() + " >> CMD Received: " + request);
+            String response = processCmdRequest(request);
+            System.out.println(new Date() + " << CMD Sending: " + response);
+            outputStream.print(response);
+            outputStream.flush();
+            // TODO: Handle execution
+        }
+    }
+
+    private static void handleTelemetryConnection(Socket connection) throws IOException {
+        // Read request, write response
+        PrintStream outputStream = new PrintStream(connection.getOutputStream());
+        BufferedReader inputStream = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        String request = readRequest(inputStream);
+        System.out.println(new Date() + " >> TLM Received: " + request);
+        String[] subsystems = processTlmRequest(request);
+        if(subsystems.length == 0) {
+            connection.close();
+            return;
+        }
+        while(true) {
+            for(String ss : subsystems) {
+                DeviceSubsystem ds = DEVICE.getSubsystem(ss);
+                if(ds != null) {
+                    Map<String, Object> values = ds.poll();
+                    StringBuilder response = new StringBuilder("TLM " + ss + " ");
+                    for(Map.Entry<String, Object> e : values.entrySet()) {
+                        response.append(ValueUtil.toString(ds.getTypeOf(e.getKey()), e.getValue())).append(" ");
+                    }
+                    String finalString = response.toString().trim();
+                    outputStream.print(finalString + "\n");
+                    outputStream.flush();
+                }
+            }
+        }
+    }
+
+    private static String[] processTlmRequest(String request) {
+        if(request.startsWith("REQ ")) {
+            return request.trim().substring("TLM ".length()).split(" ", -1);
+        } else {
+            return new String[0];
+        }
+    }
+
+    private static String processCmdRequest(String request) {
+        String[] tokens = request.split(" ", -1);
+        switch (tokens[0]) {
+            case "CMD": return commandFor(tokens[1], tokens[2], Arrays.copyOfRange(tokens, 3, tokens.length));
+            case "SET": return setFor(tokens[1], tokens[2], tokens[3]);
+            default: return nok();
+        }
+    }
+
+    private static String setFor(String subsystem, String parameter, String value) {
+        DeviceSubsystem ds = DEVICE.getSubsystem(subsystem);
+        if(ds == null) {
+            return nok();
+        } else {
+            try {
+                if(ds.set(parameter, ValueUtil.parse(ds.getTypeOf(parameter), value), false)) {
+                    return String.format("ACK %s", subsystem);
+                } else {
+                    return nok();
+                }
+            } catch (Exception e) {
+                return nok();
+            }
+        }
+    }
+
+    private static String commandFor(String subsystem, String command, String[] arguments) {
+        DeviceSubsystem ds = DEVICE.getSubsystem(subsystem);
+        if(ds == null) {
+            return nok();
+        } else {
+            try {
+                if(ds.invoke(command, arguments, false)) {
+                    return String.format("ACK %s\n", subsystem);
+                } else {
+                    return nok();
+                }
+            } catch (Exception e) {
+                return nok();
+            }
+        }
+    }
+
+    private static String nok() {
+        return "NOK\n";
+    }
+
+    private static String readRequest(BufferedReader inputStream) throws IOException {
+        return inputStream.readLine();
+    }
+
+    private static void createSubsystem(String name, double temperature) {
+        DeviceSubsystem ds = DEVICE.createSubsystem(name);
+        ds.addParameter("Status", ValueTypeEnum.ENUMERATED, 1)
+                .addParameter("Frequency", ValueTypeEnum.UNSIGNED_INTEGER, 3000L)
+                .addParameter("Temperature", ValueTypeEnum.REAL, temperature)
+                .addParameter("Offset", ValueTypeEnum.SIGNED_INTEGER, 0L)
+                .addParameter("Mode", ValueTypeEnum.ENUMERATED, 0)
+                .addParameter("Sweep", ValueTypeEnum.ENUMERATED, 0);
+        ds.addHandler("RST", (command, args1, parameterSetter) -> {
+            parameterSetter.apply("Status", 0);
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                return false;
+            }
+            parameterSetter.apply("Status", 1);
+            return true;
+        });
+        ds.addHandler("SWP", (command, args1, parameterSetter) -> {
+            int times = Integer.parseInt(args1[0]);
+            parameterSetter.apply("Sweep", 1);
+            for(int i = 0; i < times; ++i) {
+                long offset = ((Number) ds.get("Offset")).longValue();
+                offset += 100L;
+                parameterSetter.apply("Offset", offset);
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    return false;
+                }
+            }
+            parameterSetter.apply("Sweep", 0);
+            return true;
+        });
+        ds.addHandler("RBT", (command, args1, parameterSetter) -> {
+            int delay = Integer.parseInt(args1[0]);
+            int running = Integer.parseInt(args1[1]);
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException e) {
+                return false;
+            }
+            int status = (int) ds.get("Status");
+            long frequency = (long) ds.get("Frequency");
+            double temperature1 = (double) ds.get("Temperature");
+            long offset = (long) ds.get("Offset");
+            int mode = (int) ds.get("Mode");
+            int sweep = (int) ds.get("Sweep");
+            parameterSetter.apply("Status", 0);
+            parameterSetter.apply("Frequency", 0L);
+            parameterSetter.apply("Temperature", 0.0);
+            parameterSetter.apply("Offset", 0L);
+            parameterSetter.apply("Mode", 0);
+            parameterSetter.apply("Sweep", 0);
+            try {
+                Thread.sleep(running);
+            } catch (InterruptedException e) {
+                return false;
+            }
+            parameterSetter.apply("Status", status);
+            parameterSetter.apply("Frequency", frequency);
+            parameterSetter.apply("Temperature", temperature1);
+            parameterSetter.apply("Offset", offset);
+            parameterSetter.apply("Mode", mode);
+            parameterSetter.apply("Sweep", sweep);
+            return true;
+        });
+    }
 }

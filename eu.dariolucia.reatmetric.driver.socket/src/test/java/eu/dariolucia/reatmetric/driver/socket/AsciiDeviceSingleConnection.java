@@ -109,8 +109,11 @@ public class AsciiDeviceSingleConnection {
             return nok();
         } else {
             try {
-                ds.set(parameter, ValueUtil.parse(ds.getTypeOf(parameter), value), true);
-                return String.format("{ACK,%s}", subsystem);
+                if(ds.set(parameter, ValueUtil.parse(ds.getTypeOf(parameter), value), false)) {
+                    return String.format("{ACK,%s}", subsystem);
+                } else {
+                    return nok();
+                }
             } catch (Exception e) {
                 return nok();
             }
@@ -123,8 +126,11 @@ public class AsciiDeviceSingleConnection {
             return nok();
         } else {
             try {
-                ds.invoke(command, arguments, true); // TODO: Start in a separate thread
-                return String.format("{ACK,%s}", subsystem);
+                if(ds.invoke(command, arguments, false)) {
+                    return String.format("{ACK,%s}", subsystem);
+                } else {
+                    return nok();
+                }
             } catch (Exception e) {
                 return nok();
             }
