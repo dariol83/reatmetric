@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 public class DeviceSubsystem {
 
@@ -65,8 +66,8 @@ public class DeviceSubsystem {
         return this.id2value.get(name);
     }
 
-    public boolean set(String id, Object value, boolean synchronous) throws InterruptedException {
-        Future<Boolean> result = executor.submit(() -> internalSet(id, value));
+    public boolean set(String id, Object value, boolean synchronous, Consumer<Boolean> executionCompleted) throws InterruptedException {
+        Future<Boolean> result = executor.submit(() -> internalSet(id, value, executionCompleted));
         if (synchronous) {
             try {
                 return result.get();
@@ -78,10 +79,18 @@ public class DeviceSubsystem {
         }
     }
 
-    public boolean invoke(String command, String[] args, boolean synchronous) throws InterruptedException {
+    private boolean internalSet(String id, Object value, Consumer<Boolean> executionCompleted) {
+        boolean result = parameterSetter(id, value);
+        if(executionCompleted != null) {
+            executionCompleted.accept(result);
+        }
+        return result;
+    }
+
+    public boolean invoke(String command, String[] args, boolean synchronous, Consumer<Boolean> executionCompleted) throws InterruptedException {
         if(id2handler.containsKey(command)) {
             IHandler h = id2handler.get(command);
-            Future<Boolean> result = executor.submit(() -> internalInvoke(h, command, args));
+            Future<Boolean> result = executor.submit(() -> h.handle(command, args, this::parameterSetter, executionCompleted));
             if (synchronous) {
                 try {
                     return result.get();
@@ -96,11 +105,7 @@ public class DeviceSubsystem {
         }
     }
 
-    private boolean internalInvoke(IHandler h, String command, String[] args) {
-        return h.handle(command, args, this::internalSet);
-    }
-
-    private boolean internalSet(String id, Object value) {
+    private boolean parameterSetter(String id, Object value) {
         if(id2type.containsKey(id)) {
             if(ValueUtil.typeMatch(id2type.get(id), value)) {
                 synchronized (this) {
@@ -124,6 +129,6 @@ public class DeviceSubsystem {
     }
 
     public interface IHandler {
-        boolean handle(String command, String[] args, BiFunction<String, Object, Boolean> parameterSetter);
+        boolean handle(String command, String[] args, BiFunction<String, Object, Boolean> parameterSetter, Consumer<Boolean> executionCompleted);
     }
 }

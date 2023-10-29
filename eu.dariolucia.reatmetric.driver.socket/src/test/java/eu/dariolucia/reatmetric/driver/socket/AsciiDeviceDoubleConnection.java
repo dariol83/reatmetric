@@ -29,25 +29,27 @@ import java.net.Socket;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * TODO: this device has a protocol supporting two ASCII connections, one for monitoring (asynch), one for commanding, fully
+ * This device has a protocol supporting two ASCII connections, one for monitoring (asynch), one for commanding, fully
  * synchronous (request, ack message, execution message)
  * Command messages are:
  * - Request telemetry data for subsystems: REQ [list of device subsystem names separated by space]\n on monitoring connection
- * - Send command to device subsystem: CMD [device subsystem name] [command code] [arguments]\n on command connection
- * - Set device subsystem value: SET [device subsystem name] [parameter name] [parameter value]\n on command connection
+ * - Send command to device subsystem: CMD [device subsystem name] [command id] [command code] [arguments]\n on command connection
+ * - Set device subsystem value: SET [device subsystem name] [command id] [parameter name] [parameter value]\n on command connection
  * Response messages are:
  * - Telemetry data: TLM [device subsystem name] [list of parameter values separated by space]\n on monitoring connection, 1 per second per device subsystem
- * - Positive ACK of command/set: ACK [device sybsystem name]\n on command connection
- * - Positive EXE of command/set: EXE [device sybsystem name]\n on command connection
- * - Negative ACK: NOK on command connections for failed ACKs and failed EXE
+ * - Positive ACK of command/set: ACK [device sybsystem name] [command id]\n on command connection
+ * - Positive EXE of command/set: EXE [device sybsystem name] [command id]\n on command connection
+ * - Negative ACK: NOK [commandId] on command connections for failed ACKs and failed EXE
  */
 public class AsciiDeviceDoubleConnection {
 
     private static final int PORT_TLM = 35212;
     private static final int PORT_CMD = 35213;
     private static final Device DEVICE = new Device("DEVICE2");
+    private static volatile PrintStream outputStream;
 
     public static void main(String[] args) throws IOException {
         // Create the device subsystems
@@ -63,10 +65,16 @@ public class AsciiDeviceDoubleConnection {
                 while (server.isBound()) {
                     Socket connection = server.accept();
                     System.out.println("!! Connection received CMD port");
+                    // Already a connection: reject new connection
+                    if(outputStream != null) {
+                        connection.close();
+                        continue;
+                    }
                     Thread t = new Thread(() -> {
                         try {
                             handleCommandConnection(connection);
                         } catch (IOException e) {
+                            outputStream = null;
                             try {
                                 connection.close();
                             } catch (IOException ex) {
@@ -112,15 +120,13 @@ public class AsciiDeviceDoubleConnection {
     private static void handleCommandConnection(Socket connection) throws IOException {
         // Read request, write response
         while(true) {
-            PrintStream outputStream = new PrintStream(connection.getOutputStream());
+            outputStream = new PrintStream(connection.getOutputStream());
             BufferedReader inputStream = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String request = readRequest(inputStream);
             System.out.println(new Date() + " >> CMD Received: " + request);
             String response = processCmdRequest(request);
             System.out.println(new Date() + " << CMD Sending: " + response);
-            outputStream.print(response);
-            outputStream.flush();
-            // TODO: Handle execution
+            sendOnCommandConnection(response);
         }
     }
 
@@ -149,12 +155,18 @@ public class AsciiDeviceDoubleConnection {
                     outputStream.flush();
                 }
             }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                //
+                break;
+            }
         }
     }
 
     private static String[] processTlmRequest(String request) {
         if(request.startsWith("REQ ")) {
-            return request.trim().substring("TLM ".length()).split(" ", -1);
+            return request.trim().substring("REQ ".length()).split(" ", -1);
         } else {
             return new String[0];
         }
@@ -163,48 +175,59 @@ public class AsciiDeviceDoubleConnection {
     private static String processCmdRequest(String request) {
         String[] tokens = request.split(" ", -1);
         switch (tokens[0]) {
-            case "CMD": return commandFor(tokens[1], tokens[2], Arrays.copyOfRange(tokens, 3, tokens.length));
-            case "SET": return setFor(tokens[1], tokens[2], tokens[3]);
-            default: return nok();
+            case "CMD": return commandFor(tokens[1], tokens[2], tokens[3], Arrays.copyOfRange(tokens, 4, tokens.length));
+            case "SET": return setFor(tokens[1], tokens[2], tokens[3], tokens[4]);
+            default: return nok(null);
         }
     }
 
-    private static String setFor(String subsystem, String parameter, String value) {
+    private static String setFor(String subsystem, String commandId, String parameter, String value) {
         DeviceSubsystem ds = DEVICE.getSubsystem(subsystem);
         if(ds == null) {
-            return nok();
+            return nok(commandId);
         } else {
             try {
-                if(ds.set(parameter, ValueUtil.parse(ds.getTypeOf(parameter), value), false)) {
-                    return String.format("ACK %s", subsystem);
+                if(ds.set(parameter, ValueUtil.parse(ds.getTypeOf(parameter), value), false, result ->
+                        sendOnCommandConnection(result ? String.format("EXE %s %s\n", subsystem, commandId) : nok(commandId)))) {
+                    return String.format("ACK %s %s\n", subsystem, commandId);
                 } else {
-                    return nok();
+                    return nok(commandId);
                 }
             } catch (Exception e) {
-                return nok();
+                return nok(commandId);
             }
         }
     }
 
-    private static String commandFor(String subsystem, String command, String[] arguments) {
-        DeviceSubsystem ds = DEVICE.getSubsystem(subsystem);
-        if(ds == null) {
-            return nok();
-        } else {
-            try {
-                if(ds.invoke(command, arguments, false)) {
-                    return String.format("ACK %s\n", subsystem);
-                } else {
-                    return nok();
-                }
-            } catch (Exception e) {
-                return nok();
+    private static void sendOnCommandConnection(String toSend) {
+        synchronized (AsciiDeviceDoubleConnection.class) {
+            if(outputStream != null) {
+                outputStream.print(toSend);
+                outputStream.flush();
             }
         }
     }
 
-    private static String nok() {
-        return "NOK\n";
+    private static String commandFor(String subsystem, String commandId, String command, String[] arguments) {
+        DeviceSubsystem ds = DEVICE.getSubsystem(subsystem);
+        if(ds == null) {
+            return nok(commandId);
+        } else {
+            try {
+                if(ds.invoke(command, arguments, false, result ->
+                        sendOnCommandConnection(result ? String.format("EXE %s %s\n", subsystem, commandId) : nok(commandId)))) {
+                    return String.format("ACK %s %s\n", subsystem, commandId);
+                } else {
+                    return nok(commandId);
+                }
+            } catch (Exception e) {
+                return nok(commandId);
+            }
+        }
+    }
+
+    private static String nok(String commandId) {
+        return String.format("NOK %s\n", Objects.requireNonNullElse(commandId, "###"));
     }
 
     private static String readRequest(BufferedReader inputStream) throws IOException {
@@ -219,17 +242,23 @@ public class AsciiDeviceDoubleConnection {
                 .addParameter("Offset", ValueTypeEnum.SIGNED_INTEGER, 0L)
                 .addParameter("Mode", ValueTypeEnum.ENUMERATED, 0)
                 .addParameter("Sweep", ValueTypeEnum.ENUMERATED, 0);
-        ds.addHandler("RST", (command, args1, parameterSetter) -> {
+        ds.addHandler("RST", (command, args1, parameterSetter, exCompleted) -> {
             parameterSetter.apply("Status", 0);
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {
+                if(exCompleted != null) {
+                    exCompleted.accept(false);
+                }
                 return false;
             }
             parameterSetter.apply("Status", 1);
+            if(exCompleted != null) {
+                exCompleted.accept(true);
+            }
             return true;
         });
-        ds.addHandler("SWP", (command, args1, parameterSetter) -> {
+        ds.addHandler("SWP", (command, args1, parameterSetter, exCompleted) -> {
             int times = Integer.parseInt(args1[0]);
             parameterSetter.apply("Sweep", 1);
             for(int i = 0; i < times; ++i) {
@@ -239,18 +268,27 @@ public class AsciiDeviceDoubleConnection {
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
+                    if(exCompleted != null) {
+                        exCompleted.accept(false);
+                    }
                     return false;
                 }
             }
             parameterSetter.apply("Sweep", 0);
+            if(exCompleted != null) {
+                exCompleted.accept(true);
+            }
             return true;
         });
-        ds.addHandler("RBT", (command, args1, parameterSetter) -> {
+        ds.addHandler("RBT", (command, args1, parameterSetter, exCompleted) -> {
             int delay = Integer.parseInt(args1[0]);
             int running = Integer.parseInt(args1[1]);
             try {
                 Thread.sleep(delay);
             } catch (InterruptedException e) {
+                if(exCompleted != null) {
+                    exCompleted.accept(false);
+                }
                 return false;
             }
             int status = (int) ds.get("Status");
@@ -268,6 +306,9 @@ public class AsciiDeviceDoubleConnection {
             try {
                 Thread.sleep(running);
             } catch (InterruptedException e) {
+                if(exCompleted != null) {
+                    exCompleted.accept(false);
+                }
                 return false;
             }
             parameterSetter.apply("Status", status);
@@ -276,6 +317,9 @@ public class AsciiDeviceDoubleConnection {
             parameterSetter.apply("Offset", offset);
             parameterSetter.apply("Mode", mode);
             parameterSetter.apply("Sweep", sweep);
+            if(exCompleted != null) {
+                exCompleted.accept(true);
+            }
             return true;
         });
     }

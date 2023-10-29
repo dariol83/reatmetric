@@ -109,7 +109,7 @@ public class AsciiDeviceSingleConnection {
             return nok();
         } else {
             try {
-                if(ds.set(parameter, ValueUtil.parse(ds.getTypeOf(parameter), value), false)) {
+                if(ds.set(parameter, ValueUtil.parse(ds.getTypeOf(parameter), value), false, null)) {
                     return String.format("{ACK,%s}", subsystem);
                 } else {
                     return nok();
@@ -126,7 +126,7 @@ public class AsciiDeviceSingleConnection {
             return nok();
         } else {
             try {
-                if(ds.invoke(command, arguments, false)) {
+                if(ds.invoke(command, arguments, false, null)) {
                     return String.format("{ACK,%s}", subsystem);
                 } else {
                     return nok();
@@ -189,17 +189,23 @@ public class AsciiDeviceSingleConnection {
             .addParameter("Offset", ValueTypeEnum.SIGNED_INTEGER, 0L)
             .addParameter("Mode", ValueTypeEnum.ENUMERATED, 0)
             .addParameter("Sweep", ValueTypeEnum.ENUMERATED, 0);
-        ds.addHandler("RST", (command, args1, parameterSetter) -> {
+        ds.addHandler("RST", (command, args1, parameterSetter, exCompleted) -> {
             parameterSetter.apply("Status", 0);
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {
+                if(exCompleted != null) {
+                    exCompleted.accept(false);
+                }
                 return false;
             }
             parameterSetter.apply("Status", 1);
+            if(exCompleted != null) {
+                exCompleted.accept(true);
+            }
             return true;
         });
-        ds.addHandler("SWP", (command, args1, parameterSetter) -> {
+        ds.addHandler("SWP", (command, args1, parameterSetter, exCompleted) -> {
             int times = Integer.parseInt(args1[0]);
             parameterSetter.apply("Sweep", 1);
             for(int i = 0; i < times; ++i) {
@@ -209,18 +215,27 @@ public class AsciiDeviceSingleConnection {
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e) {
+                    if(exCompleted != null) {
+                        exCompleted.accept(false);
+                    }
                     return false;
                 }
             }
             parameterSetter.apply("Sweep", 0);
+            if(exCompleted != null) {
+                exCompleted.accept(true);
+            }
             return true;
         });
-        ds.addHandler("RBT", (command, args1, parameterSetter) -> {
+        ds.addHandler("RBT", (command, args1, parameterSetter, exCompleted) -> {
             int delay = Integer.parseInt(args1[0]);
             int running = Integer.parseInt(args1[1]);
             try {
                 Thread.sleep(delay);
             } catch (InterruptedException e) {
+                if(exCompleted != null) {
+                    exCompleted.accept(false);
+                }
                 return false;
             }
             int status = (int) ds.get("Status");
@@ -238,6 +253,9 @@ public class AsciiDeviceSingleConnection {
             try {
                 Thread.sleep(running);
             } catch (InterruptedException e) {
+                if(exCompleted != null) {
+                    exCompleted.accept(false);
+                }
                 return false;
             }
             parameterSetter.apply("Status", status);
@@ -246,6 +264,9 @@ public class AsciiDeviceSingleConnection {
             parameterSetter.apply("Offset", offset);
             parameterSetter.apply("Mode", mode);
             parameterSetter.apply("Sweep", sweep);
+            if(exCompleted != null) {
+                exCompleted.accept(true);
+            }
             return true;
         });
     }
