@@ -54,10 +54,10 @@ public class AsciiDeviceDoubleConnection {
     public static void main(String[] args) throws IOException {
         // Create the device subsystems
         {
-            createSubsystem("SUB1", 11.1);
+            createSubsystem("SUB1", 10.1);
         }
         {
-            createSubsystem("SUB2", 22.2);
+            createSubsystem("SUB2", 20.2);
         }
         // Define socket interfaces
         new Thread(() -> {

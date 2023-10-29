@@ -1,0 +1,128 @@
+<!--
+  ~ Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~           http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+
+<ns1:socket xmlns:ns1="http://dariolucia.eu/reatmetric/driver/socket"
+    name="Double ASCII"
+    description="Driver configuration for double ASCII TCP connection">
+    <connections>
+        <tcp name="Device TM TCP Connection" source="Device 2" protocol="ASCII" init="CONNECTOR"
+             host="127.0.0.1" remote-port="35212" local-port="0" ascii-encoding="UTF8">
+            <asciiDelimiterDecoding><delimiter>\n</delimiter></asciiDelimiterDecoding>
+            <route name="Device 2 TM Route" entity-offset="0" command-lock="true">
+                <activity-types>
+                    <type>DEV2-ASCII-CMD</type>
+                </activity-types>
+
+                <!-- First Subsystem -->
+                <inbound id="TLM_SUB1_MP" message="TLM_SUB1">
+                    <inject name="status_val" entity="40" />
+                    <inject name="freq_val" entity="41" />
+                    <inject name="temp_val" entity="42" />
+                    <inject name="offset_val" entity="43" />
+                    <inject name="mode_val" entity="44" />
+                    <inject name="sweep_val" entity="45" />
+                </inbound>
+                <!-- Second Subsystem -->
+                <inbound id="TLM_SUB2_MP" message="TLM_SUB2">
+                    <inject name="status_val" entity="50" />
+                    <inject name="freq_val" entity="51" />
+                    <inject name="temp_val" entity="52" />
+                    <inject name="offset_val" entity="53" />
+                    <inject name="mode_val" entity="54" />
+                    <inject name="sweep_val" entity="55" />
+                </inbound>
+
+                <!-- TM Subsystem Registration -->
+                <outbound id="POLL_SUB_MP" message="POLL_SUB" type="CONNECTOR_START">
+				</outbound>
+            </route>
+        </tcp>
+        <tcp name="Device TC TCP Connection" source="Device 2" protocol="ASCII" init="ON_DEMAND"
+             host="127.0.0.1" remote-port="35213" local-port="0" ascii-encoding="UTF8">
+            <asciiDelimiterDecoding><delimiter>\n</delimiter></asciiDelimiterDecoding>
+            <route name="Device 2 TC Route" entity-offset="0" command-lock="true">
+                <activity-types>
+                    <type>DEV2-ASCII-CMD</type>
+                </activity-types>
+
+                <!-- TODO -->
+            </route>
+        </tcp>
+    </connections>
+    <messages>
+        <ascii id="TLM_SUB1">
+            <template>TLM SUB1 ${{status_val}}$ ${{freq_val}}$ ${{temp_val}}$ ${{offset_val}}$ ${{mode_val}}$ ${{sweep_val}}$\n</template>
+            <symbol name="status_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+            <symbol name="freq_val" type="UNSIGNED_INTEGER" encode-null="" decode-empty-null="true" />
+            <symbol name="temp_val" type="REAL" encode-null="" decode-empty-null="true" />
+            <symbol name="offset_val" type="SIGNED_INTEGER" encode-null="" decode-empty-null="true" />
+            <symbol name="mode_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+            <symbol name="sweep_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+        </ascii>
+        <ascii id="TLM_SUB2">
+            <template>TLM SUB2 ${{status_val}}$ ${{freq_val}}$ ${{temp_val}}$ ${{offset_val}}$ ${{mode_val}}$ ${{sweep_val}}$\n</template>
+            <symbol name="status_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+            <symbol name="freq_val" type="UNSIGNED_INTEGER" encode-null="" decode-empty-null="true" />
+            <symbol name="temp_val" type="REAL" encode-null="" decode-empty-null="true" />
+            <symbol name="offset_val" type="SIGNED_INTEGER" encode-null="" decode-empty-null="true" />
+            <symbol name="mode_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+            <symbol name="sweep_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+        </ascii>
+        <ascii id="POLL_SUB">
+            <template>REQ SUB1 SUB2\n</template>
+        </ascii>
+
+
+        <!-- TODO -->
+
+
+        <ascii id="CMD_SWP">
+            <template>{CMD,${{device_subsystem}}$,SWP,${{times}}$,}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="times" type="UNSIGNED_INTEGER" />
+        </ascii>
+        <ascii id="CMD_RST">
+            <template>{CMD,${{device_subsystem}}$,RST,,}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+        </ascii>
+        <ascii id="CMD_RBT">
+            <template>{CMD,${{device_subsystem}}$,RBT,${{delay}}$,${{running}}$}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="delay" type="UNSIGNED_INTEGER" />
+            <symbol name="running" type="UNSIGNED_INTEGER" />
+        </ascii>
+        <ascii id="SET">
+            <template>{SET,${{device_subsystem}}$,${{parameter}}$,${{new_value}}$}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="parameter" type="CHARACTER_STRING" />
+            <symbol name="new_value" type="DERIVED">
+                <type id="ENUMERATED" encode-format="%d" />
+                <type id="UNSIGNED_INTEGER" encode-format="%d" />
+                <type id="SIGNED_INTEGER" encode-format="%d" />
+                <type id="REAL" encode-format="%.1f" />
+            </symbol>
+        </ascii>
+
+        <ascii id="ACK">
+            <template>{ACK,${{device_subsystem}}$}</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+        </ascii>
+        <ascii id="NOK">
+            <template>{NOK}</template>
+        </ascii>
+    </messages>
+</ns1:socket>
