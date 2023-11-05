@@ -123,9 +123,11 @@ public class AsciiDeviceDoubleConnection {
             outputStream = new PrintStream(connection.getOutputStream());
             BufferedReader inputStream = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String request = readRequest(inputStream);
+            if(request == null) {
+                throw new IOException("Connection closed");
+            }
             System.out.println(new Date() + " >> CMD Received: " + request);
             String response = processCmdRequest(request);
-            System.out.println(new Date() + " << CMD Sending: " + response);
             sendOnCommandConnection(response);
         }
     }
@@ -202,6 +204,7 @@ public class AsciiDeviceDoubleConnection {
     private static void sendOnCommandConnection(String toSend) {
         synchronized (AsciiDeviceDoubleConnection.class) {
             if(outputStream != null) {
+                System.out.println(new Date() + " << CMD Sending: " + toSend);
                 outputStream.print(toSend);
                 outputStream.flush();
             }

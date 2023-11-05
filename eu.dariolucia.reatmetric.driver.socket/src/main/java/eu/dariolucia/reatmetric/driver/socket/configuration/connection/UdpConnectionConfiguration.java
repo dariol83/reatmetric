@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.driver.socket.configuration.connection;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlTransient;
 
 import java.io.IOException;
 import java.net.*;
@@ -40,8 +41,10 @@ public class UdpConnectionConfiguration extends AbstractConnectionConfiguration 
      * Channel operations
      * ***************************************************************/
 
-    private transient volatile DatagramSocket socket;
-    private transient final byte[] buffer = new byte[65536];
+    @XmlTransient
+    private volatile DatagramSocket socket;
+    @XmlTransient
+    private final byte[] buffer = new byte[65536];
 
     @Override
     protected void connectionLoop() {
@@ -129,6 +132,9 @@ public class UdpConnectionConfiguration extends AbstractConnectionConfiguration 
     private void cleanup() {
         // Clean-up
         if(this.socket != null) {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, String.format("Connection %s: closing UDP socket on local port %d", getName(), this.socket.getLocalPort()));
+            }
             this.socket.close();
         }
         this.socket = null;

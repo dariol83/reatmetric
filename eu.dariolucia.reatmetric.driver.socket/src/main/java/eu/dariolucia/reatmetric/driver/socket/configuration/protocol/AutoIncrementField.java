@@ -17,9 +17,11 @@
 
 package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlTransient;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,8 +32,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class AutoIncrementField {
 
+    // This attributes identifies a counter per route
+    @XmlAttribute(name="counter-id", required = true)
+    private String counterId;
+
     @XmlAttribute(required = true)
     private String field;
+
+    @XmlAttribute(name="output-type")
+    private ValueTypeEnum type = ValueTypeEnum.ENUMERATED;
+
+    // Used only in case of type == ValueTypeEnum.CHARACTER_STRING
+    @XmlAttribute(name="string-format")
+    private String stringFormat = null;
 
     public String getField() {
         return field;
@@ -41,17 +54,60 @@ public class AutoIncrementField {
         this.field = field;
     }
 
+    public ValueTypeEnum getType() {
+        return type;
+    }
+
+    public void setType(ValueTypeEnum type) {
+        this.type = type;
+    }
+
+    public String getStringFormat() {
+        return stringFormat;
+    }
+
+    public void setStringFormat(String stringFormat) {
+        this.stringFormat = stringFormat;
+    }
+
+    public String getCounterId() {
+        return counterId;
+    }
+
+    public void setCounterId(String counterId) {
+        this.counterId = counterId;
+    }
+
     /* ***************************************************************
      * Internal operations
      * ***************************************************************/
 
-    private final AtomicInteger counter = new AtomicInteger(0);
+    @XmlTransient
+    private RouteConfiguration parentRoute;
 
-    public int next() {
-        return counter.getAndIncrement();
+    public void initialise(RouteConfiguration routeConfiguration) {
+        this.parentRoute = routeConfiguration;
     }
 
-    public int get() {
-        return counter.get();
+    public Object next() {
+        return transform(this.parentRoute.getNextSequenceOf(getCounterId()));
+    }
+
+    private Object transform(int value) {
+        switch (type) {
+            case UNSIGNED_INTEGER:
+            case SIGNED_INTEGER:
+                return (long) value;
+            case REAL:
+                return (double) value;
+            case CHARACTER_STRING:
+                if(stringFormat != null) {
+                    return String.format(stringFormat, value);
+                } else {
+                    return String.valueOf(value);
+                }
+            default:
+                return value;
+        }
     }
 }

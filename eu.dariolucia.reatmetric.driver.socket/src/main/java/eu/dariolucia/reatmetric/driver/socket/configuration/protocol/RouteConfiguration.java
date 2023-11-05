@@ -159,8 +159,12 @@ public class RouteConfiguration {
     @XmlTransient
     private String driverName;
 
+    @XmlTransient
+    private final Map<String, AtomicInteger> autoIncrementSequencers = new ConcurrentHashMap<>();
+
     public void initialise(AbstractConnectionConfiguration parentConnection) {
         this.parentConnection = parentConnection;
+        // Create the sequencers?
         for(InboundMessageMapping m : getInboundMessages()) {
             m.initialise(parentConnection, getEntityOffset());
             messageId2mapping.computeIfAbsent(m.getMessageDefinition().getId() + "_" + m.getSecondaryId(), k -> new LinkedList<>()).add(m);
@@ -168,6 +172,29 @@ public class RouteConfiguration {
         for(OutboundMessageMapping m : getOutboundMessages()) {
             m.initialise(parentConnection, getEntityOffset());
         }
+    }
+
+    public void notifyConnectionDisconnection() {
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.log(Level.FINE, String.format("Resetting verification trackers and connection usage state on %s", getName()));
+        }
+        List<CommandTracker> trackers = new LinkedList<>(activeCommandTrackers);
+        for(CommandTracker ct : trackers) {
+            // Mark command verification as unknown
+            ct.unknownVerification(this.dataProcessor);
+            // Remove from verifier and reset timeout
+            deregisterFromVerifier(ct);
+        }
+        // Reset internal connection usage
+        this.connectionUsage.set(0);
+        if(connectionSequencer.availablePermits() == 0) {
+            connectionSequencer.release();
+        }
+    }
+
+    public int getNextSequenceOf(String id) {
+        AtomicInteger ai = autoIncrementSequencers.computeIfAbsent(id, o -> new AtomicInteger(0));
+        return ai.incrementAndGet();
     }
 
     private void internalMessageReceived(Instant time, String messageId, String secondaryId, Map<String, Object> decodedMessage, byte[] rawMessage) {
@@ -285,7 +312,7 @@ public class RouteConfiguration {
             try {
                 Map<String, Object> decodedMessage = definition.decode(secondaryIdentifier, message);
                 if(LOG.isLoggable(Level.FINER)) {
-                    LOG.log(Level.FINER, "Binary message (" + identifier + ", " + secondaryIdentifier + ") received on route " + getName());
+                    LOG.log(Level.FINER, String.format("Binary message (%s, %s) received on route %s", identifier, secondaryIdentifier, getName()));
                 }
                 internalMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, message);
             } catch (ReatmetricException e) {
@@ -325,14 +352,14 @@ public class RouteConfiguration {
             try {
                 Map<String, Object> decodedMessage = definition.decode(null, message);
                 if(LOG.isLoggable(Level.FINER)) {
-                    LOG.log(Level.FINER, "ASCII message (" + identifier + ") received on route " + getName() + ": " + message);
+                    LOG.log(Level.FINER, String.format("ASCII message (%s) received on route %s: %s", identifier, getName(), message));
                 }
                 internalMessageReceived(receivedTime, identifier, null, decodedMessage, rawMessage);
             } catch (ReatmetricException e) {
                 LOG.log(Level.SEVERE, String.format("Error detected when decoding ASCII message '%s' with definition %s on route %s: %s", message, definition.getId(), getName(), e.getMessage()), e);
             }
         } else {
-            LOG.log(Level.WARNING, "ASCII message not identified on route " + getName());
+            LOG.log(Level.WARNING, String.format("ASCII message not identified on route %s", getName()));
         }
     }
 
@@ -343,7 +370,7 @@ public class RouteConfiguration {
 
     public void dispatchActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
         if(LOG.isLoggable(Level.FINER)) {
-            LOG.log(Level.FINER, "Dispatching activity " + activityInvocation.getPath() + " (" + activityInvocation.getActivityOccurrenceId() + ") on route " + getName());
+            LOG.log(Level.FINER, String.format("Dispatching activity %s (%s) on route %s", activityInvocation.getPath(), activityInvocation.getActivityOccurrenceId(), getName()));
         }
         Instant time = Instant.now();
         // Get the mapped OutboundMessageMapping
@@ -373,13 +400,16 @@ public class RouteConfiguration {
 
     public void startDispatchingOfPeriodicCommands() {
         if(getParentConnection().getInit() == InitType.CONNECTOR) {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, String.format("Activating dispatch of periodic commands on connection %s (route %s)", getParentConnection().getName(), getName()));
+            }
             // Schedule execution of all the periodic commands
             for (OutboundMessageMapping omm : getOutboundMessages()) {
                 if (omm.getType() == OutboundMessageType.PERIODIC) {
                     TimerTask periodTask = new TimerTask() {
                         @Override
                         public void run() {
-                            dispatchPeriodicCommand(omm);
+                            dispatchInternalCommand(omm);
                         }
                     };
                     this.periodCommandTasks.add(periodTask);
@@ -389,9 +419,17 @@ public class RouteConfiguration {
         } // ignore the ON-DEMAND connections
     }
 
-    private void dispatchPeriodicCommand(OutboundMessageMapping mapping) {
+    public void dispatchOnConnectionCommands() {
+        for(OutboundMessageMapping omm : getOutboundMessages()) {
+            if (omm.getType() == OutboundMessageType.CONNECTION_ACTIVE) {
+                dispatchInternalCommand(omm);
+            }
+        }
+    }
+
+    private void dispatchInternalCommand(OutboundMessageMapping mapping) {
         if(LOG.isLoggable(Level.FINEST)) {
-            LOG.log(Level.FINEST, "Dispatching periodic command " + mapping.getId() + " (" + mapping.getMessageDefinition().getId() + ") on route " + getName());
+            LOG.log(Level.FINEST, String.format("Dispatching internal command %s (%s) on route %s", mapping.getId(), mapping.getMessageDefinition().getId(), getName()));
         }
         Instant time = Instant.now();
         if(!getParentConnection().isOpen()) {
@@ -402,7 +440,7 @@ public class RouteConfiguration {
         try {
             encodedCommand = encodeCommand(null, mapping);
         } catch (ReatmetricException e) {
-            LOG.log(Level.SEVERE, "Cannot encode command " + mapping.getMessageDefinition().getId() + " on route " + getName() + " for periodic dispatch: " + e.getMessage(), e);
+            LOG.log(Level.SEVERE, String.format("Cannot encode command %s on route %s for internal dispatch: %s", mapping.getMessageDefinition().getId(), getName(), e.getMessage()), e);
             return;
         }
         // If you want a lock, wait
@@ -410,14 +448,14 @@ public class RouteConfiguration {
             try {
                 connectionSequencer.acquire();
             } catch (InterruptedException e) {
-                LOG.log(Level.FINE, "Command lock interrupted on dispatch of periodic command " + mapping.getMessageDefinition().getId() + " on route " + getName());
+                LOG.log(Level.FINE, String.format("Command lock interrupted on dispatch of internal command %s on route %s", mapping.getMessageDefinition().getId(), getName()));
                 return;
             }
         }
-        dataProcessor.execute(() -> internalPeriodicDispatch(time, mapping, encodedCommand));
+        dataProcessor.execute(() -> internalDispatch(time, mapping, encodedCommand));
     }
 
-    private void internalPeriodicDispatch(Instant time, OutboundMessageMapping mapping, Pair<byte[], Map<String, Object>> encodedCommand) {
+    private void internalDispatch(Instant time, OutboundMessageMapping mapping, Pair<byte[], Map<String, Object>> encodedCommand) {
         // ... create a dummy tracker
         CommandTracker tracker = registerToVerifier(time, null, mapping, encodedCommand);
         try {
@@ -431,7 +469,7 @@ public class RouteConfiguration {
             lastDispatchedCommand = tracker;
             finaliseVerificationInitialisation(mapping, tracker);
         } catch (IOException e) {
-            LOG.log(Level.SEVERE, "Cannot transmit command " + mapping.getMessageDefinition().getId() + " on route " + getName() + " for periodic dispatch: " + e.getMessage(), e);
+            LOG.log(Level.SEVERE, String.format("Cannot transmit command %s on route %s for internal dispatch: %s", mapping.getMessageDefinition().getId(), getName(), e.getMessage()), e);
             // connectionUsage -1, close connector if on demand and connectionUsage = 0
             releaseConnectionUsage();
             // If failure, then deregister verification
@@ -455,6 +493,9 @@ public class RouteConfiguration {
 
     public void stopDispatchingOfPeriodicCommands() {
         if(getParentConnection().getInit() == InitType.CONNECTOR) {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, String.format("Deactivating dispatch of periodic commands on connection %s (route %s)", getParentConnection().getName(), getName()));
+            }
             this.periodCommandTasks.forEach(TimerTask::cancel);
             this.periodCommandTasks.clear();
         }
@@ -529,6 +570,9 @@ public class RouteConfiguration {
 
     private void releaseConnectionUsage() {
         int usages = this.connectionUsage.decrementAndGet();
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.log(Level.FINER, String.format("Connection usage on route %s released, current usages %d", getName(), usages));
+        }
         // On demand and last use? Close it.
         if(usages == 0 && getParentConnection().getInit() == InitType.ON_DEMAND) {
             getParentConnection().closeConnection();

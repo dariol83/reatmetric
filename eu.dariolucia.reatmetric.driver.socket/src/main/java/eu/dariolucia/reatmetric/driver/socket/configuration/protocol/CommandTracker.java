@@ -21,7 +21,6 @@ public class CommandTracker {
     private final String route;
     private final long id;
     private TimerTask timeoutTask;
-
     private String currentlyOpenStage = null;
 
     public CommandTracker(Instant time, IActivityHandler.ActivityInvocation activityInvocation, OutboundMessageMapping mapping, Pair<byte[], Map<String, Object>> encodedCommand, String route) {
@@ -129,6 +128,30 @@ public class CommandTracker {
                                 EXECUTION_STAGE_NAME, now, ActivityOccurrenceState.EXECUTION, null, ActivityReportState.TIMEOUT, ActivityOccurrenceState.VERIFICATION, null));
                     }
                 }
+            }
+        }
+    }
+
+    public void unknownVerification(IDataProcessor dataProcessor) {
+        if(!isAlive()) {
+            return;
+        }
+        Instant now = Instant.now();
+        // Inform model
+        if(this.currentlyOpenStage != null) {
+            if(this.currentlyOpenStage.equals(ACCEPTANCE_STAGE_NAME)) {
+                if(!mapping.getVerification().getExecution().isEmpty()) {
+                    dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                            ACCEPTANCE_STAGE_NAME, now, ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.UNKNOWN, ActivityOccurrenceState.TRANSMISSION, null));
+                    dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                            EXECUTION_STAGE_NAME, now, ActivityOccurrenceState.EXECUTION, null, ActivityReportState.UNKNOWN, ActivityOccurrenceState.VERIFICATION, null));
+                } else {
+                    dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                            ACCEPTANCE_STAGE_NAME, now, ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.UNKNOWN, ActivityOccurrenceState.VERIFICATION, null));
+                }
+            } else if(this.currentlyOpenStage.equals(EXECUTION_STAGE_NAME)) {
+                dataProcessor.forwardActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(),
+                        EXECUTION_STAGE_NAME, now, ActivityOccurrenceState.EXECUTION, null, ActivityReportState.UNKNOWN, ActivityOccurrenceState.VERIFICATION, null));
             }
         }
     }

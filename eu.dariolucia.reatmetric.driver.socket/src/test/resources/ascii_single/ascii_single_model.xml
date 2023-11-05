@@ -24,10 +24,10 @@
             </calib_enum>
             <setter activity="#1" set_argument="new_value">
                 <!-- Convert? -->
-                <decalib_enum default="UNKNOWN">
-                    <point x="0" y="OFF" />
-                    <point x="1" y="ON" />
-                </decalib_enum>
+                <decalib_ienum>
+                    <point y="0" x="OFF" />
+                    <point y="1" x="ON" />
+                </decalib_ienum>
                 <fixed_argument name="device_subsystem" value="SUB1" raw_value="true" />
                 <fixed_argument name="parameter" value="Status" raw_value="true" />
             </setter>

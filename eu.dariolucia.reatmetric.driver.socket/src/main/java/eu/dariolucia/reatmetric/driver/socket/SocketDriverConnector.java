@@ -28,6 +28,8 @@ import eu.dariolucia.reatmetric.driver.socket.configuration.SocketConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.IConnectionStatusListener;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.InitType;
+import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.OutboundMessageMapping;
+import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.OutboundMessageType;
 
 import java.rmi.RemoteException;
 import java.util.logging.Logger;
@@ -109,7 +111,12 @@ public class SocketDriverConnector extends AbstractTransportConnector implements
 
     @Override
     public void onConnectionStatusUpdate(AbstractConnectionConfiguration connection, boolean activeStatus) {
+        // Update the alarm state
         deriveAlarmState();
+        // Send the commands that are marked to be sent at startup
+        if(activeStatus) {
+            connection.getRoute().dispatchOnConnectionCommands();
+        }
     }
 
     private synchronized void deriveAlarmState() {

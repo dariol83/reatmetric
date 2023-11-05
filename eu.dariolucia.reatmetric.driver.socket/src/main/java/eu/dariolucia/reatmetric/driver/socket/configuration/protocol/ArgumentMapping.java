@@ -32,9 +32,6 @@ public class ArgumentMapping {
     @XmlAttribute(required = true)
     private String field;
 
-    @XmlAttribute(name = "encode-format")
-    private String stringFormat = null;
-
     public String getName() {
         return name;
     }
@@ -49,13 +46,5 @@ public class ArgumentMapping {
 
     public void setField(String field) {
         this.field = field;
-    }
-
-    public String getStringFormat() {
-        return stringFormat;
-    }
-
-    public void setStringFormat(String stringFormat) {
-        this.stringFormat = stringFormat;
     }
 }

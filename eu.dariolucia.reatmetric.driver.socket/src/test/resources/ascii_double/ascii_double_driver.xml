@@ -47,7 +47,7 @@
                 </inbound>
 
                 <!-- TM Subsystem Registration -->
-                <outbound id="POLL_SUB_MP" message="POLL_SUB" type="CONNECTOR_START">
+                <outbound id="POLL_SUB_MP" message="POLL_SUB" type="CONNECTION_ACTIVE">
 				</outbound>
             </route>
         </tcp>
@@ -58,8 +58,91 @@
                 <activity-types>
                     <type>DEV2-ASCII-CMD</type>
                 </activity-types>
-
-                <!-- TODO -->
+                <!-- Common -->
+                <inbound id="ACK_MP" message="ACK" />
+                <inbound id="EXE_MP" message="EXE" />
+                <inbound id="NOK_MP" message="NOK" />
+                <!-- Common -->
+                <outbound id="SET_MP" message="SET" type="ACTIVITY_DRIVEN" entity="2">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="parameter" field="parameter" />
+                    <argument name="new_value" field="new_value" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <!-- First Subsystem -->
+                <outbound id="CMD_SUB1_RST_MP" message="CMD_RST" type="ACTIVITY_DRIVEN" entity="46">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB1_SWP_MP" message="CMD_SWP" type="ACTIVITY_DRIVEN" entity="47">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="times" field="times" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB1_RBT_MP" message="CMD_RBT" type="ACTIVITY_DRIVEN" entity="48">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="delay" field="delay" />
+                    <argument name="running" field="running" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <!-- Second Subsystem -->
+                <outbound id="CMD_SUB2_RST_MP" message="CMD_RST" type="ACTIVITY_DRIVEN" entity="56">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB2_SWP_MP" message="CMD_SWP" type="ACTIVITY_DRIVEN" entity="57">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="times" field="times" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB2_RBT_MP" message="CMD_RBT" type="ACTIVITY_DRIVEN" entity="58">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="delay" field="delay" />
+                    <argument name="running" field="running" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
             </route>
         </tcp>
     </connections>
@@ -86,28 +169,28 @@
             <template>REQ SUB1 SUB2\n</template>
         </ascii>
 
-
-        <!-- TODO -->
-
-
         <ascii id="CMD_SWP">
-            <template>{CMD,${{device_subsystem}}$,SWP,${{times}}$,}</template>
+            <template>CMD ${{device_subsystem}}$ ${{command_id}}$ SWP ${{times}}$\n</template>
             <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
             <symbol name="times" type="UNSIGNED_INTEGER" />
         </ascii>
         <ascii id="CMD_RST">
-            <template>{CMD,${{device_subsystem}}$,RST,,}</template>
+            <template>CMD ${{device_subsystem}}$ ${{command_id}}$ RST\n</template>
             <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
         </ascii>
         <ascii id="CMD_RBT">
-            <template>{CMD,${{device_subsystem}}$,RBT,${{delay}}$,${{running}}$}</template>
+            <template>CMD ${{device_subsystem}}$ ${{command_id}}$ RBT ${{delay}}$ ${{running}}$\n</template>
             <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
             <symbol name="delay" type="UNSIGNED_INTEGER" />
             <symbol name="running" type="UNSIGNED_INTEGER" />
         </ascii>
         <ascii id="SET">
-            <template>{SET,${{device_subsystem}}$,${{parameter}}$,${{new_value}}$}</template>
+            <template>SET ${{device_subsystem}}$ ${{command_id}}$ ${{parameter}}$ ${{new_value}}$\n</template>
             <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
             <symbol name="parameter" type="CHARACTER_STRING" />
             <symbol name="new_value" type="DERIVED">
                 <type id="ENUMERATED" encode-format="%d" />
@@ -118,11 +201,18 @@
         </ascii>
 
         <ascii id="ACK">
-            <template>{ACK,${{device_subsystem}}$}</template>
+            <template>ACK ${{device_subsystem}}$ ${{command_id}}$\n</template>
             <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
+        </ascii>
+        <ascii id="EXE">
+            <template>EXE ${{device_subsystem}}$ ${{command_id}}$\n</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
         </ascii>
         <ascii id="NOK">
-            <template>{NOK}</template>
+            <template>NOK ${{command_id}}$\n</template>
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
         </ascii>
     </messages>
 </ns1:socket>

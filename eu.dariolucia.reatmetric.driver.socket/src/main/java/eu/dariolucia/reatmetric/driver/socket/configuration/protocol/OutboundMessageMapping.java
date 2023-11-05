@@ -24,10 +24,7 @@ import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractC
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AsciiEncoding;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.AsciiMessageDefinition;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.BinaryMessageDefinition;
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlAttribute;
-import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.*;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -122,7 +119,8 @@ public class OutboundMessageMapping extends MessageMapping {
      * Internal operations
      * ***************************************************************/
 
-    private transient final Map<String, ArgumentMapping> id2argumentMapping = new TreeMap<>();
+    @XmlTransient
+    private final Map<String, ArgumentMapping> id2argumentMapping = new TreeMap<>();
 
     @Override
     public void initialise(AbstractConnectionConfiguration defaultConnection, int entityOffset) {
@@ -130,6 +128,10 @@ public class OutboundMessageMapping extends MessageMapping {
         //
         for(ArgumentMapping am : getArgumentMappings()) {
             id2argumentMapping.put(am.getName(), am);
+        }
+        //
+        for(AutoIncrementField aif : getAutoIncrementFields()) {
+            aif.initialise(defaultConnection.getRoute());
         }
         // Sanitize verification
         if(verification != null && verification.getAcceptance().isEmpty() && verification.getExecution().isEmpty()) {

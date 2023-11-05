@@ -20,8 +20,8 @@ package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 public enum OutboundMessageType {
     /** Send command when a linked activity is requested */
     ACTIVITY_DRIVEN,
-    /** Send command upon connector activation */
-    CONNECTOR_START,
+    /** Send command upon connection activation: if a connection drops and it is restored, the command is sent again */
+    CONNECTION_ACTIVE,
     /** Send command periodically when connector is up */
     PERIODIC
 }

@@ -208,10 +208,13 @@ public abstract class AbstractConnectionConfiguration {
     }
 
     public synchronized void openConnection() {
-        if(this.running) {
+        if(isOpen()) {
             return;
         }
-        this.running = true;
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.log(Level.FINE, String.format("Opening connection %s (route %s)", getName(), getRoute().getName()));
+        }
+        setOpen(true);
         this.readingThread = new Thread(this::connectionLoop);
         this.readingThread.setName("ReatMetric Socket Connector " + getName() + " Reading Thread");
         this.readingThread.setDaemon(true);
@@ -224,17 +227,23 @@ public abstract class AbstractConnectionConfiguration {
     protected abstract void connectionLoop();
 
     public void closeConnection() {
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.log(Level.FINE, String.format("Request to close connection %s (route %s)", getName(), getRoute().getName()));
+        }
         Thread oldReadingThread = null;
         synchronized (this) {
-            if (this.running) {
+            if (isOpen()) {
                 if (getInit() == InitType.CONNECTOR) {
                     getRoute().stopDispatchingOfPeriodicCommands();
                 }
-                this.running = false;
+                setOpen(false);
                 oldReadingThread = this.readingThread;
                 oldReadingThread.interrupt();
                 this.readingThread = null;
             }
+        }
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.log(Level.FINE, String.format("Cleaning up connection resources on %s (route %s)", getName(), getRoute().getName()));
         }
         // Cleanup
         if(oldReadingThread != null) {
@@ -244,12 +253,18 @@ public abstract class AbstractConnectionConfiguration {
                 // Ignore
             }
         }
+        // Reset route status
+        getRoute().notifyConnectionDisconnection();
     }
 
     public abstract boolean writeMessage(byte[] message) throws IOException;
 
     public synchronized boolean isOpen() {
         return this.running;
+    }
+
+    protected synchronized void setOpen(boolean running) {
+        this.running = running;
     }
 
     protected void setActive(boolean active) {

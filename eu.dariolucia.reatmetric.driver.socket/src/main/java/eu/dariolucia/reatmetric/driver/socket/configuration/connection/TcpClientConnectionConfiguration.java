@@ -20,6 +20,7 @@ package eu.dariolucia.reatmetric.driver.socket.configuration.connection;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlTransient;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,9 +67,25 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
      * Channel operations
      * ***************************************************************/
 
-    private transient volatile Socket socket;
-    private transient volatile InputStream inputStream;
-    private transient volatile OutputStream outputStream;
+    @XmlTransient
+    private volatile Socket socket;
+    @XmlTransient
+    private volatile InputStream inputStream;
+    @XmlTransient
+    private volatile OutputStream outputStream;
+
+    @Override
+    protected synchronized void setOpen(boolean running) {
+        super.setOpen(running);
+        Socket theSocket = this.socket;
+        if(!running &&  theSocket != null) {
+            try {
+                theSocket.close();
+            } catch (IOException e) {
+                // Nothing
+            }
+        }
+    }
 
     @Override
     protected void connectionLoop() {
@@ -81,15 +98,16 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
                 try {
                     readAndForward();
                 } catch (Exception e) {
-                    e.printStackTrace();
                     LOG.log(Level.WARNING, String.format("%s: error while reading from connection to %s:%d: %s", getName(), getHost(), getRemotePort(), e.getMessage()), e);
                     // Cleanup
                     cleanup();
                     // Wait and retry (hardcoded for now)
-                    try {
-                        Thread.sleep(5000);
-                    } catch (InterruptedException ex) {
-                        // Ignore
+                    if(isOpen()) {
+                        try {
+                            Thread.sleep(5000);
+                        } catch (InterruptedException ex) {
+                            // Ignore
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -99,10 +117,12 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
                     suppressFailure = true;
                 }
                 // Wait and retry (hardcoded for now)
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException ex) {
-                    // Ignore
+                if(isOpen()) {
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ex) {
+                        // Ignore
+                    }
                 }
             }
         }
@@ -121,7 +141,12 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
             // At this stage, whatever other exception you might have, it is not related to the connection, so log and go ahead
             forwardToRoute(message);
         } catch (SocketTimeoutException e) {
-            // Just return, this method will be immediately called again
+            // Just return, this method will be immediately called again, in case the reading must go on
+        } catch (IOException e) {
+            if(isOpen()) {
+                // If you are trying to close the connection, do not raise the exception
+                throw e;
+            }
         }
         // If you have any other exception, then it is bad and the connection will be cleared
     }
@@ -159,6 +184,7 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
         // Clean-up
         if(this.inputStream != null) {
             try {
+                this.socket.shutdownInput();
                 this.inputStream.close();
             } catch (IOException e) {
                 // Ignore
@@ -166,6 +192,7 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
         }
         if(this.outputStream != null) {
             try {
+                this.socket.shutdownOutput();
                 this.outputStream.close();
             } catch (IOException e) {
                 // Ignore
@@ -173,6 +200,9 @@ public class TcpClientConnectionConfiguration extends AbstractConnectionConfigur
         }
         if(this.socket != null) {
             try {
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.log(Level.FINE, String.format("Connection %s: closing TCP socket to %s:%d", getName(), getHost(), getRemotePort()));
+                }
                 this.socket.close();
             } catch (IOException e) {
                 // Ignore
