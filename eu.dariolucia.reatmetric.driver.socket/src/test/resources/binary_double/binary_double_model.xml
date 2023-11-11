@@ -1,0 +1,145 @@
+<!--
+  ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~          http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition" path_prefix="STATION.DEVICE3.">
+    <parameters>
+        <!-- Subsystem 1 -->
+		<parameter id="#70" location="SUB1.STATUS" description="Subsystem Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <setter activity="#3" set_argument="new_value">
+                <!-- Convert? -->
+                <decalib_ienum>
+                    <point y="0" x="OFF" />
+                    <point y="1" x="ON" />
+                </decalib_ienum>
+                <fixed_argument name="device_subsystem" value="SUB1" raw_value="true" />
+                <fixed_argument name="parameter" value="Status" raw_value="true" />
+            </setter>
+		</parameter>
+		<parameter id="#71" location="SUB1.FREQUENCY" description="Frequency" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="kHz" />
+		<parameter id="#72" location="SUB1.TEMPERATURE" description="Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C" />
+		<parameter id="#73" location="SUB1.OFFSET" description="Frequency Offset" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="kHz" />
+		<parameter id="#74" location="SUB1.MODE" description="Operating Mode" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+		</parameter>
+        <parameter id="#75" location="SUB1.SUMMARY" description="Summary" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" >
+        </parameter>
+        <parameter id="#76" location="SUB1.SWEEP" description="Sweep Mode" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+        </parameter>
+        <!-- Subsystem 2 -->
+        <parameter id="#80" location="SUB2.STATUS" description="Subsystem Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#81" location="SUB2.FREQUENCY" description="Frequency" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="kHz" />
+        <parameter id="#82" location="SUB2.TEMPERATURE" description="Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C" />
+        <parameter id="#83" location="SUB2.OFFSET" description="Frequency Offset" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="kHz" />
+        <parameter id="#84" location="SUB2.MODE" description="Operating Mode" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#85" location="SUB2.SUMMARY" description="Summary" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" >
+        </parameter>
+        <parameter id="#86" location="SUB2.SWEEP" description="Sweep Mode" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+        </parameter>
+    </parameters>
+
+    <events>
+    </events>
+
+    <activities>
+        <activity id="#3" location="COMMANDS.SET_PARAMETER" description="Set a parameter to a specific value" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
+            <argument name="parameter" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
+            <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
+        </activity>
+
+        <activity id="#77" location="SUB1.RESET" description="Reset the subsystem" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
+                <default_fixed type="RAW" value="SUB1" />
+            </argument>
+            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="RST" />
+            </argument>
+        </activity>
+        <activity id="#78" location="SUB1.START_SWEEP" description="Start sweep sequence" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
+                <default_fixed type="RAW" value="SUB1" />
+            </argument>
+            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="SWP" />
+            </argument>
+            <argument name="times" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        </activity>
+        <activity id="#79" location="SUB1.REBOOT" description="Reboot subsystem" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
+                <default_fixed type="RAW" value="SUB1" />
+            </argument>
+            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="RBT" />
+            </argument>
+            <argument name="delay" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+            <argument name="running" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        </activity>
+
+        <activity id="#87" location="SUB2.RESET" description="Reset the subsystem" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
+                <default_fixed type="RAW" value="SUB2" />
+            </argument>
+            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="RST" />
+            </argument>
+        </activity>
+        <activity id="#88" location="SUB2.START_SWEEP" description="Start sweep sequence" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
+                <default_fixed type="RAW" value="SUB2" />
+            </argument>
+            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="SWP" />
+            </argument>
+            <argument name="times" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        </activity>
+        <activity id="#89" location="SUB2.REBOOT" description="Reboot subsystem" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
+                <default_fixed type="RAW" value="SUB2" />
+            </argument>
+            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
+                <default_fixed type="RAW" value="RBT" />
+            </argument>
+            <argument name="delay" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+            <argument name="running" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        </activity>
+
+    </activities>
+</ns1:processing>

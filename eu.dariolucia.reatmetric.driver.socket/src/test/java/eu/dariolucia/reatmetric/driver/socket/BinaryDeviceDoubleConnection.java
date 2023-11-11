@@ -19,13 +19,15 @@ package eu.dariolucia.reatmetric.driver.socket;
 
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * This device has a protocol supporting two binary connections, one for monitoring, one for commanding, both fully
@@ -102,15 +104,29 @@ import java.util.Date;
  * - Subsystem ID
  * - Operation (0xFFFFFFF3)
  * - Tail
+ *
+ * Unknown message NOK
+ * - Header (length is 24 bytes)
+ * - Subsystem ID 0xFFFFFFFF
+ * - Operation (0xFFFFFFFF)
+ * - Tail
  */
 public class BinaryDeviceDoubleConnection {
 
     private static final int PORT_TLM = 37212;
     private static final int PORT_CMD = 37213;
     private static final Device DEVICE = new Device("DEVICE3");
+    public static final int SET_OPERATION = 0x0000000A;
+    public static final int CMD_OPERATION = 0x0000000B;
+    public static final int ACK_NEGATIVE = 0xFFFFFFF2;
+    public static final int ACK_POSITIVE = 0x80000002;
+    public static final int EXE_NEGATIVE = 0xFFFFFFF3;
+    public static final int EXE_POSITIVE = 0x80000003;
     private static volatile OutputStream outputStream;
 
-    public static void main(String[] args) throws IOException {
+    private static final Map<Integer, String> COMMAND_MAP = Map.of(1, "RST", 2, "SWP", 3, "RBT");
+
+    public static void main(String[] args) {
         // Create the device subsystems
         {
             createSubsystem("SUB1", 10.1);
@@ -182,9 +198,6 @@ public class BinaryDeviceDoubleConnection {
             outputStream = connection.getOutputStream();
             InputStream inputStream = connection.getInputStream();
             byte[] request = readRequest(inputStream);
-            if(request == null) {
-                throw new IOException("Connection closed");
-            }
             System.out.println(new Date() + " >> CMD Received: " + StringUtil.toHexDump(request));
             byte[] response = processCmdRequest(request);
             sendOnCommandConnection(response);
@@ -203,14 +216,144 @@ public class BinaryDeviceDoubleConnection {
         }
     }
 
-    private static byte[] processTlmRequest(byte[] request) {
-        // TODO:
-        return null;
+    private static byte[] processTlmRequest(byte[] request) throws IOException {
+        if(!validate(request)) {
+            return nok();
+        }
+        // Read the request
+        ByteBuffer bb = ByteBuffer.wrap(request);
+        bb.getLong();
+        bb.getInt();
+        int subsystem = bb.getInt();
+        String subSystemStr = "SUB" + subsystem;
+        int operation = bb.getInt();
+        if(operation != 0x00000001) {
+            return reply(subsystem, 0x8FFFFFF1);
+        } else {
+            DeviceSubsystem ds = DEVICE.getSubsystem(subSystemStr);
+            if(ds == null) {
+                return reply(subsystem, 0x8FFFFFF1);
+            }
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ds.encodeStateTo(bos);
+            return reply(subsystem, 0x80000001, bos.toByteArray());
+        }
+    }
+
+    private static byte[] reply(int subsystem, int operation) {
+        return reply(subsystem, operation, new byte[0]);
+    }
+
+    private static byte[] reply(int subsystem, int operation, byte[] body) {
+        byte[] reply = new byte[24 + body.length];
+        ByteBuffer bb = ByteBuffer.wrap(reply);
+        bb.put(new byte[] { 0x52, 0x45, 0x41, 0x54 });
+        bb.putInt(24 + body.length);
+        bb.putInt(0x0000FFFF);
+        bb.putInt(subsystem);
+        bb.putInt(operation);
+        bb.put(body);
+        bb.put(new byte[] { 0x4D, 0x45, 0x54, 0x52 });
+        return reply;
     }
 
     private static byte[] processCmdRequest(byte[] request) {
-        // TODO: Do the processing
-        return null;
+        if(!validate(request)) {
+            return nok();
+        }
+        // Read the request
+        ByteBuffer bb = ByteBuffer.wrap(request);
+        bb.getLong();
+        bb.getInt();
+        int subsystem = bb.getInt();
+        String subSystemStr = "SUB" + subsystem;
+        int operation = bb.getInt();
+        switch(operation) {
+            case SET_OPERATION:
+            {
+                return setFor(subsystem, bb);
+            }
+            case CMD_OPERATION:
+            {
+                return commandFor(subsystem, bb);
+            }
+            default:  return ackNegative(subsystem); // ACK negative
+        }
+    }
+
+    private static byte[] ackNegative(int subsystem) {
+        return reply(subsystem, ACK_NEGATIVE);
+    }
+
+    private static byte[] ackPositive(int subsystem) {
+        return reply(subsystem, ACK_POSITIVE);
+    }
+
+    private static byte[] exeNegative(int subsystem) {
+        return reply(subsystem, EXE_NEGATIVE);
+    }
+
+    private static byte[] exePositive(int subsystem) {
+        return reply(subsystem, EXE_POSITIVE);
+    }
+
+    private static byte[] commandFor(int subsystemId, ByteBuffer bb) {
+        String subsystem = "SUB" + subsystemId;
+        DeviceSubsystem ds = DEVICE.getSubsystem(subsystem);
+        if(ds == null) {
+            return ackNegative(subsystemId);
+        } else {
+            // read command
+            int commandId = bb.getInt();
+            String command = COMMAND_MAP.get(commandId);
+            if(command == null) {
+                return ackNegative(subsystemId);
+            }
+            switch(command) {
+                case "RST": // No argument
+                    return runCommand(subsystemId, ds, command, new String[0]);
+                case "SWP":
+                    return runCommand(subsystemId, ds, command, new String[] { String.valueOf(bb.getInt()) });
+                case "RBT":
+                    return runCommand(subsystemId, ds, command, new String[] { String.valueOf(bb.getInt()), String.valueOf(bb.getInt()) });
+                default:
+                    return ackNegative(subsystemId);
+            }
+        }
+    }
+
+    private static byte[] setFor(int subsystemId, ByteBuffer bb) {
+        String subsystem = "SUB" + subsystemId;
+        DeviceSubsystem ds = DEVICE.getSubsystem(subsystem);
+        if(ds == null) {
+            return ackNegative(subsystemId);
+        } else {
+            int parameterId = bb.getInt();
+            Object valueToSet = ds.decodeValueFrom(parameterId, bb);
+            try {
+                if(ds.set(parameterId, valueToSet, false, result ->
+                        sendOnCommandConnection(result ? exePositive(subsystemId) : exeNegative(subsystemId)))) {
+                    return ackPositive(subsystemId);
+                } else {
+                    return ackNegative(subsystemId);
+                }
+            } catch (Exception e) {
+                return ackNegative(subsystemId);
+            }
+        }
+    }
+
+    private static byte[] runCommand(int subsystemId, DeviceSubsystem ds, String command, String[] arguments) {
+        try {
+            if (ds.invoke(command, arguments, false, result ->
+                    sendOnCommandConnection(result ? exePositive(subsystemId) : exeNegative(subsystemId)))) {
+                return ackPositive(subsystemId);
+            } else {
+                return ackNegative(subsystemId);
+            }
+        } catch (Exception e) {
+            return ackNegative(subsystemId);
+        }
     }
 
     private static void sendOnCommandConnection(byte[] toSend) {
@@ -228,8 +371,58 @@ public class BinaryDeviceDoubleConnection {
     }
 
     private static byte[] readRequest(InputStream inputStream) throws IOException {
-        // TODO: read a message
-        return null;
+        return readMessage(inputStream);
+    }
+
+    private static byte[] readMessage(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte[] buff = inputStream.readNBytes(4); // REAT
+        byte[] lenArray = inputStream.readNBytes(4);
+        ByteBuffer bb = ByteBuffer.wrap(lenArray);
+        int length = bb.getInt();
+        byte[] rest = inputStream.readNBytes(length - 8);
+        bos.write(buff);
+        bos.write(lenArray);
+        bos.write(rest);
+        return bos.toByteArray();
+    }
+
+    private static boolean validate(byte[] message) {
+        ByteBuffer bb = ByteBuffer.wrap(message);
+        // Read first 4 bytes as String
+        byte[] headPrefix = new byte[4];
+        bb.get(headPrefix);
+        String headPrefixStr = new String(headPrefix, StandardCharsets.US_ASCII);
+        if(!headPrefixStr.equals("REAT")) {
+            return false;
+        }
+        // Read length
+        int length = bb.getInt();
+        if(length != message.length) {
+            return false;
+        }
+        // Read filler
+        int filler = bb.getInt();
+        if(filler != 0xFFFF0000) {
+            return false;
+        }
+        // Check the last 4 bytes
+        bb = ByteBuffer.wrap(message, message.length - 4, 4);
+        byte[] tailPrefix = new byte[4];
+        bb.get(tailPrefix);
+        String tailPrefixStr = new String(tailPrefix, StandardCharsets.US_ASCII);
+        return tailPrefixStr.equals("METR");
+    }
+
+    private static byte[] nok() {
+        return new byte[] {
+        0x52, 0x45, 0x41, 0x54, // REAT
+        0x00, 0x00, 0x00, 0x18, // 24
+        0x00, 0x00, (byte) 0xFF, (byte) 0xFF, // 00 00 FF FF
+        (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
+        (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF,
+        0x4D, 0x45, 0x54, 0x52 // METR
+        };
     }
 
     private static void createSubsystem(String name, double temperature) {

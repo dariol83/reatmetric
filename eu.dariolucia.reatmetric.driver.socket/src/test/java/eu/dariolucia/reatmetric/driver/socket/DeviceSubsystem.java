@@ -20,8 +20,11 @@ package eu.dariolucia.reatmetric.driver.socket;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -68,6 +71,24 @@ public class DeviceSubsystem {
 
     public boolean set(String id, Object value, boolean synchronous, Consumer<Boolean> executionCompleted) throws InterruptedException {
         Future<Boolean> result = executor.submit(() -> internalSet(id, value, executionCompleted));
+        if (synchronous) {
+            try {
+                return result.get();
+            } catch (ExecutionException e) {
+                return false;
+            }
+        } else {
+            return true;
+        }
+    }
+
+    public boolean set(int parameterIdx, Object value, boolean synchronous, Consumer<Boolean> executionCompleted) throws InterruptedException {
+        List<String> params = new ArrayList<>(this.id2value.keySet());
+        if(params.size() <= parameterIdx) {
+            return false;
+        }
+        String parameter = params.get(parameterIdx);
+        Future<Boolean> result = executor.submit(() -> internalSet(parameter, value, executionCompleted));
         if (synchronous) {
             try {
                 return result.get();
@@ -126,6 +147,88 @@ public class DeviceSubsystem {
 
     public ValueTypeEnum getTypeOf(String key) {
         return id2type.get(key);
+    }
+
+    public void encodeStateTo(ByteArrayOutputStream bos) throws IOException {
+        Map<String, Object> polled = poll();
+        for(Map.Entry<String, Object> e : polled.entrySet()) {
+            if(e.getValue() instanceof Integer) {
+                bos.write(fromInt((Integer) e.getValue()));
+            } else if(e.getValue() instanceof Double) {
+                bos.write(fromDouble((Double) e.getValue()));
+            } else if(e.getValue() instanceof Long) {
+                bos.write(fromLong((Long) e.getValue()));
+            } else { // String
+                String val = Objects.toString(e.getValue());
+                bos.write(fromString(val));
+            }
+        }
+    }
+
+    private byte[] fromInt(Integer value) {
+        byte[] b = new byte[4];
+        ByteBuffer bb = ByteBuffer.wrap(b);
+        bb.putInt(value);
+        return b;
+    }
+
+    private byte[] fromLong(Long value) {
+        byte[] b = new byte[8];
+        ByteBuffer bb = ByteBuffer.wrap(b);
+        bb.putLong(value);
+        return b;
+    }
+
+    private byte[] fromDouble(Double value) {
+        byte[] b = new byte[8];
+        ByteBuffer bb = ByteBuffer.wrap(b);
+        bb.putDouble(value);
+        return b;
+    }
+
+    private byte[] fromString(String value) throws IOException {
+        byte[] prefix = fromInt(value.length());
+        //
+        byte[] encodedString = value.getBytes(StandardCharsets.US_ASCII);
+        int rest = prefix.length % 4;
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bos.write(prefix);
+        bos.write(encodedString);
+        if(rest != 0) {
+            bos.write(new byte[4 - rest]);
+        }
+        return bos.toByteArray();
+    }
+
+    public Object decodeValueFrom(int parameterIdx, ByteBuffer bb) {
+        List<String> params = new ArrayList<>(this.id2value.keySet());
+        if(params.size() <= parameterIdx) {
+            return null;
+        }
+        String parameter = params.get(parameterIdx);
+        ValueTypeEnum type = id2type.get(parameter);
+        switch (type) {
+            case UNSIGNED_INTEGER:
+            case SIGNED_INTEGER:
+                return bb.getLong();
+            case ENUMERATED:
+                return bb.getInt();
+            case REAL:
+                return bb.getDouble();
+            case CHARACTER_STRING:
+                return toCharString(bb);
+            default:
+                throw new IllegalArgumentException("Unsupported type " + type);
+        }
+    }
+
+    private Object toCharString(ByteBuffer bb) {
+        // Read string length
+        int len = bb.getInt();
+        // Read the string
+        byte[] data = new byte[len];
+        bb.get(data);
+        return new String(data, StandardCharsets.US_ASCII);
     }
 
     public interface IHandler {
