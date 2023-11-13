@@ -25,12 +25,10 @@ import eu.dariolucia.ccsds.encdec.identifier.impl.FieldGroupBasedPacketIdentifie
 import eu.dariolucia.ccsds.encdec.structure.*;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketDecoder;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketEncoder;
+import eu.dariolucia.ccsds.encdec.structure.resolvers.DefinitionValueBasedResolver;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.PathLocationBasedResolver;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlAttribute;
-import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.*;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -46,7 +44,6 @@ public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
 
     @XmlElement(name = "type-marker")
     private List<String> markers = new LinkedList<>();
-
     public List<String> getMarkers() {
         return markers;
     }
@@ -67,14 +64,19 @@ public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
      * Internal operations
      * ***************************************************************/
 
-    private transient IPacketIdentifier identifier;
-    private transient IPacketEncoder encoder;
-    private transient IPacketDecoder decoder;
+    @XmlTransient
+    private IPacketIdentifier identifier;
+    @XmlTransient
+    private IPacketEncoder encoder;
+    @XmlTransient
+    private IPacketDecoder decoder;
+    @XmlTransient
+    private Definition definition;
 
     @Override
     public void initialise() throws ReatmetricException {
         try {
-            Definition definition = Definition.load(new FileInputStream(getLocation()));
+            definition = Definition.load(new FileInputStream(getLocation()));
             identifier = new FieldGroupBasedPacketIdentifier(definition, false, markers);
             decoder = new DefaultPacketDecoder(definition);
             encoder = new DefaultPacketEncoder(definition);
@@ -107,7 +109,7 @@ public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
     @Override
     public byte[] encode(String secondaryId, Map<String, Object> data) throws ReatmetricException {
         try {
-            return encoder.encode(secondaryId, new PathLocationBasedResolver(data));
+            return encoder.encode(secondaryId, new DefinitionValueBasedResolver(new PathLocationBasedResolver(data), true));
         } catch (EncodingException e) {
             throw new ReatmetricException(e);
         }

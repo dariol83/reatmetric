@@ -25,11 +25,11 @@
                                  considerSkippedBytes="true" considerFieldLength="true" />
             <route name="Device 3 TM Route" entity-offset="0" command-lock="true">
                 <activity-types>
-                    <type>DEV3-BIN-CMD</type>
+                    <type>DEV3-BIN-TLM</type>
                 </activity-types>
 
                 <!-- First Subsystem -->
-                <inbound id="TLM_SUB1_MP" message="TLM_SUB1">
+                <inbound id="TLM_SUB1_MP" message="TLM_DEFINITION" secondary-id="TLM_SUB1">
                     <inject name="status_val" entity="70" />
                     <inject name="freq_val" entity="71" />
                     <inject name="temp_val" entity="72" />
@@ -39,7 +39,7 @@
                     <inject name="sweep_val" entity="76" />
                 </inbound>
                 <!-- Second Subsystem -->
-                <inbound id="TLM_SUB2_MP" message="TLM_SUB2">
+                <inbound id="TLM_SUB2_MP" message="TLM_DEFINITION" secondary-id="TLM_SUB2">
                     <inject name="status_val" entity="80" />
                     <inject name="freq_val" entity="81" />
                     <inject name="temp_val" entity="82" />
@@ -50,184 +50,127 @@
                 </inbound>
 
                 <!-- TM Subsystem Registration -->
-                <outbound id="POLL_SUB1_MP" message="POLL_SUB1" type="PERIODIC" period="1">
+                <outbound id="POLL_SUB1_MP" message="TLM_DEFINITION" secondary-id="POLL_SUB" type="PERIODIC" period="1">
+                    <fixed-field field="device_subsystem" value="1" type="UNSIGNED_INTEGER" />
                     <verification timeout="3">
-                        <execution message="TLM_SUB1" result="OK" />
-                        <execution message="TLM_SUB1_NOK" result="FAIL" />
+                        <execution message="TLM_DEFINITION" secondary-id="TLM_SUB1" result="OK" />
+                        <execution message="TLM_DEFINITION" secondary-id="TLM_SUB1_NOK" result="FAIL" />
                     </verification>
 				</outbound>
 
-                <outbound id="POLL_SUB2_MP" message="POLL_SUB2" type="PERIODIC" period="1">
+                <outbound id="POLL_SUB2_MP" message="TLM_DEFINITION" secondary-id="POLL_SUB" type="PERIODIC" period="1">
+                    <fixed-field field="device_subsystem" value="2" type="UNSIGNED_INTEGER" />
                     <verification timeout="3">
-                        <execution message="TLM_SUB2" result="OK" />
-                        <execution message="TLM_SUB2_NOK" result="FAIL" />
+                        <execution message="TLM_DEFINITION" secondary-id="TLM_SUB2" result="OK" />
+                        <execution message="TLM_DEFINITION" secondary-id="TLM_SUB2_NOK" result="FAIL" />
                     </verification>
                 </outbound>
             </route>
         </tcp>
-        <!-- TODO: from here -->
-        <tcp name="Device TC TCP Connection" source="Device 2" protocol="ASCII" init="ON_DEMAND"
-             host="127.0.0.1" remote-port="35213" local-port="0" ascii-encoding="UTF8">
-            <asciiDelimiterDecoding><delimiter>\n</delimiter></asciiDelimiterDecoding>
-            <route name="Device 2 TC Route" entity-offset="0" command-lock="true">
+        <tcp name="Device TC TCP Connection" source="Device 3" protocol="BINARY" init="ON_DEMAND"
+             host="127.0.0.1" remote-port="37213" local-port="0" >
+            <lengthFieldDecoding headerNbBytesToSkip="4" fieldLength="4" bigEndian="true"
+                                 considerSkippedBytes="true" considerFieldLength="true" />
+            <route name="Device 3 TC Route" entity-offset="0" command-lock="true">
                 <activity-types>
-                    <type>DEV2-ASCII-CMD</type>
+                    <type>DEV3-BIN-CMD</type>
                 </activity-types>
                 <!-- Common -->
-                <inbound id="ACK_MP" message="ACK" />
-                <inbound id="EXE_MP" message="EXE" />
-                <inbound id="NOK_MP" message="NOK" />
-                <!-- Common -->
-                <outbound id="SET_MP" message="SET" type="ACTIVITY_DRIVEN" entity="2">
+                <inbound id="ACK_POS_IN" message="CMD_DEFINITION" secondary-id="ACK_POS" />
+                <inbound id="ACK_NEG_IN" message="CMD_DEFINITION" secondary-id="ACK_NEG" />
+                <inbound id="EXE_POS_IN" message="CMD_DEFINITION" secondary-id="EXE_POS" />
+                <inbound id="EXE_NEG_IN" message="CMD_DEFINITION" secondary-id="EXE_NEG" />
+                <inbound id="NOK_IN" message="CMD_DEFINITION" secondary-id="CMD_NOK" />
+                <!-- Common TODO: you might need more than a SET definition, one for each value type -->
+                <outbound id="SET_MP" message="CMD_DEFINITION" secondary-id="CMD_SET" type="ACTIVITY_DRIVEN" entity="3">
                     <argument name="device_subsystem" field="device_subsystem" />
                     <argument name="parameter" field="parameter" />
                     <argument name="new_value" field="new_value" />
-                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
                     <verification timeout="10">
-                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
-                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" result="OK" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_POS" result="OK" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
                 <!-- First Subsystem -->
-                <outbound id="CMD_SUB1_RST_MP" message="CMD_RST" type="ACTIVITY_DRIVEN" entity="46">
-                    <argument name="device_subsystem" field="device_subsystem" />
-                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                <outbound id="CMD_SUB1_RST_MP" message="CMD_DEFINITION" secondary-id="CMD_RST" type="ACTIVITY_DRIVEN" entity="77">
+                    <fixed-field field="device_subsystem" value="1" type="UNSIGNED_INTEGER" />
                     <verification timeout="10">
-                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
-                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" result="OK" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_POS" result="OK" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
-                <outbound id="CMD_SUB1_SWP_MP" message="CMD_SWP" type="ACTIVITY_DRIVEN" entity="47">
-                    <argument name="device_subsystem" field="device_subsystem" />
+                <outbound id="CMD_SUB1_SWP_MP" message="CMD_DEFINITION" secondary-id="CMD_SWP" type="ACTIVITY_DRIVEN" entity="78">
+                    <fixed-field field="device_subsystem" value="1" type="UNSIGNED_INTEGER" />
                     <argument name="times" field="times" />
-                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
                     <verification timeout="10">
-                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
-                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" result="OK" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_POS" result="OK" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
-                <outbound id="CMD_SUB1_RBT_MP" message="CMD_RBT" type="ACTIVITY_DRIVEN" entity="48">
-                    <argument name="device_subsystem" field="device_subsystem" />
+                <outbound id="CMD_SUB1_RBT_MP" message="CMD_DEFINITION" secondary-id="CMD_RBT" type="ACTIVITY_DRIVEN" entity="79">
+                    <fixed-field field="device_subsystem" value="1" type="UNSIGNED_INTEGER" />
                     <argument name="delay" field="delay" />
                     <argument name="running" field="running" />
-                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
                     <verification timeout="10">
-                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
-                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" result="OK" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_POS" result="OK" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
                 <!-- Second Subsystem -->
-                <outbound id="CMD_SUB2_RST_MP" message="CMD_RST" type="ACTIVITY_DRIVEN" entity="56">
-                    <argument name="device_subsystem" field="device_subsystem" />
-                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                <outbound id="CMD_SUB2_RST_MP" message="CMD_DEFINITION" secondary-id="CMD_RST" type="ACTIVITY_DRIVEN" entity="87">
+                    <fixed-field field="device_subsystem" value="2" type="UNSIGNED_INTEGER" />
                     <verification timeout="10">
-                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
-                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" result="OK" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_POS" result="OK" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
-                <outbound id="CMD_SUB2_SWP_MP" message="CMD_SWP" type="ACTIVITY_DRIVEN" entity="57">
-                    <argument name="device_subsystem" field="device_subsystem" />
+                <outbound id="CMD_SUB2_SWP_MP" message="CMD_DEFINITION" secondary-id="CMD_SWP" type="ACTIVITY_DRIVEN" entity="88">
+                    <fixed-field field="device_subsystem" value="2" type="UNSIGNED_INTEGER" />
                     <argument name="times" field="times" />
-                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
                     <verification timeout="10">
-                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
-                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" result="OK" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_POS" result="OK" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
-                <outbound id="CMD_SUB2_RBT_MP" message="CMD_RBT" type="ACTIVITY_DRIVEN" entity="58">
-                    <argument name="device_subsystem" field="device_subsystem" />
+                <outbound id="CMD_SUB2_RBT_MP" message="CMD_DEFINITION" secondary-id="CMD_RBT" type="ACTIVITY_DRIVEN" entity="89">
+                    <fixed-field field="device_subsystem" value="2" type="UNSIGNED_INTEGER" />
                     <argument name="delay" field="delay" />
                     <argument name="running" field="running" />
-                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
                     <verification timeout="10">
-                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
-                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
-                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" result="OK" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_POS" result="OK" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
             </route>
         </tcp>
     </connections>
     <messages>
-        <ascii id="TLM_SUB1">
-            <template>TLM SUB1 ${{status_val}}$ ${{freq_val}}$ ${{temp_val}}$ ${{offset_val}}$ ${{mode_val}}$ ${{sweep_val}}$\n</template>
-            <symbol name="status_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
-            <symbol name="freq_val" type="UNSIGNED_INTEGER" encode-null="" decode-empty-null="true" />
-            <symbol name="temp_val" type="REAL" encode-null="" decode-empty-null="true" />
-            <symbol name="offset_val" type="SIGNED_INTEGER" encode-null="" decode-empty-null="true" />
-            <symbol name="mode_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
-            <symbol name="sweep_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
-        </ascii>
-        <ascii id="TLM_SUB2">
-            <template>TLM SUB2 ${{status_val}}$ ${{freq_val}}$ ${{temp_val}}$ ${{offset_val}}$ ${{mode_val}}$ ${{sweep_val}}$\n</template>
-            <symbol name="status_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
-            <symbol name="freq_val" type="UNSIGNED_INTEGER" encode-null="" decode-empty-null="true" />
-            <symbol name="temp_val" type="REAL" encode-null="" decode-empty-null="true" />
-            <symbol name="offset_val" type="SIGNED_INTEGER" encode-null="" decode-empty-null="true" />
-            <symbol name="mode_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
-            <symbol name="sweep_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
-        </ascii>
-        <ascii id="POLL_SUB">
-            <template>REQ SUB1 SUB2\n</template>
-        </ascii>
-
-        <ascii id="CMD_SWP">
-            <template>CMD ${{device_subsystem}}$ ${{command_id}}$ SWP ${{times}}$\n</template>
-            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
-            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
-            <symbol name="times" type="UNSIGNED_INTEGER" />
-        </ascii>
-        <ascii id="CMD_RST">
-            <template>CMD ${{device_subsystem}}$ ${{command_id}}$ RST\n</template>
-            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
-            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
-        </ascii>
-        <ascii id="CMD_RBT">
-            <template>CMD ${{device_subsystem}}$ ${{command_id}}$ RBT ${{delay}}$ ${{running}}$\n</template>
-            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
-            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
-            <symbol name="delay" type="UNSIGNED_INTEGER" />
-            <symbol name="running" type="UNSIGNED_INTEGER" />
-        </ascii>
-        <ascii id="SET">
-            <template>SET ${{device_subsystem}}$ ${{command_id}}$ ${{parameter}}$ ${{new_value}}$\n</template>
-            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
-            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
-            <symbol name="parameter" type="CHARACTER_STRING" />
-            <symbol name="new_value" type="DERIVED">
-                <type id="ENUMERATED" encode-format="%d" />
-                <type id="UNSIGNED_INTEGER" encode-format="%d" />
-                <type id="SIGNED_INTEGER" encode-format="%d" />
-                <type id="REAL" encode-format="%.1f" />
-            </symbol>
-        </ascii>
-
-        <ascii id="ACK">
-            <template>ACK ${{device_subsystem}}$ ${{command_id}}$\n</template>
-            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
-            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
-        </ascii>
-        <ascii id="EXE">
-            <template>EXE ${{device_subsystem}}$ ${{command_id}}$\n</template>
-            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
-            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
-        </ascii>
-        <ascii id="NOK">
-            <template>NOK ${{command_id}}$\n</template>
-            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
-        </ascii>
+        <binary id="TLM_DEFINITION" location="binary_double_messages_tlm.xml">
+            <type-marker>DEV3-BIN-TLM</type-marker>
+        </binary>
+        <binary id="CMD_DEFINITION" location="binary_double_messages_cmd.xml">
+            <type-marker>DEV3-BIN-CMD</type-marker>
+        </binary>
     </messages>
 </ns1:socket>

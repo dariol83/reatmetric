@@ -50,6 +50,9 @@ public class OutboundMessageMapping extends MessageMapping {
     @XmlAttribute(name="post-send-delay")
     private int postSentDelay = 0;
 
+    @XmlElement(name = "fixed-field")
+    private List<FixedField> fixedFields = new LinkedList<>();
+
     @XmlElement(name = "argument")
     private List<ArgumentMapping> argumentMappings = new LinkedList<>();
 
@@ -115,6 +118,14 @@ public class OutboundMessageMapping extends MessageMapping {
         this.postSentDelay = postSentDelay;
     }
 
+    public List<FixedField> getFixedFields() {
+        return fixedFields;
+    }
+
+    public void setFixedFields(List<FixedField> fixedFields) {
+        this.fixedFields = fixedFields;
+    }
+
     /* ***************************************************************
      * Internal operations
      * ***************************************************************/
@@ -157,6 +168,12 @@ public class OutboundMessageMapping extends MessageMapping {
         for(AutoIncrementField aif : getAutoIncrementFields()) {
             if(!mappedArguments.containsKey(aif.getField())) {
                 mappedArguments.put(aif.getField(), aif.next());
+            }
+        }
+        // Add fixed values if not present
+        for(FixedField ff : getFixedFields()) {
+            if(!mappedArguments.containsKey(ff.getField())) {
+                mappedArguments.put(ff.getField(), ff.buildObjectValue());
             }
         }
         // Encode
