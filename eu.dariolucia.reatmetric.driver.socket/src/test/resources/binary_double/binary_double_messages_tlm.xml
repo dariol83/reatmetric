@@ -68,7 +68,7 @@
                     <type_fixed type="ENUMERATED" length="32" />
                 </parameter>
                 <parameter id="summary_val">
-                    <type_ext external="LengthPaddedString" /> <!-- TODO: implement support -->
+                    <type_ext external="LengthPaddedUsAsciiString" />
                 </parameter>
                 <parameter id="sweep_val">
                     <type_fixed type="ENUMERATED" length="32" />

@@ -81,7 +81,7 @@
                 <inbound id="EXE_POS_IN" message="CMD_DEFINITION" secondary-id="EXE_POS" />
                 <inbound id="EXE_NEG_IN" message="CMD_DEFINITION" secondary-id="EXE_NEG" />
                 <inbound id="NOK_IN" message="CMD_DEFINITION" secondary-id="CMD_NOK" />
-                <!-- Common TODO: you might need more than a SET definition, one for each value type -->
+                <!-- Common -->
                 <outbound id="SET_MP" message="CMD_DEFINITION" secondary-id="CMD_SET" type="ACTIVITY_DRIVEN" entity="3">
                     <argument name="device_subsystem" field="device_subsystem" />
                     <argument name="parameter" field="parameter" />

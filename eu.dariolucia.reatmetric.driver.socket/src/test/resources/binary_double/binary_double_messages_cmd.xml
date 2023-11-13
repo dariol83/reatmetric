@@ -59,7 +59,7 @@
                 <parameter id="parameter">
                     <type_fixed type="ENUMERATED" length="32" />
                 </parameter>
-                <!-- TODO: how to cover all types? -->
+                <!-- TODO: how to cover all types? Add different SET commands, one per type? Or use extension type? -->
                 <parameter id="new_value">
                     <type_fixed type="ENUMERATED" length="32" />
                 </parameter>
