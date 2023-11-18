@@ -46,6 +46,10 @@ public class OutboundMessageMapping extends MessageMapping {
     @XmlAttribute
     private int period = 0;
 
+    // Maximum waiting time to have a free channel, in case command lock is used. Default is 2 seconds.
+    @XmlAttribute(name="max-waiting-time")
+    private int maxWaitingTime = 2000;
+
     // Delay after sending the command in ms
     @XmlAttribute(name="post-send-delay")
     private int postSentDelay = 0;
@@ -124,6 +128,14 @@ public class OutboundMessageMapping extends MessageMapping {
 
     public void setFixedFields(List<FixedField> fixedFields) {
         this.fixedFields = fixedFields;
+    }
+
+    public int getMaxWaitingTime() {
+        return maxWaitingTime;
+    }
+
+    public void setMaxWaitingTime(int maxWaitingTime) {
+        this.maxWaitingTime = maxWaitingTime;
     }
 
     /* ***************************************************************

@@ -136,13 +136,17 @@ public class LengthFieldDecoding implements IDecodingStrategy {
             // Big Endian
             for(int i = 0; i < lengthField.length; ++i) {
                 lengthValue |= (lengthField[i] & 0x000000FF);
-                lengthValue <<= 8;
+                if(i != lengthField.length - 1) {
+                    lengthValue <<= 8;
+                }
             }
         } else {
             // Little Endian
             for(int i = lengthField.length - 1; i >= 0; --i) {
                 lengthValue |= (lengthField[i] & 0x000000FF);
-                lengthValue <<= 8;
+                if(i != 0) {
+                    lengthValue <<= 8;
+                }
             }
         }
         // Apply mask

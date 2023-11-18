@@ -30,6 +30,7 @@ import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.driver.socket.SocketDriver;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.InitType;
@@ -44,6 +45,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -320,7 +322,7 @@ public class RouteConfiguration {
             }
         } else {
             if(LOG.isLoggable(Level.WARNING)) {
-                LOG.log(Level.WARNING, String.format("Binary message not identified on route %s", getName()));
+                LOG.log(Level.WARNING, String.format("Binary message not identified on route %s: %s", getName(), StringUtil.toHexDump(message)));
             }
         }
     }
@@ -390,6 +392,9 @@ public class RouteConfiguration {
         if(isCommandLock()) {
             try {
                 connectionSequencer.acquire();
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.log(Level.FINE, String.format("Acquired command lock semaphore on route %s", getName()));
+                }
             } catch (InterruptedException e) {
                 throw new ActivityHandlingException(String.format("Waiting dispatch interrupted for activity %s on route %s", activityInvocation.getActivityOccurrenceId(), getName()), e);
             }
@@ -427,6 +432,12 @@ public class RouteConfiguration {
         }
     }
 
+    /**
+     * This method is invoked only for period and on-connection commands. In case of command lock, it waits for the
+     * maximum waiting time specified in the definition.
+     *
+     * @param mapping the message to send
+     */
     private void dispatchInternalCommand(OutboundMessageMapping mapping) {
         if(LOG.isLoggable(Level.FINEST)) {
             LOG.log(Level.FINEST, String.format("Dispatching internal command %s (%s) on route %s", mapping.getId(), mapping.getMessageDefinition().getId(), getName()));
@@ -443,10 +454,19 @@ public class RouteConfiguration {
             LOG.log(Level.SEVERE, String.format("Cannot encode command %s on route %s for internal dispatch: %s", mapping.getMessageDefinition().getId(), getName(), e.getMessage()), e);
             return;
         }
-        // If you want a lock, wait
+        // If you want a lock, wait for a while
         if(isCommandLock()) {
             try {
-                connectionSequencer.acquire();
+                boolean acquired = connectionSequencer.tryAcquire(mapping.getMaxWaitingTime(), TimeUnit.MILLISECONDS);
+                if(!acquired) {
+                    if(LOG.isLoggable(Level.WARNING)) {
+                        LOG.log(Level.WARNING, String.format("Command lock active and channel is busy - Dispatch of internal command [%s,%s] on route %s skipped", mapping.getMessageDefinition().getId(), Objects.toString(mapping.getSecondaryId(),""), getName()));
+                    }
+                    return;
+                }
+                if(LOG.isLoggable(Level.FINE)) {
+                    LOG.log(Level.FINE, String.format("Acquired command lock semaphore on route %s", getName()));
+                }
             } catch (InterruptedException e) {
                 LOG.log(Level.FINE, String.format("Command lock interrupted on dispatch of internal command %s on route %s", mapping.getMessageDefinition().getId(), getName()));
                 return;
@@ -462,14 +482,16 @@ public class RouteConfiguration {
             // If connection is on demand, start connector if connectionUsage = 0, mark connector as connectionUsage +1.
             acquireConnectionUsage();
             // Connection should be open: write command to connector
-            writeToConnection(encodedCommand.getFirst());
+            if(!writeToConnection(encodedCommand.getFirst())) {
+                throw new IOException("output stream not available");
+            }
             // If all nominal...
             // ... register the command as last command sent for the given outbound message mapping
             outboundMessage2lastCommand.put(mapping, tracker);
             lastDispatchedCommand = tracker;
             finaliseVerificationInitialisation(mapping, tracker);
         } catch (IOException e) {
-            LOG.log(Level.SEVERE, String.format("Cannot transmit command %s on route %s for internal dispatch: %s", mapping.getMessageDefinition().getId(), getName(), e.getMessage()), e);
+            LOG.log(Level.SEVERE, String.format("Cannot transmit command [%s,%s] on route %s for internal dispatch: %s", mapping.getMessageDefinition().getId(), Objects.toString(mapping.getSecondaryId(),""), getName(), e.getMessage()), e);
             // connectionUsage -1, close connector if on demand and connectionUsage = 0
             releaseConnectionUsage();
             // If failure, then deregister verification
@@ -516,7 +538,9 @@ public class RouteConfiguration {
                 throw new IOException("Connection of route " + getName() + " not open");
             }
             // Write command to connector
-            writeToConnection(encodedCommand.getFirst());
+            if(!writeToConnection(encodedCommand.getFirst())) {
+                throw new IOException("output stream not available");
+            }
             // If all nominal...
             // ... register the command as last command sent for the given outbound message mapping
             if(LOG.isLoggable(Level.FINER)) {
@@ -570,8 +594,8 @@ public class RouteConfiguration {
 
     private void releaseConnectionUsage() {
         int usages = this.connectionUsage.decrementAndGet();
-        if(LOG.isLoggable(Level.FINER)) {
-            LOG.log(Level.FINER, String.format("Connection usage on route %s released, current usages %d", getName(), usages));
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.log(Level.FINE, String.format("Connection usage on route %s released, current usages %d", getName(), usages));
         }
         // On demand and last use? Close it.
         if(usages == 0 && getParentConnection().getInit() == InitType.ON_DEMAND) {
@@ -580,6 +604,9 @@ public class RouteConfiguration {
     }
 
     private void deregisterFromVerifier(CommandTracker tracker) {
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.log(Level.FINE, String.format("Deregistering command tracker for outbound message %s on route %s from verifier", tracker.getMapping().getId(), getName()));
+        }
         activeCommandTrackers.remove(tracker);
         if(tracker.getMapping().getVerification() != null) {
             Set<String> progressMessagesId = tracker.getProgressMessageIds();
@@ -593,6 +620,9 @@ public class RouteConfiguration {
         }
         // If command lock and no more commands pending, then be ready for the next one
         if(isCommandLock() && activeCommandTrackers.isEmpty()) {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, String.format("Releasing command lock semaphore on route %s", getName()));
+            }
             connectionSequencer.release();
         }
     }
@@ -603,11 +633,15 @@ public class RouteConfiguration {
         }
     }
 
-    private void writeToConnection(byte[] encodedCommand) throws IOException {
-        getParentConnection().writeMessage(encodedCommand);
+    private boolean writeToConnection(byte[] encodedCommand) throws IOException {
+        return getParentConnection().writeMessage(encodedCommand);
     }
 
     private CommandTracker registerToVerifier(Instant time, IActivityHandler.ActivityInvocation activityInvocation, OutboundMessageMapping mapping, Pair<byte[], Map<String, Object>> encodedCommand) {
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.log(Level.FINE, String.format("Registering outbound message %s on route %s to verifier", mapping.getId(), getName()));
+        }
+
         CommandTracker tracker = new CommandTracker(time, activityInvocation, mapping, encodedCommand, getName());
         // Register in the tracker list
         activeCommandTrackers.add(tracker);
@@ -639,13 +673,23 @@ public class RouteConfiguration {
     }
 
     private void timeout(CommandTracker tracker) {
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.log(Level.FINE, String.format("Timeout for outbound message tracker %s on route %s", tracker.getId(), getName()));
+        }
         if(tracker.isAlive()) {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, String.format("Tracker %s on route %s is alive - continuing with timeout processing", tracker.getId(), getName()));
+            }
             // Cancel the timeout timer, marked as expired
             tracker.cancelTimeoutTimer(dataProcessor, true);
             // Release connection
             releaseConnectionUsage();
             // Remove from verifier
             deregisterFromVerifier(tracker);
+        } else {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, String.format("Tracker %s on route %s is not alive - timeout processing skipped", tracker.getId(), getName()));
+            }
         }
     }
 

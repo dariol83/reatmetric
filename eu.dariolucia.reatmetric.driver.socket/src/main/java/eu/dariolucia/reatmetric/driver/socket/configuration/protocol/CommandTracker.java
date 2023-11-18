@@ -110,7 +110,7 @@ public class CommandTracker {
                 this.timeoutTask.cancel();
             }
             this.timeoutTask = null;
-            if(expired) {
+            if(expired && activityInvocation != null) {
                 // Inform model
                 if(this.currentlyOpenStage != null) {
                     if(this.currentlyOpenStage.equals(ACCEPTANCE_STAGE_NAME)) {

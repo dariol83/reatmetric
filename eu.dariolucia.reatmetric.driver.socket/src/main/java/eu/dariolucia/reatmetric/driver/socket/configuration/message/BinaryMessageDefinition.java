@@ -25,6 +25,7 @@ import eu.dariolucia.ccsds.encdec.identifier.impl.FieldGroupBasedPacketIdentifie
 import eu.dariolucia.ccsds.encdec.structure.*;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketDecoder;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketEncoder;
+import eu.dariolucia.ccsds.encdec.structure.resolvers.DefaultValueFallbackResolver;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.DefinitionValueBasedResolver;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.PathLocationBasedResolver;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
@@ -32,9 +33,7 @@ import jakarta.xml.bind.annotation.*;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
@@ -108,8 +107,14 @@ public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
 
     @Override
     public byte[] encode(String secondaryId, Map<String, Object> data) throws ReatmetricException {
+        // Replace all entries in data with secondaryId.<key>
+        Set<String> keys = new LinkedHashSet<>(data.keySet());
+        for(String k : keys) {
+            data.put(secondaryId + "." + k, data.get(k));
+        }
+        // Encode
         try {
-            return encoder.encode(secondaryId, new DefinitionValueBasedResolver(new PathLocationBasedResolver(data), true));
+            return encoder.encode(secondaryId, new DefaultValueFallbackResolver(new PathLocationBasedResolver(data)));
         } catch (EncodingException e) {
             throw new ReatmetricException(e);
         }

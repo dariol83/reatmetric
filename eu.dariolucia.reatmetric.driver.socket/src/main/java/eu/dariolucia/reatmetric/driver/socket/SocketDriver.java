@@ -64,7 +64,7 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
     @Override
     protected SystemStatus startProcessing() {
         // Init data
-        this.globalDriverTimer = new Timer(getName() + " Timer Service");
+        this.globalDriverTimer = new Timer(getName() + " Timer Service", true);
         this.actionThreadPool = Executors.newSingleThreadExecutor((r) -> {
            Thread t = new Thread(r);
            t.setDaemon(true);

@@ -55,6 +55,7 @@
                     <verification timeout="3">
                         <execution message="TLM_DEFINITION" secondary-id="TLM_SUB1" result="OK" />
                         <execution message="TLM_DEFINITION" secondary-id="TLM_SUB1_NOK" result="FAIL" />
+                        <execution message="TLM_DEFINITION" secondary-id="TLM_NOK" result="FAIL" />
                     </verification>
 				</outbound>
 
@@ -63,6 +64,7 @@
                     <verification timeout="3">
                         <execution message="TLM_DEFINITION" secondary-id="TLM_SUB2" result="OK" />
                         <execution message="TLM_DEFINITION" secondary-id="TLM_SUB2_NOK" result="FAIL" />
+                        <execution message="TLM_DEFINITION" secondary-id="TLM_NOK" result="FAIL" />
                     </verification>
                 </outbound>
             </route>

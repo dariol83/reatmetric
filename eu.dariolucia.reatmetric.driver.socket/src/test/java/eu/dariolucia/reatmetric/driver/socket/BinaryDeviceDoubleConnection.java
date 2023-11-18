@@ -212,6 +212,7 @@ public class BinaryDeviceDoubleConnection {
             byte[] request = readRequest(inputStream);
             System.out.println(new Date() + " >> TLM Received: " + StringUtil.toHexDump(request));
             byte[] response = processTlmRequest(request);
+            System.out.println(new Date() + " << TLM Sending: " + StringUtil.toHexDump(response));
             outputStream.write(response);
         }
     }
