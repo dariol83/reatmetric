@@ -15,7 +15,6 @@
   ~ limitations under the License.
   ~
   -->
-<!-- TODO: add default values on parameters -->
 <ns1:packet_definitions xmlns:ns1="http://dariolucia.eu/ccsds/encdec">
     <id_fields>
         <field id="length" offset="4" len="4" />
@@ -31,7 +30,7 @@
             <structure>
                 <!-- Start of common part -->
                 <!-- Header preamble: REAT in binary: 1380270420 -->
-                <parameter id="preamble">
+                <parameter id="preamble" value="1380270420">
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- length field -->
@@ -39,15 +38,15 @@
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- filler: 0x0000FFFF: 65535 -->
-                <parameter id="filler">
+                <parameter id="filler" value="65535">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Subsystem ID -->
-                <parameter id="device_subsystem">
+                <parameter id="device_subsystem" value="1">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Operation ID -->
-                <parameter id="operation">
+                <parameter id="operation" value="-2147483647">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- End of common part -->
@@ -75,7 +74,7 @@
                 </parameter>
                 <!-- End of message-specific -->
                 <!-- Start of tail: METR in binary: 1296389202 -->
-                <parameter id="tail">
+                <parameter id="tail" value="1296389202">
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- End of tail -->
@@ -90,28 +89,28 @@
             <structure>
                 <!-- Start of common part -->
                 <!-- Header preamble: REAT in binary: 1380270420 -->
-                <parameter id="preamble">
+                <parameter id="preamble" value="1380270420">
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- length field -->
-                <parameter id="length">
+                <parameter id="length" value="24">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- filler: 0x0000FFFF: 65535 -->
-                <parameter id="filler">
+                <parameter id="filler" value="65535">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Subsystem ID -->
-                <parameter id="device_subsystem">
+                <parameter id="device_subsystem" value="1">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Operation ID -->
-                <parameter id="operation">
+                <parameter id="operation" value="-15">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- End of common part -->
                 <!-- Start of tail: METR in binary: 1296389202 -->
-                <parameter id="tail">
+                <parameter id="tail" value="1296389202">
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- End of tail -->
@@ -125,7 +124,7 @@
             <structure>
                 <!-- Start of common part -->
                 <!-- Header preamble: REAT in binary: 1380270420 -->
-                <parameter id="preamble">
+                <parameter id="preamble" value="1380270420">
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- length field -->
@@ -133,15 +132,15 @@
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- filler: 0x0000FFFF: 65535 -->
-                <parameter id="filler">
+                <parameter id="filler" value="65535">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Subsystem ID -->
-                <parameter id="device_subsystem">
+                <parameter id="device_subsystem" value="2">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Operation ID -->
-                <parameter id="operation">
+                <parameter id="operation" value="-2147483647">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- End of common part -->
@@ -168,6 +167,11 @@
                     <type_fixed type="ENUMERATED" length="32" />
                 </parameter>
                 <!-- End of message-specific -->
+                <!-- Start of tail: METR in binary: 1296389202 -->
+                <parameter id="tail" value="1296389202">
+                    <type_fixed type="SIGNED_INTEGER" length="32" />
+                </parameter>
+                <!-- End of tail -->
             </structure>
         </packet>
         <packet id="TLM_SUB2_NOK" type="DEV3-BIN-TLM">
@@ -179,28 +183,28 @@
             <structure>
                 <!-- Start of common part -->
                 <!-- Header preamble: REAT in binary: 1380270420 -->
-                <parameter id="preamble">
+                <parameter id="preamble" value="1380270420">
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- length field -->
-                <parameter id="length">
+                <parameter id="length" value="24">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- filler: 0x0000FFFF: 65535 -->
-                <parameter id="filler">
+                <parameter id="filler" value="65535">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Subsystem ID -->
-                <parameter id="device_subsystem">
+                <parameter id="device_subsystem" value="2">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Operation ID -->
-                <parameter id="operation">
+                <parameter id="operation" value="-15">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- End of common part -->
                 <!-- Start of tail: METR in binary: 1296389202 -->
-                <parameter id="tail">
+                <parameter id="tail" value="1296389202">
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- End of tail -->
@@ -214,15 +218,15 @@
             <structure>
                 <!-- Start of common part -->
                 <!-- Header preamble: REAT in binary: 1380270420 -->
-                <parameter id="preamble">
+                <parameter id="preamble" value="1380270420">
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- length field -->
-                <parameter id="length">
+                <parameter id="length" value="24">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- filler: 0x0000FFFF: 65535 -->
-                <parameter id="filler">
+                <parameter id="filler" value="65535">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Subsystem ID -->
@@ -230,12 +234,12 @@
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Operation ID -->
-                <parameter id="operation">
+                <parameter id="operation" value="1">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- End of common part -->
                 <!-- Start of tail: METR in binary: 1296389202 -->
-                <parameter id="tail">
+                <parameter id="tail" value="1296389202">
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- End of tail -->
@@ -250,28 +254,28 @@
             <structure>
                 <!-- Start of common part -->
                 <!-- Header preamble: REAT in binary: 1380270420 -->
-                <parameter id="preamble">
+                <parameter id="preamble" value="1380270420">
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- length field -->
-                <parameter id="length">
+                <parameter id="length" value="24">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- filler: 0x0000FFFF: 65535 -->
-                <parameter id="filler">
+                <parameter id="filler" value="65535">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Subsystem ID -->
-                <parameter id="device_subsystem">
+                <parameter id="device_subsystem" value="-1">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- Operation ID -->
-                <parameter id="operation">
+                <parameter id="operation" value="-1">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- End of common part -->
                 <!-- Start of tail: METR in binary: 1296389202 -->
-                <parameter id="tail">
+                <parameter id="tail" value="1296389202">
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                 </parameter>
                 <!-- End of tail -->
