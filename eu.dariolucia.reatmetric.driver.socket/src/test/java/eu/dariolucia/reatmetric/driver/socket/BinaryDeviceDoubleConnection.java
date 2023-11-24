@@ -404,7 +404,7 @@ public class BinaryDeviceDoubleConnection {
         }
         // Read filler
         int filler = bb.getInt();
-        if(filler != 0xFFFF0000) {
+        if(filler != 0x0000FFFF) {
             return false;
         }
         // Check the last 4 bytes

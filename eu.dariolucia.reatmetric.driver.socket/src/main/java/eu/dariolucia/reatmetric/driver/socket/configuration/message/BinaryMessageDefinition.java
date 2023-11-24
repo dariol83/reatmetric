@@ -26,7 +26,6 @@ import eu.dariolucia.ccsds.encdec.structure.*;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketDecoder;
 import eu.dariolucia.ccsds.encdec.structure.impl.DefaultPacketEncoder;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.DefaultValueFallbackResolver;
-import eu.dariolucia.ccsds.encdec.structure.resolvers.DefinitionValueBasedResolver;
 import eu.dariolucia.ccsds.encdec.structure.resolvers.PathLocationBasedResolver;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import jakarta.xml.bind.annotation.*;
@@ -88,7 +87,13 @@ public class BinaryMessageDefinition extends MessageDefinition<byte[]> {
     public Map<String, Object> decode(String secondaryId, byte[] messageToProcess) throws ReatmetricException {
         try {
             DecodingResult result = decoder.decode(secondaryId, messageToProcess);
-            return result.getDecodedItemsAsMap();
+            // Remove secondaryId. from each key before returning
+            Map<String, Object> resultMap = result.getDecodedItemsAsMap();
+            Map<String, Object> returnMap = new LinkedHashMap<>();
+            for(Map.Entry<String, Object> e : resultMap.entrySet()) {
+                returnMap.put(e.getKey().substring(secondaryId.length() + 1), e.getValue());
+            }
+            return returnMap;
         } catch (DecodingException e) {
             throw new ReatmetricException(e);
         }

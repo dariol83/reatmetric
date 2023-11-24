@@ -45,7 +45,7 @@
                     <inject name="temp_val" entity="82" />
                     <inject name="offset_val" entity="83" />
                     <inject name="mode_val" entity="84" />
-                    <inject name="sweep_val" entity="85" />
+                    <inject name="summary_val" entity="85" />
                     <inject name="sweep_val" entity="86" />
                 </inbound>
 

@@ -15,6 +15,7 @@
   ~ limitations under the License.
   ~
   -->
+<!-- TODO: fix value attribute to element -->
 <ns1:packet_definitions xmlns:ns1="http://dariolucia.eu/ccsds/encdec">
     <id_fields>
         <field id="length" offset="4" len="4" />

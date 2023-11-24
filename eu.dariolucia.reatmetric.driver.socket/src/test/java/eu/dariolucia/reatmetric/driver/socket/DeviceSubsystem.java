@@ -187,10 +187,10 @@ public class DeviceSubsystem {
     }
 
     private byte[] fromString(String value) throws IOException {
-        byte[] prefix = fromInt(value.length());
-        //
         byte[] encodedString = value.getBytes(StandardCharsets.US_ASCII);
-        int rest = prefix.length % 4;
+        byte[] prefix = fromInt(encodedString.length);
+        //
+        int rest = encodedString.length % 4;
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         bos.write(prefix);
         bos.write(encodedString);

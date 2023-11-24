@@ -317,7 +317,7 @@ public class RouteConfiguration {
                     LOG.log(Level.FINER, String.format("Binary message (%s, %s) received on route %s", identifier, secondaryIdentifier, getName()));
                 }
                 internalMessageReceived(receivedTime, identifier, secondaryIdentifier, decodedMessage, message);
-            } catch (ReatmetricException e) {
+            } catch (Exception e) {
                 LOG.log(Level.SEVERE, String.format("Error detected when decoding binary message %s with definition %s on route %s: %s", secondaryIdentifier, definition.getId(), getName(), e.getMessage()), e);
             }
         } else {
