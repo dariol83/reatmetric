@@ -84,10 +84,83 @@
                 <inbound id="EXE_NEG_IN" message="CMD_DEFINITION" secondary-id="EXE_NEG" />
                 <inbound id="NOK_IN" message="CMD_DEFINITION" secondary-id="CMD_NOK" />
                 <!-- Common -->
-                <outbound id="SET_MP" message="CMD_DEFINITION" secondary-id="CMD_SET" type="ACTIVITY_DRIVEN" entity="3">
+                <outbound id="SET_MP_LONG" message="CMD_DEFINITION" secondary-id="CMD_SET_LONG" type="ACTIVITY_DRIVEN" entity="3">
+                    <!-- Not needed, can go in the definition, used for testing-->
+                    <fixed-field field="length" value="40" type="UNSIGNED_INTEGER" />
                     <argument name="device_subsystem" field="device_subsystem" />
                     <argument name="parameter" field="parameter" />
                     <argument name="new_value" field="new_value" />
+                    <verification timeout="10">
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" result="OK" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_POS" result="OK" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="SET_MP_INT" message="CMD_DEFINITION" secondary-id="CMD_SET_INT" type="ACTIVITY_DRIVEN" entity="4">
+                    <fixed-field field="length" value="36" type="UNSIGNED_INTEGER" />
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="parameter" field="parameter" />
+                    <argument name="new_value" field="new_value" />
+                    <verification timeout="10">
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" result="OK" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_POS" result="OK" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="SET_MP_DOUBLE" message="CMD_DEFINITION" secondary-id="CMD_SET_DOUBLE" type="ACTIVITY_DRIVEN" entity="5">
+                    <fixed-field field="length" value="40" type="UNSIGNED_INTEGER" />
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="parameter" field="parameter" />
+                    <argument name="new_value" field="new_value" />
+                    <verification timeout="10">
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" result="OK" />
+                        <acceptance message="CMD_DEFINITION" secondary-id="ACK_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_POS" result="OK" />
+                        <execution message="CMD_DEFINITION" secondary-id="EXE_NEG" result="FAIL" />
+                        <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="SET_MP_PSTRING" message="CMD_DEFINITION" secondary-id="CMD_SET_PSTRING" type="ACTIVITY_DRIVEN" entity="6">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="parameter" field="parameter" />
+                    <argument name="new_value" field="new_value" />
+                    <!-- Declaration order matters -->
+                    <computed-field field="length">
+                        // You can access fields'names, message and secondary_id as variables here.
+                        // Remind that all spaces and dashes in names are replaced with underscore. Use only names that
+                        // are valid Java variable names.
+
+                        // The approach could have been generalised to compute the length for all messages,
+                        // but it would have been less efficient.
+                        // Moreover, given the type of format for the String parameter, the generation of multiple set
+                        // definitions at message level would have still be required.
+
+                        // if(new_value instanceof Long) return 32 + 8;
+                        // if(new_value instanceof Integer) return 32 + 4;
+                        // if(new_value instanceof Double) return 32 + 8;
+                        // if(new_value instanceof String) {
+
+                        String asciiString = (String) new_value;
+                        // In this specific case, we need to use the length + bytes + pad
+                        int rest = (asciiString.length % 4);
+                        if(rest > 0) {
+                            int toPad = 4 - rest;
+                            return 32 + 4 + asciiString.length() + toPad;
+                        } else {
+                            return 32 + 4 + asciiString.length();
+                        }
+
+                        // }
+
+                        // An alternative way could be to access the parameter ID
+                        // An alternative way is to declare a fixed argument in the SET reference and in the corresponding
+                        // activity in the processing model, indicating the type of value being set. Then map this argument
+                        // to a field parameter that is not used, and use this field parameter to derive the type of the element
+                    </computed-field>
                     <verification timeout="10">
                         <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" result="OK" />
                         <acceptance message="CMD_DEFINITION" secondary-id="ACK_NEG" result="FAIL" />

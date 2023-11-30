@@ -46,6 +46,11 @@
             <version>${jaxb.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>${groovy.version}</version>
+        </dependency>
+        <dependency>
             <groupId>eu.dariolucia.ccsds</groupId>
             <artifactId>eu.dariolucia.ccsds.encdec</artifactId>
             <version>${ccsds.version}</version>

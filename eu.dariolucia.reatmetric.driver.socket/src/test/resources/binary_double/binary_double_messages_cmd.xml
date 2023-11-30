@@ -23,6 +23,7 @@
         <field id="command" offset="20" len="4" />
     </id_fields>
     <packets>
+        <!-- TODO: create one SET per type -->
         <packet id="CMD_SET" type="DEV3-BIN-CMD">
             <identification>
                 <match field="operation" value="10"/>
@@ -35,7 +36,6 @@
                     <type_fixed type="SIGNED_INTEGER" length="32" />
                     <value>1380270420</value>
                 </parameter>
-                <!-- TODO: how to set this field automatically? -->
                 <!-- length field -->
                 <parameter id="length">
                     <type_fixed type="UNSIGNED_INTEGER" length="32" />
@@ -63,7 +63,6 @@
                 <parameter id="parameter">
                     <type_fixed type="ENUMERATED" length="32" />
                 </parameter>
-                <!-- TODO: how to cover all types? Add different SET commands, one per type? Or use extension type? -->
                 <parameter id="new_value">
                     <type_fixed type="ENUMERATED" length="32" />
                 </parameter>

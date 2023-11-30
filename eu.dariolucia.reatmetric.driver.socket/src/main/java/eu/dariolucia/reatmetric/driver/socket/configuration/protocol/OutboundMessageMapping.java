@@ -63,6 +63,9 @@ public class OutboundMessageMapping extends MessageMapping {
     @XmlElement(name = "auto-increment")
     private List<AutoIncrementField> autoIncrementFields = new LinkedList<>();
 
+    @XmlElement(name = "computed-field")
+    private List<ComputedField> computedFields = new LinkedList<>();
+
     @XmlElement(name = "verification")
     private VerificationConfiguration verification = null;
 
@@ -130,6 +133,14 @@ public class OutboundMessageMapping extends MessageMapping {
         this.fixedFields = fixedFields;
     }
 
+    public List<ComputedField> getComputedFields() {
+        return computedFields;
+    }
+
+    public void setComputedFields(List<ComputedField> computedFields) {
+        this.computedFields = computedFields;
+    }
+
     public int getMaxWaitingTime() {
         return maxWaitingTime;
     }
@@ -155,6 +166,10 @@ public class OutboundMessageMapping extends MessageMapping {
         //
         for(AutoIncrementField aif : getAutoIncrementFields()) {
             aif.initialise(defaultConnection.getRoute());
+        }
+        //
+        for(ComputedField cf : getComputedFields()) {
+            cf.initialise();
         }
         // Sanitize verification
         if(verification != null && verification.getAcceptance().isEmpty() && verification.getExecution().isEmpty()) {
@@ -187,6 +202,12 @@ public class OutboundMessageMapping extends MessageMapping {
             if(!mappedArguments.containsKey(ff.getField())) {
                 mappedArguments.put(ff.getField(), ff.buildObjectValue());
             }
+        }
+        // Add computed fields, they can overwrite existing fields!
+        for(ComputedField cf : getComputedFields()) {
+            String field = cf.getField();
+            Object value = cf.compute(getMessageDefinition().getId(), getSecondaryId(), mappedArguments);
+            mappedArguments.put(field, value);
         }
         // Encode
         if(getMessageDefinition() instanceof AsciiMessageDefinition) {

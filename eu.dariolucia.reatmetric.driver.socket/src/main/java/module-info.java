@@ -6,6 +6,7 @@ open module eu.dariolucia.reatmetric.driver.socket {
     requires java.logging;
     requires java.rmi;
     requires jakarta.xml.bind;
+    requires org.codehaus.groovy;
 
     requires eu.dariolucia.reatmetric.api;
     requires eu.dariolucia.reatmetric.core;
