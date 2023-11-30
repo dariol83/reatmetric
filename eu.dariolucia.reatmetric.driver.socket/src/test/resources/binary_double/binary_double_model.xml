@@ -85,58 +85,20 @@
             <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
         </activity>
 
-        <activity id="#77" location="SUB1.RESET" description="Reset the subsystem" type="DEV3-BIN-CMD">
-            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
-                <default_fixed type="RAW" value="SUB1" />
-            </argument>
-            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
-                <default_fixed type="RAW" value="RST" />
-            </argument>
-        </activity>
+        <activity id="#77" location="SUB1.RESET" description="Reset the subsystem" type="DEV3-BIN-CMD" />
         <activity id="#78" location="SUB1.START_SWEEP" description="Start sweep sequence" type="DEV3-BIN-CMD">
-            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
-                <default_fixed type="RAW" value="SUB1" />
-            </argument>
-            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
-                <default_fixed type="RAW" value="SWP" />
-            </argument>
             <argument name="times" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
         <activity id="#79" location="SUB1.REBOOT" description="Reboot subsystem" type="DEV3-BIN-CMD">
-            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
-                <default_fixed type="RAW" value="SUB1" />
-            </argument>
-            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
-                <default_fixed type="RAW" value="RBT" />
-            </argument>
             <argument name="delay" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
             <argument name="running" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
 
-        <activity id="#87" location="SUB2.RESET" description="Reset the subsystem" type="DEV3-BIN-CMD">
-            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
-                <default_fixed type="RAW" value="SUB2" />
-            </argument>
-            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
-                <default_fixed type="RAW" value="RST" />
-            </argument>
-        </activity>
+        <activity id="#87" location="SUB2.RESET" description="Reset the subsystem" type="DEV3-BIN-CMD" />
         <activity id="#88" location="SUB2.START_SWEEP" description="Start sweep sequence" type="DEV3-BIN-CMD">
-            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
-                <default_fixed type="RAW" value="SUB2" />
-            </argument>
-            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
-                <default_fixed type="RAW" value="SWP" />
-            </argument>
             <argument name="times" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
         <activity id="#89" location="SUB2.REBOOT" description="Reboot subsystem" type="DEV3-BIN-CMD">
-            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="">
-                <default_fixed type="RAW" value="SUB2" />
-            </argument>
-            <argument name="command_code" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
-                <default_fixed type="RAW" value="RBT" />
-            </argument>
             <argument name="delay" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
             <argument name="running" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>

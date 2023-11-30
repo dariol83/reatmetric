@@ -44,6 +44,10 @@ public class FixedLengthDecoding implements IDecodingStrategy {
 
     @Override
     public byte[] readMessage(InputStream is, AbstractConnectionConfiguration configuration) throws IOException {
-        return is.readNBytes(length);
+        byte[] data = is.readNBytes(length);
+        if(data.length == 0) {
+            throw new IOException("End of stream");
+        }
+        return data;
     }
 }

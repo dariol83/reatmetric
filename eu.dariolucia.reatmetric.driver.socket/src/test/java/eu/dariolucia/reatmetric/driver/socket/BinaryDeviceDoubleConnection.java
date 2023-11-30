@@ -210,9 +210,9 @@ public class BinaryDeviceDoubleConnection {
         InputStream inputStream = connection.getInputStream();
         while(true) {
             byte[] request = readRequest(inputStream);
-            System.out.println(new Date() + " >> TLM Received: " + StringUtil.toHexDump(request));
+            // System.out.println(new Date() + " >> TLM Received: " + StringUtil.toHexDump(request));
             byte[] response = processTlmRequest(request);
-            System.out.println(new Date() + " << TLM Sending: " + StringUtil.toHexDump(response));
+            // System.out.println(new Date() + " << TLM Sending: " + StringUtil.toHexDump(response));
             outputStream.write(response);
         }
     }
@@ -378,10 +378,19 @@ public class BinaryDeviceDoubleConnection {
     private static byte[] readMessage(InputStream inputStream) throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] buff = inputStream.readNBytes(4); // REAT
+        if(buff.length == 0) {
+            throw new IOException("End of stream");
+        }
         byte[] lenArray = inputStream.readNBytes(4);
+        if(lenArray.length == 0) {
+            throw new IOException("End of stream");
+        }
         ByteBuffer bb = ByteBuffer.wrap(lenArray);
         int length = bb.getInt();
         byte[] rest = inputStream.readNBytes(length - 8);
+        if(rest.length == 0) {
+            throw new IOException("End of stream");
+        }
         bos.write(buff);
         bos.write(lenArray);
         bos.write(rest);

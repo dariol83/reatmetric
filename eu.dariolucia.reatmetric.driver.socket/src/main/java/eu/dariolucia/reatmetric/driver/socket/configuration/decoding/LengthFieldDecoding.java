@@ -126,9 +126,16 @@ public class LengthFieldDecoding implements IDecodingStrategy {
     public byte[] readMessage(InputStream is, AbstractConnectionConfiguration configuration) throws IOException {
         ByteArrayOutputStream buff = new ByteArrayOutputStream();
         // Read (and skip) the headerNbBytesToSkip bytes
-        buff.write(is.readNBytes(this.headerNbBytesToSkip));
+        byte[] skipBytes = is.readNBytes(this.headerNbBytesToSkip);
+        if(skipBytes.length == 0) {
+            throw new IOException("End of stream");
+        }
+        buff.write(skipBytes);
         // Read fieldLength bytes
         byte[] lengthField = is.readNBytes(this.fieldLength);
+        if(lengthField.length == 0) {
+            throw new IOException("End of stream");
+        }
         buff.write(lengthField);
         // Depending on the endianness, compute the number
         long lengthValue = 0;
@@ -163,7 +170,11 @@ public class LengthFieldDecoding implements IDecodingStrategy {
             lengthValue -= this.fieldLength;
         }
         // Read the message
-        buff.write(is.readNBytes((int) lengthValue));
+        byte[] restOfMessage = is.readNBytes((int) lengthValue);
+        if(restOfMessage.length == 0) {
+            throw new IOException("End of stream");
+        }
+        buff.write(restOfMessage);
         // Return the message
         return buff.toByteArray();
     }
