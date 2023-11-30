@@ -140,6 +140,9 @@ public class CltuCaduTcpConnector extends AbstractTransportConnector implements 
         while(this.socket != null) {
             try {
                 byte[] cadu = inputStream.readNBytes(this.caduLength);
+                if(cadu.length == 0) {
+                    throw new IOException("End of stream");
+                }
                 rxBytes.addAndGet(this.caduLength);
                 Instant receptionTime = Instant.now();
                 // Remove ASM and correction codeblock
