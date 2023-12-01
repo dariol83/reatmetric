@@ -70,9 +70,9 @@ public class ComputedField {
     }
 
     public Object compute(String message, String secondaryId, Map<String, Object> mappedArguments) throws ReatmetricException {
-        // TODO: replace space and dash with underscore
+        // replace space and dash with underscore
         for(Map.Entry<String, Object> entry : mappedArguments.entrySet()) {
-            groovyBinding.setProperty(entry.getKey(), entry.getValue());
+            groovyBinding.setProperty(entry.getKey().replace(' ','_').replace('-','_'), entry.getValue());
         }
         try {
             return groovyScript.run();

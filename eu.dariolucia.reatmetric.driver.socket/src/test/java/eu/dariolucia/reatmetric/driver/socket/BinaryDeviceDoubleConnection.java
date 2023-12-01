@@ -19,7 +19,6 @@ package eu.dariolucia.reatmetric.driver.socket;
 
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
-import eu.dariolucia.reatmetric.api.value.ValueUtil;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -264,11 +263,11 @@ public class BinaryDeviceDoubleConnection {
         }
         // Read the request
         ByteBuffer bb = ByteBuffer.wrap(request);
-        bb.getLong();
-        bb.getInt();
-        int subsystem = bb.getInt();
+        bb.getLong(); // Header and length
+        bb.getInt(); // Filler
+        int subsystem = bb.getInt(); // SubID
         String subSystemStr = "SUB" + subsystem;
-        int operation = bb.getInt();
+        int operation = bb.getInt(); // Operation
         switch(operation) {
             case SET_OPERATION:
             {

@@ -111,6 +111,7 @@ public class DeviceSubsystem {
     public boolean invoke(String command, String[] args, boolean synchronous, Consumer<Boolean> executionCompleted) throws InterruptedException {
         if(id2handler.containsKey(command)) {
             IHandler h = id2handler.get(command);
+            System.out.println(new Date() + " [" + getName() + "] INVOKE " + command + " : " + Arrays.toString(args));
             Future<Boolean> result = executor.submit(() -> h.handle(command, args, this::parameterSetter, executionCompleted));
             if (synchronous) {
                 try {
@@ -130,6 +131,7 @@ public class DeviceSubsystem {
         if(id2type.containsKey(id)) {
             if(ValueUtil.typeMatch(id2type.get(id), value)) {
                 synchronized (this) {
+                    System.out.println(new Date() + " [" + getName() + "] SET " + id + " -> " + value);
                     this.id2value.put(id, value);
                 }
                 return true;

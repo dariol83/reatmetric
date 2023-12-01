@@ -22,32 +22,69 @@
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
             </calib_enum>
-            <setter activity="#3" set_argument="new_value">
+            <setter activity="#4" set_argument="new_value">
                 <!-- Convert? -->
                 <decalib_ienum>
                     <point y="0" x="OFF" />
                     <point y="1" x="ON" />
                 </decalib_ienum>
-                <fixed_argument name="device_subsystem" value="SUB1" raw_value="true" />
-                <fixed_argument name="parameter" value="Status" raw_value="true" />
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="0" raw_value="true" />
             </setter>
 		</parameter>
-		<parameter id="#71" location="SUB1.FREQUENCY" description="Frequency" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="kHz" />
-		<parameter id="#72" location="SUB1.TEMPERATURE" description="Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C" />
-		<parameter id="#73" location="SUB1.OFFSET" description="Frequency Offset" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="kHz" />
+		<parameter id="#71" location="SUB1.FREQUENCY" description="Frequency" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="kHz">
+            <setter activity="#3" set_argument="new_value">
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="1" raw_value="true" />
+            </setter>
+        </parameter>
+		<parameter id="#72" location="SUB1.TEMPERATURE" description="Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C">
+            <setter activity="#5" set_argument="new_value">
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="2" raw_value="true" />
+            </setter>
+        </parameter>
+		<parameter id="#73" location="SUB1.OFFSET" description="Frequency Offset" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="kHz">
+            <setter activity="#3" set_argument="new_value">
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="3" raw_value="true" />
+            </setter>
+        </parameter>
 		<parameter id="#74" location="SUB1.MODE" description="Operating Mode" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
 			<calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
             </calib_enum>
+            <setter activity="#4" set_argument="new_value">
+                <!-- Convert? -->
+                <decalib_ienum>
+                    <point y="0" x="OFF" />
+                    <point y="1" x="ON" />
+                </decalib_ienum>
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="4" raw_value="true" />
+            </setter>
 		</parameter>
         <parameter id="#75" location="SUB1.SUMMARY" description="Summary" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" >
+            <setter activity="#6" set_argument="new_value">
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="5" raw_value="true" />
+            </setter>
         </parameter>
         <parameter id="#76" location="SUB1.SWEEP" description="Sweep Mode" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
             <calib_enum default="UNKNOWN">
                 <point x="0" y="OFF" />
                 <point x="1" y="ON" />
             </calib_enum>
+            <setter activity="#4" set_argument="new_value">
+                <!-- Convert? -->
+                <decalib_ienum>
+                    <point y="0" x="OFF" />
+                    <point y="1" x="ON" />
+                </decalib_ienum>
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="6" raw_value="true" />
+            </setter>
         </parameter>
         <!-- Subsystem 2 -->
         <parameter id="#80" location="SUB2.STATUS" description="Subsystem Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
@@ -79,9 +116,27 @@
     </events>
 
     <activities>
-        <activity id="#3" location="COMMANDS.SET_PARAMETER" description="Set a parameter to a specific value" type="DEV3-BIN-CMD">
-            <argument name="device_subsystem" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
-            <argument name="parameter" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" />
+        <activity id="#3" location="COMMANDS.SET_PARAMETER_LONG" description="Set a long parameter to a specific value" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
+        </activity>
+
+        <activity id="#4" location="COMMANDS.SET_PARAMETER_INT" description="Set a int parameter to a specific value" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
+        </activity>
+
+        <activity id="#5" location="COMMANDS.SET_PARAMETER_DOUBLE" description="Set a double parameter to a specific value" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
+        </activity>
+
+        <activity id="#6" location="COMMANDS.SET_PARAMETER_STRING" description="Set a string parameter to a specific value" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
             <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
         </activity>
 

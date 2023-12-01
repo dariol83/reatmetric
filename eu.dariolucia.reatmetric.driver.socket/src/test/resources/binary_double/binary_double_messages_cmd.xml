@@ -23,11 +23,10 @@
         <field id="command" offset="20" len="4" />
     </id_fields>
     <packets>
-        <!-- TODO: create one SET per type -->
-        <packet id="CMD_SET" type="DEV3-BIN-CMD">
+        <!-- one SET per type -->
+        <packet id="CMD_SET_LONG" type="DEV3-BIN-CMD">
             <identification>
                 <match field="operation" value="10"/>
-                <match field="command" value="1"/>
             </identification>
             <structure>
                 <!-- Start of common part -->
@@ -56,15 +55,11 @@
                 </parameter>
                 <!-- End of common part -->
                 <!-- Start of message-specific -->
-                <parameter id="command_id">
-                    <type_fixed type="ENUMERATED" length="32" />
-                    <value>1</value>
-                </parameter>
                 <parameter id="parameter">
                     <type_fixed type="ENUMERATED" length="32" />
                 </parameter>
                 <parameter id="new_value">
-                    <type_fixed type="ENUMERATED" length="32" />
+                    <type_fixed type="SIGNED_INTEGER" length="64" />
                 </parameter>
                 <!-- End of message-specific -->
                 <!-- Start of tail: METR in binary: 1296389202 -->
@@ -75,6 +70,145 @@
                 <!-- End of tail -->
             </structure>
         </packet>
+        <packet id="CMD_SET_INT" type="DEV3-BIN-CMD">
+            <identification>
+                <match field="operation" value="10"/>
+            </identification>
+            <structure>
+                <!-- Start of common part -->
+                <!-- Header preamble: REAT in binary: 1380270420 -->
+                <parameter id="preamble">
+                    <type_fixed type="SIGNED_INTEGER" length="32" />
+                    <value>1380270420</value>
+                </parameter>
+                <!-- length field -->
+                <parameter id="length">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                </parameter>
+                <!-- filler: 0x0000FFFF: 65535 -->
+                <parameter id="filler">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                    <value>65535</value>
+                </parameter>
+                <!-- Subsystem ID -->
+                <parameter id="device_subsystem">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                </parameter>
+                <!-- Operation ID -->
+                <parameter id="operation">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                    <value>10</value>
+                </parameter>
+                <!-- End of common part -->
+                <!-- Start of message-specific -->
+                <parameter id="parameter">
+                    <type_fixed type="ENUMERATED" length="32" />
+                </parameter>
+                <parameter id="new_value">
+                    <type_fixed type="SIGNED_INTEGER" length="32" />
+                </parameter>
+                <!-- End of message-specific -->
+                <!-- Start of tail: METR in binary: 1296389202 -->
+                <parameter id="tail">
+                    <type_fixed type="SIGNED_INTEGER" length="32" />
+                    <value>1296389202</value>
+                </parameter>
+                <!-- End of tail -->
+            </structure>
+        </packet>
+        <packet id="CMD_SET_DOUBLE" type="DEV3-BIN-CMD">
+            <identification>
+                <match field="operation" value="10"/>
+            </identification>
+            <structure>
+                <!-- Start of common part -->
+                <!-- Header preamble: REAT in binary: 1380270420 -->
+                <parameter id="preamble">
+                    <type_fixed type="SIGNED_INTEGER" length="32" />
+                    <value>1380270420</value>
+                </parameter>
+                <!-- length field -->
+                <parameter id="length">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                </parameter>
+                <!-- filler: 0x0000FFFF: 65535 -->
+                <parameter id="filler">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                    <value>65535</value>
+                </parameter>
+                <!-- Subsystem ID -->
+                <parameter id="device_subsystem">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                </parameter>
+                <!-- Operation ID -->
+                <parameter id="operation">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                    <value>10</value>
+                </parameter>
+                <!-- End of common part -->
+                <!-- Start of message-specific -->
+                <parameter id="parameter">
+                    <type_fixed type="ENUMERATED" length="32" />
+                </parameter>
+                <parameter id="new_value">
+                    <type_fixed type="REAL" length="2" />
+                </parameter>
+                <!-- End of message-specific -->
+                <!-- Start of tail: METR in binary: 1296389202 -->
+                <parameter id="tail">
+                    <type_fixed type="SIGNED_INTEGER" length="32" />
+                    <value>1296389202</value>
+                </parameter>
+                <!-- End of tail -->
+            </structure>
+        </packet>
+        <packet id="CMD_SET_PSTRING" type="DEV3-BIN-CMD">
+            <identification>
+                <match field="operation" value="10"/>
+            </identification>
+            <structure>
+                <!-- Start of common part -->
+                <!-- Header preamble: REAT in binary: 1380270420 -->
+                <parameter id="preamble">
+                    <type_fixed type="SIGNED_INTEGER" length="32" />
+                    <value>1380270420</value>
+                </parameter>
+                <!-- length field -->
+                <parameter id="length">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                </parameter>
+                <!-- filler: 0x0000FFFF: 65535 -->
+                <parameter id="filler">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                    <value>65535</value>
+                </parameter>
+                <!-- Subsystem ID -->
+                <parameter id="device_subsystem">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                </parameter>
+                <!-- Operation ID -->
+                <parameter id="operation">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32" />
+                    <value>10</value>
+                </parameter>
+                <!-- End of common part -->
+                <!-- Start of message-specific -->
+                <parameter id="parameter">
+                    <type_fixed type="ENUMERATED" length="32" />
+                </parameter>
+                <parameter id="new_value">
+                    <type_ext external="LengthPaddedUsAsciiString" />
+                </parameter>
+                <!-- End of message-specific -->
+                <!-- Start of tail: METR in binary: 1296389202 -->
+                <parameter id="tail">
+                    <type_fixed type="SIGNED_INTEGER" length="32" />
+                    <value>1296389202</value>
+                </parameter>
+                <!-- End of tail -->
+            </structure>
+        </packet>
+
         <packet id="CMD_RST" type="DEV3-BIN-CMD">
             <identification>
                 <match field="operation" value="11"/>
