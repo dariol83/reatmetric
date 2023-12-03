@@ -152,6 +152,10 @@ public class DeviceSubsystem {
     }
 
     public void encodeStateTo(ByteArrayOutputStream bos) throws IOException {
+        encodeStateTo(bos, true);
+    }
+
+    public void encodeStateTo(ByteArrayOutputStream bos, boolean stringPad) throws IOException {
         Map<String, Object> polled = poll();
         for(Map.Entry<String, Object> e : polled.entrySet()) {
             if(e.getValue() instanceof Integer) {
@@ -162,7 +166,7 @@ public class DeviceSubsystem {
                 bos.write(fromLong((Long) e.getValue()));
             } else { // String
                 String val = Objects.toString(e.getValue());
-                bos.write(fromString(val));
+                bos.write(fromString(val, stringPad));
             }
         }
     }
@@ -188,7 +192,7 @@ public class DeviceSubsystem {
         return b;
     }
 
-    private byte[] fromString(String value) throws IOException {
+    private byte[] fromString(String value, boolean stringPad) throws IOException {
         byte[] encodedString = value.getBytes(StandardCharsets.US_ASCII);
         byte[] prefix = fromInt(encodedString.length);
         //
@@ -196,7 +200,7 @@ public class DeviceSubsystem {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         bos.write(prefix);
         bos.write(encodedString);
-        if(rest != 0) {
+        if(rest != 0 && stringPad) {
             bos.write(new byte[4 - rest]);
         }
         return bos.toByteArray();
