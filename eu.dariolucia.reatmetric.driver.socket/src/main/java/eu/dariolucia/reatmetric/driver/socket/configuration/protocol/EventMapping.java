@@ -20,23 +20,25 @@ package eu.dariolucia.reatmetric.driver.socket.configuration.protocol;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class EventMapping {
 
-    // TODO: add possibility to conditionally raise an event based on a value == XXX from the extracted fields
     @XmlAttribute(required = true)
     private int entity;
 
     @XmlAttribute(name = "source")
     private String source = "";
 
-
     @XmlAttribute(name = "qualifier")
     private String qualifier;
 
     @XmlAttribute(name = "qualifier-reference")
     private String qualifierReference;
+
+    @XmlElement(name = "condition")
+    private EventCondition condition;
 
     public int getEntity() {
         return entity;
@@ -68,5 +70,13 @@ public class EventMapping {
 
     public void setSource(String source) {
         this.source = source;
+    }
+
+    public EventCondition getCondition() {
+        return condition;
+    }
+
+    public void setCondition(EventCondition condition) {
+        this.condition = condition;
     }
 }

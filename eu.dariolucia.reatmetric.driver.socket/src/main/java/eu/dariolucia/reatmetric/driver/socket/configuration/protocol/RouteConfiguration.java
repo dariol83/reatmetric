@@ -241,6 +241,17 @@ public class RouteConfiguration {
     }
 
     private void performInjection(Instant time, Map<String, Object> decodedMessage, InboundMessageMapping imm) {
+        // Add computed fields, they can overwrite existing fields!
+        for(ComputedField cf : imm.getComputedFields()) {
+            String field = cf.getField();
+            Object value;
+            try {
+                value = cf.compute(imm.getMessageDefinition().getId(), imm.getSecondaryId(), decodedMessage);
+                decodedMessage.put(field, value);
+            } catch (ReatmetricException e) {
+                LOG.log(Level.SEVERE, "Cannot compute field " + field + " for inbound message " + imm.getId() + ": " + e.getMessage(), e);
+            }
+        }
         List<ParameterSample> parameterSamples = imm.mapParameters(decodedMessage, getName(), time);
         List<EventOccurrence> eventOccurrences = imm.mapEvents(decodedMessage, getName(), time);
         injectAndRaise(parameterSamples, eventOccurrences);

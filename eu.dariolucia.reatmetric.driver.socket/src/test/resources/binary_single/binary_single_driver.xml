@@ -57,6 +57,7 @@
 
                 <!-- EVT First Subsystem -->
                 <inbound id="EVT_SUB1_MP" message="CMD_DEFINITION" secondary-id="EVT_SUB1">
+                    <!-- TODO: add condition and computed fields for qualifier -->
                     <raise entity="200" source="Device 4" qualifier-reference="message_val" />
                 </inbound>
                 <!-- EVT Second Subsystem -->

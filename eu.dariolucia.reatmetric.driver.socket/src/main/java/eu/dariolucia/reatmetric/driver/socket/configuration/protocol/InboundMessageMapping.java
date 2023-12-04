@@ -55,6 +55,9 @@ public class InboundMessageMapping extends MessageMapping {
     @XmlElement(name = "command-match")
     private OutboundMessageMappingReference command = null;
 
+    @XmlElement(name = "computed-field")
+    private List<ComputedField> computedFields = new LinkedList<>();
+
     @XmlElement(name = "inject")
     private List<ParameterMapping> parameterMappings = new LinkedList<>();
 
@@ -85,6 +88,14 @@ public class InboundMessageMapping extends MessageMapping {
         this.command = command;
     }
 
+    public List<ComputedField> getComputedFields() {
+        return computedFields;
+    }
+
+    public void setComputedFields(List<ComputedField> computedFields) {
+        this.computedFields = computedFields;
+    }
+
     /* ***************************************************************
      * Internal operations
      * ***************************************************************/
@@ -98,6 +109,10 @@ public class InboundMessageMapping extends MessageMapping {
         //
         for(ParameterMapping pm : getParameterMappings()) {
             id2parameterMapping.put(pm.getName(), pm);
+        }
+        //
+        for(ComputedField cf : getComputedFields()) {
+            cf.initialise();
         }
     }
 
@@ -117,6 +132,9 @@ public class InboundMessageMapping extends MessageMapping {
     public List<EventOccurrence> mapEvents(Map<String, Object> decodedMessage, String route, Instant time) {
         List<EventOccurrence> occurrences = new ArrayList<>(getEventMappings().size());
         for(EventMapping em : getEventMappings()) {
+            if(em.getCondition() != null && !em.getCondition().check(decodedMessage)) {
+                continue;
+            }
             String qualifier = null;
             if(em.getQualifier() != null) {
                 qualifier = em.getQualifier();

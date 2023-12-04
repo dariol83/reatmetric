@@ -113,49 +113,50 @@
     </parameters>
 
     <events>
+        <!-- TODO: add one event per severity -->
         <event id="#200" location="SUB1.EVENT" description="SUB1 event" severity="INFO" type="SUB1_EVENT"/>
         <event id="#300" location="SUB2.EVENT" description="SUB2 event" severity="INFO" type="SUB2_EVENT"/>
     </events>
 
     <activities>
-        <activity id="#103" location="COMMANDS.SET_PARAMETER_LONG" description="Set a long parameter to a specific value" type="DEV3-BIN-CMD">
+        <activity id="#103" location="COMMANDS.SET_PARAMETER_LONG" description="Set a long parameter to a specific value" type="DEV4-BIN-CMD">
             <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
             <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
             <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
         </activity>
 
-        <activity id="#104" location="COMMANDS.SET_PARAMETER_INT" description="Set a int parameter to a specific value" type="DEV3-BIN-CMD">
+        <activity id="#104" location="COMMANDS.SET_PARAMETER_INT" description="Set a int parameter to a specific value" type="DEV4-BIN-CMD">
             <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
             <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
             <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
         </activity>
 
-        <activity id="#105" location="COMMANDS.SET_PARAMETER_DOUBLE" description="Set a double parameter to a specific value" type="DEV3-BIN-CMD">
+        <activity id="#105" location="COMMANDS.SET_PARAMETER_DOUBLE" description="Set a double parameter to a specific value" type="DEV4-BIN-CMD">
             <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
             <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
             <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
         </activity>
 
-        <activity id="#106" location="COMMANDS.SET_PARAMETER_STRING" description="Set a string parameter to a specific value" type="DEV3-BIN-CMD">
+        <activity id="#106" location="COMMANDS.SET_PARAMETER_STRING" description="Set a string parameter to a specific value" type="DEV4-BIN-CMD">
             <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
             <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
             <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
         </activity>
 
-        <activity id="#177" location="SUB1.RESET" description="Reset the subsystem" type="DEV3-BIN-CMD" />
-        <activity id="#178" location="SUB1.START_SWEEP" description="Start sweep sequence" type="DEV3-BIN-CMD">
+        <activity id="#177" location="SUB1.RESET" description="Reset the subsystem" type="DEV4-BIN-CMD" />
+        <activity id="#178" location="SUB1.START_SWEEP" description="Start sweep sequence" type="DEV4-BIN-CMD">
             <argument name="times" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
-        <activity id="#179" location="SUB1.REBOOT" description="Reboot subsystem" type="DEV3-BIN-CMD">
+        <activity id="#179" location="SUB1.REBOOT" description="Reboot subsystem" type="DEV4-BIN-CMD">
             <argument name="delay" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
             <argument name="running" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
 
-        <activity id="#187" location="SUB2.RESET" description="Reset the subsystem" type="DEV3-BIN-CMD" />
-        <activity id="#188" location="SUB2.START_SWEEP" description="Start sweep sequence" type="DEV3-BIN-CMD">
+        <activity id="#187" location="SUB2.RESET" description="Reset the subsystem" type="DEV4-BIN-CMD" />
+        <activity id="#188" location="SUB2.START_SWEEP" description="Start sweep sequence" type="DEV4-BIN-CMD">
             <argument name="times" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
-        <activity id="#189" location="SUB2.REBOOT" description="Reboot subsystem" type="DEV3-BIN-CMD">
+        <activity id="#189" location="SUB2.REBOOT" description="Reboot subsystem" type="DEV4-BIN-CMD">
             <argument name="delay" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
             <argument name="running" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
         </activity>
