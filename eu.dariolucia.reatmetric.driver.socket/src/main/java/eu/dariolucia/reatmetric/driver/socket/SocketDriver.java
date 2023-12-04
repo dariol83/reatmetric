@@ -28,6 +28,7 @@ import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.AbstractDriver;
+import eu.dariolucia.reatmetric.core.api.IRawDataRenderer;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
@@ -59,6 +60,12 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
     @Override
     public List<DebugInformation> currentDebugInfo() {
         return Collections.emptyList();
+    }
+
+    @Override
+    public List<IRawDataRenderer> getRawDataRenderers() {
+        // TODO: implement
+        return super.getRawDataRenderers();
     }
 
     @Override

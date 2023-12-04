@@ -24,6 +24,7 @@ import jakarta.xml.bind.annotation.XmlAttribute;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class EventMapping {
 
+    // TODO: add possibility to conditionally raise an event based on a value == XXX from the extracted fields
     @XmlAttribute(required = true)
     private int entity;
 

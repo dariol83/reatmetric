@@ -1,0 +1,164 @@
+<!--
+  ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~          http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition" path_prefix="STATION.DEVICE3.">
+    <parameters>
+        <!-- Subsystem 1 -->
+		<parameter id="#170" location="SUB1.STATUS" description="Subsystem Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <setter activity="#104" set_argument="new_value">
+                <!-- Convert? -->
+                <decalib_ienum>
+                    <point y="0" x="OFF" />
+                    <point y="1" x="ON" />
+                </decalib_ienum>
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="0" raw_value="true" />
+            </setter>
+		</parameter>
+		<parameter id="#171" location="SUB1.FREQUENCY" description="Frequency" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="kHz">
+            <setter activity="#103" set_argument="new_value">
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="1" raw_value="true" />
+            </setter>
+        </parameter>
+		<parameter id="#172" location="SUB1.TEMPERATURE" description="Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C">
+            <setter activity="#105" set_argument="new_value">
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="2" raw_value="true" />
+            </setter>
+        </parameter>
+		<parameter id="#173" location="SUB1.OFFSET" description="Frequency Offset" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="kHz">
+            <setter activity="#103" set_argument="new_value">
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="3" raw_value="true" />
+            </setter>
+        </parameter>
+		<parameter id="#174" location="SUB1.MODE" description="Operating Mode" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+			<calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <setter activity="#104" set_argument="new_value">
+                <!-- Convert? -->
+                <decalib_ienum>
+                    <point y="0" x="OFF" />
+                    <point y="1" x="ON" />
+                </decalib_ienum>
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="4" raw_value="true" />
+            </setter>
+		</parameter>
+        <parameter id="#175" location="SUB1.SUMMARY" description="Summary" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" >
+            <setter activity="#106" set_argument="new_value">
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="5" raw_value="true" />
+            </setter>
+        </parameter>
+        <parameter id="#176" location="SUB1.SWEEP" description="Sweep Mode" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+            <setter activity="#104" set_argument="new_value">
+                <!-- Convert? -->
+                <decalib_ienum>
+                    <point y="0" x="OFF" />
+                    <point y="1" x="ON" />
+                </decalib_ienum>
+                <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+                <fixed_argument name="parameter" value="6" raw_value="true" />
+            </setter>
+        </parameter>
+        <!-- Subsystem 2 -->
+        <parameter id="#180" location="SUB2.STATUS" description="Subsystem Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#181" location="SUB2.FREQUENCY" description="Frequency" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="kHz" />
+        <parameter id="#182" location="SUB2.TEMPERATURE" description="Temperature" raw_type="REAL" eng_type="REAL" eng_unit="C" />
+        <parameter id="#183" location="SUB2.OFFSET" description="Frequency Offset" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="kHz" />
+        <parameter id="#184" location="SUB2.MODE" description="Operating Mode" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+        </parameter>
+        <parameter id="#185" location="SUB2.SUMMARY" description="Summary" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" >
+        </parameter>
+        <parameter id="#186" location="SUB2.SWEEP" description="Sweep Mode" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="OFF" />
+                <point x="1" y="ON" />
+            </calib_enum>
+        </parameter>
+    </parameters>
+
+    <events>
+        <event id="#200" location="SUB1.EVENT" description="SUB1 event" severity="INFO" type="SUB1_EVENT"/>
+        <event id="#300" location="SUB2.EVENT" description="SUB2 event" severity="INFO" type="SUB2_EVENT"/>
+    </events>
+
+    <activities>
+        <activity id="#103" location="COMMANDS.SET_PARAMETER_LONG" description="Set a long parameter to a specific value" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
+        </activity>
+
+        <activity id="#104" location="COMMANDS.SET_PARAMETER_INT" description="Set a int parameter to a specific value" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
+        </activity>
+
+        <activity id="#105" location="COMMANDS.SET_PARAMETER_DOUBLE" description="Set a double parameter to a specific value" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
+        </activity>
+
+        <activity id="#106" location="COMMANDS.SET_PARAMETER_STRING" description="Set a string parameter to a specific value" type="DEV3-BIN-CMD">
+            <argument name="device_subsystem" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="parameter" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="" />
+            <argument name="new_value" raw_type="DERIVED" eng_type="DERIVED" eng_unit="" />
+        </activity>
+
+        <activity id="#177" location="SUB1.RESET" description="Reset the subsystem" type="DEV3-BIN-CMD" />
+        <activity id="#178" location="SUB1.START_SWEEP" description="Start sweep sequence" type="DEV3-BIN-CMD">
+            <argument name="times" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        </activity>
+        <activity id="#179" location="SUB1.REBOOT" description="Reboot subsystem" type="DEV3-BIN-CMD">
+            <argument name="delay" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+            <argument name="running" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        </activity>
+
+        <activity id="#187" location="SUB2.RESET" description="Reset the subsystem" type="DEV3-BIN-CMD" />
+        <activity id="#188" location="SUB2.START_SWEEP" description="Start sweep sequence" type="DEV3-BIN-CMD">
+            <argument name="times" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        </activity>
+        <activity id="#189" location="SUB2.REBOOT" description="Reboot subsystem" type="DEV3-BIN-CMD">
+            <argument name="delay" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+            <argument name="running" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+        </activity>
+
+    </activities>
+</ns1:processing>

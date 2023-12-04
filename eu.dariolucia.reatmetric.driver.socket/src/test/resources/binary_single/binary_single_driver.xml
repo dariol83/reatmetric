@@ -34,35 +34,34 @@
                 <inbound id="EXE_NEG_IN" message="CMD_DEFINITION" secondary-id="EXE_NEG" />
                 <inbound id="NOK_IN" message="CMD_DEFINITION" secondary-id="CMD_NOK" />
 
-                <!-- TODO: update entity mapping -->
                 <!-- TM First Subsystem -->
                 <inbound id="TLM_SUB1_MP" message="CMD_DEFINITION" secondary-id="TLM_SUB1">
-                    <inject name="status_val" entity="70" />
-                    <inject name="freq_val" entity="71" />
-                    <inject name="temp_val" entity="72" />
-                    <inject name="offset_val" entity="73" />
-                    <inject name="mode_val" entity="74" />
-                    <inject name="summary_val" entity="75" />
-                    <inject name="sweep_val" entity="76" />
+                    <inject name="status_val" entity="170" />
+                    <inject name="freq_val" entity="171" />
+                    <inject name="temp_val" entity="172" />
+                    <inject name="offset_val" entity="173" />
+                    <inject name="mode_val" entity="174" />
+                    <inject name="summary_val" entity="175" />
+                    <inject name="sweep_val" entity="176" />
                 </inbound>
                 <!-- TM Second Subsystem -->
                 <inbound id="TLM_SUB2_MP" message="CMD_DEFINITION" secondary-id="TLM_SUB2">
-                    <inject name="status_val" entity="80" />
-                    <inject name="freq_val" entity="81" />
-                    <inject name="temp_val" entity="82" />
-                    <inject name="offset_val" entity="83" />
-                    <inject name="mode_val" entity="84" />
-                    <inject name="summary_val" entity="85" />
-                    <inject name="sweep_val" entity="86" />
+                    <inject name="status_val" entity="180" />
+                    <inject name="freq_val" entity="181" />
+                    <inject name="temp_val" entity="182" />
+                    <inject name="offset_val" entity="183" />
+                    <inject name="mode_val" entity="184" />
+                    <inject name="summary_val" entity="185" />
+                    <inject name="sweep_val" entity="186" />
                 </inbound>
 
                 <!-- EVT First Subsystem -->
                 <inbound id="EVT_SUB1_MP" message="CMD_DEFINITION" secondary-id="EVT_SUB1">
-                    <!-- TODO: event definition -->
+                    <raise entity="200" source="Device 4" qualifier-reference="message_val" />
                 </inbound>
                 <!-- EVT Second Subsystem -->
                 <inbound id="EVT_SUB2_MP" message="CMD_DEFINITION" secondary-id="EVT_SUB2">
-                    <!-- TODO: event definition -->
+                    <raise entity="300" source="Device 4" qualifier-reference="message_val" />
                 </inbound>
 
                 <!-- TM Subsystem Registration -->
@@ -106,8 +105,7 @@
                 </outbound>
 
                 <!-- Common -->
-                <!-- TODO: update entity mapping on all commands-->
-                <outbound id="SET_MP_LONG" message="CMD_DEFINITION" secondary-id="CMD_SET_LONG" type="ACTIVITY_DRIVEN" entity="3">
+                <outbound id="SET_MP_LONG" message="CMD_DEFINITION" secondary-id="CMD_SET_LONG" type="ACTIVITY_DRIVEN" entity="103">
                     <!-- Not needed, can go in the definition, used for testing-->
                     <fixed-field field="length" value="36" type="UNSIGNED_INTEGER" />
                     <argument name="device_subsystem" field="device_subsystem" />
@@ -122,7 +120,7 @@
                         <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
-                <outbound id="SET_MP_INT" message="CMD_DEFINITION" secondary-id="CMD_SET_INT" type="ACTIVITY_DRIVEN" entity="4">
+                <outbound id="SET_MP_INT" message="CMD_DEFINITION" secondary-id="CMD_SET_INT" type="ACTIVITY_DRIVEN" entity="104">
                     <fixed-field field="length" value="32" type="UNSIGNED_INTEGER" />
                     <argument name="device_subsystem" field="device_subsystem" />
                     <argument name="parameter" field="parameter" />
@@ -136,7 +134,7 @@
                         <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
-                <outbound id="SET_MP_DOUBLE" message="CMD_DEFINITION" secondary-id="CMD_SET_DOUBLE" type="ACTIVITY_DRIVEN" entity="5">
+                <outbound id="SET_MP_DOUBLE" message="CMD_DEFINITION" secondary-id="CMD_SET_DOUBLE" type="ACTIVITY_DRIVEN" entity="105">
                     <fixed-field field="length" value="36" type="UNSIGNED_INTEGER" />
                     <argument name="device_subsystem" field="device_subsystem" />
                     <argument name="parameter" field="parameter" />
@@ -150,45 +148,17 @@
                         <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
-                <outbound id="SET_MP_PSTRING" message="CMD_DEFINITION" secondary-id="CMD_SET_PSTRING" type="ACTIVITY_DRIVEN" entity="6">
+                <outbound id="SET_MP_PSTRING" message="CMD_DEFINITION" secondary-id="CMD_SET_PSTRING" type="ACTIVITY_DRIVEN" entity="106">
                     <argument name="device_subsystem" field="device_subsystem" />
                     <argument name="parameter" field="parameter" />
                     <argument name="new_value" field="new_value" />
                     <auto-increment counter-id="SEQ1" field="request" output-type="UNSIGNED_INTEGER"/>
                     <!-- Declaration order matters -->
                     <computed-field field="length">
-                        // You can access fields'names, message and secondary_id as variables here.
-                        // Remind that all spaces and dashes in names are replaced with underscore. Use only names that
-                        // are valid Java variable names.
-
-                        // The approach could have been generalised to compute the length for all messages,
-                        // but it would have been less efficient.
-                        // Moreover, given the type of format for the String parameter, the generation of multiple set
-                        // definitions at message level would still be required.
-
-                        // if(new_value instanceof Long) return 28 + 8;
-                        // if(new_value instanceof Integer) return 28 + 4;
-                        // if(new_value instanceof Double) return 28 + 8;
-                        // if(new_value instanceof String) {
-
-                        String asciiString = (String) new_value;
-                        // In this specific case, we need to use the length + bytes + pad
-                        int rest = (asciiString.length() % 4);
-                        if(rest > 0) {
-                            int toPad = 4 - rest;
-                            return 28 + 4 + asciiString.length() + toPad;
-                        } else {
-                            return 28 + 4 + asciiString.length();
-                        }
-
-                        // }
-
-                        // An alternative way could be to access the parameter ID, to check, based on the parameter,
-                        // which kind of processing is required to compute the length of the SET message.
-
-                        // An alternative way is to declare a fixed argument in the SET reference and in the corresponding
-                        // activity in the processing model, indicating the type of value being set. Then map this argument
-                        // to a field parameter that is not used, and use this field parameter to derive the type of the element
+                        return 28 + 4 + ((String) new_value).length();
+                    </computed-field>
+                    <computed-field field="new_value_length">
+                        return ((String) new_value).length();
                     </computed-field>
                     <verification timeout="10" id-field="request">
                         <acceptance message="CMD_DEFINITION" secondary-id="ACK_POS" id-field="request" result="OK" />
@@ -199,7 +169,7 @@
                     </verification>
                 </outbound>
                 <!-- First Subsystem -->
-                <outbound id="CMD_SUB1_RST_MP" message="CMD_DEFINITION" secondary-id="CMD_RST" type="ACTIVITY_DRIVEN" entity="77">
+                <outbound id="CMD_SUB1_RST_MP" message="CMD_DEFINITION" secondary-id="CMD_RST" type="ACTIVITY_DRIVEN" entity="177">
                     <fixed-field field="device_subsystem" value="1" type="UNSIGNED_INTEGER" />
                     <auto-increment counter-id="SEQ1" field="request" output-type="UNSIGNED_INTEGER"/>
                     <verification timeout="10" id-field="request">
@@ -210,7 +180,7 @@
                         <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
-                <outbound id="CMD_SUB1_SWP_MP" message="CMD_DEFINITION" secondary-id="CMD_SWP" type="ACTIVITY_DRIVEN" entity="78">
+                <outbound id="CMD_SUB1_SWP_MP" message="CMD_DEFINITION" secondary-id="CMD_SWP" type="ACTIVITY_DRIVEN" entity="178">
                     <fixed-field field="device_subsystem" value="1" type="UNSIGNED_INTEGER" />
                     <argument name="times" field="times" />
                     <auto-increment counter-id="SEQ1" field="request" output-type="UNSIGNED_INTEGER"/>
@@ -222,7 +192,7 @@
                         <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
-                <outbound id="CMD_SUB1_RBT_MP" message="CMD_DEFINITION" secondary-id="CMD_RBT" type="ACTIVITY_DRIVEN" entity="79">
+                <outbound id="CMD_SUB1_RBT_MP" message="CMD_DEFINITION" secondary-id="CMD_RBT" type="ACTIVITY_DRIVEN" entity="179">
                     <fixed-field field="device_subsystem" value="1" type="UNSIGNED_INTEGER" />
                     <argument name="delay" field="delay" />
                     <argument name="running" field="running" />
@@ -236,7 +206,7 @@
                     </verification>
                 </outbound>
                 <!-- Second Subsystem -->
-                <outbound id="CMD_SUB2_RST_MP" message="CMD_DEFINITION" secondary-id="CMD_RST" type="ACTIVITY_DRIVEN" entity="87">
+                <outbound id="CMD_SUB2_RST_MP" message="CMD_DEFINITION" secondary-id="CMD_RST" type="ACTIVITY_DRIVEN" entity="187">
                     <fixed-field field="device_subsystem" value="2" type="UNSIGNED_INTEGER" />
                     <auto-increment counter-id="SEQ1" field="request" output-type="UNSIGNED_INTEGER"/>
                     <verification timeout="10" id-field="request">
@@ -247,7 +217,7 @@
                         <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
-                <outbound id="CMD_SUB2_SWP_MP" message="CMD_DEFINITION" secondary-id="CMD_SWP" type="ACTIVITY_DRIVEN" entity="88">
+                <outbound id="CMD_SUB2_SWP_MP" message="CMD_DEFINITION" secondary-id="CMD_SWP" type="ACTIVITY_DRIVEN" entity="188">
                     <fixed-field field="device_subsystem" value="2" type="UNSIGNED_INTEGER" />
                     <argument name="times" field="times" />
                     <auto-increment counter-id="SEQ1" field="request" output-type="UNSIGNED_INTEGER"/>
@@ -259,7 +229,7 @@
                         <execution message="CMD_DEFINITION" secondary-id="CMD_NOK" result="FAIL" />
                     </verification>
                 </outbound>
-                <outbound id="CMD_SUB2_RBT_MP" message="CMD_DEFINITION" secondary-id="CMD_RBT" type="ACTIVITY_DRIVEN" entity="89">
+                <outbound id="CMD_SUB2_RBT_MP" message="CMD_DEFINITION" secondary-id="CMD_RBT" type="ACTIVITY_DRIVEN" entity="189">
                     <fixed-field field="device_subsystem" value="2" type="UNSIGNED_INTEGER" />
                     <argument name="delay" field="delay" />
                     <argument name="running" field="running" />
