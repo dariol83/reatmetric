@@ -28,6 +28,7 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
     uses eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe.ITcFrameConnector;
     uses eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector;
     uses eu.dariolucia.reatmetric.driver.spacecraft.services.IService;
+    uses eu.dariolucia.reatmetric.driver.spacecraft.tmtc.ISecurityHandler;
 
     requires java.logging;
     requires jakarta.xml.bind;

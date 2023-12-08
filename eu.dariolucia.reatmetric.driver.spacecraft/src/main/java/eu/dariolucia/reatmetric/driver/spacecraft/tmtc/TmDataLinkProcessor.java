@@ -67,6 +67,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     private final BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver;
     private final BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker;
     private final String driverName;
+    private final DataLinkSecurityManager securityManager;
     private VirtualChannelReceiverDemux demultiplexer;
 
     private final Timer performanceSampler = new Timer("TM Data Link Processor - Sampler", true);
@@ -78,7 +79,8 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     private long frameInput = 0;
     private long packetOutput = 0;
 
-    public TmDataLinkProcessor(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketIdentifier packetIdentifier, BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver, BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker) {
+    public TmDataLinkProcessor(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IPacketIdentifier packetIdentifier, BiFunction<AbstractTransferFrame, SpacePacket, Instant> generationTimeResolver, BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker,
+                               DataLinkSecurityManager securityManager) {
         this.driverName = driverName;
         this.spacecraftId = configuration.getId();
         this.packetIdentifier = packetIdentifier;
@@ -87,6 +89,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         this.processedVCs = new boolean[64];
         this.generationTimeResolver = generationTimeResolver;
         this.packetQualityChecker = packetQualityChecker;
+        this.securityManager = securityManager;
         // Create performance samples
         performanceSampler.schedule(new TimerTask() {
             @Override
@@ -270,6 +273,9 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         }
         for(RawData rd : messages) {
             AbstractTransferFrame atf = (AbstractTransferFrame) rd.getData();
+            // Decrypt
+            atf = securityManager.decrypt(atf);
+            // Send to the demultiplexer
             demultiplexer.accept(atf);
         }
     }
@@ -278,7 +284,6 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         performanceSampler.cancel();
         broker.unsubscribe(this);
     }
-
 
     public LinkedHashMap<String, String> renderTmFrame(RawData rawData) {
         LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();

@@ -66,6 +66,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.sle.CltuServiceInstanceManager
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.SleServiceInstanceManager;
+import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.DataLinkSecurityManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TcDataLinkProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmDataLinkProcessor;
 
@@ -130,6 +131,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private TmDataLinkProcessor tmDataLinkProcessor;
     private TmPacketProcessor tmPacketProcessor;
 
+    private DataLinkSecurityManager securityManager;
     private TcPacketProcessor tcPacketProcessor;
     private TcDataLinkProcessor tcDataLinkProcessor;
 
@@ -165,6 +167,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             loadPacketServices();
             // Load the TM Packet processor
             loadTmPacketProcessor();
+            // Load the security manager
+            loadSecurityManager();
             // Load the TM Data Link processor
             loadTmDataLinkProcessor();
             // Load the SLE service instances
@@ -249,7 +253,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     private void loadTcDataLinkProcessor() {
-        tcDataLinkProcessor = new TcDataLinkProcessor(configuration, context, serviceBroker, getCltuConnectors(), getTcFrameConnectors());
+        tcDataLinkProcessor = new TcDataLinkProcessor(configuration, context, serviceBroker, getCltuConnectors(), getTcFrameConnectors(),
+                this.securityManager);
         registerActivityExecutor(tcDataLinkProcessor);
     }
 
@@ -339,12 +344,17 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.packetEncoder = new DefaultPacketEncoder(new PacketDefinitionIndexer(encodingDecodingDefinitions), MAX_TC_PACKET_SIZE, epoch);
     }
 
+    private void loadSecurityManager() {
+        this.securityManager = new DataLinkSecurityManager(this.context, this.configuration);
+    }
+
     private void loadTmDataLinkProcessor() {
         this.tmDataLinkProcessor = new TmDataLinkProcessor(this.name, this.configuration,
                 this.context,
                 this.packetIdentifier,
                 tmPacketProcessor::extractPacketGenerationTime,
-                tmPacketProcessor::checkPacketQuality
+                tmPacketProcessor::checkPacketQuality,
+                this.securityManager
         );
         this.tmDataLinkProcessor.initialise();
     }
@@ -452,6 +462,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.serviceBroker.dispose();
         this.tcPacketProcessor.dispose();
         this.tcDataLinkProcessor.dispose();
+        this.securityManager.dispose();
         updateStatus(SystemStatus.UNKNOWN);
     }
 

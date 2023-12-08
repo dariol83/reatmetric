@@ -67,6 +67,9 @@ public class SpacecraftConfiguration {
     @XmlElement(name = "tm")
     private TmDataLinkConfiguration tmDataLinkConfigurations = new TmDataLinkConfiguration();
 
+    @XmlElement(name = "security")
+    private SecurityDataLinkConfiguration securityDataLinkConfiguration = null;
+
     @XmlElement(name = "tm-packet", required = true)
     private TmPacketConfiguration tmPacketConfiguration = new TmPacketConfiguration();
 
@@ -131,6 +134,14 @@ public class SpacecraftConfiguration {
 
     public void setTmDataLinkConfigurations(TmDataLinkConfiguration tmDataLinkConfigurations) {
         this.tmDataLinkConfigurations = tmDataLinkConfigurations;
+    }
+
+    public SecurityDataLinkConfiguration getSecurityDataLinkConfiguration() {
+        return securityDataLinkConfiguration;
+    }
+
+    public void setSecurityDataLinkConfiguration(SecurityDataLinkConfiguration securityDataLinkConfiguration) {
+        this.securityDataLinkConfiguration = securityDataLinkConfiguration;
     }
 
     public TmPacketConfiguration getTmPacketConfiguration() {

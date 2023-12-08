@@ -35,6 +35,9 @@ public class TcVcConfiguration {
     @XmlAttribute(name = "default-tc-vc")
     private boolean defaultTcVc = false;
 
+    @XmlAttribute(name = "use-security")
+    private boolean useSecurity = false;
+
     public TcVcConfiguration() {
     }
 
@@ -72,5 +75,13 @@ public class TcVcConfiguration {
 
     public void setDefaultTcVc(boolean defaultTcVc) {
         this.defaultTcVc = defaultTcVc;
+    }
+
+    public boolean isUseSecurity() {
+        return useSecurity;
+    }
+
+    public void setUseSecurity(boolean useSecurity) {
+        this.useSecurity = useSecurity;
     }
 }

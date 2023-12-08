@@ -58,7 +58,10 @@ import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -89,6 +92,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     private final Map<String, ITcFrameConnector> tcFrameSenders;
 
     private final Timer uplinkTimer = new Timer();
+    private final DataLinkSecurityManager securityManager;
 
     private volatile boolean useAdMode;
 
@@ -98,11 +102,13 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         return t;
     });
 
-    public TcDataLinkProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, List<ICltuConnector> cltuSenders, List<ITcFrameConnector> frameSenders) {
+    public TcDataLinkProcessor(SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, List<ICltuConnector> cltuSenders, List<ITcFrameConnector> frameSenders,
+                               DataLinkSecurityManager securityManager) {
         this.configuration = configuration;
         this.context = context;
         this.serviceBroker = serviceBroker;
         this.useAdMode = configuration.getTcDataLinkConfiguration().isAdModeDefault();
+        this.securityManager = securityManager;
         // Create the CLTU encoder
         this.encoder = ChannelEncoder.create();
         if(configuration.getTcDataLinkConfiguration().isRandomize()) {
@@ -115,7 +121,10 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         for(int i = 0; i < tcChannels.length; ++i) {
             TcVcConfiguration tcConf = getTcVcConfiguration(i, configuration.getTcDataLinkConfiguration().getTcVcDescriptors());
             if(tcConf != null) {
-                tcChannels[i] = Pair.of(tcConf, new TcSenderVirtualChannel(configuration.getId(), i, VirtualChannelAccessMode.PACKET, configuration.getTcDataLinkConfiguration().isFecf(), tcConf.isSegmentation()));
+                tcChannels[i] = Pair.of(tcConf, new TcSenderVirtualChannel(configuration.getId(), i, VirtualChannelAccessMode.PACKET, configuration.getTcDataLinkConfiguration().isFecf(), tcConf.isSegmentation(),
+                        securityManager.getSecurityHeaderLength(configuration.getId(), i, TcTransferFrame.class), securityManager.getSecurityTrailerLength(configuration.getId(), i, TcTransferFrame.class),
+                        securityManager.getSecurityHeaderSupplier(configuration.getId(), i, TcTransferFrame.class),
+                        securityManager.getSecurityTrailerSupplier(configuration.getId(), i, TcTransferFrame.class)));
                 tcChannels[i].getSecond().register(this);
                 BcFrameCollector bcFactory = new BcFrameCollector(tcChannels[i].getSecond());
                 tcChannels[i].getSecond().register(bcFactory);
@@ -271,6 +280,8 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                         // Now lastGeneratedFrames will contain the TC frames ready to be sent
                     }
                     LOG.log(Level.INFO, lastGeneratedFrames.size() + " TC frames generated");
+                    // Perform encryption
+                    encryptTcFrames(lastGeneratedFrames);
                     // Now you have the generated frames, prepare for tracking them, encode them and send them
                     // Retrieve the route and hence the service instance to use
                     String route = tcTracker.getInvocation().getRoute();
@@ -283,6 +294,14 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             }).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new ActivityHandlingException("Problem when sending packet", e);
+        }
+    }
+
+    private void encryptTcFrames(List<TcTransferFrame> lastGeneratedFrames) {
+        List<TcTransferFrame> originalFrames = new ArrayList<>(lastGeneratedFrames);
+        lastGeneratedFrames.clear();
+        for(TcTransferFrame frame : originalFrames) {
+            lastGeneratedFrames.add((TcTransferFrame) securityManager.encrypt(frame));
         }
     }
 
