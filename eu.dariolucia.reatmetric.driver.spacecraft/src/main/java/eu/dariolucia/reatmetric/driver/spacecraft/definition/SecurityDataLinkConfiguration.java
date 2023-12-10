@@ -19,12 +19,21 @@ package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SecurityDataLinkConfiguration {
 
     @XmlAttribute(name = "handler", required = true)
     private String handler = "";
+
+    /**
+     * This element contains ;-separated entry, each with :-separated key-value pairs.
+     * The keys are either: an integer number > 0, or the string SALT.
+     * The values are: strings for integer number keys, a sequence of hex-encoded bytes for SALT key
+     */
+    @XmlElement(name = "configuration", required = true)
+    private String configuration = "";
 
     public String getHandler() {
         return handler;
@@ -33,5 +42,13 @@ public class SecurityDataLinkConfiguration {
     public SecurityDataLinkConfiguration setHandler(String handler) {
         this.handler = handler;
         return this;
+    }
+
+    public String getConfiguration() {
+        return configuration;
+    }
+
+    public void setConfiguration(String configuration) {
+        this.configuration = configuration;
     }
 }

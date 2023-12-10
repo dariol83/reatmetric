@@ -15,9 +15,10 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.tmtc;
+package eu.dariolucia.reatmetric.driver.spacecraft.security;
 
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
@@ -62,11 +63,11 @@ public class DataLinkSecurityManager {
         return securityHandler == null ? 0 : securityHandler.getSecurityTrailerLength(spacecraftId, virtualChannelId, type);
     }
 
-    public AbstractTransferFrame encrypt(AbstractTransferFrame frame) {
+    public AbstractTransferFrame encrypt(AbstractTransferFrame frame) throws ReatmetricException {
         return securityHandler == null ? frame : securityHandler.encrypt(frame);
     }
 
-    public AbstractTransferFrame decrypt(AbstractTransferFrame frame) {
+    public AbstractTransferFrame decrypt(AbstractTransferFrame frame) throws ReatmetricException{
         return securityHandler == null ? frame : securityHandler.decrypt(frame);
     }
 

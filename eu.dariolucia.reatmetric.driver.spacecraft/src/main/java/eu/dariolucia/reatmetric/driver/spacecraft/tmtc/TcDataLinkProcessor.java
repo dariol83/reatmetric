@@ -34,6 +34,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
 import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
 import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
@@ -52,6 +53,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe.ITcFrameConne
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcVcConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.security.DataLinkSecurityManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
@@ -297,7 +299,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         }
     }
 
-    private void encryptTcFrames(List<TcTransferFrame> lastGeneratedFrames) {
+    private void encryptTcFrames(List<TcTransferFrame> lastGeneratedFrames) throws ReatmetricException {
         List<TcTransferFrame> originalFrames = new ArrayList<>(lastGeneratedFrames);
         lastGeneratedFrames.clear();
         for(TcTransferFrame frame : originalFrames) {

@@ -19,6 +19,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfoValueExte
 import eu.dariolucia.reatmetric.driver.spacecraft.connectors.CltuCaduTcpConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.encoding.SpacePacketDecodingExtension;
 import eu.dariolucia.reatmetric.driver.spacecraft.encoding.SpacePacketEncodingExtension;
+import eu.dariolucia.reatmetric.driver.spacecraft.security.ISecurityHandler;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.*;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptorValueExtensionHandler;
 
@@ -28,7 +29,7 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
     uses eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe.ITcFrameConnector;
     uses eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector;
     uses eu.dariolucia.reatmetric.driver.spacecraft.services.IService;
-    uses eu.dariolucia.reatmetric.driver.spacecraft.tmtc.ISecurityHandler;
+    uses ISecurityHandler;
 
     requires java.logging;
     requires jakarta.xml.bind;

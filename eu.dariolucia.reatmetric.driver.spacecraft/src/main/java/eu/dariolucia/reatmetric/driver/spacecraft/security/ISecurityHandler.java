@@ -15,9 +15,10 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.tmtc;
+package eu.dariolucia.reatmetric.driver.spacecraft.security;
 
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
@@ -29,9 +30,9 @@ public interface ISecurityHandler {
 
     int getSecurityTrailerLength(int spacecraftId, int virtualChannelId, Class<? extends AbstractTransferFrame> type);
 
-    AbstractTransferFrame encrypt(AbstractTransferFrame frame);
+    AbstractTransferFrame encrypt(AbstractTransferFrame frame) throws ReatmetricException;
 
-    AbstractTransferFrame decrypt(AbstractTransferFrame frame);
+    AbstractTransferFrame decrypt(AbstractTransferFrame frame) throws ReatmetricException;
 
     void dispose();
 }

@@ -44,6 +44,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmDataLinkConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
+import eu.dariolucia.reatmetric.driver.spacecraft.security.DataLinkSecurityManager;
 
 import java.time.Instant;
 import java.util.*;
@@ -274,7 +275,12 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         for(RawData rd : messages) {
             AbstractTransferFrame atf = (AbstractTransferFrame) rd.getData();
             // Decrypt
-            atf = securityManager.decrypt(atf);
+            try {
+                atf = securityManager.decrypt(atf);
+            } catch (ReatmetricException e) {
+                LOG.log(Level.SEVERE, "Cannot decrypt transfer frame: " + e.getMessage(), e);
+                continue;
+            }
             // Send to the demultiplexer
             demultiplexer.accept(atf);
         }
