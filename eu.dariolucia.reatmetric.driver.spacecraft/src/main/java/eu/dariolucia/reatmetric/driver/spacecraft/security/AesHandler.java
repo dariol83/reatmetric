@@ -27,17 +27,10 @@ import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
-import javax.crypto.Cipher;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.spec.KeySpec;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,14 +49,8 @@ import java.util.Map;
  */
 public class AesHandler implements ISecurityHandler {
 
-    private static final int KEY_LENGTH = 256;
-    private static final int ITERATION_COUNT = 65536;
-    private static final String SECRET_KEY_FACTORY = "PBKDF2WithHmacSHA256";
-    private static final String ALGORITHM = "AES";
-    private static final String CHIPER = "AES/CBC/PKCS5Padding";
     public static final int TRAILER_LENGTH = 4;
     public static final int IV_LENGTH = 4;
-
     public static final int HEADER_LENGTH = 2 + IV_LENGTH;
 
     private IServiceCoreContext context;
@@ -126,7 +113,7 @@ public class AesHandler implements ISecurityHandler {
                     " but generated with length " + header.length);
         }
         // Run AES on data field
-        byte[] encryptedDataField = aesEncrypt(frameObj.getFrame(), frameObj.getDataFieldStart(), frameObj.getDataFieldLength(), key, ivArray);
+        byte[] encryptedDataField = CryptoUtil.aesEncrypt(frameObj.getFrame(), frameObj.getDataFieldStart(), frameObj.getDataFieldLength(), key, ivArray, this.salt);
         // Compute the trailer
         byte[] trailer = computeTrailer(frameObj);
         if(trailer.length != frameObj.getSecurityTrailerLength()) {
@@ -179,38 +166,6 @@ public class AesHandler implements ISecurityHandler {
         return computeSHA256(scope);
     }
 
-    public byte[] aesEncrypt(byte[] data, int offset, int length, String key, byte[] iv) throws ReatmetricException {
-        try {
-            IvParameterSpec ivspec = new IvParameterSpec(iv);
-            SecretKeyFactory factory = SecretKeyFactory.getInstance(SECRET_KEY_FACTORY);
-            KeySpec spec = new PBEKeySpec(key.toCharArray(), this.salt, ITERATION_COUNT, KEY_LENGTH);
-            SecretKey tmp = factory.generateSecret(spec);
-            SecretKeySpec secretKeySpec = new SecretKeySpec(tmp.getEncoded(), ALGORITHM);
-
-            Cipher cipher = Cipher.getInstance(CHIPER);
-            cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivspec);
-            return cipher.doFinal(data, offset, length);
-        } catch (Exception e) {
-            throw new ReatmetricException(e);
-        }
-    }
-
-    private byte[] aesDecrypt(byte[] data, int offset, int length, String key, byte[] iv) throws ReatmetricException {
-        try {
-            IvParameterSpec ivspec = new IvParameterSpec(iv);
-            SecretKeyFactory factory = SecretKeyFactory.getInstance(SECRET_KEY_FACTORY);
-            KeySpec spec = new PBEKeySpec(key.toCharArray(), this.salt, ITERATION_COUNT, KEY_LENGTH);
-            SecretKey tmp = factory.generateSecret(spec);
-            SecretKeySpec secretKeySpec = new SecretKeySpec(tmp.getEncoded(), ALGORITHM);
-
-            Cipher cipher = Cipher.getInstance(CHIPER);
-            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivspec);
-            return cipher.doFinal(data, offset, length);
-        } catch (Exception e) {
-            throw new ReatmetricException(e);
-        }
-    }
-
     @Override
     public AbstractTransferFrame decrypt(AbstractTransferFrame frame) throws ReatmetricException {
         // Only TmTransferFrame and AosTransferFrame are supported
@@ -233,7 +188,7 @@ public class AesHandler implements ISecurityHandler {
         byte[] iv = Arrays.copyOfRange(frame.getFrame(), secHeaderOffset + 2, secHeaderOffset + HEADER_LENGTH);
         // Now decrypt the body
         int dataFieldLength = frame.getLength() - secHeaderOffset - HEADER_LENGTH - TRAILER_LENGTH - (frame.isOcfPresent() ? 4 : 0) - (frame.isFecfPresent() ? 2 : 0);
-        byte[] decryptedDataField = aesDecrypt(frame.getFrame(), secHeaderOffset + HEADER_LENGTH, dataFieldLength, password, iv);
+        byte[] decryptedDataField = CryptoUtil.aesDecrypt(frame.getFrame(), secHeaderOffset + HEADER_LENGTH, dataFieldLength, password, iv, salt);
         // Now verify that the trailer matches with the data
         // Use primary header, if present, FHEC and data field (without security header and trailer, without insert zone)
         byte[] trailer = computeTrailer(frame.getFrame(),
@@ -281,7 +236,7 @@ public class AesHandler implements ISecurityHandler {
         byte[] iv = Arrays.copyOfRange(frame.getFrame(), secHeaderOffset + 2, secHeaderOffset + HEADER_LENGTH);
         // Now decrypt the body
         int dataFieldLength = frame.getLength() - secHeaderOffset - HEADER_LENGTH - TRAILER_LENGTH - (frame.isOcfPresent() ? 4 : 0) - (frame.isFecfPresent() ? 2 : 0);
-        byte[] decryptedDataField = aesDecrypt(frame.getFrame(), secHeaderOffset + HEADER_LENGTH, dataFieldLength, password, iv);
+        byte[] decryptedDataField = CryptoUtil.aesDecrypt(frame.getFrame(), secHeaderOffset + HEADER_LENGTH, dataFieldLength, password, iv, this.salt);
         // Now verify that the trailer matches with the data
         // Use primary header, if present, secondary header and data field (without security header and trailer)
         byte[] trailer = computeTrailer(frame.getFrame(), secHeaderOffset, decryptedDataField);
@@ -329,7 +284,7 @@ public class AesHandler implements ISecurityHandler {
         return computeSHA256(scope);
     }
 
-    private static byte[] computeSHA256(byte[] scope) throws ReatmetricException {
+    public static byte[] computeSHA256(byte[] scope) throws ReatmetricException {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             md.reset();
