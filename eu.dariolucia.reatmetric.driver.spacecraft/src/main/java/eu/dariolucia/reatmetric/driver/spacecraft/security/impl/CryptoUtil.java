@@ -15,7 +15,7 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.security;
+package eu.dariolucia.reatmetric.driver.spacecraft.security.impl;
 
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 

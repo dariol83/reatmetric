@@ -31,6 +31,10 @@
 	<tm fecf="true" derandomize="false">
 		<type>TM</type>
 	</tm>
+	<!-- Security -->
+	<!--
+	<security handler="eu.dariolucia.reatmetric.driver.spacecraft.security.impl.AesHandler" configuration="$HOME\reatmetric_test\test\security\security.xml" />
+	-->
 	<!-- TM packet configuration -->
 	<tm-packet parameter-id-offset="100000">
 		<default-pus-configuration 
@@ -50,8 +54,8 @@
 	</tc-packet>
 	<!-- Service configuration -->
 	<services>
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService" configuration="C:\Users\dario\reatmetric_test\test\services\time_correlation.xml" />
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService" configuration="C:\Users\dario\reatmetric_test\test\services\onboard_scheduling.xml" />
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService" configuration="$HOME\reatmetric_test\test\services\time_correlation.xml" />
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService" configuration="$HOME\reatmetric_test\test\services\onboard_scheduling.xml" />
 		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService" configuration="" /> 
 		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService" configuration="" /> 
 	</services>

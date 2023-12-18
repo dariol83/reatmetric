@@ -15,7 +15,7 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.security;
+package eu.dariolucia.reatmetric.driver.spacecraft.security.impl;
 
 import eu.dariolucia.ccsds.tmtc.algorithm.Crc16Algorithm;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
@@ -23,55 +23,96 @@ import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TcTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.api.value.StringUtil;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
+import eu.dariolucia.reatmetric.api.parameters.ParameterData;
+import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.AesSecurityHandlerConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.SpiPassword;
+import eu.dariolucia.reatmetric.driver.spacecraft.security.ISecurityHandler;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.rmi.RemoteException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 
 /**
- * This class is meant to be an example to show the use of the {@link ISecurityHandler} extension.
+ * This class is meant to be a simple example to show the use of the {@link ISecurityHandler} extension.
  * This class implements AES-based cryptography and SHA-256 hashing for securing the frame data.
  * The encoding uses a 6 bytes header, containing the security parameter index of the AES-256 key (string) used for the
  * encoding of the data field, and a 4 bytes initialisation vector.
- * The trailer is the less significant 4 bytes of the SHA-256, computed over the concatenation of transfer frame primary header field,
- * transfer frame secondary header field (if present), segment header (if present) and data field before the encryption.
- * Encryption/decryption is performed on all virtual channels.
+ * The trailer is the least significant 64 bits of the SHA-256 computed over the concatenation of transfer frame primary
+ * header field, transfer frame secondary header field (if present), segment header (if present) and data field before
+ * the encryption.
+ * This implementation, if activated, performs encryption/decryption on all virtual channels.
  * <p />
  * It must be noted that, even if the approach is quite in line with the one described in CCSDS 355.0-B-2, not all aspects
  * are covered. Nevertheless, this class represents a starting point.
  */
-public class AesHandler implements ISecurityHandler {
+public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
 
-    public static final int TRAILER_LENGTH = 4;
+    private static final Logger LOG = Logger.getLogger(AesHandler.class.getName());
+
+    public static final int TRAILER_LENGTH = 8;
     public static final int IV_LENGTH = 4;
     public static final int HEADER_LENGTH = 2 + IV_LENGTH;
 
     private IServiceCoreContext context;
-    private SpacecraftConfiguration configuration;
-    private final Map<Integer, String> spi2key = new HashMap<>();
+    private SpacecraftConfiguration spacecraftConfiguration;
+    private AesSecurityHandlerConfiguration configuration;
+    private final Map<Integer, String> tmspi2key = new HashMap<>();
+    private final Map<Integer, String> tcspi2key = new HashMap<>();
     private final SecureRandom randomizer = new SecureRandom();
     private byte[] salt;
 
+    private AtomicInteger tcSpiToUse = new AtomicInteger();
+    private boolean registered = false;
+
     @Override
-    public void initialise(IServiceCoreContext context, SpacecraftConfiguration configuration) {
+    public void initialise(IServiceCoreContext context, SpacecraftConfiguration spacecraftConfiguration) throws ReatmetricException {
         this.context = context;
-        this.configuration = configuration;
-        // Initialise keys
-        String[] split = configuration.getSecurityDataLinkConfiguration().getConfiguration().split(";", -1);
-        for(String e : split) {
-            e = e.trim();
-            String[] keyValue = e.split(":", -1);
-            if(keyValue[0].equals("SALT")) {
-                this.salt = StringUtil.toByteArray(keyValue[1]);
-            } else {
-                this.spi2key.put(Integer.parseInt(keyValue[0]), keyValue[1]);
+        this.spacecraftConfiguration = spacecraftConfiguration;
+        // Initialise configuration
+        try {
+            this.configuration = AesSecurityHandlerConfiguration.load(new FileInputStream(spacecraftConfiguration.getSecurityDataLinkConfiguration().getConfiguration()));
+        } catch (IOException e) {
+            throw new ReatmetricException(e.getMessage(), e);
+        }
+        // Save salt
+        this.salt = this.configuration.getSaltAsByteArray();
+        // Set default TC SPI to use
+        this.tcSpiToUse.set(this.configuration.getDefaultTcSpi());
+        // Init TM passwords
+        for(SpiPassword spiPassword : this.configuration.getTmSpis()) {
+            this.tmspi2key.put(spiPassword.getId(), spiPassword.getPassword());
+        }
+        // Init TC passwords
+        for(SpiPassword spiPassword : this.configuration.getTcSpis()) {
+            this.tcspi2key.put(spiPassword.getId(), spiPassword.getPassword());
+        }
+        // If TC SPI parameter is declared, register to processing model
+        if(configuration.getTcSpiParameterPath() != null) {
+            try {
+                this.context.getServiceFactory().getParameterDataMonitorService().subscribe(this,
+                        new ParameterDataFilter(
+                                null,
+                                Collections.singletonList(SystemEntityPath.fromString(configuration.getTcSpiParameterPath())),
+                                null,
+                                null,
+                                null,
+                                null));
+                this.registered = true;
+            } catch (RemoteException e) {
+                // Should never happen but...
+                throw new ReatmetricException(e);
             }
         }
     }
@@ -84,17 +125,21 @@ public class AesHandler implements ISecurityHandler {
 
     @Override
     public int getSecurityTrailerLength(int spacecraftId, int virtualChannelId, Class<? extends AbstractTransferFrame> type) {
-        // Less significant four bytes of the SHA-256 encoding
+        // eight bytes of the SHA-256 encoding
         return TRAILER_LENGTH;
     }
 
     @Override
     public AbstractTransferFrame encrypt(AbstractTransferFrame frame) throws ReatmetricException {
-        // Only TcTransferFrame are supported: encryption always performed with SPI 1.
-        // A real implementation would need a way to change the key at runtime: this can be done by reading the value of
-        // a parameter, injected directly in the model from e.g. the user interface, or by other means
+        // Only TcTransferFrame are supported: encryption is performed by reading the value of the indicated parameter
+        // in the configuration.
+        int tcSpi = this.tcSpiToUse.get();
+        String password = this.tcspi2key.get(tcSpi);
+        if(password == null) {
+            throw new ReatmetricException("SPI to use for TC frame encryption not found: " + tcSpi);
+        }
         if(frame instanceof TcTransferFrame && ((TcTransferFrame) frame).isSecurityUsed()) {
-            return encryptTcAes((TcTransferFrame) frame, spi2key.get(1), 1);
+            return encryptTcAes((TcTransferFrame) frame, password, tcSpi);
         } else {
             return frame;
         }
@@ -184,7 +229,7 @@ public class AesHandler implements ISecurityHandler {
                 frame.getInsertZoneLength();
         ByteBuffer secHeaderWrap = ByteBuffer.wrap(frame.getFrame(), secHeaderOffset, HEADER_LENGTH);
         short spi = secHeaderWrap.getShort();
-        String password = spi2key.get((int) spi);
+        String password = tmspi2key.get((int) spi);
         byte[] iv = Arrays.copyOfRange(frame.getFrame(), secHeaderOffset + 2, secHeaderOffset + HEADER_LENGTH);
         // Now decrypt the body
         int dataFieldLength = frame.getLength() - secHeaderOffset - HEADER_LENGTH - TRAILER_LENGTH - (frame.isOcfPresent() ? 4 : 0) - (frame.isFecfPresent() ? 2 : 0);
@@ -232,7 +277,7 @@ public class AesHandler implements ISecurityHandler {
         int secHeaderOffset = TmTransferFrame.TM_PRIMARY_HEADER_LENGTH + (frame.isSecondaryHeaderPresent() ? frame.getSecondaryHeaderLength() : 0);
         ByteBuffer secHeaderWrap = ByteBuffer.wrap(frame.getFrame(), secHeaderOffset, getSecurityHeaderLength(frame.getSpacecraftId(), frame.getVirtualChannelId(), TmTransferFrame.class));
         short spi = secHeaderWrap.getShort();
-        String password = spi2key.get((int) spi);
+        String password = tmspi2key.get((int) spi);
         byte[] iv = Arrays.copyOfRange(frame.getFrame(), secHeaderOffset + 2, secHeaderOffset + HEADER_LENGTH);
         // Now decrypt the body
         int dataFieldLength = frame.getLength() - secHeaderOffset - HEADER_LENGTH - TRAILER_LENGTH - (frame.isOcfPresent() ? 4 : 0) - (frame.isFecfPresent() ? 2 : 0);
@@ -280,7 +325,7 @@ public class AesHandler implements ISecurityHandler {
         System.arraycopy(frame, 0, scope, offset, headerLength);
         offset += headerLength;
         System.arraycopy(decryptedDataField, 0, scope, offset, decryptedDataField.length);
-        // Done, now compute SHA-256
+        // Done, now compute SHA-256 (least 8 bytes out of 32)
         return computeSHA256(scope);
     }
 
@@ -298,6 +343,23 @@ public class AesHandler implements ISecurityHandler {
 
     @Override
     public void dispose() {
-        // Nothing
+        // Deregister
+        if(registered) {
+            try {
+                this.context.getServiceFactory().getParameterDataMonitorService().unsubscribe(this);
+            } catch (ReatmetricException | RemoteException e) {
+                // At this stage, we do not care
+            }
+            registered = false;
+        }
+    }
+
+    @Override
+    public void dataItemsReceived(List<ParameterData> dataItems) throws RemoteException {
+        for(ParameterData pd : dataItems) {
+            if(pd.getSourceValue() instanceof Integer || pd.getSourceValue() instanceof Long) {
+                this.tcSpiToUse.set(((Number) pd.getSourceValue()).intValue());
+            }
+        }
     }
 }

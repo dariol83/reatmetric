@@ -43,6 +43,9 @@ public class SpacecraftConfiguration {
                     sc.setConfiguration(sc.getConfiguration().replace(HOME_VAR, HOME_DIR));
                 }
             }
+            if(o.getSecurityDataLinkConfiguration() != null) {
+                o.getSecurityDataLinkConfiguration().setConfiguration(o.getSecurityDataLinkConfiguration().getConfiguration().replace(HOME_VAR, HOME_DIR));
+            }
             return o;
         } catch (JAXBException e) {
             throw new IOException(e);

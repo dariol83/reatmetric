@@ -44,6 +44,7 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
     requires eu.dariolucia.ccsds.sle.utl;
 
     exports eu.dariolucia.reatmetric.driver.spacecraft;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.security;
     exports eu.dariolucia.reatmetric.driver.spacecraft.services;
     exports eu.dariolucia.reatmetric.driver.spacecraft.services.impl;
     exports eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu;
@@ -54,6 +55,8 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
     exports eu.dariolucia.reatmetric.driver.spacecraft.connectors;
     exports eu.dariolucia.reatmetric.driver.spacecraft.definition;
     exports eu.dariolucia.reatmetric.driver.spacecraft.definition.services;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.definition.security;
+    exports eu.dariolucia.reatmetric.driver.spacecraft.security.impl;
 
     provides eu.dariolucia.reatmetric.api.value.IValueExtensionHandler with TmFrameDescriptorValueExtensionHandler, TcPacketInfoValueExtensionHandler;
 

@@ -42,8 +42,17 @@ public class DataLinkSecurityManager {
             ServiceLoader<ISecurityHandler> serviceLoader = ServiceLoader.load(ISecurityHandler.class);
             Optional<ServiceLoader.Provider<ISecurityHandler>> provider = serviceLoader.stream().findFirst();
             if (provider.isPresent()) {
-                securityHandler = provider.get().get();
-                securityHandler.initialise(context, configuration);
+                ISecurityHandler theHandler = provider.get().get();
+                try {
+                    theHandler.initialise(context, configuration);
+                } catch (ReatmetricException e) {
+                    if (LOG.isLoggable(Level.WARNING)) {
+                        LOG.log(Level.WARNING, String.format("Security handler for class %s cannot be initialised: %s", handler, e.getMessage()), e);
+                    }
+                    securityHandler = null;
+                    return;
+                }
+                securityHandler = theHandler;
             } else {
                 if (LOG.isLoggable(Level.WARNING)) {
                     LOG.log(Level.WARNING, String.format("Security handler for class %s not found", handler));

@@ -28,11 +28,9 @@ public class SecurityDataLinkConfiguration {
     private String handler = "";
 
     /**
-     * This element contains ;-separated entry, each with :-separated key-value pairs.
-     * The keys are either: an integer number > 0, or the string SALT.
-     * The values are: strings for integer number keys, a sequence of hex-encoded bytes for SALT key
+     * Absolute path to the security configuration, specific for the handler
      */
-    @XmlElement(name = "configuration", required = true)
+    @XmlAttribute(name = "configuration", required = true)
     private String configuration = "";
 
     public String getHandler() {

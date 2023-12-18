@@ -24,7 +24,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfigura
 
 public interface ISecurityHandler {
 
-    void initialise(IServiceCoreContext context, SpacecraftConfiguration configuration);
+    void initialise(IServiceCoreContext context, SpacecraftConfiguration configuration) throws ReatmetricException;
 
     int getSecurityHeaderLength(int spacecraftId, int virtualChannelId, Class<? extends AbstractTransferFrame> type);
 
