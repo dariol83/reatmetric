@@ -36,13 +36,11 @@ import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.outgoing
 import eu.dariolucia.ccsds.sle.utl.si.*;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.*;
 import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstanceProvider;
-import eu.dariolucia.ccsds.tmtc.algorithm.BchCltuAlgorithm;
 import eu.dariolucia.ccsds.tmtc.algorithm.ReedSolomonAlgorithm;
 import eu.dariolucia.ccsds.tmtc.coding.ChannelDecoder;
 import eu.dariolucia.ccsds.tmtc.coding.ChannelEncoder;
 import eu.dariolucia.ccsds.tmtc.coding.decoder.CltuDecoder;
 import eu.dariolucia.ccsds.tmtc.coding.decoder.CltuRandomizerDecoder;
-import eu.dariolucia.ccsds.tmtc.coding.encoder.CltuEncoder;
 import eu.dariolucia.ccsds.tmtc.coding.encoder.ReedSolomonEncoder;
 import eu.dariolucia.ccsds.tmtc.coding.encoder.TmAsmEncoder;
 import eu.dariolucia.ccsds.tmtc.coding.encoder.TmRandomizerEncoder;
@@ -64,10 +62,10 @@ import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.*;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.AesSecurityHandlerConfiguration;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
-
 import jakarta.xml.bind.JAXBException;
-import java.io.ByteArrayOutputStream;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -164,6 +162,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private volatile Socket tcpSocket;
 
     private final ChannelEncoder<AbstractTransferFrame> caduEncoder;
+    private AesSecurityHandlerConfiguration securityHandlerConfiguration;
 
     public SpacecraftModel(String tmTcFilePath,
                            String spacecraftFilePath,
@@ -186,6 +185,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         this.farm.setNoBitLockFlag(false);
         initialiseSpacecraftUplink();
         this.tmMux = new TmMasterChannelMuxer(this::sendTmFrame);
+        initialiseSecurity();
         initialiseSpacecraftDownlink();
         initialiseSpacePacketGeneration();
         this.resolver = new ProcessingModelBasedResolver(processingDefinition, new DefinitionValueBasedResolver(new DefaultNullBasedResolver(), true), spacecraftConfiguration.getTmPacketConfiguration().getParameterIdOffset(), encDecDefs);
@@ -206,6 +206,17 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 sample();
             }
         }, 1000, 2000);
+    }
+
+    private void initialiseSecurity() {
+        try {
+            if (spacecraftConfiguration.getSecurityDataLinkConfiguration() != null) {
+                // Assume AES encryption: 6 bytes header, 8 bytes trailer
+                securityHandlerConfiguration = AesSecurityHandlerConfiguration.load(new FileInputStream(spacecraftConfiguration.getSecurityDataLinkConfiguration().getConfiguration()));
+            }
+        } catch (IOException e) {
+            LOG.log(Level.WARNING, "Error when initialising the security layer: " + e.getMessage(), e);
+        }
     }
 
     private void sample() {
@@ -230,8 +241,16 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     }
 
     private void tcFrameOutput(TcTransferFrame tcTransferFrame) {
+        if(securityHandlerConfiguration != null) {
+            tcTransferFrame = decrypt(tcTransferFrame);
+        }
         // Pass TC frame to appropriate VC
         id2tcvc.get((int) tcTransferFrame.getVirtualChannelId()).accept(tcTransferFrame);
+    }
+
+    private TcTransferFrame decrypt(TcTransferFrame tcTransferFrame) {
+        // TODO: implement decrypt
+        return null;
     }
 
     private void initialiseSpacePacketGeneration() {
@@ -282,13 +301,23 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private void initialiseSpacecraftDownlink() {
         if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() == null) {
             TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), 0, VirtualChannelAccessMode.PACKET,
-                    spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf);
+                    spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf,
+                    0, null, null,
+                    securityHandlerConfiguration != null ? 6 : 0,
+                    securityHandlerConfiguration != null ? 8 : 0,
+                    securityHandlerConfiguration != null ? () -> new byte[6] : null,
+                    securityHandlerConfiguration != null ? () -> new byte[8] : null);
             vc.register(tmMux);
             this.id2tmvc.put(0, vc);
         } else {
             for (Integer vcId : spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs()) {
                 TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), vcId, VirtualChannelAccessMode.PACKET,
-                        spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf);
+                        spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf,
+                        0, null, null,
+                        securityHandlerConfiguration != null ? 6 : 0,
+                        securityHandlerConfiguration != null ? 8 : 0,
+                        securityHandlerConfiguration != null ? () -> new byte[6] : null,
+                        securityHandlerConfiguration != null ? () -> new byte[8] : null);
                 vc.register(tmMux);
                 this.id2tmvc.put(vcId, vc);
             }
@@ -510,6 +539,9 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     }
 
     private void sendTmFrame(TmTransferFrame tmTransferFrame) {
+        if(securityHandlerConfiguration != null) {
+            tmTransferFrame = encrypt(tmTransferFrame);
+        }
         // Send the transfer frame
         // if vcId == 0 and vcc == 0, generate time packet: generation rate is 256
         if (tmTransferFrame.getVirtualChannelId() == 0 && tmTransferFrame.getVirtualChannelFrameCount() == 0) {
@@ -536,6 +568,11 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 LOG.log(Level.SEVERE, "", e);
             }
         }
+    }
+
+    private TmTransferFrame encrypt(TmTransferFrame tmTransferFrame) {
+        // TODO: implement frame encryption, round robin on all available keys
+        return null;
     }
 
     private void generateTimePacket(Instant now) {

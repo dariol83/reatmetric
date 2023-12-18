@@ -274,6 +274,11 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         }
         for(RawData rd : messages) {
             AbstractTransferFrame atf = (AbstractTransferFrame) rd.getData();
+            // If FECF is present and wrong, discard
+            if(atf.isFecfPresent() && !atf.isValid()) {
+                LOG.log(Level.SEVERE, "Invalid transfer frame (FECF) received for spacecraft " + atf.getSpacecraftId() + ", virtual channel " + atf.getVirtualChannelId());
+                continue;
+            }
             // Decrypt
             try {
                 atf = securityManager.decrypt(atf);
