@@ -21,7 +21,6 @@ import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 
-import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
@@ -83,6 +82,7 @@ abstract public class AbstractTransportConnector implements ITransportConnector 
     protected void setCharacteristics(String name, String description) {
         this.name = name;
         this.description = description;
+        this.lastTransportStatus = new TransportStatus(name, connectionStatus, lastTxRate, lastRxRate, lastAlarmState, autoReconnect);;
     }
 
     /**

@@ -162,11 +162,13 @@ public class ConnectorsBrowserViewController extends AbstractDisplayController i
 
     @Override
     public void status(TransportStatus status) {
-        FxUtils.runLater(() -> {
-            ConnectorStatusWidgetController controller = connector2controller.get(status.getName());
-            if(controller != null) {
-                controller.updateStatus(status);
-            }
-        });
+        if(status != null) {
+            FxUtils.runLater(() -> {
+                ConnectorStatusWidgetController controller = connector2controller.get(status.getName());
+                if (controller != null) {
+                    controller.updateStatus(status);
+                }
+            });
+        }
     }
 }
