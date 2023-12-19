@@ -25,18 +25,14 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.spec.KeySpec;
-import java.util.Arrays;
 
 public class CryptoUtil {
     private static final int AES_KEY_LENGTH = 256;
     private static final int AES_ITERATION_COUNT = 65536;
     private static final String AES_SECRET_KEY_FACTORY = "PBKDF2WithHmacSHA256";
     private static final String AES_ALGORITHM = "AES";
-    // private static final String AES_CHIPER = "AES/CBC/PKCS5Padding"; //
-    private static final String AES_CHIPER = "AES/CBC/NoPadding"; //
+    private static final String AES_CHIPER = "AES/CTR/NoPadding"; // CTR avoid the use of padding
 
     public static byte[] aesEncrypt(byte[] data, int offset, int length, String key, byte[] iv, byte[] salt) throws ReatmetricException {
         try {

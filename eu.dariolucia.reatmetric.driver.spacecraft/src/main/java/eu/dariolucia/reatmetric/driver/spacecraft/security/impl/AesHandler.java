@@ -63,7 +63,7 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
 
     public static final int TRAILER_LENGTH = 8;
     public static final int IV_LENGTH = 16;
-    public static final int HEADER_LENGTH = 2 + IV_LENGTH; // TODO: padding to be computed
+    public static final int HEADER_LENGTH = 2 + IV_LENGTH; // No need for padding to be computed, use CTR AES mode
 
     private IServiceCoreContext context;
     private SpacecraftConfiguration spacecraftConfiguration;
@@ -192,7 +192,12 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
             newFrame[newFrame.length - 2] = (byte) (crc >> 8);
             newFrame[newFrame.length - 1] = (byte) (crc);
         }
-        return new TcTransferFrame(newFrame, vc -> frameObj.isSegmented(), frameObj.isFecfPresent(), header.length, trailer.length);
+        TcTransferFrame ttf = new TcTransferFrame(newFrame, vc -> frameObj.isSegmented(), frameObj.isFecfPresent(), header.length, trailer.length);
+        for(Object annotationKey : frameObj.getAnnotationKeys()) {
+            ttf.setAnnotationValue(annotationKey, frameObj.getAnnotationValue(annotationKey));
+        }
+        return ttf;
+
     }
 
     private byte[] computeTrailer(TcTransferFrame frameObj) throws ReatmetricException {
@@ -269,7 +274,11 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
             newFrame[newFrame.length - 1] = (byte) (crc);
         }
 
-        return new AosTransferFrame(newFrame, frame.isFrameHeaderErrorControlPresent(), frame.getInsertZoneLength(), frame.getUserDataType(), frame.isOcfPresent(), frame.isFecfPresent(), HEADER_LENGTH, trailer.length);
+        AosTransferFrame ttf = new AosTransferFrame(newFrame, frame.isFrameHeaderErrorControlPresent(), frame.getInsertZoneLength(), frame.getUserDataType(), frame.isOcfPresent(), frame.isFecfPresent(), HEADER_LENGTH, trailer.length);
+        for(Object annotationKey : frame.getAnnotationKeys()) {
+            ttf.setAnnotationValue(annotationKey, frame.getAnnotationValue(annotationKey));
+        }
+        return ttf;
     }
 
     private AbstractTransferFrame decryptTmAes(TmTransferFrame frame) throws ReatmetricException {
@@ -315,7 +324,12 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
             newFrame[newFrame.length - 1] = (byte) (crc);
         }
 
-        return new TmTransferFrame(newFrame, frame.isFecfPresent(), HEADER_LENGTH, trailer.length);
+        TmTransferFrame ttf = new TmTransferFrame(newFrame, frame.isFecfPresent(), HEADER_LENGTH, trailer.length);
+        // I need to carry over the SOURCE ID of the frame, otherwise the TM Packet Processing function will not work
+        for(Object annotationKey : frame.getAnnotationKeys()) {
+            ttf.setAnnotationValue(annotationKey, frame.getAnnotationValue(annotationKey));
+        }
+        return ttf;
     }
 
     private byte[] computeTrailer(byte[] frame, int headerLength, byte[] decryptedDataField) throws ReatmetricException {

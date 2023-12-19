@@ -368,7 +368,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), 0, VirtualChannelAccessMode.PACKET,
                     spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf,
                     0, null, null,
-                    securityHandlerConfiguration != null ? 6 : 0,
+                    securityHandlerConfiguration != null ? 18 : 0,
                     securityHandlerConfiguration != null ? 8 : 0,
                     securityHandlerConfiguration != null ? () -> new byte[18] : null,
                     securityHandlerConfiguration != null ? () -> new byte[8] : null);
@@ -379,7 +379,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), vcId, VirtualChannelAccessMode.PACKET,
                         spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf,
                         0, null, null,
-                        securityHandlerConfiguration != null ? 6 : 0,
+                        securityHandlerConfiguration != null ? 18 : 0,
                         securityHandlerConfiguration != null ? 8 : 0,
                         securityHandlerConfiguration != null ? () -> new byte[18] : null,
                         securityHandlerConfiguration != null ? () -> new byte[8] : null);

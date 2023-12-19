@@ -45,6 +45,9 @@ public class DataLinkSecurityManager {
                 ISecurityHandler theHandler = provider.get().get();
                 try {
                     theHandler.initialise(context, configuration);
+                    if (LOG.isLoggable(Level.INFO)) {
+                        LOG.log(Level.INFO, String.format("Security handler %s for spacecraft %s initialised", handler, configuration.getName()));
+                    }
                 } catch (ReatmetricException e) {
                     if (LOG.isLoggable(Level.WARNING)) {
                         LOG.log(Level.WARNING, String.format("Security handler for class %s cannot be initialised: %s", handler, e.getMessage()), e);
