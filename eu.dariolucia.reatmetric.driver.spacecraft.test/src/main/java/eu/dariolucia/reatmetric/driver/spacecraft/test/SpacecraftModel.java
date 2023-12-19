@@ -36,6 +36,7 @@ import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.outgoing
 import eu.dariolucia.ccsds.sle.utl.si.*;
 import eu.dariolucia.ccsds.sle.utl.si.cltu.*;
 import eu.dariolucia.ccsds.sle.utl.si.raf.RafServiceInstanceProvider;
+import eu.dariolucia.ccsds.tmtc.algorithm.Crc16Algorithm;
 import eu.dariolucia.ccsds.tmtc.algorithm.ReedSolomonAlgorithm;
 import eu.dariolucia.ccsds.tmtc.coding.ChannelDecoder;
 import eu.dariolucia.ccsds.tmtc.coding.ChannelEncoder;
@@ -59,10 +60,14 @@ import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.ccsds.tmtc.ocf.pdu.AbstractOcf;
 import eu.dariolucia.ccsds.tmtc.transport.builder.SpacePacketBuilder;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.*;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.AesSecurityHandlerConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.SpiPassword;
+import eu.dariolucia.reatmetric.driver.spacecraft.security.impl.CryptoUtil;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import jakarta.xml.bind.JAXBException;
 
@@ -73,6 +78,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -248,9 +256,66 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         id2tcvc.get((int) tcTransferFrame.getVirtualChannelId()).accept(tcTransferFrame);
     }
 
-    private TcTransferFrame decrypt(TcTransferFrame tcTransferFrame) {
-        // TODO: implement decrypt
-        return null;
+    private TcTransferFrame decrypt(TcTransferFrame frame) {
+        // Get salt
+        if(salt == null) {
+            salt = securityHandlerConfiguration.getSaltAsByteArray();
+        }
+        // Get the security header: after primary and segment header (if present)
+        int secHeaderOffset = TcTransferFrame.TC_PRIMARY_HEADER_LENGTH + (frame.isSegmented() ? 1 : 0);
+        ByteBuffer secHeaderWrap = ByteBuffer.wrap(frame.getFrame(), secHeaderOffset, 18);
+        short spi = secHeaderWrap.getShort();
+        String password = securityHandlerConfiguration.getTcSpis().get(spi).getPassword();
+        byte[] iv = Arrays.copyOfRange(frame.getFrame(), secHeaderOffset + 2, secHeaderOffset + 18);
+        // Now decrypt the body
+        int dataFieldLength = frame.getLength() - secHeaderOffset - 18 - 8 - (frame.isFecfPresent() ? 2 : 0);
+        byte[] decryptedDataField = new byte[0];
+        try {
+            decryptedDataField = CryptoUtil.aesDecrypt(frame.getFrame(), secHeaderOffset + 18, dataFieldLength, password, iv, this.salt);
+        } catch (ReatmetricException e) {
+            throw new RuntimeException(e);
+        }
+        // Now verify that the trailer matches with the data
+        // Use primary header, if present, secondary header and data field (without security header and trailer)
+        byte[] trailer = computeTrailer(frame.getFrame(), secHeaderOffset, decryptedDataField);
+        if(!Arrays.equals(frame.getFrame(), secHeaderOffset + 18 + decryptedDataField.length, secHeaderOffset + 6 + decryptedDataField.length + 8,
+                trailer, 0, trailer.length)) {
+            throw new RuntimeException("Trailer mismatch, TC frame corrupted on SC: " + frame.getSpacecraftId() +
+                    "VC:" + frame.getVirtualChannelId() + " Dump: " + StringUtil.toHexDump(frame.getFrame()));
+        }
+        // Now compose the decrypted frame
+        byte[] newFrame = new byte[frame.getLength()];
+        int currentOffset = 0;
+        System.arraycopy(frame.getFrame(), 0, newFrame, currentOffset, secHeaderOffset); // Primary header and segmented header if present
+        currentOffset += secHeaderOffset;
+        // Security header
+        System.arraycopy(frame.getFrame(), secHeaderOffset, newFrame, currentOffset, 18); // security header
+        currentOffset += 18;
+        // Data
+        System.arraycopy(decryptedDataField, 0, newFrame, currentOffset, decryptedDataField.length);
+        currentOffset += decryptedDataField.length;
+        // Trailer
+        System.arraycopy(trailer, 0, newFrame, currentOffset, trailer.length);
+        currentOffset += trailer.length;
+        // If FECF, recompute
+        if(frame.isFecfPresent()) {
+            short crc = Crc16Algorithm.getCrc16(newFrame, 0, newFrame.length - 2);
+            newFrame[newFrame.length - 2] = (byte) (crc >> 8);
+            newFrame[newFrame.length - 1] = (byte) (crc);
+        }
+
+        return new TcTransferFrame(newFrame, vcID -> frame.isSegmented(), frame.isFecfPresent(), 18, trailer.length);
+    }
+
+    private byte[] computeTrailer(byte[] frame, int headerLength, byte[] decryptedDataField) {
+        int scopeLength = headerLength + decryptedDataField.length;
+        byte[] scope = new byte[scopeLength];
+        int offset = 0;
+        System.arraycopy(frame, 0, scope, offset, headerLength);
+        offset += headerLength;
+        System.arraycopy(decryptedDataField, 0, scope, offset, decryptedDataField.length);
+        // Done, now compute SHA-256 (least 8 bytes out of 32)
+        return computeSHA256(scope);
     }
 
     private void initialiseSpacePacketGeneration() {
@@ -305,7 +370,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     0, null, null,
                     securityHandlerConfiguration != null ? 6 : 0,
                     securityHandlerConfiguration != null ? 8 : 0,
-                    securityHandlerConfiguration != null ? () -> new byte[6] : null,
+                    securityHandlerConfiguration != null ? () -> new byte[18] : null,
                     securityHandlerConfiguration != null ? () -> new byte[8] : null);
             vc.register(tmMux);
             this.id2tmvc.put(0, vc);
@@ -316,7 +381,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                         0, null, null,
                         securityHandlerConfiguration != null ? 6 : 0,
                         securityHandlerConfiguration != null ? 8 : 0,
-                        securityHandlerConfiguration != null ? () -> new byte[6] : null,
+                        securityHandlerConfiguration != null ? () -> new byte[18] : null,
                         securityHandlerConfiguration != null ? () -> new byte[8] : null);
                 vc.register(tmMux);
                 this.id2tmvc.put(vcId, vc);
@@ -570,9 +635,92 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         }
     }
 
-    private TmTransferFrame encrypt(TmTransferFrame tmTransferFrame) {
-        // TODO: implement frame encryption, round robin on all available keys
-        return null;
+    private int nextTmSpiToUse = 0;
+    private final SecureRandom randomizer = new SecureRandom();
+    private volatile byte[] salt;
+
+    private TmTransferFrame encrypt(TmTransferFrame frameObj) {
+        // Get the SPI to use
+        SpiPassword toUse = securityHandlerConfiguration.getTmSpis().get(nextTmSpiToUse);
+        ++nextTmSpiToUse;
+        if(nextTmSpiToUse >= securityHandlerConfiguration.getTmSpis().size()) {
+            nextTmSpiToUse = 0;
+        }
+        // Get salt
+        if(salt == null) {
+            salt = securityHandlerConfiguration.getSaltAsByteArray();
+        }
+        // Compute the initialisation vector
+        byte[] ivArray = new byte[16];
+        this.randomizer.nextBytes(ivArray);
+        // Compute the header: keyId as short plus iv
+        byte[] header = ByteBuffer.allocate(18).putShort((short) (toUse.getId() & 0xFFFF)).put(ivArray).array();
+        // Run AES on data field
+        byte[] encryptedDataField = new byte[0];
+        try {
+            encryptedDataField = CryptoUtil.aesEncrypt(frameObj.getFrame(), frameObj.getDataFieldStart(), frameObj.getDataFieldLength(), toUse.getPassword(), ivArray, salt);
+        } catch (ReatmetricException e) {
+            throw new RuntimeException(e);
+        }
+        // Compute the trailer
+        byte[] trailer = computeTrailer(frameObj);
+        // Now allocate a frame and write down the data
+        byte[] newFrame = new byte[frameObj.getLength()];
+        // Copy primary header data
+        int currentOffset = 0;
+        System.arraycopy(frameObj.getFrame(), currentOffset, newFrame, currentOffset, TmTransferFrame.TM_PRIMARY_HEADER_LENGTH);
+        currentOffset += TmTransferFrame.TM_PRIMARY_HEADER_LENGTH;
+        // Copy secondary header
+        if(frameObj.isSecondaryHeaderPresent()) {
+            System.arraycopy(frameObj.getFrame(), currentOffset, newFrame, currentOffset, frameObj.getSecondaryHeaderLength());
+            currentOffset += frameObj.getSecondaryHeaderLength();
+        }
+        // Now copy security header
+        System.arraycopy(header, 0, newFrame, currentOffset, header.length);
+        currentOffset += header.length;
+        // Now copy the data field (encrypted)
+        System.arraycopy(encryptedDataField, 0, newFrame, currentOffset, encryptedDataField.length);
+        currentOffset += encryptedDataField.length;
+        // Now copy the trailer
+        System.arraycopy(trailer, 0, newFrame, currentOffset, trailer.length);
+        currentOffset += trailer.length;
+        // Set the OCF if set
+        if(frameObj.isOcfPresent()) {
+            System.arraycopy(frameObj.getFrame(), frameObj.getOcfStart(), newFrame, currentOffset, 4);
+            currentOffset += 4;
+        }
+        // Now compute and set FECF if needed
+        if(frameObj.isFecfPresent()) {
+            short crc = Crc16Algorithm.getCrc16(newFrame, 0, newFrame.length - 2);
+            newFrame[newFrame.length - 2] = (byte) (crc >> 8);
+            newFrame[newFrame.length - 1] = (byte) (crc);
+        }
+        return new TmTransferFrame(newFrame, frameObj.isFecfPresent(), header.length, trailer.length);
+    }
+
+    private byte[] computeTrailer(TmTransferFrame frame) {
+        int scopeLength = TmTransferFrame.TM_PRIMARY_HEADER_LENGTH + (frame.isSecondaryHeaderPresent() ? frame.getSecondaryHeaderLength() : 0) +
+                frame.getDataFieldLength();
+        byte[] scope = new byte[scopeLength];
+        int offset = 0;
+        System.arraycopy(frame.getFrame(), 0, scope, offset, TmTransferFrame.TM_PRIMARY_HEADER_LENGTH + (frame.isSecondaryHeaderPresent() ? frame.getSecondaryHeaderLength() : 0));
+        offset += TmTransferFrame.TM_PRIMARY_HEADER_LENGTH + (frame.isSecondaryHeaderPresent() ? frame.getSecondaryHeaderLength() : 0);
+        System.arraycopy(frame.getFrame(), frame.getDataFieldStart(), scope, offset, frame.getDataFieldLength());
+        // Done, now compute SHA-256 (least 8 bytes out of 32)
+        return computeSHA256(scope);
+    }
+
+    public static byte[] computeSHA256(byte[] scope) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            md.reset();
+            md.update(scope);
+            byte[] hashSignature = md.digest();
+            return Arrays.copyOfRange(hashSignature, hashSignature.length - 8, hashSignature.length);
+        } catch (NoSuchAlgorithmException e) {
+            // Should never happen
+            return null;
+        }
     }
 
     private void generateTimePacket(Instant now) {

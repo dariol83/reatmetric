@@ -47,8 +47,8 @@ import java.util.logging.Logger;
 /**
  * This class is meant to be a simple example to show the use of the {@link ISecurityHandler} extension.
  * This class implements AES-based cryptography and SHA-256 hashing for securing the frame data.
- * The encoding uses a 6 bytes header, containing the security parameter index of the AES-256 key (string) used for the
- * encoding of the data field, and a 4 bytes initialisation vector.
+ * The encoding uses a 18 bytes security header, containing the 2-bytes security parameter index of the AES-256 key (string)
+ * used for the encoding of the data field, and a 16 bytes initialisation vector.
  * The trailer is the least significant 64 bits of the SHA-256 computed over the concatenation of transfer frame primary
  * header field, transfer frame secondary header field (if present), segment header (if present) and data field before
  * the encryption.
@@ -62,8 +62,8 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
     private static final Logger LOG = Logger.getLogger(AesHandler.class.getName());
 
     public static final int TRAILER_LENGTH = 8;
-    public static final int IV_LENGTH = 4;
-    public static final int HEADER_LENGTH = 2 + IV_LENGTH;
+    public static final int IV_LENGTH = 16;
+    public static final int HEADER_LENGTH = 2 + IV_LENGTH; // TODO: padding to be computed
 
     private IServiceCoreContext context;
     private SpacecraftConfiguration spacecraftConfiguration;

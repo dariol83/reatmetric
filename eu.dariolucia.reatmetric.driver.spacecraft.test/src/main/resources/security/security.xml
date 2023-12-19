@@ -17,10 +17,10 @@
 <ns1:aes-security-handler xmlns:ns1="http://dariolucia.eu/reatmetric/driver/spacecraft/security/aes"
 			tc-spi-parameter-path="SPACE.SC.SECURITY.TCSPI"
 			default-tc-spi="1">
-	<salt>AABBCCDDEEFF</salt>
+	<salt>AABBCCDDEEFF1122</salt>
 	<tm-spi id="1" password="TestPassword1" />
-	<tm-spi id="2" password="TestPassword2" />
-	<tm-spi id="3" password="TestPassword3" />
+	<tm-spi id="2" password="Short" />
+	<tm-spi id="3" password="V3ryL0ngW31rdP455w0rd" />
 	<tc-spi id="1" password="TcCommandPW1!" />
 	<tc-spi id="2" password="TcCommandPW2!" />
 	<tc-spi id="3" password="TcCommandPW3!" />

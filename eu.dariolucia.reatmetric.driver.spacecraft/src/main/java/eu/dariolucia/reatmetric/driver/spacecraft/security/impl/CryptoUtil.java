@@ -35,7 +35,8 @@ public class CryptoUtil {
     private static final int AES_ITERATION_COUNT = 65536;
     private static final String AES_SECRET_KEY_FACTORY = "PBKDF2WithHmacSHA256";
     private static final String AES_ALGORITHM = "AES";
-    private static final String AES_CHIPER = "AES/CBC/PKCS5Padding";
+    // private static final String AES_CHIPER = "AES/CBC/PKCS5Padding"; //
+    private static final String AES_CHIPER = "AES/CBC/NoPadding"; //
 
     public static byte[] aesEncrypt(byte[] data, int offset, int length, String key, byte[] iv, byte[] salt) throws ReatmetricException {
         try {
