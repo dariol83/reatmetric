@@ -28,7 +28,6 @@ import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.PropertyBean;
 import eu.dariolucia.reatmetric.ui.utils.ReatmetricValidationSupport;
 import eu.dariolucia.reatmetric.ui.utils.ValueControlUtil;
-import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.event.ActionEvent;
@@ -51,6 +50,8 @@ import java.util.function.Supplier;
 
 public class SetParameterDialogController implements Initializable {
 
+    @FXML
+    protected HBox routeHBox;
     @FXML
     protected Accordion accordion;
 
@@ -133,49 +134,58 @@ public class SetParameterDialogController implements Initializable {
     }
 
     private void initialisePropertyTable() {
-        propertiesTableView.setEditable(true);
-        propertiesTableView.getSelectionModel().cellSelectionEnabledProperty().set(true);
-        keyColumn.setEditable(true);
-        valueColumn.setEditable(true);
-        keyColumn.setCellValueFactory(o -> o.getValue().keyProperty());
-        valueColumn.setCellValueFactory(o -> o.getValue().valueProperty());
-        keyColumn.setCellFactory(TextFieldTableCell.forTableColumn());
-        valueColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        if(descriptor.isSettable()) {
+            propertiesTableView.setEditable(true);
+            propertiesTableView.getSelectionModel().cellSelectionEnabledProperty().set(true);
+            keyColumn.setEditable(true);
+            valueColumn.setEditable(true);
+            keyColumn.setCellValueFactory(o -> o.getValue().keyProperty());
+            valueColumn.setCellValueFactory(o -> o.getValue().valueProperty());
+            keyColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+            valueColumn.setCellFactory(TextFieldTableCell.forTableColumn());
 
-        keyColumn.setOnEditCommit(event -> {
-            final String value = event.getNewValue() != null ? event.getNewValue()
-                    : event.getOldValue();
-            event.getTableView().getItems()
-                    .get(event.getTablePosition().getRow())
-                    .keyProperty().set(value);
-        });
-        valueColumn.setOnEditCommit(event -> {
-            final String value = event.getNewValue() != null ? event.getNewValue()
-                    : event.getOldValue();
-            event.getTableView().getItems()
-                    .get(event.getTablePosition().getRow())
-                    .valueProperty().set(value);
-        });
-        propertiesTableView.setOnKeyPressed(event -> {
-            if (event.getCode().isLetterKey() || event.getCode().isDigitKey()) {
-                propertiesTableView.edit(propertiesTableView.getFocusModel().getFocusedCell().getRow(), (TableColumn<PropertyBean, Object>) propertiesTableView.getFocusModel().getFocusedCell().getTableColumn());
-            } else if (event.getCode() == KeyCode.RIGHT
-                    || event.getCode() == KeyCode.TAB) {
-                propertiesTableView.getSelectionModel().selectNext();
-                event.consume();
-            } else if (event.getCode() == KeyCode.LEFT) {
-                propertiesTableView.getSelectionModel().selectPrevious();
-                event.consume();
-            }
-        });
+            keyColumn.setOnEditCommit(event -> {
+                final String value = event.getNewValue() != null ? event.getNewValue()
+                        : event.getOldValue();
+                event.getTableView().getItems()
+                        .get(event.getTablePosition().getRow())
+                        .keyProperty().set(value);
+            });
+            valueColumn.setOnEditCommit(event -> {
+                final String value = event.getNewValue() != null ? event.getNewValue()
+                        : event.getOldValue();
+                event.getTableView().getItems()
+                        .get(event.getTablePosition().getRow())
+                        .valueProperty().set(value);
+            });
+            propertiesTableView.setOnKeyPressed(event -> {
+                if (event.getCode().isLetterKey() || event.getCode().isDigitKey()) {
+                    propertiesTableView.edit(propertiesTableView.getFocusModel().getFocusedCell().getRow(), (TableColumn<PropertyBean, Object>) propertiesTableView.getFocusModel().getFocusedCell().getTableColumn());
+                } else if (event.getCode() == KeyCode.RIGHT
+                        || event.getCode() == KeyCode.TAB) {
+                    propertiesTableView.getSelectionModel().selectNext();
+                    event.consume();
+                } else if (event.getCode() == KeyCode.LEFT) {
+                    propertiesTableView.getSelectionModel().selectPrevious();
+                    event.consume();
+                }
+            });
+        } else if(descriptor.isUserParameter()) {
+            this.propertiesTableView.setVisible(false);
+            this.accordion.getPanes().get(0).setExpanded(false);
+            this.accordion.getPanes().get(0).setVisible(false);
+            this.accordion.setVisible(false);
+            ((VBox) this.accordion.getParent()).getChildren().remove(accordion);
+            this.descriptionLabel.getParent().layout();
+        }
     }
 
 
     public void initialiseParameterDialog(ParameterDescriptor descriptor, SetParameterRequest currentRequest, Supplier<List<ActivityRouteState>> routesWithAvailabilitySupplier) {
         this.descriptor = descriptor;
         this.routeSupplier = routesWithAvailabilitySupplier;
-        parameterLabel.setText(descriptor.getPath().asString());
-        descriptionLabel.setText(descriptor.getDescription());
+        this.parameterLabel.setText(descriptor.getPath().asString());
+        this.descriptionLabel.setText(descriptor.getDescription());
         // Set the routes
         refreshRoutes(descriptor, currentRequest);
 
@@ -185,12 +195,21 @@ public class SetParameterDialogController implements Initializable {
     }
 
     private void refreshRoutes(ParameterDescriptor descriptor, SetParameterRequest currentRequest) {
-        ReatmetricUI.threadPool(getClass()).execute(() -> {
-            final List<ActivityRouteState> routesWithAvailability = this.routeSupplier.get();
-            FxUtils.runLater(() -> {
-                initialiseRouteCombo(descriptor, currentRequest, routesWithAvailability);
+        if(descriptor.isSettable()) {
+            ReatmetricUI.threadPool(getClass()).execute(() -> {
+                final List<ActivityRouteState> routesWithAvailability = this.routeSupplier.get();
+                FxUtils.runLater(() -> {
+                    initialiseRouteCombo(descriptor, currentRequest, routesWithAvailability);
+                });
             });
-        });
+        } else if(descriptor.isUserParameter()) {
+            // No route
+            this.routeChoiceBox.setVisible(false);
+            this.forceToggleSwitch.setVisible(false);
+            this.refreshButton.setVisible(false);
+            ((VBox) this.routeHBox.getParent()).getChildren().remove(this.routeHBox);
+            this.descriptionLabel.getParent().layout();
+        }
     }
 
     private void initialiseRouteCombo(ParameterDescriptor descriptor, SetParameterRequest currentRequest, List<ActivityRouteState> routesWithAvailability) {
@@ -229,7 +248,11 @@ public class SetParameterDialogController implements Initializable {
     }
 
     public void bindOkButton(Button okButton) {
-        okButton.disableProperty().bind(Bindings.or(routeChoiceBoxValid.not(), validationSupport.validProperty().not()));
+        if(descriptor.isSettable()) {
+            okButton.disableProperty().bind(Bindings.or(routeChoiceBoxValid.not(), validationSupport.validProperty().not()));
+        } else if(descriptor.isUserParameter()) {
+            okButton.disableProperty().bind(validationSupport.validProperty().not());
+        }
     }
 
     private void initialiseValueTable(SetParameterRequest input) {
@@ -316,7 +339,11 @@ public class SetParameterDialogController implements Initializable {
         for (PropertyBean pb : propertiesTableView.getItems()) {
             propertyMap.put(pb.keyProperty().get(), pb.valueProperty().get());
         }
-        return new SetParameterRequest(descriptor.getExternalId(), engSelection.isSelected(), buildValueObject(), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
+        if(descriptor.isSettable()) {
+            return new SetParameterRequest(descriptor.getExternalId(), engSelection.isSelected(), buildValueObject(), propertyMap, routeChoiceBox.getSelectionModel().getSelectedItem().getRoute(), ReatmetricUI.username());
+        } else {
+            return new SetParameterRequest(descriptor.getExternalId(), engSelection.isSelected(), buildValueObject(), Collections.emptyMap(), null, ReatmetricUI.username());
+        }
     }
 
     @FXML

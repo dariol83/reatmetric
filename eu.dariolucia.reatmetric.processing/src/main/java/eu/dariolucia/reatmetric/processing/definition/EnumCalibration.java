@@ -94,4 +94,13 @@ public class EnumCalibration extends CalibrationDefinition implements Serializab
         }
         return toReturn;
     }
+
+    public long invert(String value) throws CalibrationException {
+        for(EnumCalibrationPoint ecp : getPoints()) {
+            if(ecp.getValue().equals(value)) {
+                return ecp.getInput();
+            }
+        }
+        throw new CalibrationException("Cannot invert enum calibration for value " + value);
+    }
 }

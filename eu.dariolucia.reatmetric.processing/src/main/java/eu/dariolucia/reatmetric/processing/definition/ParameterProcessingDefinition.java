@@ -55,6 +55,9 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlAttribute(name = "log_repetition_period")
     private int logRepetitionPeriod = 0;
 
+    @XmlAttribute(name = "user_parameter")
+    private boolean userParameter = false;
+
     @XmlElement(name = "validity")
     private ValidityCondition validity;
 
@@ -283,15 +286,55 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     }
 
     /**
+     * Whether this parameter is a user-settable parameter or not. User-settable parameters are set as usual by the
+     * setParameterValue() method of the {@link eu.dariolucia.reatmetric.api.processing.IProcessingModel}. This attribute
+     * is used to mark a parameter as directly settable, without having a setter activity defined.
+     *
+     * @return true if the parameter is a user-settable parameter, otherwise false
+     */
+    public boolean isUserParameter() {
+        return userParameter;
+    }
+
+    public void setUserParameter(boolean userParameter) {
+        this.userParameter = userParameter;
+    }
+
+    /**
      * Internally used by the processing model.
      *
      * @return the list of expected values (raw values)
      */
     public List<Object> buildExpectedValuesRaw() {
-        if(getSetter() == null) {
-            // Return null
+        if(getSetter() != null) {
+            return buildExpectedValuesRawWithSetter();
+        } else if(isUserParameter()) {
+            return buildExpectedValuesRawWithUserParameter();
+        } else {
             return null;
         }
+    }
+
+    private List<Object> buildExpectedValuesRawWithUserParameter() {
+        // Only if there is a single calibration of type EnumCalibration: in theory we could support also
+        // multiple calibrations (if all are of type EnumCalibration) but it is error-prone for the user
+        if(getCalibrations().size() == 1 && getCalibrations().get(0) instanceof EnumCalibration) {
+            EnumCalibration iec = (EnumCalibration) getCalibrations().get(0);
+            List<Object> rawValues = new LinkedList<>();
+            for(EnumCalibrationPoint p : iec.getPoints()) {
+                if(getRawType() == ValueTypeEnum.ENUMERATED) {
+                    rawValues.add(((Long) p.getInput()).intValue());
+                } else {
+                    rawValues.add(p.getInput());
+                }
+            }
+            return rawValues;
+        } else {
+            return null;
+        }
+    }
+
+    private List<Object> buildExpectedValuesRawWithSetter() {
         if(getSetter().getDecalibration() instanceof InvertedEnumCalibration) {
             InvertedEnumCalibration iec = (InvertedEnumCalibration) getSetter().getDecalibration();
             List<Object> rawValues = new LinkedList<>();
@@ -319,10 +362,8 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
             for(EnumCalibrationPoint p : iec.getPoints()) {
                 rawValues.add(p.getValue());
             }
-            if(iec.getDefaultValue() != null) {
-                if(!rawValues.contains(iec.getDefaultValue())) {
-                    rawValues.add(iec.getDefaultValue());
-                }
+            if(iec.getDefaultValue() != null && !rawValues.contains(iec.getDefaultValue())) {
+                rawValues.add(iec.getDefaultValue());
             }
             return rawValues;
         }
@@ -341,10 +382,31 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
      * @return the list of expected values (eng. values)
      */
     public List<Object> buildExpectedValuesEng() {
-        if(getSetter() == null) {
-            // Return null
+        if(getSetter() != null) {
+            return buildExpectedValuesEngWithSetter();
+        } else if(isUserParameter()) {
+            return buildExpectedValuesEngWithUserParameter();
+        } else {
             return null;
         }
+    }
+
+    private List<Object> buildExpectedValuesEngWithUserParameter() {
+        // Only if there is a single calibration of type EnumCalibration: in theory we could support also
+        // multiple calibrations (if all are of type EnumCalibration) but it is error-prone for the user
+        if(getCalibrations().size() == 1 && getCalibrations().get(0) instanceof EnumCalibration) {
+            EnumCalibration iec = (EnumCalibration) getCalibrations().get(0);
+            List<Object> engValues = new LinkedList<>();
+            for(EnumCalibrationPoint p : iec.getPoints()) {
+                engValues.add(p.getValue());
+            }
+            return engValues;
+        } else {
+            return null;
+        }
+    }
+
+    private List<Object> buildExpectedValuesEngWithSetter() {
         if(getSetter().getDecalibration() != null) {
             if(getSetter().getDecalibration() instanceof InvertedEnumCalibration) {
                 InvertedEnumCalibration iec = (InvertedEnumCalibration) getSetter().getDecalibration();

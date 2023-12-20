@@ -31,6 +31,7 @@ import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelExcepti
 import eu.dariolucia.reatmetric.api.processing.input.*;
 import eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding;
 import eu.dariolucia.reatmetric.api.value.ValueException;
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
@@ -98,6 +99,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 definition.getUnit(),
                 definition.getExpression() != null,
                 definition.getSetter() != null,
+                definition.isUserParameter(),
                 definition.getSetter() != null ? definition.getSetter().getActivity().getType() : null,
                 definition.getSetter() != null ? definition.getSetter().getActivity().getDefaultRoute() : null,
                 definition.buildExpectedValuesRaw(),
@@ -422,6 +424,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 case WARNING: {
                     LOG.log(Level.WARNING, "Parameter " + getPath() + " in alarm, value " + alarmData.getCurrentValue() + suffix, new Object[]{definition.getLocation(), getSystemEntityId()});
                 }
+                break;
                 case NOMINAL: {
                     if(previousState == AlarmState.ALARM || previousState == AlarmState.ERROR || previousState == AlarmState.WARNING || previousState == AlarmState.VIOLATED) {
                         LOG.log(Level.INFO, "Parameter " + getPath() + " back in limit, value " + alarmData.getCurrentValue() + suffix, new Object[]{definition.getLocation(), getSystemEntityId()});
@@ -559,25 +562,70 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         }
     }
 
-    public ActivityRequest generateSetRequest(SetParameterRequest request) throws ProcessingModelException {
+    public AbstractInputDataItem generateSetRequest(SetParameterRequest request) throws ProcessingModelException {
         ParameterSetterDefinition setter = definition.getSetter();
         if(setter == null) {
-            throw new ProcessingModelException("Parameter " + getPath().asString() + " does not have a setter operation, set request cannot be processed");
-        }
-        Map<String, String> propertyMap = new LinkedHashMap<>();
-        for(KeyValue kv : setter.getProperties()) {
-            propertyMap.put(kv.getKey(), kv.getValue());
-        }
-        for(KeyValue kv : setter.getActivity().getProperties()) {
-            if(!propertyMap.containsKey(kv.getKey())) {
+            // Check if user settable
+            if(definition.isUserParameter()) {
+                Object value = request.getValue();
+                if(request.isEngineeringUsed()) {
+                    if(value instanceof String) {
+                        // If value is of type string and there is a calibration in place, try to map it back to source value
+                        value = mapEngineeringValueFromCalibration((String) value);
+                    } else {
+                        // If the value is any other thing, then we have no idea how to map it to a source value, raise error
+                        throw new ProcessingModelException("Parameter " + getPath().asString() + " cannot be used with an engineering value");
+                    }
+                }
+                return ParameterSample.of(request.getId(), value);
+            } else {
+                throw new ProcessingModelException("Parameter " + getPath().asString() + " does not have a setter operation or is marked as user-parameter, set request cannot be processed");
+            }
+        } else {
+            Map<String, String> propertyMap = new LinkedHashMap<>();
+            for (KeyValue kv : setter.getProperties()) {
                 propertyMap.put(kv.getKey(), kv.getValue());
             }
+            for (KeyValue kv : setter.getActivity().getProperties()) {
+                if (!propertyMap.containsKey(kv.getKey())) {
+                    propertyMap.put(kv.getKey(), kv.getValue());
+                }
+            }
+            // Overwrite with the setter properties
+            for (Map.Entry<String, String> kv : request.getProperties().entrySet()) {
+                propertyMap.put(kv.getKey(), kv.getValue());
+            }
+            return new ActivityRequest(setter.getActivity().getId(), SystemEntityPath.fromString(setter.getActivity().getLocation()), buildSetArgumentList(request, setter), propertyMap, request.getRoute(), request.getSource());
         }
-        // Overwrite with the setter properties
-        for(Map.Entry<String, String> kv : request.getProperties().entrySet()) {
-            propertyMap.put(kv.getKey(), kv.getValue());
+    }
+
+    private Object mapEngineeringValueFromCalibration(String value) throws ProcessingModelException {
+        // This method tries to map a string back to a source value
+        long valueToReturn = -1;
+        boolean found = false;
+        if(getDefinition().getCalibrations().size() > 1) {
+            throw new ProcessingModelException("Cannot retrieve source value for set of parameter " + getDefinition().getLocation() + " for value " + value + ": more calibrations defined");
         }
-        return new ActivityRequest(setter.getActivity().getId(), SystemEntityPath.fromString(setter.getActivity().getLocation()), buildSetArgumentList(request, setter), propertyMap, request.getRoute(), request.getSource());
+        for(CalibrationDefinition cd : getDefinition().getCalibrations()) {
+           if(cd instanceof EnumCalibration) {
+               try {
+                   valueToReturn = ((EnumCalibration) cd).invert(value);
+                   found = true;
+                   break;
+               } catch (CalibrationException e) {
+                   // Ignore, go ahead
+               }
+           }
+        }
+        if(!found) {
+            throw new ProcessingModelException("Cannot retrieve source value for set of parameter " + getDefinition().getLocation() + " for value " + value + ": suitable calibration not found");
+        } else {
+            if(getDefinition().getRawType() == ValueTypeEnum.ENUMERATED) {
+                return (int) valueToReturn;
+            } else {
+                return valueToReturn;
+            }
+        }
     }
 
     private List<AbstractActivityArgument> buildSetArgumentList(SetParameterRequest request, ParameterSetterDefinition setter) throws ProcessingModelException {

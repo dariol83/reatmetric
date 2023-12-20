@@ -484,16 +484,23 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
             throw new IllegalArgumentException("Null request");
         }
         // Locate the parameter process and ask it to build the activity request
-        AbstractSystemEntityProcessor processor = getProcessor(request.getId());
+        AbstractSystemEntityProcessor<?,?,?> processor = getProcessor(request.getId());
         if(processor == null) {
-            throw new ProcessingModelException("Set request for parameter " + request.getId() + ": parameter does not exist");
+            throw new ProcessingModelException(String.format("Set request for parameter %d: parameter does not exist", request.getId()));
         }
         if(!(processor instanceof ParameterProcessor)) {
-            throw new ProcessingModelException("Set request for parameter " + request.getId() + " returned a different type of system entity: " + processor.getEntityState().getType());
+            throw new ProcessingModelException(String.format("Set request for parameter %d returned a different type of system entity: %s", request.getId(), processor.getEntityState().getType()));
         }
         // Start the request
-        ActivityRequest activityRequest = ((ParameterProcessor)processor).generateSetRequest(request);
-        return startActivity(activityRequest);
+        AbstractInputDataItem activityRequest = ((ParameterProcessor)processor).generateSetRequest(request);
+        if(activityRequest instanceof ActivityRequest) {
+            return startActivity((ActivityRequest) activityRequest);
+        } else if(activityRequest instanceof ParameterSample) {
+            injectParameters(Collections.singletonList((ParameterSample) activityRequest));
+            return null;
+        } else {
+            throw new ProcessingModelException(String.format("Set request for parameter %d returned a different type of input: %s", request.getId(), activityRequest));
+        }
     }
 
     @Override

@@ -44,11 +44,19 @@ public interface IProcessingModel extends IDebugInfoProvider {
 
     List<ActivityOccurrenceData> getActiveActivityOccurrences();
 
+    /**
+     * The model looks for the parameter processor, and depending on whether the parameter is settable or not,
+     * the activity related to the setting is found (part of the parameter definition), and it is invoked with the
+     * correct arguments. The following properties shall be allowed to be set: parameter external id as unsigned int,
+     * provided value as argument source or eng, parameter path as string. Route must be provided in the invocation.
+     * If the targeted parameter is a user-parameter and no setter is defined, the request translates internally into a
+     * parameter injection, and the return value is null.
+     *
+     * @param request the request to set a parameter to a given value
+     * @return the {@link IUniqueId} of the generated activity, or null in case of user-parameter
+     * @throws ProcessingModelException in case of issues to translate the request into an effective, workable task
+     */
     IUniqueId setParameterValue(SetParameterRequest request) throws ProcessingModelException;
-    // The model looks for the parameter processor, and depending on whether the parameter is settable or not,
-    // the activity related to the setting is found (part of the parameter definition), and it is invoked with the
-    // correct arguments. The following properties shall be allowed to be set: parameter external id as unsigned int,
-    // provided value as argument source or eng, parameter path as string. Route must be provided in the invocation.
 
     void visit(IProcessingModelVisitor visitor);
 

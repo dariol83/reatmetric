@@ -31,12 +31,13 @@ public class ParameterDescriptor extends AbstractSystemEntityDescriptor {
     private final String unit;
     private final boolean synthetic;
     private final boolean settable;
+    private final boolean userParameter;
     private final String setterType;
     private final String setterDefaultRoute;
     private final List<Object> expectedRawValues;
     private final List<Object> expectedEngineeringValues;
 
-    public ParameterDescriptor(SystemEntityPath path, int externalId, String description, ValueTypeEnum rawDataType, ValueTypeEnum engineeringDataType, String unit, boolean synthetic, boolean settable, String setterType, String setterDefaultRoute, List<Object> expectedRawValues, List<Object> expectedEngineeringValues) {
+    public ParameterDescriptor(SystemEntityPath path, int externalId, String description, ValueTypeEnum rawDataType, ValueTypeEnum engineeringDataType, String unit, boolean synthetic, boolean settable, boolean userParameter, String setterType, String setterDefaultRoute, List<Object> expectedRawValues, List<Object> expectedEngineeringValues) {
         super(path, externalId, SystemEntityType.PARAMETER);
         this.description = description;
         this.rawDataType = rawDataType;
@@ -56,6 +57,7 @@ public class ParameterDescriptor extends AbstractSystemEntityDescriptor {
         }
         this.setterType = setterType;
         this.setterDefaultRoute = setterDefaultRoute;
+        this.userParameter = userParameter;
     }
 
     public String getDescription() {
@@ -80,6 +82,10 @@ public class ParameterDescriptor extends AbstractSystemEntityDescriptor {
 
     public boolean isSettable() {
         return settable;
+    }
+
+    public boolean isUserParameter() {
+        return userParameter;
     }
 
     public List<Object> getExpectedRawValues() {

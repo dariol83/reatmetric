@@ -1012,18 +1012,21 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
             // Get the descriptor
             AbstractSystemEntityDescriptor descriptor = getDescriptorOf(selected.getExternalId());
             if (descriptor instanceof ParameterDescriptor) {
-                if (!((ParameterDescriptor) descriptor).isSettable()) {
+                if (!((ParameterDescriptor) descriptor).isSettable() && !((ParameterDescriptor) descriptor).isUserParameter()) {
                     DialogUtils.alert("Set parameter " + descriptor.getPath().getLastPathElement(), null, "Selected parameter " + descriptor.getPath().getLastPathElement() + " cannot be set");
                 } else {
-                    // Get the route list (from the setter type -> activity type)
-                    Supplier<List<ActivityRouteState>> routeList = () -> {
-                        try {
-                            return ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ParameterDescriptor) descriptor).getSetterType());
-                        } catch (ReatmetricException | RemoteException e) {
-                            LOG.log(Level.WARNING, "Cannot retrieve the list of routes for activity type " + ((ParameterDescriptor) descriptor).getSetterType() + ": " + e.getMessage(), e);
-                            return Collections.emptyList();
-                        }
-                    };
+                    Supplier<List<ActivityRouteState>> routeList = Collections::emptyList;
+                    if(((ParameterDescriptor) descriptor).isSettable()) {
+                        // Get the route list (from the setter type -> activity type)
+                        routeList = () -> {
+                            try {
+                                return ReatmetricUI.selectedSystem().getSystem().getActivityExecutionService().getRouteAvailability(((ParameterDescriptor) descriptor).getSetterType());
+                            } catch (ReatmetricException | RemoteException e) {
+                                LOG.log(Level.WARNING, "Cannot retrieve the list of routes for activity type " + ((ParameterDescriptor) descriptor).getSetterType() + ": " + e.getMessage(), e);
+                                return Collections.emptyList();
+                            }
+                        };
+                    }
                     Pair<Node, SetParameterDialogController> parameterSetPair = SetParameterDialogUtil.createParameterSetDialog((ParameterDescriptor) descriptor, setParameterRequestMap.get(descriptor.getPath().asString()), routeList);
                     // Create the popup
                     Dialog<ButtonType> d = new Dialog<>();

@@ -23,6 +23,10 @@ import java.util.TreeMap;
 
 public class SetParameterRequest extends AbstractInputDataItem {
 
+    public static SetParameterRequest ofRawValue(int id, Object value) {
+        return new SetParameterRequest(id, false, value, Collections.emptyMap(), null, null);
+    }
+
     public static SetParameterRequest ofRawValue(int id, Object value, Map<String, String> properties, String route, String source) {
         return new SetParameterRequest(id, false, value, properties, route, source);
     }
