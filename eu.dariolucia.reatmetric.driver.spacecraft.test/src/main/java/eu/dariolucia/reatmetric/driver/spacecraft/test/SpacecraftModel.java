@@ -257,31 +257,43 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     }
 
     private TcTransferFrame decrypt(TcTransferFrame frame) {
+        int secHeaderLength = 18;
+        int secTrailerLength = 8;
         // Get salt
         if(salt == null) {
             salt = securityHandlerConfiguration.getSaltAsByteArray();
         }
         // Get the security header: after primary and segment header (if present)
         int secHeaderOffset = TcTransferFrame.TC_PRIMARY_HEADER_LENGTH + (frame.isSegmented() ? 1 : 0);
-        ByteBuffer secHeaderWrap = ByteBuffer.wrap(frame.getFrame(), secHeaderOffset, 18);
+        ByteBuffer secHeaderWrap = ByteBuffer.wrap(frame.getFrame(), secHeaderOffset, secHeaderLength);
         short spi = secHeaderWrap.getShort();
-        String password = securityHandlerConfiguration.getTcSpis().get(spi).getPassword();
-        byte[] iv = Arrays.copyOfRange(frame.getFrame(), secHeaderOffset + 2, secHeaderOffset + 18);
+        String password = securityHandlerConfiguration.getTcSpis().stream().filter(o -> o.getId() == spi).findFirst().get().getPassword();
+        byte[] iv = Arrays.copyOfRange(frame.getFrame(), secHeaderOffset + 2, secHeaderOffset + secHeaderLength);
         // Now decrypt the body
-        int dataFieldLength = frame.getLength() - secHeaderOffset - 18 - 8 - (frame.isFecfPresent() ? 2 : 0);
+        int dataFieldLength = frame.getLength() - secHeaderOffset - secHeaderLength - secTrailerLength - (frame.isFecfPresent() ? 2 : 0);
         byte[] decryptedDataField = new byte[0];
         try {
-            decryptedDataField = CryptoUtil.aesDecrypt(frame.getFrame(), secHeaderOffset + 18, dataFieldLength, password, iv, this.salt);
+            LOG.info("Decrypting TC frame:" +
+                    "\ndata:   " + StringUtil.toHexDump(frame.getFrame()) +
+                    "\noffset: " + (secHeaderOffset + secHeaderLength) +
+                    "\nlength: " + dataFieldLength +
+                    "\npass:   " + password +
+                    "\niv:     " + StringUtil.toHexDump(iv) +
+                    "\nsalt:   " + StringUtil.toHexDump(this.salt));
+            decryptedDataField = CryptoUtil.aesDecrypt(frame.getFrame(), secHeaderOffset + secHeaderLength, dataFieldLength, password, iv, this.salt);
         } catch (ReatmetricException e) {
             throw new RuntimeException(e);
         }
+        LOG.info("TC frame (encrypted): " + StringUtil.toHexDump(frame.getFrame()));
+        LOG.info("TC frame data field (decrypted): " + StringUtil.toHexDump(decryptedDataField));
         // Now verify that the trailer matches with the data
         // Use primary header, if present, secondary header and data field (without security header and trailer)
         byte[] trailer = computeTrailer(frame.getFrame(), secHeaderOffset, decryptedDataField);
-        if(!Arrays.equals(frame.getFrame(), secHeaderOffset + 18 + decryptedDataField.length, secHeaderOffset + 6 + decryptedDataField.length + 8,
+        if(!Arrays.equals(frame.getFrame(), secHeaderOffset + 18 + decryptedDataField.length, secHeaderOffset + secHeaderLength
+                        + decryptedDataField.length + secTrailerLength,
                 trailer, 0, trailer.length)) {
             throw new RuntimeException("Trailer mismatch, TC frame corrupted on SC: " + frame.getSpacecraftId() +
-                    "VC:" + frame.getVirtualChannelId() + " Dump: " + StringUtil.toHexDump(frame.getFrame()));
+                    " VC:" + frame.getVirtualChannelId() + " Dump: " + StringUtil.toHexDump(frame.getFrame()));
         }
         // Now compose the decrypted frame
         byte[] newFrame = new byte[frame.getLength()];
@@ -307,13 +319,14 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         return new TcTransferFrame(newFrame, vcID -> frame.isSegmented(), frame.isFecfPresent(), 18, trailer.length);
     }
 
-    private byte[] computeTrailer(byte[] frame, int headerLength, byte[] decryptedDataField) {
-        int scopeLength = headerLength + decryptedDataField.length;
+    private byte[] computeTrailer(byte[] frame, int primaryHeaderLength, byte[] decryptedDataField) {
+        int scopeLength = primaryHeaderLength + decryptedDataField.length;
         byte[] scope = new byte[scopeLength];
         int offset = 0;
-        System.arraycopy(frame, 0, scope, offset, headerLength);
-        offset += headerLength;
+        System.arraycopy(frame, 0, scope, offset, primaryHeaderLength);
+        offset += primaryHeaderLength;
         System.arraycopy(decryptedDataField, 0, scope, offset, decryptedDataField.length);
+        LOG.info("Computing TC trailer on data (" + scopeLength + " bytes): " + StringUtil.toHexDump(scope));
         // Done, now compute SHA-256 (least 8 bytes out of 32)
         return computeSHA256(scope);
     }

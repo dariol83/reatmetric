@@ -27,6 +27,7 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
+import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.AesSecurityHandlerConfiguration;
@@ -138,7 +139,7 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
         if(password == null) {
             throw new ReatmetricException("SPI to use for TC frame encryption not found: " + tcSpi);
         }
-        if(frame instanceof TcTransferFrame && ((TcTransferFrame) frame).isSecurityUsed()) {
+        if(frame instanceof TcTransferFrame && ((TcTransferFrame) frame).getFrameType() != TcTransferFrame.FrameType.BC && ((TcTransferFrame) frame).isSecurityUsed()) {
             return encryptTcAes((TcTransferFrame) frame, password, tcSpi);
         } else {
             return frame;
@@ -202,13 +203,13 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
 
     private byte[] computeTrailer(TcTransferFrame frameObj) throws ReatmetricException {
         // Use primary header, if present, segment header and data field (without security header and trailer)
-        int scopeLength = TcTransferFrame.TC_PRIMARY_HEADER_LENGTH + (frameObj.isSegmented() ? 1 : 0) + frameObj.getDataFieldStart();
+        int scopeLength = TcTransferFrame.TC_PRIMARY_HEADER_LENGTH + (frameObj.isSegmented() ? 1 : 0) + frameObj.getDataFieldLength();
         byte[] scope = new byte[scopeLength];
         int offset = 0;
         System.arraycopy(frameObj.getFrame(), 0, scope, offset, TcTransferFrame.TC_PRIMARY_HEADER_LENGTH);
         offset += TcTransferFrame.TC_PRIMARY_HEADER_LENGTH;
         if(frameObj.isSegmented()) {
-            scope[TcTransferFrame.TC_PRIMARY_HEADER_LENGTH] = frameObj.getFrame()[TcTransferFrame.TC_PRIMARY_HEADER_LENGTH];
+            scope[offset] = frameObj.getFrame()[TcTransferFrame.TC_PRIMARY_HEADER_LENGTH];
             offset += 1;
         }
         System.arraycopy(frameObj.getFrame(), frameObj.getDataFieldStart(), scope, offset, frameObj.getDataFieldLength());

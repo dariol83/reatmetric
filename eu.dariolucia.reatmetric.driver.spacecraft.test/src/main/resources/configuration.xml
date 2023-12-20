@@ -32,9 +32,7 @@
 		<type>TM</type>
 	</tm>
 	<!-- Security -->
-	<!--
 	<security handler="eu.dariolucia.reatmetric.driver.spacecraft.security.impl.AesHandler" configuration="$HOME\reatmetric_test\test\security\security.xml" />
-	-->
 	<!-- TM packet configuration -->
 	<tm-packet parameter-id-offset="100000">
 		<default-pus-configuration 
