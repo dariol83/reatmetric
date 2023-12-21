@@ -57,8 +57,18 @@
 
                 <!-- EVT First Subsystem -->
                 <inbound id="EVT_SUB1_MP" message="CMD_DEFINITION" secondary-id="EVT_SUB1">
-                    <!-- TODO: add condition and computed fields for qualifier -->
-                    <raise entity="200" source="Device 4" qualifier-reference="message_val" />
+                    <raise entity="200" source="Device 4" qualifier-reference="message_val">
+                        <condition field="alarm_val" value="0" type="ENUMERATED" />
+                    </raise>
+                    <raise entity="201" source="Device 4" qualifier-reference="message_val">
+                        <condition field="alarm_val" value="1" type="ENUMERATED" />
+                    </raise>
+                    <raise entity="202" source="Device 4" qualifier-reference="message_val">
+                        <condition field="alarm_val" value="2" type="ENUMERATED" />
+                    </raise>
+                    <raise entity="203" source="Device 4" qualifier-reference="message_val">
+                        <condition field="alarm_val" value="3" type="ENUMERATED" />
+                    </raise>
                 </inbound>
                 <!-- EVT Second Subsystem -->
                 <inbound id="EVT_SUB2_MP" message="CMD_DEFINITION" secondary-id="EVT_SUB2">

@@ -36,11 +36,22 @@ import java.util.List;
 @XmlRootElement(name = "socket", namespace = "http://dariolucia.eu/reatmetric/driver/socket")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SocketConfiguration {
+
+    private static final String HOME_VAR = "$HOME";
+    private static final String HOME_DIR = System.getProperty("user.home");
+
     public static SocketConfiguration load(InputStream is) throws IOException {
         try {
             JAXBContext jc = JAXBContext.newInstance(SocketConfiguration.class);
             Unmarshaller u = jc.createUnmarshaller();
             SocketConfiguration sc = (SocketConfiguration) u.unmarshal(is);
+            if(sc.getMessageDefinitions() != null) {
+                for (MessageDefinition<?> md : sc.getMessageDefinitions()) {
+                    if(md instanceof BinaryMessageDefinition) {
+                        ((BinaryMessageDefinition) md).setLocation(((BinaryMessageDefinition) md).getLocation().replace(HOME_VAR, HOME_DIR));
+                    }
+                }
+            }
             sc.initialise();
             return sc;
         } catch (JAXBException | ReatmetricException e) {

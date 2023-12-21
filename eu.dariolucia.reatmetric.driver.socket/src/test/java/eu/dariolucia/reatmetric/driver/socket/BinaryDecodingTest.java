@@ -31,7 +31,7 @@ public class BinaryDecodingTest {
     @Test
     public void testBinaryDecoding() throws Exception {
         String toDecode = "52454154" + // preamble
-                "00000048" + // length: 68 bytes
+                "00000048" + // length: 72 bytes
                 "0000FFFF" + // filler
                 "00000002" + // device_subsystem
                 "80000001" + // operation
@@ -51,5 +51,30 @@ public class BinaryDecodingTest {
         IPacketDecoder decoder = new DefaultPacketDecoder(packetDef);
         DecodingResult result = decoder.decode(messageId, message);
         assertEquals(1, result.getDecodedItemsAsMap().get("TLM_SUB2.sweep_val"));
+    }
+
+    @Test
+    public void testBinaryDecoding2() throws Exception {
+        String toDecode = "52454154" +
+                "00000047" + // length: 71 bytes
+                "00000002" + // device_subsystem
+                "80000001" + // operation
+                "00000002" + // request
+                "00000001" + // status_val
+                "0000000000000BB8" + // freq_val
+                "404DA916872B020C" + // temp_val (double)
+                "0000000000000000" + // offset_val
+                "00000000" +
+                "00000007" + // summary_val_length
+                "4E6F6D696E616C" + // summary_val
+                "00000000" + // sweep_val
+                "4D455452";
+
+        byte[] message = StringUtil.toByteArray(toDecode);
+        String messageId = "TLM_SUB2";
+        Definition packetDef = Definition.load(getClass().getClassLoader().getResourceAsStream("binary_single/binary_single_messages.xml"));
+        IPacketDecoder decoder = new DefaultPacketDecoder(packetDef);
+        DecodingResult result = decoder.decode(messageId, message);
+        assertEquals(0, result.getDecodedItemsAsMap().get("TLM_SUB2.sweep_val"));
     }
 }

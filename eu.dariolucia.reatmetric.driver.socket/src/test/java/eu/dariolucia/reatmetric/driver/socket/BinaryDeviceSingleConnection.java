@@ -219,6 +219,7 @@ public class BinaryDeviceSingleConnection {
     }
 
     private static byte[] reply(int subsystem, int operation, int requestId, byte[] body) {
+        System.out.println(new Date() + " << Reply " + operation + " : " + subsystem + ", " + requestId + " - " + StringUtil.toHexDump(body));
         byte[] reply = new byte[24 + body.length];
         ByteBuffer bb = ByteBuffer.wrap(reply);
         bb.put(new byte[] { 0x52, 0x45, 0x41, 0x54 });
@@ -228,6 +229,7 @@ public class BinaryDeviceSingleConnection {
         bb.putInt(requestId);
         bb.put(body);
         bb.put(new byte[] { 0x4D, 0x45, 0x54, 0x52 });
+        System.out.println(new Date() + " << Reply (full): " + StringUtil.toHexDump(reply));
         return reply;
     }
 
@@ -263,6 +265,7 @@ public class BinaryDeviceSingleConnection {
     }
 
     private static byte[] paramFor(Socket connection, int subsystem, int requestId) {
+        System.out.println(new Date() + " >> Parameter subscription: " + subsystem + ", " + requestId);
         String subSystemStr = "SUB" + subsystem;
         DeviceSubsystem ds = DEVICE.getSubsystem(subSystemStr);
         if(ds == null) {
@@ -303,6 +306,7 @@ public class BinaryDeviceSingleConnection {
     }
 
     private static byte[] eventFor(Socket connection, int subsystem, int requestId) {
+        System.out.println(new Date() + " >> Event subscription: " + subsystem + ", " + requestId);
         String subSystemStr = "SUB" + subsystem;
         DeviceSubsystem ds = DEVICE.getSubsystem(subSystemStr);
         if(ds == null) {
@@ -335,7 +339,9 @@ public class BinaryDeviceSingleConnection {
             try {
                 bos.write(new byte[] { 00, 00, 00, (byte) Math.floor(Math.random() * 4) }); // 0: debug 1: INFO 2: WARN 3: ALARM
                 String eventMessage = "Random event on subsystem " + subsystem;
-                bos.write(eventMessage.getBytes(StandardCharsets.US_ASCII));
+                byte[] messageInASCII = eventMessage.getBytes(StandardCharsets.US_ASCII);
+                bos.write(new byte[] { 00, 00, 00, (byte) messageInASCII.length });
+                bos.write(messageInASCII);
                 if(!sendOnCommandConnection(connection, reply(subsystem, EVENT_POSITIVE_OPERATION, requestId, bos.toByteArray()))) {
                     return;
                 }
@@ -346,24 +352,24 @@ public class BinaryDeviceSingleConnection {
         }
     }
 
-
     private static byte[] ackNegative(int subsystem, int requestId) {
-        return reply(subsystem, requestId, ACK_NEGATIVE);
+        return reply(subsystem, ACK_NEGATIVE, requestId);
     }
 
     private static byte[] ackPositive(int subsystem, int requestId) {
-        return reply(subsystem, requestId, ACK_POSITIVE);
+        return reply(subsystem, ACK_POSITIVE, requestId);
     }
 
     private static byte[] exeNegative(int subsystem, int requestId) {
-        return reply(subsystem, requestId, EXE_NEGATIVE);
+        return reply(subsystem, EXE_NEGATIVE, requestId);
     }
 
     private static byte[] exePositive(int subsystem, int requestId) {
-        return reply(subsystem, requestId, EXE_POSITIVE);
+        return reply(subsystem, EXE_POSITIVE, requestId);
     }
 
     private static byte[] commandFor(Socket connection, int subsystemId, int requestId, ByteBuffer bb) {
+        System.out.println(new Date() + " >> Command operation: " + subsystemId + ", " + requestId);
         String subsystem = "SUB" + subsystemId;
         DeviceSubsystem ds = DEVICE.getSubsystem(subsystem);
         if(ds == null) {
@@ -389,6 +395,7 @@ public class BinaryDeviceSingleConnection {
     }
 
     private static byte[] setFor(Socket connection, int subsystemId, int requestId, ByteBuffer bb) {
+        System.out.println(new Date() + " >> Set operation: " + subsystemId + ", " + requestId);
         String subsystem = "SUB" + subsystemId;
         DeviceSubsystem ds = DEVICE.getSubsystem(subsystem);
         if(ds == null) {

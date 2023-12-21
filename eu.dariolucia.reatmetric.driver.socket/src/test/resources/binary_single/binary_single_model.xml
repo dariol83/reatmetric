@@ -14,7 +14,7 @@
   ~ limitations under the License.
   -->
 
-<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition" path_prefix="STATION.DEVICE3.">
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition" path_prefix="STATION.DEVICE4.">
     <parameters>
         <!-- Subsystem 1 -->
 		<parameter id="#170" location="SUB1.STATUS" description="Subsystem Status" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="" >
@@ -113,8 +113,10 @@
     </parameters>
 
     <events>
-        <!-- TODO: add one event per severity -->
-        <event id="#200" location="SUB1.EVENT" description="SUB1 event" severity="INFO" type="SUB1_EVENT"/>
+        <event id="#200" location="SUB1.EVENT_D" description="SUB1 event debug" severity="NONE" type="SUB1_EVENT"/>
+        <event id="#201" location="SUB1.EVENT_I" description="SUB1 event info" severity="INFO" type="SUB1_EVENT"/>
+        <event id="#202" location="SUB1.EVENT_W" description="SUB1 event warning" severity="WARN" type="SUB1_EVENT"/>
+        <event id="#203" location="SUB1.EVENT_A" description="SUB1 event severity" severity="ALARM" type="SUB1_EVENT"/>
         <event id="#300" location="SUB2.EVENT" description="SUB2 event" severity="INFO" type="SUB2_EVENT"/>
     </events>
 

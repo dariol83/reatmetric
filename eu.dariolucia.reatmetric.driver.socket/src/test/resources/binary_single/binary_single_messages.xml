@@ -18,8 +18,8 @@
 <ns1:packet_definitions xmlns:ns1="http://dariolucia.eu/ccsds/encdec">
     <id_fields>
         <field id="length" offset="4" len="4" />
-        <field id="device_subsystem" offset="12" len="4" />
-        <field id="operation" offset="16" len="4" />
+        <field id="device_subsystem" offset="8" len="4" />
+        <field id="operation" offset="12" len="4" />
         <field id="command" offset="20" len="4" />
     </id_fields>
     <packets>
