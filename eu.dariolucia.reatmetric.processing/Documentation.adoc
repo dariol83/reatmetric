@@ -81,6 +81,79 @@ of the hierarchical decomposition.
 
 ===== Parameters
 
+The _parameters_ element contains zero or more _parameter_ elements. An example is provided in the XML fragment below.
+
+[source,xml]
+----
+<parameter id="#170"
+    location="SUB1.STATUS"
+    description="Subsystem Status"
+    raw_type="ENUMERATED"
+    eng_type="CHARACTER_STRING"
+    eng_unit=""
+    log_repetition_period="2000"
+    user_parameter="false">
+    <calib_enum default="UNKNOWN">
+        <point x="0" y="OFF" />
+        <point x="1" y="ON" />
+    </calib_enum>
+    <setter activity="#104" set_argument="new_value">
+        <!-- Convert? -->
+        <decalib_ienum>
+            <point y="0" x="OFF" />
+            <point y="1" x="ON" />
+        </decalib_ienum>
+        <fixed_argument name="device_subsystem" value="1" raw_value="true" />
+        <fixed_argument name="parameter" value="0" raw_value="true" />
+    </setter>
+</parameter>
+----
+
+The _parameter_ node has the following attributes:
+
+_id_: mandatory special string. The string is a positive integer number, prefixed with the hash # symbol. The number must be unique among all
+system element ids defined in the ReatMetric model under monitoring, including those defined in separate processing models.
+
+_location_: mandatory string. This string represents the location of the parameter in the hierarchical decomposition. Each
+element of the hierarchy is separated by a dot .
+
+_description_: mandatory string. The description of the parameter.
+
+_raw_type_: mandatory enumerated value. The type of the source value: when a parameter sample is injected into the model, the source value
+of the parameter sample must have this type.
+
+_eng_type_: mandatory enumerated value. The output type of the parameter, after the processing.
+
+_eng_unit_: default is empty string. The unit of the parameter engineering value.
+
+_log_repetition_period_: default is 0 (disabled). The minimum log generation period in milliseconds. If an alarm generates
+a log within the minimum repetition period window, the log message is skipped and a counter increased. This is a way to
+limit log flooding for parameters in case of high sampling rates.
+
+_user_parameter_: default is 'false'. This attribute indicates whether a parameter must be considered a user-parameter,
+i.e. not linked to external device parameters but rather settable directly from users, drivers or other ReatMetric elements and
+not via a setter element, which is mapped to an activity for dispatching and remote execution. User parameters can be
+considered 'internal' parameters, which can be useful to define globally available values and properties, with all the
+processing capabilities of validity, calibrations, checks and triggers available for standard parameters.
+
+The _parameter_ node has the following sub-elements:
+
+_validity_
+
+_synthetic_
+
+_default_value_
+
+_calib_x_
+
+_checks_
+
+_setter_
+
+_triggers_
+
+
+
 ===== Events
 
 ===== Activities
