@@ -151,9 +151,13 @@ between the value (source or engineering) of a second parameter, and the value s
 operator (equal, higher, lower, not equal...). A _condition_ element specifies a Groovy expression that shall return
 a boolean value upon evaluation.
 
-_synthetic_
+_synthetic_: optional, to be provided only if the parameter shall be a synthetic parameter.
+A synthetic parameter requires an expression to compute its source value: therefore, injection of
+such parameters via the injectParameter() method will be rejected by the processing model.
 
-_default_value_
+_default_value_: optional, null if not provided. It allows to specify a default value (either raw or engineering)
+that the processing model will initialise as default value upon instantiation.
+Uninitialised parameters will have a Java null value as source and engineering value.
 
 _calib_x_
 
