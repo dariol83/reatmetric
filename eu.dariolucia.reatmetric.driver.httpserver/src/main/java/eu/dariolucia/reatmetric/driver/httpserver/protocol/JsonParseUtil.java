@@ -706,7 +706,8 @@ public class JsonParseUtil {
         sb.append(String.format("\"engDataType\" : \"%s\", ", obj.getEngineeringDataType().name()));
         sb.append(String.format("\"unit\" : %s, ", valueToString(obj.getUnit())));
         sb.append(String.format("\"synthetic\" : %s, ", obj.isSynthetic()));
-        sb.append(String.format("\"settable\" : %s", obj.isSettable()));
+        sb.append(String.format("\"settable\" : %s, ", obj.isSettable()));
+        sb.append(String.format("\"user\" : %s", obj.isUserParameter()));
         sb.append(" }");
     }
 
