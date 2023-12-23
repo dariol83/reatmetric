@@ -93,6 +93,13 @@ The _parameters_ element contains zero or more _parameter_ elements. An example 
     eng_unit=""
     log_repetition_period="2000"
     user_parameter="false">
+    <validity>
+        <matcher parameter="#312"
+            operator="EQUAL"
+            value="32"
+            value_type="ENUMERATED"
+            use_raw_value="true" />
+    </validity>
     <calib_enum default="UNKNOWN">
         <point x="0" y="OFF" />
         <point x="1" y="ON" />
@@ -138,7 +145,11 @@ processing capabilities of validity, calibrations, checks and triggers available
 
 The _parameter_ node has the following sub-elements:
 
-_validity_
+_validity_: optional, if not provided the parameter is always considered valid. The _validity_ element can contain either
+a _match_ element or a _condition_ sub-element. A _match_ element is used to determine the validity based on a comparison
+between the value (source or engineering) of a second parameter, and the value specified in the definition, with the related
+operator (equal, higher, lower, not equal...). A _condition_ element specifies a Groovy expression that shall return
+a boolean value upon evaluation.
 
 _synthetic_
 
