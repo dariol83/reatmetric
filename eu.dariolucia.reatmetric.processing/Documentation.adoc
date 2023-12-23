@@ -39,4 +39,48 @@ This module has two external dependencies:
 activities and synthetic parameters/events are defined using Groovy as scripting language.
 
 ==== Configuration
-To be written
+The configuration of the processing module via the processing definition XML files is complex, but it can be
+broken down to configuration elements that are simpler to understand. The configuration structure is defined in the
+package eu.dariolucia.reatmetric.processing.definition. It is one or more XML files using namespace definition
+_http://dariolucia.eu/reatmetric/processing/definition_.
+
+A commented example of such file (broken down in parts) is presented below.
+
+===== Root element
+The XML definition file has a root node named _processing_.
+
+[source,xml]
+----
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
+    <parameters>
+    ...
+    </parameters>
+    <events>
+    ...
+    </events>
+    <activities>
+    ...
+    </activities>
+</ns1:processing>
+----
+
+The _processing_ node has the following optional attributes:
+
+_synthetic_parameter_processing_enabled_: default is 'true'. When set to 'false', the processing of synthetic parameters
+will be disabled. However, if more than one file is used to build up the configuration and one of these files has this
+attribute set to false, the processing of the synthetic parameters will be disabled for all definitions in all files.
+
+_mirrored_: default is 'false'. This flag is used to indicate that the elements described in the
+file are managed by a separate processing model. When set to 'true', the processing model will only process updates coming from the mirror()
+method, and will not recomputed/recalculate any value.
+
+_path_prefix_: default is empty. When set to a string, e.g. 'STATION.DEVICE3.', the path will be prefixed to all configured
+locations of the elements defined in the file. This approach is particularly useful in case some definitions of a separate
+processing model must be imported in a different processing model for mirroring and must appear in a specific sub-branch
+of the hierarchical decomposition.
+
+===== Parameters
+
+===== Events
+
+===== Activities
