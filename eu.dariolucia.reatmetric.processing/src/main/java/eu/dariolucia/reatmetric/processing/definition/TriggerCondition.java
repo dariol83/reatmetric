@@ -16,9 +16,24 @@
 
 package eu.dariolucia.reatmetric.processing.definition;
 
+/**
+ * This enumeration defines the specific condition linked to the raise of a related event.
+ */
 public enum TriggerCondition {
+    /**
+     * When a new sample of the parameter is processed by the processing model
+     */
     ON_NEW_SAMPLE,
+    /**
+     * When the engineering value of the parameter changes
+     */
     ON_VALUE_CHANGE,
+    /**
+     * When the parameter raises a check violation
+     */
     ON_ALARM_RAISED,
+    /**
+     * When the parameter comes back to a nominal state, after having a check in failure
+     */
     ON_BACK_TO_NOMINAL
 }

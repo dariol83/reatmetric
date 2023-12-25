@@ -104,6 +104,11 @@ The _parameters_ element contains zero or more _parameter_ elements. An example 
         <point x="0" y="OFF" />
         <point x="1" y="ON" />
     </calib_enum>
+    <checks>
+        <expected type="CHARACTER_STRING">
+            <value>ON</value>
+        </expected>
+    </checks>
     <setter activity="#104" set_argument="new_value">
         <!-- Convert? -->
         <decalib_ienum>
@@ -113,6 +118,9 @@ The _parameters_ element contains zero or more _parameter_ elements. An example 
         <fixed_argument name="device_subsystem" value="1" raw_value="true" />
         <fixed_argument name="parameter" value="0" raw_value="true" />
     </setter>
+    <triggers>
+        <trigger condition="ON_VALUE_CHANGE" event="#123" />
+    </triggers>
 </parameter>
 ----
 
@@ -159,15 +167,64 @@ _default_value_: optional, null if not provided. It allows to specify a default 
 that the processing model will initialise as default value upon instantiation.
 Uninitialised parameters will have a Java null value as source and engineering value.
 
-_calib_x_
+_calib_x_: optional (zero or more), no calibration if none is provided. When no calibration is assigned, the source/raw value is simply
+assigned as engineering value. When provided, the calibration to be applied is selected by checking the list of specified
+calibration in the order they appear in the definition, and the first calibration matching the applicability criterium is
+selected and applied. If no applicability criterium is specified, then the calibration is always considered applicable. The
+following calibrations are available:
 
-_checks_
+* calib_xy: a list of x,y pairs is defined. The raw value must be defined as a number (integer, real, enumerated).
+The engineering value must be defined as a real. The processing model computes the output linked to the provided input
+number by linearly interpolating the y-value between the pair that  encloses the x-input. Extrapolation outside the minimum
+and maximum x can be activated: it is de-activated by default. In such case, the processing model will reject the attempt
+to calibrate a input outside the series-defined boundaries.
+* calib_poly: the definition specifies 6 coefficients (from a0 to a5), which compose the polynomial function:
+a0 + a1*x + a2*x^2 + a3*x^3 + a4*x^4 + a5*x^5. The raw value must be defined as a number (integer, real, enumerated).
+The engineering value must be defined as real.
+* calib_log: the definition specifies 6 coefficients (from a0 to a5), which compose the logarithmic function:
+1/(a0 + a1*log(x) + a2*log(x)^2 + a3*log(x)^3 + a4*log(x)^4 + a5*log(x)^5). The raw value must be defined as a number
+(integer, real, enumerated). The engineering value must be defined as real.
+* calib_enum: a list of key,value pairs is defined, plus a default string value. The raw value must be defined as an
+integer number or enumerated. The engineering value must be defined as string. The provided input number is mapped to the
+corresponding textual value, or to the default value if no correspondence is found.
+* calib_range_enum: a list of range-to-value pairs is defined. The raw value must be defined as a number (integer, real,
+enumerated). The engineering value must be defined as string. Given the provided input number, the range containing it is
+detected, and the corresponding textual value is returned as engineering value. If no range contains the provided input,
+the default value is returned.
+* calib_expression: input and output values can be of any type. The defined Groovy expression is used to compute the
+output value.
+* calib_external: input and output values can be of any type. The processing model uses the registered ICalibrationExtension
+implementation, as specified in the definition, to request the calibration of the provided input value.
 
-_setter_
+_checks_: optional (zero or more) checks can be specified inside the element _checks_. Checks are applied to the
+engineering value of the parameter of a parameter by default (unless differently specified),
+if the check applicability criteria is satisfied. If a check does not have an applicability criteria, the check is always
+considered to be applied. By default, a violated check immediately raises an alarm: it is possible to modify the severity of
+the check, as well as the number of consecutive checks that the check must fail before raising the failure.
+The sub-elements of the _checks_ element are:
 
-_triggers_
+* limit: the value must be inside the low/high limit specified in the definition. If it is outside the limit, the
+check is declared failed.
+* expected: the value must match one of the values specified in the definition, otherwise the check is declared failed.
+* delta: the difference between the new value and the previous value is computed. If such difference is not within the
+low/high limit specified in the definition, the check is declared failed. The absolute (positive) difference can also be used.
+* expression: a Groovy expression, returning a boolean value, is defined. If the evaluation of the definition returns
+false, then the check is declared failed.
+* external: The processing model uses the registered ICheckExtension implementation, as specified in the definition,
+to request the check of the provided parameter.
 
+_setter_: optional (zero or one) reference to an existing activity, which shall be used to set the value of the parameter
+to a new value. The definition must specify which argument of the activity shall be set to the new value specified by the
+user. The activity invocation is complemented by the list of fixed argument values, each mapping to an activity argument.
+If such setter is specified, the SetParameterRequest will translate to an activity invocation. It is important to note that
+the setter definition must specify a _complete_ activity invocation, i.e. all activity arguments must be specified. An
+optional de-calibration can be specified (including inverted enumerations) to convert the value specified as engineering value
+into raw value.
 
+_triggers_: optional (zero or more) triggers can be specified inside the element _triggers_ (sub-node _trigger_). Triggers can be linked to
+events, which are raised when there is a specific change in the parameter state. The specific change is specified with the
+attribute _condition_ (which takes four possible values: ON_NEW_SAMPLE, ON_VALUE_CHANGED, ON_ALARM_RAISED, ON_BACK_TO_NOMINAL),
+while the event to raise is specified in the attribute _event_.
 
 ===== Events
 
