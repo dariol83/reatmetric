@@ -221,11 +221,106 @@ the setter definition must specify a _complete_ activity invocation, i.e. all ac
 optional de-calibration can be specified (including inverted enumerations) to convert the value specified as engineering value
 into raw value.
 
-_triggers_: optional (zero or more) triggers can be specified inside the element _triggers_ (sub-node _trigger_). Triggers can be linked to
-events, which are raised when there is a specific change in the parameter state. The specific change is specified with the
-attribute _condition_ (which takes four possible values: ON_NEW_SAMPLE, ON_VALUE_CHANGED, ON_ALARM_RAISED, ON_BACK_TO_NOMINAL),
-while the event to raise is specified in the attribute _event_.
+_triggers_: optional (zero or more) triggers can be specified inside the element _triggers_ (sub-node _trigger_). Triggers
+can be linked to events, which are raised when there is a specific change in the parameter state. The specific change is
+specified with the attribute _condition_ (which takes four possible values: ON_NEW_SAMPLE, ON_VALUE_CHANGED, ON_ALARM_RAISED,
+ON_BACK_TO_NOMINAL), while the event to raise is specified in the attribute _event_.
 
 ===== Events
 
+The _events_ element contains zero or more _event_ elements. An example is provided in the XML fragment below.
+
+[source,xml]
+----
+<event id="#190"
+    location="SUB1.STATE_CHANGE"
+    description="Subsystem State Changed event"
+    severity="INFO"
+    type="Event Type 1"
+    inhibition_period="1000"
+    log_repetition_period="2000">
+</event>
+----
+
+The _event_ node has the following attributes:
+
+_id_: mandatory special string. The string is a positive integer number, prefixed with the hash # symbol. The number must be unique among all
+system element ids defined in the ReatMetric model under monitoring, including those defined in separate processing models.
+
+_location_: mandatory string. This string represents the location of the event in the hierarchical decomposition. Each
+element of the hierarchy is separated by a dot .
+
+_description_: mandatory string. The description of the event.
+
+_severity_: optional, default is INFO. The severity of the event.
+
+_type_: optional, default is empty string. The type of the event.
+
+_inhibition_period_: optional default is 0 (disabled). The number of milliseconds between two reporting of the event. This is a
+way to limit event flooding.
+
+_log_repetition_period_: optional, default is 0 (disabled). The minimum log generation period in milliseconds. If an event generates
+a log within the minimum repetition period window, the log message is skipped and a counter increased. This is a way to
+limit log flooding for events.
+
+_log_enabled_: optional, default is true (enabled). When set to false, the event does not generate log messages.
+
+The _event_ node has the following sub-elements:
+
+_condition_: optional, to be provided only if the event occurrence shall be computed by the processing model. The provided
+Groovy expression shall return a boolean value: when a transition false -> true in the condition evaluation is detected, the
+processing model raises the event.
+
 ===== Activities
+
+The _activities_ element contains zero or more _activity_ elements. An example is provided in the XML fragment below.
+
+[source,xml]
+----
+<activity id="#79" location="SUB1.REBOOT" description="Reboot subsystem" type="DEV3-BIN-CMD"
+    verification_timeout="3000">
+    <argument name="delay" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+    <argument name="running" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" />
+    <property key="test1" value="V1" />
+    <property key="test2" value="V2" />
+    <verification>
+        <expression>STATUS == "ON"</expression>
+        <symbol name="STATUS" reference="#170" binding="ENG_VALUE" />
+    </verification>
+</activity>
+----
+
+The _activity_ node has the following attributes:
+
+_id_: mandatory special string. The string is a positive integer number, prefixed with the hash # symbol. The number must be unique among all
+system element ids defined in the ReatMetric model under monitoring, including those defined in separate processing models.
+
+_location_: mandatory string. This string represents the location of the activity in the hierarchical decomposition. Each
+element of the hierarchy is separated by a dot .
+
+_description_: mandatory string. The description of the activity.
+
+_type_: mandatory string. The type of the activity.
+
+_default_route_: optional, null if not set. The route to be used in case no route is specified as part of the activity
+invocation request.
+
+_transmission_timeout_: optional, default is 0 (disabled). The number of seconds after entering the transmission state,
+before the state of the specific activity occurrence goes in timeout.
+
+_execution_timeout_: optional, default is 0 (disabled). The number of seconds after entering the transmission state,
+before the state of the specific activity occurrence goes in timeout.
+
+_verification_timeout_: optional, default is 0 (disabled). The number of seconds after entering the transmission state,
+before the state of the specific activity occurrence goes in timeout.
+
+_expected_duration_: optional, default is 1000. The expected duration of an activity occurrence execution, in milliseconds.
+
+The _activity_ node has the following sub-elements:
+
+_argument_:
+_array_:
+_property_:
+_verification_:
+
+===== Expressions

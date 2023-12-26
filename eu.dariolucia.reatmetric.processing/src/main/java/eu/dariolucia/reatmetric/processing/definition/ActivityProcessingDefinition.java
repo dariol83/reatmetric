@@ -44,7 +44,7 @@ public class ActivityProcessingDefinition extends AbstractProcessingDefinition i
     @XmlAttribute(name = "type", required = true)
     private String type;
 
-    @XmlAttribute(name = "defaultRoute")
+    @XmlAttribute(name = "default_route")
     private String defaultRoute;
 
     @XmlAttribute(name = "transmission_timeout")
