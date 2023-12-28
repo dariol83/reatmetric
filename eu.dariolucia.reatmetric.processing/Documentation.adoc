@@ -1,6 +1,6 @@
 ==== Overview
 The eu.dariolucia.reatmetric.processing module provides an implementation of the IProcessingModel interface specified in
-the API module. Such model defines the M&C structure of the system(s) monitored by ReatMetric, in terms of system
+the API module. Such model defines the M&C structure of the system(s) monitored by ReatMetric, in terms of s&amp;stem
 elements, parameters, events, activities.
 
 Upon loading the definitions of the model, this module builds a graph of dependencies across the various entities, in
@@ -318,9 +318,67 @@ _expected_duration_: optional, default is 1000. The expected duration of an acti
 
 The _activity_ node has the following sub-elements:
 
-_argument_:
-_array_:
-_property_:
-_verification_:
+_argument_: optional (zero or more), it can be interleaved with _array_ elements. It defines a simple argument with the
+given name, type and decalibration function, which is applied if the argument is provided in engineering value.
+_array_: optional (zero or more), it can be interleaved with _argument_ elements. It defines an array of values.
+_property_: optional (zero or more). It is used to pre-define properties and values to be used as part of an activity
+invocation.
+_verification_: optional (zero or one), default is null. It is used to specify a Groovy expression, which is executed when the
+activity occurrence enters the _VERIFICATION_ state and at every change of the contributing inputs, until the timeout
+elapses.
 
 ===== Expressions
+
+In the definition of the elements of the processing model, it is possible to use a Groovy expression in several places
+(validity conditions, monitoring checks, calibrations, events, activity verification). An expression is composed by two
+sub-elements:
+
+_expression_: it contains the expression that it is used to compute the desired value. The type of such value depends on
+the use of such expression: for validity conditions, monitoring checks, events and activity verification, the expression
+must return a boolean value. Expressions used for synthetic parameters and calibrations can return any value, as long as
+the returned value is in line with the declared parameters types.
+
+_symbol_: optional (zero or more). Each _symbol_ specifies the mapping between a variable present in the expression and
+a system element or related property in the processing model.
+
+A symbol can be linked to one of the following system element properties using the attribute _binding_:
+
+* PATH: The location of the system entity (as string)
+* GEN_TIME: The generation time (as Java java.time.Instant)
+* RCT_TIME: The reception time (as Java java.time.Instant)
+* ROUTE: The route (as string)
+* SOURCE_VALUE: The raw/source value (only for parameters)
+* ENG_VALUE: The engineering value (only for parameters)
+* ALARM_STATE: The alarm state (as eu.dariolucia.reatmetric.api.model.AlarmState, only for parameters)
+* VALIDITY: The validity (as eu.dariolucia.reatmetric.api.parameters.Validity, only for parameters)
+* QUALIFIER: The qualifier (as string, only for events)
+* SOURCE: The source (as string)
+* OBJECT: The bound object (i.e. eu.dariolucia.reatmetric.api.processing.scripting.IParameterBinding for parameters,
+eu.dariolucia.reatmetric.api.processing.scripting.IEventBinding for events
+
+An example of a synthetic parameter is provided below. The synthetic parameter computes the maximum value between two
+parameters, depending on the value and alarm state of a third parameter.
+
+[source,xml]
+----
+<parameter id="#1430"
+    location="SUB1.MAX_LEVEL"
+    description="Subsystem Maximum Voltage Level"
+    raw_type="REAL"
+    eng_type="REAL"
+    eng_unit="mV">
+    <synthetic>
+        <expression>
+            if(COMBINER_VALUE == "COMBINING" &amp;&amp; !COMBINER_ALARM.isAlarm()) {
+                return Math.max(LEVEL1, LEVEL2);
+            } else {
+                return 0;
+            }
+        </expression>
+        <symbol name="LEVEL1" reference="#1421" binding="ENG_VALUE" />
+        <symbol name="LEVEL2" reference="#1422" binding="ENG_VALUE" />
+        <symbol name="COMBINER_VALUE" reference="#1424" binding="ENG_VALUE" />
+        <symbol name="COMBINER_ALARM" reference="#1424" binding="ALARM_STATE" />
+    </synthetic>
+</parameter>
+----
