@@ -324,7 +324,7 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
                         LOG.log(Level.FINE, String.format("Verification of activity occurrence %s of activity %s completed: no expression defined", occurrenceId, parent.getPath()));
                     }
                     // If no expression is defined, move currentState to COMPLETION
-                    generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETED);
+                    generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.NOT_AVAILABLE, null, ActivityOccurrenceState.COMPLETED);
                 }
             }
             // Verify timeout completions: this can generate an additional ActivityOccurrenceData object

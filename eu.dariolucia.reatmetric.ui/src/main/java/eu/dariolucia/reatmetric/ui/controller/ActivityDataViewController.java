@@ -279,6 +279,7 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                     setText(item.name());
                     switch (item) {
                         case OK:
+                        case NOT_AVAILABLE:
                             setTextFill(Color.GREEN);
                             break;
                         case FAIL:

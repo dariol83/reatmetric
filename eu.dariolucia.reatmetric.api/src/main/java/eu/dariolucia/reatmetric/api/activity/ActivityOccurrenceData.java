@@ -21,7 +21,10 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An instance of this class encapsulates the state of an activity occurrence at a given point in time. An activity
@@ -254,16 +257,18 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
 
     /**
      * This method derives the aggregated status of the activity occurrence. The status of the activity: can be OK, FAIL,
-     * PENDING, UNKNOWN (not others).
+     * PENDING, UNKNOWN, TIMEOUT (not others).
      *
      * OK -> Activity is COMPLETED && no FATAL present && last state in verification or execution state is OK
+     * TIMEOUT -> Activity is COMPLETED && no FATAL present && no verification expression defined && last state is TIMEOUT
      * FAIL -> Activity is COMPLETED && (FATAL present || last state in verification or execution state is FAIL)
-     * UNKNOWN -> Activity is COMPLETED && no FATAL present && no execution state reported
+     * UNKNOWN -> Activity is COMPLETED && no FATAL, FAIL, OK, TIMEOUT present && no execution state reported
      * PENDING -> Activity is not completed
      *
      * @return the aggregated status
      */
     public ActivityReportState aggregateStatus() {
+        ActivityReportState aggregated = ActivityReportState.UNKNOWN;
         if(getCurrentState() == ActivityOccurrenceState.COMPLETED) {
             for(int i = getProgressReports().size() - 1; i >= 0; --i) {
                 ActivityOccurrenceReport report = getProgressReports().get(i);
@@ -272,8 +277,13 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
                 } else if(report.getStatus() == ActivityReportState.OK && (report.getState() == ActivityOccurrenceState.EXECUTION || report.getState() == ActivityOccurrenceState.VERIFICATION)) {
                     return ActivityReportState.OK;
                 }
+                // Here we assign the status of the report to the aggregated, as long as it is not NOT_APPLICABLE or EXPECTED or PENDING
+                if(report.getStatus() != ActivityReportState.NOT_AVAILABLE && report.getStatus() != ActivityReportState.EXPECTED && report.getStatus() != ActivityReportState.PENDING) {
+                    aggregated = report.getStatus();
+                }
+                // The last reported status is the one to return, which can be UNKNOWN, OK, TIMEOUT or ERROR
             }
-            return ActivityReportState.UNKNOWN;
+            return aggregated;
         } else {
             return ActivityReportState.PENDING;
         }

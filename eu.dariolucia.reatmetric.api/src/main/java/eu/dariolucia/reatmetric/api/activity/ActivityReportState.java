@@ -50,7 +50,12 @@ public enum ActivityReportState {
     FATAL,
     /**
      * This specific state is reported in relation to a verification expression, linked to the {@link ActivityOccurrenceState#VERIFICATION}
-     * when the expression cannot be evaluated
+     * when the expression cannot be evaluated. It shall not be used in {@link eu.dariolucia.reatmetric.api.processing.input.ActivityProgress} objects
      */
-    ERROR
+    ERROR,
+    /**
+     * This specific state is reported in relation to missing verification expression, linked to the {@link ActivityOccurrenceState#VERIFICATION}.
+     * It shall not be used in {@link eu.dariolucia.reatmetric.api.processing.input.ActivityProgress} objects
+     */
+    NOT_AVAILABLE
 }
