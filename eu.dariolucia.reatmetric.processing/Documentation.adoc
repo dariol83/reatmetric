@@ -1,6 +1,6 @@
 ==== Overview
 The eu.dariolucia.reatmetric.processing module provides an implementation of the IProcessingModel interface specified in
-the API module. Such model defines the M&C structure of the system(s) monitored by ReatMetric, in terms of s&amp;stem
+the API module. Such model defines the M&C structure of the system(s) monitored by ReatMetric, in terms of system
 elements, parameters, events, activities.
 
 Upon loading the definitions of the model, this module builds a graph of dependencies across the various entities, in
@@ -12,7 +12,7 @@ updates.
 In addition, the graph is used to determine when two requests for parameter/event updates can be processed in parallel,
 because there is no processing overlap between the two requests. For instance, if two set of parameter updates are
 provided at the same time (e.g. since they come from the monitoring of two separate devices), then the processing will
-be performed in parallel by two different execution threads. Of course, this happens only if there is no 'shared entity'
+be performed in parallel by two different processing threads. Of course, this happens only if there is no 'shared entity'
 affected by the two updates. For instance, if a synthetic parameter is defined, having parameters coming from two
 different devices as input parameters, then the updates will be serialised due to the synthetic parameter presence.
 
@@ -37,6 +37,136 @@ This module has two external dependencies:
 * On JAXB library, since the processing definitions are defined in XML files;
 * On Groovy library, since expression-based checks, expression-based calibrations, parameter-based verifications for
 activities and synthetic parameters/events are defined using Groovy as scripting language.
+
+==== Behaviour
+Once instantiated, the IProcessingModel implementation must be used according to the contract specified by the IProcessingModel
+interface (check the related Javadoc). The processing of the related request is performed asynchronously, even if some parts
+(e.g. the derivation of the unique ID mapped to an activity invocation request) are done synchronously, in order to return
+a meaningful value to the caller.
+
+Once a request is received by the processing model, it is routed to a specific dispatching queue:
+
+* Requests linked to _reporting operations_ (parameter updates, requests to raise events, activity progress reports) are
+added to a _reporting queue_
+* Requests linked to _commanding operations_ (activity invocations, activity control operations, system element enable/disable)
+are added to a _commanding queue_
+
+The _commanding queue_ is of limited capacity (20000) and can therefore block the caller, if it becomes full.
+Half of the queue is reserved for internal operations of the processing model that result in internal commanding requests,
+to avoid deadlocks and delays in the processing of reporting operations. This means that, if more than half of the _commanding queue_
+is full, externally requested commanding operations will block until at least half of the _commanding queue_ is empty.
+
+The _reporting queue_ is of limited capacity (1000) and can therefore block the caller, if it becomes full. Backpressure is
+hence generated in case the processing model is saturated.
+
+Each queue has an associated dispatch thread, which is responsible to:
+
+* Remove one item from the queue, containing the list of operations to be performed
+* Finalize the list of operations by extending it with the necessary re-evaluations
+* Identify the involved processors and the affected system elements
+* Re-order the final list of operations according to the topological sort
+* Record the affected system elements as part of the _working set_
+* Request the implementation of the operations to the _processing thread pool_
+
+The _working set_ identifies what system elements are currently under update by the _processing thread pool_. At the end of the
+update, such system elements are removed from the working set. If there is an overlap between the working set and the
+system elements affected by one list of operations (i.e. there is a processing conflict), the dispatch thread waits until
+the conflict is resolved.
+
+The _processing thread pool_ is a fixed thread pool, having a number of thread equals to the number of available processors
+in the machine (Runtime.getRuntime().availableProcessors()). A thread in this pool is responsible to apply and process an
+operation on the related system elements. Only the system elements having state ENABLED and IGNORED are processed.
+
+Each operation on a system element generates a visible state (ParameterData, EventData, ActivityOccurrenceData,
+AlarmParameterData), which is then delivered to the output sink provided in the constructor of the model implementation
+(IProcessingModelOutput).
+
+The processing model does not provide any subscription or archiving mechanisms: such functions are provided by the
+eu.dariolucia.reatmetric.core module.
+
+===== Parameter Processing
+Parameter samples are injected into the model using the method: void injectParameters(List<ParameterSample>).
+
+The processing is done according to the following logic:
+
+. If the generation time of the sample is older than the generation time of the previous sample, the injected sample is
+ignored and the processing is over
+. The validity of the parameter is computed
+. If the parameter is valid, then the engineering value is computed
+. If the parameter is valid, then the alarm state is computed
+. A ParameterData object is generated
+. The alarm state is evaluated, to decide whether an AlarmParameterData object must be generated
+. The defined triggers are evaluated
+
+===== Event Processing
+Events are injected into the model using the method: void raiseEvent(EventOccurrence).
+
+The processing is done according to the following logic:
+
+. If the event occurs within the defined inhibition period (based in generation time), then the injected event is ignored
+and the processing is over
+. A log message is generated, if the event does not lie in the log repetition inhibition period
+. An EventData object is generated
+
+Note that the generation time is not used to ignore events based on previous occurrences, as it is done for parameters.
+
+===== Activity Processing
+Execution of activities is requested using the method: IUniqueId startActivity(ActivityRequest).
+
+The processing is done according to the following logic:
+
+. The request is checked for its consistency: all arguments are present with the right type, the route is defined and it
+is existing
+. The activity occurrence is created
+. The activity occurrence is forwarded to the handler linked to type and route, for implementation
+. An ActivityOccurrenceData is generated
+
+The IUniqueId returned by the method uniquely identifies the created activity occurrence in the system.
+
+Progresses about the activity execution are injected into the model using the method: void reportActivityProgress(ActivityProgress).
+
+The processing is done according to the following logic:
+. The activity state is updated according to the ActivityProcess information
+. If an activity state transition is detected, the timer for the timeout is started (if defined)
+. An ActivityOccurrenceData is generated
+
+The processing model defines specific verification stages: some of them *must* be used by callers as part of the
+ActivityProgress objects, so that the correct transitions can take place:
+
+. The constant ActivityOccurrenceReport.CREATION_REPORT_NAME ("Creation") is internally used by the processing model to
+indicate the creation stage of the activity occurrence and it is the only stage of the activity state ActivityOccurrenceState.CREATION.
+Its use is reserved and shall not be used by activity progresses.
+. The constant ActivityOccurrenceReport.FORWARDING_REPORT_NAME ("Forwarding to Activity Handler") is announced by the processing
+model as part of the activity state ActivityOccurrenceState.RELEASE. The stage indicates the forwarding phase of the activity
+occurrence to the associated activity handler via the method IActivityHandler.executeActivity(). Any exception
+raised by the handler is caught by the processing model and a FATAL result is reported associated to this stage.
+The activity handler must report an OK linked to this stage, if the activity occurrence is accepted for release and
+remain in the ActivityOccurrenceState.RELEASE activity state.
+. The constant ActivityOccurrenceReport.RELEASE_REPORT_NAME ("Release") must be announced by the activity handler when
+the encoded activity is about to leave the system and reported with a OK or FATAL depending on the result. Upon report,
+the next state of the activity shall be moved to ActivityOccurrenceState.TRANSMISSION.
+. The constant ActivityOccurrenceReport.VERIFICATION_REPORT_NAME ("Verification") is internally used by the processing model
+when the activity state moved to ActivityOccurrenceState.VERIFICATION, as announced by the activity handler/driver that
+monitors the progress of the activity occurrence.
+
+An activity handler can report, for the TRANSMISSION and EXECUTION state, an unlimited number of verification stages.
+
+The sequence of activity occurrence states is the following:
+
+CREATION -> RELEASE -> (TRANSMISSION) -> (SCHEDULING) -> EXECUTION -> VERIFICATION
+
+The TRANSMISSION and SCHEDULING states are optional: in fact, activity occurrences could be implemented by internal
+ReatMetric functions/drivers, so the RELEASE state could be immediately followed by the EXECUTION state. The SCHEDULING
+state is used when the activity occurrence is scheduled for execution at a later point in time on the remote device/equipment.
+
+Upon entering the TRANSMISSION, EXECUTION and VERIFICATION states, the related timers defined in the definition (if present)
+are started: the stages belonging to the state, that are PENDING at the expiration of the timer linked to the state,
+are reported as TIMEOUT by the processing model.
+
+===== Mirrored Elements
+A processing model can be kept synchronised with the state of another processing model via the mirror(List<AbstractDataItem>)
+method. The processing of such requests simply overwrite the state of the system element with the one provided as input.
+Such requests are only considered for system entities marked as 'mirrored' in the definition.
 
 ==== Configuration
 The configuration of the processing module via the processing definition XML files is complex, but it can be

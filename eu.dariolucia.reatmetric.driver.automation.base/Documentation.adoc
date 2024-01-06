@@ -1,0 +1,283 @@
+==== Overview
+The eu.dariolucia.reatmetric.driver.automation.base module provides a common codebase and utility classes to implement
+language-specialized automation functions. Three different automation modules are provided by ReatMetric:
+
+* eu.dariolucia.reatmetric.driver.automation.groovy: automation implementation that uses Groovy as scripting language. This
+is the module to use for reliable and optimised script execution.
+** Activity type: GROOVY_SCRIPT
+** Activity route: Groovy Automation Engine
+** Script file extension: groovy
+* eu.dariolucia.reatmetric.driver.automation.js: automation implementation that uses Javascript as scripting
+language via GraalVM.
+** Activity type: JS_SCRIPT
+** Activity route: JS Automation Engine
+** Script file extension: js
+* eu.dariolucia.reatmetric.driver.automation.python: experimental automation implementation that uses Python as scripting
+language via Jython. Jython is an old Python 2 implementation in Java, therefore its use is discouraged: plans exist to
+migrate this module to use JEP, with full Python 3 support.
+** Activity type: PYTHON_SCRIPT
+** Activity route: Python Automation Engine
+** Script file extension: py
+
+Being a driver, an _automation_ module must be registered as such in the system Core's configuration. The module provides
+an IActivityHandler implementation, capable to map an activity occurrence to the corresponding script file to be
+executed.
+
+This module has the following internal dependencies:
+
+* On eu.dariolucia.reatmetric.api
+* On eu.dariolucia.reatmetric.core
+
+This module has one external dependencies:
+
+* On JAXB library, since the configuration is defined in XML files.
+
+==== Automation Language API
+
+===== Script structure
+A script must be a sequence of Javascript/Groovy/Python statements, which will be executed when the script is evaluated by the script engine. The
+statements shall not be placed into a function wrapper, even though Javascript/Groovy/Python functions can be specified at the beginning of the
+script file.
+
+API function names as well as the variable names 'FILENAME' and '_scriptManager' are reserved and shall not be used as
+declared variable names.
+
+===== Declaration of arguments
+Script arguments do not need declaration: the automation engine binds all the activity arguments to equivalent language
+symbols. The only argument which is not mapped is the argument named "FILENAME", which is the reserved argument name to
+map to the specific script file inside the script directory.
+
+===== API functions
+The automation engine provides to scripts the following API functions.
+
+====== Log messages
+
+`info(String message):void`
+
+`warning(String message):void`
+
+`alarm(String message):void`
+
+Raise a message with the specified severity as operational message.
+
+====== State fetching
+
+`parameter(String paramPath):ParameterData`
+
+Return the current state (as ParameterData) of the specified parameter. Can return null if no such parameter can be located in the processing model.
+
+`event(String eventPath):EventData`
+
+Return the current state (as EventData) of the specified event. Can return null if no such event can be located in the processing model.
+
+`wait_for_event(String eventPath, int timeoutSeconds):EventData`
+
+Wait timeoutSeconds for the next occurrence of the specified event. Return the event (as EventData) of the specified event, if received during the specified time.
+Can return null if no such event is received during the specified time.
+
+`wait_for_parameter(String parameterPath, int timeoutSeconds):ParameterData`
+
+Wait timeoutSeconds for the next occurrence of the specified parameter. Return the parameter (as ParameterData) of the specified parameter, if received during the specified time.
+Can return null if no such parameter is received during the specified time.
+
+====== Parameter injection
+
+`inject_parameter(String paramPath, Object value):boolean`
+
+Inject the source value of the specified parameter. Return true if the function call to the processing model went OK, false in case of injection exception.
+
+====== Event injection
+
+`raise_event(String eventPath):boolean`
+
+Raise the specified event. Return true if the function call to the processing model went OK, false in case of injection exception.
+
+`raise_event(String eventPath, String qualifier):boolean`
+
+Raise the specified event with the attached qualifier. Return true if the function call to the processing model went OK, false in case of injection exception.
+
+`raise_event(String eventPath, String qualifier, Object report):boolean`
+
+Raise the specified event with the attached qualifier and report. Return true if the function call to the processing model went OK, false in case of injection exception.
+
+====== Activity execution and monitoring
+
+`prepare_activity(String activityPath):ActivityInvocationBuilder`
+
+Prepare the invocation of an activity. Return an object that can be used to customise the activity execution and invoke it subsequently. Can return null if no such activity can be located in the processing model..
+
+`ActivityInvocationBuilder::with_route(String route):ActivityInvocationBuilder`
+
+Set the activity invocation route. Return the builder object.
+
+`ActivityInvocationBuilder::with_property(String k, String v):ActivityInvocationBuilder`
+
+Set a property. Return the builder object.
+
+`ActivityInvocationBuilder::with_argument(String name, Object value, boolean engineering):ActivityInvocationBuilder`
+
+Set a plain argument. Return the builder object.
+
+`ActivityInvocationBuilder::with_argument(AbstractActivityArgument arg):ActivityInvocationBuilder`
+
+Set an argument (plain or array). Return the builder object.
+
+`ActivityInvocationBuilder::execute():ActivityInvocationResult`
+
+Execute the activity. Return an ActivityInvocationResult object that can be used to asynchronously monitor the status of the activity.
+
+`ActivityInvocationBuilder::execute_and_wait():boolean;`
+
+Execute the activity and wait for its completion. Return true if the activity execution completed with success, otherwise false.
+
+`ActivityInvocationBuilder::execute_and_wait(int timeoutSeconds):boolean`
+
+Execute the activity and wait for its completion in the specified time in seconds. Return true if the activity execution completed with success, otherwise (also in case of timeout) false.
+
+`ActivityInvocationBuilder::prepare_schedule(String source, String externalId, Integer expectedDurationSeconds):SchedulingActivityInvocationBuilder`
+
+Starting preparing a scheduling request for the activity. If expectedDurationSeconds is null, then the expected
+duration as per activity definition is used.
+
+`SchedulingActivityInvocationBuilder::with_resource(String resource):SchedulingActivityInvocationBuilder`
+
+Add a resource to the resource set of the scheduling request.
+
+`SchedulingActivityInvocationBuilder::with_resources(Collection<String> resources):SchedulingActivityInvocationBuilder`
+
+Add resources to the resource set of the scheduling request.
+
+`SchedulingActivityInvocationBuilder::with_resources(String... resources):SchedulingActivityInvocationBuilder`
+
+Add resources to the resource set of the scheduling request.
+
+`SchedulingActivityInvocationBuilder::with_latest_invocation_time(Instant time):SchedulingActivityInvocationBuilder`
+
+Set the latest invocation time to the scheduling request.
+
+`SchedulingActivityInvocationBuilder::with_conflict_strategy(ConflictStrategy conflictStrategy):SchedulingActivityInvocationBuilder`
+
+Set the conflict strategy for the activity execution.
+
+`SchedulingActivityInvocationBuilder::with_creation_conflict_strategy(CreationConflictStrategy strategy):SchedulingActivityInvocationBuilder`
+
+Set the conflict strategy for the scheduling request.
+
+`SchedulingActivityInvocationBuilder::schedule_absolute(Instant scheduledTime):boolean`
+
+Schedule the activity at the specified time.
+
+`SchedulingActivityInvocationBuilder::schedule_relative(int delaySeconds, String... predecessors):boolean`
+
+Schedule the activity to start after the completion of all listed predecessors (external IDs), and with the addition of the specified delay in seconds.
+
+`SchedulingActivityInvocationBuilder::schedule_event(String eventPath, int millisecondsProtectionTime):boolean`
+
+Schedule the activity to start when the specified event is detected, and with the specified protection time.
+
+`ActivityInvocationResult::wait_for_completion():boolean`
+
+Wait for the activity to complete. Return true if the activity execution completed with success, otherwise false.
+
+`ActivityInvocationResult::wait_for_completion(int timeoutSeconds):boolean`
+
+Wait for the activity to complete in the specified time in seconds. Return true if the activity execution completed with success, otherwise (also in case of timeout) false.
+
+`ActivityInvocationResult::is_invocation_failed():boolean`
+
+Return true if the activity invocation failed, otherwise false.
+
+`ActivityInvocationResult::is_completed():boolean`
+
+Return true if the activity execution completed, otherwise false.
+
+`ActivityInvocationResult::current_status():ActivityReportState`
+
+Return the current status (as ActivityReportState) of the activity execution.
+
+`delete_scheduled_activity(String externalId):boolean`
+
+Delete the specified entry in the scheduler. Return true if the entry was deleted, otherwise false.
+
+====== How to return a value
+
+For Javascript and Groovy it is enough to evaluate the variable as last instruction at the end of the script. For instance, if the script uses the variable
+`theResult` and the value must be reported, it is enough to declare, at the end of the script:
+
+`theResult;`
+
+For Python, the special variable name `_result` shall be used to report the return value, since Python does not return a value using the last evaluated
+expression.
+
+==== Configuration
+Being a driver, the automation implementation driver must be registered as such in the system configuration file.
+
+[source,xml]
+----
+<ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
+    <name>Test System</name>
+    <log-property-file>$HOME\Reatmetric\reatmetric_test\log.properties</log-property-file>
+    <definitions-location>$HOME\Reatmetric\reatmetric_test\processing</definitions-location>
+    <driver name="Automation Driver" type="eu.dariolucia.reatmetric.driver.automation.groovy.GroovyAutomationDriver"
+    configuration="$HOME\Reatmetric\reatmetric_test\automation"/>
+</ns1:core>
+----
+
+The folder specified in the _configuration_ attribute of the _driver_ element must contain a file named _configuration.xml_,
+which defines the configuration properties of the specific automation driver (in the example, the Groovy implementation).
+
+The configuration structure of the eu.dariolucia.reatmetric.driver.automation.base module is defined in the package
+eu.dariolucia.reatmetric.driver.automation.base.definition. It is an XML file named _configuration.xml_ using
+namespace definition _http://dariolucia.eu/reatmetric/driver/automation_.
+
+Such configuration is used by all automation module implementations (Groovy, Python, Javascript), i.e. such implementation
+modules do not have language-specific configuration.
+
+The elements that can contain a path support the special value $HOME, which is replaced at runtime with the contents
+of the _user.home_ system variable.
+
+A commented example of such file is presented below.
+
+[source,xml]
+----
+<ns1:automation xmlns:ns1="http://dariolucia.eu/reatmetric/driver/automation">
+    <!-- Optional element: number of scripts that can be executed in parallel by the automation driver. Default is 1. -->
+    <max-parallel-scripts>2</max-parallel-scripts>
+    <!-- Mandatory element: the folder containing the script files -->
+    <script-folder>$HOME\Reatmetric\Automation\Scripts</script-folder>
+</ns1:automation>
+----
+
+In order to map an activity to a script execution, the processing model definition of the activity must contain
+at least one argument named _FILENAME_ and type _GROOVY_SCRIPT_ for Groovy scripts, _JS_SCRIPT_ for Javascript scripts,
+_PYTHON_SCRIPT_ for Python scripts. An example follows below.
+
+[source,xml]
+----
+<activity id="#79" location="ROOT.ELEMENT.SUBELEMENT.OPERATION1" description="Operation 1 of sub-element"
+type="GROOVY_SCRIPT">
+    <argument name="FILENAME" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" eng_unit="" fixed="true">
+        <default_fixed type="RAW" value="script1.groovy"/>
+    </argument>
+    <argument name="arg1" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" />
+    <argument name="arg2" raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" />
+    <argument name="arg3" raw_type="REAL" eng_type="REAL" />
+</activity>
+----
+
+In the example, the _FILENAME_ argument is fixed and it is used to block the value of such argument to 'script1.groovy'.
+Such file must be present inside the _script-folder_ as specified in the configuration file. The other arguments must be
+specified at invocation time, as for normal activities, and the specified values are mapped to the variables with the
+same argument name, defined in the script. It is of course also possible to have a non-fixed FILENAME argument: in that
+case, the name of the script to be executed can be provided as argument at activity invocation time.
+
+An example of groovy script is provided below.
+
+[source,groovy]
+----
+// arg1 and arg2 are from the activity arguments, arg3 is not used
+info("Test message from script1.groovy with values " + arg1 + ", " + arg2)
+123
+----
+
+The script above raises a log message with severity _INFO_, and then returns, as activity result, the value _123_.

@@ -65,8 +65,6 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     public static final String DEBUG_INPUT_DATA_ITEMS = "Input data items";
     public static final String DEBUG_INPUT_DATA_ITEMS_UNIT = "data items/second";
 
-    public static final String FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME = "Forwarding to Activity Handler";
-
     public static final int COMMAND_DISPATCHING_QUEUE = 0;
     public static final int REPORTING_DISPATCHING_QUEUE = 1;
 
@@ -310,7 +308,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // Check if the route exist
         IActivityHandler handler = checkHandlerAvailability(route, type);
         // Assume positive dispatch at this stage
-        reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.RELEASE, null));
+        reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, ActivityOccurrenceReport.FORWARDING_REPORT_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.RELEASE, null));
         // All fine, schedule the dispatch
         this.activityOccurrenceDispatcher.execute(() -> {
             try {
@@ -324,7 +322,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
             } catch (ActivityHandlingException e) {
                 LOG.log(Level.SEVERE, String.format("Failure forwarding activity occurrence %s of activity %s to the activity handler on route %s: %s", occurrenceId, path, route, e.getMessage()), e);
                 // Overwrite status
-                reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, FORWARDING_TO_ACTIVITY_HANDLER_STAGE_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE, null));
+                reportActivityProgress(ActivityProgress.of(activityId, occurrenceId, ActivityOccurrenceReport.FORWARDING_REPORT_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE, null));
             }
         });
     }

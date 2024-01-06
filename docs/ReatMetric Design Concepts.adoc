@@ -301,8 +301,12 @@ To be written
 ==== Configuration
 To be written
 
-
 === Remote
+==== Overview
+==== Configuration
+To be written
+
+=== Socket
 ==== Overview
 ==== Configuration
 To be written
@@ -326,7 +330,7 @@ To be written
 
 === Implement a new driver
 
-=== Generate a new custom package
+=== Generate a new deployment package
 
 
 

@@ -1,0 +1,108 @@
+==== Overview
+The eu.dariolucia.reatmetric.driver.remote module provides a driver that allows to retrieve parameter, events and invoke
+activities on a remote ReatMetric system, and to repatriate such information into a local processing model.
+
+Being a driver, a _remote_ module must be registered as such in the system Core's configuration. The module provides
+an IActivityHandler implementation, capable to forward activity requests to be implemented by the remote system to the
+system itself and to monitor their progress.
+
+The main idea implemented in ReatMetric for the monitoring and control of remote ReatMetric systems from a central
+ReatMetric system (called _master_) is the following (example):
+
+* Each ReatMetric system (the remote ones and the master) have a processing model, with the hierarchical decomposition
+in system elements. For instance, the two remote systems might have the following:
+** Remote System A: SITE1.SYSTEM1.(...) and SITE1.SYSTEM2.(...)
+** Remote System B: SITE2.SYSTEM1.(...) and SITE2.SYSTEM2.(...) and SITE2.SYSTEM3.(...)
+** Master System: CENTRAL.(...) and two branches for the site 1 and site 2: CENTRAL.SITE1.(...) and CENTRAL.SITE2.(...)
+* The remote systems have no special configuration, besides the fact that their systems is configured allowing remote
+connections. See the documentation related to the module eu.dariolucia.reatmetric.remote.
+* In order to repatriate the data from each remote system to the master, the master needs to know:
+** How to reach such systems in terms of name, IP and port: to achieve this, a specific configuration and related
+system variable must be initialised on the master system, according to the documentation provided in the eu.dariolucia.reatmetric.remoting.connector
+module. This configuration must contain the connection details for all remote systems, i.e. the configuration is a global
+one.
+** Where to map the root node of the processing model of each remote system into its own processing model: to achieve this,
+a specific configuration for each driver instance must be specified (see below for the details). In addition, such branches
+in the master system must be defined as mirrored branches.
+* Upon start-up, the _remote_ driver scans the configured branch, starting from the configured node, to detect all the defined
+parameters and events, and it subscribes for these in the remote system.
+
+In order to repatriate the definition of the remote systems into the master system (assuming that they are contained in
+a single file), it is enough to copy the file into the master system, add the necessary global prefix (path_prefix attribute)
+and set the mirroring (mirrored attribute). If there is no interest to monitor specific parameter or events at master level,
+or there is the need to hide activities at master level, it is enough to remove such definitions in the copied file in the
+master system.
+
+The main limitation of this approach is that *all system entities across all systems must have a unique ID*.
+Such limitation allows the implementation of a very robust and stable mechanism for system-of-systems deployment
+configurations with multiple tiers.
+
+This module has the following internal dependencies:
+
+* On eu.dariolucia.reatmetric.api
+* On eu.dariolucia.reatmetric.core
+* On eu.dariolucia.reatmetric.remoting.connector
+
+This module has one external dependencies:
+
+* On JAXB library, since the configuration is defined in XML files.
+
+==== Configuration
+Being a driver, the _remote_ module must be registered as such in the system configuration file. You need to have a
+remote module registration for every remote system that you need to monitor and control
+
+[source,xml]
+----
+<ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
+    <name>Master System</name>
+    <log-property-file>$HOME\Reatmetric\reatmetric_test\log.properties</log-property-file>
+    <definitions-location>$HOME\Reatmetric\reatmetric_test\processing</definitions-location>
+    <driver name="Remote System 1" type="eu.dariolucia.reatmetric.driver.remote.RemoteDriver"
+    configuration="$HOME\Reatmetric\reatmetric_test\system1"/>
+    <driver name="Remote System 2" type="eu.dariolucia.reatmetric.driver.remote.RemoteDriver"
+    configuration="$HOME\Reatmetric\reatmetric_test\system2"/>
+</ns1:core>
+----
+
+The folder specified in the _configuration_ attribute of the _driver_ element must contain a file named _configuration.xml_,
+which defines the configuration properties of the driver.
+
+The configuration structure of the eu.dariolucia.reatmetric.driver.remote module is defined in the package
+eu.dariolucia.reatmetric.driver.remote.definition. It is an XML file named _configuration.xml_ using
+namespace definition _http://dariolucia.eu/reatmetric/driver/remote_.
+
+An example of such file is presented below.
+
+[source,xml]
+----
+<ns1:remote xmlns:ns1="http://dariolucia.eu/reatmetric/driver/remote"
+	remote-system-name="Test System Station 1"
+	remote-path-prefix="CENTRAL."
+	remote-path-selector="CENTRAL.SITE1">
+</ns1:remote>
+----
+
+_remote-system-name_ is the name of the remote system as exposed by the local remoting connector (local name).
+
+_remote-path-prefix_ indicates the prefix (parent path) in the master's processing model that must be added to remotely
+received updates and data, to construct their location in the master's processing model, and removed to outgoing activities
+to identify their correct path in the remote system. For instance: if the remote system reports an update for parameter
+SITE1.SYSTEM1.STATUS, such parameter's location is derived as concatenation of _remote-path-prefix_ (CENTRAL.) and the
+remote location of the parameter, resulting in CENTRAL.SITE1.SYSTEM1.STATUS.
+
+_remote-path-selector_ indicates the system element in the master's processing model, which maps the root system element
+of the remote's processing model.
+
+In order to work as expected, it is necessary to have a remoting configuration, which must be specified in the master system
+using the system variable _reatmetric.remoting.connector.config_. The content of the file pointed by such system variable
+is as follows.
+
+[source,xml]
+----
+<ns1:connectors xmlns:ns1="http://dariolucia.eu/reatmetric/remoting/connector/configuration">
+	<connector local-name="Test System Station 1" remote-name="System 1" host="192.168.0.3" port="20000" />
+	<connector local-name="Test System Station 2" remote-name="System 2" host="192.168.0.177" port="20000" />
+</ns1:connectors>
+----
+
+For further details check the documentation related to the eu.dariolucia.reatmetric.remoting.connector module.

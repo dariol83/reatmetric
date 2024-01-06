@@ -40,11 +40,6 @@
             <artifactId>eu.dariolucia.reatmetric.core</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
-		<dependency>
-            <groupId>eu.dariolucia.reatmetric</groupId>
-            <artifactId>eu.dariolucia.reatmetric.processing</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
         <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.driver.automation.base</artifactId>
