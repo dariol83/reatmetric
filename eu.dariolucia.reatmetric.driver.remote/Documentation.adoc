@@ -49,7 +49,7 @@ This module has one external dependencies:
 
 ==== Configuration
 Being a driver, the _remote_ module must be registered as such in the system configuration file. You need to have a
-remote module registration for every remote system that you need to monitor and control
+remote module registration for every remote system that you need to monitor and control.
 
 [source,xml]
 ----
