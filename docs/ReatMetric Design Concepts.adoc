@@ -295,9 +295,7 @@ include::../eu.dariolucia.reatmetric.remoting.connector/Documentation.adoc[]
 include::../eu.dariolucia.reatmetric.driver.automation.base/Documentation.adoc[]
 
 === HTTP Server
-==== Overview
-==== Configuration
-To be written
+include::../eu.dariolucia.reatmetric.driver.httpserver/Documentation.adoc[]
 
 === Remote
 include::../eu.dariolucia.reatmetric.driver.remote/Documentation.adoc[]
@@ -316,8 +314,8 @@ To be written
 include::../eu.dariolucia.reatmetric.driver.serial/Documentation.adoc[]
 
 == User Interface
-==== Overview
-==== Configuration
+=== Overview
+=== Configuration
 To be written
 
 == Extending ReatMetric
