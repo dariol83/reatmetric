@@ -64,7 +64,7 @@ independent power supplies (a primary power source and two emergency power sourc
 second switch that selects which powerline must be used to power up the device. Each power source output can be enabled
 or disabled, and they should be disabled if not used. The device has an internal capacitor to allow short power breaks in the order of few seconds.
 
-image::../docs/docimg/Figure_2.png[Bot Example]
+image::../docs/docimg/Drawings-Scheduler - Example.drawio.png[Bot Example]
 
 A bot can be configured to automatically handle the necessary commands to enable/disable outputs and change switch
 positions, depending on the status of the power sources. In order to do that, we define the following bot states:

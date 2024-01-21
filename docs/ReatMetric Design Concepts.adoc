@@ -25,7 +25,7 @@ interfaces that are at the foundation of the framework, other modules can be rep
 
 The modules that form the foundation of the ReatMetric system are shown in the following figure.
 
-image::docimg/Figure_1.png[ReatMetric Foundation Modules and dependencies]
+image::docimg/Drawings-ReatMetric Core Architecture.drawio.png[ReatMetric Foundation Modules and dependencies]
 
 === Monitoring and Control Concepts
 In the ReatMetric world, the environment to be monitored and controlled is seen as a hierarchical decomposition,
