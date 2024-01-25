@@ -69,6 +69,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState.RELEASE;
+
 public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelSenderOutput<TcTransferFrame>, IForwardDataUnitStatusSubscriber, IActivityExecutor, IFopObserver {
 
     private static final Logger LOG = Logger.getLogger(TcDataLinkProcessor.class.getName());
@@ -208,6 +210,9 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             for (RawData rd : messages) {
                 AbstractTransferFrame atf = (AbstractTransferFrame) rd.getData();
                 Clcw clcw = extractClcw(atf);
+                if(LOG.isLoggable(Level.FINER)) {
+                    LOG.log(Level.FINER, "Transfer Frame received - CLCW: " + clcw);
+                }
                 if (clcw != null) {
                     int vcId = clcw.getVirtualChannelId();
                     fopEngines[vcId].clcw(clcw);
@@ -240,7 +245,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                         LOG.log(Level.SEVERE, "Transmission of space packet from activity " + tcTracker.getInvocation().getPath() + " on TC VC " + tcVcId + " not possible: TC VC " + tcVcId + " not configured");
                         Instant t = Instant.now();
                         informServiceBroker(TcPhase.FAILED, t, Collections.singletonList(tcTracker));
-                        reportActivityState(Collections.singletonList(tcTracker), t, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE);
+                        reportActivityState(Collections.singletonList(tcTracker), t, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, RELEASE);
                         return;
                     }
 
@@ -282,6 +287,17 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                         // Now lastGeneratedFrames will contain the TC frames ready to be sent
                     }
                     LOG.log(Level.INFO, lastGeneratedFrames.size() + " TC frames generated");
+
+                    if(LOG.isLoggable(Level.FINER)) {
+                        for(TcTransferFrame tctf : lastGeneratedFrames) {
+                            LOG.log(Level.FINER, String.format("TC Transfer Frame (%d, %d, %d, %s): %s",
+                                    tctf.getSpacecraftId(),
+                                    tctf.getVirtualChannelId(),
+                                    tctf.getVirtualChannelFrameCount(),
+                                    tctf.getFrameType().name(),
+                                    StringUtil.toHexDump(tctf.getFrame())));
+                        }
+                    }
                     // Perform encryption
                     encryptTcFrames(lastGeneratedFrames);
                     // Now you have the generated frames, prepare for tracking them, encode them and send them
@@ -324,8 +340,13 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         // Send the TC frames
         for (Pair<Long, TcTransferFrame> p : toSend) {
             try {
-                LOG.log(Level.INFO, " Sending TC frame to FOP");
-                fopEngines[p.getSecond().getVirtualChannelId()].transmit(p.getSecond(), 15000);
+                if(LOG.isLoggable(Level.FINER)) {
+                    LOG.log(Level.FINER, "Sending TC frame to FOP");
+                }
+                boolean result = fopEngines[p.getSecond().getVirtualChannelId()].transmit(p.getSecond(), 15000);
+                if(LOG.isLoggable(Level.FINER)) {
+                    LOG.log(Level.FINER, String.format("FOP Engine %s Result: %s", p.getSecond().getVirtualChannelId(), result));
+                }
             } catch (InterruptedException e) {
                 LOG.warning("TC frame acceptance by FOP engine on VC " + p.getSecond().getVirtualChannelId() + " interrupted");
                 Thread.interrupted();
@@ -335,11 +356,12 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
     // No need to delegate
     private boolean frameOutput(TcTransferFrame tcTransferFrame) {
-        LOG.log(Level.INFO, "FOP Low Layer - Received TC frame " + tcTransferFrame);
+        LOG.log(Level.INFO, String.format("FOP Low Layer - Received TC frame %s", tcTransferFrame));
         String route;
         long frameInTransmissionId;
         if(tcTransferFrame.getFrameType() == TcTransferFrame.FrameType.BC) {
             // From a directive
+            // TODO: verify generation of BC frames with security layer active
             IActivityHandler.ActivityInvocation tag = (IActivityHandler.ActivityInvocation) tcTransferFrame.getAnnotationValue(FopEngine.ANNOTATION_BC_FRAME_TAG);
             route = tag.getRoute();
             frameInTransmissionId = -tag.getActivityOccurrenceId().asLong();
@@ -427,14 +449,15 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     public void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
         try {
             delegator.submit(() -> {
-                context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.PENDING, ActivityOccurrenceState.RELEASE, null));
+                context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), RELEASE, null, ActivityReportState.PENDING, RELEASE, null));
                 if (activityInvocation.getPath().getLastPathElement().equals(Constants.TC_COP1_DIRECTIVE_NAME)) {
+                    LOG.log(Level.FINER, "Invocation of COP-1 directive " + activityInvocation.getPath().asString());
                     // Three parameters: TC VC ID (enumeration: 0 to 7), directive ID (enumeration: as per FopDirective enum), qualifier (enumeration)
                     int tcVcId = (int) activityInvocation.getArguments().get(Constants.ARGUMENT_FOP_DIRECTIVE_TC_VC_ID);
                     FopDirective directive = FopDirective.values()[(int) activityInvocation.getArguments().get(Constants.ARGUMENT_FOP_DIRECTIVE_DIRECTIVE_ID)];
                     int qualifier = (int) activityInvocation.getArguments().get(Constants.ARGUMENT_FOP_DIRECTIVE_QUALIFIER);
-
-                    context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.RELEASE, null));
+                    LOG.log(Level.INFO, "Invocation of COP-1 directive " + directive + " - TC VC ID: " + tcVcId + " - Qualifier: " + qualifier);
+                    context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), RELEASE, null, ActivityReportState.OK, RELEASE, null));
                     // Go for execution
                     if (directive == FopDirective.INIT_AD_WITH_UNLOCK || directive == FopDirective.INIT_AD_WITH_SET_V_R) {
                         // Create the global tracker
@@ -450,18 +473,23 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     }
                     fopEngines[tcVcId].directive(activityInvocation, directive, qualifier);
                 } else if (activityInvocation.getPath().getLastPathElement().equals(Constants.TC_COP1_SET_AD_NAME)) {
+                    LOG.log(Level.FINER, "Invocation of COP-1 SET_AD command " + activityInvocation.getPath().asString());
                     // One parameter: SET_AD (boolean)
                     boolean setAd = (boolean) activityInvocation.getArguments().get(Constants.ARGUMENT_TC_SET_AD);
-                    context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, null));
+                    LOG.log(Level.INFO, "Invocation of COP-1 SET_AD command: " + (setAd ? "default mode AD" : "default mode BD"));
+                    context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), RELEASE, null, ActivityReportState.OK, ActivityOccurrenceState.EXECUTION, null));
                     context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), Constants.STAGE_LOCAL_EXECUTION, Instant.now(), ActivityOccurrenceState.EXECUTION, null, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null));
                     // Go for execution
                     setAdMode(setAd);
                     context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), Constants.STAGE_LOCAL_EXECUTION, Instant.now(), ActivityOccurrenceState.EXECUTION, null, ActivityReportState.OK, ActivityOccurrenceState.VERIFICATION, null));
                 } else {
+                    context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), RELEASE, null, ActivityReportState.FATAL, RELEASE, null));
+                    LOG.log(Level.SEVERE, "Unknown COP-1 activity invoked: " + activityInvocation.getPath() + " (" + activityInvocation.getActivityId() + ")");
                     throw new RuntimeException("Unknown COP-1 activity invoked: " + activityInvocation.getPath() + " (" + activityInvocation.getActivityId() + ")");
                 }
             }).get();
         } catch (InterruptedException | ExecutionException e) {
+            LOG.log(Level.FINER, "Invocation of COP-1 SET_AD command " + activityInvocation.getPath().asString());
             throw new ActivityHandlingException("Cannot execute activity " + activityInvocation.getPath(), e);
         }
     }
@@ -500,13 +528,26 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         this.pendingGroupTcs.remove(groupToAbort);
         Instant now = Instant.now();
         informServiceBroker(TcPhase.FAILED, now, tcTrackers);
-        reportActivityState(tcTrackers, now, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
+        reportActivityState(tcTrackers, now, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
     }
 
     @Override
     public void transferNotification(FopEngine engine, FopOperationStatus status, TcTransferFrame frame) {
         delegator.submit(() -> {
-            if (frame.getFrameType() == TcTransferFrame.FrameType.AD && (status == FopOperationStatus.NEGATIVE_CONFIRM || status == FopOperationStatus.POSIIVE_CONFIRM)) {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, String.format("FOP engine %d - Transfer notification - Status: %s, TC Frame: %s", engine.getVirtualChannelId(), status, frame));
+            }
+            if (status == FopOperationStatus.REJECT_RESPONSE) {
+                LOG.log(Level.SEVERE, String.format("FOP engine %d - Transfer notification - Reject response, TC Frame: %s", engine.getVirtualChannelId(), frame));
+                long frameInTransmissionId = (Long) frame.getAnnotationValue(Constants.ANNOTATION_TC_FRAME_ID);
+                RequestTracker tracker = cltuId2requestTracker.get(frameInTransmissionId);
+                if(tracker != null) {
+                    tracker.trackCltuStatus(frameInTransmissionId, ForwardDataUnitProcessingStatus.RELEASE_FAILED, Instant.now(), null, null);
+                    if (tracker.isLifecycleCompleted()) {
+                        this.cltuId2requestTracker.remove(frameInTransmissionId);
+                    }
+                }
+            } else if (frame.getFrameType() == TcTransferFrame.FrameType.AD && (status == FopOperationStatus.NEGATIVE_CONFIRM || status == FopOperationStatus.POSIIVE_CONFIRM)) {
                 long frameInTransmissionId = (Long) frame.getAnnotationValue(Constants.ANNOTATION_TC_FRAME_ID);
                 RequestTracker tracker = cltuId2requestTracker.get(frameInTransmissionId);
                 if (tracker != null) {
@@ -524,6 +565,9 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         if(tag == null) {
             // Ignore, can still be an initialisation callback
             return;
+        }
+        if(LOG.isLoggable(Level.FINE)) {
+            LOG.log(Level.FINE, String.format("FOP engine %d - Directive notification - Status: %s, Tag: %s, Directive: %s, Qualifier: %d", engine.getVirtualChannelId(), status, tag, directive, qualifier));
         }
         delegator.submit(() -> {
             IActivityHandler.ActivityInvocation activityInvocation = (IActivityHandler.ActivityInvocation) tag;
@@ -552,9 +596,13 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     public void statusReport(FopEngine engine, FopStatus status) {
         if(!status.getPreviousState().equals(status.getCurrentState())) {
             if(status.getCurrentState() == FopState.S6) {
-                LOG.warning("FOP engine for TC VC " + engine.getVirtualChannelId() + ": " + status.getPreviousState() + " -> " + status.getCurrentState());
+                LOG.warning("FOP engine " + engine.getVirtualChannelId() + " state transition: " + status.getPreviousState() + " -> " + status.getCurrentState());
             } else {
-                LOG.info("FOP engine for TC VC " + engine.getVirtualChannelId() + ": " + status.getPreviousState() + " -> " + status.getCurrentState());
+                LOG.info("FOP engine " + engine.getVirtualChannelId() + " state transition: " + status.getPreviousState() + " -> " + status.getCurrentState());
+            }
+        } else {
+            if(LOG.isLoggable(Level.FINER)) {
+                LOG.finer("FOP engine " + engine.getVirtualChannelId() + ": " + status.getCurrentState() + " -- " + status.getEvent());
             }
         }
     }
@@ -586,14 +634,14 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     released.add(id);
                     if(released.size() == dataUnits.size()) { // All released
                         informServiceBroker(TcPhase.RELEASED, time, tcTrackers);
-                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
+                        reportActivityState(tcTrackers, time, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
                         reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, nextStep, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                     }
                 }
                 break;
                 case RELEASE_FAILED: { // Release problem
                     informServiceBroker(TcPhase.FAILED, time, tcTrackers);
-                    reportActivityState(tcTrackers, time, ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.RELEASE);
+                    reportActivityState(tcTrackers, time, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, RELEASE);
                     lifecycleCompleted = true;
                 }
                 break;
