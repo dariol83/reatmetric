@@ -396,18 +396,8 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
 
     public LinkedHashMap<String, String> renderTmPacket(RawData rawData) {
         LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
-        SpacePacket sp = (SpacePacket) rawData.getData();
-        if(sp == null) {
-            sp = new SpacePacket(rawData.getContents(), rawData.getQuality().equals(Quality.GOOD));
-        }
-        TmPusHeader pusHeader = (TmPusHeader) sp.getAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER);
-        if (pusHeader == null && sp.isSecondaryHeaderFlag()) {
-            TmPusConfiguration conf = configuration.getPusConfigurationFor(sp.getApid());
-            if (conf != null) {
-                pusHeader = TmPusHeader.decodeFrom(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.getObtConfiguration() != null && conf.getObtConfiguration().isExplicitPField(), epoch, conf.getTimeDescriptor());
-            }
-        }
-        TmFrameDescriptor frameDescriptor = (TmFrameDescriptor) rawData.getExtension();
+        SpacePacket sp = getSpacePacketFromRawData(rawData);
+        renderCommonTmPacketAttributes(rawData, toReturn, sp);
         // Packet parameters
         DecodingResult result = null;
         try {
@@ -417,6 +407,43 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         } catch (DecodingException e) {
             LOG.log(Level.SEVERE, "Cannot decode TM packet " + rawData.getName() + " from route " + rawData.getRoute() + ": " + e.getMessage(), e);
         }
+        if(result != null) {
+            Map<String, Object> paramMap = result.getDecodedItemsAsMap();
+            if(!paramMap.isEmpty()) {
+                toReturn.put("Raw Parameters", null);
+                for (Map.Entry<String, Object> params : paramMap.entrySet()){
+                    toReturn.put(params.getKey(), ValueUtil.toString(params.getValue()));
+                }
+            }
+        }
+        return toReturn;
+    }
+
+    public LinkedHashMap<String, String> renderBadPacket(RawData rawData) {
+        LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
+        SpacePacket sp = getSpacePacketFromRawData(rawData);
+        renderCommonTmPacketAttributes(rawData, toReturn, sp);
+        return toReturn;
+    }
+
+    private SpacePacket getSpacePacketFromRawData(RawData rawData) {
+        SpacePacket sp = (SpacePacket) rawData.getData();
+        if(sp == null) {
+            sp = new SpacePacket(rawData.getContents(), rawData.getQuality().equals(Quality.GOOD));
+        }
+        return sp;
+    }
+
+    private void renderCommonTmPacketAttributes(RawData rawData, LinkedHashMap<String, String> toReturn, SpacePacket sp) {
+        TmPusHeader pusHeader = (TmPusHeader) sp.getAnnotationValue(Constants.ANNOTATION_TM_PUS_HEADER);
+        if (pusHeader == null && sp.isSecondaryHeaderFlag()) {
+            TmPusConfiguration conf = configuration.getPusConfigurationFor(sp.getApid());
+            if (conf != null) {
+                pusHeader = TmPusHeader.decodeFrom(sp.getPacket(), SpacePacket.SP_PRIMARY_HEADER_LENGTH, conf.isPacketSubCounterPresent(), conf.getDestinationLength(), conf.getObtConfiguration() != null && conf.getObtConfiguration().isExplicitPField(), epoch, conf.getTimeDescriptor());
+            }
+        }
+        TmFrameDescriptor frameDescriptor = (TmFrameDescriptor) rawData.getExtension();
+
         toReturn.put("TM Space Packet", null);
         toReturn.put("APID", String.valueOf(sp.getApid()));
         toReturn.put("SCC", String.valueOf(sp.getPacketSequenceCount()));
@@ -438,20 +465,6 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
             toReturn.put("Virtual Channel Counter", String.valueOf(frameDescriptor.getVirtualChannelFrameCounter()));
             toReturn.put("Earth-Reception Time", String.valueOf(frameDescriptor.getEarthReceptionTime()));
         }
-        if(result != null) {
-            Map<String, Object> paramMap = result.getDecodedItemsAsMap();
-            if(!paramMap.isEmpty()) {
-                toReturn.put("Raw Parameters", null);
-                for (Map.Entry<String, Object> params : paramMap.entrySet()){
-                    toReturn.put(params.getKey(), ValueUtil.toString(params.getValue()));
-                }
-            }
-        }
-        return toReturn;
-    }
-
-    public LinkedHashMap<String, String> renderBadPacket(RawData rawData) {
-        return null;
     }
 
     @Override
