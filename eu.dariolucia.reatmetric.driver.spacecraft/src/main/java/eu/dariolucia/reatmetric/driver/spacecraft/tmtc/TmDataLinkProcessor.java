@@ -20,10 +20,7 @@ import eu.dariolucia.ccsds.encdec.identifier.IPacketIdentifier;
 import eu.dariolucia.ccsds.encdec.identifier.PacketAmbiguityException;
 import eu.dariolucia.ccsds.encdec.identifier.PacketNotIdentifiedException;
 import eu.dariolucia.ccsds.tmtc.datalink.channel.VirtualChannelAccessMode;
-import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.AbstractReceiverVirtualChannel;
-import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.AosReceiverVirtualChannel;
-import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.IVirtualChannelReceiverOutput;
-import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.TmReceiverVirtualChannel;
+import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.*;
 import eu.dariolucia.ccsds.tmtc.datalink.channel.receiver.demux.VirtualChannelReceiverDemux;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
@@ -186,7 +183,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     }
 
     @Override
-    public void spacePacketExtracted(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, byte[] packet, boolean qualityIndicator) {
+    public void spacePacketExtracted(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, byte[] packet, boolean qualityIndicator, List<PacketGap> gaps) {
         // Add performance indicator
         synchronized (performanceSampler) {
             ++packetOutput;
@@ -204,7 +201,11 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         String route = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_ROUTE);
         // If the packet is a bad packet, we do not even try to identify it
         if (!qualityIndicator) {
-            LOG.warning("Quality indicator of space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", route " + route + " is negative, space packet marked as bad packet");
+            if(gaps.isEmpty()) {
+                LOG.warning("Quality indicator of space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", route " + route + " is negative, space packet marked as bad packet");
+            } else {
+                LOG.warning("Quality indicator of space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", route " + route + " is negative, gaps detected, space packet marked as bad packet");
+            }
             distributeBadPacket(firstFrame, route, sp);
         } else {
             // Make an attempt to identify the packet
