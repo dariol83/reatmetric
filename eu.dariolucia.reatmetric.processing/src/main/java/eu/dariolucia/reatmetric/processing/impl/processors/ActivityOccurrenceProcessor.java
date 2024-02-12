@@ -211,6 +211,15 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         }
         // Set the last generated state
         this.lastGeneratedState = activityOccurrenceData;
+        // Do some reporting
+        if(LOG.isLoggable(Level.INFO)) {
+            LOG.log(Level.INFO, "Activity occurrence " + getOccurrenceId() + ": stage " + name + " -> " + reportState + ", current state is " + nextState, new Object[] { parent.getPath() + ":" + getOccurrenceId() });
+            if(nextState == ActivityOccurrenceState.COMPLETED) {
+                if(LOG.isLoggable(Level.INFO)) {
+                    LOG.log(Level.INFO, "Activity occurrence " + getOccurrenceId() + " completed with final status " + activityOccurrenceData.aggregateStatus(), new Object[] { parent.getPath() + ":" + getOccurrenceId() });
+                }
+            }
+        }
     }
 
     /**

@@ -361,7 +361,6 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         long frameInTransmissionId;
         if(tcTransferFrame.getFrameType() == TcTransferFrame.FrameType.BC) {
             // From a directive
-            // TODO: verify generation of BC frames with security layer active
             IActivityHandler.ActivityInvocation tag = (IActivityHandler.ActivityInvocation) tcTransferFrame.getAnnotationValue(FopEngine.ANNOTATION_BC_FRAME_TAG);
             route = tag.getRoute();
             frameInTransmissionId = -tag.getActivityOccurrenceId().asLong();
@@ -534,8 +533,8 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     @Override
     public void transferNotification(FopEngine engine, FopOperationStatus status, TcTransferFrame frame) {
         delegator.submit(() -> {
-            if(LOG.isLoggable(Level.FINE)) {
-                LOG.log(Level.FINE, String.format("FOP engine %d - Transfer notification - Status: %s, TC Frame: %s", engine.getVirtualChannelId(), status, frame));
+            if(LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, String.format("FOP engine %d - Transfer notification - Status: %s, TC Frame: %s", engine.getVirtualChannelId(), status, frame));
             }
             if (status == FopOperationStatus.REJECT_RESPONSE) {
                 LOG.log(Level.SEVERE, String.format("FOP engine %d - Transfer notification - Reject response, TC Frame: %s", engine.getVirtualChannelId(), frame));
@@ -547,7 +546,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                         this.cltuId2requestTracker.remove(frameInTransmissionId);
                     }
                 }
-            } else if (frame.getFrameType() == TcTransferFrame.FrameType.AD && (status == FopOperationStatus.NEGATIVE_CONFIRM || status == FopOperationStatus.POSIIVE_CONFIRM)) {
+            } else if (frame.getFrameType() == TcTransferFrame.FrameType.AD && (status == FopOperationStatus.NEGATIVE_CONFIRM || status == FopOperationStatus.POSITIVE_CONFIRM)) {
                 long frameInTransmissionId = (Long) frame.getAnnotationValue(Constants.ANNOTATION_TC_FRAME_ID);
                 RequestTracker tracker = cltuId2requestTracker.get(frameInTransmissionId);
                 if (tracker != null) {
@@ -566,15 +565,22 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             // Ignore, can still be an initialisation callback
             return;
         }
-        if(LOG.isLoggable(Level.FINE)) {
-            LOG.log(Level.FINE, String.format("FOP engine %d - Directive notification - Status: %s, Tag: %s, Directive: %s, Qualifier: %d", engine.getVirtualChannelId(), status, tag, directive, qualifier));
+        // Log
+        if(status == FopOperationStatus.REJECT_RESPONSE || status == FopOperationStatus.NEGATIVE_CONFIRM) {
+            if (LOG.isLoggable(Level.WARNING)) {
+                LOG.log(Level.WARNING, String.format("FOP engine %d - Directive notification - Status: %s, Tag: %s, Directive: %s, Qualifier: %d", engine.getVirtualChannelId(), status, tag, directive, qualifier));
+            }
+        } else {
+            if (LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, String.format("FOP engine %d - Directive notification - Status: %s, Tag: %s, Directive: %s, Qualifier: %d", engine.getVirtualChannelId(), status, tag, directive, qualifier));
+            }
         }
         delegator.submit(() -> {
             IActivityHandler.ActivityInvocation activityInvocation = (IActivityHandler.ActivityInvocation) tag;
             if (status == FopOperationStatus.REJECT_RESPONSE || status == FopOperationStatus.NEGATIVE_CONFIRM) {
                 // For the execution time we use the ground time, because the effect of the command is on the FOP entity on ground
                 context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), Constants.STAGE_FOP_DIRECTIVE, Instant.now(), ActivityOccurrenceState.EXECUTION, Instant.now(), ActivityReportState.FATAL, ActivityOccurrenceState.EXECUTION, null));
-            } else if (status == FopOperationStatus.POSIIVE_CONFIRM) {
+            } else if (status == FopOperationStatus.POSITIVE_CONFIRM) {
                 // For the execution time we use the ground time, because the effect of the command is on the FOP entity on ground
                 context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), Constants.STAGE_FOP_DIRECTIVE, Instant.now(), ActivityOccurrenceState.EXECUTION, Instant.now(), ActivityReportState.OK, ActivityOccurrenceState.VERIFICATION, null));
             }
@@ -605,6 +611,10 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 LOG.finer("FOP engine " + engine.getVirtualChannelId() + ": " + status.getCurrentState() + " -- " + status.getEvent());
             }
         }
+        if(LOG.isLoggable(Level.FINER)) {
+            LOG.finer("FOP engine " + engine.getVirtualChannelId() + ": " + status);
+        }
+        // TODO: implement injection of status parameters into the processing model, on change, for monitoring purposes
     }
 
     private class RequestTracker {

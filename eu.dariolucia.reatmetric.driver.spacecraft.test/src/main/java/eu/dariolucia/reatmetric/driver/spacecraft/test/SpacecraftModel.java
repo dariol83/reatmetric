@@ -243,7 +243,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 lastSampleGenerationTime = genTime;
                 double numPacketsPerSecond = (numPackets / (millis/1000.0));
                 double numFramesPerSecond = (numFrames / (millis/1000.0));
-                LOG.info("Frames per second: " + (int) numFramesPerSecond + ", packets per second: " + numPacketsPerSecond);
+                // LOG.info("Frames per second: " + (int) numFramesPerSecond + ", packets per second: " + numPacketsPerSecond);
             }
         }
     }
@@ -292,6 +292,8 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         if(!Arrays.equals(frame.getFrame(), secHeaderOffset + 18 + decryptedDataField.length, secHeaderOffset + secHeaderLength
                         + decryptedDataField.length + secTrailerLength,
                 trailer, 0, trailer.length)) {
+            LOG.severe("Trailer mismatch, TC frame corrupted on SC: " + frame.getSpacecraftId() +
+                    " VC:" + frame.getVirtualChannelId() + " Dump: " + StringUtil.toHexDump(frame.getFrame()));
             throw new RuntimeException("Trailer mismatch, TC frame corrupted on SC: " + frame.getSpacecraftId() +
                     " VC:" + frame.getVirtualChannelId() + " Dump: " + StringUtil.toHexDump(frame.getFrame()));
         }
@@ -315,8 +317,8 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             newFrame[newFrame.length - 2] = (byte) (crc >> 8);
             newFrame[newFrame.length - 1] = (byte) (crc);
         }
-
-        return new TcTransferFrame(newFrame, vcID -> frame.isSegmented(), frame.isFecfPresent(), 18, trailer.length);
+        LOG.info("TC frame (decrypted): " + StringUtil.toHexDump(newFrame));
+        return new TcTransferFrame(newFrame, vcID -> frame.isSegmented(), frame.isFecfPresent(), secHeaderLength, trailer.length);
     }
 
     private byte[] computeTrailer(byte[] frame, int primaryHeaderLength, byte[] decryptedDataField) {

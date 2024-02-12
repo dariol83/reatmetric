@@ -153,8 +153,8 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
 
     public List<AbstractDataItem> invoke(ActivityRequest request) throws ProcessingModelException {
         if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
-            if(LOG.isLoggable(Level.INFO)) {
-                LOG.log(Level.INFO, "Activity invocation request for activity " + getPath() + " received by the processing model");
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Activity invocation request for activity " + getPath() + " received by the processing model");
             }
             // Start with the checks of the activity request: argument presence and type, route presence
             // Check if the route exists
@@ -192,6 +192,9 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             properties.putAll(request.getProperties());
             ActivityOccurrenceProcessor activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), Instant.now(), finalName2value, properties, new LinkedList<>(), request.getRoute(), request.getSource());
             id2occurrence.put(activityOccurrence.getOccurrenceId(), activityOccurrence);
+            if(LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, "Activity occurrence " + activityOccurrence.getOccurrenceId() + " for activity " + getPath() + " created by the processing model", new Object[] { getPath().asString() + ":" + activityOccurrence.getOccurrenceId() });
+            }
             // inform the processor that the activity occurrence has been created, use equality to 1 to avoid calling the registration for every activity
             if (id2occurrence.size() == 1) {
                 processor.registerActiveActivityProcessor(this);

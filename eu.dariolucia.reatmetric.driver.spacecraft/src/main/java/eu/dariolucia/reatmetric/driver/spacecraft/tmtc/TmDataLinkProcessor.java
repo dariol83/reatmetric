@@ -188,6 +188,10 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         synchronized (performanceSampler) {
             ++packetOutput;
         }
+        Instant genTime = (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_GEN_TIME);
+        if(genTime == null) {
+            genTime = Instant.now();
+        }
         // Read route from the frame annotated map
         Instant receptionTime = (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME);
         if(receptionTime == null) {
@@ -201,37 +205,44 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         String route = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_ROUTE);
         // If the packet is a bad packet, we do not even try to identify it
         if (!qualityIndicator) {
-            if(gaps.isEmpty()) {
-                LOG.warning("Quality indicator of space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", route " + route + " is negative, space packet marked as bad packet");
+            if (gaps.isEmpty()) {
+                LOG.warning(String.format("Quality indicator of space packet from spacecraft ID %d, VC %d, route %s is negative, space packet marked as bad packet", spacecraftId, vc.getVirtualChannelId(), route));
             } else {
-                LOG.warning("Quality indicator of space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", route " + route + " is negative, gaps detected, space packet marked as bad packet");
+                LOG.warning(String.format("Quality indicator of space packet from spacecraft ID %d, VC %d, route %s is negative, gaps detected, space packet marked as bad packet", spacecraftId, vc.getVirtualChannelId(), route));
             }
-            distributeBadPacket(firstFrame, route, sp);
-        } else {
-            // Make an attempt to identify the packet
-            String packetName = Constants.N_UNKNOWN_PACKET;
-            String packetType = Constants.T_TM_PACKET;
-            if(sp.isIdle()) {
-                packetType = Constants.T_IDLE_PACKET;
-            } else {
-                try {
-                    packetName = packetIdentifier.identify(packet);
-                } catch (PacketNotIdentifiedException e) {
-                    LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " not identified: " + e.getMessage(), e);
-                } catch (PacketAmbiguityException e) {
-                    LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " ambiguous: " + e.getMessage(), e);
-                } catch (Exception e) {
-                    LOG.log(Level.SEVERE, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " error during identification: " + e.getMessage(), e);
-                }
-            }
-            // Perform time generation extraction/time correlation
-            Instant generationTime = generationTimeResolver.apply(firstFrame, sp);
-            Quality quality = packetQualityChecker.apply(firstFrame, sp);
-            String source = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_SOURCE);
-            // Now we distribute it and store it as well
-            // Provide also the frame information, needed for time correlation ... they go as extension
-            distributeSpacePacket(sp, packetName, generationTime, receptionTime, route, source, packetType, quality, new TmFrameDescriptor(firstFrame.getVirtualChannelId(), firstFrame.getVirtualChannelFrameCount(), (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME)));
         }
+        // Make an attempt to identify the packet
+        String packetName = Constants.N_UNKNOWN_PACKET;
+        String packetType = Constants.T_TM_PACKET;
+        if(sp.isIdle()) {
+            packetName = Constants.N_IDLE_PACKET;
+            packetType = Constants.T_IDLE_PACKET;
+        } else {
+            packetName = identifyPacket(vc, packet, sp, packetName);
+        }
+        // Perform time generation extraction/time correlation for good packets
+        Instant generationTime = genTime;
+        if (qualityIndicator) {
+            generationTime = generationTimeResolver.apply(firstFrame, sp);
+        }
+        Quality quality = !qualityIndicator ? Quality.BAD : packetQualityChecker.apply(firstFrame, sp);
+        String source = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_SOURCE);
+        // Now we distribute it and store it as well
+        // Provide also the frame information, needed for time correlation ... they go as extension
+        distributeSpacePacket(sp, packetName, generationTime, receptionTime, route, source, packetType, quality, new TmFrameDescriptor(firstFrame.getVirtualChannelId(), firstFrame.getVirtualChannelFrameCount(), (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME)));
+    }
+
+    private String identifyPacket(AbstractReceiverVirtualChannel vc, byte[] packet, SpacePacket sp, String packetName) {
+        try {
+            packetName = packetIdentifier.identify(packet);
+        } catch (PacketNotIdentifiedException e) {
+            LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " not identified: " + e.getMessage(), e);
+        } catch (PacketAmbiguityException e) {
+            LOG.log(Level.WARNING, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " ambiguous: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Space packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + ", APID " + sp.getApid() + " error during identification: " + e.getMessage(), e);
+        }
+        return packetName;
     }
 
     private void distributeSpacePacket(SpacePacket sp, String packetName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality, TmFrameDescriptor frameDescriptor) {
@@ -241,24 +252,6 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
             broker.distribute(Collections.singletonList(rd));
         } catch (ReatmetricException e) {
             LOG.log(Level.SEVERE, "Error while distributing packet " + packetName + " from route " + rd.getRoute(), e);
-        }
-    }
-
-    private void distributeBadPacket(AbstractTransferFrame firstFrame, String route, SpacePacket sp) {
-        Instant genTime = (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_GEN_TIME);
-        Instant rcpTime = (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME);
-        if(genTime == null) {
-            genTime = Instant.now();
-        }
-        if(rcpTime == null) {
-            rcpTime = Instant.now();
-        }
-        RawData rd = new RawData(broker.nextRawDataId(), genTime, Constants.N_UNKNOWN_PACKET, Constants.T_BAD_PACKET, route, String.valueOf(firstFrame.getSpacecraftId()), Quality.BAD, null, sp.getPacket(), rcpTime, driverName,null);
-        rd.setData(sp);
-        try {
-            broker.distribute(Collections.singletonList(rd));
-        } catch (ReatmetricException e) {
-            LOG.log(Level.SEVERE, "Error while distributing bad packet from route " + rd.getRoute(), e);
         }
     }
 
