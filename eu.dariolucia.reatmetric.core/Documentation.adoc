@@ -70,7 +70,7 @@ A commented example of such file is presented below.
     -->
 	<name>Test System</name>
     <!-- Path to the java.util.logging configuration file.
-    This element is optional.
+    This element is optional. See below for further explanation.
     -->
 	<log-property-file>$HOME\reatmetric\log.properties</log-property-file>
     <!-- Archive configuration location: the string depends on the IArchive implementation
@@ -144,3 +144,33 @@ Example:
 ----
 java -Dreatmetric.core.config=/home/reatmetric/rm.core.config.xml ...
 ----
+
+ReatMetric uses the java.util.logging implementation to log messages and traces. The ReatMetric Core module is responsible
+for the initialisation of the logging, based on the contents of the provided configuration file, as specified by the
+<log-property-file> element. An example of the log configuration file can be seen below.
+
+----
+handlers = java.util.logging.ConsoleHandler, java.util.logging.FileHandler
+
+.level = OFF
+eu.dariolucia.level = INFO
+eu.dariolucia.ccsds.tmtc.cop1.fop.level = ALL
+eu.dariolucia.reatmetric.driver.spacecraft.tmtc.level = ALL
+eu.dariolucia.reatmetric.driver.automation.internal.level = ALL
+
+java.util.logging.ConsoleHandler.level = ALL
+
+java.util.logging.FileHandler.level = ALL
+java.util.logging.FileHandler.pattern=/home/user/reatmetric.log
+java.util.logging.FileHandler.limit=5000000
+java.util.logging.FileHandler.count=1
+java.util.logging.FileHandler.formatter=java.util.logging.SimpleFormatter
+----
+
+The above file configures the logging to log on the console and on a file. The logging levels can be assigned per package and
+per handler: in the example above, logging is disabled for all packages (.level = OFF), and it is then selectively enabled
+at INFO level for the eu.dariolucia package (recursively). Three specific packages have the log level specified without
+any filtering (level = ALL).
+
+For the file handler it is possible to specify the path to the log file (pattern), the maximum file size (limit) and the
+number of log files (count) before start rotating them.
