@@ -314,7 +314,64 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         this.filterText.textProperty().addListener((obs, oldValue, newValue) -> updatePredicate(newValue));
 
         this.nameCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getName()));
-        this.nameCol.setCellFactory(column -> new TreeTableCell<>() {
+        this.nameCol.setCellFactory(column ->
+        {
+            TreeTableCell<SystemEntity, String> cell = createTableCell();
+            cell.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && (!cell.isEmpty()) ) {
+                    SystemEntity entity = cell.getTableRow().getItem();
+                    if(entity.getType() == SystemEntityType.ACTIVITY) {
+                        // Execute activity
+                        executeActivity(entity);
+                    }
+                }
+            });
+            return cell;
+        });
+        this.statusCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getStatus()));
+        this.statusCol.setCellFactory(column -> new TreeTableCell<>() {
+            @Override
+            protected void updateItem(Status item, boolean empty) {
+                super.updateItem(item, empty);
+                if (item != null && !empty && !isEmpty()) {
+                    setText(item.name());
+                    switch (item) {
+                        case ENABLED:
+                            setTextFill(Color.LIMEGREEN);
+                            break;
+                        case DISABLED:
+                            setTextFill(Color.DARKGRAY);
+                            break;
+                        case IGNORED:
+                            setTextFill(Color.DARKCYAN);
+                            break;
+                        case UNKNOWN:
+                            setTextFill(Color.DARKORANGE);
+                            break;
+                        default:
+                            setText("");
+                            setTextFill(Color.BLACK);
+                            break;
+                    }
+                } else {
+                    setText("");
+                    setGraphic(null);
+                }
+            }
+        });
+
+        this.delegator = new DataProcessingDelegator<>("Model Browser Delegator", (a) -> {
+            this.mapLock.lock();
+            try {
+                addDataItems(a);
+            } finally {
+                this.mapLock.unlock();
+            }
+        });
+    }
+
+    private TreeTableCell<SystemEntity, String> createTableCell() {
+        return new TreeTableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
@@ -403,47 +460,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     setGraphic(null);
                 }
             }
-        });
-        this.statusCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getValue().getStatus()));
-        this.statusCol.setCellFactory(column -> new TreeTableCell<>() {
-            @Override
-            protected void updateItem(Status item, boolean empty) {
-                super.updateItem(item, empty);
-                if (item != null && !empty && !isEmpty()) {
-                    setText(item.name());
-                    switch (item) {
-                        case ENABLED:
-                            setTextFill(Color.LIMEGREEN);
-                            break;
-                        case DISABLED:
-                            setTextFill(Color.DARKGRAY);
-                            break;
-                        case IGNORED:
-                            setTextFill(Color.DARKCYAN);
-                            break;
-                        case UNKNOWN:
-                            setTextFill(Color.DARKORANGE);
-                            break;
-                        default:
-                            setText("");
-                            setTextFill(Color.BLACK);
-                            break;
-                    }
-                } else {
-                    setText("");
-                    setGraphic(null);
-                }
-            }
-        });
-
-        this.delegator = new DataProcessingDelegator<>("Model Browser Delegator", (a) -> {
-            this.mapLock.lock();
-            try {
-                addDataItems(a);
-            } finally {
-                this.mapLock.unlock();
-            }
-        });
+        };
     }
 
     private Tooltip createActivityTooltip(SystemEntity entity) {
