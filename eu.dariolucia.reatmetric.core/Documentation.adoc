@@ -20,6 +20,10 @@ provided to the drivers upon system initialisation. From such object, a driver c
 * It provides an implementation of all the processing model service factories, to access live and historical data generated
 by the processing model.
 
+With respect to operational messages, the ReatMetric Core initialises an internal log handler, which registers itself to
+the java.util.logging framework, and translate all log messages raised with a level equal to or greater than INFO to
+corresponding operational messages.
+
 When the IReatmetricSystem implementation is instantiated by the IReatmetricRegister implementation, the system is
 initialised in the following steps:
 
@@ -173,4 +177,8 @@ at INFO level for the eu.dariolucia package (recursively). Three specific packag
 any filtering (level = ALL).
 
 For the file handler it is possible to specify the path to the log file (pattern), the maximum file size (limit) and the
-number of log files (count) before start rotating them.
+number of log files (count) before start rotating them. Further information about the java.util.logging configurability
+and usage can be found on the Oracle tutorial https://docs.oracle.com/javase/8/docs/technotes/guides/logging/overview.html
+
+It is not recommended to reduce the log levels under INFO for the eu.dariolucia.reatmetric package, otherwise many
+operational messages will not be generated and shown to the user by the ReatMetric Core logging handler.
