@@ -24,6 +24,8 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
+import eu.dariolucia.reatmetric.api.processing.input.*;
+import eu.dariolucia.reatmetric.api.value.Array;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
@@ -56,6 +58,8 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * FXML Controller class
@@ -63,6 +67,8 @@ import java.util.function.Predicate;
  * @author dario
  */
 public class ActivityDataViewController extends AbstractDisplayController implements IActivityOccurrenceDataSubscriber {
+
+    private static final Logger LOG = Logger.getLogger(ActivityDataViewController.class.getName());
 
     protected static final int MAX_ENTRIES = 100;
 
@@ -912,6 +918,66 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         if(ed != null) {
             MainViewController.instance().getModelController().locate(ed.getPath());
         }
+    }
+
+    @FXML
+    private void replayItemAction(ActionEvent actionEvent) {
+        ActivityOccurrenceDataWrapper ed = this.dataItemTableView.getSelectionModel().getSelectedItem().getValue();
+        if(ed != null) {
+            ActivityOccurrenceData activityOccurrenceData = (ActivityOccurrenceData) ed.get();
+            ActivityRequest derivedRequest = toActivityRequest(activityOccurrenceData);
+            MainViewController.instance().getModelController().requestActivity(derivedRequest.getPath().asString(), derivedRequest);
+        }
+    }
+
+    private ActivityRequest toActivityRequest(ActivityOccurrenceData activityOccurrenceData) {
+        return new ActivityRequest(activityOccurrenceData.getExternalId(), activityOccurrenceData.getPath(),
+                toActivityArgumentList(activityOccurrenceData.getPath(), activityOccurrenceData.getArguments()),
+                activityOccurrenceData.getProperties(),
+                activityOccurrenceData.getRoute(),
+                activityOccurrenceData.getSource());
+    }
+
+    private List<AbstractActivityArgument> toActivityArgumentList(SystemEntityPath path, Map<String, Object> arguments) {
+        try {
+            ActivityDescriptor descriptor = (ActivityDescriptor) MainViewController.instance().getModelController().getDescriptorOf(path.asString());
+            List<AbstractActivityArgumentDescriptor> argumentDescriptors = descriptor.getArgumentDescriptors();
+            List<AbstractActivityArgument> argumentList = new ArrayList<>(arguments.size());
+            for(AbstractActivityArgumentDescriptor argDesc : argumentDescriptors) {
+                Object value = arguments.get(argDesc.getName());
+                if(argDesc instanceof ActivityPlainArgumentDescriptor) {
+                    argumentList.add(PlainActivityArgument.of(argDesc.getName(), value, null, false));
+                } else if(argDesc instanceof ActivityArrayArgumentDescriptor) {
+                    argumentList.add(toArrayActivityArgument(argDesc.getName(), (Array) value));
+                }
+            }
+            return argumentList;
+        } catch (ReatmetricException | RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot acquire descriptor for path " + path.asString() + ": " + e.getMessage(), e);
+            // Error, return
+            return Collections.emptyList();
+        }
+    }
+
+    private ArrayActivityArgument toArrayActivityArgument(String name, Array value) {
+        List<ArrayActivityArgumentRecord> recordList = new LinkedList<>();
+        for(Array.Record record : value.getRecords()) {
+            ArrayActivityArgumentRecord rec = toActivityArgumentRecord(record);
+            recordList.add(rec);
+        }
+        return new ArrayActivityArgument(name, recordList);
+    }
+
+    private ArrayActivityArgumentRecord toActivityArgumentRecord(Array.Record record) {
+        List<AbstractActivityArgument> recordContents = new ArrayList<>(record.getElements().size());
+        for(Pair<String, Object> elem : record.getElements()) {
+            if(elem.getSecond() instanceof Array) {
+                recordContents.add(toArrayActivityArgument(elem.getFirst(), (Array) elem.getSecond()));
+            } else {
+                recordContents.add(PlainActivityArgument.of(elem.getFirst(), elem.getSecond(), null, false));
+            }
+        }
+        return new ArrayActivityArgumentRecord(recordContents);
     }
 
     @Override

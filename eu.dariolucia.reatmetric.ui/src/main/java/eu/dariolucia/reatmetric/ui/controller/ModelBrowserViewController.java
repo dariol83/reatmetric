@@ -834,9 +834,13 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     }
 
     public void requestActivity(String activityPath) {
+        requestActivity(activityPath, null);
+    }
+
+    public void requestActivity(String activityPath, ActivityRequest initialisationData) {
         FilterableTreeItem<SystemEntity> item = path2item.get(SystemEntityPath.fromString(activityPath));
         if (item != null) {
-            executeActivity(item.getValue());
+            executeActivity(item.getValue(), initialisationData);
         }
     }
 
@@ -896,6 +900,10 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
     }
 
     private void executeActivity(SystemEntity toExecute) {
+        executeActivity(toExecute, null);
+    }
+
+    private void executeActivity(SystemEntity toExecute, ActivityRequest initialisationData) {
         try {
             // Get the descriptor
             AbstractSystemEntityDescriptor descriptor = getDescriptorOf(toExecute.getExternalId());
@@ -909,7 +917,11 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                         return Collections.emptyList();
                     }
                 };
-                Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityInvocationDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, activityRequestMap.get(descriptor.getPath().asString()), routeList);
+                if(initialisationData == null) {
+                    // Load from internal map
+                    initialisationData = activityRequestMap.get(descriptor.getPath().asString());
+                }
+                Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityInvocationDialogUtil.createActivityInvocationDialog((ActivityDescriptor) descriptor, initialisationData, routeList);
                 // Create the popup
                 Dialog<ButtonType> d = new Dialog<>();
                 d.setTitle("Execute activity " + descriptor.getPath().getLastPathElement());

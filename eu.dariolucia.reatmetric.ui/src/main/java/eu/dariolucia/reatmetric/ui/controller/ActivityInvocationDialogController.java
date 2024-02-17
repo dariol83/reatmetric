@@ -22,17 +22,16 @@ import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.ActivityArgumentTableManager;
-import eu.dariolucia.reatmetric.ui.utils.FxUtils;
-import eu.dariolucia.reatmetric.ui.utils.PropertyBean;
-import javafx.application.Platform;
+import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.beans.InvalidationListener;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.ComboBoxTableCell;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.VBox;
@@ -42,11 +41,15 @@ import javafx.util.Callback;
 import org.controlsfx.control.ToggleSwitch;
 
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class ActivityInvocationDialogController implements Initializable {
+
+    private static final String PRESET_NAME = "PropertyKeyList";
+    private static final String PRESET_VIEW_ID = "ActivityInvocationDialog";
 
     @FXML
     protected Accordion accordion;
@@ -83,6 +86,11 @@ public class ActivityInvocationDialogController implements Initializable {
     private InvalidationListener registeredRouteListener;
 
     private final SimpleBooleanProperty entriesValid = new SimpleBooleanProperty(false);
+
+    private final List<String> propertyKeyList = new LinkedList<>();
+
+    // Preset manager
+    private final PresetStorageManager presetManager = new PresetStorageManager();
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -126,6 +134,8 @@ public class ActivityInvocationDialogController implements Initializable {
             routeChoiceBoxValid.set(routeChoiceBox.getSelectionModel().getSelectedItem() != null &&
                     (forceToggleSwitch.isSelected() || routeChoiceBox.getSelectionModel().getSelectedItem().getAvailability() != ActivityRouteAvailability.UNAVAILABLE));
         });
+        // Load already used property keys
+        loadPropertyKeyList();
     }
 
     public void hideRouteControls() {
@@ -149,7 +159,8 @@ public class ActivityInvocationDialogController implements Initializable {
         valueColumn.setEditable(true);
         keyColumn.setCellValueFactory(o -> o.getValue().keyProperty());
         valueColumn.setCellValueFactory(o -> o.getValue().valueProperty());
-        keyColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        // keyColumn.setCellFactory(TextFieldTableCell.forTableColumn());
+        keyColumn.setCellFactory(createKeyTableCellFactory());
         valueColumn.setCellFactory(TextFieldTableCell.forTableColumn());
 
         keyColumn.setOnEditCommit(event -> {
@@ -158,6 +169,8 @@ public class ActivityInvocationDialogController implements Initializable {
             event.getTableView().getItems()
                     .get(event.getTablePosition().getRow())
                     .keyProperty().set(value);
+            // Update the propertyKeyList
+            updatePropertyKeyList(value);
         });
         valueColumn.setOnEditCommit(event -> {
             final String value = event.getNewValue() != null ? event.getNewValue()
@@ -178,6 +191,43 @@ public class ActivityInvocationDialogController implements Initializable {
                 event.consume();
             }
         });
+    }
+
+    private void updatePropertyKeyList(String value) {
+        if(value != null && !value.isBlank() && !this.propertyKeyList.contains(value)) {
+            this.propertyKeyList.add(value);
+            persistPropertyKeyList();
+        }
+    }
+
+    private void persistPropertyKeyList() {
+        PropertyKeyPreset p = new PropertyKeyPreset();
+        p.setItems(this.propertyKeyList);
+        try {
+            this.presetManager.save(ReatmetricUI.selectedSystem().getSystem().getName(), ReatmetricUI.username(), PRESET_NAME, PRESET_VIEW_ID, p);
+        } catch (RemoteException e) {
+            // List cannot be persisted, ignore
+        }
+    }
+
+    private void loadPropertyKeyList() {
+        try {
+            PropertyKeyPreset p = this.presetManager.load(ReatmetricUI.selectedSystem().getSystem().getName(), ReatmetricUI.username(), PRESET_NAME, PRESET_VIEW_ID, PropertyKeyPreset.class);
+            if(p != null) {
+                this.propertyKeyList.addAll(p.getItems());
+            }
+        } catch (RemoteException e) {
+            // List cannot be persisted, ignore
+        }
+    }
+
+    private Callback<TableColumn<PropertyBean, String>, TableCell<PropertyBean, String>> createKeyTableCellFactory() {
+        // We create a combo box using the list of key values as 'suggestion', make it editable
+        return theVar -> {
+            ComboBoxTableCell<PropertyBean, String> cell = new ComboBoxTableCell<>(FXCollections.observableList(this.propertyKeyList));
+            cell.setComboBoxEditable(true);
+            return cell;
+        };
     }
 
     public void initialiseActivityDialog(ActivityDescriptor descriptor, ActivityRequest currentRequest, Supplier<List<ActivityRouteState>> routesWithAvailabilitySupplier) {

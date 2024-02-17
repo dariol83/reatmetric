@@ -194,11 +194,20 @@
                         </graphic>
                     </MenuItem>
                     <SeparatorMenuItem mnemonicParsing="false" />
-                    <MenuItem mnemonicParsing="false" onAction="#locateItemAction" text="Locate">
+                    <MenuItem mnemonicParsing="false" onAction="#locateItemAction" text="Locate activity in processing model">
                         <graphic>
                             <ImageView pickOnBounds="true" preserveRatio="true">
                                 <image>
                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/map-marker.svg.png" />
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </MenuItem>
+                    <MenuItem mnemonicParsing="false" onAction="#replayItemAction" text="Replay activity">
+                        <graphic>
+                            <ImageView pickOnBounds="true" preserveRatio="true">
+                                <image>
+                                    <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/repeat.svg.png" />
                                 </image>
                             </ImageView>
                         </graphic>
