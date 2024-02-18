@@ -1,0 +1,118 @@
+==== Overview
+The eu.dariolucia.reatmetric.driver.spacecraft module provides a driver that allows the processing of telemetry data and
+the sending of telecommand to satellites compliant to the CCSDS (http://www.ccsds.org) standards.
+
+Being a driver, a _spacecraft_ module must be registered as such in the system Core's configuration.
+
+As it must be able to support primarily by configuration the basic monitoring and control of CCSDS-compliant satellites,
+the driver configuration and design are overall complex and require preliminary knowledge of CCSDS and ECSS standards.
+Nevertheless, by breaking down the configuration and the design smaller pieces, such complexity can be managed. The
+information provided in this document allows to understand the fundamentals of the design of the driver, without pretending
+to be an exhaustive guide to satellite monitoring and control.
+
+==== Design
+===== Telemetry
+The telemetry processing chain is composed by the following processing entities:
+
+. Interface that are able to receive TM data from the spacecraft by means of _connectors_. The spacecraft
+driver implements the support for CCSDS SLE RAF (Return All Frames) and RCF (Return Channel Frames) protocols. These
+protocols deliver TM or AOS Transfer Frames to the ReatMetric Raw Data Broker, for further dissemination and processing.
+Additional interfaces can be added by leveraging the driver extensions (see <<_extensions>>). De-randomisation is also
+performed by this entity, if configured.
+. A TM Data Link Processor that is subscribed to the Raw Data Broker for TM or AOS transfer frames (as defined in the driver
+configuration) and extracts TM packets from the transfer frames. If the security layer is configured, this entity also
+makes sure to decrypt the frame before extracting the TM packets. Extracted TM packets are identified according to the
+packet definitions defined as part of the driver configuration, time-correlated with the currently availabile time correlation
+coefficients, and forwarded to the Raw Data Broker for further dissemination and processing.
+. A TM Packet Processor that is subscribed to the Raw Data Broker to TM packets and decodes the TM parameters contained
+in each packet according to the packet structure definition defined as part of the driver configuration. The extracted
+TM parameters are time-correlated (depending on the structure definition of the packet) and mapped to ReatMetric's
+processing model parameters and injected into the processing model for processing (validity checking, calibration,
+alarm checking). Each TM packet together with the extracted TM parameters is also forwarded to the _Service Broker_.
+. The _Service Broker_ is an entity responsible to distribute TM packets and telecommand lifecycle information to so-called
+_services_, as well to act as a registry for some specific internal interface implementations. A _service_ in this context
+has the same meaning of that defined by the ECSS Packet Utilisation Standard. The driver provides basic (and sometimes partial)
+implementations of the following services, but the service support can be extended by means of extensions and the provided
+implementations easily replaced (see <<_extensions>>):
+.. Time service (PUS service 9), responsible for time correlation
+.. On-board event service (PUS service 5)
+.. On-board operations scheduling service (PUS service 11)
+.. Command verification service (PUS service 1)
+
+image::../docs/docimg/Drawings-Spacecraft Driver - Telemetry.drawio.png[Telemetry Processing - Design]
+
+===== Telecommand
+The telecommand processing chain is composed by the following processing entities:
+
+. A TC Packet Processor that is an _Activity Handler_ of the ReatMetric processing model: when an activity is invoked, and
+this activity is mapped to a telecommand, the corresponding activity occurrence is forwarded to this element. This element
+encodes the telecommand, forwards it to the Raw Data Broker and to the _Service Broker_. If there is a service that fully
+takes over the processing of the telecommand (e.g. the on-board operations scheduling service), then the TC Packet Processor
+does not perform any additional processing. If instead there is no service taking over the processing of the telecommand,
+then the TC Packet Processor, depending on the selected route, might forward the telecommand to an external, TC packet-based
+interface or to the TC Data Link Processor.
+. A TC Data Link Processor that receives TC packets and constructs TC frames out of them. This entity also manages the
+COP-1 protocol for all the possible TC VC IDs, as specified in the configuration. Selection of the AD/BD mode, segmentation,
+MAP-ID and grouping is achieved by configuration, and it can be overridden using the _activity properties_ described
+further on. Depending on the selected route, the TC Data Link Processor forwards the TC frame to an external, TC frame-based
+interface or to an external, CLTU-based interface. In the latter case, the entity takes care of encoding the CLTU.
+Randomisation is also performed by this entity, if configured.
+. Interfaces that are able to send telecommands in TC packet, TC frame or CLTU form. The spacecraft
+driver implements the support for CCSDS SLE CLTU protocol, as well as for a simple TCP/IP CADU/CLTU connection.
+
+TBW telecommand lifecycle
+
+
+image::../docs/docimg/Drawings-Spacecraft Driver - Telecommand (basic).drawio.png[Telecommand Processing (basic) - Design]
+
+image::../docs/docimg/Drawings-Spacecraft Driver - Telecommand (time-tagged).drawio.png[Telecommand Processing (time-tag) - Design]
+
+===== COP-1
+
+
+===== Security
+
+
+===== Services
+
+
+===== Extensions
+
+
+==== Configuration
+Being a driver, the _spacecraft_ module must be registered as such in the system configuration file. You need to have a
+spacecraft module registration for each satellite that you need to process.
+
+[source,xml]
+----
+<ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
+    <name>Test System</name>
+    <log-property-file>$HOME\Reatmetric\reatmetric_test\log.properties</log-property-file>
+    <definitions-location>$HOME\Reatmetric\reatmetric_test\processing</definitions-location>
+    <driver name="Spacecraft Driver" type="eu.dariolucia.reatmetric.driver.spacecraft.SpacecraftDriver"
+    configuration="$HOME\Reatmetric\reatmetric_test\spacecraft"/>
+</ns1:core>
+----
+
+The folder specified in the _configuration_ attribute of the _driver_ element must contain a file named _configuration.xml_,
+which defines the configuration properties of the driver.
+
+The configuration structure of the eu.dariolucia.reatmetric.driver.spacecraft module is defined in the package
+eu.dariolucia.reatmetric.driver.spacecraft.definition. It is an XML file named _configuration.xml_ using
+namespace definition _http://dariolucia.eu/reatmetric/driver/spacecraft_.
+
+An example of such file is presented below.
+
+[source,xml]
+----
+----
+
+==== Developer's Q&A
+
+===== Receiving telemetry packets
+
+===== Implement a custom service
+
+===== Implement a custom connector
+
+===== Implement a custom security module
