@@ -1,0 +1,30 @@
+<!--
+  ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~          http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<ns2:processing xmlns:ns2="http://dariolucia.eu/reatmetric/processing/definition" synthetic_parameter_processing_enabled="true">
+    <parameters>
+        <parameter raw_type="ENUMERATED" eng_type="CHARACTER_STRING" id="#9999999"
+                   location="SPACE.SC.SECURITY.TCSPI" description="Selector for the SPI key to be used for telecommanding" user_parameter="true">
+            <calib_enum default="UNKNOWN">
+                <point x="1" y="KEY1"/>
+                <point x="2" y="KEY2"/>
+                <point x="3" y="KEY3"/>
+            </calib_enum>
+            <checks/>
+            <triggers/>
+        </parameter>
+    </parameters>
+</ns2:processing>

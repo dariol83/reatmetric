@@ -27,7 +27,6 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
-import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.AesSecurityHandlerConfiguration;
@@ -43,7 +42,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 /**
  * This class is meant to be a simple example to show the use of the {@link ISecurityHandler} extension.
@@ -60,43 +58,39 @@ import java.util.logging.Logger;
  */
 public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
 
-    private static final Logger LOG = Logger.getLogger(AesHandler.class.getName());
-
     public static final int TRAILER_LENGTH = 8;
     public static final int IV_LENGTH = 16;
     public static final int HEADER_LENGTH = 2 + IV_LENGTH; // No need for padding to be computed, use CTR AES mode
 
     private IServiceCoreContext context;
-    private SpacecraftConfiguration spacecraftConfiguration;
-    private AesSecurityHandlerConfiguration configuration;
     private final Map<Integer, String> tmspi2key = new HashMap<>();
     private final Map<Integer, String> tcspi2key = new HashMap<>();
     private final SecureRandom randomizer = new SecureRandom();
     private byte[] salt;
 
-    private AtomicInteger tcSpiToUse = new AtomicInteger();
+    private final AtomicInteger tcSpiToUse = new AtomicInteger();
     private boolean registered = false;
 
     @Override
     public void initialise(IServiceCoreContext context, SpacecraftConfiguration spacecraftConfiguration) throws ReatmetricException {
         this.context = context;
-        this.spacecraftConfiguration = spacecraftConfiguration;
         // Initialise configuration
+        AesSecurityHandlerConfiguration configuration;
         try {
-            this.configuration = AesSecurityHandlerConfiguration.load(new FileInputStream(spacecraftConfiguration.getSecurityDataLinkConfiguration().getConfiguration()));
+            configuration = AesSecurityHandlerConfiguration.load(new FileInputStream(spacecraftConfiguration.getSecurityDataLinkConfiguration().getConfiguration()));
         } catch (IOException e) {
             throw new ReatmetricException(e.getMessage(), e);
         }
         // Save salt
-        this.salt = this.configuration.getSaltAsByteArray();
+        this.salt = configuration.getSaltAsByteArray();
         // Set default TC SPI to use
-        this.tcSpiToUse.set(this.configuration.getDefaultTcSpi());
+        this.tcSpiToUse.set(configuration.getDefaultTcSpi());
         // Init TM passwords
-        for(SpiPassword spiPassword : this.configuration.getTmSpis()) {
+        for(SpiPassword spiPassword : configuration.getTmSpis()) {
             this.tmspi2key.put(spiPassword.getId(), spiPassword.getPassword());
         }
         // Init TC passwords
-        for(SpiPassword spiPassword : this.configuration.getTcSpis()) {
+        for(SpiPassword spiPassword : configuration.getTcSpis()) {
             this.tcspi2key.put(spiPassword.getId(), spiPassword.getPassword());
         }
         // If TC SPI parameter is declared, register to processing model
@@ -193,12 +187,7 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
             newFrame[newFrame.length - 2] = (byte) (crc >> 8);
             newFrame[newFrame.length - 1] = (byte) (crc);
         }
-        TcTransferFrame ttf = new TcTransferFrame(newFrame, vc -> frameObj.isSegmented(), frameObj.isFecfPresent(), header.length, trailer.length);
-        for(Object annotationKey : frameObj.getAnnotationKeys()) {
-            ttf.setAnnotationValue(annotationKey, frameObj.getAnnotationValue(annotationKey));
-        }
-        return ttf;
-
+        return new TcTransferFrame(newFrame, vc -> frameObj.isSegmented(), frameObj.isFecfPresent(), header.length, trailer.length);
     }
 
     private byte[] computeTrailer(TcTransferFrame frameObj) throws ReatmetricException {
@@ -275,11 +264,7 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
             newFrame[newFrame.length - 1] = (byte) (crc);
         }
 
-        AosTransferFrame ttf = new AosTransferFrame(newFrame, frame.isFrameHeaderErrorControlPresent(), frame.getInsertZoneLength(), frame.getUserDataType(), frame.isOcfPresent(), frame.isFecfPresent(), HEADER_LENGTH, trailer.length);
-        for(Object annotationKey : frame.getAnnotationKeys()) {
-            ttf.setAnnotationValue(annotationKey, frame.getAnnotationValue(annotationKey));
-        }
-        return ttf;
+        return new AosTransferFrame(newFrame, frame.isFrameHeaderErrorControlPresent(), frame.getInsertZoneLength(), frame.getUserDataType(), frame.isOcfPresent(), frame.isFecfPresent(), HEADER_LENGTH, trailer.length);
     }
 
     private AbstractTransferFrame decryptTmAes(TmTransferFrame frame) throws ReatmetricException {
@@ -325,12 +310,7 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
             newFrame[newFrame.length - 1] = (byte) (crc);
         }
 
-        TmTransferFrame ttf = new TmTransferFrame(newFrame, frame.isFecfPresent(), HEADER_LENGTH, trailer.length);
-        // I need to carry over the SOURCE ID of the frame, otherwise the TM Packet Processing function will not work
-        for(Object annotationKey : frame.getAnnotationKeys()) {
-            ttf.setAnnotationValue(annotationKey, frame.getAnnotationValue(annotationKey));
-        }
-        return ttf;
+        return new TmTransferFrame(newFrame, frame.isFecfPresent(), HEADER_LENGTH, trailer.length);
     }
 
     private byte[] computeTrailer(byte[] frame, int headerLength, byte[] decryptedDataField) throws ReatmetricException {

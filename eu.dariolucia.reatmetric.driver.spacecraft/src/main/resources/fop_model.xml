@@ -16,7 +16,7 @@
 
 <ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
     <activities>
-        <activity id="#1000" location="FOP.DIRECTIVE" description="Send a directive to the FOP engine" type="COP-1">
+        <activity id="#1000" location="SPACE.FOP.DIRECTIVE" description="Send a directive to the FOP engine" type="COP-1">
             <argument name="TCVCID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="">
                 <default_fixed type="RAW" value="0" />
             </argument>
@@ -39,7 +39,7 @@
                 <default_fixed type="RAW" value="0" />
             </argument>
         </activity>
-        <activity id="#1001" location="TC.SET_AD" description="Set the AD value as default" type="COP-1">
+		<activity id="#1001" location="SPACE.FOP.SET_AD" description="Set the AD value as default" type="COP-1">
             <argument name="SET_AD" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="">
                 <default_fixed type="RAW" value="false" />
             </argument>

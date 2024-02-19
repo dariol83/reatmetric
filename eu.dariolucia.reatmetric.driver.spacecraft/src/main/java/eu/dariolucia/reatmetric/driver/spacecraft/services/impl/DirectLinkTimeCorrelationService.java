@@ -29,7 +29,6 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.services.TimeCorrel
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ITimeCorrelation;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
-import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -104,7 +103,7 @@ public class DirectLinkTimeCorrelationService extends TimeCorrelationService imp
     @Override
     public void dataItemsReceived(List<RawData> messages) {
         // Do nothing, should actually not be called
-        throw new RuntimeException("Call to dataItemsReceived should not happen, this is a software bug");
+        throw new IllegalStateException("Call to dataItemsReceived should not happen, this is a software bug");
     }
 
     @Override

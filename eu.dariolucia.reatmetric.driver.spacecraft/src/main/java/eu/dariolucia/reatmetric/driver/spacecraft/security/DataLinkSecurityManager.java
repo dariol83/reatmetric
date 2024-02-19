@@ -76,11 +76,22 @@ public class DataLinkSecurityManager {
     }
 
     public AbstractTransferFrame encrypt(AbstractTransferFrame frame) throws ReatmetricException {
-        return securityHandler == null ? frame : securityHandler.encrypt(frame);
+        return securityHandler == null ? frame : withAnnotations(frame, securityHandler.encrypt(frame));
     }
 
     public AbstractTransferFrame decrypt(AbstractTransferFrame frame) throws ReatmetricException{
-        return securityHandler == null ? frame : securityHandler.decrypt(frame);
+        return securityHandler == null ? frame : withAnnotations(frame, securityHandler.decrypt(frame));
+    }
+
+    private AbstractTransferFrame withAnnotations(AbstractTransferFrame originalFrame, AbstractTransferFrame newFrame) {
+        if (originalFrame != newFrame) {
+            for (Object annotationKey : originalFrame.getAnnotationKeys()) {
+                if (!newFrame.isAnnotationPresent(annotationKey)) {
+                    newFrame.setAnnotationValue(annotationKey, originalFrame.getAnnotationValue(annotationKey));
+                }
+            }
+        }
+        return newFrame;
     }
 
     public Supplier<byte[]> getSecurityHeaderSupplier(int spacecraftId, int virtualChannelId, Class<? extends AbstractTransferFrame> type) {

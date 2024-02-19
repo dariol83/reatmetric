@@ -17,14 +17,14 @@ The telemetry processing chain is composed by the following processing entities:
 . Interface that are able to receive TM data from the spacecraft by means of _connectors_. The spacecraft
 driver implements the support for CCSDS SLE RAF (Return All Frames) and RCF (Return Channel Frames) protocols. These
 protocols deliver TM or AOS Transfer Frames to the ReatMetric Raw Data Broker, for further dissemination and processing.
-Additional interfaces can be added by leveraging the driver extensions (see <<_extensions>>). De-randomisation is also
+Additional interfaces can be added by leveraging the driver extensions (see <<_command_connectors>>). De-randomisation is also
 performed by this entity, if configured.
-. A TM Data Link Processor that is subscribed to the Raw Data Broker for TM or AOS transfer frames (as defined in the driver
+. A _TM Data Link Processor_ that is subscribed to the Raw Data Broker for TM or AOS transfer frames (as defined in the driver
 configuration) and extracts TM packets from the transfer frames. If the security layer is configured, this entity also
 makes sure to decrypt the frame before extracting the TM packets. Extracted TM packets are identified according to the
 packet definitions defined as part of the driver configuration, time-correlated with the currently availabile time correlation
 coefficients, and forwarded to the Raw Data Broker for further dissemination and processing.
-. A TM Packet Processor that is subscribed to the Raw Data Broker to TM packets and decodes the TM parameters contained
+. A _TM Packet Processor_ that is subscribed to the Raw Data Broker to TM packets and decodes the TM parameters contained
 in each packet according to the packet structure definition defined as part of the driver configuration. The extracted
 TM parameters are time-correlated (depending on the structure definition of the packet) and mapped to ReatMetric's
 processing model parameters and injected into the processing model for processing (validity checking, calibration,
@@ -33,51 +33,285 @@ alarm checking). Each TM packet together with the extracted TM parameters is als
 _services_, as well to act as a registry for some specific internal interface implementations. A _service_ in this context
 has the same meaning of that defined by the ECSS Packet Utilisation Standard. The driver provides basic (and sometimes partial)
 implementations of the following services, but the service support can be extended by means of extensions and the provided
-implementations easily replaced (see <<_extensions>>):
-.. Time service (PUS service 9), responsible for time correlation
-.. On-board event service (PUS service 5)
-.. On-board operations scheduling service (PUS service 11)
-.. Command verification service (PUS service 1)
+implementations easily replaced (see <<_services>>):
+.. Time service (PUS service 9), responsible for time correlation with a linear regressor implementation;
+.. On-board event service (PUS service 5);
+.. On-board operations scheduling service (PUS service 11), with limited support to 11,4 telecommands: only one inner TC) and
+no support for (11,1), (11,2) and status reports;
+.. Command verification service (PUS service 1).
 
 image::../docs/docimg/Drawings-Spacecraft Driver - Telemetry.drawio.png[Telemetry Processing - Design]
 
 ===== Telecommand
 The telecommand processing chain is composed by the following processing entities:
 
-. A TC Packet Processor that is an _Activity Handler_ of the ReatMetric processing model: when an activity is invoked, and
+. A _TC Packet Processor_ that is an _Activity Handler_ of the ReatMetric processing model: when an activity is invoked, and
 this activity is mapped to a telecommand, the corresponding activity occurrence is forwarded to this element. This element
 encodes the telecommand, forwards it to the Raw Data Broker and to the _Service Broker_. If there is a service that fully
 takes over the processing of the telecommand (e.g. the on-board operations scheduling service), then the TC Packet Processor
 does not perform any additional processing. If instead there is no service taking over the processing of the telecommand,
 then the TC Packet Processor, depending on the selected route, might forward the telecommand to an external, TC packet-based
 interface or to the TC Data Link Processor.
-. A TC Data Link Processor that receives TC packets and constructs TC frames out of them. This entity also manages the
+. A _TC Data Link Processor_ that receives TC packets and constructs TC frames out of them. This entity also manages the
 COP-1 protocol for all the possible TC VC IDs, as specified in the configuration. Selection of the AD/BD mode, segmentation,
 MAP-ID and grouping is achieved by configuration, and it can be overridden using the _activity properties_ described
 further on. Depending on the selected route, the TC Data Link Processor forwards the TC frame to an external, TC frame-based
 interface or to an external, CLTU-based interface. In the latter case, the entity takes care of encoding the CLTU.
 Randomisation is also performed by this entity, if configured.
-. Interfaces that are able to send telecommands in TC packet, TC frame or CLTU form. The spacecraft
+. Interfaces that are able to send telecommands in TC packet, TC frame or CLTU form by means of _connectors_. The spacecraft
 driver implements the support for CCSDS SLE CLTU protocol, as well as for a simple TCP/IP CADU/CLTU connection.
 
-TBW telecommand lifecycle
+An important aspect related to telecommand handling is the management of telecommand verification. ReatMetric Spacecraft
+driver defines a telecommand lifecycle, partitioned in _phases_, mapped to the ReatMetric processing model activity lifecycle:
 
+. *ENCODED*: the telecommand is encoded and announced as such to the service broker, so that all services involved in the telecommand
+handling are aware that a new telecommand is encoded and ready to be released (but not released yet).
+. *RELEASED*: the telecommand is possibly encoded into a TC frame (and possibly in a CLTU) and sent for release.
+The service broker is informed that the telecommand left the ReatMetric system and it is on its way to the satellite. In case
+of SLE CLTU being used, this phase corresponds to the reception of a positive CLTU-TRANSFER-DATA confirmation by the ground
+station or intermediate system. Other interfaces (e.g. TCP/IP CADU/CLTU connection) might report this phase if the connection is
+active and if it was possible to write the telecommand (including its envelope, i.e. TC frame/CLTU) to the connection.
+The linked activity occurrence is in TRANSMISSION.
+. *UPLINKED*: the telecommand has been transmitted from the ground station or intermediate system to the satellite. In case
+of SLE CLTU being used, this phase corresponds to the reception of an ASYNC-NOTIFY operation, reporting the radiation of the
+CLTU. Other interfaces (e.g. TCP/IP CADU/CLTU connection) might report this phase if the connection is
+active and if it was possible to write the telecommand (including its envelope, i.e. TC frame/CLTU) to the connection. This
+behaviour is obviously protocol- and intermediate system-dependant. The linked activity occurrence is in TRANSMISSION.
+. *RECEIVED_ONBOARD*: the telecommand is assumed or confirmed to be received on-board. In case of telecommand dispatch in
+TC frames using AD mode, this information is reported by the FOP-1 engine. In case of BD mode, the propagation
+delay, as defined as part of the driver configuration, is taken into account to announce the _expected_ reception of the
+telecommand on-board. It must be kept in mind that this phase simply means that the telecommand should be at the satellite:
+it does not mean that the telecommand is in the availability of the on-board software for execution. In fact, this depends
+whether the telecommand is for direct execution or if it is for later, scheduled execution (in PUS terms, it is wrapped
+in a PUS 11,4 telecommand). The linked activity occurrence is in TRANSMISSION.
+. *SCHEDULED*: the telecommand is scheduled on-board for future execution. In the current driver implementation, this phase
+is announced by the On-board Operations Scheduling service, upon completion of the containing 11,4 telecommand.  The linked
+activity occurrence is still in TRANSMISSION.
+. *AVAILABLE_ONBOARD*: the telecommand is assumed to be in the availability of the on-board software for immediate execution.
+This phase is announced immediately after the RECEIVED_ONBOARD phase for immediate telecommands, or after the SCHEDULED phase
+for time-tagged commands. The announcement of this phase triggers the Command Verification service to register the telecommand
+and start processing incoming PUS 1 TM packets, to receive and process the PUS 1 reports related to the telecommand.  The linked
+activity occurrence is in EXECUTION.
+. *STARTED*: the telecommand is started its on-board execution. This phase is announced by the Command Verification service upon
+reception of the related PUS START success report (1,3).
+. *COMPLETED*: the telecommand completed its on-board execution. This phase is announced by the Command Verification service upon
+reception of the related PUS COMPLETED success report (1,7), or by any success report that is marked to be the last expected
+PUS report linked to the telecommand.
+. *FAILED*: at any time during the lifecycle of the telecommand, a transition to the FAILED phase means that the telecommand
+lifecycle must be stopped and a failure must be reported for the corresponding activity.
+
+It could be observed that the PUS 1 reports related to the on-board acceptance and on-board progress are not reflected in the
+telecommand lifecycle phases. The reports are redundant to describe the lifecycle of a telecommand from the point of view of the
+ReatMetric design, but they are in any case forwarded as activity progress reports to the ReatMetric processing
+model, so no monitoring information is skipped.
 
 image::../docs/docimg/Drawings-Spacecraft Driver - Telecommand (basic).drawio.png[Telecommand Processing (basic) - Design]
+
+The handling of time-tagged telecommands deserves a dedicated explanation. In order to request the execution of an activity
+to be scheduled on-board, the Spacecraft driver defines two special properties that can be added to the activity invocation
+request:
+
+- _tc-scheduled-time_: mandatory. It specifies the UTC execution time of the activity
+- _onboard-sub-schedule-id_: optional. If specified, overrides the sub-schedule ID for telecommands wrapped into a PUS 11,4 packet
+
+When an activity is invoked with the _tc-scheduled-time_ specified, the encoded telecommand is declared to be fully taken over
+by the Onboard Scheduling service. The service will then use the encoded telecommand as argument for the invocation of the
+configured PUS 11,4 activity. From the point of view of the ReatMetric processing model, two activity occurrences will then be
+handled:
+
+- the one linked to the telecommand being invoked and expected to be scheduled on-board
+- the one linked to the PUS 11,4 corresponding activity
+
+The processing of the PUS 11,4 activity occurrence is performed as a normal, immediate telecommand. Nesting of PUS 11,4
+telecommands into PUS 11,4 telecommands is not supported by the driver implementation.
 
 image::../docs/docimg/Drawings-Spacecraft Driver - Telecommand (time-tagged).drawio.png[Telecommand Processing (time-tag) - Design]
 
 ===== COP-1
+The _TC Data Link Processor_ entity instantiates one FOP engine for each configured TC virtual channel. This entity can
+execute activities defined with type _COP-1_. These activities are:
 
+- *SET_AD*: it allows to set the type of service to be used for TC frame-based telecommand, changing the setting provided
+in the configuration.
+- *DIRECTIVE*: it allows to request the execution of a directive to the specified FOP engine (TC VCID). This activity is
+particularly important, as it allows to initialise the COP-1 Sequence Controlled service.
+
+In order to use these two activities, the fop_model.xml file (or its contents) must be included in the processing model.
+The names, types and arguments of the activities shall not be changed, as they are used by the implemented code. The
+locations, descriptions and entity IDs can be updated to fit the needs of the users.
+
+In order to receive CLCW information to handle the Sequence Controlled service, the _TC Data Link Processor_ is subscribed
+to the Raw Data Broker to receive TM frames from the configured satellite.
 
 ===== Security
+The Spacecraft driver provides design support to include security decryption for telemetry frames and encryption for
+TC frames, based on the Space Data Link Security Protocol (CCSDS standard CCSDS 355.0-B-2). The support is provided by
+implementing the _ISecurityHandler_ interface and registering such implementation in the Spacecraft driver configuration
+(see <<_configuration>> section below).
 
+The contract specified by the _ISecurityHandler_ interface is straightforward:
+
+- The implementation must provide the length of the security header and trailer fields for a given spacecraft id, virtual
+channel and type of frame;
+- The implementation must provide the encryption of a given transfer frame, by returning the encrypted version of the
+transfer frame;
+- The implementation must provide the decryption of a given transfer frame, by returning the decrypted version of the
+transfer frame.
+
+In addition, upon instantiation, the context information and the driver configuration are provided by means of the
+_initialise()_ method. Clean-up operations must be implemented inside the _dispose()_ method.
+
+The driver provides one implementation of the _ISecurityHandler_ interface, which uses AES as encryption/decryption
+algorithm and supports a set of keys specified as part of the extension configuration (package
+eu.dariolucia.reatmetric.driver.spacecraft.definition.security).
+The implementation uses a parameter to be specified in the processing model, to keep track of which key must be used
+for the encryption of TC frames. This parameter can be manually changed by the user. The structure is provided in the
+security_model.xml file.
 
 ===== Services
+The concept of _service_ is a bit broader than the one specified by the ECSS PUS standard: a service in the ReatMetric Spacecraft
+driver term is simply an entity that can be notified of telecommands and telemetry packets/parameters disseminated in the
+system. What a service does with such information is service-implementation specific: it could maintain an internal model
+based on the received data, it can generate reports, it can communicate with external systems or with a database, and so
+on. The services provided by the driver implementation are (partial) implementations of some PUS-defined services.
 
+The *Command Verification Service* is a full implementation of the PUS 1 service, and it manages the telecommand execution
+verification reports as generated by the satellite. This service does not require configuration.
 
-===== Extensions
+The *Time Correlation Service* is a full implementation of the PUS 9 service, and it provides an implementation of the
+_ITimeCorrelation_ interface. This service uses time packets to correlate the generation of VC0, VCC0 frames to UTC time
+and builds the related time couples. Depending on the number of time couples, time correlation coefficients are generated
+by direct interpolation or by linear regression. Upon updating the time correlation coefficients, the service distributes
+them via the Raw Data Broker. In this way, the coefficients can be stored and reloaded when the system is started again.
+This service requires configuration, as specified in the
+eu.dariolucia.reatmetric.driver.spacecraft.definition.services package, class TimeCorrelationServiceConfiguration.
 
+The *Direct Link Time Correlation Service* is an alternative implementation for time correlation, replacing the one based
+on time packets. The documentation of class DirectLinkTimeCorrelationService explains the behaviour of this implementation.
+It is useful in cases where the system is used with simulators with unreliable OBT generation or with missing time packet
+information, but it should not be used in real-case scenarios. This service does not require configuration.
+
+The *Onboard Event Service* is a full implementation of the PUS 5 service. Upon reception of a PUS 5 report, the service
+raises a corresponding event in the ReatMetric processing model. This service does not require configuration.
+
+The *Onboard Operations Scheduling Service* is a partial implementation of the PUS 11 service. This service requires
+configuration, as specified in the eu.dariolucia.reatmetric.driver.spacecraft.definition.services package, class
+OnboardOperationsSchedulingServiceConfiguration.
+
+Typically, services are stand-alone and communicate among themselves via telecommand notifications and TM information,
+delivered by the service broker. However, direct service-to-service communication via method calls is possible: all
+registered services are subject to be located by means of interfaces. An example can be seen in the code with the
+ITimeCorrelation interface: this interface is provided by one service (Time Correlation Service) and used by another
+service (Onboard Operations Scheduling Service). The latter looks up the interface provider via the service broker.
+In this way there is full decoupling between services. Custom services can leverage this system to register and look up
+custom interface and related implementations.
+
+===== Command Connectors
+The driver provides the following points for external connection extensions:
+
+- CLTU-based connectors, implementing the _ICltuConnector_ interface;
+- TC frame-based connectors, implementing the _ITcFrameConnector_ interface;
+- TC Packet-based connectors, implementing the _ITcPacketConnector_ interface.
+
+All interfaces extend the _ITransportConnector_ ReatMetric interface, and therefore will be controllable as ReatMetric
+_connectors_. It is suggested to extend the abstract class _AbstractTransportConnector_, which provides already a
+skeleton for implementation. A connector implemented in this way shall take care of:
+
+- Receiving TM data and providing it to the Raw Data Broker in a way that can be processed by the other elements of the
+TM processing chain;
+- Forwarding TC data to the related external endpoint and handling the lifecycle of the specific data unit.
+
+An example of a CLTU-based connector can be seen in the class CltuCaduTcpConnector, which implements a TCP/IP-based connection,
+which delivers CADUs as TM data, and forwards CLTUs as TC data. Two further examples for a TC frame/TM frame TCP/IP connector,
+and TC packet/TM packet connector are planned to be implemented.
+
+===== Activity Invocation Properties
+====== Packet level
+
+*pus-ack-override*
+
+Override the PUS ack flags specified in the packet definition.
+
+Format: `[X|-][X|-][X|-][X|-]`
+
+Example: `X-XX`
+
+*pus-source-override*
+
+Override the PUS source ID specified in the packet definition or configuration.
+
+Format: `[0-9]+`
+
+Example: `14`
+
+*map-id-override*
+
+Override the Map ID specified in the packet definition.
+
+Format: `[0-9]+`
+
+Example: `2`
+
+*tc-scheduled-time*
+
+Specify the on-board execution time of the telecommand. If this property is specified, the encoded telecommand will be
+wrapped into the configured PUS 11,4 command.
+
+Format:  `ISO-8601 instant format`
+
+Example: `2011-12-23T10:15:30Z`
+
+*tc-vc-id-override*
+
+Override the TC VC ID specified in the configuration for generated TC frames.
+
+Format: `[0-7]`
+
+Example: `1`
+
+*use-ad-mode-override*
+
+Override the currently specified TC frame transfer mode for generated TC frames.
+If set to 'true', the TC frame will have the bypass flag unset.
+
+Format: `true|false`
+
+Example: `true`
+
+*group-tc-name*
+
+Inform the TC Data Link processor that the TC packet is part of a group and shall
+be encoded inside a single frame with other commands. The string set here identifies
+the name of the group.
+
+Format: `[0-9a-zA-Z]+'`
+
+Example: `Group1`
+
+*group-tc-transmit*
+
+Inform the TC Data Link processor that the TC packet is the last one of the group
+identified with the group-tc-name property. The group is closed, encoded and the resulting
+frame transmitted.
+
+Format: `true|false`
+
+Example: `true`
+
+*onboard-sub-schedule-id*
+
+Override the sub-schedule ID for telecommands wrapped into a PUS 11,4 packet.
+
+Format: `[0-9]+`
+
+Example: `2`
+
+*linked-scheduled-activity-occurrence*
+
+Allow to keep tracking between a scheduled activity occurrence and the PUS 11,4 TC.
+The implementation of the PUS 11 in this module supports a single TC per PUS 11,4.
+
+Format: _internal_
 
 ==== Configuration
 Being a driver, the _spacecraft_ module must be registered as such in the system configuration file. You need to have a
