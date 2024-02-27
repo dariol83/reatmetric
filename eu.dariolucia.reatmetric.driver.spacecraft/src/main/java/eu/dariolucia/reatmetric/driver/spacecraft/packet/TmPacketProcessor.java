@@ -57,7 +57,7 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
 
     private static final Logger LOG = Logger.getLogger(TmPacketProcessor.class.getName());
 
-    private static final ITimeCorrelation IDENTITY_TIME_CORRELATION = new ITimeCorrelation() {
+    public static final ITimeCorrelation IDENTITY_TIME_CORRELATION = new ITimeCorrelation() {
         @Override
         public Instant toUtc(Instant obt, AbstractTransferFrame frame, SpacePacket spacePacket) {
             return obt;
@@ -358,10 +358,7 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         return frameGenerationTime;
     }
 
-    public Quality checkPacketQuality(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {
-        // if tmPecPresent in PUS configuration is CRC or ISO, check packet PEC
-        short apid = spacePacket.getApid();
-        TmPusConfiguration confForApid = configuration.getPusConfigurationFor(apid);
+    public static Quality checkPacketQuality(TmPusConfiguration confForApid, SpacePacket spacePacket) {
         if(confForApid == null) {
             return Quality.GOOD;
         } else {
@@ -384,6 +381,13 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
                     return Quality.GOOD;
             }
         }
+    }
+
+    public Quality checkPacketQuality(AbstractTransferFrame abstractTransferFrame, SpacePacket spacePacket) {
+        // if tmPecPresent in PUS configuration is CRC or ISO, check packet PEC
+        short apid = spacePacket.getApid();
+        TmPusConfiguration confForApid = configuration.getPusConfigurationFor(apid);
+        return checkPacketQuality(confForApid, spacePacket);
     }
 
     public void dispose() {
