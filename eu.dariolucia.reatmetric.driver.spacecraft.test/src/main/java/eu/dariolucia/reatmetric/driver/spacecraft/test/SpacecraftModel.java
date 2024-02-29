@@ -60,7 +60,6 @@ import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.ccsds.tmtc.ocf.pdu.AbstractOcf;
 import eu.dariolucia.ccsds.tmtc.transport.builder.SpacePacketBuilder;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
-import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
@@ -111,7 +110,7 @@ import java.util.logging.Logger;
  *     <li>Specific SETTER commands </li>
  * </ul>
  *
- *
+ * Yes, I know, this class is awful and badly written...
  *
  */
 public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceInstanceListener {
@@ -164,10 +163,15 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private Thread tmThread;
     private Thread generationThread;
 
-    private final int tcpPort;
-    private Thread tcpPortThread;
-    private volatile ServerSocket tcpServerSocket;
-    private volatile Socket tcpSocket;
+    private final int caduTcpPort;
+    private Thread caduTcpPortThread;
+    private volatile ServerSocket caduTcpServerSocket;
+    private volatile Socket caduTcpSocket;
+
+    private final int packetTcpPort;
+    private Thread packetTcpPortThread;
+    private volatile ServerSocket packetTcpServerSocket;
+    private volatile Socket packetTcpSocket;
 
     private final ChannelEncoder<AbstractTransferFrame> caduEncoder;
     private AesSecurityHandlerConfiguration securityHandlerConfiguration;
@@ -177,7 +181,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                            CltuServiceInstanceProvider cltuProvider,
                            RafServiceInstanceProvider rafProvider,
                            String processingModelPath,
-                           int tcpPort) throws IOException, JAXBException {
+                           int caduTcpPort) throws IOException, JAXBException {
         this.cltuProvider = cltuProvider;
         this.rafProvider = rafProvider;
         this.rafProvider.register(this);
@@ -197,7 +201,8 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         initialiseSpacecraftDownlink();
         initialiseSpacePacketGeneration();
         this.resolver = new ProcessingModelBasedResolver(processingDefinition, new DefinitionValueBasedResolver(new DefaultNullBasedResolver(), true), spacecraftConfiguration.getTmPacketConfiguration().getParameterIdOffset(), encDecDefs);
-        this.tcpPort = tcpPort;
+        this.caduTcpPort = caduTcpPort;
+        this.packetTcpPort = caduTcpPort > 0 ? caduTcpPort + 10000 : -1;
         // Create encoder in case it is needed
         int interleaving = this.spacecraftConfiguration.getTmDataLinkConfigurations().getFrameLength()/223;
         boolean randomize = this.spacecraftConfiguration.getTmDataLinkConfigurations().isDerandomize();
@@ -438,19 +443,25 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         tmThread.start();
         generationThread = new Thread(this::generatePackets);
         generationThread.start();
-        if(tcpPort > -1) {
-            tcpPortThread = new Thread(this::processTcpConnection);
-            tcpPortThread.start();
+        // Cadu/CLTU server
+        if(caduTcpPort > -1) {
+            caduTcpPortThread = new Thread(this::processTcpCltuConnection);
+            caduTcpPortThread.start();
+        }
+        // Packet server
+        if(packetTcpPort > -1) {
+            packetTcpPortThread = new Thread(this::processTcpTcPacketConnection);
+            packetTcpPortThread.start();
         }
     }
 
-    private void processTcpConnection() {
+    private void processTcpCltuConnection() {
         AtomicLong al = new AtomicLong(0);
         while(running) {
             try {
-                tcpServerSocket = new ServerSocket(tcpPort);
-                tcpSocket = tcpServerSocket.accept();
-                InputStream is = tcpSocket.getInputStream();
+                caduTcpServerSocket = new ServerSocket(caduTcpPort);
+                caduTcpSocket = caduTcpServerSocket.accept();
+                InputStream is = caduTcpSocket.getInputStream();
                 SyncMarkerVariableLengthChannelReader cltuReader = new SyncMarkerVariableLengthChannelReader(
                         is,
                         new byte[]{(byte) 0xEB, (byte) 0x90},
@@ -471,22 +482,68 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     }
                 }
             } catch (IOException e) {
-                if(tcpSocket != null) {
+                if(caduTcpSocket != null) {
                     try {
-                        tcpSocket.close();
+                        caduTcpSocket.close();
                     } catch (IOException ex) {
                         //
                     }
-                    tcpSocket = null;
+                    caduTcpSocket = null;
                 }
                 try {
-                    tcpServerSocket.close();
+                    caduTcpServerSocket.close();
                 } catch (IOException ex) {
                     //
                 }
-                tcpServerSocket = null;
+                caduTcpServerSocket = null;
             }
         }
+    }
+
+    private void processTcpTcPacketConnection() {
+        while(running) {
+            try {
+                packetTcpServerSocket = new ServerSocket(packetTcpPort);
+                packetTcpSocket = packetTcpServerSocket.accept();
+                InputStream is = packetTcpSocket.getInputStream();
+                while (running) {
+                    // Read packet
+                    byte[] packet = readPacketFromStream(is);
+                    // Forward packet
+                    this.cltuProcessor.execute(() -> processTcPacket(true, new SpacePacket(packet, true)));
+                }
+            } catch (IOException e) {
+                if(packetTcpSocket != null) {
+                    try {
+                        packetTcpSocket.close();
+                    } catch (IOException ex) {
+                        //
+                    }
+                    packetTcpSocket = null;
+                }
+                try {
+                    packetTcpServerSocket.close();
+                } catch (IOException ex) {
+                    //
+                }
+                packetTcpServerSocket = null;
+            }
+        }
+    }
+
+    private byte[] readPacketFromStream(InputStream inputStream) throws IOException {
+        byte[] header = inputStream.readNBytes(SpacePacket.SP_PRIMARY_HEADER_LENGTH);
+        if(header.length == 0) {
+            throw new IOException("End of stream");
+        }
+        // Get length of packet
+        int pktDataLength = Short.toUnsignedInt(ByteBuffer.wrap(header, 4, 2).getShort()) + 1;
+        // Read the rest
+        byte[] packet = new byte[SpacePacket.SP_PRIMARY_HEADER_LENGTH + pktDataLength];
+        inputStream.readNBytes(packet, SpacePacket.SP_PRIMARY_HEADER_LENGTH, pktDataLength);
+        // Copy header in place
+        System.arraycopy(header, 0, packet, 0, SpacePacket.SP_PRIMARY_HEADER_LENGTH);
+        return packet;
     }
 
     private void generatePackets() {
@@ -582,6 +639,16 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 if (Math.random() < 0.01) {
                     sendIdlePacket(vcToUse);
                 }
+                // Send the packet on the packetConnection, if any
+                try {
+                    Socket packetSocketRunning = this.packetTcpSocket;
+                    if(packetSocketRunning != null) {
+                        packetSocketRunning.getOutputStream().write(sp.getPacket());
+                        packetSocketRunning.getOutputStream().flush();
+                    }
+                } catch (Exception e) {
+                    // Ignore
+                }
             } catch (Exception e) {
                 Thread.interrupted();
                 LOG.log(Level.SEVERE, "", e);
@@ -639,11 +706,12 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             }
         }
         // Send to TCP
-        Socket sock = this.tcpSocket;
-        if(tcpPort > -1 && sock != null) {
+        Socket sock = this.caduTcpSocket;
+        if(caduTcpPort > -1 && sock != null) {
             byte[] cadu = this.caduEncoder.apply(tmTransferFrame);
             try {
                 sock.getOutputStream().write(cadu);
+                sock.getOutputStream().flush();
             } catch (IOException e) {
                 LOG.log(Level.SEVERE, "", e);
             }
@@ -771,7 +839,11 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     @Override
     public void spacePacketExtracted(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, byte[] packet, boolean qualityIndicator) {
         SpacePacket sp = new SpacePacket(packet, qualityIndicator);
+        processTcPacket(qualityIndicator, sp);
+    }
 
+    private void processTcPacket(boolean qualityIndicator, SpacePacket sp) {
+        byte[] packet = sp.getPacket();
         // Verify TC packet checksum
         boolean validChecksum = true;
         switch (this.spacecraftConfiguration.getTcPacketConfiguration().getTcPecPresent()) {
@@ -806,7 +878,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 queuePus1(sp, 7);
             }
             if(isTimeTaggedCommand(sp)) {
-                queueCommandExecution(vc, firstFrame, sp);
+                queueCommandExecution(sp);
             }
             if(isSetterCommand(sp)) {
                 executeSetterCommand(sp);
@@ -860,7 +932,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         return sp.getApid() == SETTER_APID && sp.getPacket()[SpacePacket.SP_PRIMARY_HEADER_LENGTH + 1] == SETTER_PUS;
     }
 
-    private void queueCommandExecution(AbstractReceiverVirtualChannel<?> vc, AbstractTransferFrame firstFrame, SpacePacket sp) {
+    private void queueCommandExecution(SpacePacket sp) {
         // sp is a 11,4 packet: we need to extract the command to schedule, according to the 11,4 definition
         // First of all, get rid of the TC PUS header: assume sourceLen octet align
         int sourceLenSpare = (spacecraftConfiguration.getTcPacketConfiguration().getSourceIdLength() + spacecraftConfiguration.getTcPacketConfiguration().getSpareLength()) / 8;
@@ -875,7 +947,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         queueeTcScheduler.schedule(new TimerTask() {
             @Override
             public void run() {
-                spacePacketExtracted(vc, firstFrame, packet, true);
+                spacePacketExtracted(null, null, packet, true);
             }
         }, new Date(time.toEpochMilli()));
     }

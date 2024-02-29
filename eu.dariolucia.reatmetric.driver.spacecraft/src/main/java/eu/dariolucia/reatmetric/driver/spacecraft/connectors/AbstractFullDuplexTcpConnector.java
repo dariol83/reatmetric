@@ -81,6 +81,30 @@ public abstract class AbstractFullDuplexTcpConnector extends AbstractTransportCo
         });
     }
 
+    protected String getDriverName() {
+        return driverName;
+    }
+
+    protected SpacecraftConfiguration getSpacecraftConfig() {
+        return spacecraftConfig;
+    }
+
+    protected IServiceCoreContext getContext() {
+        return context;
+    }
+
+    protected String getHost() {
+        return host;
+    }
+
+    protected int getPort() {
+        return port;
+    }
+
+    protected boolean isClosing() {
+        return closing;
+    }
+
     protected final void setConnectionInformation(String host, int port) {
         this.host = host;
         this.port = port;
@@ -233,14 +257,11 @@ public abstract class AbstractFullDuplexTcpConnector extends AbstractTransportCo
         disconnect();
     }
 
-    protected void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, String connectorInformation) {
+    protected void internalConfigure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context) {
         this.driverName = driverName;
         this.spacecraftConfig = configuration;
         this.context = context;
-        initialiseInternalConfiguration(driverName, configuration, context, connectorInformation);
     }
-
-    protected abstract void initialiseInternalConfiguration(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, String connectorInformation);
 
     /**
      * This method must be internally called by subclasses to send data via the connection.
@@ -253,7 +274,7 @@ public abstract class AbstractFullDuplexTcpConnector extends AbstractTransportCo
      */
     protected boolean sendDataUnit(byte[] data, Object trackingInformation, int activityId, IUniqueId activityOccurrenceId) {
         if(this.dataForwarderExecutor.isShutdown()) {
-            LOG.log(Level.SEVERE, String.format("%s: transmission of data unit with ID %s failed: connector disposed", getName(), activityOccurrenceId));
+            LOG.log(Level.SEVERE, String.format("%s: transmission of data unit failed: connector disposed", getName()));
             reportActivityRelease(trackingInformation, activityId, activityOccurrenceId, Instant.now(), ActivityReportState.FATAL);
             return false;
         }
@@ -263,17 +284,18 @@ public abstract class AbstractFullDuplexTcpConnector extends AbstractTransportCo
             Socket sock = this.socket;
             if (sock == null) {
                 LOG.severe(String.format("%s: transmission of data unit with ID %s failed: connector is disconnected", getName(), activityOccurrenceId));
-                reportActivityRelease(trackingInformation, activityId, activityOccurrenceId, Instant.now(), ActivityReportState.FATAL);
+                reportActivityReceptionFailure(trackingInformation, activityId, activityOccurrenceId, Instant.now());
                 return;
             }
             // Try to send the data unit
             Instant sent = null;
             try {
-                LOG.log(Level.INFO, String.format("%s: sending data unit with ID %d: %s", activityOccurrenceId, StringUtil.toHexDump(data)));
+                LOG.log(Level.INFO, String.format("%s: sending data unit: %s", getName(), StringUtil.toHexDump(data)));
                 sock.getOutputStream().write(data);
+                sock.getOutputStream().flush();
                 sent = Instant.now();
             } catch (IOException e) {
-                LOG.log(Level.SEVERE, String.format("%s: transmission of data unit with ID %d failed: connector error on write", getName(), activityOccurrenceId), e);
+                LOG.log(Level.SEVERE, String.format("%s: transmission of data unit failed: connector error on write", getName()), e);
                 reportActivityReceptionFailure(trackingInformation, activityId, activityOccurrenceId, Instant.now());
                 return;
             }
@@ -334,6 +356,8 @@ public abstract class AbstractFullDuplexTcpConnector extends AbstractTransportCo
     }
 
     private void reportActivityState(int activityId, IUniqueId activityOccurrenceId, Instant progressTime, ActivityOccurrenceState currentState, String name, ActivityReportState status, ActivityOccurrenceState nextState) {
-        context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityId, activityOccurrenceId, name, progressTime, currentState, null, status, nextState, null));
+        if(activityOccurrenceId != null) {
+            context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityId, activityOccurrenceId, name, progressTime, currentState, null, status, nextState, null));
+        }
     }
 }

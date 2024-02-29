@@ -379,6 +379,11 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     }
 
     private RawData locateFrame(TmFrameDescriptor packetFrameDescriptor, int generationPeriod) {
+        // If the frame descriptor is null, it could be that the packet was delivered without frame datalink (e.g. direct packet interface)
+        if(packetFrameDescriptor == null) {
+            // Warning reported by calling method
+            return null;
+        }
         // From the frame counter of the frame delivering the time packet, calculate the frame referred by the time packet
         int targetVcc = packetFrameDescriptor.getVirtualChannelFrameCounter() - (packetFrameDescriptor.getVirtualChannelFrameCounter() % generationPeriod);
         // Now look for the frame

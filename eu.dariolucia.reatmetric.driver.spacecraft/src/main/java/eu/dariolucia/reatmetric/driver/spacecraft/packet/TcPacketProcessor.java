@@ -121,7 +121,9 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
 
     @Override
     public List<String> getSupportedRoutes() {
-        return tcDataLinkProcessor.getSupportedRoutes();
+        List<String> supportedRoutes = new LinkedList<>(tcDataLinkProcessor.getSupportedRoutes());
+        supportedRoutes.addAll(this.tcPacketConnectors.keySet());
+        return supportedRoutes;
     }
 
     @Override
