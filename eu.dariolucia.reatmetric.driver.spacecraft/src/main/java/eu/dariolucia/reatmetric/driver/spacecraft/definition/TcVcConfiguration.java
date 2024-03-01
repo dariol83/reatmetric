@@ -38,6 +38,9 @@ public class TcVcConfiguration {
     @XmlAttribute(name = "use-security")
     private boolean useSecurity = false;
 
+    @XmlAttribute(name = "system-entity-path")
+    private String systemEntityPath = null;
+
     public TcVcConfiguration() {
     }
 
@@ -83,5 +86,13 @@ public class TcVcConfiguration {
 
     public void setUseSecurity(boolean useSecurity) {
         this.useSecurity = useSecurity;
+    }
+
+    public String getSystemEntityPath() {
+        return systemEntityPath;
+    }
+
+    public void setSystemEntityPath(String systemEntityPath) {
+        this.systemEntityPath = systemEntityPath;
     }
 }

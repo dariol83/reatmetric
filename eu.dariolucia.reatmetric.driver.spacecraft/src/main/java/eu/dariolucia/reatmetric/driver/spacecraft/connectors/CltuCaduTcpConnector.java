@@ -119,9 +119,14 @@ public class CltuCaduTcpConnector extends AbstractFullDuplexTcpConnector impleme
 
     @Override
     protected byte[] readDataUnit(InputStream inputStream) throws Exception {
-        byte[] cadu = inputStream.readNBytes(this.caduLength);
-        if(cadu.length == 0) {
-            throw new IOException("End of stream");
+        int read = 0;
+        byte[] cadu = new byte[this.caduLength];
+        while(read < this.caduLength) {
+            int len = inputStream.read(cadu, read, this.caduLength - read);
+            if(len == -1) {
+                throw new IOException("End of stream");
+            }
+            read += len;
         }
         return cadu;
     }

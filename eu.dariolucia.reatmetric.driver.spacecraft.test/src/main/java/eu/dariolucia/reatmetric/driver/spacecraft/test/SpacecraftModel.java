@@ -462,7 +462,8 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 caduTcpServerSocket = new ServerSocket(caduTcpPort);
                 caduTcpSocket = caduTcpServerSocket.accept();
                 InputStream is = caduTcpSocket.getInputStream();
-                SyncMarkerVariableLengthChannelReader cltuReader = new SyncMarkerVariableLengthChannelReader(
+
+                SyncMarkerVariableLengthChannelReader cltuReader2 = new SyncMarkerVariableLengthChannelReader(
                         is,
                         new byte[]{(byte) 0xEB, (byte) 0x90},
                         new byte[]{(byte) 0xC5, (byte) 0xC5, (byte) 0xC5, (byte) 0xC5, (byte) 0xC5, (byte) 0xC5, (byte) 0xC5, 0x79},
@@ -470,6 +471,8 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                         false,
                         5000
                 );
+
+                CltuReader cltuReader = new CltuReader(is);
                 while (running) {
                     // Read until you can
                     byte[] cltu = cltuReader.readNext();
@@ -482,6 +485,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     }
                 }
             } catch (IOException e) {
+                e.printStackTrace();
                 if(caduTcpSocket != null) {
                     try {
                         caduTcpSocket.close();
@@ -513,6 +517,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     this.cltuProcessor.execute(() -> processTcPacket(true, new SpacePacket(packet, true)));
                 }
             } catch (IOException e) {
+                e.printStackTrace();
                 if(packetTcpSocket != null) {
                     try {
                         packetTcpSocket.close();
@@ -679,10 +684,14 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         } catch (InterruptedException e) {
             LOG.log(Level.SEVERE, "", e);
         }
-        cltuProvider.cltuProgress(cltuId, CltuStatusEnum.RADIATED, startTime, new Date(), BUFFER_AVAILABLE);
-        // Process the CLTU
-        TcTransferFrame decodedTcFrame = cltuDecoder.apply(cltu);
-        farm.frameArrived(decodedTcFrame);
+        try {
+            cltuProvider.cltuProgress(cltuId, CltuStatusEnum.RADIATED, startTime, new Date(), BUFFER_AVAILABLE);
+            // Process the CLTU
+            TcTransferFrame decodedTcFrame = cltuDecoder.apply(cltu);
+            farm.frameArrived(decodedTcFrame);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void sendTmFrame(TmTransferFrame tmTransferFrame) {

@@ -25,7 +25,7 @@
 	<propagation-delay>0</propagation-delay>
 	<!-- TC datalink configuration -->
 	<tc randomize="true" fecf="true" ad-mode-default="true">
-		<tc-vc-descriptor tc-vc="0" segmentation="true" default-tc-vc="true" />
+		<tc-vc-descriptor tc-vc="0" segmentation="true" default-tc-vc="true" system-entity-path="SPACE.FOP.TCVC0" />
 	</tc>
 	<!-- TM datalink configuration -->
 	<tm fecf="true" derandomize="false" frame-length="1115">

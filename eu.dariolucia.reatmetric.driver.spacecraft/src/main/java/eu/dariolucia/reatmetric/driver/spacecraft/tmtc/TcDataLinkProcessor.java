@@ -100,6 +100,8 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
     private volatile boolean useAdMode;
 
+    private final Map<Integer, FopStatusManager> fop2statusManager = new HashMap<>();
+
     private final ExecutorService delegator = Executors.newFixedThreadPool(1, r -> {
         Thread t = new Thread(r, "TC Data Link Processor Handler Thread");
         t.setDaemon(true);
@@ -139,6 +141,8 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 fopEngines[i].directive(null, FopDirective.SET_TRANSMISSION_LIMIT, 1);
                 fopEngines[i].directive(null, FopDirective.SET_TIMEOUT_TYPE, 0);
                 fopEngines[i].register(this);
+                // Check/init FOP status manager
+                initFopStatusManager(tcConf);
             }
         }
         this.defaultTcVcId = configuration.getTcDataLinkConfiguration().getDefaultTcVc();
@@ -172,6 +176,18 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 m.register(this);
             } catch (RemoteException e) {
                 LOG.log(Level.WARNING, "Unexpected RemoteException: " + e.getMessage(), e);
+            }
+        }
+    }
+
+    private void initFopStatusManager(TcVcConfiguration tcConf) {
+        if(tcConf.getSystemEntityPath() != null) {
+            // Create the manager and initialise it
+            FopStatusManager manager = new FopStatusManager(tcConf.getTcVc(), tcConf.getSystemEntityPath(), context.getProcessingModel());
+            // If the initialisation is OK, register the manager
+            boolean initOk = manager.initialise();
+            if(initOk) {
+                this.fop2statusManager.put(tcConf.getTcVc(), manager);
             }
         }
     }
@@ -418,6 +434,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             }
         });
         delegator.shutdown();
+        fop2statusManager.clear();
     }
 
     // Called by the VC that already runs in the delegator thread
@@ -591,11 +608,27 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     @Override
     public void alert(FopEngine engine, FopAlertCode code) {
         LOG.severe("FOP engine for TC VC " + engine.getVirtualChannelId() + " alert: " + code);
+        raiseAlertIndicationEvent(engine.getVirtualChannelId(), code);
+    }
+
+    private void raiseAlertIndicationEvent(int virtualChannelId, FopAlertCode code) {
+        FopStatusManager fsm = this.fop2statusManager.get(virtualChannelId);
+        if(fsm != null) {
+            fsm.raiseAlertIndication(code);
+        }
     }
 
     @Override
     public void suspend(FopEngine engine) {
         LOG.warning("FOP engine for TC VC " + engine.getVirtualChannelId() + " suspended");
+        raiseSuspendIndicationEvent(engine.getVirtualChannelId());
+    }
+
+    private void raiseSuspendIndicationEvent(int virtualChannelId) {
+        FopStatusManager fsm = this.fop2statusManager.get(virtualChannelId);
+        if(fsm != null) {
+            fsm.raiseSuspendIndication();
+        }
     }
 
     @Override
@@ -614,7 +647,11 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer("FOP engine " + engine.getVirtualChannelId() + ": " + status);
         }
-        // TODO: implement injection of status parameters into the processing model, on change, for monitoring purposes
+        // injection of status parameters into the processing model, on change, for monitoring purposes
+        FopStatusManager fsm = this.fop2statusManager.get(engine.getVirtualChannelId());
+        if(fsm != null) {
+            fsm.injectStatusUpdate(status);
+        }
     }
 
     private class RequestTracker {

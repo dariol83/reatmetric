@@ -81,11 +81,18 @@ public class SpacecraftSimulator {
         sm.startProcessing();
 
         // Exit when the user presses Enter
-        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-        br.readLine();
+        while(true) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+
+            }
+        }
+        // BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        // br.readLine();
 
         //
-        sm.stopProcessing();
+        // sm.stopProcessing();
         // Bye
     }
 }

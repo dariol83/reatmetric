@@ -15,6 +15,59 @@
   -->
 
 <ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
+    <parameters>
+        <!-- Parameter block for FOP engine state -->
+        <parameter raw_type="ENUMERATED" eng_type="ENUMERATED" id="#1004" location="SPACE.FOP.TCVC0.V_S" description="Current TC VC0 V(S)">
+            <checks/>
+            <setter activity="#1000" set_argument="QUALIFIER"><!-- Directive activity -->
+                <fixed_argument value="0" raw_value="true" name="TCVCID"/>
+                <fixed_argument value="6" raw_value="true" name="DIRECTIVE"/>
+            </setter>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="ENUMERATED" eng_type="ENUMERATED" id="#1005" location="SPACE.FOP.TCVC0.SENT_QUEUE_SIZE" description="Number of frames in the sent queue">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1006" location="SPACE.FOP.TCVC0.WAIT_QUEUE_FULL" description="Wait queue full">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1007" location="SPACE.FOP.TCVC0.AD_OUT_READY" description="AD-Frame Out Ready Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1008" location="SPACE.FOP.TCVC0.BC_OUT_READY" description="BC-Frame Out Ready Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1009" location="SPACE.FOP.TCVC0.BD_OUT_READY" description="BD-Frame Out Ready Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="ENUMERATED" eng_type="CHARACTER_STRING" id="#1010" location="SPACE.FOP.TCVC0.STATE" description="Current FOP state">
+            <calib_enum default="UNKNOWN">
+                <point x="0" y="S1 - Active"/>
+                <point x="1" y="S2 - Retransmit without wait"/>
+                <point x="2" y="S3 - Retransmit with wait"/>
+                <point x="3" y="S4 - Initialising without BC Frame"/>
+                <point x="4" y="S5 - Initialising with BC Frame"/>
+                <point x="5" y="S6 - Initial"/>
+            </calib_enum>
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" id="#1011" location="SPACE.FOP.TCVC0.LAST_EVENT" description="Last FOP event">
+            <checks/>
+            <triggers/>
+        </parameter>
+    </parameters>
+
+    <events>
+        <!-- Event block for FOP engine indications -->
+        <event severity="ALARM" type="FOP" inhibition_period="0" log_enabled="true" id="#1002" location="SPACE.FOP.TCVC0.ALERT" description="FOP alert indication for TC VC0"/>
+        <event severity="WARNING" type="FOP" inhibition_period="0" log_enabled="true" id="#1003" location="SPACE.FOP.TCVC0.SUSPEND" description="FOP suspend indication for TC VC0"/>
+    </events>
     <activities>
         <activity id="#1000" location="SPACE.FOP.DIRECTIVE" description="Send a directive to the FOP engine" type="COP-1">
             <argument name="TCVCID" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="">
