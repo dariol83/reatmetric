@@ -233,6 +233,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     int vcId = clcw.getVirtualChannelId();
                     fopEngines[vcId].clcw(clcw);
                 }
+                // TODO: forward CLCW to FOP status manager for publication into the processing model
             }
         });
     }
