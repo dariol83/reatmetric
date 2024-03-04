@@ -49,7 +49,7 @@ public class ServiceBroker implements IServiceBroker {
     private final List<Pair<IServicePacketSubscriber, IServicePacketFilter>> subscribers = new CopyOnWriteArrayList<>();
 
     private final Map<Integer, IService> serviceMap = new HashMap<>();
-    private final Map<Class, Object> serviceLocator = new HashMap<>();
+    private final Map<Class<?>, Object> serviceLocator = new HashMap<>();
 
     @Override
     public void register(IServicePacketSubscriber subscriber, IServicePacketFilter predicateFilter) {

@@ -66,6 +66,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.*;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.AesSecurityHandlerConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.SpiPassword;
+import eu.dariolucia.reatmetric.driver.spacecraft.security.impl.AesHandler;
 import eu.dariolucia.reatmetric.driver.spacecraft.security.impl.CryptoUtil;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import jakarta.xml.bind.JAXBException;
@@ -222,10 +223,11 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     }
 
     private void initialiseSecurity() {
+        Optional<String> secConfPath = spacecraftConfiguration.getPacketServiceConfiguration().getServices().stream().filter(a -> a.getType().equals(AesHandler.class.getName())).map(ServiceConfiguration::getConfiguration).findFirst();
         try {
-            if (spacecraftConfiguration.getSecurityDataLinkConfiguration() != null) {
+            if (secConfPath.isPresent() && !secConfPath.get().isBlank()) {
                 // Assume AES encryption: 6 bytes header, 8 bytes trailer
-                securityHandlerConfiguration = AesSecurityHandlerConfiguration.load(new FileInputStream(spacecraftConfiguration.getSecurityDataLinkConfiguration().getConfiguration()));
+                securityHandlerConfiguration = AesSecurityHandlerConfiguration.load(new FileInputStream(secConfPath.get()));
             }
         } catch (IOException e) {
             LOG.log(Level.WARNING, "Error when initialising the security layer: " + e.getMessage(), e);

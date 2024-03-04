@@ -21,9 +21,9 @@ import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.ISecurityHandler;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 
-import java.util.Optional;
-import java.util.ServiceLoader;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,36 +33,17 @@ public class DataLinkSecurityManager {
     private static final Logger LOG = Logger.getLogger(DataLinkSecurityManager.class.getName());
     private final ISecurityHandler securityHandler;
 
-    public DataLinkSecurityManager(IServiceCoreContext context, SpacecraftConfiguration configuration) {
-        this(context, configuration, configuration.getSecurityDataLinkConfiguration() != null ? configuration.getSecurityDataLinkConfiguration().getHandler() : null);
-    }
-
-    public DataLinkSecurityManager(IServiceCoreContext context, SpacecraftConfiguration configuration, String handler) {
+    public DataLinkSecurityManager(IServiceCoreContext context, SpacecraftConfiguration configuration, IServiceBroker serviceBroker) {
+        ISecurityHandler handler = serviceBroker.locate(ISecurityHandler.class);
         if(handler != null) {
-            ServiceLoader<ISecurityHandler> serviceLoader = ServiceLoader.load(ISecurityHandler.class);
-            Optional<ServiceLoader.Provider<ISecurityHandler>> provider = serviceLoader.stream().findFirst();
-            if (provider.isPresent()) {
-                ISecurityHandler theHandler = provider.get().get();
-                try {
-                    theHandler.initialise(context, configuration);
-                    if (LOG.isLoggable(Level.INFO)) {
-                        LOG.log(Level.INFO, String.format("Security handler %s for spacecraft %s initialised", handler, configuration.getName()));
-                    }
-                } catch (ReatmetricException e) {
-                    if (LOG.isLoggable(Level.WARNING)) {
-                        LOG.log(Level.WARNING, String.format("Security handler for class %s cannot be initialised: %s", handler, e.getMessage()), e);
-                    }
-                    securityHandler = null;
-                    return;
-                }
-                securityHandler = theHandler;
-            } else {
-                if (LOG.isLoggable(Level.WARNING)) {
-                    LOG.log(Level.WARNING, String.format("Security handler for class %s not found", handler));
-                }
-                securityHandler = null;
+            if (LOG.isLoggable(Level.INFO)) {
+                LOG.log(Level.INFO, String.format("Security handler %s for spacecraft %s initialised", handler.getName(), configuration.getName()));
             }
+            securityHandler = handler;
         } else {
+            if (LOG.isLoggable(Level.WARNING)) {
+                LOG.log(Level.WARNING, "Security handler not found");
+            }
             securityHandler = null;
         }
     }

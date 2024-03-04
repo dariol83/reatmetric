@@ -345,7 +345,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     }
 
     private void loadSecurityManager() {
-        this.securityManager = new DataLinkSecurityManager(this.context, this.configuration);
+        this.securityManager = new DataLinkSecurityManager(this.context, this.configuration, this.serviceBroker);
     }
 
     private void loadTmDataLinkProcessor() {

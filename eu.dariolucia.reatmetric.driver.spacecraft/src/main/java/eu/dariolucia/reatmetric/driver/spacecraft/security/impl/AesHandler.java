@@ -28,10 +28,14 @@ import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
+import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.AesSecurityHandlerConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.SpiPassword;
-import eu.dariolucia.reatmetric.driver.spacecraft.security.ISecurityHandler;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.ISecurityHandler;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -72,34 +76,44 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
     private boolean registered = false;
 
     @Override
-    public void initialise(IServiceCoreContext context, SpacecraftConfiguration spacecraftConfiguration) throws ReatmetricException {
+    public String getName() {
+        return "AES Security Service";
+    }
+
+    @Override
+    public IServicePacketFilter getSubscriptionFilter() {
+        return null;
+    }
+
+    @Override
+    public void initialise(String serviceConfigurationPath, String driverName, SpacecraftConfiguration configuration, ServiceCoreConfiguration coreConfiguration, IServiceCoreContext context, IServiceBroker serviceBroker) throws ReatmetricException {
         this.context = context;
         // Initialise configuration
-        AesSecurityHandlerConfiguration configuration;
+        AesSecurityHandlerConfiguration aesConfiguration;
         try {
-            configuration = AesSecurityHandlerConfiguration.load(new FileInputStream(spacecraftConfiguration.getSecurityDataLinkConfiguration().getConfiguration()));
+            aesConfiguration = AesSecurityHandlerConfiguration.load(new FileInputStream(serviceConfigurationPath));
         } catch (IOException e) {
             throw new ReatmetricException(e.getMessage(), e);
         }
         // Save salt
-        this.salt = configuration.getSaltAsByteArray();
+        this.salt = aesConfiguration.getSaltAsByteArray();
         // Set default TC SPI to use
-        this.tcSpiToUse.set(configuration.getDefaultTcSpi());
+        this.tcSpiToUse.set(aesConfiguration.getDefaultTcSpi());
         // Init TM passwords
-        for(SpiPassword spiPassword : configuration.getTmSpis()) {
+        for(SpiPassword spiPassword : aesConfiguration.getTmSpis()) {
             this.tmspi2key.put(spiPassword.getId(), spiPassword.getPassword());
         }
         // Init TC passwords
-        for(SpiPassword spiPassword : configuration.getTcSpis()) {
+        for(SpiPassword spiPassword : aesConfiguration.getTcSpis()) {
             this.tcspi2key.put(spiPassword.getId(), spiPassword.getPassword());
         }
         // If TC SPI parameter is declared, register to processing model
-        if(configuration.getTcSpiParameterPath() != null) {
+        if(aesConfiguration.getTcSpiParameterPath() != null) {
             try {
                 this.context.getServiceFactory().getParameterDataMonitorService().subscribe(this,
                         new ParameterDataFilter(
                                 null,
-                                Collections.singletonList(SystemEntityPath.fromString(configuration.getTcSpiParameterPath())),
+                                Collections.singletonList(SystemEntityPath.fromString(aesConfiguration.getTcSpiParameterPath())),
                                 null,
                                 null,
                                 null,
@@ -110,6 +124,16 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
                 throw new ReatmetricException(e);
             }
         }
+    }
+
+    @Override
+    public int getServiceType() {
+        return 0x7CFFFFFE; // Fictitious service type
+    }
+
+    @Override
+    public boolean isDirectHandler(TcTracker trackedTc) {
+        return false;
     }
 
     @Override

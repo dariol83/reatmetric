@@ -24,37 +24,42 @@
 	<!-- Propagation delay - in microseconds - not specified means 0 -->
 	<propagation-delay>0</propagation-delay>
 	<!-- TC datalink configuration -->
-	<tc randomize="true" fecf="true" ad-mode-default="false">
-		<tc-vc-descriptor tc-vc="0" segmentation="false" default-tc-vc="true" />
+	<tc randomize="true" fecf="true" ad-mode-default="true">
+		<tc-vc-descriptor tc-vc="0" segmentation="true" default-tc-vc="true" system-entity-path="SPACE.FOP.TCVC0" />
 	</tc>
 	<!-- TM datalink configuration -->
-	<tm fecf="true" derandomize="false">
+	<tm fecf="true" derandomize="false" frame-length="1115">
 		<type>TM</type>
 	</tm>
 	<!-- Security -->
-	<security handler="eu.dariolucia.reatmetric.driver.spacecraft.security.impl.AesHandler" configuration="$HOME\reatmetric_test\test\security\security.xml" />
 	<!-- TM packet configuration -->
 	<tm-packet parameter-id-offset="100000">
-		<default-pus-configuration 
-			destination-field-length="8" 
-			packet-subcounter-present="false" 
-			tm-spare-length="0" 
-			tm-pec-present="NONE">
+		<default-pus-configuration
+				destination-field-length="8"
+				packet-subcounter-present="false"
+				tm-spare-length="0"
+				tm-pec-present="NONE">
 			<obt-cuc-config explicit-p-field="false" coarse="4" fine="2" />
 		</default-pus-configuration>
 	</tm-packet>
 	<tc-packet
-		activity-tc-packet-type="TC"
-		pus-source-id-default-value="123"
-		pus-source-id-length="8"
-		pus-spare-length="0"
-		tc-pec-present="CRC">
+			activity-tc-packet-type="TC"
+			pus-source-id-default-value="123"
+			pus-source-id-length="8"
+			pus-spare-length="0"
+			tc-pec-present="CRC">
 	</tc-packet>
 	<!-- Service configuration -->
 	<services>
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService" configuration="$HOME\reatmetric_test\test\services\time_correlation.xml" />
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService" configuration="$HOME\reatmetric_test\test\services\onboard_scheduling.xml" />
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService" configuration="" /> 
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService" configuration="" /> 
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService" configuration="$HOME\Reatmetric\reatmetric_test\test\services\time_correlation.xml" />
+		<!-- <service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.DirectLinkTimeCorrelationService" configuration="$HOME\Reatmetric\reatmetric_test\test\services\time_correlation.xml" /> -->
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService" configuration="$HOME\Reatmetric\reatmetric_test\test\services\onboard_scheduling.xml" />
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService" configuration="" />
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService" configuration="" />
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.security.impl.AesHandler" configuration="$HOME\Reatmetric\reatmetric_test\test\security\security.xml" />
 	</services>
+	<external-connectors>
+		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.CltuCaduTcpConnector" configuration="127.0.0.1:23532:1279:4" data-unit-type="CLTU" />
+		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.SpacePacketTcpConnector" configuration="127.0.0.1:33532" data-unit-type="TC_PACKET" />
+	</external-connectors>
 </ns1:spacecraft>

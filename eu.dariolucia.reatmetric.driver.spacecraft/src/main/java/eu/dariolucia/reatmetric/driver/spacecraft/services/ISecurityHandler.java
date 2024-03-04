@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2023 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2024 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.security;
+package eu.dariolucia.reatmetric.driver.spacecraft.services;
 
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
@@ -26,15 +26,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfigura
  * This interface specifies the methods that an external class must implement, to provide encryption/decryption capabilities
  * to ReatMetric's spacecraft driver.
  */
-public interface ISecurityHandler {
-
-    /**
-     * Initialise the ISecurityHandler implementation
-     * @param context the driver context
-     * @param configuration the spacecraft driver configuration
-     * @throws ReatmetricException in case of issues during the extension configuration
-     */
-    void initialise(IServiceCoreContext context, SpacecraftConfiguration configuration) throws ReatmetricException;
+public interface ISecurityHandler extends IService {
 
     /**
      * The length of the security header field, as defined by the CCSDS SDLP.
