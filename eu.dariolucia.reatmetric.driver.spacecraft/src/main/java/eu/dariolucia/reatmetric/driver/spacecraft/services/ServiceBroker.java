@@ -53,7 +53,9 @@ public class ServiceBroker implements IServiceBroker {
 
     @Override
     public void register(IServicePacketSubscriber subscriber, IServicePacketFilter predicateFilter) {
-        this.subscribers.add(Pair.of(subscriber, predicateFilter));
+        if(predicateFilter != null) {
+            this.subscribers.add(Pair.of(subscriber, predicateFilter));
+        }
     }
 
     @Override
