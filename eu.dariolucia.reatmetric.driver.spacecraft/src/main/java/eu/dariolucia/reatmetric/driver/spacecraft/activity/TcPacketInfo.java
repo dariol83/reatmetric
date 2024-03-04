@@ -42,7 +42,6 @@ public class TcPacketInfo implements Serializable {
     private final PacketErrorControlType checksumType;
 
     public TcPacketInfo(String str, String overriddenAckFields, Integer overridenSourceId, Integer overridenMapId, Integer sourceIdDefaultValue, PacketErrorControlType checksumType) {
-        this.checksumType = checksumType;
         String[] tokens = str.split("\\.", -1);
         Map<String, String> keyValueMap = new HashMap<>();
         for(String ton : tokens) {
@@ -100,6 +99,8 @@ public class TcPacketInfo implements Serializable {
             this.map = -1;
             this.mapUsed = false;
         }
+
+        this.checksumType = pusHeader != null ? checksumType : PacketErrorControlType.NONE;
     }
 
     public TcPacketInfo(int apid, TcPusHeader pusHeader, int map, PacketErrorControlType checksumType) {
