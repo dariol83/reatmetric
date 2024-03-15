@@ -127,13 +127,12 @@ public class ReatmetricUI extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         Parent root = FXMLLoader.load(ReatmetricUI.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/MainView.fxml"));
-        
+        CssHandler.applyTo(root);
+
         Scene scene = new Scene(root);
-        // scene.getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/css/MainView.css").toExternalForm());
-        
         stage.setScene(scene);
         stage.setTitle(APPLICATION_NAME);
-
+        stage.setMaximized(true);
         Image icon = new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png"));
         stage.getIcons().add(icon);
 

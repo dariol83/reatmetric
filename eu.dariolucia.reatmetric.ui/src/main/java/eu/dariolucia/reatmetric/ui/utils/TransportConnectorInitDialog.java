@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.controller.ConnectorStatusWidgetController;
 import javafx.application.Platform;
@@ -94,6 +95,8 @@ public class TransportConnectorInitDialog {
         canFinish.bind(page.validProperty());
         box.getChildren().addAll(page, separator, hbox);
         popOver.setContentNode(box);
+        CssHandler.applyTo(popOver.getRoot());
+        CssHandler.applyTo(popOver.getScene());
     }
 
     public static void openWizardNoElements(Node hook) {
@@ -109,6 +112,8 @@ public class TransportConnectorInitDialog {
         l.setPrefHeight(50);
         box.getChildren().add(l);
         popOver.setContentNode(box);
+        CssHandler.applyTo(popOver.getRoot());
+        CssHandler.applyTo(popOver.getScene());
         popOver.show(hook);
         popOver.setOnCloseRequest((e) -> {
         	if(hook instanceof ToggleSwitch) {

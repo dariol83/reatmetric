@@ -22,6 +22,7 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItemFilter;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
@@ -127,6 +128,9 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
      */
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
+        CssHandler.applyTo(filterPopup.getScene());
+        CssHandler.applyTo(dateTimePopup.getScene());
+
     	this.dataItemTableView.setPlaceholder(new Label(""));
     	this.dataItemTableView.setFixedCellSize(TABLE_ROW_HEIGHT);
 
@@ -147,6 +151,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent dateTimePicker = loader.load();
+            CssHandler.applyTo(dateTimePicker);
             this.dateTimePickerController = loader.getController();
             this.dateTimePopup.getContent().addAll(dateTimePicker);
             // Load the controller hide with select
@@ -165,6 +170,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             URL filterWidgetUrl = doGetFilterWidget();
             FXMLLoader loader = new FXMLLoader(filterWidgetUrl);
             Parent filterSelector = loader.load();
+            CssHandler.applyTo(filterSelector);
             this.dataItemFilterController = loader.getController();
             this.filterPopup.getContent().addAll(filterSelector);
             // Load the controller hide with select
@@ -244,7 +250,6 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
         text.setFont(f);
         new Scene(new Group(text));
         double height = text.getLayoutBounds().getHeight();
-        System.out.println("updateZoomFactor for " + getClass().getSimpleName() + ": height text is " + height + " - Font is " + f);
         dataItemTableView.setFixedCellSize(height + 4);
         dataItemTableView.refresh();
     }
@@ -282,7 +287,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             Bounds b = this.filterBtn.localToScreen(this.filterBtn.getBoundsInLocal());
             this.filterPopup.setX(b.getMinX());
             this.filterPopup.setY(b.getMaxY());
-            this.filterPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+            CssHandler.applyTo(filterPopup.getScene().getRoot());
             this.filterPopup.show(this.displayTitledPane.getScene().getWindow());
         }
     }
@@ -362,7 +367,7 @@ public abstract class AbstractDataItemLogViewController<T extends AbstractDataIt
             Bounds b = this.selectTimeBtn.localToScreen(this.selectTimeBtn.getBoundsInLocal());
             this.dateTimePopup.setX(b.getMinX());
             this.dateTimePopup.setY(b.getMaxY());
-            this.dateTimePopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+            CssHandler.applyTo(dateTimePopup.getScene().getRoot());
             this.dateTimePopup.show(this.displayTitledPane.getScene().getWindow());
         }
     }

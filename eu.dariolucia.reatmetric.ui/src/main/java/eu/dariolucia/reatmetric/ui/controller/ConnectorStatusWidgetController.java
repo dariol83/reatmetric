@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.TransportStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.TransportConnectorInitDialog;
 import javafx.fxml.FXML;
@@ -139,25 +140,25 @@ public class ConnectorStatusWidgetController implements Initializable {
     private void updateStatusCircle(TransportConnectionStatus status) {
         switch(status) {
             case OPEN: {
-                statusCircle.setFill(Paint.valueOf("lime"));
+                CssHandler.updateStyleClass(statusCircle, CssHandler.CSS_CONNECTION_STATUS_NOMINAL);
             }
             break;
             case ERROR:
             case ABORTED: {
-                statusCircle.setFill(Paint.valueOf("darkred"));
+                CssHandler.updateStyleClass(statusCircle, CssHandler.CSS_CONNECTION_STATUS_ERROR);
             }
             break;
             case CONNECTING:
             case DISCONNECTING: {
-                statusCircle.setFill(Paint.valueOf("dodgerblue"));
+                CssHandler.updateStyleClass(statusCircle, CssHandler.CSS_CONNECTION_STATUS_CONNECTING);
             }
             break;
             case IDLE: {
-                statusCircle.setFill(Paint.valueOf("gray"));
+                CssHandler.updateStyleClass(statusCircle, CssHandler.CSS_CONNECTION_STATUS_IDLE);
             }
             break;
             case NOT_INIT: {
-                statusCircle.setFill(Paint.valueOf("dimgray"));
+                CssHandler.updateStyleClass(statusCircle, CssHandler.CSS_CONNECTION_STATUS_NOT_INIT);
             }
             break;
         }
@@ -167,29 +168,29 @@ public class ConnectorStatusWidgetController implements Initializable {
         switch(alarmState) {
             case ERROR:
             case ALARM: {
+                CssHandler.updateStyleClass(alarmLbl, CssHandler.CSS_CONNECTOR_ALARM);
                 alarmLbl.setText(alarmState.name());
-                alarmLbl.setStyle("-fx-background-color: darkred; -fx-text-fill: white; -fx-border-color: white; ");
             }
             break;
             case WARNING: {
+                CssHandler.updateStyleClass(alarmLbl, CssHandler.CSS_CONNECTOR_WARNING);
                 alarmLbl.setText("WARNING");
-                alarmLbl.setStyle("-fx-background-color: darkorange; -fx-text-fill: black; -fx-border-color: black; ");
             }
             break;
             case NOT_APPLICABLE:
             case NOMINAL: {
+                CssHandler.updateStyleClass(alarmLbl, CssHandler.CSS_CONNECTOR_NOMINAL);
                 alarmLbl.setText("OK");
-                alarmLbl.setStyle("-fx-background-color: lime; -fx-text-fill: black; -fx-border-color: black; ");
             }
             break;
             case VIOLATED: {
+                CssHandler.updateStyleClass(alarmLbl, CssHandler.CSS_CONNECTOR_VIOLATED);
                 alarmLbl.setText("VIOLATED");
-                alarmLbl.setStyle("-fx-background-color: gold; -fx-text-fill: black; -fx-border-color: black; ");
             }
             break;
             default: {
+                CssHandler.updateStyleClass(alarmLbl, CssHandler.CSS_CONNECTOR_NA);
                 alarmLbl.setText("N/A");
-                alarmLbl.setStyle("-fx-background-color: gray; -fx-text-fill: black; -fx-border-color: black; ");
             }
             break;
         }

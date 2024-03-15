@@ -26,6 +26,7 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.input.*;
 import eu.dariolucia.reatmetric.api.value.Array;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
@@ -188,8 +189,10 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent dateTimePicker = loader.load();
+            CssHandler.applyTo(dateTimePicker);
             this.dateTimePickerController = loader.getController();
             this.dateTimePopup.getContent().addAll(dateTimePicker);
+            CssHandler.applyTo(this.dateTimePopup.getScene().getRoot());
             // Load the controller hide with select
             this.dateTimePickerController.setActionAfterSelection(() -> {
                 this.dateTimePopup.hide();
@@ -207,8 +210,10 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/ActivityDataFilterWidget.fxml");
             FXMLLoader loader = new FXMLLoader(filterWidgetUrl);
             Parent filterSelector = loader.load();
+            CssHandler.applyTo(filterSelector);
             this.dataItemFilterController = loader.getController();
             this.filterPopup.getContent().addAll(filterSelector);
+            CssHandler.applyTo(this.filterPopup.getScene().getRoot());
             // Load the controller hide with select
             this.dataItemFilterController.setActionAfterSelection(() -> {
                 this.filterPopup.hide();
@@ -250,28 +255,29 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                     switch (item) {
                         case RELEASE:
                         case CREATION:
-                            setTextFill(Color.BLACK);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATE_RELEASE);
                             break;
                         case TRANSMISSION:
-                            setTextFill(Color.BLUE);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATE_TRANSMISSION);
                             break;
                         case SCHEDULING:
-                            setTextFill(Color.LIGHTBLUE);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATE_SCHEDULING);
                             break;
                         case EXECUTION:
-                            setTextFill(Color.LAWNGREEN);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATE_EXECUTION);
                             break;
                         case VERIFICATION:
-                            setTextFill(Color.LIMEGREEN);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATE_VERIFICATION);
                             break;
                         case COMPLETED:
-                            setTextFill(Color.DARKGREEN);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATE_COMPLETED);
                             break;
                         default:
-                            setTextFill(null);
+                            CssHandler.updateStyleClass(this, null);
                             break;
                     }
                 } else {
+                    CssHandler.updateStyleClass(this, null);
                     setText("");
                     setGraphic(null);
                 }
@@ -286,34 +292,35 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                     switch (item) {
                         case OK:
                         case NOT_AVAILABLE:
-                            setTextFill(Color.GREEN);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATUS_OK);
                             break;
                         case FAIL:
-                            setTextFill(Color.DARKRED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATUS_FAIL);
                             break;
                         case FATAL:
-                            setTextFill(Color.RED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATUS_FATAL);
                             break;
                         case PENDING:
-                            setTextFill(Color.BLUE);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATUS_PENDING);
                             break;
                         case EXPECTED:
-                            setTextFill(Color.LIMEGREEN);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATUS_EXPECTED);
                             break;
                         case UNKNOWN:
-                            setTextFill(Color.GRAY);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATUS_UNKNOWN);
                             break;
                         case ERROR:
-                            setTextFill(Color.ORANGERED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATUS_ERROR);
                             break;
                         case TIMEOUT:
-                            setTextFill(Color.GOLD);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_ACTIVITY_STATUS_TIMEOUT);
                             break;
                         default:
-                            setTextFill(null);
+                            CssHandler.updateStyleClass(this, null);
                             break;
                     }
                 } else {
+                    CssHandler.updateStyleClass(this, null);
                     setText("");
                     setGraphic(null);
                 }
@@ -566,7 +573,6 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             Bounds b = this.selectTimeBtn.localToScreen(this.selectTimeBtn.getBoundsInLocal());
             this.dateTimePopup.setX(b.getMinX());
             this.dateTimePopup.setY(b.getMaxY());
-            this.dateTimePopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
             this.dateTimePopup.show(this.liveTgl.getScene().getWindow());
         }
         e.consume();
@@ -690,7 +696,6 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             Bounds b = this.filterBtn.localToScreen(this.filterBtn.getBoundsInLocal());
             this.filterPopup.setX(b.getMinX());
             this.filterPopup.setY(b.getMaxY());
-            this.filterPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
             this.filterPopup.show(this.displayTitledPane.getScene().getWindow());
         }
         e.consume();

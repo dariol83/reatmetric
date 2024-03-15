@@ -31,6 +31,7 @@ import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
 import eu.dariolucia.reatmetric.api.scheduler.CreationConflictStrategy;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.udd.PopoverChartController;
 import eu.dariolucia.reatmetric.ui.utils.*;
@@ -79,6 +80,7 @@ import java.util.stream.Collectors;
 public class ModelBrowserViewController extends AbstractDisplayController implements SystemEntityResolver.ISystemEntityResolver {
 
     private static final Logger LOG = Logger.getLogger(ModelBrowserViewController.class.getName());
+
 
     private final Image containerImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/box.svg.png"));
     private final Image parameterImage = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/menu.svg.png"));
@@ -282,6 +284,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 URL detailDialog = ActivityInvocationDialogUtil.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/SystemEntityDescriptorPanel.fxml");
                 FXMLLoader loader = new FXMLLoader(detailDialog);
                 VBox controllerRoot = loader.load();
+                CssHandler.applyTo(controllerRoot);
                 SystemEntityDescriptorPanelController controller = loader.getController();
                 controller.handle(se.getValue().getPath(), getDescriptorOf(se.getValue().getExternalId()));
                 DialogUtils.customInfoDialog(this.modelTree.getScene().getWindow(), controllerRoot, "Information about " + se.getValue().getPath());
@@ -337,23 +340,29 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     setText(item.name());
                     switch (item) {
                         case ENABLED:
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_MODEL_STATUS_CELL_ENABLED);
                             setTextFill(Color.LIMEGREEN);
                             break;
                         case DISABLED:
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_MODEL_STATUS_CELL_DISABLED);
                             setTextFill(Color.DARKGRAY);
                             break;
                         case IGNORED:
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_MODEL_STATUS_CELL_IGNORED);
                             setTextFill(Color.DARKCYAN);
                             break;
                         case UNKNOWN:
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_MODEL_STATUS_CELL_UNKNOWN);
                             setTextFill(Color.DARKORANGE);
                             break;
                         default:
-                            setText("");
+                            CssHandler.updateStyleClass(this, null);
                             setTextFill(Color.BLACK);
+                            setText("");
                             break;
                     }
                 } else {
+                    CssHandler.updateStyleClass(this, null);
                     setText("");
                     setGraphic(null);
                 }
@@ -415,42 +424,53 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                     AckAlarmStatus status = alarmStatusMap.get(entity.getExternalId()).get();
                     switch (status) {
                         case ALARM_NOT_ACKED:
+                            CssHandler.updateStyleClass(this,CssHandler.CSS_SEVERITY_ALARM);
                             setFont(fontNotAcked);
                             setTextFill(Color.RED);
                             break;
                         case ALARM_ACKED:
+                            CssHandler.updateStyleClass(this,CssHandler.CSS_SEVERITY_ALARM);
                             setFont(defaultFont);
                             setTextFill(Color.RED);
                             break;
                         case WARNING_NOT_ACKED:
+                            CssHandler.updateStyleClass(this,CssHandler.CSS_SEVERITY_WARNING);
                             setFont(fontNotAcked);
                             setTextFill(Color.ORANGE);
                             break;
                         case WARNING_ACKED:
+                            CssHandler.updateStyleClass(this,CssHandler.CSS_SEVERITY_WARNING);
                             setFont(defaultFont);
                             setTextFill(Color.ORANGE);
                             break;
                         case NOMINAL:
                             setFont(defaultFont);
                             if (entity.getAlarmState() == AlarmState.UNKNOWN) {
+                                CssHandler.updateStyleClass(this,CssHandler.CSS_SEVERITY_UNKNOWN);
                                 setTextFill(Color.GRAY);
                             } else if (entity.getAlarmState() == AlarmState.VIOLATED) {
+                                CssHandler.updateStyleClass(this,CssHandler.CSS_SEVERITY_VIOLATED);
                                 setTextFill(Color.LIMEGREEN);
                             } else {
+                                CssHandler.updateStyleClass(this, null);
                                 setTextFill(defaultTextColor);
                             }
                             break;
                         case NOMINAL_NOT_ACKED:
                             setFont(fontNotAcked);
                             if (entity.getAlarmState() == AlarmState.UNKNOWN) {
+                                CssHandler.updateStyleClass(this,CssHandler.CSS_SEVERITY_UNKNOWN);
                                 setTextFill(Color.GRAY);
                             } else if (entity.getAlarmState() == AlarmState.VIOLATED) {
+                                CssHandler.updateStyleClass(this,CssHandler.CSS_SEVERITY_VIOLATED);
                                 setTextFill(Color.LIMEGREEN);
                             } else {
+                                CssHandler.updateStyleClass(this, null);
                                 setTextFill(defaultTextColor);
                             }
                             break;
                         default:
+                            CssHandler.updateStyleClass(this, null);
                             setTextFill(defaultTextColor);
                             setFont(defaultFont);
                             break;
@@ -785,7 +805,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 d.initModality(Modality.APPLICATION_MODAL);
                 d.initOwner(modelTree.getScene().getWindow());
                 d.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
-
+                CssHandler.applyTo(d.getDialogPane());
                 Tab scheduleTab = new Tab("Schedule Information");
                 scheduleTab.setContent(scheduleDialogPair.getFirst());
                 Tab activityTab = new Tab("Activity Execution");
@@ -929,6 +949,7 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
                 d.initOwner(modelTree.getScene().getWindow());
                 d.getDialogPane().getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
                 d.getDialogPane().setContent(activityDialogPair.getFirst());
+                CssHandler.applyTo(d.getDialogPane());
                 Button ok = (Button) d.getDialogPane().lookupButton(ButtonType.OK);
                 activityDialogPair.getSecond().bindOkButton(ok);
                 Optional<ButtonType> result = d.showAndWait();

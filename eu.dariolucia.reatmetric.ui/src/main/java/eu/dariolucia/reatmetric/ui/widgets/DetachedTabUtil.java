@@ -1,5 +1,6 @@
 package eu.dariolucia.reatmetric.ui.widgets;
 
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.Parent;
@@ -9,7 +10,6 @@ import javafx.scene.control.TabPane;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -34,7 +34,7 @@ public class DetachedTabUtil {
         return STAGE2INFO.containsKey(stage);
     }
 
-    public static Stage detachTab(Tab t, URL stylesheetUrl, Image stageImage) {
+    public static Stage detachTab(Tab t, Image stageImage) {
         TabPane tabPane = t.getTabPane();
         Parent tabContents = (Parent) t.getContent();
         // Create a detached scene parent
@@ -45,9 +45,7 @@ public class DetachedTabUtil {
         t.setOnCloseRequest(null);
         tabPane.getTabs().remove(t);
         Scene scene = new Scene(tabContents, tabContents.getLayoutBounds().getWidth(), tabContents.getLayoutBounds().getHeight());
-        if(stylesheetUrl != null) {
-            scene.getStylesheets().add(stylesheetUrl.toExternalForm());
-        }
+        CssHandler.applyTo(scene);
         stage.setScene(scene);
         stage.setTitle(t.getText());
         stage.setUserData(t.getUserData());

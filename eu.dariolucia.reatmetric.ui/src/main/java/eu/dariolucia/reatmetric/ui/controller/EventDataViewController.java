@@ -25,8 +25,8 @@ import eu.dariolucia.reatmetric.api.events.IEventDataSubscriber;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
 import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -36,7 +36,6 @@ import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
-import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.net.URL;
@@ -109,19 +108,20 @@ public class EventDataViewController extends AbstractDataItemLogViewController<E
                     setText(item.name());
                     switch (item) {
                         case ALARM:
-                            setTextFill(Color.RED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_ALARM);
                             break;
                         case ERROR:
-                            setTextFill(Color.DARKRED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_ERROR);
                             break;
                         case WARN:
-                            setTextFill(Color.CHOCOLATE);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_WARNING);
                             break;
                         default:
-                            setTextFill(Color.DARKGREEN);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_NOMINAL);
                             break;
                     }
                 } else {
+                    CssHandler.updateStyleClass(this, null);
                     setText("");
                     setGraphic(null);
                 }

@@ -20,6 +20,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.processing.input.SetParameterRequest;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.controller.SetParameterDialogController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -36,6 +37,7 @@ public class SetParameterDialogUtil {
         URL datePickerUrl = SetParameterDialogUtil.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/SetParameterDialog.fxml");
         FXMLLoader loader = new FXMLLoader(datePickerUrl);
         VBox root = loader.load();
+        CssHandler.applyTo(root);
         SetParameterDialogController controller = loader.getController();
         return Pair.of(root, controller);
     }

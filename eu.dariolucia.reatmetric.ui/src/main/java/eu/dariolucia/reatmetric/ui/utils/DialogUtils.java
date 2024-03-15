@@ -16,15 +16,15 @@
 
 package eu.dariolucia.reatmetric.ui.utils;
 
-import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import javafx.application.Platform;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import javafx.scene.Node;
-import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.TextInputDialog;
 import javafx.stage.Modality;
 import javafx.stage.Window;
 
-import javax.swing.*;
 import java.util.Optional;
 
 public class DialogUtils {
@@ -34,8 +34,7 @@ public class DialogUtils {
         dialog.setTitle(title);
         dialog.setHeaderText(headerText);
         dialog.setContentText(contentText);
-        dialog.getDialogPane().getStylesheets().add(ReatmetricUI.class.getClassLoader()
-                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+        CssHandler.applyTo(dialog.getDialogPane());
         // Traditional way to get the response value.
         return dialog.showAndWait();
     }
@@ -45,8 +44,7 @@ public class DialogUtils {
         alert.setTitle(title);
         alert.setHeaderText(headerText);
         alert.setContentText(contentText);
-        alert.getDialogPane().getStylesheets().add(ReatmetricUI.class.getClassLoader()
-                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+        CssHandler.applyTo(alert.getDialogPane());
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
     }
@@ -56,8 +54,7 @@ public class DialogUtils {
         alert.setTitle(title);
         alert.setHeaderText(headerText);
         alert.setContentText(contentText);
-        alert.getDialogPane().getStylesheets().add(ReatmetricUI.class.getClassLoader()
-                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+        CssHandler.applyTo(alert.getDialogPane());
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
     }
@@ -69,6 +66,7 @@ public class DialogUtils {
         d.initOwner(window);
         d.getDialogPane().getButtonTypes().addAll(ButtonType.OK);
         d.getDialogPane().setContent(toAdd);
+        CssHandler.applyTo(d.getDialogPane());
         d.show();
     }
 }

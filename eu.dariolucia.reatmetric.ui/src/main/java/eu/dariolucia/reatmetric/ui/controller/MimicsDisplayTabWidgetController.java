@@ -26,12 +26,12 @@ import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DataProcessingDelegator;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.MimicsDisplayCoordinator;
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -126,6 +126,8 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
             URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent dateTimePicker = loader.load();
+            CssHandler.applyTo(dateTimePopup.getScene().getRoot());
+            CssHandler.applyTo(dateTimePicker);
             this.dateTimePickerController = loader.getController();
             this.dateTimePopup.getContent().addAll(dateTimePicker);
             // Load the controller hide with select
@@ -143,6 +145,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
             URL svgUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/MimicsSvgView.fxml");
             FXMLLoader loader = new FXMLLoader(svgUrl);
             Parent svgUrlNode = loader.load();
+            CssHandler.applyTo(svgUrlNode);
             this.mimicsManager = loader.getController();
             this.innerBox.getChildren().addAll(svgUrlNode);
         } catch (IOException e) {
@@ -180,7 +183,7 @@ public class MimicsDisplayTabWidgetController extends AbstractDisplayController 
             Bounds b = this.selectTimeBtn.localToScreen(this.selectTimeBtn.getBoundsInLocal());
             this.dateTimePopup.setX(b.getMinX());
             this.dateTimePopup.setY(b.getMaxY());
-            this.dateTimePopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+            CssHandler.applyTo(this.dateTimePopup.getScene().getRoot());
             this.dateTimePopup.show(this.innerBox.getScene().getWindow());
         }
     }

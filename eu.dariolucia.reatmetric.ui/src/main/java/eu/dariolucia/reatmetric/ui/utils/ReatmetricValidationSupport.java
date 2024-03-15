@@ -29,6 +29,7 @@ import java.util.function.Predicate;
 
 public class ReatmetricValidationSupport {
 
+    public static final String CSS_CLASS_X_REATMETRIC_FAILED_CHECK = "x-reatmetric-failed-check";
     private final SimpleBooleanProperty valid = new SimpleBooleanProperty(true);
 
     private final List<ValidationController> registeredControls = new LinkedList<>();
@@ -96,13 +97,15 @@ public class ReatmetricValidationSupport {
 
         private void markAsGood() {
             control.setTooltip(null);
-            control.setStyle("");
+            control.getStyleClass().remove(CSS_CLASS_X_REATMETRIC_FAILED_CHECK);
             valid.set(true);
         }
 
         private void markAsFailure() {
             control.setTooltip(new Tooltip(error));
-            control.setStyle("-fx-border-color: #FF0000; -fx-border-width: 2; -fx-border-insets: -2;");
+            if(!control.getStyleClass().contains(CSS_CLASS_X_REATMETRIC_FAILED_CHECK)) {
+                control.getStyleClass().add(CSS_CLASS_X_REATMETRIC_FAILED_CHECK);
+            }
             valid.set(false);
         }
 

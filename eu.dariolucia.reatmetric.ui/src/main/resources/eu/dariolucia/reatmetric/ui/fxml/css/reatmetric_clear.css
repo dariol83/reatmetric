@@ -1,0 +1,386 @@
+/*******************************************************************************
+ *                                                                             *
+ * ReatMetric custom                                                           *
+ *                                                                             *
+ ******************************************************************************/
+
+.banner {
+    -fx-background-color: #19197f;
+}
+
+.time-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.marked-label {
+    -fx-padding: 3 3 3 3;
+}
+
+.reatmetric-model-status-cell-enabled {
+	-fx-text-fill: #32CD32;
+}
+
+.reatmetric-model-status-cell-disabled {
+	-fx-text-fill: #A9A9A9;
+}
+
+.reatmetric-model-status-cell-ignored {
+	-fx-text-fill: #008B8B;
+}
+
+.reatmetric-model-status-cell-unknown {
+	-fx-text-fill: #000000;
+}
+
+.reatmetric-severity-alarm {
+	-fx-text-fill: #FF0000;
+}
+
+.reatmetric-severity-error {
+	-fx-text-fill: #8B0000;
+}
+
+.reatmetric-severity-warning {
+	-fx-text-fill: #FF8C00;
+}
+
+.reatmetric-severity-violated {
+	-fx-text-fill: #32CD32;
+}
+
+.reatmetric-severity-nominal {
+	-fx-text-fill: #00FF00;
+}
+
+.reatmetric-severity-unknown {
+	-fx-text-fill: #808080;
+}
+
+.reatmetric-validity-valid {
+	-fx-text-fill: #00FF00;
+}
+
+.reatmetric-validity-disabled {
+	-fx-text-fill: #A9A9A9;
+}
+
+.reatmetric-validity-invalid {
+	-fx-text-fill: #FF0000;
+}
+
+.reatmetric-validity-error {
+	-fx-text-fill: #8B0000;
+}
+
+.reatmetric-validity-unknown {
+	-fx-text-fill: #808080;
+}
+
+.reatmetric-parameter-raw-separator {
+	TOP-COLOR: ladder(
+        -fx-base,
+        derive(-fx-base,0%) 0%,
+        derive(-fx-base,46%) 100%
+    );
+    -fx-background-color:
+        linear-gradient(to bottom, derive(TOP-COLOR,25%) 0%, -fx-outer-border 90%),
+        linear-gradient(to bottom, TOP-COLOR 2%, derive(-fx-base,-2.1%) 95%);
+	-fx-font-weight: bold; 
+	-fx-border-color: black; 
+	-fx-border-insets: 0 -1 0 -1;
+}
+
+.reatmetric-parameter-raw-separator .table-cell {
+	-fx-text-fill: black;
+}
+
+.reatmetric-activity-state-release {
+	-fx-text-fill: #000000;
+}
+
+.reatmetric-activity-state-transmission {
+	-fx-text-fill: #0000A9;
+}
+
+.reatmetric-activity-state-scheduling {
+	-fx-text-fill: #ADD8E6;
+}
+
+.reatmetric-activity-state-execution {
+	-fx-text-fill: #7CFC00;
+}
+
+.reatmetric-activity-state-verification {
+	-fx-text-fill: #32CD32;
+}
+
+.reatmetric-activity-state-completed {
+	-fx-text-fill: #006400;
+}
+
+.reatmetric-activity-status-ok {
+	-fx-text-fill: #00FF00;
+}
+
+.reatmetric-activity-status-fail {
+	-fx-text-fill: #FF0000;
+}
+
+.reatmetric-activity-status-fatal {
+	-fx-text-fill: #8B0000;
+}
+
+.reatmetric-activity-status-pending {
+	-fx-text-fill: #0000FF;
+}
+
+.reatmetric-activity-status-expected {
+	-fx-text-fill: #32CD32;
+}
+
+.reatmetric-activity-status-unknown {
+	-fx-text-fill: #808080;
+}
+
+.reatmetric-activity-status-error {
+	-fx-text-fill: #FF0000;
+}
+
+.reatmetric-activity-status-timeout {
+	-fx-text-fill: #FFD700;
+}
+
+.reatmetric-schedule-status-ignored {
+	-fx-text-fill: #008B8B;
+}
+
+.reatmetric-schedule-status-scheduled {
+	-fx-text-fill: #FFD700;
+}
+
+.reatmetric-schedule-status-waiting {
+	-fx-text-fill: #0000FF;
+}
+
+.reatmetric-schedule-status-running {
+	-fx-text-fill: #008B8B;
+}
+
+.reatmetric-schedule-status-finished-ok {
+	-fx-text-fill: #00FF00;
+}
+
+.reatmetric-schedule-status-finished-fail {
+	-fx-text-fill: #FF0000;
+}
+
+.reatmetric-schedule-status-disabled {
+	-fx-text-fill: #A9A9A9;
+}
+
+.reatmetric-schedule-status-unknown {
+	-fx-text-fill: #808080;
+}
+
+.reatmetric-connector-alarm {
+	-fx-background-color: darkred; 
+	-fx-text-fill: white; 
+	-fx-border-color: white;
+}
+
+.reatmetric-connector-warning {
+	-fx-background-color: darkorange;
+	-fx-text-fill: black;
+	-fx-border-color: black;
+}
+
+.reatmetric-connector-nominal {
+	-fx-background-color: lime;
+	-fx-text-fill: black; 
+	-fx-border-color: black;
+}
+
+.reatmetric-connector-violated {
+	-fx-background-color: gold;
+	-fx-text-fill: black; 
+	-fx-border-color: black;
+}
+
+.reatmetric-connector-na {
+	-fx-background-color: gray; 
+	-fx-text-fill: black; 
+	-fx-border-color: black;
+}
+
+.reatmetric-connection-status-error {
+	-fx-fill: darkred; 
+	-fx-border-color: white;
+}
+
+.reatmetric-connection-status-connecting {
+	-fx-fill: blue;
+	-fx-border-color: black;
+}
+
+.reatmetric-connection-status-nominal {
+	-fx-fill: lime;
+	-fx-border-color: black;
+}
+
+.reatmetric-connection-status-idle {
+	-fx-fill: #808080;
+	-fx-border-color: black;
+}
+
+.reatmetric-connection-status-not-init {
+	-fx-fill: #C3C3C3;
+	-fx-border-color: black;
+}
+
+.reatmetric-connection-status-warning {
+	-fx-fill: #FF8C00;
+	-fx-border-color: black;
+}
+
+.reatmetric-gantt-scheduled {
+    -fx-background-color: #6495ED;
+    -fx-border-color: black;
+    -fx-border-width: 1;
+    -fx-cursor: hand;
+}
+
+.reatmetric-gantt-running {
+    -fx-background-color: #00FFFF;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+
+.reatmetric-gantt-waiting {
+    -fx-background-color: #00BFFF;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+
+.reatmetric-gantt-ignored {
+    -fx-background-color: #2F4F4F;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+
+.reatmetric-gantt-disabled {
+    -fx-background-color: #696969;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+
+.reatmetric-gantt-aborted {
+    -fx-background-color: #FA8072;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+
+.reatmetric-gantt-finished-nominal {
+    -fx-background-color: #7CFC00;
+        -fx-border-color: black;
+        -fx-border-width: 1;
+        -fx-cursor: hand;
+}
+
+.reatmetric-gantt-finished-fail {
+    -fx-background-color: #FF0000;
+          -fx-border-color: black;
+          -fx-border-width: 1;
+          -fx-cursor: hand;
+}
+
+.reatmetric-gantt-unknown {
+    -fx-background-color: #800080;
+            -fx-border-color: black;
+            -fx-border-width: 1;
+            -fx-cursor: hand;
+}
+
+.x-reatmetric-chat-notify {
+	-fx-background-color: -fx-faint-focus-color;
+}
+
+.x-reatmetric-status-idle {
+	-fx-border-color: black; 
+	-fx-background-color: #c6c6c6; 
+	-fx-text-fill: #1a1a1a;
+}
+
+.x-reatmetric-status-notify {
+	-fx-border-color: black; 
+	-fx-background-color: #c60000; 
+	-fx-text-fill: #FFFFFF;
+}
+
+.x-reatmetric-schedule-line {
+	-fx-background-color: lightgreen;
+}
+
+.x-reatmetric-failed-check {
+	-fx-border-color: #FF0000; 
+	-fx-border-width: 2; 
+	-fx-border-insets: -2;
+}
+
+.x-reatmetric-activity-argument-fixed {
+	-fx-background-color: lightgray; 
+}
+
+.x-reatmetric-activity-argument-not-ready {
+	-fx-background-color: orangered; 
+}
+
+/*******************************************************************************
+ *                                                                             *
+ * ControlFX PopOver                                                           *
+ *                                                                             *
+ ******************************************************************************/
+
+.popover  {
+	-fx-background-color: -fx-background;
+}
+
+.popover > .border {
+	-fx-stroke: linear-gradient(to bottom, rgba(0,0,0, .3), rgba(0, 0, 0, .7)) ;
+	-fx-stroke-width: 1;
+	-fx-fill: -fx-background;
+	-fx-effect: dropshadow(gaussian, rgba(0,0,0,.2), 10.0, 0.5, 2.0, 2.0);
+}
+
+.popover > .content {
+	-fx-background-color: -fx-background;
+}
+
+.popover > .detached {
+	-fx-background-color: -fx-background;
+}
+
+.popover > .content > .title > .text  {
+	-fx-padding: 6.0 6.0 0.0 6.0;
+	-fx-text-fill: rgba(255, 255, 255, 1);
+	-fx-font-weight: bold;
+}
+
+.popover > .content > .title > .icon {
+	-fx-padding: 6.0 0.0 0.0 10.0;
+}
+
+.popover > .content > .title > .icon > .graphics > .circle {
+	-fx-fill: gray ;
+	-fx-effect: innershadow(gaussian, rgba(0,0,0,.2), 3, 0.5, 1.0, 1.0);
+}
+
+.popover > .content > .title > .icon > .graphics > .line {
+	-fx-stroke: white ;
+	-fx-stroke-width: 2;
+}

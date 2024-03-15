@@ -29,6 +29,7 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.*;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.gantt.GanttChart;
 import eu.dariolucia.reatmetric.ui.udd.InstantAxis;
@@ -51,7 +52,6 @@ import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
-import javafx.scene.paint.Color;
 import javafx.stage.*;
 
 import java.io.IOException;
@@ -79,6 +79,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private static final int MAX_ENTRIES = 1000;
     private static final int INITIALIZATION_SECONDS_IN_PAST = 7200;
     private static final String REATMETRIC_GANTT_STYLE_PREFIX = "reatmetric-gantt-";
+    public static final String CSS_CLASS_X_REATMETRIC_SCHEDULER_LINE = "x-reatmetric-scheduler-line";
 
     // Not final, applicable for the entire UI
     private static int GANTT_RANGE_PAST = 3600;
@@ -304,7 +305,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
 
         // Chart initialisation
-        this.ganttChart.getStylesheets().add(getClass().getClassLoader().getResource("eu/dariolucia/reatmetric/ui/fxml/css/gantt.css").toExternalForm());
+        CssHandler.applyTo(this.ganttChart);
         Instant now = Instant.now();
         updateChartLocation(now.minusSeconds(GANTT_RANGE_PAST), now.plusSeconds(GANTT_RANGE_AHEAD));
         this.ganttChart.getXAxis().setAutoRanging(false);
@@ -352,7 +353,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private String extractStyleClass(Object o) {
         ScheduledActivityOccurrenceDataWrapper w = (ScheduledActivityOccurrenceDataWrapper) o;
         SchedulingState ss = w.get().getState();
-        return REATMETRIC_GANTT_STYLE_PREFIX + ss.name();
+        return REATMETRIC_GANTT_STYLE_PREFIX + ss.name().toLowerCase().replace('_','-');
     }
 
     private Instant extractEndTime(Object o) {
@@ -369,6 +370,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/SchedulerFilterWidget.fxml");
             FXMLLoader loader = new FXMLLoader(filterWidgetUrl);
             Parent filterSelector = loader.load();
+            CssHandler.applyTo(filterSelector);
             this.dataItemFilterController = loader.getController();
             this.filterPopup.getContent().addAll(filterSelector);
             // Load the controller hide with select
@@ -389,6 +391,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent dateTimePicker = loader.load();
+            CssHandler.applyTo(dateTimePicker);
             this.dateTimePickerController = loader.getController();
             this.dateTimePopup.getContent().addAll(dateTimePicker);
             // Load the controller hide with select
@@ -411,6 +414,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/GanttTimeBoundariesPickerWidget.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent dateTimePicker = loader.load();
+            CssHandler.applyTo(dateTimePicker);
             this.ganttTimeBoundariesPickerController = loader.getController();
             this.ganttBoundariesPopup.getContent().addAll(dateTimePicker);
             // Load the controller hide with select
@@ -478,35 +482,36 @@ public class SchedulerViewController extends AbstractDisplayController implement
                     setText(item.name());
                     switch (item) {
                         case IGNORED:
-                            setTextFill(Color.BLACK);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SCHEDULE_STATUS_IGNORED);
                             break;
                         case SCHEDULED:
-                            setTextFill(Color.BLUE);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SCHEDULE_STATUS_SCHEDULED);
                             break;
                         case WAITING:
-                            setTextFill(Color.LIGHTBLUE);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SCHEDULE_STATUS_WAITING);
                             break;
                         case RUNNING:
-                            setTextFill(Color.DARKCYAN);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SCHEDULE_STATUS_RUNNING);
                             break;
                         case FINISHED_NOMINAL:
-                            setTextFill(Color.DARKGREEN);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SCHEDULE_STATUS_FINISHED_OK);
                             break;
                         case FINISHED_FAIL:
                         case ABORTED:
-                            setTextFill(Color.DARKRED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SCHEDULE_STATUS_FINISHED_FAIL);
                             break;
                         case DISABLED:
-                            setTextFill(Color.GRAY);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SCHEDULE_STATUS_DISABLED);
                             break;
                         case UNKNOWN:
-                            setTextFill(Color.DARKORANGE);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SCHEDULE_STATUS_UNKNOWN);
                             break;
                         default:
-                            setTextFill(null);
+                            CssHandler.updateStyleClass(this, null);
                             break;
                     }
                 } else {
+                    CssHandler.updateStyleClass(this, null);
                     setText("");
                     setGraphic(null);
                 }
@@ -517,12 +522,9 @@ public class SchedulerViewController extends AbstractDisplayController implement
             @Override
             public void updateItem(ScheduledActivityOccurrenceDataWrapper item, boolean empty) {
                 super.updateItem(item, empty);
-                if (item == null) {
-                    setStyle("");
-                } else if (item.setLineProperty().get()) {
-                    setStyle("-fx-background-color: lightgreen;");
-                } else {
-                    setStyle("");
+                this.getStyleClass().remove(CSS_CLASS_X_REATMETRIC_SCHEDULER_LINE);
+                if (item != null && item.setLineProperty().get()) {
+                    this.getStyleClass().add(CSS_CLASS_X_REATMETRIC_SCHEDULER_LINE);
                 }
             }
         });
@@ -714,7 +716,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             Bounds b = this.selectTimeBtn.localToScreen(this.selectTimeBtn.getBoundsInLocal());
             this.dateTimePopup.setX(b.getMinX());
             this.dateTimePopup.setY(b.getMaxY());
-            this.dateTimePopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+            CssHandler.applyTo(this.dateTimePopup.getScene().getRoot());
             this.dateTimePopup.show(this.liveTgl.getScene().getWindow());
         }
         e.consume();
@@ -920,7 +922,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             Bounds b = this.filterBtn.localToScreen(this.filterBtn.getBoundsInLocal());
             this.filterPopup.setX(b.getMinX());
             this.filterPopup.setY(b.getMaxY());
-            this.filterPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+            CssHandler.applyTo(this.filterPopup.getScene().getRoot());
             this.filterPopup.show(this.displayTitledPane.getScene().getWindow());
         }
         e.consume();
@@ -1407,7 +1409,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
             this.ganttTimeBoundariesPickerController.setInterval(GANTT_RANGE_PAST, GANTT_RANGE_AHEAD, GANTT_RETRIEVAL_RANGE);
             this.ganttBoundariesPopup.setX(b.getMinX());
             this.ganttBoundariesPopup.setY(b.getMaxY());
-            this.ganttBoundariesPopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+            CssHandler.applyTo(this.ganttBoundariesPopup.getScene().getRoot());
             this.ganttBoundariesPopup.show(this.liveTgl.getScene().getWindow());
         }
         e.consume();

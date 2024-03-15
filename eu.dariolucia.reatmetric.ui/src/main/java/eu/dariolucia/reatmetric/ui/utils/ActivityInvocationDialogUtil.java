@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.activity.ActivityRouteState;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityRequest;
 import eu.dariolucia.reatmetric.api.scheduler.input.SchedulingRequest;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.controller.ActivityInvocationDialogController;
 import eu.dariolucia.reatmetric.ui.controller.ActivitySchedulingDialogController;
 import javafx.fxml.FXMLLoader;
@@ -39,6 +40,7 @@ public class ActivityInvocationDialogUtil {
         URL datePickerUrl = ActivityInvocationDialogUtil.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/ActivityInvocationDialog.fxml");
         FXMLLoader loader = new FXMLLoader(datePickerUrl);
         VBox root = loader.load();
+        CssHandler.applyTo(root);
         ActivityInvocationDialogController controller = loader.getController();
         return Pair.of(root, controller);
     }
@@ -53,6 +55,7 @@ public class ActivityInvocationDialogUtil {
         URL datePickerUrl = ActivityInvocationDialogUtil.class.getResource("/eu/dariolucia/reatmetric/ui/fxml/ActivitySchedulingDialog.fxml");
         FXMLLoader loader = new FXMLLoader(datePickerUrl);
         VBox root = loader.load();
+        CssHandler.applyTo(root);
         ActivitySchedulingDialogController controller = loader.getController();
         controller.setDuration(expectedDuration);
         return Pair.of(root, controller);

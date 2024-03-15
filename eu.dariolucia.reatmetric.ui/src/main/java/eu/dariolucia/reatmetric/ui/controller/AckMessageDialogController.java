@@ -23,6 +23,7 @@ import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.udd.PopoverChartController;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
@@ -101,16 +102,17 @@ public class AckMessageDialogController implements Initializable, IAcknowledgedM
                     setText(item.name());
                     switch (item) {
                         case ALARM:
-                            setTextFill(Color.RED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_ALARM);
                             break;
                         case WARN:
-                            setTextFill(Color.DARKORANGE);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_WARNING);
                             break;
                         default:
-                            setTextFill(Color.BLACK);
+                            CssHandler.updateStyleClass(this, null);
                             break;
                     }
                 } else {
+                    CssHandler.updateStyleClass(this, null);
                     setText("");
                     setGraphic(null);
                 }

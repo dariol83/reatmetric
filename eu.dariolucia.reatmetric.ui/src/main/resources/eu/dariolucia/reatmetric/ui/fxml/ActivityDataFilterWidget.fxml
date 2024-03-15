@@ -25,7 +25,7 @@
   ~ limitations under the License.
   -->
 
-<VBox spacing="5.0" style="-fx-border-color: -fx-faint-focus-color;" stylesheets="@css/MainView.css" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityDataFilterWidgetController">
+<VBox spacing="5.0" style="-fx-border-color: -fx-faint-focus-color;" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.ActivityDataFilterWidgetController">
    <children>
       <CheckBox fx:id="pathCheckbox" mnemonicParsing="false" text="Parent Path" />
       <TextField fx:id="pathText">

@@ -20,6 +20,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import eu.dariolucia.reatmetric.ui.plugin.ReatmetricPluginInspector;
@@ -46,7 +47,6 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.AudioClip;
-import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
@@ -76,11 +76,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     private static final Logger LOG = Logger.getLogger(MainViewController.class.getName());
 
-    public static final String WARNING_COLOR = "#CCAA00";
-    public static final String ALARM_COLOR = "#CC0000";
-    public static final String NOMINAL_COLOR = "#00FF15";
-    public static final String DISABLED_COLOR = "#003915";
-
     private final Image CONNECT_IMAGE = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/48px/plug-f.svg.png"));
     private final Image DISCONNECT_IMAGE = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/48px/plug.svg.png"));
     private final Image PIN_IMAGE = new Image(getClass().getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/16px/pin.svg.png"));
@@ -89,13 +84,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private static final String VIEW_NAME = "viewName";
     private static final String VIEW_IMAGE = "viewImage";
 
-    private static final URL CSS_URL = MainViewController.class.getClassLoader().getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
+    private static final String SYSTEM_LABEL_CSS_STYLE_NOALARM = "x-reatmetric-status-idle";
+    private static final String SYSTEM_LABEL_CSS_STYLE_ALARM = "x-reatmetric-status-notify";
 
-    private static final String SYSTEM_LABEL_CSS_STYLE_NOALARM = "-fx-border-color: black; -fx-background-color: #c6c6c6; -fx-text-fill: #1a1a1a;";
-    private static final String SYSTEM_LABEL_CSS_STYLE_ALARM = "-fx-border-color: black; -fx-background-color: #c60000; -fx-text-fill: #FFFFFF;";
-
-    private static final String CHAT_LABEL_CSS_STYLE_NOALARM = "";
-    private static final String CHAT_LABEL_CSS_STYLE_ALARM = "-fx-background-color: -fx-faint-focus-color";
+    private static final String CHAT_LABEL_CSS_STYLE_ALARM = "x-reatmetric-chat-notify";
 
     private static volatile MainViewController.Facade INSTANCE = null;
     private AudioClip alarmSound;
@@ -225,7 +217,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         MenuItem detachMenuItem = new MenuItem("Detach");
         detachMenuItem.setGraphic(new ImageView(PIN_IMAGE));
         detachMenuItem.setOnAction(e -> {
-            DetachedTabUtil.detachTab(t, CSS_URL, new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png")));
+            DetachedTabUtil.detachTab(t, new Image(ReatmetricUI.class.getResourceAsStream("/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-32px.png")));
             ctrl.informDisplayDetached();
         });
         cm.getItems().add(detachMenuItem);
@@ -291,9 +283,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         layoutBox.setPadding(new Insets(8));
         connectPopOver.setArrowLocation(PopOver.ArrowLocation.LEFT_TOP);
         connectPopOver.setContentNode(layoutBox);
-        // Set the CSS
-        systemBox.getStylesheets().add(getClass().getClassLoader()
-                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
         // Set the callback
         connectToSystemButton.setOnAction(actionEvent -> {
             connectPopOver.hide();
@@ -332,8 +321,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         connectPopOver.setDetachable(false);
         connectPopOver.setContentNode(layoutBox);
         // Set the CSS
-        systemBox.getStylesheets().add(getClass().getClassLoader()
-                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+        CssHandler.applyTo(systemBox);
         // Set the callback
         connectToSystemButton.setOnAction(actionEvent -> {
             connectPopOver.hide();
@@ -362,7 +350,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         try {
             Parent root = FXMLLoader.load(getClass().getClassLoader()
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/DebugDialog.fxml"));
-
+            CssHandler.applyTo(root);
             debugPopOver.setContentNode(root);
             debugPopOver.setArrowLocation(PopOver.ArrowLocation.BOTTOM_LEFT);
             debugPopOver.setTitle("Debug Information");
@@ -377,7 +365,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         try {
             Parent root = FXMLLoader.load(getClass().getClassLoader()
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/AboutDialog.fxml"));
-
+            CssHandler.applyTo(root);
             infoPopOver.setContentNode(root);
             infoPopOver.setArrowLocation(PopOver.ArrowLocation.RIGHT_TOP);
             infoPopOver.setDetachable(false);
@@ -399,7 +387,6 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private void chatButtonAction(ActionEvent actionEvent) {
         if (ReatmetricUI.selectedSystem().getSystem() != null) {
             chatFlashTimeline.pause();
-            chatButton.setStyle(CHAT_LABEL_CSS_STYLE_NOALARM);
             chatPopOver.show(chatButton);
             chatMessageController.setFocus();
         }
@@ -410,6 +397,11 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         // Set the instance
         INSTANCE = new Facade();
 
+        CssHandler.applyTo(connectPopOver.getRoot(), true);
+        CssHandler.applyTo(messagePopOver.getRoot(), true);
+        CssHandler.applyTo(infoPopOver.getRoot(), true);
+        CssHandler.applyTo(debugPopOver.getRoot(), true);
+        CssHandler.applyTo(chatPopOver.getRoot(), true);
         // Set tabpane image
         viewTabPane.setStyle("-fx-background-image: url(\"/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-small-color-128px.png\"); -fx-background-repeat: no-repeat; -fx-background-position: center;");
 
@@ -443,6 +435,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
             URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/AckMessageDialog.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent root = loader.load();
+            CssHandler.applyTo(root);
             ackMessageController = loader.getController();
             messagePopOver.setHeaderAlwaysVisible(true);
             messagePopOver.setContentNode(root);
@@ -461,23 +454,30 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         // Flashing timeline for alarms
         alarmFlashTimeline = new Timeline(
                 new KeyFrame(Duration.seconds(0.5), e -> {
-                    systemLbl.setStyle(SYSTEM_LABEL_CSS_STYLE_ALARM);
+                    systemLbl.getStyleClass().remove(SYSTEM_LABEL_CSS_STYLE_NOALARM);
+                    systemLbl.getStyleClass().add(SYSTEM_LABEL_CSS_STYLE_ALARM);
                     if(soundButton.isSelected()) {
                         alarmSound.play();
                     }
+                    systemLbl.layout();
                 }),
                 new KeyFrame(Duration.seconds(1.0), e -> {
-                    systemLbl.setStyle(SYSTEM_LABEL_CSS_STYLE_NOALARM);
+                    systemLbl.getStyleClass().remove(SYSTEM_LABEL_CSS_STYLE_ALARM);
+                    systemLbl.getStyleClass().add(SYSTEM_LABEL_CSS_STYLE_NOALARM);
                     alarmSound.stop();
+                    systemLbl.layout();
                 })
         );
         alarmFlashTimeline.setCycleCount(Animation.INDEFINITE);
+        systemLbl.getStyleClass().add(SYSTEM_LABEL_CSS_STYLE_NOALARM);
+        chatButton.getStyleClass().remove(CHAT_LABEL_CSS_STYLE_ALARM);
 
         // Create chat table view
         try {
             URL chatDialogUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/ChatDialog.fxml");
             FXMLLoader loader = new FXMLLoader(chatDialogUrl);
             Parent root = loader.load();
+            CssHandler.applyTo(root);
             chatMessageController = loader.getController();
             chatPopOver.setHeaderAlwaysVisible(true);
             chatPopOver.setContentNode(root);
@@ -490,10 +490,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         // Flashing timeline for chat
         chatFlashTimeline = new Timeline(
                 new KeyFrame(Duration.seconds(0.5), e -> {
-                    chatButton.setStyle(CHAT_LABEL_CSS_STYLE_ALARM);
+                    chatButton.getStyleClass().add(CHAT_LABEL_CSS_STYLE_ALARM);
                 }),
                 new KeyFrame(Duration.seconds(1.0), e -> {
-                    chatButton.setStyle(CHAT_LABEL_CSS_STYLE_NOALARM);
+                    chatButton.getStyleClass().remove(CHAT_LABEL_CSS_STYLE_ALARM);
                 })
         );
         chatFlashTimeline.setCycleCount(Animation.INDEFINITE);
@@ -573,6 +573,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
 
     private void deregisterChatMonitor() {
         chatMessageController.deactivate();
+        chatButton.getStyleClass().remove(CHAT_LABEL_CSS_STYLE_ALARM);
     }
 
     @Override
@@ -583,8 +584,13 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
     protected void signalChatStatusChanged(boolean inAlarm) {
-        if (chatFlashTimeline.getStatus() != Animation.Status.RUNNING && !chatPopOver.isShowing()) {
-            chatFlashTimeline.play();
+        if(inAlarm) {
+            if (chatFlashTimeline.getStatus() != Animation.Status.RUNNING && !chatPopOver.isShowing()) {
+                chatFlashTimeline.play();
+            }
+        } else {
+            chatFlashTimeline.pause();
+            chatButton.getStyleClass().remove(CHAT_LABEL_CSS_STYLE_ALARM);
         }
     }
 
@@ -595,7 +601,10 @@ public class MainViewController implements Initializable, IReatmetricServiceList
             }
         } else {
             alarmFlashTimeline.pause();
-            systemLbl.setStyle(SYSTEM_LABEL_CSS_STYLE_NOALARM);
+            // Reset style
+            systemLbl.getStyleClass().remove(SYSTEM_LABEL_CSS_STYLE_ALARM);
+            systemLbl.getStyleClass().remove(SYSTEM_LABEL_CSS_STYLE_NOALARM);
+            systemLbl.getStyleClass().add(SYSTEM_LABEL_CSS_STYLE_NOALARM);
         }
     }
 
@@ -650,16 +659,16 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         FxUtils.runLater(() -> {
             switch (state) {
                 case ALARM:
-                    this.nominalCrl.setFill(Paint.valueOf(ALARM_COLOR));
+                    CssHandler.updateStyleClass(this.nominalCrl, CssHandler.CSS_CONNECTION_STATUS_ERROR);
                     break;
                 case WARNING:
-                    this.nominalCrl.setFill(Paint.valueOf(WARNING_COLOR));
+                    CssHandler.updateStyleClass(this.nominalCrl, CssHandler.CSS_CONNECTION_STATUS_WARNING);
                     break;
                 case NOMINAL:
-                    this.nominalCrl.setFill(Paint.valueOf(NOMINAL_COLOR));
+                    CssHandler.updateStyleClass(this.nominalCrl, CssHandler.CSS_CONNECTION_STATUS_NOMINAL);
                     break;
                 default:
-                    this.nominalCrl.setFill(Paint.valueOf(DISABLED_COLOR));
+                    CssHandler.updateStyleClass(this.nominalCrl, CssHandler.CSS_CONNECTION_STATUS_NOT_INIT);
                     break;
             }
         });

@@ -26,11 +26,11 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.udd.*;
 import eu.dariolucia.reatmetric.ui.utils.ChartPreset;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
-import eu.dariolucia.reatmetric.ui.udd.IChartDisplayController;
 import eu.dariolucia.reatmetric.ui.utils.UserDisplayCoordinator;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -145,6 +145,8 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent dateTimePicker = loader.load();
+            CssHandler.applyTo(dateTimePopup.getScene().getRoot());
+            CssHandler.applyTo(dateTimePicker);
             this.dateTimePickerController = loader.getController();
             this.dateTimePopup.getContent().addAll(dateTimePicker);
             // Load the controller hide with select
@@ -450,8 +452,7 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
             Bounds b = this.selectTimeBtn.localToScreen(this.selectTimeBtn.getBoundsInLocal());
             this.dateTimePopup.setX(b.getMinX());
             this.dateTimePopup.setY(b.getMaxY());
-            this.dateTimePopup.getScene().getRoot().getStylesheets().add(getClass().getClassLoader()
-                    .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+            CssHandler.applyTo(this.dateTimePopup.getScene().getRoot());
             this.dateTimePopup.show(this.innerBox.getScene().getWindow());
         }
     }

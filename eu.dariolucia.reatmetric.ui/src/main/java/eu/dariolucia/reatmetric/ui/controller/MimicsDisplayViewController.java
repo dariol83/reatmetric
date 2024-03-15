@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
@@ -72,8 +73,6 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
     @FXML
     protected MenuButton loadBtn;
 
-    private URL cssUrl;
-
     // Tab buttons
     @FXML
     protected Button detachButton;
@@ -89,9 +88,6 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
     @Override
     public final void doInitialize(URL url, ResourceBundle rb) {
         this.loadBtn.setOnShowing(this::onShowingPresetMenu);
-        this.cssUrl = getClass().getClassLoader()
-                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
-
         // tab buttons visible/invisible depending on tab selection
         detachButton.setVisible(false);
         tabPane.getSelectionModel().selectedItemProperty().addListener((t) -> {
@@ -268,7 +264,7 @@ public class MimicsDisplayViewController extends AbstractDisplayController {
         t.setOnCloseRequest(null);
         this.tabPane.getTabs().remove(t);
         Scene scene = new Scene(pair.getFirst(), 800, 600);
-        scene.getStylesheets().add(cssUrl.toExternalForm());
+        CssHandler.applyTo(scene);
 
         stage.setScene(scene);
         stage.setTitle(t.getText());

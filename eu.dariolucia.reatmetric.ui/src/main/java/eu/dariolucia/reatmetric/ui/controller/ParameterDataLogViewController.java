@@ -25,14 +25,13 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.net.URL;
@@ -101,22 +100,23 @@ public class ParameterDataLogViewController extends AbstractDataItemLogViewContr
 					setText(item.name());
 					switch (item) {
 						case DISABLED:
-							setTextFill(Color.GRAY);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_VALIDITY_DISABLED);
 							break;
 						case INVALID:
-							setTextFill(Color.RED);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_VALIDITY_INVALID);
 							break;
 						case ERROR:
-							setTextFill(Color.DARKRED);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_VALIDITY_ERROR);
 							break;
 						case UNKNOWN:
-							setTextFill(Color.CHOCOLATE);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_VALIDITY_UNKNOWN);
 							break;
 						default:
-							setTextFill(Color.DARKGREEN);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_VALIDITY_VALID);
 							break;
 					}
 				} else {
+					CssHandler.updateStyleClass(this, null);
 					setText("");
 					setGraphic(null);
 				}
@@ -130,28 +130,29 @@ public class ParameterDataLogViewController extends AbstractDataItemLogViewContr
 					setText(item.name());
 					switch (item) {
 						case ALARM:
-							setTextFill(Color.RED);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_ALARM);
 							break;
 						case ERROR:
-							setTextFill(Color.DARKRED);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_ERROR);
 							break;
 						case WARNING:
-							setTextFill(Color.CHOCOLATE);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_WARNING);
 							break;
 						case VIOLATED:
-							setTextFill(Color.DARKGOLDENROD);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_VIOLATED);
 							break;
 						case UNKNOWN:
 						case NOT_APPLICABLE:
 						case NOT_CHECKED:
 						case IGNORED:
-							setTextFill(Color.GRAY);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_UNKNOWN);
 							break;
 						default:
-							setTextFill(Color.DARKGREEN);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_NOMINAL);
 							break;
 					}
 				} else {
+					CssHandler.updateStyleClass(this, null);
 					setText("");
 					setGraphic(null);
 				}

@@ -24,6 +24,7 @@ import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
@@ -35,7 +36,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
-import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 
@@ -143,16 +143,17 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
                     setText(item.name());
                     switch (item) {
                         case BAD:
-                            setTextFill(Color.DARKRED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_ERROR);
                             break;
                         case UNKNOWN:
-                            setTextFill(Color.BLACK);
+                            CssHandler.updateStyleClass(this, null);
                             break;
                         default:
-                            setTextFill(Color.DARKGREEN);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_NOMINAL);
                             break;
                     }
                 } else {
+                    CssHandler.updateStyleClass(this, null);
                     setText("");
                     setGraphic(null);
                 }

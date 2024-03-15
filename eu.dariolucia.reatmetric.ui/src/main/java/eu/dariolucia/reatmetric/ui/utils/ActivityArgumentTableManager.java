@@ -40,6 +40,9 @@ import java.util.*;
 
 public class ActivityArgumentTableManager {
 
+    private static final String CSS_ACTIVITY_ARGUMENT_FIXED = "x-reatmetric-activity-argument-fixed";
+    private static final String CSS_ACTIVITY_ARGUMENT_NOT_READY = "x-reatmetric-activity-argument-not-ready";
+
     private TreeTableView<ArgumentBean> table;
 
     private TreeTableColumn<ArgumentBean, String> nameCol;
@@ -101,11 +104,14 @@ public class ActivityArgumentTableManager {
                 TreeTableRow<ArgumentBean> currentRow = getTreeTableRow();
                 if(currentRow != null && currentRow.getTreeItem() != null) {
                     if (currentRow.getTreeItem().getValue().isFixed()) {
-                        currentRow.setStyle("-fx-background-color: lightgray");
+                        currentRow.getStyleClass().add(CSS_ACTIVITY_ARGUMENT_FIXED);
+                        currentRow.getStyleClass().remove(CSS_ACTIVITY_ARGUMENT_NOT_READY);
                     } else if (!currentRow.getTreeItem().getValue().readyProperty().get()) {
-                        currentRow.setStyle("-fx-background-color: orangered");
+                        currentRow.getStyleClass().remove(CSS_ACTIVITY_ARGUMENT_FIXED);
+                        currentRow.getStyleClass().add(CSS_ACTIVITY_ARGUMENT_NOT_READY);
                     } else {
-                        currentRow.setStyle("");
+                        currentRow.getStyleClass().remove(CSS_ACTIVITY_ARGUMENT_FIXED);
+                        currentRow.getStyleClass().remove(CSS_ACTIVITY_ARGUMENT_NOT_READY);
                     }
                 }
             }

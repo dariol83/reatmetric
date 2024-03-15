@@ -30,6 +30,7 @@ import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDescriptor;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
 import javafx.application.Platform;
@@ -153,6 +154,8 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
             URL datePickerUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/DateTimePickerWidget.fxml");
             FXMLLoader loader = new FXMLLoader(datePickerUrl);
             Parent dateTimePicker = loader.load();
+            CssHandler.applyTo(dateTimePopup.getScene().getRoot());
+            CssHandler.applyTo(dateTimePicker);
             this.dateTimePickerController = loader.getController();
             this.dateTimePopup.getContent().addAll(dateTimePicker);
             // Load the controller hide with select
@@ -192,7 +195,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                 TableRow<ParameterDataWrapper> currentRow = getTableRow();
                 if(currentRow != null && currentRow.getItem() instanceof RowSeparatorWrapper) {
                     setText(item);
-                    currentRow.setStyle("-fx-background-color: lightgray; -fx-font-weight: bold; -fx-border-color: black; -fx-border-insets: 0 -1 0 -1;");
+                    CssHandler.updateStyleClass(currentRow, CssHandler.CSS_PARAMETER_RAW_SEPARATOR);
                 } else {
                     if (item != null && !empty && !isEmpty()) {
                         setText(item);
@@ -200,7 +203,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                         setText("");
                     }
                     if(currentRow != null) {
-                        currentRow.setStyle("");
+                        CssHandler.updateStyleClass(currentRow, null);
                     }
                 }
                 setCellFontSize(this);
@@ -214,22 +217,23 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                     setText(item.name());
                     switch (item) {
                         case DISABLED:
-                            setTextFill(Color.GRAY);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_VALIDITY_DISABLED);
                             break;
                         case INVALID:
-                            setTextFill(Color.RED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_VALIDITY_INVALID);
                             break;
                         case ERROR:
-                            setTextFill(Color.DARKRED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_VALIDITY_ERROR);
                             break;
                         case UNKNOWN:
-                            setTextFill(Color.CHOCOLATE);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_VALIDITY_UNKNOWN);
                             break;
                         default:
-                            setTextFill(Color.DARKGREEN);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_VALIDITY_VALID);
                             break;
                     }
                 } else {
+                    CssHandler.updateStyleClass(this, null);
                     setText("");
                     setGraphic(null);
                 }
@@ -244,28 +248,29 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                     setText(item.name());
                     switch (item) {
                         case ALARM:
-                            setTextFill(Color.RED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_ALARM);
                             break;
                         case ERROR:
-                            setTextFill(Color.DARKRED);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_ERROR);
                             break;
                         case WARNING:
-                            setTextFill(Color.CHOCOLATE);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_WARNING);
                             break;
                         case VIOLATED:
-                            setTextFill(Color.DARKGOLDENROD);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_VIOLATED);
                             break;
                         case UNKNOWN:
                         case NOT_APPLICABLE:
                         case NOT_CHECKED:
                         case IGNORED:
-                            setTextFill(Color.GRAY);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_UNKNOWN);
                             break;
                         default:
-                            setTextFill(Color.DARKGREEN);
+                            CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_NOMINAL);
                             break;
                     }
                 } else {
+                    CssHandler.updateStyleClass(this, null);
                     setText("");
                     setGraphic(null);
                 }
@@ -333,7 +338,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
             Bounds b = this.selectTimeBtn.localToScreen(this.selectTimeBtn.getBoundsInLocal());
             this.dateTimePopup.setX(b.getMinX());
             this.dateTimePopup.setY(b.getMaxY());
-            this.dateTimePopup.getScene().getRoot().getStylesheets().add(getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+            CssHandler.applyTo(this.dateTimePopup.getScene().getRoot());
             this.dateTimePopup.show(this.liveTgl.getScene().getWindow());
         }
     }

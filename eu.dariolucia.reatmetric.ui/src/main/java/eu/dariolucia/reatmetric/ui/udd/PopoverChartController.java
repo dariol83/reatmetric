@@ -25,10 +25,10 @@ import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.UserDisplayCoordinator;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.chart.AreaChart;
@@ -174,8 +174,7 @@ public class PopoverChartController implements IChartDisplayController {
         stage.setWidth(600);
         stage.setHeight(200);
         Scene scene = new Scene(theBox, 600, 200);
-        scene.getStylesheets().add(getClass().getClassLoader()
-                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css").toExternalForm());
+        CssHandler.applyTo(scene);
         stage.setScene(scene);
 
         // ... and retrieve data from the archive from now - TIME_WINDOW to now ...

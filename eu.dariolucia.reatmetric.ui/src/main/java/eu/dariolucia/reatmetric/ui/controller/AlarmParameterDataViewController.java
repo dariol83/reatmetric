@@ -27,6 +27,7 @@ import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.InstantCellFactory;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
@@ -113,28 +114,29 @@ public class AlarmParameterDataViewController
 					setText(item.name());
 					switch (item) {
 						case ALARM:
-							setTextFill(Color.RED);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_ALARM);
 							break;
 						case ERROR:
-							setTextFill(Color.DARKRED);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_ERROR);
 							break;
 						case WARNING:
-							setTextFill(Color.CHOCOLATE);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_WARNING);
 							break;
 						case VIOLATED:
-							setTextFill(Color.DARKGOLDENROD);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_VIOLATED);
 							break;
 						case UNKNOWN:
 						case NOT_APPLICABLE:
 						case NOT_CHECKED:
 						case IGNORED:
-							setTextFill(Color.GRAY);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_UNKNOWN);
 							break;
 						default:
-							setTextFill(Color.DARKGREEN);
+							CssHandler.updateStyleClass(this, CssHandler.CSS_SEVERITY_NOMINAL);
 							break;
 					}
 				} else {
+					CssHandler.updateStyleClass(this, null);
 					setText("");
 					setGraphic(null);
 				}

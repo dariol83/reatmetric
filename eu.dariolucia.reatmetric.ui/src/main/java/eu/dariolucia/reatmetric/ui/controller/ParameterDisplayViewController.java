@@ -19,13 +19,13 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.AndPreset;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
 import eu.dariolucia.reatmetric.ui.utils.PresetStorageManager;
 import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
-import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
@@ -53,8 +53,6 @@ import java.util.logging.Logger;
 public class ParameterDisplayViewController extends AbstractDisplayController {
 
 	private static final Logger LOG = Logger.getLogger(ParameterDisplayViewController.class.getName());
-
-	private URL cssUrl;
 
 	// Pane control
 	@FXML
@@ -96,8 +94,6 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 	@Override
 	public final void doInitialize(URL url, ResourceBundle rb) {
 		this.loadBtn.setOnShowing(this::onShowingPresetMenu);
-		this.cssUrl = getClass().getClassLoader()
-				.getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
 
 		// tab buttons visible/invisible depending on tab selection
 		detachButton.setVisible(false);
@@ -282,7 +278,7 @@ public class ParameterDisplayViewController extends AbstractDisplayController {
 		t.setOnCloseRequest(null);
 		this.tabPane.getTabs().remove(t);
 		Scene scene = new Scene(pair.getFirst(), 800, 600);
-		scene.getStylesheets().add(cssUrl.toExternalForm());
+		CssHandler.applyTo(scene);
 
 		stage.setScene(scene);
 		stage.setTitle(t.getText());

@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.ChartPreset;
 import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
@@ -52,8 +53,6 @@ import java.util.logging.Logger;
 public class UserDisplayViewController extends AbstractDisplayController {
 
     private static final Logger LOG = Logger.getLogger(UserDisplayViewController.class.getName());
-
-    private URL cssUrl;
 
     // Pane control
     @FXML
@@ -95,9 +94,6 @@ public class UserDisplayViewController extends AbstractDisplayController {
     @Override
     public final void doInitialize(URL url, ResourceBundle rb) {
         this.loadBtn.setOnShowing(this::onShowingPresetMenu);
-        this.cssUrl = getClass().getClassLoader()
-                .getResource("eu/dariolucia/reatmetric/ui/fxml/css/MainView.css");
-
         // tab buttons visible/invisible depending on tab selection
         detachButton.setVisible(false);
         renameButton.setVisible(false);
@@ -282,7 +278,7 @@ public class UserDisplayViewController extends AbstractDisplayController {
         t.setOnCloseRequest(null);
         this.tabPane.getTabs().remove(t);
         Scene scene = new Scene(pair.getFirst(), 800, 600);
-        scene.getStylesheets().add(cssUrl.toExternalForm());
+        CssHandler.applyTo(scene);
 
         stage.setScene(scene);
         stage.setTitle(t.getText());
