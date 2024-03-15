@@ -26,9 +26,10 @@ ReatMetric is a modular framework, decomposed in modules following the Java modu
 - **eu.dariolucia.reatmetric.driver.automation.groovy**: this module provides a driver implementation of an automation system capable to execute Groovy scripts. Preferred choice.
 - **eu.dariolucia.reatmetric.driver.automation.js**: this module provides a driver implementation of an automation system capable to execute Javascript scripts. Experimental.
 - **eu.dariolucia.reatmetric.driver.automation.python**: this module provides a driver implementation of an automation system capable to execute Python scripts. Experimental.
-- **eu.dariolucia.reatmetric.driver.remote**: this module is driver that allows connection to a remote ReatMetric-based system (which is seen as a monitorable and controllable element).
-- **eu.dariolucia.reatmetric.driver.serial**: this module is driver that allows communication to a serial interface.
-- **eu.dariolucia.reatmetric.driver.spacecraft**: this module provides a driver implementation for the monitoring and control of a CCSDS/ECSS-PUS compliant spacecraft. Currently it includes support for the reception of TM/AOS frames via SLE RAF/RCF services, TM packet extraction, parameter decoding, PUS 9 time correlation, PUS 5 event mapping, PUS 1 command verification, PUS 11 on-board command scheduling (limited to 11,4 commands), telecommand encoding and CLTU transmission via SLE CLTU, full COP-1 support.
+- **eu.dariolucia.reatmetric.driver.remote**: this module allows connection to a remote ReatMetric-based system (which is seen as a monitorable and controllable element).
+- **eu.dariolucia.reatmetric.driver.serial**: this module allows communication to a serial interface.
+- **eu.dariolucia.reatmetric.driver.socket**: this module allows communication to a TCP/IP interface and allows to fully specify a monitoring and control protocol in terms of binary or ASCII messages, verifications and interactions.
+- **eu.dariolucia.reatmetric.driver.spacecraft**: this module provides a driver implementation for the monitoring and control of a CCSDS/ECSS-PUS compliant spacecraft. Currently, it includes support for the reception of TM/AOS frames via SLE RAF/RCF services, TM packet extraction, parameter decoding, PUS 9 time correlation, PUS 5 event mapping, PUS 1 command verification, PUS 11 on-board command scheduling (limited to 11,4 commands), telecommand encoding and CLTU transmission via SLE CLTU, full COP-1 support.
 - **eu.dariolucia.reatmetric.driver.test**: this module is a simple test driver that shows how to implement a simple custom driver.
 - **eu.dariolucia.reatmetric.driver.httpserver**: this module provides a simple, well documented REST/JSON API for monitoring, control and retrieval of data via a HTTP interface.
 
@@ -78,6 +79,7 @@ ReatMetric Graphical User Interface (composed by the _ui_ module, with optional 
 - Scheduling display. Time-based navigation based on stored data is available.
 - Acknowledgement display.
 - Chat display.
+- Full customisation via CSS stylesheets.
 
 ### Spacecraft M&C Driver
 The Spacecraft M&C Driver (composed by the _driver.spacecraft_ module) provides a complete TM/TC solution for the monitoring and control of a single spacecraft. Such support is heavily based on the eu.dariolucia.ccsds library.
@@ -95,8 +97,7 @@ The full set of capabilities of the driver:
 - Supported PUS services: 9 (time correlation), 5 (on-board events), 1 (command verification), 11 (on-board scheduling)
 
 In order to test the driver, a simplified telemetry generator and telecommand processor (with SLE interface) has been implemented in the module _driver.spacecraft.test_. 
-The simulator supports the generation of housekeeping telemetry packets, time packets, on-board events and command verifications reports. It also has support for telecommands received in AD and BD mode, BC frames and 
-basic support for time-tagged commands. 
+The simulator supports the generation of housekeeping telemetry packets, time packets, on-board events and command verifications reports. It also has support for telecommands received in AD and BD mode, BC frames and basic support for time-tagged commands. 
 
 If you have MIB file in the ESA SCOS-2000 format (e.g. https://issues.cosmos.esa.int/solarorbiterwiki/download/attachments/23757668/MOC-applicable%20MIB%20egos-mcs-s2k-icd-0001-version7.0-FINAL.pdf?version=1&modificationDate=1522940882000&api=v2), it is possible to convert it to the ReatMetric format (TM/TC definitions and processing model) using an online conversion service. The converter is available here:
 
@@ -148,6 +149,11 @@ underlying communication interface.
 
 The HTTP server driver allows interactions to the system by exposing a REST/JSON API on HTTP. The driver comes together with a Javascript library,
 which can be used in web pages to remotely connect to ReatMetric and request interactions. Several HTML pages using the library are provided as example.
+
+### Socket Driver
+
+The socket driver is a generic driver that allows to define, only by means of configuration files, connection styles, binary or ASCII protocol messages,
+mapping to processing model elements and verification strategies for commands. 
 
 ## Performance
 The performance are computed with reference to the following 2 platforms:
@@ -268,14 +274,38 @@ Example of remoting configuration:
 ## Implement your driver
 
 ## Roadmap
-- SCOS-2000 MIB conversion service
-- Web interface (finalize HTTP driver)
-- Generic binary/ASCII UDP/TCP driver
-- Optimisations, features and bug-fixes for the JavaFX UI (support for custom views in the UI)
-- Documentation (javadoc, configuration examples, driver example)
+
+### To version 1.0.0
+- Improvements to the Spacecraft driver
+  - Direct VCA TM/TC support
+  - CLCW information publication in the processing model 
+  - Replay connector to be excluded by spacecraft driver configuration (add as connector with NONE data type)
+- Documentation (ASCII doc to be completed - 80%)
+
+### To version 1.1.0
+- SNMP driver
+- SNMP generator for SNMP driver
+
+### Future ideas
+- Drop Javascript automation driver, due to GraalVM memory leak?
+- Use JEP for Python support in automation, drop Jython
+- Report generation module (driver? activity mapped?)
+- File circulation/distribution driver, based on FTP/SFTP/SCP/HTTP/REST
+- Export data function
+- persist implementation based on PostgreSQL and Timeseries
+- Helidon gRPC/REST remoting/Helidon gRPC/REST connector (requires Java 21)
+- Helidon gRPC/REST remoting driver (requires Java 21)
+- Hot redundancy at Reatmetric Core level (two instances fully synchronised, but only one has the connectors open and the scheduler active. When one goes down, the other takes over)
 
 ## Acknowledgements and Credits
 A special mention goes to Theresa Köster from the University of Gießen, who evaluated ReatMetric (among other tools) 
 against the Flying Laptop operational simulator. With her contributions, ideas and suggestions, she helped greatly to 
 verify the TM/TC implementation compatibility of ReatMetric against a real, operational system.
+
+Special thanks go to the F-Series team at Airbus DS, Germany, which is using ReatMetric and the underlying CCSDS software
+library as a testing system for the development support and verification of the F-Series core avionics FLP2 and FLC. The
+team contributed to resolve some issues in the implementation of the protocols and provided valuable feedback for the 
+improvement of the usability of the ReatMetric system.
+
+![F-Series](docs/images/f-series.png)
 
