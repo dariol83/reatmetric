@@ -29,11 +29,11 @@ in each packet according to the packet structure definition defined as part of t
 TM parameters are time-correlated (depending on the structure definition of the packet) and mapped to ReatMetric's
 processing model parameters and injected into the processing model for processing (validity checking, calibration,
 alarm checking). Each TM packet together with the extracted TM parameters is also forwarded to the _Service Broker_.
-. The _Service Broker_ is an entity responsible to distribute TM packets and telecommand lifecycle information to so-called
-_services_, as well to act as a registry for some specific internal interface implementations. A _service_ in this context
-has the same meaning of that defined by the ECSS Packet Utilisation Standard. The driver provides basic (and sometimes partial)
-implementations of the following services, but the service support can be extended by means of extensions and the provided
-implementations easily replaced (see <<_services>>):
+. The _Service Broker_ is an entity responsible to distribute TM packets and telecommand (both TC packets and VC data units)
+lifecycle information to so-called _services_, as well to act as a registry for some specific internal interface implementations.
+A _service_ in this context has the same meaning of that defined by the ECSS Packet Utilisation Standard. The driver provides
+basic (and sometimes partial) implementations of the following services, but the service support can be extended by means
+of extensions and the provided implementations easily replaced (see <<_services>>):
 .. Time service (PUS service 9), responsible for time correlation with a linear regressor implementation;
 .. On-board event service (PUS service 5);
 .. On-board operations scheduling service (PUS service 11), with limited support to 11,4 telecommands: only one inner TC) and
@@ -46,18 +46,19 @@ image::../docs/docimg/Drawings-Spacecraft Driver - Telemetry.drawio.png[Telemetr
 The telecommand processing chain is composed by the following processing entities:
 
 . A _TC Packet Processor_ that is an _Activity Handler_ of the ReatMetric processing model: when an activity is invoked, and
-this activity is mapped to a telecommand, the corresponding activity occurrence is forwarded to this element. This element
-encodes the telecommand, forwards it to the Raw Data Broker and to the _Service Broker_. If there is a service that fully
-takes over the processing of the telecommand (e.g. the on-board operations scheduling service), then the TC Packet Processor
-does not perform any additional processing. If instead there is no service taking over the processing of the telecommand,
-then the TC Packet Processor, depending on the selected route, might forward the telecommand to an external, TC packet-based
-interface or to the TC Data Link Processor.
-. A _TC Data Link Processor_ that receives TC packets and constructs TC frames out of them. This entity also manages the
-COP-1 protocol for all the possible TC VC IDs, as specified in the configuration. Selection of the AD/BD mode, segmentation,
-MAP-ID and grouping is achieved by configuration, and it can be overridden using the _activity properties_ described
-further on. Depending on the selected route, the TC Data Link Processor forwards the TC frame to an external, TC frame-based
-interface or to an external, CLTU-based interface. In the latter case, the entity takes care of encoding the CLTU.
-Randomisation is also performed by this entity, if configured.
+this activity is mapped to a telecommand packet or to a VC data unit (depending on the telecommand definition),
+the corresponding activity occurrence is forwarded to this element. This element encodes the telecommand, forwards it to
+the Raw Data Broker and to the _Service Broker_. If there is a service that fully takes over the processing of the telecommand
+(e.g. the on-board operations scheduling service), then the TC Packet Processor does not perform any additional processing.
+If instead there is no service taking over the processing of the telecommand, then the TC Packet Processor, depending on
+the selected route, might forward the telecommand to an external, TC packet-based interface (in case of TC packets)
+or to the TC Data Link Processor.
+. A _TC Data Link Processor_ that receives TC packets and VC data units, and constructs TC frames out of them. This entity
+also manages the COP-1 protocol for all the possible TC VC IDs, as specified in the configuration. Selection of the AD/BD mode,
+segmentation, MAP-ID and grouping is achieved by configuration, and it can be overridden using the _activity properties_
+described further on. Depending on the selected route, the TC Data Link Processor forwards the TC frame to an external,
+TC frame-based interface or to an external, CLTU-based interface. In the latter case, this entity takes care of encoding
+the CLTU. Randomisation is also performed by this entity, if configured.
 . Interfaces that are able to send telecommands in TC packet, TC frame or CLTU form by means of _connectors_. The spacecraft
 driver implements the support for CCSDS SLE CLTU protocol, as well as for a simple TCP/IP CADU/CLTU connection.
 
@@ -88,15 +89,15 @@ in a PUS 11,4 telecommand). The linked activity occurrence is in TRANSMISSION.
 is announced by the On-board Operations Scheduling service, upon completion of the containing 11,4 telecommand.  The linked
 activity occurrence is still in TRANSMISSION.
 . *AVAILABLE_ONBOARD*: the telecommand is assumed to be in the availability of the on-board software for immediate execution.
-This phase is announced immediately after the RECEIVED_ONBOARD phase for immediate telecommands, or after the SCHEDULED phase
-for time-tagged commands. The announcement of this phase triggers the Command Verification service to register the telecommand
-and start processing incoming PUS 1 TM packets, to receive and process the PUS 1 reports related to the telecommand.  The linked
-activity occurrence is in EXECUTION.
+This phase is announced by the PUS 1 service immediately after the RECEIVED_ONBOARD phase for immediate telecommands, or by
+the PUS 9 service after the SCHEDULED phase for time-tagged commands. The announcement of this phase triggers the
+Command Verification service to register the telecommand and start processing incoming PUS 1 TM packets, to receive and
+process the PUS 1 reports related to the telecommand.  The linked activity occurrence is in EXECUTION.
 . *STARTED*: the telecommand is started its on-board execution. This phase is announced by the Command Verification service upon
-reception of the related PUS START success report (1,3).
+reception of the related PUS START success report (1,3). There is no such verification for VC data units telecommands.
 . *COMPLETED*: the telecommand completed its on-board execution. This phase is announced by the Command Verification service upon
 reception of the related PUS COMPLETED success report (1,7), or by any success report that is marked to be the last expected
-PUS report linked to the telecommand.
+PUS report linked to the telecommand. There is no such verification for VC data units telecommands.
 . *FAILED*: at any time during the lifecycle of the telecommand, a transition to the FAILED phase means that the telecommand
 lifecycle must be stopped and a failure must be reported for the corresponding activity.
 
@@ -146,32 +147,35 @@ to the Raw Data Broker to receive TM frames from the configured satellite.
 ===== Services
 The concept of _service_ is a bit broader than the one specified by the ECSS PUS standard: a service in the ReatMetric Spacecraft
 driver term is simply an entity that can be notified of telecommands and telemetry packets/parameters disseminated in the
-system. What a service does with such information is service-implementation specific: it could maintain an internal model
+system. A service is identified by its service number: the numbers between 1 and 255 are reserved for PUS services. Other numbers
+can be used to register extension services, not necessarily linked to the service type of a PUS on-board implementation.
+What a service does with such information is service-implementation specific: it could maintain an internal model
 based on the received data, it can generate reports, it can communicate with external systems or with a database, and so
 on. The services provided by the driver implementation are (partial) implementations of some PUS-defined services.
 
-The *Command Verification Service* is a full implementation of the PUS 1 service, and it manages the telecommand execution
-verification reports as generated by the satellite. This service does not require configuration.
+The *Command Verification Service* (service number 1) is a full implementation of the PUS 1 service, and it manages the
+telecommand execution verification reports as generated by the satellite. This service does not require configuration.
 
-The *Time Correlation Service* is a full implementation of the PUS 9 service, and it provides an implementation of the
-_ITimeCorrelation_ interface. This service uses time packets to correlate the generation of VC0, VCC0 frames to UTC time
-and builds the related time couples. Depending on the number of time couples, time correlation coefficients are generated
-by direct interpolation or by linear regression. Upon updating the time correlation coefficients, the service distributes
-them via the Raw Data Broker. In this way, the coefficients can be stored and reloaded when the system is started again.
-This service requires configuration, as specified in the
+The *Time Correlation Service* (service number 9) is a full implementation of the PUS 9 service, and it provides an
+implementation of the _ITimeCorrelation_ interface. This service uses time packets to correlate the generation of VC0,
+VCC0 frames to UTC time and builds the related time couples. Depending on the number of time couples, time correlation
+coefficients are generated by direct interpolation or by linear regression. Upon updating the time correlation coefficients,
+the service distributes them via the Raw Data Broker. In this way, the coefficients can be stored and reloaded when the
+system is started again. This service requires configuration, as specified in the
 eu.dariolucia.reatmetric.driver.spacecraft.definition.services package, class TimeCorrelationServiceConfiguration.
 
-The *Direct Link Time Correlation Service* is an alternative implementation for time correlation, replacing the one based
-on time packets. The documentation of class DirectLinkTimeCorrelationService explains the behaviour of this implementation.
+The *Direct Link Time Correlation Service* (service number 9) is an alternative implementation for time correlation,
+replacing the one based on time packets.
+The documentation of class DirectLinkTimeCorrelationService explains the behaviour of this implementation.
 It is useful in cases where the system is used with simulators with unreliable OBT generation or with missing time packet
 information, but it should not be used in real-case scenarios. This service does not require configuration.
 
-The *Onboard Event Service* is a full implementation of the PUS 5 service. Upon reception of a PUS 5 report, the service
-raises a corresponding event in the ReatMetric processing model. This service does not require configuration.
+The *Onboard Event Service* (service number 5) is a full implementation of the PUS 5 service. Upon reception of a PUS 5
+report, the service raises a corresponding event in the ReatMetric processing model. This service does not require configuration.
 
-The *Onboard Operations Scheduling Service* is a partial implementation of the PUS 11 service. This service requires
-configuration, as specified in the eu.dariolucia.reatmetric.driver.spacecraft.definition.services package, class
-OnboardOperationsSchedulingServiceConfiguration.
+The *Onboard Operations Scheduling Service* (service number 11) is a partial implementation of the PUS 11 service.
+This service requires configuration, as specified in the eu.dariolucia.reatmetric.driver.spacecraft.definition.services
+package, class OnboardOperationsSchedulingServiceConfiguration.
 
 Typically, services are stand-alone and communicate among themselves via telecommand notifications and TM information,
 delivered by the service broker. However, direct service-to-service communication via method calls is possible: all
@@ -185,12 +189,12 @@ custom interface and related implementations.
 The Spacecraft driver provides design support to include security decryption for telemetry frames and encryption for
 TC frames, based on the Space Data Link Security Protocol (CCSDS standard CCSDS 355.0-B-2). The support is provided by
 implementing the _ISecurityHandler_ interface and registering such implementation in the Spacecraft driver configuration
-(see <<_configuration>> section below), as a service.
+(see <<_configuration>> section below) as a service.
 
 The contract specified by the _ISecurityHandler_ interface is straightforward:
 
 - As a service, it has access to all TC and TM via the service broker, which is particularly relevant in case of security
-management operations;
+management operations. Access to TM frames and TC frames is also possible via the Raw Data Broker;
 - The implementation must provide the length of the security header and trailer fields for a given spacecraft id, virtual
 channel and type of frame;
 - The implementation must provide the encryption of a given transfer frame, by returning the encrypted version of the
@@ -223,9 +227,9 @@ skeleton for implementation. A connector implemented in this way shall take care
 TM processing chain;
 - Forwarding TC data to the related external endpoint and handling the lifecycle of the specific data unit.
 
-An example of a CLTU-based connector can be seen in the class CltuCaduTcpConnector, which implements a TCP/IP-based connection,
-which delivers CADUs as TM data, and forwards CLTUs as TC data. Two further examples for a TC frame/TM frame TCP/IP connector,
-and TC packet/TM packet connector are planned to be implemented.
+Two examples (CLTU/CADU-based connector and TM/TC packet connector) can be observed in the package
+eu.dariolucia.reatmetric.driver.spacecraft.connectors. A further example (TC frame/TM frame TCP/IP connector)
+is planned to be implemented.
 
 ===== Activity Invocation Properties
 ====== Packet level
@@ -331,60 +335,74 @@ spacecraft module registration for each satellite that you need to process.
 ----
 
 The folder specified in the _configuration_ attribute of the _driver_ element must contain a file named _configuration.xml_,
-which defines the configuration properties of the driver.
+which defines the configuration properties of the driver, and a file named _tmtc.xml_, which contains the definition of the
+TM and TC packets and VC data units. In addition, the folder might contain a subfolder called _sle_, which shall contain the
+SLE configuration files to configure the SLE service instances.
 
+===== Main Configuration File
 The configuration structure of the eu.dariolucia.reatmetric.driver.spacecraft module is defined in the package
 eu.dariolucia.reatmetric.driver.spacecraft.definition. It is an XML file named _configuration.xml_ using
 namespace definition _http://dariolucia.eu/reatmetric/driver/spacecraft_.
 
-An example of such file is presented below.
+An example of such file is presented below. As it covers all the TM/TC characteristics of a CCSDS/ECSS spacecraft,
+with the exception of the packet structure and mapping, the configuration is not easy to understand. Therefore, the
+following example provide extensive comments covering all elements and configuration aspects.
 
 [source,xml]
 ----
-<!--
-  ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~          http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
-
 <ns1:spacecraft xmlns:ns1="http://dariolucia.eu/reatmetric/driver/spacecraft">
 	<!-- Spacecraft name -->
 	<name>TEST</name>
 	<!-- Spacecraft ID -->
 	<id>123</id>
-	<!-- Agency epoch - not specified means 1st Jan 1958 00:00:00 -->
+	<!-- Agency epoch -->
 	<obt-epoch>2000-01-01T00:00:00.000Z</obt-epoch>
-	<!-- Propagation delay - in microseconds - not specified means 0 -->
+	<!-- Propagation delay -->
 	<propagation-delay>0</propagation-delay>
 	<!-- TC datalink configuration -->
 	<tc randomize="true" fecf="true" ad-mode-default="true">
-		<tc-vc-descriptor tc-vc="0" segmentation="true" default-tc-vc="true" system-entity-path="SPACE.FOP.TCVC0" />
+        <!-- TC VC configuration
+        TODO: implement support for use-security
+        -->
+		<tc-vc-descriptor tc-vc="0" segmentation="true" default-tc-vc="true" system-entity-path="SPACE.FOP.TCVC0"
+            use-security="true" access-mode="PACKET" />
+        <tc-vc-descriptor tc-vc="1" segmentation="false" default-tc-vc="false" system-entity-path="SPACE.FOP.TCVC1"
+            use-security="true" access-mode="VCA" />
 	</tc>
 	<!-- TM datalink configuration -->
 	<tm fecf="true" derandomize="false" frame-length="1115">
+		<!-- TM VC configuration -->
+        <tm-vc-descriptor id="0" process-type="PACKET" />
+        <tm-vc-descriptor id="1" process-type="PACKET" />
+        <tm-vc-descriptor id="2" process-type="VCA" />
+        <tm-vc-descriptor id="7" process-type="IGNORE" />
+        <!-- Protocol type -->
 		<type>TM</type>
 	</tm>
-	<!-- Security -->
 	<!-- TM packet configuration -->
 	<tm-packet parameter-id-offset="100000">
+        <!-- Default PUS configuration -->
 		<default-pus-configuration
-			destination-field-length="8"
+			destination-field-length="0"
 			packet-subcounter-present="false"
 			tm-spare-length="0"
 			tm-pec-present="NONE">
+            <!-- OBT time field format in PUS header: CUC or CDS -->
 			<obt-cuc-config explicit-p-field="false" coarse="4" fine="2" />
+            <!-- <obt-cds-config explicit-p-field="false" short_days="true" subtime_byte_res="2" /> TODO: change underscores -->
 		</default-pus-configuration>
+        <!-- It is possible to override the default PUS configuration for specific APIDs, as per following block.
+        More sub-elements can be added. -->
+        <!--
+        <apid-pus-configuration apid="103" destination-field-length="8"
+			packet-subcounter-present="true"
+			tm-spare-length="0"
+			tm-pec-present="CRC">
+            <obt-cuc-config explicit-p-field="false" coarse="4" fine="3" />
+        </apid-pus-configuration>
+        -->
 	</tm-packet>
+    <!-- TC packet configuration -->
 	<tc-packet
 		activity-tc-packet-type="TC"
 		pus-source-id-default-value="123"
@@ -394,20 +412,159 @@ An example of such file is presented below.
 	</tc-packet>
 	<!-- Service configuration -->
 	<services>
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService" configuration="$HOME\Reatmetric\reatmetric_test\test\services\time_correlation.xml" />
-		<!-- <service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.DirectLinkTimeCorrelationService" configuration="$HOME\Reatmetric\reatmetric_test\test\services\time_correlation.xml" /> -->
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService" configuration="$HOME\Reatmetric\reatmetric_test\test\services\onboard_scheduling.xml" />
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.TimeCorrelationService"
+            configuration="$HOME\Reatmetric\reatmetric_test\test\services\time_correlation.xml" />
+		<!-- <service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.DirectLinkTimeCorrelationService"
+            configuration="$HOME\Reatmetric\reatmetric_test\test\services\time_correlation.xml" /> -->
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService"
+            configuration="$HOME\Reatmetric\reatmetric_test\test\services\onboard_scheduling.xml" />
 		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService" configuration="" />
 		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService" configuration="" />
-		<service type="eu.dariolucia.reatmetric.driver.spacecraft.security.impl.AesHandler"
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.AesEncryptionService"
          configuration="$HOME\Reatmetric\reatmetric_test\test\security\security.xml" />
 	</services>
+    <!-- External connectors -->
 	<external-connectors>
 		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.CltuCaduTcpConnector" configuration="127.0.0.1:23532:1279:4" data-unit-type="CLTU" />
 		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.SpacePacketTcpConnector" configuration="127.0.0.1:33532" data-unit-type="TC_PACKET" />
 	</external-connectors>
 </ns1:spacecraft>
 ----
+
+Element *<name>* (mandatory, string): this element assigns the name of the driver instance, it does not play any
+role in the processing of the spacecraft data.
+
+Element *<id>* (mandatory, integer): this element must be set to the spacecraft ID as present in the TM frames,
+and it will be used as value for the spacecraft ID when constructing TC frames. TM frames containing a different
+spacecraft ID will not processed by this driver instance.
+
+Element *<obt-epoch>* (optional, string with XML datetime format): the value is used to correctly interpret the time
+information when delivered with CUC or CDS format. When not specified it is set to 1st Jan 1958 00:00:00.
+
+Element *<propagation-delay>* (optional, integer): this value (in microseconds) is used to derive the actual frame generation
+time (from the Earth-received time) when performing time correlation calculations, and to open verification windows for
+telecommand verification purposes, taking into account the time required by the telecommand to travel and reach the
+spacecraft. When not specified it is set to 0.
+
+Element *<tc>* (mandatory): this element lists the available TC data link properties and their
+characteristics. At least one tc-vc-descriptor child element must be present beneath this element.
+The following attributes are defined:
+
+- _randomize_ (optional, boolean, default: true): TC frames will be randomized using the polynomial defined by the CCSDS
+standard. To disable this behaviour, the attribute shall be set to false.
+- _fecf_ (optional, boolean, default: true): TC frames will contain the Frame Error Control Field at the end (2 bytes).
+To disable the addition of the FECF, the attribute shall be set to false.
+- _ad-mode-default_ (optional, boolean, default: false): if true, TC frames will have the Sequence Controlled flag set.
+The default setting implies that all TC frames are sent in Bypass mode, i.e. they do not require the COP-1 to be
+active. To require the use of the Sequence Controlled mode by default, this attribute shall be set to true and the
+COP-1 shall be activated using the standard-specified activation procedure and related directives.
+
+Sub-element *<tc><tc-vc-descriptor>* (mandatory, at least one defined). This element defines the characteristics of a TC
+virtual channel. The following attributes are defined:
+
+- _tc-vc_ (mandatory, integer): the virtual channel ID of the TC VC.
+- segmentation (optional, boolean, default: false): if set, the virtual channel will use TC segments to deliver
+telecommands.
+- _default-tc-vc_ (optional, boolean, default: false): if set, the virtual channel will be used for all TC frames,
+whose related activity invocations do not specify explicitly a TC VC to be used (see the activity invocation
+properties).
+- _system-entity-path_ (optional, string, default: null): if specified, and if the specified processing model element
+exists with the right structure (see the fop_model.xml file), then the driver will publish status information
+related to the FOP linked to the defined TC virtual channel. If not present or if with wrong structure,
+the system will raise warnings at startup, but it will not block COP operations.
+- _use-security_ (TODO: implement support, optional, string, default: false): if set, all TC frames on this virtual
+channel will be encrypted using the registered ISecurityHandler service.
+- _access-mode_ (optional, enumeration: PACKET, VCA, default: PACKET): access mode of the virtual channel. If PACKET
+is selected, then only TC space packets can be delivered on the virtual channel. If VCA is selected, then only
+raw VC data units can be delivered on the virtual channel. Attempting to send the wrong data unit to the virtual channel
+will cause the telecommand to fail upon release.
+
+Element *<tm>* (mandatory). This element configures TM data link properties and their characteristics. All VCs possibly
+defined by the selected protocol (see type element below) are processed with the default configuration, unless the
+virtual channel is configured ad-hoc in the list of tm-vc-descriptor elements.
+The following attributes are defined:
+
+- _type_ (optional, enumeration: TM, AOS, default: TM): the type of transfer frames delivering telemetry data. It applies
+to all virtual channels.
+- _fecf_ (optional, boolean, default: false): if set, the Frame Error Control Field is assumed present in all transfer frames.
+- _ocf_ (optional, boolean, default: true): if set, the OCF is assumed present in all transfer frames.
+- _derandomize_ (optional, boolean, default: false): if set, received frames shall be derandomised by the receiving
+connector, before distributing the frames in the Raw Data broker. This processing depends on the connector: for instance,
+SLE connectors do not provide any derandomization, as this is not specified by the SLE standard.
+- _aos-fhec_ (optional, boolean, default: false): if set, the AOS Frame Header Error Control is assumed present in AOS
+frames. Only considered if type = AOS.
+- _aos-insert-zone-length_ (optional, integer, default: 0): the length of the Insert Zone for AOS frames. Only considered
+if type = AOS.
+- _frame-length_ (optional, integer, default: -1): the length of the TM/AOS transfer frame. This information is available
+to connectors that require it, e.g. to read CADUs and frames from external sources. SLE connectors do not require this
+information.
+
+Sub-element *<tm><tm-vc-descriptor>* (optional). This element defines the characteristics of a TM virtual channel.
+The following attributes are defined:
+
+- _id_ (mandatory, integer): the virtual channel id.
+- _process-type_ (optional, enumeration: PACKET, VCA, IGNORE, default: PACKET): the data delivered by the virtual
+channel. If PACKET is set, then space packets are assumed to be delivered by the virtual channel. If VCA is
+set, then it is assumed that raw data is written in each transfer frame, not encapsulated in space packets.
+If IGNORE is set, then transfer frames are not further processed.
+
+Sub-element *<tm><type>* (optional, enumeration: TM, AOS, default: TM): data link protocol used to deliver telemetry
+data.
+
+Element *<tm-packet>* (mandatory). This element provides information related to the mapping of packet parameters
+to processing model parameters, and information about properties defined for PUS packet secondary headers.
+The following attributes are defined:
+
+- _parameter-id-offset_ (optional, integer, default: 0): when a telemetry packet or VC data unit is decoded, i.e.
+parameters are extracted, they are assigned to the defined external-id as per structure definition. The value
+specified in this field is then added to the parameter's external-id to compute the ID of the parameter in the
+ReatMetric processing model. This approach simplifies the configuration in case of identical spacecraft (sharing the
+TM/TC structure definition), which can be both included in a single processing model, keeping the same structure
+definition but using different offsets.
+
+Sub-element *<tm-packet><default-pus-configuration>* (optional): if this element is not provided, and no APID-specific configuration
+is provided, then no PUS secondary header will be attempted to be extracted and processed, in case the TM packet
+indicates the presence of a secondary header. This element has a sub-element to define the format of the OBT time
+field (CUC or CDS) as encoded in the PUS header. Support for other, non-PUS secondary headers is not present in the
+current implementation.
+The following attributes are defined:
+
+- _destination-field-length_ (optional, integer, default: 0): length in bits of the PUS header destination field.
+- _packet-subcounter-present_ (optional, boolean, default: false): if set, the PUS packet sub-counter is assumed present.
+- _tm-spare-length_ (optional, integer, default: 0): length in bits of the PUS header spare field.
+- _tm-pec-present_ (optional, enumeration: NONE, CRC, ISO, default: NONE): presence and type of the packet error
+control field (2 bytes).
+
+Sub-element *<tm-packet><default-pus-configuration><obt-cuc-config>* (optional, mandatory choice with obt-cds-config):
+this element defines the characteristics of a CUC-encoded time field as per CCSDS 301.0-B-4.
+The following attributes are defined:
+
+- _explicit-p-field_ (optional, boolean, default: false): whether the P-field is present or not.
+- _coarse_ (optional, integer, default: 4): number of bytes for the coarse CUC field.
+- _fine_ (optional, integer, default: 3): number of bytes for the fine CUC field.
+
+Sub-element *<tm-packet><default-pus-configuration><obt-cds-config>* (optional, mandatory choice with obt-cuc-config):
+this element defines the characteristics of a CDS-encoded time field as per CCSDS 301.0-B-4.
+The following attributes are defined:
+
+- _explicit-p-field_ (optional, boolean, default: false): whether the P-field is present or not.
+- _short-days_ (optional, boolean, default: true): if set, 16 bits are considered for the days field. If false, 24 bits.
+- _subtime-byte-res_ (optional, integer, default: 2): possible values are 0 (no sub-milli field), 2 (number of microseconds
+in millisecond), or 4 (number of picoseconds in millisecond).
+
+Sub-element *<tm-packet><apid-pus-configuration>* (optional): this element has the same structure of the *default-pus-configuration*,
+with the additional presence of the following attribute:
+
+- _apid_ (mandatory, integer): APID of the TM packets, for which the configuration applies.
+
+
+===== TM/TC Structure Definition File
+
+===== Time Correlation Configuration File
+
+===== Onboard Operations Scheduling Configuration File
+
+===== AES Encryption Configuration File
 
 ==== Developer's Q&A
 

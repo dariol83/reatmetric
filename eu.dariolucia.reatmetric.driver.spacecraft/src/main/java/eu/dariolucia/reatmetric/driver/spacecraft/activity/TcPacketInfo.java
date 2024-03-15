@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 import eu.dariolucia.ccsds.encdec.pus.AckField;
 import eu.dariolucia.ccsds.encdec.pus.TcPusHeader;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.PacketErrorControlType;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.VirtualChannelType;
 
 import java.io.Serializable;
 import java.util.HashMap;
@@ -40,17 +41,38 @@ public class TcPacketInfo implements Serializable {
     private final int map;
     private final boolean mapUsed;
     private final PacketErrorControlType checksumType;
+    private final VirtualChannelType tcUnitType;
 
     public TcPacketInfo(String str, String overriddenAckFields, Integer overridenSourceId, Integer overridenMapId, Integer sourceIdDefaultValue, PacketErrorControlType checksumType) {
-        String[] tokens = str.split("\\.", -1);
+        // Parse the string present in the definition
         Map<String, String> keyValueMap = new HashMap<>();
-        for(String ton : tokens) {
-            String key = ton.substring(0, ton.indexOf('='));
-            String value = ton.substring(key.length() + 1);
-            keyValueMap.put(key, value);
+        if(!str.isBlank()) {
+            String[] tokens = str.split("\\.", -1);
+            for (String ton : tokens) {
+                String key = ton.substring(0, ton.indexOf('='));
+                String value = ton.substring(key.length() + 1);
+                keyValueMap.put(key, value);
+            }
         }
-        // Look for APID
-        this.apid = Integer.parseInt(keyValueMap.get(APID_KEY));
+        // Look for the MAP ID if present
+        String mapIdStr = keyValueMap.get(MAPID_KEY);
+        if(overridenMapId != null) {
+            this.map = overridenMapId;
+            this.mapUsed = true;
+        } else if(mapIdStr != null) {
+            this.map = Integer.parseInt(mapIdStr);
+            this.mapUsed = true;
+        } else {
+            this.map = -1;
+            this.mapUsed = false;
+        }
+        // Look for APID, if present: if not present, the TC is assumed to be a VC unit
+        if(keyValueMap.containsKey(APID_KEY)) {
+            this.apid = Integer.parseInt(keyValueMap.get(APID_KEY));
+        } else {
+            this.apid = -1;
+        }
+        this.tcUnitType = this.apid == -1 ? VirtualChannelType.VCA : VirtualChannelType.PACKET;
         // Look for PUS Header information
         String pTypeStr = keyValueMap.get(PUSTYPE_KEY);
         String pSubtypeStr = keyValueMap.get(PUSSUBTYPE_KEY);
@@ -88,18 +110,6 @@ public class TcPacketInfo implements Serializable {
             this.pusHeader = null;
         }
 
-        String mapIdStr = keyValueMap.get(MAPID_KEY);
-        if(overridenMapId != null) {
-            this.map = overridenMapId;
-            this.mapUsed = true;
-        } else if(mapIdStr != null) {
-            this.map = Integer.parseInt(mapIdStr);
-            this.mapUsed = true;
-        } else {
-            this.map = -1;
-            this.mapUsed = false;
-        }
-
         this.checksumType = pusHeader != null ? checksumType : PacketErrorControlType.NONE;
     }
 
@@ -109,6 +119,7 @@ public class TcPacketInfo implements Serializable {
         this.map = map;
         this.mapUsed = this.map > -1;
         this.checksumType = checksumType;
+        this.tcUnitType = this.apid == -1 ? VirtualChannelType.VCA : VirtualChannelType.PACKET;
     }
 
     public TcPusHeader getPusHeader() {
@@ -131,4 +142,7 @@ public class TcPacketInfo implements Serializable {
         return checksumType;
     }
 
+    public VirtualChannelType getTcUnitType() {
+        return tcUnitType;
+    }
 }

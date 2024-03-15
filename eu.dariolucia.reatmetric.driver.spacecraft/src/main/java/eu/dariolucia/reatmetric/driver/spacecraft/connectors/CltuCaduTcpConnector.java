@@ -32,6 +32,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.VirtualChannelType;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -85,8 +86,7 @@ public class CltuCaduTcpConnector extends AbstractFullDuplexTcpConnector impleme
         Instant genTimeInstant = receptionTime.minusNanos(getSpacecraftConfig().getPropagationDelay() * 1000);
         String source = String.valueOf(frame.getSpacecraftId());
         if (frame.isValid()) {
-            if(getSpacecraftConfig().getTmDataLinkConfigurations().getProcessVcs() == null ||
-                    getSpacecraftConfig().getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
+            if(isVcToBeProcessed(frame.getVirtualChannelId())) {
                 String route = String.valueOf(frame.getSpacecraftId()) + '.' + frame.getVirtualChannelId() + ".TCP." + getHost() + '.' + getPort();
                 rd = createRawData(genTimeInstant,
                         Constants.N_TM_TRANSFER_FRAME,
@@ -115,6 +115,12 @@ public class CltuCaduTcpConnector extends AbstractFullDuplexTcpConnector impleme
             rd.setData(frame);
             distributeRawData(rd);
         }
+    }
+
+    private boolean isVcToBeProcessed(short virtualChannelId) {
+        return getSpacecraftConfig().getTmDataLinkConfigurations().getTmVcConfigurations() == null ||
+                getSpacecraftConfig().getTmDataLinkConfigurations().getTmVcConfigurations().stream().anyMatch(o -> o.getId() == virtualChannelId &&
+                        o.getProcessType() != VirtualChannelType.IGNORE);
     }
 
     @Override

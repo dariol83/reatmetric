@@ -20,18 +20,16 @@ import eu.dariolucia.reatmetric.driver.spacecraft.connectors.CltuCaduTcpConnecto
 import eu.dariolucia.reatmetric.driver.spacecraft.connectors.SpacePacketTcpConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.encoding.SpacePacketDecodingExtension;
 import eu.dariolucia.reatmetric.driver.spacecraft.encoding.SpacePacketEncodingExtension;
-import eu.dariolucia.reatmetric.driver.spacecraft.security.impl.AesHandler;
-import eu.dariolucia.reatmetric.driver.spacecraft.services.ISecurityHandler;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.AesEncryptionService;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.*;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptorValueExtensionHandler;
 
 open module eu.dariolucia.reatmetric.driver.spacecraft {
-    uses eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
     uses eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
     uses eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe.ITcFrameConnector;
     uses eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector;
     uses eu.dariolucia.reatmetric.driver.spacecraft.services.IService;
-    uses ISecurityHandler;
+    uses eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
 
     requires java.logging;
     requires jakarta.xml.bind;
@@ -64,7 +62,7 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
     provides eu.dariolucia.reatmetric.api.value.IValueExtensionHandler with TmFrameDescriptorValueExtensionHandler, TcPacketInfoValueExtensionHandler;
     provides eu.dariolucia.ccsds.encdec.extension.IDecoderExtension with SpacePacketDecodingExtension;
     provides eu.dariolucia.ccsds.encdec.extension.IEncoderExtension with SpacePacketEncodingExtension;
-    provides eu.dariolucia.reatmetric.driver.spacecraft.services.IService with CommandVerificationService, OnboardEventService, OnboardOperationsSchedulingService, TimeCorrelationService, DirectLinkTimeCorrelationService, AesHandler;
+    provides eu.dariolucia.reatmetric.driver.spacecraft.services.IService with CommandVerificationService, OnboardEventService, OnboardOperationsSchedulingService, TimeCorrelationService, DirectLinkTimeCorrelationService, AesEncryptionService;
     provides eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector with CltuCaduTcpConnector;
     provides eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector with SpacePacketTcpConnector;
 }

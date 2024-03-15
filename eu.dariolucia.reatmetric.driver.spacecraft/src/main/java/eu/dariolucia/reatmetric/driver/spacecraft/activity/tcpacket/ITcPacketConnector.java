@@ -21,7 +21,7 @@ import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 
 import java.rmi.RemoteException;
@@ -40,7 +40,7 @@ public interface ITcPacketConnector extends ITransportConnector {
      */
     void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, IPacketIdentifier packetIdentifier, String connectorInformation) throws RemoteException;
 
-    void sendTcPacket(SpacePacket sp, TcTracker tcTracker) throws RemoteException;
+    void sendTcPacket(SpacePacket sp, TcPacketTracker tcPacketTracker) throws RemoteException;
 
     List<String> getSupportedRoutes() throws RemoteException;
 }

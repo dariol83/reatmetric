@@ -39,6 +39,7 @@ import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.VirtualChannelType;
 
 import java.time.Instant;
 import java.util.Collections;
@@ -217,7 +218,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         // add source and route in the frame annotated map, route is SCID.VCID.ANTENNA.SERVICE_TYPE.SERVICE_ID, e.g. 123.7.ANT01.RAF.raf001
         if(quality == Quality.GOOD) { // GOOD
             TmTransferFrame frame = new TmTransferFrame(frameContents, spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
-            if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() == null || spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
+            if(isVcToBeProcessed(frame.getVirtualChannelId())) {
                 StringBuilder route = new StringBuilder().append(frame.getSpacecraftId()).append('.').append(frame.getVirtualChannelId()).append('.').append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart);
                 RawData rd = new RawData(context.getRawDataBroker().nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_TM_FRAME, route.toString(), String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, receivedTime, driverName, null);
                 frame.setAnnotationValue(Constants.ANNOTATION_ROUTE, rd.getRoute());
@@ -239,7 +240,7 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
             AosTransferFrame frame = new AosTransferFrame(frameContents, spacecraftConfiguration.getTmDataLinkConfigurations().isAosFrameHeaderErrorControlPresent(),
                     spacecraftConfiguration.getTmDataLinkConfigurations().getAosTransferFrameInsertZoneLength(), AosTransferFrame.UserDataType.M_PDU,
                     spacecraftConfiguration.getTmDataLinkConfigurations().isOcfPresent(), spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
-            if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() != null && spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs().contains((int) frame.getVirtualChannelId())) {
+            if(isVcToBeProcessed(frame.getVirtualChannelId())) {
                 StringBuilder route = new StringBuilder().append(frame.getSpacecraftId()).append('.').append(frame.getVirtualChannelId()).append('.').append(antennaId).append('.').append(serviceInstance.getApplicationIdentifier().name()).append('.').append(this.serviceInstanceLastPart);
                 RawData rd = new RawData(context.getRawDataBroker().nextRawDataId(), genTimeInstant, Constants.N_TM_TRANSFER_FRAME, Constants.T_AOS_FRAME, route.toString(), String.valueOf(frame.getSpacecraftId()), quality, null, frameContents, receivedTime, driverName, null);
                 frame.setAnnotationValue(Constants.ANNOTATION_ROUTE, rd.getRoute());
@@ -253,6 +254,12 @@ abstract public class SleServiceInstanceManager<T extends ServiceInstance, K ext
         } else {
             distributeBadFrame(frameContents, quality, genTimeInstant, receivedTime, antennaId);
         }
+    }
+
+    private boolean isVcToBeProcessed(short virtualChannelId) {
+        return spacecraftConfiguration.getTmDataLinkConfigurations().getTmVcConfigurations() == null ||
+                spacecraftConfiguration.getTmDataLinkConfigurations().getTmVcConfigurations().stream().anyMatch(o -> o.getId() == virtualChannelId &&
+                        o.getProcessType() != VirtualChannelType.IGNORE);
     }
 
     private void distributeBadFrame(byte[] frameContents, Quality quality, Instant genTimeInstant, Instant receivedTime, String antennaId) {

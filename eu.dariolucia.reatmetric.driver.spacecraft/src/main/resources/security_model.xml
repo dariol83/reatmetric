@@ -26,5 +26,25 @@
             <checks/>
             <triggers/>
         </parameter>
+        <parameter raw_type="ENUMERATED" eng_type="CHARACTER_STRING" id="#9999998" location="SPACE.SC.SECURITY.ONBOARD_SPI" description="Last SPI key for TM encryption as reported by the satellite">
+            <calib_enum default="UNKNOWN">
+                <point x="1" y="KEY1"/>
+                <point x="2" y="KEY2"/>
+                <point x="3" y="KEY3"/>
+            </calib_enum>
+            <checks/>
+            <triggers/>
+        </parameter>
     </parameters>
+    <activities>
+        <activity id="#9999997" location="SPACE.SC.SECURITY.CHANGE_TM_SPI" description="Send a VCA command to change SPI on specific VC" type="TC">
+            <argument name="SPI" raw_type="ENUMERATED" eng_type="CHARACTER_STRING" eng_unit="">
+                <decalib_ienum default="0">
+                    <point x="KEY1" y="0" />
+                    <point x="KEY2" y="1" />
+                    <point x="KEY3" y="2" />
+                </decalib_ienum>
+            </argument>
+        </activity>
+    </activities>
 </ns2:processing>

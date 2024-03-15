@@ -28,7 +28,7 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
@@ -46,7 +46,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Logger;
 
 /**
  * This connector established a TCP/IP connection to a host on a given port, and uses this connection to:
@@ -164,16 +163,16 @@ public class SpacePacketTcpConnector extends AbstractFullDuplexTcpConnector impl
     }
 
     @Override
-    public synchronized void sendTcPacket(SpacePacket sp, TcTracker tcTracker) throws RemoteException {
-        sendDataUnit(sp.getPacket(), Pair.of(sp, tcTracker), tcTracker != null ? tcTracker.getInvocation().getActivityId() : -1,
-                tcTracker != null ? tcTracker.getInvocation().getActivityOccurrenceId() : null);
+    public synchronized void sendTcPacket(SpacePacket sp, TcPacketTracker tcPacketTracker) throws RemoteException {
+        sendDataUnit(sp.getPacket(), Pair.of(sp, tcPacketTracker), tcPacketTracker != null ? tcPacketTracker.getInvocation().getActivityId() : -1,
+                tcPacketTracker != null ? tcPacketTracker.getInvocation().getActivityOccurrenceId() : null);
     }
 
     @Override
     protected void reportActivityRelease(Object trackingInformation, int activityId, IUniqueId activityOccurrenceId, Instant progressTime, ActivityReportState status) {
         // Report status to service broker
-        Pair<SpacePacket, TcTracker> tracker = (Pair<SpacePacket, TcTracker>) trackingInformation;
-        this.serviceBroker.informTcPacket(status == ActivityReportState.OK ? TcPhase.RELEASED : TcPhase.FAILED, progressTime, tracker.getSecond());
+        Pair<SpacePacket, TcPacketTracker> tracker = (Pair<SpacePacket, TcPacketTracker>) trackingInformation;
+        this.serviceBroker.informTc(status == ActivityReportState.OK ? TcPhase.RELEASED : TcPhase.FAILED, progressTime, tracker.getSecond());
         // Invoke super method
         super.reportActivityRelease(trackingInformation, activityId, activityOccurrenceId, progressTime, status);
     }
@@ -181,19 +180,19 @@ public class SpacePacketTcpConnector extends AbstractFullDuplexTcpConnector impl
     @Override
     protected void reportActivityReceptionOk(Object trackingInformation, int activityId, IUniqueId activityOccurrenceId, Instant progressTime) {
         // Report status to service broker
-        Pair<SpacePacket, TcTracker> tracker = (Pair<SpacePacket, TcTracker>) trackingInformation;
-        this.serviceBroker.informTcPacket(TcPhase.UPLINKED, progressTime, tracker.getSecond());
+        Pair<SpacePacket, TcPacketTracker> tracker = (Pair<SpacePacket, TcPacketTracker>) trackingInformation;
+        this.serviceBroker.informTc(TcPhase.UPLINKED, progressTime, tracker.getSecond());
         // Invoke super method
         super.reportActivityReceptionOk(trackingInformation, activityId, activityOccurrenceId, progressTime);
         // Inform on-board availability (ignore propagation delay)
-        this.serviceBroker.informTcPacket(TcPhase.AVAILABLE_ONBOARD, progressTime, tracker.getSecond());
+        this.serviceBroker.informTc(TcPhase.AVAILABLE_ONBOARD, progressTime, tracker.getSecond());
     }
 
     @Override
     protected void reportActivityReceptionFailure(Object trackingInformation, int activityId, IUniqueId activityOccurrenceId, Instant progressTime) {
         // Report status to service broker
-        Pair<SpacePacket, TcTracker> tracker = (Pair<SpacePacket, TcTracker>) trackingInformation;
-        this.serviceBroker.informTcPacket(TcPhase.FAILED, progressTime, tracker.getSecond());
+        Pair<SpacePacket, TcPacketTracker> tracker = (Pair<SpacePacket, TcPacketTracker>) trackingInformation;
+        this.serviceBroker.informTc(TcPhase.FAILED, progressTime, tracker.getSecond());
         // Invoke super method
         super.reportActivityReceptionFailure(trackingInformation, activityId, activityOccurrenceId, progressTime);
     }

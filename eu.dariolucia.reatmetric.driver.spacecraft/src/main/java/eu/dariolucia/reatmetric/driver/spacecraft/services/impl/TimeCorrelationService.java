@@ -27,7 +27,8 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.*;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.AbstractTcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.PacketErrorControlType;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.services.TimeCorrelationServiceConfiguration;
@@ -223,11 +224,15 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     }
 
     @Override
-    public void onTcPacket(TcPhase phase, Instant phaseTime, TcTracker tcTracker) {
-        if(tcTracker.getInfo() != null && tcTracker.getInfo().getPusHeader() != null && tcTracker.getInfo().getPusHeader().getServiceType() == 9 && tcTracker.getInfo().getPusHeader().getServiceSubType() == 1) {
+    public void onTcUpdate(TcPhase phase, Instant phaseTime, AbstractTcTracker tracker) {
+        if(!(tracker instanceof TcPacketTracker)) {
+            return;
+        }
+        TcPacketTracker tcPacketTracker = (TcPacketTracker) tracker;
+        if(tcPacketTracker.getInfo() != null && tcPacketTracker.getInfo().getPusHeader() != null && tcPacketTracker.getInfo().getPusHeader().getServiceType() == 9 && tcPacketTracker.getInfo().getPusHeader().getServiceSubType() == 1) {
             if(phase == TcPhase.COMPLETED) {
                 // The TC is over, change the generation period accordingly
-                byte newGenerationPeriod = tcTracker.getPacket().getPacket()[tcTracker.getPacket().getLength() - 1 - (tcTracker.getInfo().getChecksumType() == PacketErrorControlType.NONE ? 0 : 2)];
+                byte newGenerationPeriod = tcPacketTracker.getPacket().getPacket()[tcPacketTracker.getPacket().getLength() - 1 - (tcPacketTracker.getInfo().getChecksumType() == PacketErrorControlType.NONE ? 0 : 2)];
                 this.generationPeriod = 1 << newGenerationPeriod;
             }
         }
@@ -435,7 +440,7 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
 
     @Override
     public IServicePacketFilter getSubscriptionFilter() {
-        return (rd, sp, pusType, pusSubtype, destination, source) -> sp.getApid() == 0 || (pusType != null && pusType == 9);
+        return (rd, sp, pusType, pusSubtype, destination, source) -> sp instanceof SpacePacket && (((SpacePacket) sp).getApid() == 0 || (pusType != null && pusType == 9));
     }
 
     @Override
@@ -444,7 +449,7 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     }
 
     @Override
-    public boolean isDirectHandler(TcTracker trackedTc) {
+    public boolean isDirectHandler(AbstractTcTracker trackedTc) {
         return false;
     }
 

@@ -25,6 +25,7 @@ import eu.dariolucia.ccsds.encdec.structure.ParameterValue;
 import eu.dariolucia.ccsds.encdec.value.BitString;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.ccsds.tmtc.util.AnnotatedObject;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.IDebugInfoProvider;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
@@ -37,12 +38,11 @@ import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPacketConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.*;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ITimeCorrelation;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 import eu.dariolucia.reatmetric.driver.spacecraft.util.BoundedExecutorService;
 
 import java.time.Instant;
@@ -116,15 +116,15 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         this.broker = context.getRawDataBroker();
         this.configuration = configuration.getTmPacketConfiguration();
         ITimeCorrelation timeCorrelationService = serviceBroker.locate(eu.dariolucia.reatmetric.driver.spacecraft.services.ITimeCorrelation.class);
-        if(timeCorrelationService != null) {
-            this.timeCorrelation = timeCorrelationService;
-        } else {
-            this.timeCorrelation = IDENTITY_TIME_CORRELATION;
-        }
+        this.timeCorrelation = Objects.requireNonNullElse(timeCorrelationService, IDENTITY_TIME_CORRELATION);
         this.serviceBroker = serviceBroker;
         this.processedVCs = new boolean[64];
-        for(int i = 0; i < this.processedVCs.length; ++i) {
-            if(this.configuration.getProcessVcs() != null && this.configuration.getProcessVcs().contains(i)) {
+        if(this.configuration.getProcessVcs() == null) {
+            // No limits, process all
+            Arrays.fill(this.processedVCs, true);
+        } else {
+            // Only process the declared VCs
+            for(Integer i : this.configuration.getProcessVcs()) {
                 this.processedVCs[i] = true;
             }
         }
@@ -170,29 +170,35 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
     }
 
     private void subscribeToBroker() {
-        // We want to receive only good space packets, quality must be good, from the configured spacecraft, not idle
-        String typeName = Constants.T_TM_PACKET;
-        RawDataFilter filter = new RawDataFilter(true, null, null, Collections.singletonList(typeName), Collections.singletonList(spacecraft), Collections.singletonList(Quality.GOOD));
+        // We want to receive only good space packets/VCAs, quality must be good, from the configured spacecraft, not idle
+        RawDataFilter filter = new RawDataFilter(true, null, null, Arrays.asList(Constants.T_TM_PACKET, Constants.T_TM_VCA), Collections.singletonList(spacecraft), Collections.singletonList(Quality.GOOD));
         // We want to get only packets that need to be processed, according to VC ID
         broker.subscribe(this, null, filter, buildPostFilter());
     }
 
     private Predicate<RawData> buildPostFilter() {
-        if(configuration.getProcessVcs() != null) {
-            return o -> {
-                // If the packet has VC information, then check if it falls in the provided set. If the packet has no VC information, then discard it.
-                SpacePacket spacePacket = (SpacePacket) o.getData();
-                if (spacePacket != null) {
-                    Integer vcId = (Integer) spacePacket.getAnnotationValue(Constants.ANNOTATION_VCID);
-                    return vcId != null && processedVCs[vcId];
-                } else {
-                    return false;
-                }
-            };
-        } else {
-            // No filter at packet level
-            return o -> true;
+        return o -> {
+            // If the data has VC information, then check if it falls in the provided set. If the data has no VC information, then discard it.
+            Integer vcId = extractVcIdInformation(o);
+            return vcId != null;
+        };
+    }
+
+    private Integer extractVcIdInformation(RawData rawData) {
+        Object o = rawData.getData();
+        if(o instanceof SpacePacket) {
+            Integer vcId = (Integer) ((SpacePacket) o).getAnnotationValue(Constants.ANNOTATION_VCID);
+            if(vcId != null && processedVCs[vcId]) {
+                return vcId;
+            }
         }
+        if(o instanceof VirtualChannelUnit) {
+            Integer vcId = (Integer) ((VirtualChannelUnit) o).getAnnotationValue(Constants.ANNOTATION_VCID);
+            if(vcId != null && processedVCs[vcId]) {
+                return vcId;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -235,17 +241,21 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
                 incomingPacketsQueue.drainTo(itemsToProcess);
                 incomingPacketsQueue.notifyAll();
             }
-            processPackets(itemsToProcess);
+            processItems(itemsToProcess);
         }
     }
 
-    private void processPackets(List<RawData> itemsToProcess) {
-        List<Future<PacketDecodingResult>> results = new ArrayList<>(itemsToProcess.size());
+    private void processItems(List<RawData> itemsToProcess) {
+        List<Future<ItemDecodingResult>> results = new ArrayList<>(itemsToProcess.size());
         for(RawData rd : itemsToProcess) {
-            results.add(decoderService.submit(() -> process(rd)));
+            if(rd.getType().equals(Constants.T_TM_PACKET)) {
+                results.add(decoderService.submit(() -> processSpacePacket(rd)));
+            } else if(rd.getType().equals(Constants.T_TM_VCA)) {
+                results.add(decoderService.submit(() -> processVca(rd)));
+            }
         }
-        for(Future<PacketDecodingResult> fpdt : results) {
-            PacketDecodingResult pdt = null;
+        for(Future<ItemDecodingResult> fpdt : results) {
+            ItemDecodingResult pdt = null;
             try {
                 pdt = fpdt.get();
             } catch (InterruptedException e) {
@@ -255,12 +265,36 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
                 LOG.log(Level.SEVERE, "TM Packet Processor dispatcher service exception while decoding packet", e);
             }
             if(pdt != null) {
-                notifySpacePacketResults(pdt.getRawData(), pdt.getSpacePacket(), pdt.getPusHeader(), pdt.getResult());
+                notifySpacePacketResults(pdt.getRawData(), pdt.getItem(), pdt.getPusHeader(), pdt.getResult());
             }
         }
     }
 
-    private PacketDecodingResult process(RawData rd) {
+    private ItemDecodingResult processVca(RawData rd) {
+        try {
+            VirtualChannelUnit vcUnit = (VirtualChannelUnit) rd.getData();
+            if (vcUnit == null) {
+                vcUnit = new VirtualChannelUnit(rd.getContents());
+            }
+
+            // Expectation is that the definitions refer to the start of the VC unit
+            DecodingResult result = null;
+            int offset = 0;
+            try {
+                result = packetDecoder.decode(rd.getName(), rd.getContents(), offset, rd.getContents().length - offset);
+            } catch (DecodingException e) {
+                LOG.log(Level.SEVERE, "Cannot decode VC unit " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
+            }
+
+            // Return result
+            return new ItemDecodingResult(rd, vcUnit, null, result);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Unforeseen exception when processing packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private ItemDecodingResult processSpacePacket(RawData rd) {
         try {
             // To correctly apply generation time derivation ,we need to remember which raw data is used, as we need the generation time of the packet.
             // We build an anonymous class for this purpose.
@@ -292,28 +326,32 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
             }
 
             // Return result
-            return new PacketDecodingResult(rd, spacePacket, pusHeader, result);
+            return new ItemDecodingResult(rd, spacePacket, pusHeader, result);
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Unforeseen exception when processing packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
             return null;
         }
     }
 
-    private void notifySpacePacketResults(RawData rd, SpacePacket spacePacket, TmPusHeader pusHeader, DecodingResult result) {
+    private void notifySpacePacketResults(RawData rd, AnnotatedObject item, TmPusHeader pusHeader, DecodingResult result) {
         if(!notifierService.isShutdown()) {
             notifierService.execute(() -> {
                 // Forward to processing model and ...
                 if (result != null) {
                     forwardParameterResult(rd, result.getDecodedParameters());
                 }
-                // ... notify all services about the new TM packet
-                notifyExtensionServices(rd, spacePacket, pusHeader, result);
+                // ... notify all services about the new TM packet/VC unit
+                notifyExtensionServices(rd, item, pusHeader, result);
             });
         }
     }
 
-    private void notifyExtensionServices(RawData rd, SpacePacket spacePacket, TmPusHeader pusHeader, DecodingResult result) {
-        this.serviceBroker.distributeTmPacket(rd, spacePacket, pusHeader, result);
+    private void notifyExtensionServices(RawData rd, AnnotatedObject unit, TmPusHeader pusHeader, DecodingResult result) {
+        if(unit instanceof SpacePacket) {
+            this.serviceBroker.distributeTmPacket(rd, (SpacePacket) unit, pusHeader, result);
+        } else if(unit instanceof VirtualChannelUnit) {
+            this.serviceBroker.distributeTmVcUnit(rd, (VirtualChannelUnit) unit, result);
+        }
     }
 
     private void forwardParameterResult(RawData packet, List<ParameterValue> decodedParameters) {
@@ -476,16 +514,16 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         return lastStats.get();
     }
 
-    private class PacketDecodingResult {
+    private static class ItemDecodingResult {
 
         private final RawData rawData;
-        private final SpacePacket spacePacket;
+        private final AnnotatedObject item;
         private final TmPusHeader pusHeader;
         private final DecodingResult result;
 
-        public PacketDecodingResult(RawData rawData, SpacePacket spacePacket, TmPusHeader pusHeader, DecodingResult result) {
+        public ItemDecodingResult(RawData rawData, AnnotatedObject item, TmPusHeader pusHeader, DecodingResult result) {
             this.rawData = rawData;
-            this.spacePacket = spacePacket;
+            this.item = item;
             this.pusHeader = pusHeader;
             this.result = result;
         }
@@ -494,8 +532,8 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
             return rawData;
         }
 
-        public SpacePacket getSpacePacket() {
-            return spacePacket;
+        public AnnotatedObject getItem() {
+            return item;
         }
 
         public TmPusHeader getPusHeader() {

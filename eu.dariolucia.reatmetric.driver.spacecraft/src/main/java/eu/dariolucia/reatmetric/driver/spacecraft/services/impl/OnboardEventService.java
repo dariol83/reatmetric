@@ -22,7 +22,7 @@ import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.AbstractTcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
@@ -48,7 +48,7 @@ public class OnboardEventService extends AbstractPacketService<Object> {
     }
 
     @Override
-    public void onTcPacket(TcPhase phase, Instant phaseTime, TcTracker tcTracker) {
+    public void onTcUpdate(TcPhase phase, Instant phaseTime, AbstractTcTracker tcPacketTracker) {
         // Not used
     }
 
@@ -68,7 +68,7 @@ public class OnboardEventService extends AbstractPacketService<Object> {
     }
 
     @Override
-    public boolean isDirectHandler(TcTracker trackedTc) {
+    public boolean isDirectHandler(AbstractTcTracker trackedTc) {
         return false;
     }
 

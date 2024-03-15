@@ -16,13 +16,15 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.packet;
 
-import eu.dariolucia.ccsds.encdec.definition.PacketDefinition;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfo;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcUnitTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 
 public interface ITcPacketInjector {
-    TcTracker injectTcPacket(IActivityHandler.ActivityInvocation activityInvocation, PacketDefinition packetDefinition, TcPacketInfo packetInfo, SpacePacket sp) throws ActivityHandlingException;
+    TcPacketTracker injectTcPacket(IActivityHandler.ActivityInvocation activityInvocation, String packetName, TcPacketInfo packetInfo, SpacePacket sp) throws ActivityHandlingException;
+    TcUnitTracker injectVcUnit(IActivityHandler.ActivityInvocation activityInvocation, String packetName, TcPacketInfo packetInfo, VirtualChannelUnit unit) throws ActivityHandlingException;
 }

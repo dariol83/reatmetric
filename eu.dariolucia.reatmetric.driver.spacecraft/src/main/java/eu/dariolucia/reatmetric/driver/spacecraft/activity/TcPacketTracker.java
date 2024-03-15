@@ -17,43 +17,27 @@
 package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.ccsds.tmtc.util.AnnotatedObject;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 
-import java.io.IOException;
-import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 
-public class TcTracker implements Serializable {
+public class TcPacketTracker extends AbstractTcTracker implements Serializable {
 
-    private final IActivityHandler.ActivityInvocation invocation;
     private final SpacePacket packet;
-    private final TcPacketInfo info;
-    private final RawData rawData;
 
-    public TcTracker(IActivityHandler.ActivityInvocation invocation, SpacePacket packet, TcPacketInfo info, RawData rd) {
-        this.invocation = invocation;
+    public TcPacketTracker(IActivityHandler.ActivityInvocation invocation, TcPacketInfo info, RawData rd, SpacePacket packet) {
+        super(invocation, info, rd);
         this.packet = packet;
-        this.info = info;
-        this.rawData = rd;
-    }
-
-    public RawData getRawData() {
-        return rawData;
-    }
-
-    public IActivityHandler.ActivityInvocation getInvocation() {
-        return invocation;
     }
 
     public SpacePacket getPacket() {
         return packet;
     }
 
-    public TcPacketInfo getInfo() {
-        return info;
+    @Override
+    public AnnotatedObject getObject() {
+        return getPacket();
     }
-
 }

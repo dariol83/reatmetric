@@ -38,12 +38,15 @@ import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmDataLinkConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmVcConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
 import eu.dariolucia.reatmetric.driver.spacecraft.security.DataLinkSecurityManager;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -66,12 +69,13 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     private final BiFunction<AbstractTransferFrame, SpacePacket, Quality> packetQualityChecker;
     private final String driverName;
     private final DataLinkSecurityManager securityManager;
+    private final long propagationDelay;
     private VirtualChannelReceiverDemux demultiplexer;
 
     private final Timer performanceSampler = new Timer("TM Data Link Processor - Sampler", true);
     private final AtomicReference<List<DebugInformation>> lastStats = new AtomicReference<>(Arrays.asList(
             DebugInformation.of("TM Data Link Processor", "Transfer frames", 0, null, "frames/second"),
-            DebugInformation.of("TM Data Link Processor", "Space packets", 0, null, "packets/second")
+            DebugInformation.of("TM Data Link Processor", "Space packets/VCA units", 0, null, "packets/second")
     ));
     private Instant lastSampleGenerationTime;
     private long frameInput = 0;
@@ -81,6 +85,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                                DataLinkSecurityManager securityManager) {
         this.driverName = driverName;
         this.spacecraftId = configuration.getId();
+        this.propagationDelay = configuration.getPropagationDelay();
         this.packetIdentifier = packetIdentifier;
         this.broker = context.getRawDataBroker();
         this.configuration = configuration.getTmDataLinkConfigurations();
@@ -127,24 +132,48 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         // Build the VCs to process
         List<Integer> vcToBuild = new ArrayList<>(64);
         if(configuration.getType() == TransferFrameType.TM) {
-            if(configuration.getProcessVcs() != null) {
-                vcToBuild.addAll(configuration.getProcessVcs());
-            } else {
+            if(configuration.getTmVcConfigurations() == null) {
                 vcToBuild.addAll(IntStream.rangeClosed(0, 8).boxed().collect(Collectors.toList()));
-            }
-            for(Integer i : vcToBuild) {
-                TmReceiverVirtualChannel vc = new TmReceiverVirtualChannel(i, VirtualChannelAccessMode.PACKET, false);
-                virtualChannels.add(vc);
+                vcToBuild.stream().map(i -> new TmReceiverVirtualChannel(i, VirtualChannelAccessMode.PACKET, false)).forEach(virtualChannels::add);
+            } else {
+                for(TmVcConfiguration vcConf : configuration.getTmVcConfigurations()) {
+                    switch (vcConf.getProcessType()) {
+                        case PACKET: {
+                            vcToBuild.add(vcConf.getId());
+                            TmReceiverVirtualChannel vc = new TmReceiverVirtualChannel(vcConf.getId(), VirtualChannelAccessMode.PACKET, false);
+                            virtualChannels.add(vc);
+                        }
+                        break;
+                        case VCA: {
+                            vcToBuild.add(vcConf.getId());
+                            TmReceiverVirtualChannel vc = new TmReceiverVirtualChannel(vcConf.getId(), VirtualChannelAccessMode.DATA, false);
+                            virtualChannels.add(vc);
+                        }
+                        break;
+                    }
+                }
             }
         } else if(configuration.getType() == TransferFrameType.AOS) {
-            if(configuration.getProcessVcs() != null) {
-                vcToBuild.addAll(configuration.getProcessVcs());
-            } else {
+            if(configuration.getTmVcConfigurations() == null) {
                 vcToBuild.addAll(IntStream.rangeClosed(0, 64).boxed().collect(Collectors.toList()));
-            }
-            for(Integer i : vcToBuild) {
-                AosReceiverVirtualChannel vc = new AosReceiverVirtualChannel(i, VirtualChannelAccessMode.PACKET, false);
-                virtualChannels.add(vc);
+                vcToBuild.stream().map(i -> new AosReceiverVirtualChannel(i, VirtualChannelAccessMode.PACKET, false)).forEach(virtualChannels::add);
+            } else {
+                for(TmVcConfiguration vcConf : configuration.getTmVcConfigurations()) {
+                    switch (vcConf.getProcessType()) {
+                        case PACKET: {
+                            vcToBuild.add(vcConf.getId());
+                            AosReceiverVirtualChannel vc = new AosReceiverVirtualChannel(vcConf.getId(), VirtualChannelAccessMode.PACKET, false);
+                            virtualChannels.add(vc);
+                        }
+                        break;
+                        case VCA: {
+                            vcToBuild.add(vcConf.getId());
+                            AosReceiverVirtualChannel vc = new AosReceiverVirtualChannel(vcConf.getId(), VirtualChannelAccessMode.DATA, false);
+                            virtualChannels.add(vc);
+                        }
+                        break;
+                    }
+                }
             }
         }
         // Remember VCs to process
@@ -252,6 +281,59 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
             broker.distribute(Collections.singletonList(rd));
         } catch (ReatmetricException e) {
             LOG.log(Level.SEVERE, "Error while distributing packet " + packetName + " from route " + rd.getRoute(), e);
+        }
+    }
+
+    @Override
+    public void dataExtracted(AbstractReceiverVirtualChannel vc, AbstractTransferFrame frame, byte[] data, int missingBytes) {
+        // Add performance indicator
+        synchronized (performanceSampler) {
+            ++packetOutput;
+        }
+        // Read route from the frame annotated map
+        Instant receptionTime = (Instant) frame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME);
+        if(receptionTime == null) {
+            receptionTime = Instant.now();
+        }
+        // Generation time is reception time minus propagation delay
+        Instant generationTime = receptionTime.minus(this.propagationDelay, ChronoUnit.MICROS);
+        VirtualChannelUnit sp = new VirtualChannelUnit(data);
+        // Annotate with reception time
+        sp.setAnnotationValue(Constants.ANNOTATION_RCP_TIME, receptionTime);
+        // Annotate with the VC ID
+        sp.setAnnotationValue(Constants.ANNOTATION_VCID, (int) frame.getVirtualChannelId());
+        String route = (String) frame.getAnnotationValue(Constants.ANNOTATION_ROUTE);
+        // Make an attempt to identify the virtual channel unit
+        String vcaName = Constants.N_UNKNOWN_VCA;
+        String rawDataType = Constants.T_TM_VCA;
+        vcaName = identifyVca(vc, data, vcaName);
+
+        String source = (String) frame.getAnnotationValue(Constants.ANNOTATION_SOURCE);
+        // Now we distribute it and store it as well
+        // Provide also the frame information, needed for time correlation ... they go as extension
+        distributeVca(sp, vcaName, generationTime, receptionTime, route, source, rawDataType, Quality.GOOD, new TmFrameDescriptor(frame.getVirtualChannelId(), frame.getVirtualChannelFrameCount(), (Instant) frame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME)));
+    }
+
+    private String identifyVca(AbstractReceiverVirtualChannel vc, byte[] packet, String vcaName) {
+        try {
+            vcaName = packetIdentifier.identify(packet);
+        } catch (PacketNotIdentifiedException e) {
+            LOG.log(Level.WARNING, "VCA from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + " not identified: " + e.getMessage(), e);
+        } catch (PacketAmbiguityException e) {
+            LOG.log(Level.WARNING, "VCA from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + " ambiguous: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "VCA from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + " error during identification: " + e.getMessage(), e);
+        }
+        return vcaName;
+    }
+
+    private void distributeVca(VirtualChannelUnit vcaUnit, String vcaName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality, TmFrameDescriptor frameDescriptor) {
+        RawData rd = new RawData(broker.nextRawDataId(), generationTime, vcaName, type, route, source, quality, null, vcaUnit.getData(), receptionTime, driverName, frameDescriptor);
+        rd.setData(vcaUnit);
+        try {
+            broker.distribute(Collections.singletonList(rd));
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Error while distributing VCA unit " + vcaName + " from route " + rd.getRoute(), e);
         }
     }
 

@@ -20,6 +20,7 @@ public class Constants {
     // RawData Names
     public static final String N_TM_TRANSFER_FRAME = "TRANSFER FRAME";
     public static final String N_UNKNOWN_PACKET = "UNKNOWN";
+    public static final String N_UNKNOWN_VCA = "UNKNOWN";
     public static final String N_IDLE_PACKET = "IDLE PACKET";
     public static final String N_TIME_COEFFICIENTS = "TIME COEFFICIENT";
     public static final String N_TC_VERIFICATION_MAP = "TC VERIFICATION MAP";
@@ -29,8 +30,10 @@ public class Constants {
     public static final String T_TM_FRAME = "TM FRAME";
     public static final String T_AOS_FRAME = "AOS FRAME";
     public static final String T_TM_PACKET = "TM PACKET";
+    public static final String T_TM_VCA = "TM VCA";
     public static final String T_IDLE_PACKET = "IDLE PACKET";
     public static final String T_TC_PACKET = "TC PACKET";
+    public static final String T_TC_VCA = "TC VCA";
     public static final String T_BAD_TM = "BAD TM";
     public static final String T_BAD_PACKET = "BAD PACKET";
     public static final String T_TIME_COEFFICIENTS = "TIME COEFF";

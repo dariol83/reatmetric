@@ -19,8 +19,6 @@ package eu.dariolucia.reatmetric.driver.spacecraft.services;
 
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
-import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
 /**
  * This interface specifies the methods that an external class must implement, to provide encryption/decryption capabilities
@@ -66,8 +64,4 @@ public interface ISecurityHandler extends IService {
      */
     AbstractTransferFrame decrypt(AbstractTransferFrame frame) throws ReatmetricException;
 
-    /**
-     * This method is called at the disposal of the driver: all acquired resources must be released.
-     */
-    void dispose();
 }

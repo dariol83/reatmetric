@@ -318,6 +318,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         if (provider.isPresent()) {
             theService = provider.get().get();
             theService.initialise(dc.getConfiguration(), this.name, this.configuration, this.coreConfiguration, this.context, this.serviceBroker);
+        } else {
+            LOG.log(Level.SEVERE, "Service " + dc.getType() + " cannot be loaded, provider not present");
         }
         return theService;
     }

@@ -66,8 +66,8 @@ import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.*;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.AesSecurityHandlerConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.SpiPassword;
-import eu.dariolucia.reatmetric.driver.spacecraft.security.impl.AesHandler;
 import eu.dariolucia.reatmetric.driver.spacecraft.security.impl.CryptoUtil;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.impl.AesEncryptionService;
 import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
 import jakarta.xml.bind.JAXBException;
 
@@ -142,7 +142,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private final Map<Integer, TcReceiverVirtualChannel> id2tcvc = new HashMap<>();
     private final Map<Integer, Boolean> id2segmentation = new HashMap<>();
     private final Timer queueeTcScheduler = new Timer();
-    private final FarmEngine farm;
+    private final Map<Integer, FarmEngine> farm;
 
     // TM processing part
     private final BlockingQueue<SpacePacket> packetsToSend = new ArrayBlockingQueue<>(2000);
@@ -191,11 +191,18 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         this.processingDefinition = ProcessingDefinition.load(new FileInputStream(processingModelPath));
         this.spacecraftConfiguration = SpacecraftConfiguration.load(new FileInputStream(spacecraftFilePath));
         this.spacecraftConfiguration.getTmPacketConfiguration().buildLookupMap();
-        this.farm = new FarmEngine(0, this::tcFrameOutput, true, 10, 20, FarmState.S3, 0);
-        this.farm.setStatusField(7);
-        this.farm.setReservedSpare(0);
-        this.farm.setNoRfAvailableFlag(false);
-        this.farm.setNoBitLockFlag(false);
+        this.farm = new HashMap<>();
+        for(TcVcConfiguration vcConfiguration : this.spacecraftConfiguration.getTcDataLinkConfiguration().getTcVcDescriptors()) {
+            if(vcConfiguration.getAccessMode() != VirtualChannelType.IGNORE) {
+                FarmEngine theFarm = new FarmEngine(vcConfiguration.getTcVc(), this::tcFrameOutput, true, 10, 20, FarmState.S3, 0);
+                theFarm.setStatusField(7);
+                theFarm.setReservedSpare(0);
+                theFarm.setNoRfAvailableFlag(false);
+                theFarm.setNoBitLockFlag(false);
+                this.farm.put(vcConfiguration.getTcVc(), theFarm);
+            }
+        }
+
         initialiseSpacecraftUplink();
         this.tmMux = new TmMasterChannelMuxer(this::sendTmFrame);
         initialiseSecurity();
@@ -223,7 +230,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     }
 
     private void initialiseSecurity() {
-        Optional<String> secConfPath = spacecraftConfiguration.getPacketServiceConfiguration().getServices().stream().filter(a -> a.getType().equals(AesHandler.class.getName())).map(ServiceConfiguration::getConfiguration).findFirst();
+        Optional<String> secConfPath = spacecraftConfiguration.getPacketServiceConfiguration().getServices().stream().filter(a -> a.getType().equals(AesEncryptionService.class.getName())).map(ServiceConfiguration::getConfiguration).findFirst();
         try {
             if (secConfPath.isPresent() && !secConfPath.get().isBlank()) {
                 // Assume AES encryption: 6 bytes header, 8 bytes trailer
@@ -386,7 +393,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     }
 
     private void initialiseSpacecraftDownlink() {
-        if(spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs() == null) {
+        if(spacecraftConfiguration.getTmDataLinkConfigurations().getTmVcConfigurations() == null) {
             TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), 0, VirtualChannelAccessMode.PACKET,
                     spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf,
                     0, null, null,
@@ -397,31 +404,57 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             vc.register(tmMux);
             this.id2tmvc.put(0, vc);
         } else {
-            for (Integer vcId : spacecraftConfiguration.getTmDataLinkConfigurations().getProcessVcs()) {
-                TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), vcId, VirtualChannelAccessMode.PACKET,
-                        spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf,
-                        0, null, null,
-                        securityHandlerConfiguration != null ? 18 : 0,
-                        securityHandlerConfiguration != null ? 8 : 0,
-                        securityHandlerConfiguration != null ? () -> new byte[18] : null,
-                        securityHandlerConfiguration != null ? () -> new byte[8] : null);
-                vc.register(tmMux);
-                this.id2tmvc.put(vcId, vc);
+            for (TmVcConfiguration vcId : spacecraftConfiguration.getTmDataLinkConfigurations().getTmVcConfigurations()) {
+                if(vcId.getProcessType() == VirtualChannelType.PACKET) {
+                    TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), vcId.getId(), VirtualChannelAccessMode.PACKET,
+                            spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf,
+                            0, null, null,
+                            securityHandlerConfiguration != null ? 18 : 0,
+                            securityHandlerConfiguration != null ? 8 : 0,
+                            securityHandlerConfiguration != null ? () -> new byte[18] : null,
+                            securityHandlerConfiguration != null ? () -> new byte[8] : null);
+                    vc.register(tmMux);
+                    this.id2tmvc.put(vcId.getId(), vc);
+                } else if(vcId.getProcessType() == VirtualChannelType.VCA) {
+                    TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), vcId.getId(), VirtualChannelAccessMode.DATA,
+                            spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf,
+                            0, null, null,
+                            securityHandlerConfiguration != null ? 18 : 0,
+                            securityHandlerConfiguration != null ? 8 : 0,
+                            securityHandlerConfiguration != null ? () -> new byte[18] : null,
+                            securityHandlerConfiguration != null ? () -> new byte[8] : null);
+                    vc.register(tmMux);
+                    this.id2tmvc.put(vcId.getId(), vc);
+                }
             }
         }
     }
 
+    private boolean clcwTcVc0 = false;
+
     private AbstractOcf provideOcf(int tmVcId) {
-        return farm.get();
+        clcwTcVc0 = !clcwTcVc0;
+        if(clcwTcVc0) {
+            return farm.get(0).get();
+        } else {
+            return farm.get(1).get();
+        }
     }
 
     private void initialiseSpacecraftUplink() {
         // Create N TC VC according to configuration
         for (TcVcConfiguration c : spacecraftConfiguration.getTcDataLinkConfiguration().getTcVcDescriptors()) {
-            TcReceiverVirtualChannel vc = new TcReceiverVirtualChannel(c.getTcVc(), VirtualChannelAccessMode.PACKET, true);
-            vc.register(this);
-            id2tcvc.put(vc.getVirtualChannelId(), vc);
-            id2segmentation.put(c.getTcVc(), c.isSegmentation());
+            if(c.getAccessMode() == VirtualChannelType.PACKET) {
+                TcReceiverVirtualChannel vc = new TcReceiverVirtualChannel(c.getTcVc(), VirtualChannelAccessMode.PACKET, true);
+                vc.register(this);
+                id2tcvc.put(vc.getVirtualChannelId(), vc);
+                id2segmentation.put(c.getTcVc(), c.isSegmentation());
+            } else if(c.getAccessMode() == VirtualChannelType.VCA) {
+                TcReceiverVirtualChannel vc = new TcReceiverVirtualChannel(c.getTcVc(), VirtualChannelAccessMode.DATA, true);
+                vc.register(this);
+                id2tcvc.put(vc.getVirtualChannelId(), vc);
+                id2segmentation.put(c.getTcVc(), c.isSegmentation());
+            }
         }
         // Create channel cltuDecoder
         cltuDecoder = ChannelDecoder.create(TcTransferFrame.decodingFunction(id2segmentation::get, spacecraftConfiguration.getTcDataLinkConfiguration().isFecf()));
@@ -688,7 +721,13 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             cltuProvider.cltuProgress(cltuId, CltuStatusEnum.RADIATED, startTime, new Date(), BUFFER_AVAILABLE);
             // Process the CLTU
             TcTransferFrame decodedTcFrame = cltuDecoder.apply(cltu);
-            farm.frameArrived(decodedTcFrame);
+            int vcId = decodedTcFrame.getVirtualChannelId();
+            FarmEngine theFarm = this.farm.get(vcId);
+            if(theFarm == null) {
+                LOG.log(Level.WARNING, "Frame for unknown TC VC ID: " + StringUtil.toHexDump(decodedTcFrame.getFrame()) + ", " + decodedTcFrame);
+            } else {
+                theFarm.frameArrived(decodedTcFrame);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -734,10 +773,6 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private TmTransferFrame encrypt(TmTransferFrame frameObj) {
         // Get the SPI to use
         SpiPassword toUse = securityHandlerConfiguration.getTmSpis().get(nextTmSpiToUse);
-        ++nextTmSpiToUse;
-        if(nextTmSpiToUse >= securityHandlerConfiguration.getTmSpis().size()) {
-            nextTmSpiToUse = 0;
-        }
         // Get salt
         if(salt == null) {
             salt = securityHandlerConfiguration.getSaltAsByteArray();
@@ -843,6 +878,40 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             ai.set(0);
         }
         return val;
+    }
+
+    @Override
+    public void dataExtracted(AbstractReceiverVirtualChannel vc, AbstractTransferFrame frame, byte[] data) {
+        // I got something from a VC configured with VCA access
+        LOG.log(Level.INFO, "Received VCA data unit: " + StringUtil.toHexDump(data));
+        processVcaUnit(data);
+    }
+
+    private void processVcaUnit(byte[] data) {
+        // read the VCA unit and, if it has type 255, length 2, the value contains the key to be used for TM encryption, update nextTmSpiToUse
+        if(data.length == 4 && data[0] == (byte) 0xFF && data[1] == 2) {
+            short key = ByteBuffer.wrap(data, 2, 2).getShort();
+            if(securityHandlerConfiguration.getTmSpis().size() <= key) {
+                // Wrong key
+                generateVc2Frame(new byte[] { (byte) 0xFF, 0x02, (byte) 0xFF, (byte) 0xFF});
+            } else {
+                nextTmSpiToUse = key;
+                byte[] response = ByteBuffer.allocate(4).put((byte) 0xFF).put((byte)2).putShort(key).array();
+                generateVc2Frame(response);
+            }
+        }
+        // TODO: update verification of activity to use parameter-based verification with timeout 10 seconds
+    }
+
+    private void generateVc2Frame(byte[] response) {
+        // You always send a full TM frame, immediately
+        TmSenderVirtualChannel sender = this.id2tmvc.get(2);
+        if(sender != null) {
+            sender.dispatch(response);
+            int stillToSend = sender.getRemainingFreeSpace();
+            sender.dispatch(new byte[stillToSend]); // You achieve emission
+            LOG.info("TM frame on VC 2 emitted: data is " + StringUtil.toHexDump(response));
+        }
     }
 
     @Override

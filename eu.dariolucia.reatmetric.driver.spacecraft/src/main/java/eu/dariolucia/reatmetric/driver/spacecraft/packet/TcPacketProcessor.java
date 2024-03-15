@@ -40,13 +40,13 @@ import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.value.Array;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfo;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.*;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcPacketConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.VirtualChannelType;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TcDataLinkProcessor;
@@ -128,7 +128,8 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
 
     @Override
     public void abort(int activityId, IUniqueId activityOccurrenceId) {
-        // Nothing can be done here
+        // Propagate this to the TcDataLinkProcessor, for group commands
+        this.tcDataLinkProcessor.abort(activityId, activityOccurrenceId);
     }
 
     @Override
@@ -160,7 +161,7 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
                     convertedArgumentMap.put(defToEncode.getId() + "." + entry.getKey(), entry.getValue());
                 }
             }
-            // Encode the body of the packet (no PUS header)
+            // Encode the body of the packet/VC unit (no PUS header)
             byte[] packetUserDataField;
             try {
                 packetUserDataField = packetEncoder.encode(defToEncode.getId(), new DefaultValueFallbackResolver(new PathLocationBasedResolver(convertedArgumentMap)));
@@ -193,11 +194,24 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
                 }
             }
             // Finally build the packet info for the header
-            TcPacketInfo packetInfo = new TcPacketInfo(packetInfoStr, ackOverride, sourceId, mapId, configuration.getTcPacketConfiguration().getSourceIdDefaultValue(), configuration.getTcPacketConfiguration().getTcPecPresent());
-            // Construct the space packet using the information in the encoding definition and the configuration (override by activity properties)
-            SpacePacket sp = buildPacket(packetInfo, packetUserDataField);
-            // Send it off, no need to remember the TcTracker here
-            injectTcPacket(activityInvocation, defToEncode, packetInfo, sp);
+            TcPacketInfo packetInfo = new TcPacketInfo(packetInfoStr, ackOverride, sourceId, mapId,
+                    configuration.getTcPacketConfiguration().getSourceIdDefaultValue(), configuration.getTcPacketConfiguration().getTcPecPresent());
+            // At this stage, if the TC is actually a TC packet (APID is specified in the extension), build the packet and send it
+            if(packetInfo.getTcUnitType() == VirtualChannelType.PACKET) {
+                // Construct the space packet using the information in the encoding definition and the configuration (override by activity properties)
+                SpacePacket sp = buildPacket(packetInfo, packetUserDataField);
+                // Send it off
+                injectTcPacket(activityInvocation, defToEncode.getId(), packetInfo, sp);
+            } else if(packetInfo.getTcUnitType() == VirtualChannelType.VCA) {
+                // Construct the VC unit (simple)
+                VirtualChannelUnit vcUnit = new VirtualChannelUnit(packetUserDataField);
+                // Send it off
+                injectVcUnit(activityInvocation, defToEncode.getId(), packetInfo, vcUnit);
+            } else {
+                throw new ActivityHandlingException("TC type " + packetInfo.getTcUnitType() + " not supported for activity " +
+                        activityInvocation.getActivityOccurrenceId() +
+                        " of external ID " + activityInvocation.getActivityId());
+            }
         } catch(ActivityHandlingException e) {
             LOG.log(Level.SEVERE, "Cannot encode and send TC packet " + defToEncode.getId() + ": " + e.getMessage(), e);
             reportReleaseProgress(context.getProcessingModel(), activityInvocation, ActivityReportState.FATAL);
@@ -211,52 +225,72 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
      * This method is used to inject a complete space packet (mapped to an activity occurrence) into the lower processing layers.
      *
      * @param activityInvocation the activity invocation
-     * @param packetDefinition the packet definition
+     * @param packetName the packet name
      * @param packetInfo the TC packet information
      * @param sp the fully encoded space packet
      * @throws ActivityHandlingException in case of troubles handling the activity
      */
     @Override
-    public TcTracker injectTcPacket(IActivityHandler.ActivityInvocation activityInvocation, PacketDefinition packetDefinition, TcPacketInfo packetInfo, SpacePacket sp) throws ActivityHandlingException {
+    public TcPacketTracker injectTcPacket(IActivityHandler.ActivityInvocation activityInvocation, String packetName,
+                                          TcPacketInfo packetInfo, SpacePacket sp) throws ActivityHandlingException {
         Instant encodingTime = Instant.now();
         // Store the TC packet in the raw data archive
-        RawData rd = distributeAsRawData(activityInvocation, sp, packetDefinition, encodingTime, packetInfo);
-        // Build the activity tracker and add it to the Space Packet
-        TcTracker tcTracker = buildTcTracker(activityInvocation, sp, packetInfo, rd);
-        sp.setAnnotationValue(Constants.ANNOTATION_TC_TRACKER, tcTracker);
+        RawData rd = distributeAsRawData(activityInvocation, sp, sp.getPacket(), Constants.T_TC_PACKET, packetName, encodingTime, packetInfo);
+        // Build the activity tracker and add it to the space packet
+        TcPacketTracker tcPacketTracker = new TcPacketTracker(activityInvocation, packetInfo, rd, sp);
+        sp.setAnnotationValue(Constants.ANNOTATION_TC_TRACKER, tcPacketTracker);
         // Notify packet built to service broker: if the packet is time tagged, then the processing will continue in the PUS 11 service implementation
-        serviceBroker.informTcPacket(TcPhase.ENCODED, encodingTime, tcTracker);
+        serviceBroker.informTc(TcPhase.ENCODED, encodingTime, tcPacketTracker);
         // Release packet to lower layer (TC layer), unless the activity is directly handled by a service (e.g. PUS 11, activity property)
-        if (!serviceBroker.isDirectlyHandled(tcTracker)) {
+        if (!serviceBroker.isDirectlyHandled(tcPacketTracker)) {
             // If there is an external connector for the route, go for it
             ITcPacketConnector externalConnector = this.tcPacketConnectors.get(activityInvocation.getRoute());
             if(externalConnector != null) {
                 try {
-                    externalConnector.sendTcPacket(sp, tcTracker);
+                    externalConnector.sendTcPacket(sp, tcPacketTracker);
                 } catch (RemoteException e) {
                     LOG.log(Level.WARNING, "Unexpected RemoteException: " + e.getMessage(), e);
                 }
             } else {
                 // Fall back to the TC Data Link processor
-                tcDataLinkProcessor.sendTcPacket(sp, tcTracker);
+                tcDataLinkProcessor.sendTcPacket(sp, tcPacketTracker);
             }
         }
-        return tcTracker;
+        return tcPacketTracker;
+    }
+
+    @Override
+    public TcUnitTracker injectVcUnit(IActivityHandler.ActivityInvocation activityInvocation, String unitName,
+                                        TcPacketInfo packetInfo, VirtualChannelUnit unit) throws ActivityHandlingException {
+        Instant encodingTime = Instant.now();
+        // Store the VC unit in the raw data archive
+        RawData rd = distributeAsRawData(activityInvocation, unit, unit.getData(), Constants.T_TC_VCA, unitName, encodingTime, packetInfo);
+        // Build the activity tracker and add it to the VC unit
+        TcUnitTracker tcUnitTracker = new TcUnitTracker(activityInvocation, packetInfo, rd, unit);
+        unit.setAnnotationValue(Constants.ANNOTATION_TC_TRACKER, tcUnitTracker);
+        // Notify VC unit built to service broker
+        serviceBroker.informTc(TcPhase.ENCODED, encodingTime, tcUnitTracker);
+        // Release VC unit to lower layer (TC layer), unless the activity is directly handled by a service (unusual for this kind of command, but not impossible)
+        if (!serviceBroker.isDirectlyHandled(tcUnitTracker)) {
+            // Send to TC Data Link processor, no external connector for direct VCA as it needs a transfer frame
+            tcDataLinkProcessor.sendTcUnit(unit, tcUnitTracker);
+        }
+        return tcUnitTracker;
     }
 
     private void reportReleaseProgress(IProcessingModel processingModel, IActivityHandler.ActivityInvocation activityInvocation, ActivityReportState status) {
         processingModel.reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), ActivityOccurrenceReport.RELEASE_REPORT_NAME, Instant.now(), ActivityOccurrenceState.RELEASE, null, status, ActivityOccurrenceState.RELEASE, null));
     }
 
-    private RawData distributeAsRawData(IActivityHandler.ActivityInvocation activityInvocation, SpacePacket sp, PacketDefinition defToEncode, Instant buildTime, TcPacketInfo packetInfo) {
-        RawData rd = new RawData(context.getRawDataBroker().nextRawDataId(), activityInvocation.getGenerationTime(), defToEncode.getId(), Constants.T_TC_PACKET,
-                activityInvocation.getRoute(), activityInvocation.getSource(), Quality.GOOD, activityInvocation.getActivityOccurrenceId(), sp.getPacket(),
+    private RawData distributeAsRawData(IActivityHandler.ActivityInvocation activityInvocation, Object dataItem, byte[] contents, String type, String packetName, Instant buildTime, TcPacketInfo packetInfo) {
+        RawData rd = new RawData(context.getRawDataBroker().nextRawDataId(), activityInvocation.getGenerationTime(), packetName, type,
+                activityInvocation.getRoute(), activityInvocation.getSource(), Quality.GOOD, activityInvocation.getActivityOccurrenceId(), contents,
                 buildTime, driverName, packetInfo);
-        rd.setData(sp);
+        rd.setData(dataItem);
         try {
             context.getRawDataBroker().distribute(Collections.singletonList(rd));
         } catch (ReatmetricException e) {
-            LOG.log(Level.SEVERE, "Error when distributing encoded TC packet " + defToEncode.getId() + " for activity " + activityInvocation.getPath() + " to raw data broker: " + e.getMessage(), e);
+            LOG.log(Level.SEVERE, "Error when distributing encoded TC " + packetName + " for activity " + activityInvocation.getPath() + " to raw data broker: " + e.getMessage(), e);
         }
         return rd;
     }
@@ -305,10 +339,6 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
         }
         sp.setAnnotationValue(Constants.ANNOTATION_TC_PUS_HEADER, packetInfo.getPusHeader());
         return sp;
-    }
-
-    private TcTracker buildTcTracker(IActivityHandler.ActivityInvocation activityInvocation, SpacePacket sp, TcPacketInfo packetInfo, RawData rd) {
-        return new TcTracker(activityInvocation, sp, packetInfo, rd);
     }
 
     private void convertArrayRecords(PacketDefinition defToEncode, String key, Array value, Map<String, Object> convertedArgumentMap) {

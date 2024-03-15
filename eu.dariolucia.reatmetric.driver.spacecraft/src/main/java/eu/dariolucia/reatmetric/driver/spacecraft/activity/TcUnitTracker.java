@@ -14,22 +14,30 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.services;
+package eu.dariolucia.reatmetric.driver.spacecraft.activity;
 
-import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
-import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
-import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
+import eu.dariolucia.ccsds.tmtc.util.AnnotatedObject;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.AbstractTcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 
-import java.time.Instant;
+import java.io.Serializable;
 
-public interface IServicePacketSubscriber {
+public class TcUnitTracker extends AbstractTcTracker implements Serializable {
 
-    void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded);
+    private final VirtualChannelUnit vcUnit;
 
-    void onTmVcUnit(RawData packetRawData, VirtualChannelUnit unit, DecodingResult decoded);
+    public TcUnitTracker(IActivityHandler.ActivityInvocation invocation, TcPacketInfo info, RawData rd, VirtualChannelUnit unit) {
+        super(invocation, info, rd);
+        this.vcUnit = unit;
+    }
 
-    void onTcUpdate(TcPhase phase, Instant phaseTime, AbstractTcTracker tcTracker);
+    public VirtualChannelUnit getVcUnit() {
+        return vcUnit;
+    }
+
+    @Override
+    public AnnotatedObject getObject() {
+        return getVcUnit();
+    }
 }

@@ -44,15 +44,15 @@ import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.ForwardDataUnitProcessingStatus;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.IActivityExecutor;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.IForwardDataUnitStatusSubscriber;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.AbstractTcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.*;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe.ITcFrameConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.TcVcConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.VirtualChannelType;
 import eu.dariolucia.reatmetric.driver.spacecraft.security.DataLinkSecurityManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
@@ -85,12 +85,12 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
     private final int defaultTcVcId;
     private final ChannelEncoder<TcTransferFrame> encoder;
 
-    private final List<TcTracker> pendingTcPackets = new LinkedList<>();
+    private final List<AbstractTcTracker> pendingTcItems = new LinkedList<>();
     private final List<TcTransferFrame> lastGeneratedFrames = new LinkedList<>();
 
     private final Map<Long, RequestTracker> cltuId2requestTracker = new ConcurrentHashMap<>();
 
-    private final Map<String, List<TcTracker>> pendingGroupTcs = new HashMap<>();
+    private final Map<String, List<TcPacketTracker>> pendingGroupTcs = new HashMap<>();
 
     private final Map<String, ICltuConnector> cltuSenders;
     private final Map<String, ITcFrameConnector> tcFrameSenders;
@@ -126,8 +126,11 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         this.fopEngines = new FopEngine[8];
         for(int i = 0; i < tcChannels.length; ++i) {
             TcVcConfiguration tcConf = getTcVcConfiguration(i, configuration.getTcDataLinkConfiguration().getTcVcDescriptors());
-            if(tcConf != null) {
-                tcChannels[i] = Pair.of(tcConf, new TcSenderVirtualChannel(configuration.getId(), i, VirtualChannelAccessMode.PACKET, configuration.getTcDataLinkConfiguration().isFecf(), tcConf.isSegmentation(),
+            if(tcConf != null && tcConf.getAccessMode() != VirtualChannelType.IGNORE) {
+                // PACKET or DATA depending on configuration
+                tcChannels[i] = Pair.of(tcConf, new TcSenderVirtualChannel(configuration.getId(), i,
+                        tcConf.getAccessMode() == VirtualChannelType.PACKET ? VirtualChannelAccessMode.PACKET : VirtualChannelAccessMode.DATA,
+                        configuration.getTcDataLinkConfiguration().isFecf(), tcConf.isSegmentation(),
                         securityManager.getSecurityHeaderLength(configuration.getId(), i, TcTransferFrame.class), securityManager.getSecurityTrailerLength(configuration.getId(), i, TcTransferFrame.class),
                         securityManager.getSecurityHeaderSupplier(configuration.getId(), i, TcTransferFrame.class),
                         securityManager.getSecurityTrailerSupplier(configuration.getId(), i, TcTransferFrame.class)));
@@ -245,51 +248,116 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         return null;
     }
 
-    public void sendTcPacket(SpacePacket sp, TcTracker tcTracker) throws ActivityHandlingException {
+    public void sendTcUnit(VirtualChannelUnit unit, TcUnitTracker tracker) throws ActivityHandlingException {
         try {
             delegator.submit(() -> {
-                LOG.log(Level.INFO, "TC packet with APID (" + sp.getApid() + ") for activity " + tcTracker.getInvocation().getPath() + " encoded: " + StringUtil.toHexDump(sp.getPacket()));
+                LOG.log(Level.INFO, "TC VC unit for activity " + tracker.getInvocation().getPath() + " encoded: " + StringUtil.toHexDump(unit.getData()));
                 try {
                     // Overridden TC VC ID
-                    int tcVcId = defaultTcVcId;
-                    if (tcTracker.getInvocation().getProperties().containsKey(Constants.ACTIVITY_PROPERTY_OVERRIDE_TCVC_ID)) {
-                        tcVcId = Integer.parseInt(tcTracker.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_OVERRIDE_TCVC_ID));
-                    }
+                    int tcVcId = deriveTcVcUse(tracker.getInvocation());
 
                     // Look for TC VC ID
                     Pair<TcVcConfiguration, TcSenderVirtualChannel> vcToUse = tcChannels[tcVcId];
                     if (vcToUse == null) {
-                        LOG.log(Level.SEVERE, "Transmission of space packet from activity " + tcTracker.getInvocation().getPath() + " on TC VC " + tcVcId + " not possible: TC VC " + tcVcId + " not configured");
+                        LOG.log(Level.SEVERE, "Transmission of VC unit from activity " + tracker.getInvocation().getPath() + " on TC VC " + tcVcId +
+                                " not possible: TC VC " + tcVcId + " not configured");
                         Instant t = Instant.now();
-                        informServiceBroker(TcPhase.FAILED, t, Collections.singletonList(tcTracker));
-                        reportActivityState(Collections.singletonList(tcTracker), t, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, RELEASE);
+                        informServiceBroker(TcPhase.FAILED, t, Collections.singletonList(tracker));
+                        reportActivityState(Collections.singletonList(tracker), t, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, RELEASE);
+                        return;
+                    }
+
+                    // At this stage, check if TC VC is configured for direct VC access
+                    if(vcToUse.getSecond().getMode() != VirtualChannelAccessMode.DATA) {
+                        LOG.log(Level.SEVERE, "Transmission of VC unit from activity " + tracker.getInvocation().getPath() + " on TC VC " + tcVcId +
+                                " not possible: TC VC " + tcVcId + " not configured for direct VC access mode");
+                        Instant t = Instant.now();
+                        informServiceBroker(TcPhase.FAILED, t, Collections.singletonList(tracker));
+                        reportActivityState(Collections.singletonList(tracker), t, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, RELEASE);
                         return;
                     }
 
                     // Map ID: only used if segmentation is used
-                    int map = tcTracker.getInfo().isMapUsed() ? tcTracker.getInfo().getMap() : vcToUse.getFirst().getMapId(); // This means segmentation is needed, overridden map already taken into account
+                    int map = deriveMapUse(tracker.getInfo(), vcToUse);
 
                     // Overriden mode (AD or BD)
-                    boolean useAd = this.useAdMode;
-                    if (tcTracker.getInvocation().getProperties().containsKey(Constants.ACTIVITY_PROPERTY_OVERRIDE_USE_AD_FRAME)) {
-                        useAd = Boolean.parseBoolean(tcTracker.getInvocation().getProperties().get(Constants.ACTIVITY_PROPERTY_OVERRIDE_USE_AD_FRAME));
+                    boolean useAd = deriveAdModeUse(tracker.getInvocation());
+
+                    // Send the VC unit right away
+                    lastGeneratedFrames.clear();
+                    pendingTcItems.clear();
+                    pendingTcItems.add(tracker);
+                    vcToUse.getSecond().dispatch(useAd, map, unit.getData());
+                    // Now lastGeneratedFrames will contain the TC frames ready to be sent
+                    encryptAndForward(useAd, tracker.getInvocation().getRoute());
+                } catch (Exception e) {
+                    // This is a bug
+                    throw new RuntimeException("TC frame construction/processing error: " + e.getMessage(), e);
+                }
+            }).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new ActivityHandlingException("Problem when sending VC unit", e);
+        }
+    }
+
+    private boolean deriveAdModeUse(IActivityHandler.ActivityInvocation tracker) {
+        boolean useAd = this.useAdMode;
+        if (tracker.getProperties().containsKey(Constants.ACTIVITY_PROPERTY_OVERRIDE_USE_AD_FRAME)) {
+            useAd = Boolean.parseBoolean(tracker.getProperties().get(Constants.ACTIVITY_PROPERTY_OVERRIDE_USE_AD_FRAME));
+        }
+        return useAd;
+    }
+
+    public void sendTcPacket(SpacePacket sp, TcPacketTracker tracker) throws ActivityHandlingException {
+        try {
+            delegator.submit(() -> {
+                LOG.log(Level.INFO, "TC packet with APID (" + sp.getApid() + ") for activity " + tracker.getInvocation().getPath() + " encoded: " + StringUtil.toHexDump(sp.getPacket()));
+                try {
+                    // Overridden TC VC ID
+                    int tcVcId = deriveTcVcUse(tracker.getInvocation());
+
+                    // Look for TC VC ID
+                    Pair<TcVcConfiguration, TcSenderVirtualChannel> vcToUse = tcChannels[tcVcId];
+                    if (vcToUse == null) {
+                        LOG.log(Level.SEVERE, "Transmission of space packet from activity " + tracker.getInvocation().getPath() + " on TC VC " + tcVcId +
+                                " not possible: TC VC " + tcVcId + " not configured");
+                        Instant t = Instant.now();
+                        informServiceBroker(TcPhase.FAILED, t, Collections.singletonList(tracker));
+                        reportActivityState(Collections.singletonList(tracker), t, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, RELEASE);
+                        return;
                     }
 
+                    // At this stage, check if TC VC is configured for space packets
+                    if(vcToUse.getSecond().getMode() != VirtualChannelAccessMode.PACKET) {
+                        LOG.log(Level.SEVERE, "Transmission of space packet from activity " + tracker.getInvocation().getPath() + " on TC VC " + tcVcId +
+                                " not possible: TC VC " + tcVcId + " not configured for PACKET access mode");
+                        Instant t = Instant.now();
+                        informServiceBroker(TcPhase.FAILED, t, Collections.singletonList(tracker));
+                        reportActivityState(Collections.singletonList(tracker), t, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, RELEASE);
+                        return;
+                    }
+
+                    // Map ID: only used if segmentation is used
+                    int map = deriveMapUse(tracker.getInfo(), vcToUse);
+
+                    // Overriden mode (AD or BD)
+                    boolean useAd = deriveAdModeUse(tracker.getInvocation());
+
                     // Check if this command is part of a group command: a group command is a sequence of TCs that is encoded and sent in a single TC frame
-                    String groupName = tcTracker.getInvocation().getProperties().getOrDefault(Constants.ACTIVITY_PROPERTY_TC_GROUP_NAME, null);
+                    String groupName = tracker.getInvocation().getProperties().getOrDefault(Constants.ACTIVITY_PROPERTY_TC_GROUP_NAME, null);
                     if (groupName != null) {
                         // Retrieve the group if it exists, or create a new one
-                        List<TcTracker> groupList = this.pendingGroupTcs.computeIfAbsent(groupName, o -> new LinkedList<>());
+                        List<TcPacketTracker> groupList = this.pendingGroupTcs.computeIfAbsent(groupName, o -> new LinkedList<>());
                         // Add the TC
-                        groupList.add(tcTracker);
+                        groupList.add(tracker);
                         // If this is the last TC in the group, send the group
-                        String transmit = tcTracker.getInvocation().getProperties().getOrDefault(Constants.ACTIVITY_PROPERTY_TC_GROUP_TRANSMIT, Boolean.FALSE.toString());
+                        String transmit = tracker.getInvocation().getProperties().getOrDefault(Constants.ACTIVITY_PROPERTY_TC_GROUP_TRANSMIT, Boolean.FALSE.toString());
                         if (transmit.equals(Boolean.TRUE.toString())) {
                             this.pendingGroupTcs.remove(groupName);
                             lastGeneratedFrames.clear();
-                            pendingTcPackets.clear();
-                            pendingTcPackets.addAll(groupList);
-                            vcToUse.getSecond().dispatch(useAd, map, groupList.stream().map(TcTracker::getPacket).collect(Collectors.toList()));
+                            pendingTcItems.clear();
+                            pendingTcItems.addAll(groupList);
+                            vcToUse.getSecond().dispatch(useAd, map, groupList.stream().map(TcPacketTracker::getPacket).collect(Collectors.toList()));
                             // Now lastGeneratedFrames will contain the TC frames ready to be sent
                         } else {
                             // You are done for now
@@ -298,38 +366,53 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     } else {
                         // No group, send it right away
                         lastGeneratedFrames.clear();
-                        pendingTcPackets.clear();
-                        pendingTcPackets.add(tcTracker);
+                        pendingTcItems.clear();
+                        pendingTcItems.add(tracker);
                         vcToUse.getSecond().dispatch(useAd, map, sp);
                         // Now lastGeneratedFrames will contain the TC frames ready to be sent
                     }
-                    LOG.log(Level.INFO, lastGeneratedFrames.size() + " TC frames generated");
-
-                    if(LOG.isLoggable(Level.FINER)) {
-                        for(TcTransferFrame tctf : lastGeneratedFrames) {
-                            LOG.log(Level.FINER, String.format("TC Transfer Frame (%d, %d, %d, %s): %s",
-                                    tctf.getSpacecraftId(),
-                                    tctf.getVirtualChannelId(),
-                                    tctf.getVirtualChannelFrameCount(),
-                                    tctf.getFrameType().name(),
-                                    StringUtil.toHexDump(tctf.getFrame())));
-                        }
-                    }
-                    // Perform encryption
-                    encryptTcFrames(lastGeneratedFrames);
-                    // Now you have the generated frames, prepare for tracking them, encode them and send them
-                    // Retrieve the route and hence the service instance to use
-                    String route = tcTracker.getInvocation().getRoute();
-                    // Check the route from the last TcTracker: if it ends up to a CLTU connector, go for encoding.
-                    // If it ends up to a Tc Frame connector, send the frames without encoding.
-                    sendToFop(lastGeneratedFrames, useAd, route);
+                    // Keep processing the result of the generation
+                    encryptAndForward(useAd, tracker.getInvocation().getRoute());
                 } catch (Exception e) {
                     throw new RuntimeException("TC frame construction/processing error: " + e.getMessage(), e);
                 }
             }).get();
         } catch (InterruptedException | ExecutionException e) {
+            // This is a bug
             throw new ActivityHandlingException("Problem when sending packet", e);
         }
+    }
+
+    private int deriveTcVcUse(IActivityHandler.ActivityInvocation tracker) {
+        int tcVcId = defaultTcVcId;
+        if (tracker.getProperties().containsKey(Constants.ACTIVITY_PROPERTY_OVERRIDE_TCVC_ID)) {
+            tcVcId = Integer.parseInt(tracker.getProperties().get(Constants.ACTIVITY_PROPERTY_OVERRIDE_TCVC_ID));
+        }
+        return tcVcId;
+    }
+
+    private int deriveMapUse(TcPacketInfo tracker, Pair<TcVcConfiguration, TcSenderVirtualChannel> vcToUse) {
+        return tracker.isMapUsed() ? tracker.getMap() : vcToUse.getFirst().getMapId();
+    }
+
+    private void encryptAndForward(boolean useAd, String route) throws ReatmetricException {
+        LOG.log(Level.INFO, lastGeneratedFrames.size() + " TC frames generated");
+
+        if(LOG.isLoggable(Level.FINER)) {
+            for(TcTransferFrame tctf : lastGeneratedFrames) {
+                LOG.log(Level.FINER, String.format("TC Transfer Frame (%d, %d, %d, %s): %s",
+                        tctf.getSpacecraftId(),
+                        tctf.getVirtualChannelId(),
+                        tctf.getVirtualChannelFrameCount(),
+                        tctf.getFrameType().name(),
+                        StringUtil.toHexDump(tctf.getFrame())));
+            }
+        }
+        // Perform encryption
+        encryptTcFrames(lastGeneratedFrames);
+        // Check the route from the last TcTracker: if it ends up to a CLTU connector, go for encoding.
+        // If it ends up to a Tc Frame connector, send the frames without encoding.
+        sendToFop(lastGeneratedFrames, useAd, route);
     }
 
     private void encryptTcFrames(List<TcTransferFrame> lastGeneratedFrames) throws ReatmetricException {
@@ -353,7 +436,7 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             frame.setAnnotationValue(Constants.ANNOTATION_TC_FRAME_ID, frameInTransmissionId);
         }
         // Initialise the tracker
-        tracker.initialise(pendingTcPackets, toSend.stream().map(Pair::getFirst).collect(Collectors.toList()));
+        tracker.initialise(pendingTcItems, toSend.stream().map(Pair::getFirst).collect(Collectors.toList()));
         // Send the TC frames
         for (Pair<Long, TcTransferFrame> p : toSend) {
             try {
@@ -447,17 +530,17 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         }
     }
 
-    private void informServiceBroker(TcPhase phase, Instant time, List<TcTracker> trackers) {
-        for (TcTracker tracker : trackers) {
-            // To be reported only if there is actually a packet, not for a BC frame for COP-1 controlling
-            if(tracker.getPacket() != null) {
-                serviceBroker.informTcPacket(phase, time, tracker);
+    private void informServiceBroker(TcPhase phase, Instant time, List<AbstractTcTracker> trackers) {
+        for (AbstractTcTracker tracker : trackers) {
+            // To be reported only if there is actually a packet/VC unit, not for a BC frame for COP-1 controlling
+            if(tracker.getObject() != null) {
+                serviceBroker.informTc(phase, time, tracker);
             }
         }
     }
 
-    private void reportActivityState(List<TcTracker> trackers, Instant t, ActivityOccurrenceState state, String name, ActivityReportState status, ActivityOccurrenceState nextState) {
-        for (TcTracker tracker : trackers) {
+    private void reportActivityState(List<AbstractTcTracker> trackers, Instant t, ActivityOccurrenceState state, String name, ActivityReportState status, ActivityOccurrenceState nextState) {
+        for (AbstractTcTracker tracker : trackers) {
             context.getProcessingModel().reportActivityProgress(ActivityProgress.of(tracker.getInvocation().getActivityId(), tracker.getInvocation().getActivityOccurrenceId(), name, t, state, null, status, nextState, null));
         }
     }
@@ -482,8 +565,8 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                         long frameInTransmissionId = -activityInvocation.getActivityOccurrenceId().asLong();
                         cltuId2requestTracker.put(frameInTransmissionId, tracker);
                         // Initialise the tracker
-                        TcTracker tcTracker = new TcTracker(activityInvocation, null, null, null);
-                        tracker.initialise(Collections.singletonList(tcTracker), Collections.singletonList(frameInTransmissionId));
+                        TcPacketTracker tcPacketTracker = new TcPacketTracker(activityInvocation, null, null, null);
+                        tracker.initialise(Collections.singletonList(tcPacketTracker), Collections.singletonList(frameInTransmissionId));
                         context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), Constants.STAGE_GROUND_STATION_RECEPTION, Instant.now(), ActivityOccurrenceState.TRANSMISSION, null, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION, null));
                     } else {
                         context.getProcessingModel().reportActivityProgress(ActivityProgress.of(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), Constants.STAGE_FOP_DIRECTIVE, Instant.now(), ActivityOccurrenceState.EXECUTION, null, ActivityReportState.PENDING, ActivityOccurrenceState.EXECUTION, null));
@@ -528,9 +611,9 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         delegator.submit(() -> {
             // If the activityOccurrenceId is part of a group command, then the group commands (and the related TCs up to now
             // pending release) should be aborted.
-            for (Map.Entry<String, List<TcTracker>> entry : this.pendingGroupTcs.entrySet()) {
-                for (TcTracker tcTracker : entry.getValue()) {
-                    if (tcTracker.getInvocation().getActivityOccurrenceId().equals(activityOccurrenceId)) {
+            for (Map.Entry<String, List<TcPacketTracker>> entry : this.pendingGroupTcs.entrySet()) {
+                for (TcPacketTracker tcPacketTracker : entry.getValue()) {
+                    if (tcPacketTracker.getInvocation().getActivityOccurrenceId().equals(activityOccurrenceId)) {
                         // Found, abort all TC group
                         abortTcGroup(entry.getKey(), entry.getValue());
                         return;
@@ -540,12 +623,13 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         });
     }
 
-    private void abortTcGroup(String groupToAbort, List<TcTracker> tcTrackers) {
+    private void abortTcGroup(String groupToAbort, List<TcPacketTracker> tcPacketTrackers) {
         LOG.log(Level.WARNING, "Aborting TC group " + groupToAbort + " due to abort request received");
         this.pendingGroupTcs.remove(groupToAbort);
         Instant now = Instant.now();
-        informServiceBroker(TcPhase.FAILED, now, tcTrackers);
-        reportActivityState(tcTrackers, now, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
+        List<AbstractTcTracker> trackers = new ArrayList<>(tcPacketTrackers);
+        informServiceBroker(TcPhase.FAILED, now, trackers);
+        reportActivityState(trackers, now, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
     }
 
     @Override
@@ -655,8 +739,13 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         }
     }
 
+    @Override
+    public String toString() {
+        return "TC Data Link Processor";
+    }
+
     private class RequestTracker {
-        private final List<TcTracker> tcTrackers = new LinkedList<>();
+        private final List<AbstractTcTracker> linkedTrackers = new LinkedList<>();
         private final Set<Long> dataUnits = new HashSet<>();
         private final boolean useAd;
         private volatile boolean lifecycleCompleted;
@@ -670,8 +759,8 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
            this.useAd = useAd;
         }
 
-        public void initialise(List<TcTracker> tcTrackers, List<Long> dataUnits) {
-            this.tcTrackers.addAll(tcTrackers);
+        public void initialise(List<AbstractTcTracker> linkedTrackers, List<Long> dataUnits) {
+            this.linkedTrackers.addAll(linkedTrackers);
             this.dataUnits.addAll(dataUnits);
         }
 
@@ -681,15 +770,15 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                 case RELEASED: { // The CLTU/Frame was sent to the ground station
                     released.add(id);
                     if(released.size() == dataUnits.size()) { // All released
-                        informServiceBroker(TcPhase.RELEASED, time, tcTrackers);
-                        reportActivityState(tcTrackers, time, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
-                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, nextStep, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+                        informServiceBroker(TcPhase.RELEASED, time, linkedTrackers);
+                        reportActivityState(linkedTrackers, time, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
+                        reportActivityState(linkedTrackers, time, ActivityOccurrenceState.TRANSMISSION, nextStep, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                     }
                 }
                 break;
                 case RELEASE_FAILED: { // Release problem
-                    informServiceBroker(TcPhase.FAILED, time, tcTrackers);
-                    reportActivityState(tcTrackers, time, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, RELEASE);
+                    informServiceBroker(TcPhase.FAILED, time, linkedTrackers);
+                    reportActivityState(linkedTrackers, time, RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL, RELEASE);
                     lifecycleCompleted = true;
                 }
                 break;
@@ -697,36 +786,36 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
                     accepted.add(id);
                     if(accepted.size() == dataUnits.size()) { // All CLTUs/Frames accepted, so command is all at the ground station
                         // Nothing to be done here with the service broker
-                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, currentStep, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
-                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, nextStep, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+                        reportActivityState(linkedTrackers, time, ActivityOccurrenceState.TRANSMISSION, currentStep, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
+                        reportActivityState(linkedTrackers, time, ActivityOccurrenceState.TRANSMISSION, nextStep, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                     }
                 }
                 break;
                 case REJECTED:  // The CLTU/Frame was rejected by the ground station or discarded -> all related TC requests to be marked as failed in ground station reception
                 case UPLINK_FAILED: { // The CLTU/Frame failed uplink -> all related TC requests to be marked as failed in ground station uplink
-                    informServiceBroker(TcPhase.FAILED, time, tcTrackers);
-                    reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, currentStep, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
+                    informServiceBroker(TcPhase.FAILED, time, linkedTrackers);
+                    reportActivityState(linkedTrackers, time, ActivityOccurrenceState.TRANSMISSION, currentStep, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
                     lifecycleCompleted = true;
                 }
                 break;
                 case UPLINKED: { // The CLTU/Frame was uplinked by the ground station
                     uplinked.add(id);
                     if(uplinked.size() == dataUnits.size()) { // All CLTUs/Frames uplinked, so command is all on its way
-                        informServiceBroker(TcPhase.UPLINKED, time, tcTrackers);
-                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, currentStep, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
-                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
+                        informServiceBroker(TcPhase.UPLINKED, time, linkedTrackers);
+                        reportActivityState(linkedTrackers, time, ActivityOccurrenceState.TRANSMISSION, currentStep, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
+                        reportActivityState(linkedTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.PENDING, ActivityOccurrenceState.TRANSMISSION);
                         if(!useAd) {
                             // Other stages are not in the scope of this class: send out a RECEIVED_ONBOARD success after uplink time + propagation delay on the service broker only
                             Instant estimatedOnboardReceptionTime = time.plusNanos(configuration.getPropagationDelay() * 1000);
                             if(configuration.getPropagationDelay() < 1000000) { // Less than one second propagation delay: report onboard reception now
-                                informServiceBroker(TcPhase.RECEIVED_ONBOARD, estimatedOnboardReceptionTime, tcTrackers);
-                                reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.EXPECTED, ActivityOccurrenceState.TRANSMISSION);
+                                informServiceBroker(TcPhase.RECEIVED_ONBOARD, estimatedOnboardReceptionTime, linkedTrackers);
+                                reportActivityState(linkedTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.EXPECTED, ActivityOccurrenceState.TRANSMISSION);
                             } else {
                                 TimerTask tt = new TimerTask() {
                                     @Override
                                     public void run() {
-                                        informServiceBroker(TcPhase.RECEIVED_ONBOARD, estimatedOnboardReceptionTime, tcTrackers);
-                                        reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.EXPECTED, ActivityOccurrenceState.TRANSMISSION);
+                                        informServiceBroker(TcPhase.RECEIVED_ONBOARD, estimatedOnboardReceptionTime, linkedTrackers);
+                                        reportActivityState(linkedTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.EXPECTED, ActivityOccurrenceState.TRANSMISSION);
                                     }
                                 };
                                 uplinkTimer.schedule(tt, new Date(estimatedOnboardReceptionTime.toEpochMilli()));
@@ -743,14 +832,14 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
 
         public void trackReceptionConfirmation(Long id, FopOperationStatus status, Instant time) {
             if(status == FopOperationStatus.NEGATIVE_CONFIRM) {
-                informServiceBroker(TcPhase.FAILED, time, tcTrackers);
-                reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
+                informServiceBroker(TcPhase.FAILED, time, linkedTrackers);
+                reportActivityState(linkedTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.FATAL, ActivityOccurrenceState.TRANSMISSION);
                 lifecycleCompleted = true;
             } else {
                 received.add(id);
                 if(received.size() == dataUnits.size()) { // All CLTUs/Frames received on-board, so command is all on the spacecraft
-                    informServiceBroker(TcPhase.RECEIVED_ONBOARD, time, tcTrackers);
-                    reportActivityState(tcTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
+                    informServiceBroker(TcPhase.RECEIVED_ONBOARD, time, linkedTrackers);
+                    reportActivityState(linkedTrackers, time, ActivityOccurrenceState.TRANSMISSION, Constants.STAGE_ONBOARD_RECEPTION, ActivityReportState.OK, ActivityOccurrenceState.TRANSMISSION);
                     lifecycleCompleted = true;
                 }
             }
@@ -759,10 +848,5 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         public boolean isLifecycleCompleted() {
             return lifecycleCompleted;
         }
-    }
-
-    @Override
-    public String toString() {
-        return "TC Data Link Processor";
     }
 }
