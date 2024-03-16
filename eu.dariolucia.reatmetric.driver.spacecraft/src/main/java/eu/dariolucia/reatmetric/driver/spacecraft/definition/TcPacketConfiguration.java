@@ -25,6 +25,9 @@ import jakarta.xml.bind.annotation.XmlAttribute;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class TcPacketConfiguration {
 
+    @XmlAttribute(name = "telecommand-id-offset")
+    private int telecommandIdOffset = 0;
+
     @XmlAttribute(name="activity-tc-packet-type")
     private String activityTcPacketType = Constants.ENCDEC_TC_PACKET_TYPE;
 
@@ -78,5 +81,13 @@ public class TcPacketConfiguration {
 
     public void setTcPecPresent(PacketErrorControlType tcPecPresent) {
         this.tcPecPresent = tcPecPresent;
+    }
+
+    public int getTelecommandIdOffset() {
+        return telecommandIdOffset;
+    }
+
+    public void setTelecommandIdOffset(int telecommandIdOffset) {
+        this.telecommandIdOffset = telecommandIdOffset;
     }
 }

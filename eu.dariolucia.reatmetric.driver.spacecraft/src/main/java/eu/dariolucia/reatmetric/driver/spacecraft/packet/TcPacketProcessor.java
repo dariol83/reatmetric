@@ -140,7 +140,7 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
                     + " cannot be processed: processing model not available");
         }
         // Get the encoding definition
-        PacketDefinition defToEncode = externalId2packet.get((long) activityInvocation.getActivityId());
+        PacketDefinition defToEncode = externalId2packet.get((long) (activityInvocation.getActivityId() + configuration.getTcPacketConfiguration().getTelecommandIdOffset()));
         if(defToEncode == null) {
             throw new ActivityHandlingException("Invocation for activity occurrence " + activityInvocation.getActivityOccurrenceId() + " of " + activityInvocation.getPath()
             + " cannot be processed: TC packet definition not found for external ID " + activityInvocation.getActivityId());

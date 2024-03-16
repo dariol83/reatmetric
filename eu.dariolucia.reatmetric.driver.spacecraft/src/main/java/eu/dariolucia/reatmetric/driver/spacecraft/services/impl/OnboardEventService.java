@@ -23,20 +23,37 @@ import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.AbstractTcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.services.OnboardEventServiceConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.services.TimeCorrelationServiceConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.time.Instant;
 
 /**
  * This class implements the ECSS PUS 5 on-board event service.
  */
-public class OnboardEventService extends AbstractPacketService<Object> {
+public class OnboardEventService extends AbstractPacketService<OnboardEventServiceConfiguration> {
+
+    private boolean firstEvent = true;
+    private int offset = 0;
 
     @Override
     public void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
+        // Get and store the offset to apply to the event IDs
+        if(firstEvent) {
+            firstEvent = false;
+            if (configuration() != null) {
+                offset = configuration().getEventIdOffset();
+            } else {
+                offset = 0;
+            }
+        }
         // Create the event
-        EventOccurrence eo = EventOccurrence.of((int) decoded.getDefinition().getExternalId(),
+        EventOccurrence eo = EventOccurrence.of((int) decoded.getDefinition().getExternalId() + offset,
                 packetRawData.getGenerationTime(),
                 packetRawData.getReceptionTime(),
                 packetRawData.getInternalId(), null,
@@ -83,7 +100,11 @@ public class OnboardEventService extends AbstractPacketService<Object> {
     }
 
     @Override
-    protected Object loadConfiguration(String serviceConfigurationPath) {
-        return null;
+    protected OnboardEventServiceConfiguration loadConfiguration(String serviceConfigurationPath) throws IOException {
+        if(!serviceConfigurationPath.isBlank()) {
+            return OnboardEventServiceConfiguration.load(new FileInputStream(serviceConfigurationPath));
+        } else {
+            return null;
+        }
     }
 }
