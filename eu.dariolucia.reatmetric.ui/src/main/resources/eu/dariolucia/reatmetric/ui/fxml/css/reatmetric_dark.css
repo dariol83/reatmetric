@@ -32,6 +32,11 @@
     -fx-padding: 3 3 3 3;
 }
 
+.reatmetric-layover {
+    -fx-border-color: -fx-faint-focus-color;
+    -fx-background-color: -fx-base;
+}
+
 .reatmetric-model-status-cell-enabled {
 	-fx-text-fill: #32CD32;
 }
