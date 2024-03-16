@@ -16,8 +16,12 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
+/**
+ * This enumeration is used to identify the type of external connector in terms of type of data unit that it can forward.
+ */
 public enum DataUnitType {
     TC_PACKET,
     TC_FRAME,
-    CLTU
+    CLTU,
+    NONE
 }
