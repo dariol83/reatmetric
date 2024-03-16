@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2024 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.services;
+package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
-import eu.dariolucia.ccsds.tmtc.util.AnnotatedObject;
-import eu.dariolucia.reatmetric.api.rawdata.RawData;
-
-public interface IServicePacketFilter {
-
-    boolean filter(RawData rd, AnnotatedObject sp, Integer pusType, Integer pusSubtype, Integer destination, Integer source);
+public enum VirtualChannelType {
+    PACKET,
+    VCA,
+    IGNORE
 }

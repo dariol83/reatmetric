@@ -52,6 +52,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.tcframe.ITcFrameConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.IReceptionOnlyConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.DataUnitType;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.ExternalConnectorConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.ServiceConfiguration;
@@ -59,14 +60,13 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfigura
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.ITcPacketInjector;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TcPacketProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.packet.TmPacketProcessor;
-import eu.dariolucia.reatmetric.driver.spacecraft.replay.TmPacketReplayManager;
+import eu.dariolucia.reatmetric.driver.spacecraft.security.DataLinkSecurityManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IService;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.CltuServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RafServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.RcfServiceInstanceManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.sle.SleServiceInstanceManager;
-import eu.dariolucia.reatmetric.driver.spacecraft.security.DataLinkSecurityManager;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TcDataLinkProcessor;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmDataLinkProcessor;
 
@@ -127,7 +127,6 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private volatile SystemStatus status = SystemStatus.UNKNOWN;
 
     private List<SleServiceInstanceManager<?, ?>> sleManagers;
-    private TmPacketReplayManager tmPacketReplayer;
     private TmDataLinkProcessor tmDataLinkProcessor;
     private TmPacketProcessor tmPacketProcessor;
 
@@ -145,6 +144,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private final List<ICltuConnector> cltuConnectors = new LinkedList<>();
     private final List<ITcFrameConnector> tcFrameConnectors = new LinkedList<>();
     private final List<ITcPacketConnector> tcPacketConnectors = new LinkedList<>();
+    private final List<IReceptionOnlyConnector> receptionOnlyConnectors = new LinkedList<>();
     // The next field is constructed upon getTransportConnectors invocation
     private List<ITransportConnector> allConnectors;
 
@@ -179,8 +179,6 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             loadTcDataLinkProcessor();
             // Load the TC Packet processor
             loadTcPacketProcessor();
-            // Load packet replayer
-            loadTmPacketReplayer();
             // Initialise raw data renderers
             loadRawDataRenderers();
             // Finalise service loading
@@ -249,6 +247,21 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             } else {
                 LOG.log(Level.WARNING, "External TC packet connector for class " + dc.getType() + " and configuration " + dc.getConfiguration() + " not found");
             }
+        } else if (dc.getDataUnitType() == DataUnitType.NONE) {
+            ServiceLoader<IReceptionOnlyConnector> serviceLoader = ServiceLoader.load(IReceptionOnlyConnector.class);
+            Optional<ServiceLoader.Provider<IReceptionOnlyConnector>> provider = serviceLoader.stream().filter(pr -> pr.type().getName().equals(dc.getType())).findFirst();
+            if (provider.isPresent()) {
+                IReceptionOnlyConnector connector = provider.get().get();
+                try {
+                    connector.configure(this.name, this.configuration, this.context, this.serviceBroker, dc.getConfiguration());
+                    connector.prepare();
+                } catch (RemoteException e) {
+                    // Cannot happen
+                }
+                receptionOnlyConnectors.add(connector);
+            } else {
+                LOG.log(Level.WARNING, "Reception-only connector for class " + dc.getType() + " and configuration " + dc.getConfiguration() + " not found");
+            }
         }
     }
 
@@ -298,11 +311,6 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.rawDataRenderers.putAll(serviceRenderers);
     }
 
-    private void loadTmPacketReplayer() {
-        this.tmPacketReplayer = new TmPacketReplayManager(name, configuration, context.getRawDataBroker());
-        this.tmPacketReplayer.prepare();
-    }
-
     private void loadPacketServices() throws ReatmetricException {
         for (ServiceConfiguration sc : configuration.getPacketServiceConfiguration().getServices()) {
             IService theService = loadService(sc);
@@ -318,6 +326,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         if (provider.isPresent()) {
             theService = provider.get().get();
             theService.initialise(dc.getConfiguration(), this.name, this.configuration, this.coreConfiguration, this.context, this.serviceBroker);
+        } else {
+            LOG.log(Level.SEVERE, "Service " + dc.getType() + " cannot be loaded, provider not present");
         }
         return theService;
     }
@@ -444,7 +454,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     public synchronized List<ITransportConnector> getTransportConnectors() {
         if (allConnectors == null) {
             allConnectors = this.sleManagers.stream().map(o -> (ITransportConnector) o).collect(Collectors.toCollection(LinkedList::new));
-            allConnectors.add(this.tmPacketReplayer);
+            allConnectors.addAll(this.receptionOnlyConnectors);
             allConnectors.addAll(this.cltuConnectors);
             allConnectors.addAll(this.tcFrameConnectors);
             allConnectors.addAll(this.tcPacketConnectors);
@@ -456,7 +466,6 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     public void dispose() {
         this.sleManagers.forEach(SleServiceInstanceManager::abort);
         this.sleManagers.clear();
-        this.tmPacketReplayer.dispose();
         this.tmDataLinkProcessor.dispose();
         this.tmPacketProcessor.dispose();
         this.serviceBroker.dispose();

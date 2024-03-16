@@ -20,7 +20,8 @@ import eu.dariolucia.ccsds.encdec.pus.TmPusHeader;
 import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.AbstractTcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 
 import java.time.Instant;
 
@@ -29,11 +30,12 @@ public interface IServiceBroker {
 
     void deregister(IServicePacketSubscriber subscriber);
 
-    void distributeTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded);
+    void distributeTmPacket(RawData rawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded);
+    void distributeTmVcUnit(RawData rawData, VirtualChannelUnit vcUnit, DecodingResult decoded);
 
-    void informTcPacket(TcPhase phase, Instant phaseTime, TcTracker trackerBean);
+    void informTc(TcPhase phase, Instant phaseTime, AbstractTcTracker trackerBean);
 
     <T> T locate(Class<T> interfaceClass);
 
-    boolean isDirectlyHandled(TcTracker tcTracker);
+    boolean isDirectlyHandled(AbstractTcTracker tcTracker);
 }

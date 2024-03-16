@@ -26,13 +26,16 @@
 	<!-- TC datalink configuration -->
 	<tc randomize="true" fecf="true" ad-mode-default="true">
 		<tc-vc-descriptor tc-vc="0" segmentation="true" default-tc-vc="true" system-entity-path="SPACE.FOP.TCVC0" />
+		<tc-vc-descriptor tc-vc="1" segmentation="false" default-tc-vc="true" system-entity-path="SPACE.FOP.TCVC1" access-mode="VCA" />
 	</tc>
 	<!-- TM datalink configuration -->
 	<tm fecf="true" derandomize="false" frame-length="1115">
+		<tm-vc-descriptor id="0" process-type="PACKET" />
+		<tm-vc-descriptor id="1" process-type="PACKET" />
+		<tm-vc-descriptor id="2" process-type="VCA" />
+		<tm-vc-descriptor id="7" process-type="IGNORE" />
 		<type>TM</type>
 	</tm>
-	<!-- Security -->	
-	<security handler="eu.dariolucia.reatmetric.driver.spacecraft.security.impl.AesHandler" configuration="$HOME\Reatmetric\reatmetric_test\test\security\security_configuration.xml" />
 	<!-- TM packet configuration -->
 	<tm-packet parameter-id-offset="100000">
 		<default-pus-configuration 
@@ -57,9 +60,11 @@
 		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardOperationsSchedulingService" configuration="$HOME\Reatmetric\reatmetric_test\test\services\onboard_scheduling.xml" />
 		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.OnboardEventService" configuration="" /> 
 		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.CommandVerificationService" configuration="" /> 
+		<service type="eu.dariolucia.reatmetric.driver.spacecraft.services.impl.AesEncryptionService" configuration="$HOME\Reatmetric\reatmetric_test\test\security\security_configuration.xml" />
 	</services>
 	<external-connectors>
 		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.CltuCaduTcpConnector" configuration="127.0.0.1:23532:1279:4" data-unit-type="CLTU" />
 		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.SpacePacketTcpConnector" configuration="127.0.0.1:33532" data-unit-type="TC_PACKET" />
+		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.TmPacketReplayConnector" configuration="" data-unit-type="NONE" />
 	</external-connectors>
 </ns1:spacecraft>

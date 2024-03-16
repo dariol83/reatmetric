@@ -15,8 +15,9 @@
  *
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.security.impl;
+package eu.dariolucia.reatmetric.driver.spacecraft.services.impl;
 
+import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.algorithm.Crc16Algorithm;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
@@ -27,12 +28,15 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.AbstractTcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.AesSecurityHandlerConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.security.SpiPassword;
+import eu.dariolucia.reatmetric.driver.spacecraft.security.impl.CryptoUtil;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ISecurityHandler;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
@@ -46,6 +50,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This class is meant to be a simple example to show the use of the {@link ISecurityHandler} extension.
@@ -60,7 +66,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * It must be noted that, even if the approach is quite in line with the one described in CCSDS 355.0-B-2, not all aspects
  * are covered. Nevertheless, this class represents a starting point.
  */
-public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
+public class AesEncryptionService implements ISecurityHandler, IParameterDataSubscriber {
+
+    private static final Logger LOG = Logger.getLogger(AesEncryptionService.class.getName());
 
     public static final int TRAILER_LENGTH = 8;
     public static final int IV_LENGTH = 16;
@@ -132,7 +140,7 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
     }
 
     @Override
-    public boolean isDirectHandler(TcTracker trackedTc) {
+    public boolean isDirectHandler(AbstractTcTracker trackedTc) {
         return false;
     }
 
@@ -249,6 +257,9 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
         ByteBuffer secHeaderWrap = ByteBuffer.wrap(frame.getFrame(), secHeaderOffset, HEADER_LENGTH);
         short spi = secHeaderWrap.getShort();
         String password = tmspi2key.get((int) spi);
+        if(password == null) {
+            LOG.log(Level.SEVERE, "Cannot find password for spi {0}", spi);
+        }
         byte[] iv = Arrays.copyOfRange(frame.getFrame(), secHeaderOffset + 2, secHeaderOffset + HEADER_LENGTH);
         // Now decrypt the body
         int dataFieldLength = frame.getLength() - secHeaderOffset - HEADER_LENGTH - TRAILER_LENGTH - (frame.isOcfPresent() ? 4 : 0) - (frame.isFecfPresent() ? 2 : 0);
@@ -297,6 +308,9 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
         ByteBuffer secHeaderWrap = ByteBuffer.wrap(frame.getFrame(), secHeaderOffset, getSecurityHeaderLength(frame.getSpacecraftId(), frame.getVirtualChannelId(), TmTransferFrame.class));
         short spi = secHeaderWrap.getShort();
         String password = tmspi2key.get((int) spi);
+        if(password == null) {
+
+        }
         byte[] iv = Arrays.copyOfRange(frame.getFrame(), secHeaderOffset + 2, secHeaderOffset + HEADER_LENGTH);
         // Now decrypt the body
         int dataFieldLength = frame.getLength() - secHeaderOffset - HEADER_LENGTH - TRAILER_LENGTH - (frame.isOcfPresent() ? 4 : 0) - (frame.isFecfPresent() ? 2 : 0);
@@ -380,5 +394,10 @@ public class AesHandler implements ISecurityHandler, IParameterDataSubscriber {
                 this.tcSpiToUse.set(((Number) pd.getSourceValue()).intValue());
             }
         }
+    }
+
+    @Override
+    public void onTmVcUnit(RawData packetRawData, VirtualChannelUnit unit, DecodingResult decoded) {
+        // Not processed by this implementation
     }
 }

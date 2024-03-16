@@ -21,7 +21,8 @@ import eu.dariolucia.ccsds.encdec.structure.DecodingResult;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.AbstractTcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -47,7 +48,6 @@ public class ServiceBroker implements IServiceBroker {
     });
 
     private final List<Pair<IServicePacketSubscriber, IServicePacketFilter>> subscribers = new CopyOnWriteArrayList<>();
-
     private final Map<Integer, IService> serviceMap = new HashMap<>();
     private final Map<Class<?>, Object> serviceLocator = new HashMap<>();
 
@@ -84,6 +84,21 @@ public class ServiceBroker implements IServiceBroker {
         });
     }
 
+    @Override
+    public void distributeTmVcUnit(RawData rawData, VirtualChannelUnit vcUnit, DecodingResult decoded) {
+        itemDistributor.execute(() -> {
+            for(Pair<IServicePacketSubscriber, IServicePacketFilter> s : subscribers) {
+                try {
+                    if(s.getSecond().filter(rawData, vcUnit, null, null, null, null)) {
+                        s.getFirst().onTmVcUnit(rawData, vcUnit, decoded);
+                    }
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Cannot notify packet service subscriber " + subscribers + ": " + e.getMessage(), e);
+                }
+            }
+        });
+    }
+
     public void dispose() {
         itemDistributor.shutdownNow();
         subscribers.clear();
@@ -92,12 +107,12 @@ public class ServiceBroker implements IServiceBroker {
     }
 
     @Override
-    public void informTcPacket(TcPhase phase, Instant phaseTime, TcTracker trackerBean) {
+    public void informTc(TcPhase phase, Instant phaseTime, AbstractTcTracker trackerBean) {
         itemDistributor.execute(() -> {
             for(Pair<IServicePacketSubscriber, IServicePacketFilter> s : subscribers) {
                 try {
-                    if(s.getSecond().filter(trackerBean.getRawData(), trackerBean.getPacket(), trackerBean.getInfo().getPusHeader() != null ? Integer.valueOf(trackerBean.getInfo().getPusHeader().getServiceType()) : null,  trackerBean.getInfo().getPusHeader() != null ? Integer.valueOf(trackerBean.getInfo().getPusHeader().getServiceSubType()) : null, null, trackerBean.getInfo().getPusHeader() != null ? trackerBean.getInfo().getPusHeader().getSourceId() : null)) {
-                        s.getFirst().onTcPacket(phase, phaseTime, trackerBean);
+                    if(s.getSecond().filter(trackerBean.getRawData(), trackerBean.getObject(), trackerBean.getInfo().getPusHeader() != null ? Integer.valueOf(trackerBean.getInfo().getPusHeader().getServiceType()) : null,  trackerBean.getInfo().getPusHeader() != null ? Integer.valueOf(trackerBean.getInfo().getPusHeader().getServiceSubType()) : null, null, trackerBean.getInfo().getPusHeader() != null ? trackerBean.getInfo().getPusHeader().getSourceId() : null)) {
+                        s.getFirst().onTcUpdate(phase, phaseTime, trackerBean);
                     }
                 } catch (Exception e) {
                     LOG.log(Level.SEVERE, "Cannot notify packet service subscriber " + s + ": " + e.getMessage(), e);
@@ -121,9 +136,9 @@ public class ServiceBroker implements IServiceBroker {
     }
 
     @Override
-    public boolean isDirectlyHandled(TcTracker tcTracker) {
+    public boolean isDirectlyHandled(AbstractTcTracker tcPacketTracker) {
         // Ask all services
-        return this.serviceMap.values().stream().anyMatch(o -> o.isDirectHandler(tcTracker));
+        return this.serviceMap.values().stream().anyMatch(o -> o.isDirectHandler(tcPacketTracker));
     }
 
     public <T> void registerServiceInterface(Class<T> locator, T theService) {

@@ -23,7 +23,8 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.AbstractTcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 
 import java.time.Instant;
@@ -79,7 +80,7 @@ public interface IService extends IServicePacketSubscriber {
      * @param trackedTc the encoded TC and related invocation
      * @return true if the service implementation will handle the provided tracked TC, otherwise false
      */
-    boolean isDirectHandler(TcTracker trackedTc);
+    boolean isDirectHandler(AbstractTcTracker trackedTc);
 
     /**
      * Stop and dispose the service implementation
@@ -87,12 +88,17 @@ public interface IService extends IServicePacketSubscriber {
     void dispose();
 
     @Override
-    default void onTcPacket(TcPhase phase, Instant phaseTime, TcTracker tcTracker) {
+    default void onTcUpdate(TcPhase phase, Instant phaseTime, AbstractTcTracker tcPacketTracker) {
         // Override if needed
     }
 
     @Override
     default void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
+        // Override if needed
+    }
+
+    @Override
+    default void onTmVcUnit(RawData packetRawData, VirtualChannelUnit unit, DecodingResult decoded) {
         // Override if needed
     }
 

@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket;
+package eu.dariolucia.reatmetric.driver.spacecraft.common;
 
-import eu.dariolucia.ccsds.encdec.identifier.IPacketIdentifier;
-import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 
 import java.rmi.RemoteException;
-import java.util.List;
 
-public interface ITcPacketConnector extends ITransportConnector {
+public interface IReceptionOnlyConnector extends ITransportConnector {
 
     /**
      * Configure the connector after its creation.
@@ -35,12 +31,8 @@ public interface ITcPacketConnector extends ITransportConnector {
      * @param configuration the configuration of the driver
      * @param context the service context
      * @param serviceBroker the service broker
-     * @param packetIdentifier
      * @param connectorInformation the configuration string provided in the connector configuration
      */
-    void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, IPacketIdentifier packetIdentifier, String connectorInformation) throws RemoteException;
+    void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, String connectorInformation) throws RemoteException;
 
-    void sendTcPacket(SpacePacket sp, TcPacketTracker tcPacketTracker) throws RemoteException;
-
-    List<String> getSupportedRoutes() throws RemoteException;
 }

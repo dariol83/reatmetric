@@ -1,20 +1,21 @@
 /*
- * Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2024 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *          http://www.apache.org/licenses/LICENSE-2.0
+ *           http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package eu.dariolucia.reatmetric.driver.spacecraft.replay;
+package eu.dariolucia.reatmetric.driver.spacecraft.connectors;
 
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
@@ -33,9 +34,13 @@ import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
+import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.IReceptionOnlyConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Level;
@@ -45,18 +50,18 @@ import java.util.logging.Logger;
  * This connector allow to re-inject all TM packets of good quality (no time packets) from the provided archive location
  * and between the two provided times.
  */
-public class TmPacketReplayManager extends AbstractTransportConnector {
+public class TmPacketReplayConnector extends AbstractTransportConnector implements IReceptionOnlyConnector {
 
-    private static final Logger LOG = Logger.getLogger(TmPacketReplayManager.class.getName());
+    private static final Logger LOG = Logger.getLogger(TmPacketReplayConnector.class.getName());
 
     public static final String ARCHIVE_LOCATION_KEY = "archive.location";
     public static final String SPACECRAFT_ID_KEY = "spacecraft.id";
     public static final String START_TIME_KEY = "start.time";
     public static final String END_TIME_KEY = "end.time";
 
-    private final SpacecraftConfiguration spacecraftConfiguration;
-    private final IRawDataBroker broker;
-    private final String driverName;
+    private SpacecraftConfiguration spacecraftConfiguration;
+    private IRawDataBroker broker;
+    private String driverName;
 
     private volatile Instant lastSamplingTime;
     private volatile long rxBytes; // injected bytes
@@ -65,11 +70,8 @@ public class TmPacketReplayManager extends AbstractTransportConnector {
     private volatile Thread extractionThread;
     private volatile boolean extracting;
 
-    public TmPacketReplayManager(String driverName, SpacecraftConfiguration spacecraftConfiguration, IRawDataBroker broker) {
-        super(spacecraftConfiguration.getName() + " Replay Connector", "Replay connector based on raw data re-ingestion");
-        this.driverName = driverName;
-        this.broker = broker;
-        this.spacecraftConfiguration = spacecraftConfiguration;
+    public TmPacketReplayConnector() {
+        super("Replay Connector", "Replay connector based on raw data re-ingestion");
     }
 
     @Override
@@ -228,5 +230,12 @@ public class TmPacketReplayManager extends AbstractTransportConnector {
     @Override
     public synchronized void abort() throws TransportException {
         disconnect();
+    }
+
+    @Override
+    public void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, String connectorInformation) throws RemoteException {
+        this.driverName = driverName;
+        this.broker = context.getRawDataBroker();
+        this.spacecraftConfiguration = configuration;
     }
 }

@@ -24,7 +24,7 @@ import jakarta.xml.bind.annotation.XmlAttribute;
 public class TcVcConfiguration {
 
     @XmlAttribute(name = "tc-vc", required = true)
-    private int tcVc = 0;
+    private int tcVc;
 
     @XmlAttribute(name = "segmentation")
     private boolean segmentation = false;
@@ -35,18 +35,11 @@ public class TcVcConfiguration {
     @XmlAttribute(name = "default-tc-vc")
     private boolean defaultTcVc = false;
 
-    @XmlAttribute(name = "use-security")
-    private boolean useSecurity = false;
-
     @XmlAttribute(name = "system-entity-path")
     private String systemEntityPath = null;
 
-    public TcVcConfiguration() {
-    }
-
-    public TcVcConfiguration(int tcVc) {
-        this.tcVc = tcVc;
-    }
+    @XmlAttribute(name = "access-mode")
+    private VirtualChannelType accessMode = VirtualChannelType.PACKET;
 
     public int getTcVc() {
         return tcVc;
@@ -80,19 +73,19 @@ public class TcVcConfiguration {
         this.defaultTcVc = defaultTcVc;
     }
 
-    public boolean isUseSecurity() {
-        return useSecurity;
-    }
-
-    public void setUseSecurity(boolean useSecurity) {
-        this.useSecurity = useSecurity;
-    }
-
     public String getSystemEntityPath() {
         return systemEntityPath;
     }
 
     public void setSystemEntityPath(String systemEntityPath) {
         this.systemEntityPath = systemEntityPath;
+    }
+
+    public VirtualChannelType getAccessMode() {
+        return accessMode;
+    }
+
+    public void setAccessMode(VirtualChannelType accessMode) {
+        this.accessMode = accessMode;
     }
 }

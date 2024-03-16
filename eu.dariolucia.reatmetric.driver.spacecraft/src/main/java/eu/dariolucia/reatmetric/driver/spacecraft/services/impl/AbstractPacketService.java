@@ -16,7 +16,6 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.services.impl;
 
-import eu.dariolucia.reatmetric.api.activity.IActivityOccurrenceDataArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.archive.IArchiveFactory;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
@@ -31,14 +30,12 @@ import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfigura
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IService;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ServiceLoader;
 
 public abstract class AbstractPacketService<T> implements IService {
 
-    private String serviceConfigurationPath;
     private String driverName;
     private SpacecraftConfiguration spacecraftConfiguration;
     private ServiceCoreConfiguration serviceCoreConfiguration;
@@ -48,7 +45,6 @@ public abstract class AbstractPacketService<T> implements IService {
 
     @Override
     public void initialise(String serviceConfigurationPath, String driverName, SpacecraftConfiguration configuration, ServiceCoreConfiguration coreConfiguration, IServiceCoreContext context, IServiceBroker serviceBroker) throws ReatmetricException {
-        this.serviceConfigurationPath = serviceConfigurationPath;
         this.driverName = driverName;
         this.spacecraftConfiguration = configuration;
         this.serviceCoreConfiguration = coreConfiguration;
@@ -79,7 +75,7 @@ public abstract class AbstractPacketService<T> implements IService {
                 initialiseFromExternalArchive(location, time);
             }
         } else if(initialisation instanceof ResumeInitialisationConfiguration) {
-            // Get the latest time coefficients in the raw data broker
+            // Get the latest state information in the raw data broker
             Instant latestGenerationTime = context().getArchive().getArchive(IRawDataArchive.class).retrieveLastGenerationTime();
             // If latestGenerationTime is null, it means that the archive is empty for this data type
             if(latestGenerationTime != null) {

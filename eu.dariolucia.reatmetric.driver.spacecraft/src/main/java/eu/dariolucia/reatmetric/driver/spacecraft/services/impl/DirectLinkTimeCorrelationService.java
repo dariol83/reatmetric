@@ -23,7 +23,7 @@ import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.archive.IArchive;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataSubscriber;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
-import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcTracker;
+import eu.dariolucia.reatmetric.driver.spacecraft.activity.AbstractTcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.services.TimeCorrelationServiceConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
@@ -123,7 +123,7 @@ public class DirectLinkTimeCorrelationService extends TimeCorrelationService imp
     }
 
     @Override
-    public void onTcPacket(TcPhase phase, Instant phaseTime, TcTracker tcTracker) {
+    public void onTcUpdate(TcPhase phase, Instant phaseTime, AbstractTcTracker tcPacketTracker) {
         // Nothing to be done, update of generation time period not needed
     }
 
@@ -134,6 +134,7 @@ public class DirectLinkTimeCorrelationService extends TimeCorrelationService imp
 
     @Override
     public IServicePacketFilter getSubscriptionFilter() {
-        return (rd, sp, pusType, pusSubtype, destination, source) -> sp.getApid() != 0 && pusType != null && (pusType == 3 || pusType == 5);
+        return (rd, item, pusType, pusSubtype, destination, source) -> (item instanceof SpacePacket) && (
+            ((SpacePacket) item).getApid() != 0 && pusType != null && (pusType == 3 || pusType == 5));
     }
 }

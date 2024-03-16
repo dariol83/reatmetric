@@ -22,9 +22,8 @@ import java.util.List;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class TmDataLinkConfiguration {
 
-    @XmlElementWrapper(name = "vc-limit")
-    @XmlElement(name = "vc")
-    private List<Integer> processVcs;
+    @XmlElement(name = "tm-vc-descriptor")
+    private List<TmVcConfiguration> tmVcConfigurations;
 
     @XmlElement(name = "type")
     private TransferFrameType type = TransferFrameType.TM;
@@ -47,15 +46,12 @@ public class TmDataLinkConfiguration {
     @XmlAttribute(name = "frame-length")
     private int frameLength = -1;
 
-    public TmDataLinkConfiguration() {
+    public List<TmVcConfiguration> getTmVcConfigurations() {
+        return tmVcConfigurations;
     }
 
-    public List<Integer> getProcessVcs() {
-        return processVcs;
-    }
-
-    public void setProcessVcs(List<Integer> processVcs) {
-        this.processVcs = processVcs;
+    public void setTmVcConfigurations(List<TmVcConfiguration> tmVcConfigurations) {
+        this.tmVcConfigurations = tmVcConfigurations;
     }
 
     public boolean isFecfPresent() {
