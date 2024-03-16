@@ -900,7 +900,6 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                 generateVc2Frame(response);
             }
         }
-        // TODO: update verification of activity to use parameter-based verification with timeout 10 seconds
     }
 
     private void generateVc2Frame(byte[] response) {
