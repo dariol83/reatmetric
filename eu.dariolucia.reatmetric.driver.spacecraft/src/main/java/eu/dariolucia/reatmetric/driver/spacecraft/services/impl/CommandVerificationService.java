@@ -40,7 +40,6 @@ import eu.dariolucia.reatmetric.driver.spacecraft.activity.AbstractTcTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfo;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketTracker;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
-import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServicePacketFilter;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.TcPhase;
 
@@ -247,6 +246,7 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
             tcPacketTracker = (TcPacketTracker) tracker;
             if (tcPacketTracker.getInfo().getPusHeader() == null) {
                 // No PUS packet, no verification using PUS-1, hardcode
+                // TODO: if ReatMetric needs to support this, then we need to promote the ackFields at the level of TcPacketInfo (read from the definitions)
                 ackFields = new AckField(false, false, false, false);
             } else {
                 ackFields = tcPacketTracker.getInfo().getPusHeader().getAckField();
