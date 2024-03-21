@@ -306,9 +306,7 @@ include::../eu.dariolucia.reatmetric.driver.remote/Documentation.adoc[]
 To be written
 
 === Spacecraft
-==== Overview
-==== Configuration
-To be written
+include::../eu.dariolucia.reatmetric.driver.spacecraft/Documentation.adoc[]
 
 === Serial
 include::../eu.dariolucia.reatmetric.driver.serial/Documentation.adoc[]
