@@ -361,9 +361,7 @@ following example provide extensive comments covering all elements and configura
 	<propagation-delay>0</propagation-delay>
 	<!-- TC datalink configuration -->
 	<tc randomize="true" fecf="true" ad-mode-default="true">
-        <!-- TC VC configuration
-        TODO: implement support for use-security
-        -->
+        <!-- TC VC configuration -->
 		<tc-vc-descriptor tc-vc="0" segmentation="true" default-tc-vc="true" system-entity-path="SPACE.FOP.TCVC0"
             use-security="true" access-mode="PACKET" />
         <tc-vc-descriptor tc-vc="1" segmentation="false" default-tc-vc="false" system-entity-path="SPACE.FOP.TCVC1"
@@ -427,6 +425,9 @@ following example provide extensive comments covering all elements and configura
 	<external-connectors>
 		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.CltuCaduTcpConnector" configuration="127.0.0.1:23532:1279:4" data-unit-type="CLTU" />
 		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.SpacePacketTcpConnector" configuration="127.0.0.1:33532" data-unit-type="TC_PACKET" />
+        <!--
+        <external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.TmPacketReplayConnector" configuration="" data-unit-type="NONE" />
+        -->
 	</external-connectors>
 </ns1:spacecraft>
 ----
