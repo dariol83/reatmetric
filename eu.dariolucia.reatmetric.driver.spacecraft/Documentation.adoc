@@ -34,7 +34,7 @@ lifecycle information to so-called _services_, as well to act as a registry for 
 A _service_ in this context has the same meaning of that defined by the ECSS Packet Utilisation Standard. The driver provides
 basic (and sometimes partial) implementations of the following services, but the service support can be extended by means
 of extensions and the provided implementations easily replaced (see <<_services>>):
-.. Time service (PUS service 9), responsible for time correlation with a linear regressor implementation;
+.. Time service (PUS service 9), responsible for time correlation with a linear regression implementation;
 .. On-board event service (PUS service 5);
 .. On-board operations scheduling service (PUS service 11), with limited support to 11,4 telecommands: only one inner TC) and
 no support for (11,1), (11,2) and status reports;

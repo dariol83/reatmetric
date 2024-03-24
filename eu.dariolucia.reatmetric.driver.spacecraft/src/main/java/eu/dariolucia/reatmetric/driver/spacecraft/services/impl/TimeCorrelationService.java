@@ -270,7 +270,7 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
         // Convert data set
         List<Pair<BigDecimal, BigDecimal>> converted = timeCouples.stream().map(this::convert).collect(Collectors.toList());
         // Get the coefficients
-        this.obt2gtCoefficients = LinearRegressor.calculate(converted);
+        this.obt2gtCoefficients = LinearRegression.calculate(converted);
         if(LOG.isLoggable(Level.FINE)) {
             LOG.log(Level.FINE, String.format("Time coefficient generated (LR): m=%s, q=%s",
                     obt2gtCoefficients.getFirst().toPlainString(),

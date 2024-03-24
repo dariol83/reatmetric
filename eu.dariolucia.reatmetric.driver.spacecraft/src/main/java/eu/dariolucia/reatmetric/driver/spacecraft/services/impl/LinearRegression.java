@@ -28,9 +28,9 @@ import java.util.List;
  * (<a href="https://notebook.community/cleuton/datascience/java/JavaRegression">Robert Sedgewick and Kevin Wayne</a>)
  * and updated to support BigDecimal as data type for increased resolution.
  */
-public class LinearRegressor {
+public class LinearRegression {
 
-    private LinearRegressor() {
+    private LinearRegression() {
         throw new IllegalAccessError("Not expected to be instantiated");
     }
 
