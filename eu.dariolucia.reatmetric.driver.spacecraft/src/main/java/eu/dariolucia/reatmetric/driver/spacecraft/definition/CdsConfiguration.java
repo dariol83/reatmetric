@@ -23,10 +23,10 @@ import jakarta.xml.bind.annotation.XmlAttribute;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class CdsConfiguration extends ObtConfiguration {
 
-    @XmlAttribute(name = "short_days")
+    @XmlAttribute(name = "short-days")
     private boolean shortDays = true; // true: 16 bits, false: 24 bits
 
-    @XmlAttribute(name = "subtime_byte_res")
+    @XmlAttribute(name = "subtime-byte-res")
     private int subtimeResolution = 2; // 0, 2 (micro in milli) or 4 (pico in milli)
 
     public CdsConfiguration() {
