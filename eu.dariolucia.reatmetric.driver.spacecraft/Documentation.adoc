@@ -229,7 +229,8 @@ The driver provides the following points for external connection extensions:
 
 - CLTU-based connectors, implementing the _ICltuConnector_ interface;
 - TC frame-based connectors, implementing the _ITcFrameConnector_ interface;
-- TC Packet-based connectors, implementing the _ITcPacketConnector_ interface.
+- TC Packet-based connectors, implementing the _ITcPacketConnector_ interface;
+- Telemetry-only connectors, implementing the _IReceptionOnlyConnector_ interface.
 
 All interfaces extend the _ITransportConnector_ ReatMetric interface, and therefore will be controllable as ReatMetric
 _connectors_. It is suggested to extend the abstract class _AbstractTransportConnector_, which provides already a
@@ -239,17 +240,21 @@ skeleton for implementation. A connector implemented in this way shall take care
 TM processing chain;
 - Forwarding TC data to the related external endpoint and handling the lifecycle of the specific data unit.
 
-Two examples (CLTU/CADU-based connector and TM/TC packet connector) can be observed in the package
+Three examples (CLTU/CADU-based connector, TM/TC packet connector) can be checked in the package
 eu.dariolucia.reatmetric.driver.spacecraft.connectors.
 
 Type: _eu.dariolucia.reatmetric.driver.spacecraft.connectors.CltuCaduTcpConnector_
+Configuration: a string so defined: <IP address to connect to>:<TCP port to connect to>:<total block length>:<sync word length>
+
 Type: _eu.dariolucia.reatmetric.driver.spacecraft.connectors.SpacePacketTcpConnector_
+Configuration: a string so defined: <IP address to connect to>:<TCP port to connect to>
 
 In addition, a connector can declare to implement no support for commanding. It is typically use to implement connectors
 for pure TM reception support. An example provided by the Spacecraft driver is the Replay connector, which can read
 TM frames from an external archive and ingest such data in the running ReatMetric instance.
 
 Type: _eu.dariolucia.reatmetric.driver.spacecraft.connectors.TmPacketReplayConnector_
+Configuration: not required
 
 ===== Activity Invocation Properties
 ====== Packet level
@@ -519,7 +524,8 @@ frames. Only considered if type = AOS.
 if type = AOS.
 - _frame-length_ (optional, integer, default: -1): the length of the TM/AOS transfer frame. This information is available
 to connectors that require it, e.g. to read CADUs and frames from external sources. SLE connectors do not require this
-information.
+information. It is *strongly* suggested to set this value, to avoid undefined behaviours when using connectors that are
+not SLE connectors, which might rely on this setting.
 
 Sub-element *<tm><tm-vc-descriptor>* (optional). This element defines the characteristics of a TM virtual channel.
 The following attributes are defined:
@@ -606,8 +612,109 @@ corresponding module-info file. The following attributes are defined:
 - _configuration_ (mandatory, string): a string identifying the configuration to be used for the implementation of the
 service. Typically, it is a path to a file, but it is implementation-dependant.
 
+Element *<external-connectors>* (mandatory): this element contains a list of zero or more <external-connector> sub-elements.
+
+Sub-element *<external-connectors><external-connector>* (optional): this element register the implementation of an external connector
+in the Spacecraft driver. The connector implementation must implement the interface ICltuConnector (in case it sends CLTUs
+to external systems), ITcFrameConnector (in case it sends TC frame to external systems), ITcPacketConnector (in case it
+sends TC packets to external systems), or IReceptionOnlyConnector (in case it has no support for telecommands), and it must
+be registered as exposed Java service in the corresponding module-info file. The following attributes are defined:
+
+- _type_ (mandatory, string): the fully qualified name of the Java class implementing the connector.
+- _configuration_ (mandatory, string): a string identifying the configuration to be used for the implementation of the
+service. Typically, it is a path to a file, but it is implementation-dependant.
+- _data-unit-type_ (mandatory, enumeration: CLTU, TC_FRAME, TC_PACKET, NONE): the telecommand type that the connector handles.
+It must match with the interface implemented by the connector.
 
 ===== TM/TC Structure Definition File
+The TC and TM packet structures are defined inside the tmtc.xml file. Such file uses the format defined by the
+eu.dariolucia.ccsds.encdec module. The description of such file in this documentation is explained by an example, and
+only focuses to the parts linked to the processing of the Spacecraft driver, assuming a spacecraft that uses the ECSS
+PUS standard. The concept can be extended also for non-PUS spacecraft.
+
+For further information, it is advised to check the Javadoc of the classes of the package eu.dariolucia.ccsds.encdec.definition.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns2:packet_definitions xmlns:ns2="http://dariolucia.eu/ccsds/encdec">
+    <id_fields>
+        <field id="I-APID" offset="0" len="2" and="2047" or="0" lshift="0" rshift="0"/>
+        <field id="I-PUS-TYPE" offset="7" len="1" and="-1" or="0" lshift="0" rshift="0"/>
+        <field id="I-PUS-SUBTYPE" offset="8" len="1" and="-1" or="0" lshift="0" rshift="0"/>
+        <field id="I-18-32" offset="18" len="4" and="-1" or="0" lshift="0" rshift="0"/>
+        <field id="I-22-24" offset="22" len="3" and="16777215" or="0" lshift="0" rshift="0"/>
+    </id_fields>
+    <packets>
+        <packet id="TMPACKET1" external_id="114001" description="Service Packet (106,12)" type="TM">
+            <identification>
+                <match field="I-APID" value="33"/>
+                <match field="I-PUS-TYPE" value="106"/>
+                <match field="I-PUS-SUBTYPE" value="12"/>
+                <match field="I-18-32" value="1440852322"/>
+                <match field="I-22-24" value="129723"/>
+            </identification>
+            <structure>
+                <parameter id="EI-DMT70003-000">
+                    <location_absolute bit_absolute="200"/>
+                    <type_fixed type="UNSIGNED_INTEGER" length="8"/>
+                    <time offset="0"/>
+                    <parameter_fixed parameter="DMT70003"/>
+                </parameter>
+                <parameter id="EI-DMT70004-000">
+                    <location_absolute bit_absolute="208"/>
+                    <type_fixed type="UNSIGNED_INTEGER" length="16"/>
+                    <time offset="0"/>
+                    <parameter_fixed parameter="DMT70004"/>
+                </parameter>
+                <parameter id="EI-DMT70005-000">
+                    <location_absolute bit_absolute="232"/>
+                    <type_fixed type="UNSIGNED_INTEGER" length="8"/>
+                    <time offset="0"/>
+                    <parameter_fixed parameter="DMT70005"/>
+                </parameter>
+                <parameter id="EI-DMT70006-000">
+                    <location_absolute bit_absolute="224"/>
+                    <type_fixed type="UNSIGNED_INTEGER" length="8"/>
+                    <time offset="0"/>
+                    <parameter_fixed parameter="DMT70006"/>
+                </parameter>
+                <parameter id="EI-YFTRW107-000">
+                    <location_absolute bit_absolute="240"/>
+                    <type_fixed type="UNSIGNED_INTEGER" length="32"/>
+                    <time offset="0"/>
+                    <parameter_fixed parameter="YFTRW107"/>
+                </parameter>
+            </structure>
+        </packet>
+        [...]
+        <packet id="TCPACKET1" external_id="116873" description="(102,17) Modify Limit Monitoring Check Def for float parameter" type="TC">
+            <identification/>
+            <structure>
+                <parameter id="PARAMETER_ID">
+                    <type_fixed type="UNSIGNED_INTEGER" length="32"/>
+                </parameter>
+                <parameter id="MIN_VALUE">
+                    <type_fixed type="REAL" length="1"/>
+                </parameter>
+                <parameter id="MAX_VALUE">
+                    <type_fixed type="REAL" length="1"/>
+                </parameter>
+            </structure>
+            <extension>APID=231.PUSTYPE=102.PUSSUBTYPE=17.ACKS=XX-X.CRITICAL=true</extension>
+        </packet>
+    </packets>
+    <parameters>
+        <parameter id="DMT70003" external_id="2634" description="PARARR_INDEX">
+            <type type="UNSIGNED_INTEGER" length="8"/>
+        </parameter>
+        <parameter id="DMT70004" external_id="2639" description="PARARR_PTC_PFC">
+            <type type="UNSIGNED_INTEGER" length="16"/>
+        </parameter>
+        [...]
+    </parameters>
+</ns2:packet_definitions>
+----
 
 ===== Time Correlation Configuration File
 

@@ -9,26 +9,37 @@ functions used in an M&C system.
 ## Documentation
 The system concepts, design and modules are described in the [documentation](docs/ReatMetric%20Design%20Concepts.adoc).
 
+## Dependencies
+ReatMetric is based on a very limited set of dependencies:
+- [eu.dariolucia.ccsds](https://www.github.com/dariol83/ccsds): providing support for SLE/TM/TC/PUS handling of the _spacecraft_ driver;
+- [openJFX](https://openjfx.io): for the graphical user interface of the _ui_ module;
+- [ControlsFX](https://github.com/controlsfx/controlsfx): advanced UI controls for the _ui_ module;
+- [Apache Derby](http://db.apache.org/derby): providing the storage backend of the _persist_ module;
+- [JAXB](https://javaee.github.io/jaxb-v2): for the configuration of all modules;
+- [Groovy](https://groovy-lang.org): for the Groovy language support in the _processing_ and _automation_ modules (best choice);
+- [GraalVM](https://www.graalvm.org): for the Javascript language support in the _automation_ modules;
+- [Jython](https://www.jython.org/): for the Python language support in the _automation_ modules.
+
 ## Performance
 The performance of the processing model and of the spacecraft driver have been measured on the following 2 platforms:
 
 1) Zotac Magnus EN72070V: Intel Core i7-9750H, Hexa-core, 2.6 GHz without turbo boost; 32 GB DDR4 2666 MHz; Windows 10 Professional 64 bits; openJDK 11.
 2) Raspberry PI 4: Broadcom BCM2711, Quad Core Cortex-A72 (ARM v8) 64-bit SoC @ 1.5GHz, 8 GB DDR4 3200 MHz; Manjaro Linux 64 bits; openJDK 11.
 
-Each platform only run the backend application, without UI.
+Each platform runs only the backend application, without UI.
 
 The data definition of the processing model included:
 - 80'000 processing parameters
 - 5'000 synthetic parameters
 - 10'000 reported events
-- 2'000 condition-based events 
+- 2'000 condition-based events
 - 10'000 activities
 
 The TM/TC data definition of the spacecraft included:
 - 3'600 PUS (3,25) TM packets
 - 10'000 PUS 5 TM packets
 - time packet, verification reports
-- 10'000 TC commands 
+- 10'000 TC commands
 
 TM/TC setup:
 - single RAF SLE in online complete mode;
@@ -44,7 +55,7 @@ TM/TC setup:
 - Nb. of TM packets per second: ca 8.000/sec
 - Nb. of TM parameter samples decoded per second: ca 435.000/sec
 - Nb. of processed items generated per second: ca 530.000/sec
-- Memory usage (heap size): between 2 and 4 GB, Windows reports 5 GB 
+- Memory usage (heap size): between 2 and 4 GB, Windows reports 5 GB
 - CPU load: between 35% and 45% (equivalent of almost 6 cores fully utilised)
 
 ![Connector Performance](docs/images/reatmetric-test-all-in-a-box-01.PNG "Connector Performance")
@@ -57,24 +68,13 @@ TM/TC setup:
 - Nb. of TM frames per second (peak): ca 450/sec, no backlog: 250/sec
 - Nb. of TM packets per second (peak): ca 1270/sec, no backlog: 900/sec
 - Nb. of TM parameter samples decoded per second (peak): 70.000/sec
-- Nb. of processed items generated per second (peak): 100.000/sec 
+- Nb. of processed items generated per second (peak): 100.000/sec
 - Memory usage server (heap size): between 2 and 4 GB, top reports 4.6 GB (capped with -Xmx4G)
 - Memory usage UI (Windows Task Monitor): 1.6 GB
 - CPU load: between 320% and 350% (all 4 cores above 80%)
 
 ![Connector Performance](docs/images/reatmetric-test-raspberry-01.PNG "Connector Performance")
 ![System Performance](docs/images/reatmetric-test-raspberry-02.PNG "System Performance")
-
-## Dependencies
-ReatMetric is based on a very limited set of dependencies:
-- [eu.dariolucia.ccsds](https://www.github.com/dariol83/ccsds): providing support for SLE/TM/TC/PUS handling of the _spacecraft_ driver;
-- [openJFX](https://openjfx.io): for the graphical user interface of the _ui_ module;
-- [ControlsFX](https://github.com/controlsfx/controlsfx): advanced UI controls for the _ui_ module;
-- [Apache Derby](http://db.apache.org/derby): providing the storage backend of the _persist_ module;
-- [JAXB](https://javaee.github.io/jaxb-v2): for the configuration of all modules;
-- [Groovy](https://groovy-lang.org): for the Groovy language support in the _processing_ and _automation_ modules (best choice);
-- [GraalVM](https://www.graalvm.org): for the Javascript language support in the _automation_ modules;
-- [Jython](https://www.jython.org/): for the Python language support in the _automation_ modules.
 
 ## Getting Started
 
