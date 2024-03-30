@@ -1,6 +1,6 @@
 ![ReatMetric](eu.dariolucia.reatmetric.ui/src/main/resources/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-full-color-640px.png)
 
-ReatMetric is a Java-based software infrastructure for the implementation of Monitoring & Control (M&C) systems, with a
+ReatMetric is a well-documented Java-based software infrastructure for the implementation of Monitoring & Control (M&C) systems, with a
 strong focus on the space domain. ReatMetric components provide a simple but efficient implementation of the typical 
 functions used in an M&C system.
 
@@ -18,7 +18,11 @@ ReatMetric is based on a very limited set of dependencies:
 - [JAXB](https://javaee.github.io/jaxb-v2): for the configuration of all modules;
 - [Groovy](https://groovy-lang.org): for the Groovy language support in the _processing_ and _automation_ modules (best choice);
 - [GraalVM](https://www.graalvm.org): for the Javascript language support in the _automation_ modules;
-- [Jython](https://www.jython.org/): for the Python language support in the _automation_ modules.
+- [Jython](https://www.jython.org/): for the Python language support in the _automation_ modules;
+- [JSON Path](https://github.com/json-path/JsonPath): for the parsing of JSON objects and files.
+
+Including also the indirect dependencies, a typical ReatMetric backend deployment (i.e. without UI) is composed by 33 Jars,
+10 from ReatMetric and 23 from external dependencies, for a total of 19.4 MB.
 
 ## Performance
 The performance of the processing model and of the spacecraft driver have been measured on the following 2 platforms:
@@ -129,8 +133,6 @@ Example of remoting configuration:
 ## Roadmap
 
 ### To version 1.0.0
-- Improvements to the Spacecraft driver
-  - CLCW information publication in the processing model 
 - Complete the documentation (ASCII doc to be completed - 80%)
 
 ### To version 1.1.0
@@ -140,10 +142,10 @@ Example of remoting configuration:
 ### Future ideas
 - Drop Javascript automation driver, due to GraalVM memory leak?
 - Use JEP for Python support in automation, drop Jython
+- persist implementation based on PostgreSQL and Timeseries
 - Report generation module (driver? activity mapped?)
 - File circulation/distribution driver, based on FTP/SFTP/SCP/HTTP/REST
 - Export data function
-- persist implementation based on PostgreSQL and Timeseries
 - Helidon gRPC/REST remoting/Helidon gRPC/REST connector (requires Java 21)
 - Helidon gRPC/REST remoting driver (requires Java 21)
 - Hot redundancy at Reatmetric Core level (two instances fully synchronised, but only one has the connectors open and the scheduler active. When one goes down, the other takes over)
