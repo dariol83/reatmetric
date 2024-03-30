@@ -361,8 +361,11 @@ spacecraft module registration for each satellite that you need to process.
 
 The folder specified in the _configuration_ attribute of the _driver_ element must contain a file named _configuration.xml_,
 which defines the configuration properties of the driver, and a file named _tmtc.xml_, which contains the definition of the
-TM and TC packets and VC data units. In addition, the folder might contain a subfolder called _sle_, which shall contain the
-SLE configuration files to configure the SLE service instances.
+TM and TC packets and VC data units.
+
+In addition, the folder might contain a subfolder called _sle_, which shall contain the SLE configuration files to configure
+the SLE service instances. For further information about these files, please check the Javadoc and examples provided in the
+eu.dariolucia.ccsds.sle.utl module.
 
 ===== Main Configuration File
 The configuration structure of the eu.dariolucia.reatmetric.driver.spacecraft module is defined in the package
@@ -716,11 +719,138 @@ For further information, it is advised to check the Javadoc of the classes of th
 </ns2:packet_definitions>
 ----
 
+The first element *<id_fields>* identifies all the fields in a packet, which contribute to its identification. For PUS-defined
+spacecraft, these are typically the APID, PUS type, PUS subtype fields, plus some addition fields identifying the specific
+ID of a PUS report.
+
+The definition of each *<field>* includes:
+
+- the _id_ of the field, which is then referenced by the <match> element in the packet definition;
+- the _offset_ of the field in bytes from the start of the packet;
+- the _length_ of the field in bytes: 1, 2, 4 and 8 are supported;
+- the _and_ value (default: -1, i.e. all 1 in binary), which is applied to the extracted field value;
+- the _or_ value (default: 0, i.e. all 0 in binary), which is applied to the extracted field value, after the _and_ value;
+- the _lshift_ value in bits (default: 0, i.e. no left shift), which is applied to the extracted field value, after the _and_ and _or_ values;
+- the _rshift_ value in bits (default: 0, i.e. no left shift), which is applied to the extracted field value, after the _and_, _or_ and _lshift_ values.
+
+The second element *<packets>* contains the list of packets (TM and TC). For each *<packet>*, the following attributes:
+
+- attribute _id_ (mandatory, string): identifies the packet definition;
+- attribute _external_id_ (mandatory, integer): used to map a packet to an external entity (e.g. in case of PUS 5 events, this value
+is equal to the event object in the ReatMetric processing model mapped to such on-board event; in case of TC packets, this value
+must match the value of the ID of the corresponding activity plus offset, as defined in the configuration.xml file);
+- attribute _description_ (optional, string, default: ): description of the packet
+- attribute _type_ (mandatory, string): ReatMetric uses the following hardcoded convention: "TM" for TM packets,
+"TC" for TC packets.
+
+Each *<packet>* element contains:
+
+* the identification criteria, as a list of *<match>* elements, each of them referring to one identification field and providing
+the expected value for such field. Note that each packet might specify only a subset of the defined identification fields. These
+fields are needed for TM packets only, since TC packets are encoded by the ReatMetric driver and do not need an identification.
+* the structure of the packet, as a sequence of *<parameter>* elements and related sub-elements. Refer to the eu.dariolucia.ccsds.encdec
+Javadoc for the detailed explanation of each sub-element. For telemetry parameters, each structure parameter must be mapped to a
+top level parameter
+* an extension string, used for TC packets, composed by a sequence of key-value pairs separated by a dot. The following keys can
+be specified:
+** APID: the APID value to be set in the encoded TC packet;
+** PUSTYPE: the PUS type value to be set in the encoded TC packet;
+** PUSSUBTYPE: the PUS subtype value to be set in the encoded TC packet;
+** ACKS: a string with 4 characters, either X or -, for the PUS verification stages Acceptance, Start, Progress, Completed
+** SOURCEID: an integer to be used as source ID in the PUS header (if the source field is configured)
+** MAPID: an integer to overwrite the default MAP ID of the TC segment (if segmentation is configured)
+** Other values can be used but are not taken into account by the current Spacecraft driver implementation.
+
+The third element *<parameters>* contains the definition of top level parameters, which are ultimately mapped to parameters
+in the ReatMetric processing model via the _external_id_ attribute value, plus the offset configured inside the Spacecraft
+driver configuration. When a packet is received, the packet is first identified, then the structure parameters are extracted
+and mapped to top-level parameters, which are finally forward to the processing model for calibration and checking.
+
 ===== Time Correlation Configuration File
+The Time Correlation Service implementation requires a configuration file, as specified below.
+
+[source,xml]
+----
+<ns1:time-service xmlns:ns1="http://dariolucia.eu/reatmetric/driver/spacecraft/time-service"
+			generation-frame-period="256"
+			on-board-delay="0"
+			num-time-couples="10"
+			generation-period-reported="true"
+			maximum-frame-time-delay="1200000000000000">
+	<time-format explicit-p-field="true" coarse="4" fine="2" />
+</ns1:time-service>
+----
+
+The attributes have the following usage:
+- _generation-frame-period_ (optional, integer, default: 256): VC0 frame counter modulo that triggers the generation of a time packet;
+- _on-board-delay_ (optional, integer, default: 0): on-board delay in microseconds, to be taken into account when computing the propagation time;
+- _num-time-couples_ (optional, integer, default: 2): number of latest time couples to be considered by the linear regression (minimum value is 2);
+- _generation-period-reported_ (optional, boolean, default: false): whether the generation period field is contained in the time packet;
+- _maximum-frame-time-delay_ (optional, long, default: 1200000000L): the maximum delay in microseconds that it is allows to match a frame identified
+by the generation period with the corresponding time packet.
+- _initial-coefficient-m_ (optional, double, default: 1.0): initial m coefficient
+- _initial-coefficient-q_ (optional, double, default: 0.0): initial q coefficient
+
+The *<time-format>* sub-element specifies the CUC format of the time field contained in the time packet. CDS format is not supported.
 
 ===== Onboard Operations Scheduling Configuration File
+The On-Board Operations Scheduling Service implementation requires a configuration file, as specified below.
+
+[source,xml]
+----
+<ns1:onboard-scheduling-service xmlns:ns1="http://dariolucia.eu/reatmetric/driver/spacecraft/onboard-scheduling-service"
+    schedule-activity-path="SPACE.SC.SCHEDULE.SCHEDULEA0000"
+    sub-schedule-id-name="Subschedule-ID"
+    array-used="false">
+</ns1:onboard-scheduling-service>
+----
+
+The attributes have the following usage:
+- _schedule-activity-path_ (mandatory, string): the path to the activity mapped to the 11,4 TC;
+- _sub-schedule-id-name_ (optional, string, default: null): the name of the 11,4 activity argument that is used to specify the sub-schedule ID;
+- _array-used_ (optional, boolean, default: false): whether an array for the 11,4 TC field is used;
+- _num-commands-name_ (optional, string, default: null): the name of the 11,4 activity argument that is used to specify the number of TC commands in the TC 11,4 packet.
+
+===== Onboard Event Configuration File
+The On-Board Event Service implementation optionally requires a configuration file, as specified below.
+
+[source,xml]
+----
+<ns1:event-service xmlns:ns1="http://dariolucia.eu/reatmetric/driver/spacecraft/event-service"
+    event-id-offset="0">
+</ns1:event-service>
+----
+
+The attributes have the following usage:
+- _event-id-offset_ (optional, integer, default: 0): the event offset to be added to the TM packet external ID, as specified
+in the packet definition, to compute the event object in the processing model, to be raised.
 
 ===== AES Encryption Configuration File
+The AES Encryption implementation requires a configuration file, as specified below. Note that the implementation is
+purely an example and not an operational one. It is strongly advised to check the implementation code of the AesEncryptionService
+class (and the related constraints), to understand how to use this service.
+
+This implementation uses a security header length of 18 bytes: 2 for the SPI identification, 16 for the initialisation vector.
+The security trailer is made of 8 bytes, containing the 8 least significant bytes of the SHA-256 checksum, computed over the
+concatenation of the bytes in scope, as specified by the CCSDS standard.
+
+When encrypting TC frames, the SPI to be used is taken from the (integer) value of the parameter indicated by the
+_tc-spi-parameter-path_ attribute.
+
+[source,xml]
+----
+<ns1:aes-security-handler xmlns:ns1="http://dariolucia.eu/reatmetric/driver/spacecraft/security/aes"
+tc-spi-parameter-path="SPACE.SC.SECURITY.TCSPI"
+default-tc-spi="1">
+    <salt>AABBCCDDEEFF1122</salt>
+    <tm-spi id="1" password="TestPassword1" />
+    <tm-spi id="2" password="Short" />
+    <tm-spi id="3" password="V3ryL0ngW31rdP455w0rd" />
+    <tc-spi id="1" password="TcCommandPW1!" />
+    <tc-spi id="2" password="TcCommandPW2!" />
+    <tc-spi id="3" password="TcCommandPW3!" />
+</ns1:aes-security-handler>
+----
 
 ==== Developer's Q&A
 

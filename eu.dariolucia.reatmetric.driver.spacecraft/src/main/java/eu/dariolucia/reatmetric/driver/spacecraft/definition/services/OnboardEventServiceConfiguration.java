@@ -27,7 +27,7 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 import java.io.IOException;
 import java.io.InputStream;
 
-@XmlRootElement(name = "time-service", namespace = "http://dariolucia.eu/reatmetric/driver/spacecraft/event-service")
+@XmlRootElement(name = "event-service", namespace = "http://dariolucia.eu/reatmetric/driver/spacecraft/event-service")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class OnboardEventServiceConfiguration {
 
