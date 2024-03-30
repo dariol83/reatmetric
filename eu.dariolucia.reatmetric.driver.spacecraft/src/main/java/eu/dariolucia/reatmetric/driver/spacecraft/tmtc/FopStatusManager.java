@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.driver.spacecraft.tmtc;
 
 import eu.dariolucia.ccsds.tmtc.cop1.fop.FopAlertCode;
 import eu.dariolucia.ccsds.tmtc.cop1.fop.FopStatus;
+import eu.dariolucia.ccsds.tmtc.ocf.pdu.Clcw;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.events.EventDescriptor;
@@ -49,6 +50,14 @@ public class FopStatusManager {
     private static final String STATE_NAME = "STATE";
     private static final String LAST_EVENT_NAME = "LAST_EVENT";
 
+    private static final String CLCW_LOCKOUT = "LOCKOUT";
+    private static final String CLCW_WAIT = "WAIT";
+    private static final String CLCW_RETRANSMIT = "RETRANSMIT";
+    private static final String CLCW_NO_RF = "NO_RF_AVAILABLE";
+    private static final String CLCW_NO_BL = "NO_BITLOCK_AVAILABLE";
+    private static final String CLCW_FARM = "FARMB_COUNTER";
+    private static final String CLCW_REPORT = "REPORT_VALUE";
+
     private static final String ALERT_NAME = "ALERT";
     private static final String SUSPEND_NAME = "SUSPEND";
 
@@ -59,6 +68,8 @@ public class FopStatusManager {
     private Map<String, ParameterDescriptor> pname2descriptor = new TreeMap<>();
     private Map<String, EventDescriptor> ename2descriptor = new TreeMap<>();
     private volatile FopStatus lastReceivedStatus;
+
+    private volatile Clcw lastReceivedClcw;
 
     public FopStatusManager(int tcVc, String systemEntityPath, IProcessingModel processingModel) {
         this.tcVc = tcVc;
@@ -78,6 +89,15 @@ public class FopStatusManager {
         lookupAndAdd(LAST_EVENT_NAME,  ValueTypeEnum.CHARACTER_STRING);
         lookupAndAdd(ALERT_NAME,  null);
         lookupAndAdd(SUSPEND_NAME, null);
+
+        lookupAndAdd(CLCW_LOCKOUT, ValueTypeEnum.BOOLEAN);
+        lookupAndAdd(CLCW_WAIT, ValueTypeEnum.BOOLEAN);
+        lookupAndAdd(CLCW_RETRANSMIT, ValueTypeEnum.BOOLEAN);
+        lookupAndAdd(CLCW_NO_BL, ValueTypeEnum.BOOLEAN);
+        lookupAndAdd(CLCW_NO_RF, ValueTypeEnum.BOOLEAN);
+        lookupAndAdd(CLCW_FARM, ValueTypeEnum.UNSIGNED_INTEGER);
+        lookupAndAdd(CLCW_REPORT, ValueTypeEnum.UNSIGNED_INTEGER);
+
         return !pname2descriptor.isEmpty() || !ename2descriptor.isEmpty();
     }
 
@@ -179,4 +199,34 @@ public class FopStatusManager {
         return ValueUtil.convert(value, rawDataType);
     }
 
+    public void injectClcwUpdate(Instant frameGenTime, Instant frameRcpTime, Clcw clcw, String route) {
+        Clcw previous = this.lastReceivedClcw;
+        this.lastReceivedClcw = clcw;
+        List<ParameterSample> toUpdate = new LinkedList<>();
+        addIfDifferent(CLCW_LOCKOUT, clcw, previous, toUpdate, frameGenTime, frameRcpTime, Clcw::isLockoutFlag, route);
+        addIfDifferent(CLCW_WAIT, clcw, previous, toUpdate, frameGenTime, frameRcpTime, Clcw::isWaitFlag, route);
+        addIfDifferent(CLCW_RETRANSMIT, clcw, previous, toUpdate, frameGenTime, frameRcpTime, Clcw::isRetransmitFlag, route);
+        addIfDifferent(CLCW_NO_RF, clcw, previous, toUpdate, frameGenTime, frameRcpTime, Clcw::isNoRfAvailableFlag, route);
+        addIfDifferent(CLCW_NO_BL, clcw, previous, toUpdate, frameGenTime, frameRcpTime, Clcw::isNoBitlockFlag, route);
+        addIfDifferent(CLCW_FARM, clcw, previous, toUpdate, frameGenTime, frameRcpTime, Clcw::getFarmBCounter, route);
+        addIfDifferent(CLCW_REPORT, clcw, previous, toUpdate, frameGenTime, frameRcpTime, Clcw::getReportValue, route);
+
+        if(!toUpdate.isEmpty()) {
+            this.processingModel.injectParameters(toUpdate);
+        }
+    }
+
+    private void addIfDifferent(String name, Clcw current, Clcw previous, List<ParameterSample> toUpdate, Instant genTime, Instant rcpTime, Function<Clcw, Object> propertyFetcher, String route) {
+        try {
+            if (previous == null || !Objects.equals(propertyFetcher.apply(previous), propertyFetcher.apply(current))) {
+                ParameterDescriptor pd = pname2descriptor.get(name);
+                if (pd != null) {
+                    toUpdate.add(ParameterSample.of(pd.getExternalId(), genTime, rcpTime, null,
+                            toValue(propertyFetcher.apply(current), pd.getRawDataType()), route, null));
+                }
+            }
+        } catch (ValueException e) {
+            // Ignore update
+        }
+    }
 }

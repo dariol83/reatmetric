@@ -62,6 +62,36 @@
             <triggers/>
         </parameter>
 
+        <!-- CLCW values for TC VC0 -->
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1030" location="SPACE.FOP.TCVC0.LOCKOUT" description="CLCW Lockout Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1031" location="SPACE.FOP.TCVC0.WAIT" description="CLCW Wait Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1032" location="SPACE.FOP.TCVC0.RETRANSMIT" description="CLCW Retransmit Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1033" location="SPACE.FOP.TCVC0.NO_RF_AVAILABLE" description="CLCW No-RF Available Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1034" location="SPACE.FOP.TCVC0.NO_BITLOCK_AVAILABLE" description="CLCW No-Bitlock Available Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" id="#1035" location="SPACE.FOP.TCVC0.FARMB_COUNTER" description="CLCW FARM-B Counter">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" id="#1036" location="SPACE.FOP.TCVC0.REPORT_VALUE" description="CLCW Report Value">
+            <checks/>
+            <triggers/>
+        </parameter>
+
         <!-- Parameter block for FOP engine state -->
         <parameter raw_type="ENUMERATED" eng_type="ENUMERATED" id="#1014" location="SPACE.FOP.TCVC1.V_S" description="Current TC VC0 V(S)">
             <checks/>
@@ -104,6 +134,36 @@
             <triggers/>
         </parameter>
         <parameter raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING" id="#1021" location="SPACE.FOP.TCVC1.LAST_EVENT" description="Last FOP event">
+            <checks/>
+            <triggers/>
+        </parameter>
+
+        <!-- CLCW values for TC VC1 -->
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1040" location="SPACE.FOP.TCVC1.LOCKOUT" description="CLCW Lockout Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1041" location="SPACE.FOP.TCVC1.WAIT" description="CLCW Wait Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1042" location="SPACE.FOP.TCVC1.RETRANSMIT" description="CLCW Retransmit Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1043" location="SPACE.FOP.TCVC1.NO_RF_AVAILABLE" description="CLCW No-RF Available Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="BOOLEAN" eng_type="BOOLEAN" id="#1044" location="SPACE.FOP.TCVC1.NO_BITLOCK_AVAILABLE" description="CLCW No-Bitlock Available Flag">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" id="#1045" location="SPACE.FOP.TCVC1.FARMB_COUNTER" description="CLCW FARM-B Counter">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <parameter raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" id="#1046" location="SPACE.FOP.TCVC1.REPORT_VALUE" description="CLCW Report Value">
             <checks/>
             <triggers/>
         </parameter>
