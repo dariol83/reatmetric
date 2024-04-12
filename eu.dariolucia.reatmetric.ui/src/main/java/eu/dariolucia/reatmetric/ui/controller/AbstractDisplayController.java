@@ -38,8 +38,9 @@ import javafx.scene.transform.Transform;
 import javafx.stage.Window;
 
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.Instant;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -212,5 +213,65 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
             pane.layout();
         });
     }
+
+    /**
+     * Load the persisted configuration of a display (properties file)
+     * @param viewId view id
+     * @return the properties object or null if such properties are not present or if the system is not connected
+     */
+    public Properties loadViewConfiguration(String viewId) {
+        if(this.system == null) {
+            return null;
+        }
+        String csystem = null;
+        try {
+            csystem = this.system.getName();
+        } catch (RemoteException e) {
+            LOG.severe("Cannot retrieve system name for view configuration loading of " + viewId);
+            return null;
+        }
+        String cuser = this.user;
+        try {
+            if(csystem != null && cuser != null) {
+                return ReatmetricUI.preferences().load(csystem, cuser, viewId);
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Cannot retrieve view configuration for " + csystem + ", " + cuser + ", " + viewId + ": " + e.getMessage(), e);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Store the provided configuration of a display (properties file)
+     * @param viewId view id
+     * @param properties the properties to store
+     */
+    public void storeViewConfiguration(String viewId, Properties properties) {
+        if(this.system == null) {
+            return;
+        }
+        String csystem = null;
+        try {
+            csystem = this.system.getName();
+        } catch (RemoteException e) {
+            LOG.severe("Cannot retrieve system name for view configuration storing of " + viewId);
+            return;
+        }
+        String cuser = this.user;
+        try {
+            if(csystem != null && cuser != null) {
+                ReatmetricUI.preferences().save(csystem, cuser, viewId, properties);
+            }
+        } catch (Exception e) {
+            if(LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Cannot store view configuration for " + csystem + ", " + cuser + ", " + viewId + ": " + e.getMessage(), e);
+            }
+        }
+    }
+
 }
 

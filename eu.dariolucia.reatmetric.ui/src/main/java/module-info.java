@@ -30,6 +30,7 @@ open module eu.dariolucia.reatmetric.ui {
     requires javafx.swing;
 
     requires org.controlsfx.controls;
+    requires eu.dariolucia.jfx.timeline;
 
     requires eu.dariolucia.reatmetric.api;
     requires java.rmi;

@@ -716,8 +716,9 @@ public class Scheduler implements IScheduler, IInternalResolver {
         // remove from the current internal set
         ScheduledTask st = id2scheduledTask.remove(scheduledId);
         if (st != null) {
+            LOG.info(String.format("Removing scheduled task %s (%d)", st.getRequest().getRequest().getPath().asString(), st.getId().asLong()));
             st.abortTask();
-            // update or remove in the archive
+            // Update or remove in the archive
             ScheduledActivityData sad = st.getCurrentData();
             storeAndDistribute(sad);
             // Update relative trigger of relative-time scheduled tasks

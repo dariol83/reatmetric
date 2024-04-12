@@ -62,15 +62,6 @@ public class CssHandler {
     public static final String CSS_ACTIVITY_STATUS_ERROR = CSS_REATMETRIC_PREFIX + "activity-status-error";
     public static final String CSS_ACTIVITY_STATUS_TIMEOUT = CSS_REATMETRIC_PREFIX + "activity-status-timeout";
 
-    public static final String CSS_SCHEDULE_STATUS_IGNORED = CSS_REATMETRIC_PREFIX + "schedule-status-ignored";
-    public static final String CSS_SCHEDULE_STATUS_SCHEDULED = CSS_REATMETRIC_PREFIX + "schedule-status-scheduled";
-    public static final String CSS_SCHEDULE_STATUS_WAITING = CSS_REATMETRIC_PREFIX + "schedule-status-waiting";
-    public static final String CSS_SCHEDULE_STATUS_RUNNING = CSS_REATMETRIC_PREFIX + "schedule-status-running";
-    public static final String CSS_SCHEDULE_STATUS_FINISHED_OK = CSS_REATMETRIC_PREFIX + "schedule-status-finished-ok";
-    public static final String CSS_SCHEDULE_STATUS_FINISHED_FAIL = CSS_REATMETRIC_PREFIX + "schedule-status-finished-fail";
-    public static final String CSS_SCHEDULE_STATUS_DISABLED = CSS_REATMETRIC_PREFIX + "schedule-status-disabled";
-    public static final String CSS_SCHEDULE_STATUS_UNKNOWN = CSS_REATMETRIC_PREFIX + "schedule-status-unknown";
-
     public static final String CSS_CONNECTOR_ALARM = CSS_REATMETRIC_PREFIX + "connector-alarm";
     public static final String CSS_CONNECTOR_NA = CSS_REATMETRIC_PREFIX + "connector-na";
     public static final String CSS_CONNECTOR_WARNING = CSS_REATMETRIC_PREFIX + "connector-warning";

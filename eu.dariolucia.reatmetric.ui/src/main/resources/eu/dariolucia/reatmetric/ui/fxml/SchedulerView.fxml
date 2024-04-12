@@ -28,21 +28,18 @@
 
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
-<?import javafx.scene.control.TitledPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.Tab?>
 <?import javafx.scene.control.ScrollPane?>
-<?import eu.dariolucia.reatmetric.ui.gantt.GanttChart?>
-<?import eu.dariolucia.reatmetric.ui.udd.InstantAxis?>
-<?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Tooltip?>
 <?import eu.dariolucia.reatmetric.ui.widgets.EnhancedTitledPane?>
 
 <?import javafx.scene.control.CheckMenuItem?>
+<?import eu.dariolucia.jfx.timeline.Timeline?>
 <EnhancedTitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Scheduler" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.SchedulerViewController">
     <content>
     <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1">
@@ -168,14 +165,7 @@
         <ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="400" maxWidth="1.7976931348623157E308" pannable="true"
                     VBox.vgrow="NEVER" prefHeight="400">
              <content>
-                 <GanttChart fx:id="ganttChart" animated="false" legendVisible="false">
-                     <xAxis>
-                         <InstantAxis />
-                     </xAxis>
-                     <yAxis>
-                         <CategoryAxis />
-                     </yAxis>
-                 </GanttChart>
+                 <Timeline fx:id="ganttChart" taskPanelWidth="250" horizontalScrollbarVisible="false" verticalScrollbarVisible="true" enableZoomMouseScroll="false" />
              </content>
         </ScrollPane>
         <TabPane VBox.vgrow="ALWAYS">

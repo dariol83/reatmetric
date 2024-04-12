@@ -81,6 +81,11 @@
             <artifactId>json-path</artifactId>
             <version>${jsonpath.version}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.jfx</groupId>
+            <artifactId>eu.dariolucia.jfx.timeline</artifactId>
+            <version>${timeline.version}</version>
+        </dependency>
         <!--
         <dependency>
             <groupId>com.panemu</groupId>

@@ -175,10 +175,10 @@ public class ScheduledTask {
                 // Execute now
                 timer.schedule(timingHandler, 0L);
             } else {
-                throw new SchedulingException("Cannot update trigger evaluation for task " + this.taskId + ", trigger type " + request.getTrigger() + " not recognised");
+                throw new SchedulingException("Cannot update trigger evaluation for scheduled task " + getRequest().getRequest().getPath().asString() + "(" + currentData.getExternalId() + ")" + ", trigger type " + request.getTrigger() + " not recognised");
             }
         } else {
-            throw new SchedulingException("Cannot update trigger evaluation for task " + this.taskId + ", task is not scheduled anymore");
+            throw new SchedulingException("Cannot update trigger evaluation for scheduled task " + getRequest().getRequest().getPath().asString() + "(" + currentData.getExternalId() + ")" + ", task is not scheduled anymore");
         }
     }
 
@@ -295,7 +295,7 @@ public class ScheduledTask {
         dispatcher.submit(() -> {
             // Guard condition: you can reach this only if SCHEDULED or WAITING. If this happens in a different situation, error
             if(currentData.getState() != SchedulingState.SCHEDULED && currentData.getState() != SchedulingState.WAITING) {
-                LOG.log(Level.SEVERE, "Scheduled task " + taskId + " with state " + currentData.getState() + " requested to executed, request ignored.");
+                LOG.log(Level.SEVERE, "Scheduled task " + getRequest().getRequest().getPath().asString() + "(" + currentData.getExternalId() + ")" + " with state " + currentData.getState() + " requested to execute, request ignored due to unexpected state transition error.");
                 return;
             }
             // Try to run the activity if the scheduler is enabled, if all resources are available and if all constraints are satisfied
@@ -307,12 +307,16 @@ public class ScheduledTask {
                     case WAIT: {
                         //
                         if(lastPossibleExecution) {
+                            LOG.log(Level.WARNING, "Scheduled task " + getRequest().getRequest().getPath().asString() + "(" + currentData.getExternalId() + ")" + " requested to execute, resource conflict detected, ignoring task (last possible execution attempted).");
                             // Expired, therefore task ignored and move on ...
                             this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
                                     null,
                                     SchedulingState.IGNORED);
                             checkForTaskRemoval();
                         } else {
+                            if(this.currentData != null && this.currentData.getState() != SchedulingState.WAITING) {
+                                LOG.log(Level.INFO, "Scheduled task " + getRequest().getRequest().getPath().asString() + "(" + currentData.getExternalId() + ")" + " requested to execute, resource conflict detected, entering waiting state.");
+                            }
                             // Wait for some update in the resource status
                             this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
                                     null,
@@ -323,6 +327,7 @@ public class ScheduledTask {
                     }
                     break;
                     case DO_NOT_START_AND_FORGET: {
+                        LOG.log(Level.WARNING, "Scheduled task " + getRequest().getRequest().getPath().asString() + "(" + currentData.getExternalId() + ")" + " requested to execute, resource conflict detected, ignoring task.");
                         // Mark as ignored and move on ...
                         this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
                                 null,
@@ -331,6 +336,7 @@ public class ScheduledTask {
                     }
                     break;
                     case ABORT_OTHER_AND_START: {
+                        LOG.log(Level.WARNING, "Scheduled task " + getRequest().getRequest().getPath().asString() + "(" + currentData.getExternalId() + ")" + " requested to execute, resource conflict detected, aborting other tasks,");
                         scheduler.abortConflictingTasksWith(this);
                         runTask(lastPossibleExecution);
                     }
@@ -343,6 +349,7 @@ public class ScheduledTask {
                     // Start the task now
                     stopLatestExecutionTimer();
                     try {
+                        LOG.log(Level.INFO, "Scheduled task " + getRequest().getRequest().getPath().asString() + "(" + currentData.getExternalId() + ")" + " dispatched for execution");
                         this.activityId = this.scheduler.startActivity(this.request.getRequest());
                         scheduler.registerActivity(this.activityId, this);
                         this.currentData = buildUpdatedSchedulingActivityData(newStartTime,
@@ -357,6 +364,7 @@ public class ScheduledTask {
                         checkForTaskRemoval();
                     }
                 } else {
+                    LOG.log(Level.WARNING, "Scheduled task " + getRequest().getRequest().getPath().asString() + "(" + currentData.getExternalId() + ")" + " disabled, not executing");
                     // Release the resources and report the task as DISABLED. This task is dead if not an event-based task.
                     this.currentData = buildUpdatedSchedulingActivityData(newStartTime, null,
                             SchedulingState.DISABLED);
@@ -400,6 +408,9 @@ public class ScheduledTask {
      * To be called from the dispatcher thread.
      */
     public void abortTask() {
+        if(LOG.isLoggable(Level.INFO)) {
+            LOG.fine("Aborting scheduled task " + getRequest().getRequest().getPath().asString() + "(" + currentData.getExternalId() + ")");
+        }
         // Release resources
         if(resourcesAcquired) {
             scheduler.releaseResources(request.getResources());
@@ -425,7 +436,7 @@ public class ScheduledTask {
         } else {
             // if not any of the two above, the activity is already over, so do not do anything
             if(LOG.isLoggable(Level.FINE)) {
-                LOG.fine("Task " + taskId + " already in state " + currentData.getState() + ", abort not performed");
+                LOG.fine("Scheduled task " + getRequest().getRequest().getPath().asString() + "(" + currentData.getExternalId() + ")" + " already in state " + currentData.getState() + ", abort not performed");
             }
         }
         // Remove the activity occurrence ID from the set of interesting ones
