@@ -29,33 +29,33 @@ import java.io.InputStream;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class LengthFieldDecoding implements IDecodingStrategy {
 
-    @XmlAttribute
+    @XmlAttribute(name="header-nb-bytes-to-skip")
     private int headerNbBytesToSkip = 0; // in bytes
 
-    @XmlAttribute
+    @XmlAttribute(name="field-length")
     private int fieldLength = 0; // in bytes, max is 8
 
     // Endianness of the length field
-    @XmlAttribute
+    @XmlAttribute(name="big-endian")
     private boolean bigEndian = true;
 
-    @XmlAttribute
+    @XmlAttribute(name="field-mask")
     private long fieldMask = 0xFFFFFFFFFFFFFFFFL;
 
-    @XmlAttribute
+    @XmlAttribute(name="field-right-shift")
     private int fieldRightShift = 0;
 
-    @XmlAttribute
+    @XmlAttribute(name="field-value-offset")
     private int fieldValueOffset = 0;
 
     // If true, then the derived length considers also the skipped bytes, which must be then removed to complete the
     // reading of the message
-    @XmlAttribute
+    @XmlAttribute(name="consider-skipped-bytes")
     private boolean considerSkippedBytes = false;
 
     // If true, then the derived length considers also the field length, whose length must be then removed to complete the
     // reading of the message
-    @XmlAttribute
+    @XmlAttribute(name="consider-field-length")
     private boolean considerFieldLength = false;
 
     public int getHeaderNbBytesToSkip() {

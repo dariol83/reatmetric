@@ -851,13 +851,3 @@ default-tc-spi="1">
     <tc-spi id="3" password="TcCommandPW3!" />
 </ns1:aes-security-handler>
 ----
-
-==== Developer's Q&A
-
-===== Receiving telemetry packets
-
-===== Implement a custom service
-
-===== Implement a custom connector
-
-===== Implement a custom security module

@@ -21,8 +21,8 @@
     <connections>
         <tcp name="Device TC TCP Connection" source="Device 4" protocol="BINARY" init="CONNECTOR"
              host="127.0.0.1" remote-port="37280" local-port="0" >
-            <lengthFieldDecoding headerNbBytesToSkip="4" fieldLength="4" bigEndian="true"
-                                 considerSkippedBytes="true" considerFieldLength="true" />
+            <lengthFieldDecoding header-nb-bytes-to-skip="4" field-length="4" big-endian="true"
+                                 consider-skipped-bytes="true" consider-field-length="true" />
             <route name="Device 4 Route" entity-offset="0" command-lock="false">
                 <activity-types>
                     <type>DEV4-BIN-CMD</type>

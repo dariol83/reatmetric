@@ -1,0 +1,326 @@
+==== Overview
+The eu.dariolucia.reatmetric.driver.socket module provides a driver that allows the processing of socket-based protocols
+(TCP/P), in binary and ASCII format.
+
+Being a driver, a _socket_ module must be registered as such in the system Core's configuration.
+
+As it must be able to support by configuration a large variety of ASCII and binary-based protocols,
+the driver configuration and design are overall complex. Nevertheless, by breaking down the configuration and the design
+smaller pieces, such complexity can be managed. The information provided in this document allows to understand the
+fundamentals of the design of the driver.
+
+==== General Concepts
+The _socket_ driver is structure upon the following main concepts:
+
+. Messages: A message is a protocol data unit exchanged on one or more connections between the driver and the endpoint.
+Messages can be binary messages, defined using the eu.dariolucia.ccsds.encdec definitions, or ASCII, defined in the
+configuration file of the driver.
+. Connections: A connection is either a TCP connection or a UDP association with a remote host and port. For a given entity
+to monitor and control, the driver allows to specify several connections, each with its own characteristics: IP and port,
+initialisation of the connection, type of the protocol that is run over the connection (binary, ASCII), way to read the
+protocol data units from the connection.
+. Decodings: A decoding strategy is the way to read PDUs over a stream of data. For instance, in case of ASCII connections,
+the delimiter could be a specific character or sequence of characters. In case of binary data, there might be
+known prefixes, which identify the start of the PDU, or a structure with a length field, or the PDUs have fixed length.
+. Protocols: A protocol specifies which specific PDU is expected from a specific connection, how the information contained
+in the PDU must be mapped to the entities defined in the ReatMetric processing model, which events must be raised upon
+reception of specific PDUs, how commands can be verified by reception of specific responses. Such protocol information are
+defined per connection.
+
+==== Configuration
+Being a driver, the _socket_ module must be registered as such in the system configuration file. You need to have a
+socket module registration for each endpoint that requires such driver.
+
+[source,xml]
+----
+<ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
+    <name>Test System</name>
+    <log-property-file>$HOME\Reatmetric\reatmetric_test\log.properties</log-property-file>
+    <definitions-location>$HOME\Reatmetric\reatmetric_test\processing</definitions-location>
+    <driver name="Equipment 1 Driver" type="eu.dariolucia.reatmetric.driver.socket.SocketDriver"
+    configuration="$HOME\Reatmetric\reatmetric_test\eqp1"/>
+</ns1:core>
+----
+
+The folder specified in the _configuration_ attribute of the _driver_ element must contain a file named _configuration.xml_,
+which defines the configuration properties of the driver.
+
+===== Main Configuration File
+The configuration structure of the eu.dariolucia.reatmetric.driver.socket module is defined in the package
+eu.dariolucia.reatmetric.driver.socket.configuration. It is an XML file named _configuration.xml_ using
+namespace definition _http://dariolucia.eu/reatmetric/driver/socket_.
+
+====== ASCII Example
+An example of configuration file modelling an ASCII based protocol is presented below.
+
+[source,xml]
+----
+<ns1:socket xmlns:ns1="http://dariolucia.eu/reatmetric/driver/socket"
+    name="Double ASCII"
+    description="Driver configuration for double ASCII TCP connection">
+    <connections>
+        <tcp name="Device TM TCP Connection" source="Device 2" protocol="ASCII" init="CONNECTOR"
+             host="127.0.0.1" remote-port="35212" local-port="0" ascii-encoding="UTF8">
+            <asciiDelimiterDecoding><delimiter>\n</delimiter></asciiDelimiterDecoding>
+            <route name="Device 2 TM Route" entity-offset="0" command-lock="true">
+                <activity-types>
+                    <type>DEV2-ASCII-CMD</type>
+                </activity-types>
+
+                <!-- First Subsystem -->
+                <inbound id="TLM_SUB1_MP" message="TLM_SUB1">
+                    <inject name="status_val" entity="40" />
+                    <inject name="freq_val" entity="41" />
+                    <inject name="temp_val" entity="42" />
+                    <inject name="offset_val" entity="43" />
+                    <inject name="mode_val" entity="44" />
+                    <inject name="sweep_val" entity="45" />
+                </inbound>
+                <!-- Second Subsystem -->
+                <inbound id="TLM_SUB2_MP" message="TLM_SUB2">
+                    <inject name="status_val" entity="50" />
+                    <inject name="freq_val" entity="51" />
+                    <inject name="temp_val" entity="52" />
+                    <inject name="offset_val" entity="53" />
+                    <inject name="mode_val" entity="54" />
+                    <inject name="sweep_val" entity="55" />
+                </inbound>
+
+                <!-- TM Subsystem Registration -->
+                <outbound id="POLL_SUB_MP" message="POLL_SUB" type="CONNECTION_ACTIVE">
+				</outbound>
+            </route>
+        </tcp>
+        <tcp name="Device TC TCP Connection" source="Device 2" protocol="ASCII" init="ON_DEMAND"
+             host="127.0.0.1" remote-port="35213" local-port="0" ascii-encoding="UTF8">
+            <asciiDelimiterDecoding><delimiter>\n</delimiter></asciiDelimiterDecoding>
+            <route name="Device 2 TC Route" entity-offset="0" command-lock="true">
+                <activity-types>
+                    <type>DEV2-ASCII-CMD</type>
+                </activity-types>
+                <!-- Common -->
+                <inbound id="ACK_MP" message="ACK" />
+                <inbound id="EXE_MP" message="EXE" />
+                <inbound id="NOK_MP" message="NOK" />
+                <!-- Common -->
+                <outbound id="SET_MP" message="SET" type="ACTIVITY_DRIVEN" entity="2">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="parameter" field="parameter" />
+                    <argument name="new_value" field="new_value" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <!-- First Subsystem -->
+                <outbound id="CMD_SUB1_RST_MP" message="CMD_RST" type="ACTIVITY_DRIVEN" entity="46">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB1_SWP_MP" message="CMD_SWP" type="ACTIVITY_DRIVEN" entity="47">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="times" field="times" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB1_RBT_MP" message="CMD_RBT" type="ACTIVITY_DRIVEN" entity="48">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="delay" field="delay" />
+                    <argument name="running" field="running" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <!-- Second Subsystem -->
+                <outbound id="CMD_SUB2_RST_MP" message="CMD_RST" type="ACTIVITY_DRIVEN" entity="56">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB2_SWP_MP" message="CMD_SWP" type="ACTIVITY_DRIVEN" entity="57">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="times" field="times" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+                <outbound id="CMD_SUB2_RBT_MP" message="CMD_RBT" type="ACTIVITY_DRIVEN" entity="58">
+                    <argument name="device_subsystem" field="device_subsystem" />
+                    <argument name="delay" field="delay" />
+                    <argument name="running" field="running" />
+                    <auto-increment counter-id="SEQ1" field="command_id" output-type="UNSIGNED_INTEGER"/>
+                    <verification timeout="10">
+                        <acceptance message="ACK" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <acceptance message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                        <execution message="EXE" value-field="command_id" reference-argument="command_id" result="OK" />
+                        <execution message="NOK" value-field="command_id" reference-argument="command_id" result="FAIL" />
+                    </verification>
+                </outbound>
+            </route>
+        </tcp>
+    </connections>
+    <messages>
+        <ascii id="TLM_SUB1">
+            <template>TLM SUB1 ${{status_val}}$ ${{freq_val}}$ ${{temp_val}}$ ${{offset_val}}$ ${{mode_val}}$ ${{sweep_val}}$\n</template>
+            <symbol name="status_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+            <symbol name="freq_val" type="UNSIGNED_INTEGER" encode-null="" decode-empty-null="true" />
+            <symbol name="temp_val" type="REAL" encode-null="" decode-empty-null="true" />
+            <symbol name="offset_val" type="SIGNED_INTEGER" encode-null="" decode-empty-null="true" />
+            <symbol name="mode_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+            <symbol name="sweep_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+        </ascii>
+        <ascii id="TLM_SUB2">
+            <template>TLM SUB2 ${{status_val}}$ ${{freq_val}}$ ${{temp_val}}$ ${{offset_val}}$ ${{mode_val}}$ ${{sweep_val}}$\n</template>
+            <symbol name="status_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+            <symbol name="freq_val" type="UNSIGNED_INTEGER" encode-null="" decode-empty-null="true" />
+            <symbol name="temp_val" type="REAL" encode-null="" decode-empty-null="true" />
+            <symbol name="offset_val" type="SIGNED_INTEGER" encode-null="" decode-empty-null="true" />
+            <symbol name="mode_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+            <symbol name="sweep_val" type="ENUMERATED" encode-null="" decode-empty-null="true" />
+        </ascii>
+        <ascii id="POLL_SUB">
+            <template>REQ SUB1 SUB2\n</template>
+        </ascii>
+
+        <ascii id="CMD_SWP">
+            <template>CMD ${{device_subsystem}}$ ${{command_id}}$ SWP ${{times}}$\n</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
+            <symbol name="times" type="UNSIGNED_INTEGER" />
+        </ascii>
+        <ascii id="CMD_RST">
+            <template>CMD ${{device_subsystem}}$ ${{command_id}}$ RST\n</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
+        </ascii>
+        <ascii id="CMD_RBT">
+            <template>CMD ${{device_subsystem}}$ ${{command_id}}$ RBT ${{delay}}$ ${{running}}$\n</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
+            <symbol name="delay" type="UNSIGNED_INTEGER" />
+            <symbol name="running" type="UNSIGNED_INTEGER" />
+        </ascii>
+        <ascii id="SET">
+            <template>SET ${{device_subsystem}}$ ${{command_id}}$ ${{parameter}}$ ${{new_value}}$\n</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
+            <symbol name="parameter" type="CHARACTER_STRING" />
+            <symbol name="new_value" type="DERIVED">
+                <type id="ENUMERATED" encode-format="%d" />
+                <type id="UNSIGNED_INTEGER" encode-format="%d" />
+                <type id="SIGNED_INTEGER" encode-format="%d" />
+                <type id="REAL" encode-format="%.1f" />
+            </symbol>
+        </ascii>
+
+        <ascii id="ACK">
+            <template>ACK ${{device_subsystem}}$ ${{command_id}}$\n</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
+        </ascii>
+        <ascii id="EXE">
+            <template>EXE ${{device_subsystem}}$ ${{command_id}}$\n</template>
+            <symbol name="device_subsystem" type="CHARACTER_STRING" decode-empty-null="false" />
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
+        </ascii>
+        <ascii id="NOK">
+            <template>NOK ${{command_id}}$\n</template>
+            <symbol name="command_id" type="UNSIGNED_INTEGER" decode-empty-null="false" />
+        </ascii>
+    </messages>
+</ns1:socket>
+----
+
+Attribute *<name>* (mandatory, string): this element assigns the name of the driver instance, it does not play any
+role in the processing of the data.
+
+Attribute *<description>* (mandatory, string): this element assigns a description of the driver instance.
+
+The example file defines 2 connections of type TCP, therefore the element *<connections>* contains 2 elements *<tcp>*.
+
+Element *<tcp>*: this element defines a TCP/IP connection with the provided characteristics.
+Element *<udp>*: this element defines a UDP/IP connection with the provided characteristics.
+
+The following attributes are defined for the two connection types:
+
+* _name_
+* _source_
+* _protocol_
+* _init_
+* _host_
+* _remote-port_
+* _local-port_
+* _ascii-encoding_
+* _timeout_
+* _tx-buffer_
+* _rx-buffer_
+
+For *<tcp>* connections only, the following two attributes are additionally defined:
+
+* _tcp-keep-alive_
+* _tcp-no-delay_
+
+As decoding strategy, the following decoders are available as sub-elements of the *<tcp>* and *<udp>* elements:
+
+* *<datagramDecoding>*: this element can only be used linked to *<udp>* connection types, to indicate that a received datagram
+must be interpreted as a PDU. No sub-elements/attributes are supported.
+* *<fixedLengthDecoding>*: this decoder reads a fixed number of bytes from the underlying channel and interpret such data
+as a PDU.
+** Attribute _length_ (mandatory, integer): length of the PDU.
+* *<lengthFieldDecoding>*: this decoder is configurable to read and interpret a specific field as length of the message,
+possibly shifting, masking and adding a value. The decoder can be configured to consider or not the header length or the
+size of the length field itself.
+** Attribute _header-nb-bytes-to-skip_ (optional, integer, default: 0): number of bytes to skip before the length field.
+** Attribute _field-length_ (optional, integer, default: 0): size in bytes of the length field. Maximum value is 8.
+** Attribute _big-endian_ (optional, boolean, default: true): length field endianness.
+** Attribute _field-mask_ (optional, integer, default: -1): AND mask to be applied to the length field value.
+** Attribute _field-right-shift_ (optional, integer, default: 0): number of bits to shift right the length field value, after
+application of the AND mask.
+** Attribute _field-value-offset_ (optional, integer, default: 0): value to be added to the length field value, after AND
+mask and right shift.
+** Attribute _consider-skipped-bytes_ (optional, boolean, default: false): if true, then the length field value counts also
+the skipped bytes (before the length field). This information is fundamental to ensure the complete and correct reading of the
+PDU from the connection.
+** Attribute _consider-field-length_ (optional, boolean, default: false): if true, then the length field value counts also
+the size of the field length. This information is fundamental to ensure the complete and correct reading of the
+PDU from the connection.
+* *<binaryDelimiterDecoding>*: this decoder reads all characters in the underlying channel and stops when the specified
+delimiter is found.
+** Attribute _start-sequence_ (mandatory, string): hex dump of the delimiter identifying the start of the PDU.
+** Attribute _end-sequence_ (mandatory, string): hex dump of the delimiter identifying the end of the PDU.
+* *<asciiDelimiterDecoding>*: This decoder reads all characters in the underlying channel and stops when the specified
+delimiter, as sequence of ASCII characters, is found. For instance, for ASCII protocols having a new line as message
+delimiter (as in the example file), the string "\n" shall be used.
+** Element *<delimiter>*: string that identifies the end of message.
+
+
+
+===== Main Configuration File - Binary
+

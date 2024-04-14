@@ -34,11 +34,11 @@ import java.io.InputStream;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class BinaryDelimiterDecoding implements IDecodingStrategy {
 
-    @XmlAttribute(required = true)
+    @XmlAttribute(required = true, name="start-sequence")
     @XmlJavaTypeAdapter(ByteArrayToStringAdapter.class)
     private byte[] startSequence;
 
-    @XmlAttribute(required = true)
+    @XmlAttribute(required = true, name="end-sequence")
     @XmlJavaTypeAdapter(ByteArrayToStringAdapter.class)
     private byte[] endSequence;
 
