@@ -15,17 +15,21 @@ The _socket_ driver is structure upon the following main concepts:
 . Messages: A message is a protocol data unit exchanged on one or more connections between the driver and the endpoint.
 Messages can be binary messages, defined using the eu.dariolucia.ccsds.encdec definitions, or ASCII, defined in the
 configuration file of the driver.
-. Connections: A connection is either a TCP connection or a UDP association with a remote host and port. For a given entity
-to monitor and control, the driver allows to specify several connections, each with its own characteristics: IP and port,
-initialisation of the connection, type of the protocol that is run over the connection (binary, ASCII), way to read the
-protocol data units from the connection.
-. Decodings: A decoding strategy is the way to read PDUs over a stream of data. For instance, in case of ASCII connections,
+. Connections: A connection is a communication channel, based on a network protocol, established between the driver and
+a remote host and port. For a given entity to monitor and control, the driver allows to specify several connections,
+each with its own characteristics: IP and port, initialisation of the connection, type of the protocol that is run over
+the connection (binary, ASCII), way to read the protocol data units from the connection. The driver supports TCP and UDP
+transport protocols.
+. Decodings: A decoding strategy is the way to read PDUs over a connection. For instance, in case of ASCII connections,
 the delimiter could be a specific character or sequence of characters. In case of binary data, there might be
 known prefixes, which identify the start of the PDU, or a structure with a length field, or the PDUs have fixed length.
-. Protocols: A protocol specifies which specific PDU is expected from a specific connection, how the information contained
-in the PDU must be mapped to the entities defined in the ReatMetric processing model, which events must be raised upon
-reception of specific PDUs, how commands can be verified by reception of specific responses. Such protocol information are
-defined per connection.
+. Route configuration: A route configuration specifies which specific PDU is expected from a specific connection, how the
+information contained in the PDU must be mapped to the entities defined in the ReatMetric processing model, which events
+must be raised upon reception of specific PDUs, how commands can be verified by reception of specific responses. Such
+protocol information are defined per connection.
+
+When the driver is instantiated, all connections marked to be 'connector-driver' are grouped into a single ReatMetric
+_connector_ and are globally controllable.
 
 ==== Configuration
 Being a driver, the _socket_ module must be registered as such in the system configuration file. You need to have a
@@ -50,6 +54,8 @@ The configuration structure of the eu.dariolucia.reatmetric.driver.socket module
 eu.dariolucia.reatmetric.driver.socket.configuration. It is an XML file named _configuration.xml_ using
 namespace definition _http://dariolucia.eu/reatmetric/driver/socket_.
 
+In order to explain the different configuration parts in relation to ASCII and binary protocols, two examples are provided.
+
 ====== ASCII Example
 An example of configuration file modelling an ASCII based protocol is presented below.
 
@@ -59,15 +65,18 @@ An example of configuration file modelling an ASCII based protocol is presented 
     name="Double ASCII"
     description="Driver configuration for double ASCII TCP connection">
     <connections>
+        <!-- Connection 1: TCP connection to get TM data from the endpoint -->
         <tcp name="Device TM TCP Connection" source="Device 2" protocol="ASCII" init="CONNECTOR"
              host="127.0.0.1" remote-port="35212" local-port="0" ascii-encoding="UTF8">
+            <!-- Decoding: messages are all terminated with a new line character -->
             <asciiDelimiterDecoding><delimiter>\n</delimiter></asciiDelimiterDecoding>
+            <!-- Route configuration: definition of the mappings for inbound messages -->
             <route name="Device 2 TM Route" entity-offset="0" command-lock="true">
                 <activity-types>
+                    <!-- List of activity types (from the processing model) supported by this driver/route -->
                     <type>DEV2-ASCII-CMD</type>
                 </activity-types>
-
-                <!-- First Subsystem -->
+                <!-- Mapping definition for incoming PDU: from parameters of message TLM_SUB1 to the parameter IDs in the processing model -->
                 <inbound id="TLM_SUB1_MP" message="TLM_SUB1">
                     <inject name="status_val" entity="40" />
                     <inject name="freq_val" entity="41" />
@@ -76,7 +85,7 @@ An example of configuration file modelling an ASCII based protocol is presented 
                     <inject name="mode_val" entity="44" />
                     <inject name="sweep_val" entity="45" />
                 </inbound>
-                <!-- Second Subsystem -->
+                <!-- Mapping definition for incoming PDU: from parameters of message TLM_SUB2 to the parameter IDs in the processing model -->
                 <inbound id="TLM_SUB2_MP" message="TLM_SUB2">
                     <inject name="status_val" entity="50" />
                     <inject name="freq_val" entity="51" />
@@ -85,12 +94,12 @@ An example of configuration file modelling an ASCII based protocol is presented 
                     <inject name="mode_val" entity="54" />
                     <inject name="sweep_val" entity="55" />
                 </inbound>
-
-                <!-- TM Subsystem Registration -->
+                <!-- Mapping definition: TM Subsystem Registration -->
                 <outbound id="POLL_SUB_MP" message="POLL_SUB" type="CONNECTION_ACTIVE">
 				</outbound>
             </route>
         </tcp>
+        <!-- Connection 2: TCP connection to send commands to the endpoint -->
         <tcp name="Device TC TCP Connection" source="Device 2" protocol="ASCII" init="ON_DEMAND"
              host="127.0.0.1" remote-port="35213" local-port="0" ascii-encoding="UTF8">
             <asciiDelimiterDecoding><delimiter>\n</delimiter></asciiDelimiterDecoding>
@@ -263,6 +272,38 @@ role in the processing of the data.
 
 Attribute *<description>* (mandatory, string): this element assigns a description of the driver instance.
 
+Even if the configuration file first presents the connection definitions, with the associated decoding and route configuration,
+for a better understanding the element *<messages>* is introduced first. The sub-elements of a *<messages>* element are:
+
+* *<ascii>* elements: it defines a single ASCII message, with associated template and symbol definitions;
+* *<binary>* elements: it defines a collection of binary messages, with associated definition file and type of structure
+to consider within the definition file;
+
+All *<ascii>* elements have the following structure:
+
+* Attribute _id_ (mandatory, string): the identifier of the message, which is used in the route configuration.
+* Sub-element *<template>* (mandatory, string): the message template, including non printable characters (\n, \t, ...). The template is a
+sequence of characters and _symbols_. A symbol, to be recognised as such, must be enclosed between the _${{_ and _}}$_
+escape fields.
+* Sub-element *<symbol>* (optional, zero or more): it contains the definition of the symbol in terms of type and encoding/decoding
+characteristics. It defines the following attributes and sub-elements:
+** Attribute _name_ (mandatory, string): it must match the name of the symbol as it appears in the template.
+** Attribute _type_ (mandatory, enum from eu.dariolucia.reatmetric.api.value.ValueTypeEnum): the type of the field, DERIVED
+can also be used for messages representing commands.
+** Attribute _radix_ (optional, enum: BIN, OCT, DEC, HEX, default: DEC): the radix to be used for decoding and encoding
+ENUMERATION and INTEGER symbols.
+** Attribute _encode-format_ (optional, string, default: null): the encode format to be used for non-DERIVED types. The format
+syntax is the one defined by the java.util.Formatter class (e.g. %04X to print an integer as 4 digits hex number with pre-padded 0).
+** Attribute _encode-null_ (optional, string, default: null): the value to be used for the symbol when encoding a null value.
+** Attribute _decode-empty-null_ (optional, boolean, default: false): if true, then the Java null value is returned as decoded value,
+if the symbol is encoded as an empty string. If false, an empty string is returned.
+** Sub-element *<type>* (optional, zero or more): this sequence of elements is used to specify how to encode a specific
+type in the case of DERIVED fields. It defines the following two attributes:
+*** Attribute _id_ (mandatory, enum from eu.dariolucia.reatmetric.api.value.ValueTypeEnum): the type of the field according
+to the provided value type (mapping defined as per ValueTypeEnum specification)
+*** Attribute _encode-format_ (mandatory, string): the encode format to be used for the specified type. The format
+syntax is the one defined by the java.util.Formatter class (e.g. %04X to print an integer as 4 digits hex number with pre-padded 0).
+
 The example file defines 2 connections of type TCP, therefore the element *<connections>* contains 2 elements *<tcp>*.
 
 Element *<tcp>*: this element defines a TCP/IP connection with the provided characteristics.
@@ -270,33 +311,40 @@ Element *<udp>*: this element defines a UDP/IP connection with the provided char
 
 The following attributes are defined for the two connection types:
 
-* _name_
-* _source_
-* _protocol_
-* _init_
-* _host_
-* _remote-port_
-* _local-port_
-* _ascii-encoding_
-* _timeout_
-* _tx-buffer_
-* _rx-buffer_
+* _name_ (mandatory, string): the name of the connection.
+* _source_ (mandatory, string): the name of the endpoint, used as source when distributing the received messages as raw data
+to the Raw Data broker for distribution inside ReatMetric.
+* _protocol_ (mandatory, enum: ASCII, BINARY): the type of the protocol exchanged on top of this connection.
+* _init_ (optional, enum: CONNECTOR, ON_DEMAND, default: CONNECTOR): the way the establishment of the connection must be
+performed. If CONNECTOR is set, then the connection and disconnection is fully driven by the driver's _connector_. If
+ON_DEMAND is set, then the connection is established if the driver's _connector_ is active and an outgoing message is
+requested to be sent on the connection. The connection remains open until the lifetime of the outgoing message is not
+expired.
+* _host_ (mandatory, string): the hostname or IP address of the endpoint.
+* _remote-port_ (mandatory, integer): the remote port, the connection shall associate to.
+* _local-port_ (mandatory, integer): the local port, the connection shall be bound to. Setting this value to 0 leaves to
+the operating system the decision of what to do.
+* _ascii-encoding_ (optional, enum: US_ASCII, ISO_8859_1, UTF_8, UTF_16, default: US_ASCII): the ASCII encoding to be used
+when interpreting bytes from the connection and encoding messages.
+* _timeout_ (optional, integer, default: 5000): socket timeout in milliseconds, affecting socket reading and connection timeout.
+* _tx-buffer_ (optional, integer, default: 0): transmit buffer in bytes, 0 means use operating system default.
+* _rx-buffer_ (optional, integer, default: 0): reception buffer in bytes, 0 means use operating system default.
 
 For *<tcp>* connections only, the following two attributes are additionally defined:
 
-* _tcp-keep-alive_
-* _tcp-no-delay_
+* _tcp-keep-alive_ (optional, boolean, default: false): if true, activate TCP keep-alive mechanism.
+* _tcp-no-delay_ (optional, boolean, default: false): if true, activate TCP no-delay mechanism.
 
 As decoding strategy, the following decoders are available as sub-elements of the *<tcp>* and *<udp>* elements:
 
 * *<datagramDecoding>*: this element can only be used linked to *<udp>* connection types, to indicate that a received datagram
 must be interpreted as a PDU. No sub-elements/attributes are supported.
 * *<fixedLengthDecoding>*: this decoder reads a fixed number of bytes from the underlying channel and interpret such data
-as a PDU.
+as a PDU. The following attribute is defined:
 ** Attribute _length_ (mandatory, integer): length of the PDU.
 * *<lengthFieldDecoding>*: this decoder is configurable to read and interpret a specific field as length of the message,
 possibly shifting, masking and adding a value. The decoder can be configured to consider or not the header length or the
-size of the length field itself.
+size of the length field itself. The following attributes are defined:
 ** Attribute _header-nb-bytes-to-skip_ (optional, integer, default: 0): number of bytes to skip before the length field.
 ** Attribute _field-length_ (optional, integer, default: 0): size in bytes of the length field. Maximum value is 8.
 ** Attribute _big-endian_ (optional, boolean, default: true): length field endianness.
@@ -312,15 +360,195 @@ PDU from the connection.
 the size of the field length. This information is fundamental to ensure the complete and correct reading of the
 PDU from the connection.
 * *<binaryDelimiterDecoding>*: this decoder reads all characters in the underlying channel and stops when the specified
-delimiter is found.
+delimiter is found. The following attributes are defined:
 ** Attribute _start-sequence_ (mandatory, string): hex dump of the delimiter identifying the start of the PDU.
 ** Attribute _end-sequence_ (mandatory, string): hex dump of the delimiter identifying the end of the PDU.
 * *<asciiDelimiterDecoding>*: This decoder reads all characters in the underlying channel and stops when the specified
 delimiter, as sequence of ASCII characters, is found. For instance, for ASCII protocols having a new line as message
-delimiter (as in the example file), the string "\n" shall be used.
-** Element *<delimiter>*: string that identifies the end of message.
+delimiter (as in the example file), the string "\n" shall be used. The following sub-element is defined.
+** Element *<delimiter>* (mandatory, string): string that identifies the end of message.
 
+Each connection shall contain a *<route>* element, containing the mapping and protocol configuration. The purpose of the
+route configuration section is to:
 
+* define inbound and outbound PDUs allowed for the connection;
+* define a mapping between the fields contained in each inbound PDU to the corresponding parameters in the processing model;
+* define a mapping between inbound PDUs and events to be raised in the processing model;
+* define a mapping between inbound PDUs and verification stages linked to outbound PDUs;
+* define the characteristics of the interlocking for outbound PDUs.
+
+The *<route>* element has the following structure:
+
+* Attribute _name_ (mandatory, string): name of the route configuration.
+* Attribute _entity-offset_ (optional, integer, default: 0): value to be added to the defined mapping to derive the actual
+parameter/event ID in the processing model, and to be subtraced to the invoked activity ID, to identify the outbound message
+to encode and send as command.
+* Attribute _command-lock_ (optional, boolean, default: true): if true, the connection will not allow more than a single
+command to be sent and alive on the connection. The lifecycle of the command must complete, before the driver sends the
+following command. This type of configuration is typically used for communication patterns of type request/response or
+request/progress/response, where there is no way to identify the command in the protocol, for further verification with
+responses.
+* Element *<activity-types>* (mandatory, one) with sub-elements *<type>* (string): this list identifies the types of the
+activity, as specified in the processing model, so that the driver can inform the processing model about its capability
+to encode and process such activities.
+* List of *<inbound>* elements.
+* List of *<outbound>* elements.
+
+The *<inbound>* element specifies the processing for incoming PDUs, i.e. PDUs received from the endpoint through the
+connection, in terms of mapping of PDU's contained fields to parameters and mapping of PDU's reception to events.
+The element has the following structure:
+
+* Attribute _id_ (mandatory, string): the ID of the inbound message configuration, used for logging purposes.
+* Attribute _message_ (mandatory, string - IDREF): the ID of the mapped message as defined in the *<messages>* section.
+* Attribute _secondary-id_ (optional, string, default: empty string): in case of binary messages, this attribute must
+contain the ID of the binary structure defined in the structure definition file.
+* Element *<command-match>* (optional): this element is a way to specify that the mapping is linked to an outbound message
+mapping, with optionally a specific argument matching a value expressed here.
+When such message is sent and a message is received, this mapping is effectively used only if it is linked to that command.
+This feature covers the situation when a request is asking for a given response, the request contains an ID of a device
+to query, but the response does not have such ID. The correlation to the ID, and therefore the mapping to the correct parameters
+to be injected in the processing model, must be derived by the fact that a previous command was sent. This approach of
+course works only for full synchronous request-response protocols. It specifies the following attributes:
+** _outbound-mapping_ (mandatory, string - IDREF): the ID of the outbound message configuration.
+** _argument_ (optional, string, default: null): the field in the outbound message, previously sent, to be checked to
+confirm the mapping. If null, the mapping is confirmed by default.
+** _value_ (optional, string, default: null): the value that must be matched by the outbound message field indicated by
+the _argument_ attribute. It is a mandatory if the _argument_ attribute is set.
+** _type_ (optional, enum from eu.dariolucia.reatmetric.api.value.ValueTypeEnum, default: null): the type of the value
+string specified in the _value_ attribute. It is a mandatory if the _value_ attribute is set.
+** _last-command_ (optional, boolean, default: true): if true, the driver will use the actual very last PDU that was
+sent on this connection, regardless of the PDU linked to the associated outbound mapping, to verify if the inbound mapping
+must be selected. If false, the driver will use the last command sent with the specified outbound mapping.
+* List of *<computed-field>* elements (optional): a computed field is an artificial field, computed from other fields
+(PDU value fields or other computed fields). It has the following structure:
+** Attribute _field_: name of the computed field.
+** Element value: Groovy expression to compute the value of the computed field. The expression can access all fields of the
+inbound message and also all the previously computed fields. Computed fields are calculated in the order they appear in the
+configuration. When binding the PDU fields and computed fields to the Groovy expression, characters ' ' (space) and '-' (minus)
+are replaced with '_' (underscore). This means e.g. that the value of the PDU field "device-id" will be mapped to a Groovy
+variable named "device_id".
+* List of *<inject>* elements (optional): each element maps a field by name to the corresponding parameter in the processing
+model. It has the following structure:
+** Attribute _name_ (mandatory, string): the name of the field to map.
+** Attribute _entity_ (mandatory, integer): the ID of the parameter, as defined in the processing model. The actual value of
+the parameter ID is computed by adding to this value the value of the _entity-offset_ attribute defined in the parent *<route>*
+element.
+* List of *<raise>* elements (optional): each element requests the raising of the corresponding event in the processing
+model. It has the following structure:
+** Attribute _entity_ (mandatory, integer): the ID of the event, as defined in the processing model. The actual value of
+the event ID is computed by adding to this value the value of the _entity-offset_ attribute defined in the parent *<route>*
+element.
+** Attribute _source_ (optional, string, default: empty string): the source value to be associated to the request to
+raise the event.
+** Attribute _qualifier_ (optional, string, default: null): the qualifier value to be associated to the request to
+raise the event. If specified, this value takes precedence over the _qualifier-reference_.
+** Attribute _qualifier-reference_ (optional, string, default: null): the name of the field (PDU field or computed field)
+to be used as qualifier value. If the field is not defined, an empty string is used as qualifier.
+** Element *<condition>* (optional): if defined, the event is raised only if the equality condition specified by this
+element is satisfied. This element has the following structure:
+** Attribute _field_ (mandatory, string): name of the field (PDU field or computed field) that must be checked.
+** Attribute _value_ (mandatory, string): the value that must match the value of the specified field, to verify the condition.
+** Attribute _type_ (mandatory, enum from eu.dariolucia.reatmetric.api.value.ValueTypeEnum): the type of the value
+string specified in the _value_ attribute.
+
+The *<outbound>* element specifies the processing for the encoding and sending of outgoing PDUs, i.e. PDUs assembled by
+the ReatMetric system and delivered to the endpoint through the connection. In terms of mapping to PDU fields, the outbound
+message element specifies how fields are computed from activity arguments, fixed values, auto incremental fields and computed
+fields. At the end of the processing, each field is mapped to the corresponding PDU field by name, and the resulting message
+is encoded. The element has the following structure:
+
+* Attribute _id_ (mandatory, string): the ID of the outbound message configuration, used for logging and mapping purposes
+in the _outbound-mapping_ attribute of the *<command-match>* element of *<inbound>* elements.
+* Attribute _message_ (mandatory, string - IDREF): the ID of the mapped message as defined in the *<messages>* section.
+* Attribute _secondary-id_ (optional, string, default: empty string): in case of binary messages, this attribute must
+contain the ID of the binary structure defined in the structure definition file.
+* Attribute _type_ (mandatory, enum: ACTIVITY_DRIVEN, CONNECTION_ACTIVE, PERIODIC): the type of outbound message:
+** If ACTIVITY_DRIVEN: the PDU is encoded and dispatched after reception of an activity request, whose activity ID is
+mapped to this outbound mapping via the _entity_ attribute value plus the offset defined in the _entity-offset_ attribute
+defined in the parent *<route>* element.
+** If CONNECTION_ACTIVE: the PDU is encoded and dispatched every time the connection is established. The typical use of
+this feature is to send automated subscription requests upon connection establishment.
+** If PERIODIC: the PDU is encoded and dispatched periodically, as long as the connection is established. This value works
+only for connections configured to be connector-driven, i.e. with attribute _init_ on the *<tcp>* or *<udp>* element to be
+set to CONNECTOR.
+* Attribute _entity_ (optional, integer, default: -1): the ID of the activity in the processing model, which shall
+trigger the encoding and dispatch of the associated message, if received by the driver. The actual value used to map the
+activity ID is computed by adding to this value the value of the _entity-offset_ attribute defined in the parent *<route>*
+element. Only taken into account if the _type_ of the outbound message is ACTIVITY_DRIVEN.
+* Attribute _period_ (optional, integer, default: 0): the period in seconds, for outbound messages with _type_ PERIODIC.
+* Attribute _max-waiting-time_ (optional, integer, default: 2000): the maximum waiting time in milliseconds, that the
+driver can wait, in order to have a free connection to send the message in case the _command-lock_ is used and active.
+* Attribute _post-send-delay_ (optional, integer, default: 0): the time in milliseconds that the driver waits, after
+sending this outbound message, before processing the other outbound messages.
+* List of *<fixed-field>* elements (optional): a fixed field is an artificial field, defined in the outbound message
+configuration, which can be used for encoding purpose. The element contains the following attributes:
+** Attribute _field_ (mandatory, string): name of the fixed field.
+** Attribute _value_ (mandatory, string): the value that is assigned to the field.
+** Attribute _type_ (mandatory, enum from eu.dariolucia.reatmetric.api.value.ValueTypeEnum): the type of the value
+string specified in the _value_ attribute.
+* List of *<argument>* elements (optional): the element specifies how activity argument fields are assigned to fields.
+The element contains the following attributes:
+** Attribute _field_ (mandatory, string): name of the field.
+** Attribute _name_ (mandatory, string): name of the activity argument.
+* List of *<auto-increment>* elements (optional): this element assigns an incremental value to the specified field, every
+time a new outbound message is encoded. The element contains the following attributes:
+** Attribute _field_ (mandatory, string): name of the field.
+** Attribute _counter-id_ (mandatory, string): name of the counter. If different counters are needed, depending on the outbound
+messages, then different values must be specified here. If a single global counter is needed, then the same value on all
+outbound messages must be defined. Counters are route-specific and have signed integer resolution.
+** Attribute _output-type_ (optional, enum from eu.dariolucia.reatmetric.api.value.ValueTypeEnum, default: ENUMERATED):
+output value of the counter, limited to: SIGNED_INTEGER, UNSIGNED_INTEGER, REAL, ENUMERATED, CHARACTER_STRING.
+** Attribute _string-format_ (optional, string, default: null): the encode format to be used in case _output-type_ is set
+to CHARACTER_STRING. The format syntax is the one defined by the java.util.Formatter class (e.g. %04X to print an integer
+as 4 digits hex number with pre-padded 0).
+* List of *<computed-field>* elements (optional): a computed field is an artificial field, computed from other fields
+(argument fields, fixed value fields, auto-increment fields or other computed fields). The structure is the same one defined
+for *<inbound>* elements.
+* Element *<verification>* (optional, default: null): the verification configuration for the outbound message. The element
+has the following structure:
+** Attribute _id-field_ (optional, string, default: null): the name of the field of the outbound message, containing its
+identifier value. If null, this information is not used.
+** Attribute _timeout_ (optional, integer, default: 5): overall timeout in seconds for the command to be fully verified,
+since its successful release (activity occurrence transitioned to TRANSMISSION).
+** List of *<acceptance>* elements (optional): a list of elements detailing the checks for confirming the acceptance of
+the outbound message by the endpoint. The checks are executed in order of definition.
+** List of *<execution>* elements (optional): a list of elements detailing the checks for confirming the execution of
+the outbound message by the endpoint. The checks are executed in order of definition.
+
+Both the *<acceptance>* and *<execution>* elements have the following structure:
+
+* Attribute _message_ (mandatory, string - IDREF): the ID of the message that contains the verification information.
+* Attribute _secondary-id_ (optional, string, default: null): the secondary ID of the message that contains the
+verification information. Shall be null if not used, i.e. for ASCII messages.
+* Attribute _id-field_ (optional, string, default: null): the name of the field of the inbound message, containing the
+identifier value of the corresponding outbound message (for mapping purposes). If null, it is not used.
+* Attribute _value-field_ (optional, string, default: null): the name of the field of the inbound message, to be checked
+to understand the result of the operation. If null, it is not used.
+* Attribute _expected-fixed-value_ (optional, string, default: null): the value that it is compared with the one defined
+in the _value-field_ attribute.
+* Attribute _expected-fixed-value-type_ (optional, enum from eu.dariolucia.reatmetric.api.value.ValueTypeEnum, default:
+CHARACTER_STRING): the type of the value defined in the _expected-fixed-value_ attribute.
+* Attribute _reference-argument_ (optional, string, default: null): the name of the field of the outbound message, that
+it is compared with the one defined in the _value-field_ attribute of the inbound message.
+* Attribute _result_ (mandatory, enum from eu.dariolucia.reatmetric.api.activity.ActivityReportState): the result to be
+reported for the specific stage (acceptance, execution) if all defined criteria are matched.
+
+Therefore, the verification approach for a released outbound command pending verification works as follows:
+
+. An inbound message is received.
+. If there is a registered outbound message declaring the message and secondary ID of the inbound message in one of
+the verification stages, then the inbound message is further processed for its verification.
+. If an id-field is defined and its value in the inbound message matches the value of the outbound message under
+verification, then the inbound message is further processed for the verification of the specific outbound message. The
+same happens if no id-field is specified.
+. If a value-field is defined, then its value is checked against either the fixed value or against the specified
+outbound message field. If the values are the same, then the inbound message is further processed for the verification
+of the specific outbound message. The same happens if the value-field is not specified.
+. The result as reported in the _result_ attribute is delivered to the processing model in case of activity mapping.
+
+Once the acceptance stage is verified, the defined *<acceptance>* elements are not processed anymore. The same happens
+for the execution stage. It is possible for an outbound message to have both acceptance and execution elements, only
+acceptance, only execution or no verification element.
 
 ===== Main Configuration File - Binary
 

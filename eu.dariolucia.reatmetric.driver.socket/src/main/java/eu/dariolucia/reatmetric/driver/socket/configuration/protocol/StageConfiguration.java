@@ -26,7 +26,7 @@ import jakarta.xml.bind.annotation.*;
 public class StageConfiguration {
 
     // Message ID that contains the verification information
-    @XmlAttribute(name="message")
+    @XmlAttribute(name="message", required = true)
     @XmlIDREF
     private MessageDefinition<?> message;
 

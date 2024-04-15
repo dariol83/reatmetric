@@ -303,7 +303,7 @@ include::../eu.dariolucia.reatmetric.driver.remote/Documentation.adoc[]
 === Socket
 ==== Overview
 ==== Configuration
-To be written
+include::../eu.dariolucia.reatmetric.driver.socket/Documentation.adoc[]
 
 === Spacecraft
 include::../eu.dariolucia.reatmetric.driver.spacecraft/Documentation.adoc[]

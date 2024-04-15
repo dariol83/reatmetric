@@ -711,7 +711,7 @@ public class RouteConfiguration {
     private OutboundMessageMapping getOutboundMessageFor(IActivityHandler.ActivityInvocation activityInvocation) {
         // Slow, consider adding a map
         for(OutboundMessageMapping omm : getOutboundMessages()) {
-            if(omm.getEntity() == activityInvocation.getActivityId()) {
+            if(omm.getEntity() + getEntityOffset() == activityInvocation.getActivityId()) {
                 return omm;
             }
         }
