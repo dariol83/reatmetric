@@ -37,11 +37,6 @@
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.glassfish.jaxb</groupId>
-            <artifactId>jaxb-runtime</artifactId>
-            <version>${jaxb.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-base</artifactId>
             <version>${openjfx.version}</version>
@@ -86,12 +81,5 @@
             <artifactId>eu.dariolucia.jfx.timeline</artifactId>
             <version>${timeline.version}</version>
         </dependency>
-        <!--
-        <dependency>
-            <groupId>com.panemu</groupId>
-            <artifactId>tiwulfx-dock</artifactId>
-            <version>${tiwulf.version}</version>
-        </dependency>
-        -->
     </dependencies>
 </project>

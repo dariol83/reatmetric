@@ -1,19 +1,23 @@
 ![ReatMetric](eu.dariolucia.reatmetric.ui/src/main/resources/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-full-color-640px.png)
 
-ReatMetric is a well-documented Java-based software infrastructure for the implementation of Monitoring & Control (M&C) systems, with a
-strong focus on the space domain. ReatMetric components provide a simple but efficient implementation of the typical 
+ReatMetric is a well-documented Java-based software infrastructure for the implementation of Monitoring & Control (M&C) systems, 
+with a strong focus on the space domain. ReatMetric components provide a simple but efficient implementation of the typical 
 functions used in an M&C system.
 
 ![Displays](docs/images/reatmetric-windows-01.PNG "ReatMetric")
 
 ## Documentation
-The system concepts, design and modules are described in the [documentation](docs/ReatMetric%20Design%20Concepts.adoc).
+The system concepts, design, configuration and usage are described in the [documentation](docs/ReatMetric%20System%20Manual.adoc).
+
+Suggestions on how to improve the documentation and on missing description of features can be provided opening an issue on
+GitHub.
 
 ## Dependencies
 ReatMetric is based on a very limited set of dependencies:
 - [eu.dariolucia.ccsds](https://www.github.com/dariol83/ccsds): providing support for SLE/TM/TC/PUS handling of the _spacecraft_ driver;
 - [openJFX](https://openjfx.io): for the graphical user interface of the _ui_ module;
 - [ControlsFX](https://github.com/controlsfx/controlsfx): advanced UI controls for the _ui_ module;
+- [eu.dariolucia.jfx.timeline](https://www.github.com/dariol83/timeline): providing support for schedule rendering in the _ui_ module;
 - [Apache Derby](http://db.apache.org/derby): providing the storage backend of the _persist_ module;
 - [JAXB](https://javaee.github.io/jaxb-v2): for the configuration of all modules;
 - [Groovy](https://groovy-lang.org): for the Groovy language support in the _processing_ and _automation_ modules (best choice);

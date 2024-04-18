@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-
 open module eu.dariolucia.reatmetric.ui {
 
     requires java.logging;
+    requires java.rmi;
     requires java.desktop;
     requires jdk.jsobject;
 
@@ -33,10 +33,8 @@ open module eu.dariolucia.reatmetric.ui {
     requires eu.dariolucia.jfx.timeline;
 
     requires eu.dariolucia.reatmetric.api;
-    requires java.rmi;
 
-    // In order to activate JAXB implementation
-    requires jakarta.xml.bind;
+
     requires json.path;
 
     exports eu.dariolucia.reatmetric.ui;
