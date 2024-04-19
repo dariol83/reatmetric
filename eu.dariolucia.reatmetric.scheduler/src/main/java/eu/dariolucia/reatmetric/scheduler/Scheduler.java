@@ -245,6 +245,8 @@ public class Scheduler implements IScheduler, IInternalResolver {
         // Transition the RUNNING and WAITING activities in:
         // RUNNING -> UNKNOWN
         // WAITING -> ABORTED
+        // TODO: transition activities that are SCHEDULED and scheduled time is in the past --> ABORTED
+        //  See method restoreActivitiesFromList
         try {
             // This part retrieves everything but not the event-based scheduled activities, for which the generation time is set
             // to EPOCH.
