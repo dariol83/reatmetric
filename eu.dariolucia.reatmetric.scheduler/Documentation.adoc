@@ -128,7 +128,12 @@ A commented example of such file is presented below.
 
 [source,xml]
 ----
-<ns1:scheduler xmlns:ns1="http://dariolucia.eu/reatmetric/scheduler" scheduler-enabled="true">
+<ns1:scheduler xmlns:ns1="http://dariolucia.eu/reatmetric/scheduler" scheduler-enabled="true"
+    run-past-scheduled-activities="false">
+    <!-- scheduler-enabled: status of the scheduler when the system starts, default is true -->
+    <!-- run-past-scheduled-activities: if true, activities in status SCHEDULED in the past are restored and
+    immediately executed; if false, scheduled activities in the past are marked as aborted. Future scheduled
+    activities are restored and configured ready for execution at the scheduled time -->
     <!-- Define a new bot with name 'Bot Test 1', which is enabled by default and will execute the configured
     actions for the state upon initialisation -->
     <bot-definition name="Bot Test 1" execute-on-init="false" enabled="true">

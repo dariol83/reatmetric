@@ -245,8 +245,8 @@ public class Scheduler implements IScheduler, IInternalResolver {
         // Transition the RUNNING and WAITING activities in:
         // RUNNING -> UNKNOWN
         // WAITING -> ABORTED
-        // TODO: transition activities that are SCHEDULED and scheduled time is in the past --> ABORTED
-        //  See method restoreActivitiesFromList
+        // Transition activities that are SCHEDULED and scheduled time is in the past --> ABORTED
+        // See method restoreActivitiesFromList
         try {
             // This part retrieves everything but not the event-based scheduled activities, for which the generation time is set
             // to EPOCH.
@@ -257,7 +257,7 @@ public class Scheduler implements IScheduler, IInternalResolver {
 
             restoreActivitiesFromList(scheduledItems);
 
-            // Now it is the time of the event-based activities
+            // Now it is the time of the event-based activities, start and end time set to EPOCH
             scheduledItems = archive.retrieve(Instant.EPOCH,
                     new ScheduledActivityDataFilter(null, null, null, null,
                             Collections.singletonList(SchedulingState.SCHEDULED), null),
@@ -271,14 +271,97 @@ public class Scheduler implements IScheduler, IInternalResolver {
     }
 
     private void restoreActivitiesFromList(List<ScheduledActivityData> scheduledItems) throws SchedulingException {
+        Instant now = Instant.now();
+        // Partition: first schedule all the AbsoluteTimeSchedulingTrigger and the others are in another group
+        List<ScheduledActivityData> absoluteScheduled = scheduledItems.stream().filter(i -> i.getTrigger() instanceof AbsoluteTimeSchedulingTrigger).collect(Collectors.toList());
+        List<ScheduledActivityData> relativeScheduled = scheduledItems.stream().filter(i -> i.getTrigger() instanceof RelativeTimeSchedulingTrigger).collect(Collectors.toList());
+        List<ScheduledActivityData> otherScheduled = scheduledItems.stream().filter(i -> !(i.getTrigger() instanceof AbsoluteTimeSchedulingTrigger) &&
+                !(i.getTrigger() instanceof RelativeTimeSchedulingTrigger)).collect(Collectors.toList());
+        // Sort the relative-scheduled items
+        relativeScheduled = buildSortedRelativeScheduled(relativeScheduled);
+        // Restore items
+        restoreActivities(absoluteScheduled, now);
+        restoreActivities(otherScheduled, now);
+        restoreActivities(relativeScheduled, now);
+    }
+
+    /**
+     * The idea of this method is to build a list of scheduled activities, which would be able to resolve their predecessors
+     * as they will be added to the scheduler. Therefore, the list will first have the activities without predecessors
+     * (or with predecessors of other types). And only then, the activities with predecessors also of type relative-time,
+     * in the correct order.
+     * @param relativeScheduled the list to order
+     * @return the ordered list
+     */
+    private List<ScheduledActivityData> buildSortedRelativeScheduled(List<ScheduledActivityData> relativeScheduled) {
+        List<ScheduledActivityData> relativeScheduledToReturn = new ArrayList<>(relativeScheduled.size());
+        Queue<ScheduledActivityData> toProcess = new LinkedList<>(relativeScheduled);
+        int pushBackIterations = 0;
+        while(!toProcess.isEmpty()) {
+            // Get the top
+            ScheduledActivityData d = toProcess.remove();
+            RelativeTimeSchedulingTrigger trigger = (RelativeTimeSchedulingTrigger) d.getTrigger();
+            // Get the referenced activities
+            boolean backInQueue = false;
+            for(String pred : trigger.getPredecessors()) {
+                // Look for predecessor in the queue: if it is there, then put the item back in the queue
+                for(ScheduledActivityData sad : toProcess) {
+                    if(sad.getExternalId().equals(pred)) {
+                        toProcess.add(d);
+                        backInQueue = true;
+                        ++pushBackIterations;
+                        break;
+                    }
+                }
+                if(backInQueue) {
+                    break;
+                }
+            }
+            if(!backInQueue) {
+                relativeScheduledToReturn.add(d);
+                pushBackIterations = 0;
+            }
+            if(pushBackIterations > toProcess.size() + 1) {
+                LOG.warning("Cycle detected when restoring scheduled items with relative time");
+                // Cycle, stop and copy all remaining data in the list to return.
+                // It should not happen.
+                relativeScheduledToReturn.addAll(toProcess);
+                break;
+            }
+        }
+        return relativeScheduledToReturn;
+    }
+
+    private void restoreActivities(List<ScheduledActivityData> scheduledItems, Instant now) throws SchedulingException {
         for (ScheduledActivityData item : scheduledItems) {
             if (item.getState() == SchedulingState.SCHEDULED) {
-                // Create ScheduledTask
-                ScheduledTask st = new ScheduledTask(this, timer, dispatcher, item);
-                id2scheduledTask.put(st.getId(), st);
-                // Prepare execution event depending on trigger (absolute, relative, event)
-                st.armTrigger();
+                if(isToBeScheduled(item, now)) {
+                    LOG.info("Restoring scheduled activity: " + item);
+                    // Create ScheduledTask
+                    ScheduledTask st = new ScheduledTask(this, timer, dispatcher, item);
+                    id2scheduledTask.put(st.getId(), st);
+                    // Prepare execution event depending on trigger (absolute, relative, event)
+                    st.armTrigger();
+                } else {
+                    LOG.warning("Scheduled activity not restored (ABORTED): " + item);
+                    // ABORTED, it will never start
+                    storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
+                            item.getGenerationTime(),
+                            item.getRequest(),
+                            item.getActivityOccurrence(),
+                            item.getResources(),
+                            item.getSource(),
+                            item.getExternalId(),
+                            item.getTrigger(),
+                            item.getLatestInvocationTime(),
+                            item.getStartTime(),
+                            item.getDuration(),
+                            item.getConflictStrategy(),
+                            SchedulingState.ABORTED,
+                            item.getExtension()));
+                }
             } else if (item.getState() == SchedulingState.RUNNING) {
+                LOG.warning("Scheduled running activity restored with status UNKNOWN: " + item);
                 storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
                         item.getGenerationTime(),
                         item.getRequest(),
@@ -294,6 +377,7 @@ public class Scheduler implements IScheduler, IInternalResolver {
                         SchedulingState.UNKNOWN,
                         item.getExtension()));
             } else if (item.getState() == SchedulingState.WAITING) {
+                LOG.warning("Scheduled waiting activity restored with status ABORTED: " + item);
                 storeAndDistribute(new ScheduledActivityData(item.getInternalId(),
                         item.getGenerationTime(),
                         item.getRequest(),
@@ -309,6 +393,45 @@ public class Scheduler implements IScheduler, IInternalResolver {
                         SchedulingState.ABORTED,
                         item.getExtension()));
             }
+        }
+    }
+
+    private boolean isToBeScheduled(ScheduledActivityData item, Instant now) {
+        if(this.configuration.isRunPastScheduledActivities()) {
+            return true;
+        } else if(item.getTrigger() instanceof EventBasedSchedulingTrigger) {
+            // Always schedule
+            return true;
+        } else if(item.getTrigger() instanceof AbsoluteTimeSchedulingTrigger) {
+            Instant expectedStart = ((AbsoluteTimeSchedulingTrigger) item.getTrigger()).getReleaseTime();
+            return expectedStart.equals(now) || expectedStart.isAfter(now);
+        } else if(item.getTrigger() instanceof NowSchedulingTrigger) {
+            // NowSchedulingTrigger are inaccurate, they were supposed to start right away, so at this stage do not restore
+            return false;
+        } else if(item.getTrigger() instanceof RelativeTimeSchedulingTrigger) {
+            RelativeTimeSchedulingTrigger trigger = (RelativeTimeSchedulingTrigger) item.getTrigger();
+            // Check that predecessors are all in the schedule and with right state
+            for(String extId : trigger.getPredecessors()) {
+                boolean found = false;
+                for(ScheduledTask st : id2scheduledTask.values()) {
+                    if(Objects.equals(st.getCurrentData().getExternalId(), extId)) {
+                        found = true;
+                        // If the status is SCHEDULED --> OK, else return false
+                        if(st.getCurrentData().getState() != SchedulingState.SCHEDULED) {
+                            return false;
+                        }
+                        break;
+                    }
+                }
+                if(!found) {
+                    // Well, in the past or non-existing --> do not schedule
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            // ???
+            return false;
         }
     }
 
@@ -718,7 +841,7 @@ public class Scheduler implements IScheduler, IInternalResolver {
         // remove from the current internal set
         ScheduledTask st = id2scheduledTask.remove(scheduledId);
         if (st != null) {
-            LOG.info(String.format("Removing scheduled task %s (%d)", st.getRequest().getRequest().getPath().asString(), st.getId().asLong()));
+            LOG.info(String.format("Removing scheduled task %s (%s)", st.getRequest().getRequest().getPath().asString(), st.getRequest().getExternalId()));
             st.abortTask();
             // Update or remove in the archive
             ScheduledActivityData sad = st.getCurrentData();

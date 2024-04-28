@@ -382,10 +382,10 @@ public class SchedulerViewController extends AbstractDisplayController implement
         }
 
         this.ganttChart.setBackgroundColor(Color.valueOf(this.viewConfiguration.getProperty(TIMELINE_BGCOLOR_PREFIX)));
-        this.ganttChart.setPanelBackgroundColor(Color.valueOf(this.viewConfiguration.getProperty(TIMELINE_PANEL_BGCOLOR_PREFIX)));
+        this.ganttChart.setPanelBackground(Color.valueOf(this.viewConfiguration.getProperty(TIMELINE_PANEL_BGCOLOR_PREFIX)));
         this.ganttChart.setPanelForegroundColor(Color.valueOf(this.viewConfiguration.getProperty(TIMELINE_PANEL_FGCOLOR_PREFIX)));
         this.ganttChart.setPanelBorderColor(Color.valueOf(this.viewConfiguration.getProperty(TIMELINE_PANEL_BORDERCOLOR_PREFIX)));
-        this.ganttChart.setHeaderBackgroundColor(Color.valueOf(this.viewConfiguration.getProperty(TIMELINE_HEADER_BGCOLOR_PREFIX)));
+        this.ganttChart.setHeaderBackground(Color.valueOf(this.viewConfiguration.getProperty(TIMELINE_HEADER_BGCOLOR_PREFIX)));
         this.ganttChart.setHeaderForegroundColor(Color.valueOf(this.viewConfiguration.getProperty(TIMELINE_HEADER_FGCOLOR_PREFIX)));
         this.ganttChart.setHeaderBorderColor(Color.valueOf(this.viewConfiguration.getProperty(TIMELINE_HEADER_BORDERCOLOR_PREFIX)));
         this.ganttChart.setSelectBorderColor(Color.valueOf(this.viewConfiguration.getProperty(TIMELINE_SELECTCOLOR_PREFIX)));
@@ -692,7 +692,7 @@ public class SchedulerViewController extends AbstractDisplayController implement
         data.startTimeProperty().bind(wrapper.startTimeProperty());
         data.expectedDurationProperty().bind(wrapper.durationProperty().map(Duration::toSeconds));
         data.actualDurationProperty().bind(wrapper.actualDurationProperty().map(Duration::getSeconds));
-        data.taskBackgroundColorProperty().bind(wrapper.stateProperty().map(this::stateToBgColor));
+        data.taskBackgroundProperty().bind(wrapper.stateProperty().map(this::stateToBgColor));
         data.taskTextColorProperty().bind(wrapper.stateProperty().map(this::stateToTextColor));
         // Add data to series
         series.getItems().add(data);

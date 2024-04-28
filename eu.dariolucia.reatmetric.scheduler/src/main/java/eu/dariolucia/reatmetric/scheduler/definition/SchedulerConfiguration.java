@@ -43,6 +43,9 @@ public class SchedulerConfiguration {
     @XmlAttribute(name = "scheduler-enabled")
     private boolean schedulerEnabled = true;
 
+    @XmlAttribute(name = "run-past-scheduled-activities")
+    private boolean runPastScheduledActivities = false;
+
     @XmlElement(name = "bot-definition")
     private List<BotProcessingDefinition> bots = new LinkedList<>();
 
@@ -60,5 +63,13 @@ public class SchedulerConfiguration {
 
     public void setSchedulerEnabled(boolean schedulerEnabled) {
         this.schedulerEnabled = schedulerEnabled;
+    }
+
+    public boolean isRunPastScheduledActivities() {
+        return runPastScheduledActivities;
+    }
+
+    public void setRunPastScheduledActivities(boolean runPastScheduledActivities) {
+        this.runPastScheduledActivities = runPastScheduledActivities;
     }
 }

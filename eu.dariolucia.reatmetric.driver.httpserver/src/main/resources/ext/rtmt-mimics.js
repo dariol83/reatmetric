@@ -488,7 +488,6 @@ class TextNodeApplier extends Runnable {
 }
 
 class BlinkNodeProcessor extends SvgAttributeProcessor {
-	// TODO: cache the BlinkNodeApplier operation to avoid the search of the animate node?
 	constructor(svgElement, name, value, objPropertyNames) {
 		super(svgElement, name, value, objPropertyNames);
 	}
@@ -540,7 +539,6 @@ class BlinkNodeApplier extends Runnable {
 }
 
 class RotateNodeProcessor extends SvgAttributeProcessor {
-	// TODO: cache the BlinkNodeApplier operation to avoid the search of the animate node?
 	constructor(svgElement, name, value, objPropertyNames) {
 		super(svgElement, name, value, objPropertyNames);
 	}
