@@ -137,7 +137,8 @@ Example of remoting configuration:
 ## Roadmap
 
 ### To version 1.0.0
-- Complete the documentation (ASCII doc to be completed - 80%)
+- UI: introduce dialog to show the details of an activity invocation 
+- Complete the documentation (ASCII doc to be completed - 90%)
 
 ### To version 1.1.0
 - SNMP driver
