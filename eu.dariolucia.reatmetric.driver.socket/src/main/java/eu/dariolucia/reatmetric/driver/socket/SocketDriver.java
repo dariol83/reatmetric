@@ -25,6 +25,7 @@ import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.AbstractDriver;
@@ -35,10 +36,12 @@ import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.SocketConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.IDataProcessor;
+import eu.dariolucia.reatmetric.driver.socket.configuration.protocol.RouteConfiguration;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.*;
@@ -48,14 +51,15 @@ import java.util.logging.Logger;
 /**
  *
  */
-public class SocketDriver extends AbstractDriver implements IDataProcessor {
-
+public class SocketDriver extends AbstractDriver implements IDataProcessor, IRawDataRenderer {
     private static final Logger LOG = Logger.getLogger(SocketDriver.class.getName());
+    public static final String SOCKET_MESSAGE_TYPE = "SOCKET";
     private SocketConfiguration configuration;
     private SocketDriverConnector connector;
     private SocketActivityHandler activityHandler;
     private Timer globalDriverTimer;
     private ExecutorService actionThreadPool;
+    private IRawDataArchive rawDataArchive;
 
     @Override
     public List<DebugInformation> currentDebugInfo() {
@@ -64,13 +68,41 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor {
 
     @Override
     public List<IRawDataRenderer> getRawDataRenderers() {
-        // TODO: implement
-        return super.getRawDataRenderers();
+        return Collections.singletonList(this);
+    }
+
+    @Override
+    public String getHandler() {
+        return getName();
+    }
+
+    @Override
+    public List<String> getSupportedTypes() {
+        return Collections.singletonList(SOCKET_MESSAGE_TYPE);
+    }
+
+    @Override
+    public LinkedHashMap<String, String> render(RawData rawData) throws ReatmetricException {
+        if (!rawData.getHandler().equals(getHandler())) {
+            throw new ReatmetricException("Raw data with handler " + rawData.getHandler() + " cannot be processed by driver " + configuration.getName() + ", expecting handler " + getHandler());
+        }
+        // Look-up the route configuration: handler and type should match at this stage
+        String route = rawData.getRoute();
+        RouteConfiguration theConf = configuration.getConnections().stream().map(AbstractConnectionConfiguration::getRoute).filter(r -> r.getName().equals(route)).findFirst().orElse(null);
+        if (theConf == null) {
+            throw new ReatmetricException("Raw data with route " + rawData.getRoute() + " cannot be processed by driver " + configuration.getName() + ", expecting types " + getSupportedTypes());
+        }
+        // Ok, now check if raw data has contents. If not, retrieve the one with the contents.
+        if (!rawData.isContentsSet() && rawDataArchive != null) {
+            rawData = rawDataArchive.retrieve(rawData.getInternalId());
+        }
+        return theConf.render(rawData);
     }
 
     @Override
     protected SystemStatus startProcessing() {
         // Init data
+        this.rawDataArchive = getContext().getArchive() != null ? getContext().getArchive().getArchive(IRawDataArchive.class) : null;
         this.globalDriverTimer = new Timer(getName() + " Timer Service", true);
         this.actionThreadPool = Executors.newSingleThreadExecutor((r) -> {
            Thread t = new Thread(r);

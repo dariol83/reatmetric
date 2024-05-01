@@ -31,9 +31,11 @@ import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
+import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.driver.socket.SocketDriver;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.AbstractConnectionConfiguration;
 import eu.dariolucia.reatmetric.driver.socket.configuration.connection.InitType;
+import eu.dariolucia.reatmetric.driver.socket.configuration.connection.ProtocolType;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.AsciiMessageDefinition;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.BinaryMessageDefinition;
 import eu.dariolucia.reatmetric.driver.socket.configuration.message.MessageDefinition;
@@ -202,7 +204,7 @@ public class RouteConfiguration {
     private void internalMessageReceived(Instant time, String messageId, String secondaryId, Map<String, Object> decodedMessage, byte[] rawMessage) {
         // Forward raw data
         RawData rawData = new RawData(dataProcessor.getNextRawDataId(), time, secondaryId != null ? secondaryId : messageId,
-                "", getName(), getParentConnection().getSource(),
+                SocketDriver.SOCKET_MESSAGE_TYPE, getName(), getParentConnection().getSource(),
                 Quality.GOOD, null, rawMessage, time, driverName, null);
         dataProcessor.forwardRawData(rawData);
         //
@@ -733,6 +735,60 @@ public class RouteConfiguration {
             ct.closeVerification(this.dataProcessor, time);
             releaseConnectionUsage();
             deregisterFromVerifier(ct);
+        }
+    }
+
+    public LinkedHashMap<String, String> render(RawData rawData) {
+        // Only inbound messages supported
+        LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
+        if(parentConnection.getProtocol() == ProtocolType.ASCII) {
+            // ASCII message - look for name = message id
+            for(InboundMessageMapping imm : inboundMessageMappings) {
+                if(imm.getMessageDefinition().getId().equals(rawData.getName())) {
+                    // Found
+                    addAsciiRawFields((AsciiMessageDefinition) imm.getMessageDefinition(), toReturn, rawData);
+                    break;
+                }
+            }
+        } else if(parentConnection.getProtocol() == ProtocolType.BINARY) {
+            // Binary message - look for binding with secondary id = name
+            for(InboundMessageMapping imm : inboundMessageMappings) {
+                if(imm.getSecondaryId().equals(rawData.getName())) {
+                    // Found
+                    addBinaryRawFields((BinaryMessageDefinition) imm.getMessageDefinition(), toReturn, rawData);
+                    break;
+                }
+            }
+        } else {
+            // Not supported
+            if(LOG.isLoggable(Level.WARNING)) {
+                LOG.warning(String.format("Protocol not supported for rendering raw data %s on route %s (handler=%s): %s", rawData.getName(), rawData.getRoute(), rawData.getHandler(), parentConnection.getProtocol().name()));
+            }
+        }
+        return toReturn;
+    }
+
+    private void addBinaryRawFields(BinaryMessageDefinition messageDefinition, LinkedHashMap<String, String> toReturn, RawData rawData) {
+        try {
+            Map<String, Object> fieldValues = messageDefinition.decode(rawData.getName(), rawData.getContents());
+            addValuesToRenderingMap(toReturn, fieldValues);
+        } catch (ReatmetricException e) {
+            LOG.warning("Cannot decode binary message for rendering purposes: id=" + messageDefinition.getId() + ", secondary id=" + rawData.getName() + ", message=" + StringUtil.toHexDump(rawData.getContents()));
+        }
+    }
+
+    private void addAsciiRawFields(AsciiMessageDefinition messageDefinition, LinkedHashMap<String, String> toReturn, RawData rawData) {
+        try {
+            Map<String, Object> fieldValues = messageDefinition.decode(rawData.getName(), new String(rawData.getContents(), parentConnection.getAsciiEncoding().getCharset()));
+            addValuesToRenderingMap(toReturn, fieldValues);
+        } catch (ReatmetricException e) {
+            LOG.warning("Cannot decode ASCII message for rendering purposes: id=" + rawData.getName() + ", message=" + new String(rawData.getContents(), parentConnection.getAsciiEncoding().getCharset()));
+        }
+    }
+
+    private void addValuesToRenderingMap(LinkedHashMap<String, String> toReturn, Map<String, Object> fieldValues) {
+        for(Map.Entry<String, Object> e : fieldValues.entrySet()) {
+            toReturn.put(e.getKey(), ValueUtil.toString(e.getValue()));
         }
     }
 }

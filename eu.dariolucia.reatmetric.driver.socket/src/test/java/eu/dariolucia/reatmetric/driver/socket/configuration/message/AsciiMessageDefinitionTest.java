@@ -33,7 +33,6 @@ class AsciiMessageDefinitionTest {
 
     @Test
     public void testTlmAsciiMessageHandling() throws IOException, ReatmetricException {
-        // TODO: make locale configurable
         Locale.setDefault(Locale.UK);
         SocketConfiguration sc = SocketConfiguration.load(this.getClass().getClassLoader().getResourceAsStream("ascii_single/ascii_single_driver.xml"));
 

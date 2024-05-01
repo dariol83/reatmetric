@@ -32,7 +32,7 @@ public class LengthFieldDecoding implements IDecodingStrategy {
     @XmlAttribute(name="header-nb-bytes-to-skip")
     private int headerNbBytesToSkip = 0; // in bytes
 
-    @XmlAttribute(name="field-length")
+    @XmlAttribute(name="field-length", required = true)
     private int fieldLength = 0; // in bytes, max is 8
 
     // Endianness of the length field
@@ -125,16 +125,21 @@ public class LengthFieldDecoding implements IDecodingStrategy {
     @Override
     public byte[] readMessage(InputStream is, AbstractConnectionConfiguration configuration) throws IOException {
         ByteArrayOutputStream buff = new ByteArrayOutputStream();
-        // Read (and skip) the headerNbBytesToSkip bytes
-        byte[] skipBytes = is.readNBytes(this.headerNbBytesToSkip);
-        if(skipBytes.length == 0) {
-            throw new IOException("End of stream");
+        // Read (and skip) the headerNbBytesToSkip bytes, if > 0
+        if(this.headerNbBytesToSkip > 0) {
+            byte[] skipBytes = is.readNBytes(this.headerNbBytesToSkip);
+            if (skipBytes.length == 0) {
+                throw new IOException("End of stream when reading the header bytes to skip");
+            }
+            buff.write(skipBytes);
         }
-        buff.write(skipBytes);
+        if(this.fieldLength == 0) {
+            throw new IOException("Wrong configuration: field-length set to 0, it must be set");
+        }
         // Read fieldLength bytes
         byte[] lengthField = is.readNBytes(this.fieldLength);
         if(lengthField.length == 0) {
-            throw new IOException("End of stream");
+            throw new IOException("End of stream when reading the length field");
         }
         buff.write(lengthField);
         // Depending on the endianness, compute the number
@@ -172,7 +177,7 @@ public class LengthFieldDecoding implements IDecodingStrategy {
         // Read the message
         byte[] restOfMessage = is.readNBytes((int) lengthValue);
         if(restOfMessage.length == 0) {
-            throw new IOException("End of stream");
+            throw new IOException("End of stream when reading the message (" + lengthValue + " bytes)");
         }
         buff.write(restOfMessage);
         // Return the message
