@@ -246,7 +246,7 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
             tcPacketTracker = (TcPacketTracker) tracker;
             if (tcPacketTracker.getInfo().getPusHeader() == null) {
                 // No PUS packet, no verification using PUS-1, hardcode
-                // TODO: if ReatMetric needs to support this, then we need to promote the ackFields at the level of TcPacketInfo (read from the definitions)
+                // Reminder: if ReatMetric needs to support this, then we need to promote the ackFields at the level of TcPacketInfo (to be read from the definitions)
                 ackFields = new AckField(false, false, false, false);
             } else {
                 ackFields = tcPacketTracker.getInfo().getPusHeader().getAckField();

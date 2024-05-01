@@ -48,7 +48,6 @@ import java.util.logging.Logger;
 
 /**
  * This class implements the ECSS PUS 11 command scheduling service (limited to 11,4 and 11,3 commands).
- *
  */
 public class OnboardOperationsSchedulingService extends AbstractPacketService<OnboardOperationsSchedulingServiceConfiguration> {
 
@@ -62,7 +61,9 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
 
     @Override
     public void postInitialisation() {
-        // subscribeToRawDataBroker(); // TODO: support for 11,1, 11,2 and status report (minimal capability set) to be implemented
+        // Reminder: support for 11,1, 11,2 and status report (minimal capability set) to be implemented,
+        // not available in this version of the spacecraft driver
+        // subscribeToRawDataBroker();
     }
 
     @Override
