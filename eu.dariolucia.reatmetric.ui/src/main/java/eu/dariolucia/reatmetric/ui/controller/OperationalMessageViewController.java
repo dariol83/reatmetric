@@ -34,6 +34,7 @@ import eu.dariolucia.reatmetric.ui.utils.SystemEntityResolver;
 import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
@@ -84,6 +85,17 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
     protected void doInitialize(URL url, ResourceBundle rb) {
         super.doInitialize(url, rb);
 
+        super.dataItemTableView.setRowFactory(tv -> {
+            TableRow<OperationalMessage> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && (! row.isEmpty()) ) {
+                    OperationalMessage rowData = row.getItem();
+                    openDetailsDialog(rowData);
+                }
+            });
+            return row ;
+        });
+
         this.idCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getId()));
         this.severityCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getSeverity()));
         this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getGenerationTime()));
@@ -130,6 +142,32 @@ public class OperationalMessageViewController extends AbstractDataItemLogViewCon
         dataItemTableView.setContextMenu(null);
 
         initialiseToolbarVisibility(displayTitledPane, toolbar, toggleShowToolbarItem);
+    }
+
+    private void openDetailsDialog(OperationalMessage message) {
+        String time = formatTime(message.getGenerationTime());
+        String content = message.getMessage();
+        Alert.AlertType at;
+        switch (message.getSeverity()) {
+            case ALARM:
+            case ERROR:
+                at = Alert.AlertType.ERROR;
+                break;
+            case WARN:
+            case UNKNOWN:
+                at = Alert.AlertType.WARNING;
+                break;
+            case INFO:
+                at = Alert.AlertType.INFORMATION;
+                break;
+            default:
+                at = Alert.AlertType.NONE;
+        }
+        Alert toOpen = new Alert(at, content, ButtonType.OK);
+        toOpen.setTitle(time + " - " + message.getSource());
+        toOpen.setHeaderText(message.getSource());
+        toOpen.initOwner(this.dataItemTableView.getScene().getWindow());
+        toOpen.showAndWait();
     }
 
     @Override

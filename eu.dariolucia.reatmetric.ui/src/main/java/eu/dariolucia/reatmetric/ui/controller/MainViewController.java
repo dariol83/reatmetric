@@ -68,7 +68,6 @@ import java.util.logging.Logger;
 
 /**
  * TODO: implement activity occurrence visualisation details
- * TODO: improve raw data visualisation
  *
  * @author Dario Lucia
  */
