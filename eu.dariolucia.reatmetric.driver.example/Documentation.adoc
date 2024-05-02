@@ -2,13 +2,14 @@ This part of the documentation provides a step-by-step guide on how to create, i
 driver from scratch. This guide will assume adequate knowledge of Java and Maven.
 
 The example driver presented here is very simple:
+
 - it implements a connector, that can be started and stopped.
-- When the connector is started, the driver publishes a single parameter value every second to the ReatMetric processing model,
-increasing its value by one;
+- When the connector is started, the driver publishes a single parameter value every second to the ReatMetric processing model, increasing its value by one;
 - it raises one event when the counter is a multiple of 10;
 - it handles an activity that resets the counter to 0.
 
-==== Step 1: create a new Maven project
+==== Step 1: Create a new Maven project
+
 Create an empty folder and put inside this folder the pom file and the necessary Maven folders. As a minimum, the folder
 src/main/java needs to exist. The pom file must contain as a minimum the dependencies to the API and Core modules.
 
@@ -80,7 +81,7 @@ By running:
 
 the project should build with errors.
 
-==== Step 2: create the driver module file and the class entrypoint
+==== Step 2: Create the driver module file and the class entrypoint
 
 Create the file module-info.java with the information about the module dependencies. As a minimum, the following dependencies
 shall be listed.
@@ -128,7 +129,7 @@ open module eu.dariolucia.reatmetric.driver.example {
 }
 ----
 
-==== Step 3: initialise the driver from the configuration
+==== Step 3: Initialise the driver from the configuration
 
 The driver needs to know which are the IDs of the related parameter and event objects in the processing model, as well
 as to know the ID of the supported activity. The approach used for this example is very simple: the configuration string
@@ -172,7 +173,7 @@ public class ExampleDriver extends AbstractDriver {
 }
 ----
 
-==== Step 4: add a connector, implement data injection in the processing model
+==== Step 4: Add a connector, implement data injection in the processing model
 
 Create a class in the package eu.dariolucia.reatmetric.driver.example, named ExampleConnector and extending from the
 AbstractConnector class, as shown below. This class is used to control the start and stop of the parameter publication.
@@ -252,6 +253,7 @@ public class ExampleConnector extends AbstractTransportConnector {
 ----
 
 The ExampleDriver class must now be extended to:
+
 - Create the connector in the starting phase;
 - Return the connector as supported connector;
 - Implement the newValue(long) method.
@@ -314,7 +316,7 @@ public class ExampleDriver extends AbstractDriver {
 }
 ----
 
-==== Step 5: add an activity handler
+==== Step 5: Add an activity handler
 
 Create a class in the package eu.dariolucia.reatmetric.driver.example, named ExampleHandler and implementing the
 IActivityHandler interface, as shown below. This class is used to manage the requests of activity executions.
@@ -384,6 +386,7 @@ public class ExampleHandler implements IActivityHandler {
 ----
 
 The ExampleDriver class must now be extended to:
+
 - Create the activity handler in the starting phase;
 - Return the activity handler as supported connector;
 - Implement the necessary methods to implement the activity occurrence lifecycle.
@@ -586,7 +589,7 @@ public class ExampleConnector extends AbstractTransportConnector {
 }
 ----
 
-==== Step 6: prepare the processing model definition
+==== Step 6: Prepare the processing model definition
 
 Create an XML file with the following content:
 
