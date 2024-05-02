@@ -320,6 +320,7 @@ include::../eu.dariolucia.reatmetric.ui/Documentation.adoc[]
 include::../eu.dariolucia.reatmetric.driver.example/Documentation.adoc[]
 
 === Generate a new deployment package
+include::../eu.dariolucia.reatmetric.driver.example.test/Documentation.adoc[]
 
 
 

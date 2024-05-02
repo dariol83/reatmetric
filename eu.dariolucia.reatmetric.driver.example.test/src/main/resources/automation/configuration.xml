@@ -1,0 +1,3 @@
+<ns1:automation xmlns:ns1="http://dariolucia.eu/reatmetric/driver/automation">
+	<script-folder>$HOME\reatmetric_example\automation\scripts</script-folder>
+</ns1:automation>

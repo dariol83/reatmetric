@@ -71,6 +71,7 @@ public class ExampleDriver extends AbstractDriver {
         }
         // Create the connector
         this.connector = new ExampleConnector("Example Connector", "Example Connector Description", this);
+        this.connector.prepare();
         // Create the activity handler
         this.handler = new ExampleHandler(this);
         // If we are here, all fine

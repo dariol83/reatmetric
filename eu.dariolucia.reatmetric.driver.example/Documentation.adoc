@@ -79,7 +79,7 @@ By running:
 
     mvn clean install
 
-the project should build with errors.
+the project should build without errors.
 
 ==== Step 2: Create the driver module file and the class entrypoint
 
@@ -289,6 +289,8 @@ public class ExampleDriver extends AbstractDriver {
         }
         // Create the connector
         this.connector = new ExampleConnector("Example Connector", "Example Connector Description", this);
+        // The connector prepare() must be called before being able to use it
+        this.connector.prepare();
         // If we are here, all fine
         return SystemStatus.NOMINAL;
     }
@@ -426,6 +428,8 @@ public class ExampleDriver extends AbstractDriver {
         }
         // Create the connector
         this.connector = new ExampleConnector("Example Connector", "Example Connector Description", this);
+        // The connector prepare() must be called before being able to use it
+        this.connector.prepare();
         // Create the activity handler
         this.handler = new ExampleHandler(this);
         // If we are here, all fine

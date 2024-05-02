@@ -1,0 +1,17 @@
+<ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
+	<name>Example System</name>
+	<log-property-file>$HOME\reatmetric_example\log.properties</log-property-file>
+	<archive-location>$HOME\reatmetric_example\archive</archive-location>
+	<definitions-location>$HOME\reatmetric_example\model</definitions-location>
+	<scheduler-configuration>$HOME\reatmetric_example\scheduler-configuration.xml</scheduler-configuration>
+	<driver name="Example Driver"
+		type="eu.dariolucia.reatmetric.driver.example.ExampleDriver"
+		configuration="EXAMPLE.SYSTEM.DRIVER" />
+	<driver name="Automation Driver"
+		type="eu.dariolucia.reatmetric.driver.automation.groovy.GroovyAutomationDriver"
+		configuration="$HOME\reatmetric_example\automation" />
+	<driver name="HTTP Driver"
+		type="eu.dariolucia.reatmetric.driver.httpserver.HttpServerDriver"
+		configuration="$HOME\reatmetric_example\http" />
+	<autostart-connectors startup="true" reconnect="true" />
+</ns1:core>

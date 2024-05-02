@@ -1,0 +1,218 @@
+This part of the documentation provides a step-by-step guide on how to create a new ReatMetric deployment from scratch.
+This guide will assume adequate knowledge of Java and Maven.
+
+The example deployment presented here is very simple, it generates a ReatMetric software deployment including:
+
+- The example driver implemented in the previous section;
+- The automation, HTTP driver and scheduler;
+- The persist implementation based on Apache Derby;
+- The UI module.
+
+The deployment is assumed to be on Windows systems. In case it is done on Unix systems, obviously the Unix path separator
+should be used, i.e. / instead of \.
+
+==== Step 1: Create a new Maven project
+
+Create an empty folder and put inside this folder the pom file. The pom file must contain the dependencies that are
+required for the deployment.
+
+[source, xml]
+----
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>eu.dariolucia.reatmetric.example</groupId>
+    <artifactId>eu.dariolucia.reatmetric.driver.example.test</artifactId>
+    <name>REATMETRIC - Example Test</name>
+    <version>0.1.0-SNAPSHOT</version>
+    <description>REATMETRIC Example Test for deployment</description>
+
+    <properties>
+        <!-- Encoding -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>target/deps</outputDirectory>
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                            <excludeGroupIds>
+                                org.junit.jupiter,org.apiguardian,org.junit.platform,org.opentest4j
+                            </excludeGroupIds>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <verbose>true</verbose>
+                    <detail>true</detail>
+                    <outputDirectory>${project.build.directory}</outputDirectory>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.api</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+	    <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.core</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.scheduler</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+	    <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.ui</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.automation.groovy</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.persist</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+	    <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.processing</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.httpserver</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+        <!-- The new driver -->
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric.example</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.example</artifactId>
+            <version>0.1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+</project>
+----
+
+==== Step 2: Run Maven
+
+By running:
+
+    mvn clean install
+
+the project should build without errors. Inside the target/deps folder you should find all JAR files that are needed
+to start the system.
+
+==== Step 3: Create the system configuration
+
+Let's assume that you want to install the system, including the configuration, inside the folder $HOME\reatmetric_example.
+So first create folder $HOME\reatmetric_example and copy all the contents of the deps folder into a folder beneath this
+newly create folder, e.g. $HOME\reatmetric_example\bin.
+
+As second step, create the $HOME\reatmetric_example\configuration.xml file, needed to configure the ReatMetric Core module.
+
+[source, xml]
+----
+<ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
+	<name>Example System</name>
+	<log-property-file>$HOME\reatmetric_example\log.properties</log-property-file>
+	<archive-location>$HOME\reatmetric_example\archive</archive-location>
+	<definitions-location>$HOME\reatmetric_example\model</definitions-location>
+	<scheduler-configuration>$HOME\reatmetric_example\scheduler-configuration.xml</scheduler-configuration>
+	<driver name="Example Driver"
+		type="eu.dariolucia.reatmetric.driver.example.ExampleDriver"
+		configuration="EXAMPLE.SYSTEM.DRIVER" />
+	<driver name="Automation Driver"
+		type="eu.dariolucia.reatmetric.driver.automation.groovy.GroovyAutomationDriver"
+		configuration="$HOME\reatmetric_example\automation" />
+	<driver name="HTTP Driver"
+		type="eu.dariolucia.reatmetric.driver.httpserver.HttpServerDriver"
+		configuration="$HOME\reatmetric_example\http" />
+	<autostart-connectors startup="true" reconnect="true" />
+</ns1:core>
+----
+
+Now you have to create the files and folders pointed by this configuration file:
+
+- $HOME\reatmetric_example\model folder
+- $HOME\reatmetric_example\automation folder
+- $HOME\reatmetric_example\http folder
+
+Create the log.properties file in the $HOME\reatmetric_example, example:
+
+[source, properties]
+----
+handlers = java.util.logging.ConsoleHandler, java.util.logging.FileHandler
+
+.level = OFF
+eu.dariolucia.level = INFO
+
+java.util.logging.ConsoleHandler.level = ALL
+
+java.util.logging.FileHandler.level = ALL
+java.util.logging.FileHandler.pattern=C:\\temp\\reatmetric.log
+java.util.logging.FileHandler.limit=5000000
+java.util.logging.FileHandler.count=1
+java.util.logging.FileHandler.formatter=java.util.logging.SimpleFormatter
+----
+
+Create the configuration.xml folder in the $HOME\reatmetric_example\automation, example:
+
+[source, xml]
+----
+<ns1:automation xmlns:ns1="http://dariolucia.eu/reatmetric/driver/automation">
+	<script-folder>$HOME\reatmetric_example\automation\scripts</script-folder>
+</ns1:automation>
+----
+
+Create the folder $HOME\reatmetric_example\automation\scripts.
+
+Create the configuration.xml folder in the $HOME\reatmetric_example\http, example:
+
+[source, xml]
+----
+<ns1:httpserver xmlns:ns1="http://dariolucia.eu/reatmetric/driver/httpserver"
+ host="127.0.0.1"
+ port="8081">
+</ns1:httpserver>
+----
+
+Copy the example_model.xml of the driver into the $HOME\reatmetric_example\model folder.
+
+==== Step 4: Create a launcher script
+
+Create a launcher script inside the $HOME\reatmetric_example folder. The script assumes that the java executable is in
+the path.
+
+----
+    java
+    --module-path="bin"
+    -Dreatmetric.core.config=<path to reatmetric_example folder>\configuration.xml
+    --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls
+    -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+----
+
+==== Step 5: Create a launcher script
+
+Execute the script and enjoy your ReatMetric instance running.
