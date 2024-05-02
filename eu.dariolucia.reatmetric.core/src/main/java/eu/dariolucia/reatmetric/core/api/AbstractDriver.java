@@ -1,11 +1,16 @@
 package eu.dariolucia.reatmetric.core.api;
 
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
+import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
@@ -72,6 +77,20 @@ public abstract class AbstractDriver implements IDriver {
 
     protected final ServiceCoreConfiguration getCoreConfiguration() {
         return coreConfiguration;
+    }
+
+    /**
+     * Report an activity progress.
+     * @param activityId the activity ID
+     * @param activityOccurrenceId the activity occurrence ID
+     * @param time the time of the report
+     * @param state the current state associated to the report
+     * @param reportName the name of the report
+     * @param status the status of the report
+     * @param nextState the next state upon completion status of the report
+     */
+    protected void reportActivityState(int activityId, IUniqueId activityOccurrenceId, Instant time, ActivityOccurrenceState state, String reportName, ActivityReportState status, ActivityOccurrenceState nextState) {
+        getContext().getProcessingModel().reportActivityProgress(ActivityProgress.of(activityId, activityOccurrenceId, reportName, time, state, null, status, nextState, null));
     }
 
     /**

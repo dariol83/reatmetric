@@ -438,10 +438,10 @@ invocation request.
 _transmission_timeout_: optional, default is 0 (disabled). The number of seconds after entering the transmission state,
 before the state of the specific activity occurrence goes in timeout.
 
-_execution_timeout_: optional, default is 0 (disabled). The number of seconds after entering the transmission state,
+_execution_timeout_: optional, default is 0 (disabled). The number of seconds after entering the execution state,
 before the state of the specific activity occurrence goes in timeout.
 
-_verification_timeout_: optional, default is 0 (disabled). The number of seconds after entering the transmission state,
+_verification_timeout_: optional, default is 0 (disabled). The number of seconds after entering the verification state,
 before the state of the specific activity occurrence goes in timeout.
 
 _expected_duration_: optional, default is 1000. The expected duration of an activity occurrence execution, in milliseconds.

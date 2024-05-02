@@ -317,6 +317,7 @@ include::../eu.dariolucia.reatmetric.ui/Documentation.adoc[]
 == Extending ReatMetric
 
 === Implement a new driver
+include::../eu.dariolucia.reatmetric.driver.example/Documentation.adoc[]
 
 === Generate a new deployment package
 
