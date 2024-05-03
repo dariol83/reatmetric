@@ -39,11 +39,11 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.DragEvent;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
@@ -70,7 +70,6 @@ import java.util.logging.Logger;
 public class ActivityDataViewController extends AbstractDisplayController implements IActivityOccurrenceDataSubscriber {
 
     private static final Logger LOG = Logger.getLogger(ActivityDataViewController.class.getName());
-
     protected static final int MAX_ENTRIES = 100;
 
     // Pane control
@@ -237,7 +236,6 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
         this.genTimeCol.setCellFactory(getInstantCellCallback());
         this.execTimeCol.setCellFactory(getInstantCellCallback());
-
         this.nameCol.setCellFactory(getNormalTextCellCallback());
         this.occIdCol.setCellFactory(getNormalTextCellCallback());
         this.sourceCol.setCellFactory(getNormalTextCellCallback());
@@ -245,7 +243,6 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         this.typeCol.setCellFactory(getNormalTextCellCallback());
         this.resultCol.setCellFactory(getNormalTextCellCallback());
         this.parentCol.setCellFactory(getNormalTextCellCallback());
-
         this.stateCol.setCellFactory(zoomEnabledWrapper(column -> new TreeTableCell<>() {
             @Override
             protected void updateItem(ActivityOccurrenceState item, boolean empty) {
@@ -326,11 +323,31 @@ public class ActivityDataViewController extends AbstractDisplayController implem
                 }
             }
         }));
+
         this.delegator = new DataProcessingDelegator<>(doGetComponentId(), buildIncomingDataDelegatorAction());
         this.dataItemTableView.setShowRoot(false);
         this.dataItemTableView.setRoot(new FilterableTreeItem<>(null, false));
 
         Platform.runLater(() -> updateZoomFactor(0));
+    }
+
+    private void openDetailsDialog(ActivityOccurrenceDataWrapper data) {
+        if(!(data.get() instanceof ActivityOccurrenceData)) {
+            return;
+        }
+        ActivityOccurrenceData actOccData = (ActivityOccurrenceData) data.get();
+        try {
+            ActivityRequest derivedRequest = toActivityRequest(actOccData);
+            ActivityDescriptor descriptor = (ActivityDescriptor) MainViewController.instance().getModelController().getDescriptorOf(actOccData.getExternalId());
+            Pair<Node, ActivityInvocationDialogController> activityDialogPair = ActivityInvocationDialogUtil.createActivityInvocationDialog(descriptor, derivedRequest,
+                    () -> Collections.singletonList(new ActivityRouteState(actOccData.getRoute(), ActivityRouteAvailability.UNKNOWN)));
+            activityDialogPair.getSecond().hideRouteControls();
+            activityDialogPair.getSecond().makeReadOnly();
+            // Load the controller hide with select
+            DialogUtils.customInfoDialog(this.dataItemTableView.getScene().getWindow(), activityDialogPair.getFirst(), "Activity Occurrence Details - " + data.nameProperty().get());
+        } catch (IOException | ReatmetricException e) {
+            e.printStackTrace();
+        }
     }
 
 
@@ -388,7 +405,6 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         text.setFont(f);
         new Scene(new Group(text));
         double height = text.getLayoutBounds().getHeight();
-        System.out.println("updateZoomFactor for " + getClass().getSimpleName() + ": height text is " + height + " - Font is " + f);
         dataItemTableView.setFixedCellSize(height + 4);
         dataItemTableView.refresh();
     }
@@ -457,10 +473,6 @@ public class ActivityDataViewController extends AbstractDisplayController implem
     }
 
     protected void addDataItems(List<ActivityOccurrenceData> messages, boolean fromLive) {
-        // if(!fromLive) {
-        //    // Revert the list
-        //    Collections.reverse(messages);
-        // }
         FxUtils.runLater(() -> {
             if (!this.displayTitledPane.isDisabled() && (!fromLive || (this.liveTgl == null || this.liveTgl.isSelected()))) {
                 for (ActivityOccurrenceData aod : messages) {
@@ -922,6 +934,14 @@ public class ActivityDataViewController extends AbstractDisplayController implem
         ActivityOccurrenceDataWrapper ed = this.dataItemTableView.getSelectionModel().getSelectedItem().getValue();
         if(ed != null) {
             MainViewController.instance().getModelController().locate(ed.getPath());
+        }
+    }
+
+    @FXML
+    public void invocationDetailsAction(ActionEvent actionEvent) {
+        ActivityOccurrenceDataWrapper ed = this.dataItemTableView.getSelectionModel().getSelectedItem().getValue();
+        if(ed != null) {
+            openDetailsDialog(ed);
         }
     }
 

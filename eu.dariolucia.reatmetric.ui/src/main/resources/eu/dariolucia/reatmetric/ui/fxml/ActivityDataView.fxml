@@ -184,7 +184,7 @@
           <contextMenu>
               <ContextMenu>
                 <items>
-                    <MenuItem mnemonicParsing="false" onAction="#onPurgeMenuItem" text="Purge selected activity occurrence(s)">
+                    <MenuItem mnemonicParsing="false" onAction="#onPurgeMenuItem" text="Purge selected activity occurrence(s)...">
                         <graphic>
                             <ImageView pickOnBounds="true" preserveRatio="true">
                                 <image>
@@ -203,11 +203,21 @@
                             </ImageView>
                         </graphic>
                     </MenuItem>
-                    <MenuItem mnemonicParsing="false" onAction="#replayItemAction" text="Replay activity">
+                    <MenuItem mnemonicParsing="false" onAction="#replayItemAction" text="Replay activity...">
                         <graphic>
                             <ImageView pickOnBounds="true" preserveRatio="true">
                                 <image>
                                     <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/repeat.svg.png" />
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </MenuItem>
+                    <SeparatorMenuItem mnemonicParsing="false" />
+                    <MenuItem mnemonicParsing="false" onAction="#invocationDetailsAction" text="Display activity invocation details...">
+                        <graphic>
+                            <ImageView pickOnBounds="true" preserveRatio="true">
+                                <image>
+                                    <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/info.svg.png" />
                                 </image>
                             </ImageView>
                         </graphic>

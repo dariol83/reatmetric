@@ -43,6 +43,7 @@ public class ActivityArgumentTableManager {
     private static final String CSS_ACTIVITY_ARGUMENT_FIXED = "x-reatmetric-activity-argument-fixed";
     private static final String CSS_ACTIVITY_ARGUMENT_NOT_READY = "x-reatmetric-activity-argument-not-ready";
 
+    private boolean editable = true;
     private TreeTableView<ArgumentBean> table;
 
     private TreeTableColumn<ArgumentBean, String> nameCol;
@@ -146,7 +147,7 @@ public class ActivityArgumentTableManager {
         table.setRowFactory( tv -> {
             TreeTableRow<ArgumentBean> row = new TreeTableRow<>();
             row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && (!row.isEmpty()) ) {
+                if (editable && event.getClickCount() == 2 && (!row.isEmpty()) ) {
                     editCurrentSelection();
                 }
             });
@@ -320,6 +321,10 @@ public class ActivityArgumentTableManager {
         if(result.isPresent() && result.get().equals(ButtonType.OK)) {
             line.updateArgumentBean();
         }
+    }
+
+    public void setReadOnly() {
+        this.editable = false;
     }
 
     private void recheckArguments() {

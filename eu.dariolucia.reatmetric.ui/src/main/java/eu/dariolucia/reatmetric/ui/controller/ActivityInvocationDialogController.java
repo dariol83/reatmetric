@@ -50,7 +50,6 @@ public class ActivityInvocationDialogController implements Initializable {
 
     private static final String PRESET_NAME = "PropertyKeyList";
     private static final String PRESET_VIEW_ID = "ActivityInvocationDialog";
-
     @FXML
     protected Accordion accordion;
     @FXML
@@ -79,6 +78,11 @@ public class ActivityInvocationDialogController implements Initializable {
     protected TableColumn<PropertyBean, String> keyColumn;
     @FXML
     protected TableColumn<PropertyBean, String> valueColumn;
+
+    @FXML
+    protected Button addPropButton;
+    @FXML
+    protected Button removePropButton;
 
     private ActivityDescriptor descriptor;
     private Supplier<List<ActivityRouteState>> routeSupplier;
@@ -159,11 +163,13 @@ public class ActivityInvocationDialogController implements Initializable {
         valueColumn.setEditable(true);
         keyColumn.setCellValueFactory(o -> o.getValue().keyProperty());
         valueColumn.setCellValueFactory(o -> o.getValue().valueProperty());
-        // keyColumn.setCellFactory(TextFieldTableCell.forTableColumn());
         keyColumn.setCellFactory(createKeyTableCellFactory());
         valueColumn.setCellFactory(TextFieldTableCell.forTableColumn());
 
         keyColumn.setOnEditCommit(event -> {
+            if(!keyColumn.isEditable()) {
+                return;
+            }
             final String value = event.getNewValue() != null ? event.getNewValue()
                     : event.getOldValue();
             event.getTableView().getItems()
@@ -173,6 +179,9 @@ public class ActivityInvocationDialogController implements Initializable {
             updatePropertyKeyList(value);
         });
         valueColumn.setOnEditCommit(event -> {
+            if(!valueColumn.isEditable()) {
+                return;
+            }
             final String value = event.getNewValue() != null ? event.getNewValue()
                     : event.getOldValue();
             event.getTableView().getItems()
@@ -180,6 +189,9 @@ public class ActivityInvocationDialogController implements Initializable {
                     .valueProperty().set(value);
         });
         propertiesTableView.setOnKeyPressed(event -> {
+            if(!propertiesTableView.isEditable()) {
+                return;
+            }
             if (event.getCode().isLetterKey() || event.getCode().isDigitKey()) {
                 propertiesTableView.edit(propertiesTableView.getFocusModel().getFocusedCell().getRow(), (TableColumn<PropertyBean, Object>) propertiesTableView.getFocusModel().getFocusedCell().getTableColumn());
             } else if (event.getCode() == KeyCode.RIGHT
@@ -357,4 +369,14 @@ public class ActivityInvocationDialogController implements Initializable {
         refreshRoutes(null, null);
     }
 
+    public void makeReadOnly() {
+        routeChoiceBox.setEditable(false);
+        propertiesTableView.setEditable(false);
+        keyColumn.setEditable(false);
+        valueColumn.setEditable(false);
+        argumentTableManager.getTable().setEditable(false);
+        argumentTableManager.setReadOnly();
+        addPropButton.setVisible(false);
+        removePropButton.setVisible(false);
+    }
 }

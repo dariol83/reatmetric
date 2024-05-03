@@ -76,7 +76,7 @@
                   </TableView>
                        <VBox spacing="8">
                            <children>
-                               <Button mnemonicParsing="false" prefWidth="18.0" prefHeight="18.0" onAction="#addPropertyClicked">
+                               <Button fx:id="addPropButton" mnemonicParsing="false" prefWidth="18.0" prefHeight="18.0" onAction="#addPropertyClicked">
                                    <graphic>
                                        <ImageView pickOnBounds="true" preserveRatio="true">
                                            <image>
@@ -85,7 +85,7 @@
                                        </ImageView>
                                    </graphic>
                                </Button>
-                               <Button mnemonicParsing="false" prefWidth="18.0" prefHeight="18.0" onAction="#removePropertyClicked">
+                               <Button fx:id="removePropButton" mnemonicParsing="false" prefWidth="18.0" prefHeight="18.0" onAction="#removePropertyClicked">
                                    <graphic>
                                        <ImageView pickOnBounds="true" preserveRatio="true">
                                            <image>
