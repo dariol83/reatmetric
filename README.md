@@ -23,7 +23,7 @@ ReatMetric is based on a very limited set of dependencies:
 - [Groovy](https://groovy-lang.org): for the Groovy language support in the _processing_ and _automation_ modules (best choice);
 - [GraalVM](https://www.graalvm.org): for the Javascript language support in the _automation_ modules;
 - [Jython](https://www.jython.org/): for the Python language support in the _automation_ modules;
-- [JSON Path](https://github.com/json-path/JsonPath): for the parsing of JSON objects and files.
+- [Json Path](https://github.com/json-path/JsonPath): for the parsing of JSON objects and files.
 
 Including also the indirect dependencies, a typical ReatMetric backend deployment (i.e. without UI) is composed by 33 Jars,
 10 from ReatMetric and 23 from external dependencies, for a total of 19.4 MB.

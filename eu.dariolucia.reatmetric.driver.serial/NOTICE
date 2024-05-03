@@ -1,5 +1,10 @@
 CREDITS
 ------------------------------------------------------------------------------
+eu.dariolucia.reatmetric.driver.serial uses jSerialComm.
+(https://github.com/Fazecast/jSerialComm)
+
+jSerialComm is licensed under the Apache License 2.0
+(https://www.apache.org/licenses/LICENSE-2.0.html)
 ------------------------------------------------------------------------------
 eu.dariolucia.reatmetric.driver.serial
 

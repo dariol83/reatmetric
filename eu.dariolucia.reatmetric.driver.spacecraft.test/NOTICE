@@ -5,7 +5,7 @@ modules.
 (https://github.com/dariol83/ccsds)
 
 eu.dariolucia.ccsds modules are licensed under the Apache License 2.0
-(https://db.apache.org/derby/license.html)
+(https://www.apache.org/licenses/LICENSE-2.0.html)
 ------------------------------------------------------------------------------
 eu.dariolucia.reatmetric.driver.spacecraft.test
 

@@ -1,11 +1,10 @@
 CREDITS
 ------------------------------------------------------------------------------
-eu.dariolucia.reatmetric.processing uses GraalVM
-(https://www.graalvm.org/)
+eu.dariolucia.reatmetric.processing uses Groovy
+(https://groovy-lang.org/)
 
-GraalVM is free software, licensed under the GNU General Public License with
-Classpath Exception
-(https://github.com/oracle/graal/blob/master/LICENSE)
+Groovy is licensed under the Apache License 2.0
+(https://www.apache.org/licenses/LICENSE-2.0.html)
 ------------------------------------------------------------------------------
 eu.dariolucia.reatmetric.processing
 

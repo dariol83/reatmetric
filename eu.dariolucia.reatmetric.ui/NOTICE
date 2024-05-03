@@ -43,6 +43,18 @@ OpenJFX is free software, licensed under the GNU General Public License with
 Classpath Exception
 (http://openjdk.java.net/legal/gplv2+ce.html)
 ------------------------------------------------------------------------------
+eu.dariolucia.reatmetric.ui uses JsonPath
+(https://github.com/json-path/JsonPath)
+
+JsonPath is licensed under the Apache License 2.0
+(https://www.apache.org/licenses/LICENSE-2.0.html)
+------------------------------------------------------------------------------
+eu.dariolucia.reatmetric.ui uses eu.dariolucia.jfx.timeline
+(https://github.com/dariol83/timeline)
+
+eu.dariolucia.jfx.timeline is licensed under the Apache License 2.0
+(https://www.apache.org/licenses/LICENSE-2.0.html)
+------------------------------------------------------------------------------
 eu.dariolucia.reatmetric.ui
 
 Copyright (c) 2020 Dario Lucia (https://www.dariolucia.eu)
