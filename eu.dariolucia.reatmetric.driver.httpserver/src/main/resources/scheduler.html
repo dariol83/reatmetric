@@ -1,0 +1,148 @@
+<html>
+    <head>
+        <script type="text/javascript" src="reatmetric.js">
+        </script>
+        <script type="text/javascript">
+    var reatmetric = new ReatMetric('http://127.0.0.1:8081','Test System');
+    var subscriptionKey = null;
+    var subIntervalId = null;
+    var parameterMap = null;
+
+    function createTable(divToAttach, thTextArray, thWidthArray) {
+        // Table and header
+        var tableNode = document.createElement('table');
+        divToAttach.appendChild(tableNode);
+        var theadNode = document.createElement('thead');
+        tableNode.appendChild(theadNode);
+        var trNode = document.createElement('tr');
+        theadNode.appendChild(trNode);
+
+        var wi = 0;
+        for(var colname of thTextArray) {
+            var thNode = document.createElement('th');
+            thNode.textContent = colname;
+            thNode.setAttribute("width", thWidthArray[wi++] + "%");
+            trNode.appendChild(thNode);
+        }
+
+        // Create tbody
+        var tbodyNode = document.createElement('tbody');
+        tableNode.appendChild(tbodyNode);
+        return tbodyNode;
+    }
+
+    function addRow(tbodyNode, obj, tdTextArrayKeys) {
+        var addedTds = new Object();
+        var pTrNode = document.createElement('tr');
+        for(var tdkey of tdTextArrayKeys) {
+            var tdNode = document.createElement('td');
+            tdNode.textContent = obj[tdkey];
+            pTrNode.appendChild(tdNode);
+            addedTds[tdkey] = tdNode;
+        }
+        tbodyNode.appendChild(pTrNode);
+        return addedTds;
+    }
+
+    async function enableScheduler() {
+        await reatmetric.enableScheduler()
+    }
+
+    async function disableScheduler() {
+        await reatmetric.disableScheduler()
+    }
+
+    async function activateSchedulerRefresh() {
+        if(subscriptionKey != null) {
+            return;
+        }
+        var divToAttach = document.getElementById('div1');
+        divToAttach.textContent = '';
+
+        subscriptionKey = "scheduler";
+        // Create table node
+        var thTextArray = ['Path', 'Release Time', 'State'];
+        var thWidthArray = [30, 40, 30];
+        tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
+        parameterMap = [];
+
+        subIntervalId = setInterval(scheduleRetrieve, 1000);
+        console.log("Schedule state interval: " + subIntervalId);
+    }
+
+    async function scheduleRetrieve() {
+        var currentMessages = null;
+        if(subscriptionKey != null) {
+            currentMessages = await reatmetric.getSchedulerState()
+        }
+        if(currentMessages != null) {
+            var paramKeys = ['internalId', 'startTime', 'state'];
+            console.log("Schedule data retrieved: items " + currentMessages.items.length);
+            for(var i = 0; i < currentMessages.items.length; ++i) {
+                var item = currentMessages.items[i];
+                if(parameterMap[item['internalId']] != null) {
+                    for(var tdkey of paramKeys) {
+                        var theTdArray = parameterMap[item['internalId']];
+                        theTdArray[tdkey].textContent = item[tdkey];
+                    }
+                } else {
+                    parameterMap[item['internalId']] = addRow(tableBodyVar, item, paramKeys);
+                }
+            }
+        }
+    }
+
+    async function scheduleActivity() {
+        var divToAttach = document.getElementById('div1');
+        divToAttach.textContent = '';
+
+        args = [];
+        args.push(reatmetric.plainArgument('arg1','PARAM1',true));
+        args.push(reatmetric.plainArgument('arg2',0.0092,true));
+        args.push(reatmetric.plainArgument('arg3',123434321,true));
+        args.push(reatmetric.plainArgument('arg4',-47,true));
+        var actRequest = reatmetric.activityRequest(1111001, 'STATION.AUTOMATION.SCRIPT2', args, 'Groovy Automation Engine', 'Web Page', { "aaa" : "bbb", "CCC" : "test" });
+
+        activityIdentifier = await reatmetric.invoke(actRequest);
+        console.log("Activity id: " + activityIdentifier);
+    }
+
+        </script>
+        <style>
+          .tableFixHead {
+            overflow-y: auto;
+            height: 85%;
+            font-size: 9px;
+          }
+          .tableFixHead thead th {
+            position: sticky;
+            top: 0;
+            font-size: 9px;
+          }
+          table {
+            border-collapse: collapse;
+            width: 100%;
+          }
+          th,
+          td {
+            padding: 8px 16px;
+            border: 1px solid #ccc;
+            font-size: 9px;
+          }
+          th {
+            background: #eee;
+          }
+        </style>
+    </head>
+    <body>
+        <button type="button" onclick="activateSchedulerRefresh()">Activate Schedule Refresh</button>
+        <button type="button" onclick="enableScheduler()">Enable Scheduler</button>
+        <button type="button" onclick="disableScheduler()">Disable Scheduler</button>
+        <button type="button" onclick="scheduleActivity()">Schedule Activity</button>
+        <hr/>
+        <br/>
+        <div id="div1" class="tableFixHead">
+        </div>
+        <br/>
+    </body>
+</html>

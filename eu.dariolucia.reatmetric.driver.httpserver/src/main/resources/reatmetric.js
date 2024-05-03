@@ -454,30 +454,22 @@ class ReatMetric {
      async enableScheduler() {
           var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH + "/" + RTMT_ENABLE_URL;
           const response = await fetch(toFetch, this.fetchInit('POST', null));
-          const data = await response.json();
-          return;
      }
 
      async disableScheduler() {
           var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH + "/" + RTMT_DISABLE_URL;
           const response = await fetch(toFetch, this.fetchInit('POST', null));
-          const data = await response.json();
-          return;
      }
 
      async removeScheduledItem(id) {
          var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH + "/" + id;
          const response = await fetch(toFetch, this.fetchInit('DELETE', null));
-         const data = await response.json();
-         return;
      }
 
      async updateScheduledItem(id, updatedRequest, creationConflictStrategy) {
          var toFetch = this.baseUrl + "/" + this.name + "/" + RTMT_SCHEDULER_PATH + "/" + id +
             "?" + RTMT_CONFLICT_ARG + "=" + creationConflictStrategy;
          const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(updatedRequest)));
-         const data = await response.json();
-         return;
      }
 
      async schedule(newRequest, creationConflictStrategy) {
@@ -499,8 +491,6 @@ class ReatMetric {
             "&" + RTMT_ENDTIME_ARG + "=" + endTime +
             "&" + RTMT_SOURCE_ARG + "=" + source;
          const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(schedulingRequests)));
-         const data = await response.json();
-         return;
      }
 }
 

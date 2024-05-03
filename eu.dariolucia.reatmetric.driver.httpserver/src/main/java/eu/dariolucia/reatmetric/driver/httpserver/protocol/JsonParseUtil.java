@@ -1002,7 +1002,7 @@ public class JsonParseUtil {
         StringBuilder sb = new StringBuilder();
         sb.append("[ ");
         for(String s : resources) {
-            sb.append(s + ", ");
+            sb.append("\"" + s + "\", ");
         }
         if(resources.size() > 0) {
             sb.delete(sb.length() - 2, sb.length()).append(" ");
