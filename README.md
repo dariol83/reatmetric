@@ -4,6 +4,8 @@ ReatMetric is a well-documented Java-based software infrastructure for the imple
 with a strong focus on the space domain. ReatMetric components provide a simple but efficient implementation of the typical 
 functions used in an M&C system.
 
+![GitHub Release](https://img.shields.io/github/v/release/dariol83/reatmetric)
+
 ![Displays](docs/images/reatmetric-windows-01.PNG "ReatMetric")
 
 ## Documentation
@@ -135,9 +137,6 @@ Example of remoting configuration:
     </ns1:connectors>
 
 ## Roadmap
-
-### To version 1.0.0
-- UI: introduce dialog to show the details of an activity invocation 
 
 ### To version 1.1.0
 - SNMP driver
