@@ -1,6 +1,6 @@
-= ReatMetric System Manual
+= System Manual
 Dario Lucia <dario.lucia@gmail.com>
-v1.0, 2024-05-04
+v1.0.0, 2024-05-04
 :title-logo-image: image:docimg/ReatMetric-Logo.png[top=42%,align=left,pdfwidth=6in]
 :doctype: book
 :toc:
@@ -22,12 +22,12 @@ A Monitoring and Control (abbreviated as M&C) system is an application used to:
 * present such information to human users, operators and other software systems,
 * detect non-nominal situation and raise alarms accordingly,
 * schedule operations and activities to be executed on the devices,
-* record the most important data for later analysis.
+* record the most important data for subsequent analysis.
 
 ReatMetric is designed as a modular M&C framework, whereas each module follows the Java Platform Module System
-(https://en.wikipedia.org/wiki/Java_Platform_Module_System). Each module provide a specific set of functionalities,
-data structures and interfaces that can be used by other modules. While some modules provide data structures and
-interfaces that are at the foundation of the framework, other modules can be replaced in isolation.
+specification (https://en.wikipedia.org/wiki/Java_Platform_Module_System). Each module provide a specific set of
+functionalities, data structures and interfaces that can be used by other modules. While some modules provide data
+structures and interfaces that are at the foundation of the framework, other modules can be replaced in isolation.
 
 The modules that form the foundation of the ReatMetric system are shown in the following figure.
 
@@ -76,7 +76,7 @@ The arrangement of the hierarchy is sometimes obvious to design, while in other 
 the example above, for instance, the hierarchy is a functional hierarchy, based on the functional elements present in
 the domotic system. However, a hierarchical breakdown based on the rooms of the house could have been an alternative.
 What it is not a matter of taste are the physical objects (labelled as 'device'), which are ultimately monitored and
-controlled. Such objects are characterised by having:
+controlled. Such objects are characterised by:
 
 * A readable state - i.e. a set of _parameters_ - with related values, which you can actively monitor and, in some cases,
 also change. For instance, a television has the following state parameters: if it is on or off, selected input source,
@@ -90,8 +90,9 @@ accepted and, after a while, that the operation has been completed - with succes
 * A way to signal when something happened - i.e. an _event_ - which is relevant for the functioning purpose of the device.
 For instance, a television might signal when a new version of the firmware is detected.
 
-ReatMetric concepts are derived as described above. As it is a M&C framework oriented to the space domain, such concepts
-are a re-elaboration of the M&C concepts reported in the ECSS standard ECSS-E-ST-70C
+ReatMetric concepts are derived from this general device characterisation, as described above. As it is a M&C framework
+oriented to the space domain, such concepts are actually a re-elaboration of the M&C concepts reported in the ECSS
+standard ECSS-E-ST-70C
 (https://esastar-publication.sso.esa.int/api/filemanagement/download?url=emits.sso.esa.int/emits-doc/ESOC/1-6223/ECSS-E-ST-70-31C(31July2008).pdf).
 ReatMetric manages a hierarchical tree composed of so-called _System Entities_. A _System Entity_ (at any level of the
 hierarchy) is characterised by _parameters_, _activities_ and _events_. Some system entities are mapped to actual devices,

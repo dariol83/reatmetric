@@ -228,7 +228,7 @@ This attribute can be present several times attached to a single SVG element. If
 is evaluated in lexicographical order. As soon as one item's evaluation is successful, the list evaluation
 stops.
 
-Allowed expression values: a real number. Null value _##NULL##_ removes the attribute.
+Allowed expression values: a real number. Null value _\\##NULL##_ removes the attribute.
 
 *data-rtmt-width-[nn]*
 
