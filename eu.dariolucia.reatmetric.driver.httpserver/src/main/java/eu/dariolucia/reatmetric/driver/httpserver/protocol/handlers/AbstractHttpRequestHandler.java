@@ -59,15 +59,23 @@ public abstract class AbstractHttpRequestHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        // First of all, check if it is an OPTIONS. If so, return the CORS headers
-        if(exchange.getRequestMethod().equals(HTTP_METHOD_OPTIONS)) {
-            sendPositiveResponse(exchange, new byte[0], true);
-            return;
-        }
-        int handled = doHandle(exchange);
+        try {
+            // First of all, check if it is an OPTIONS. If so, return the CORS headers
+            if (exchange.getRequestMethod().equals(HTTP_METHOD_OPTIONS)) {
+                sendPositiveResponse(exchange, new byte[0], true);
+                return;
+            }
+            int handled = doHandle(exchange);
 
-        if(handled != HTTP_CODE_OK) {
-            sendNegativeResponse(exchange, handled);
+            if (handled != HTTP_CODE_OK) {
+                sendNegativeResponse(exchange, handled);
+            }
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "IO exception in HTTP handler " + getClass().getName() + ": " + e.getMessage(), e);
+            throw e;
+        } catch (Exception e) {
+            // Let's dump this for debugging reasons
+            LOG.log(Level.SEVERE, "Unhandled exception in HTTP handler " + getClass().getName() + ": " + e.getMessage(), e);
         }
     }
 

@@ -234,17 +234,17 @@ public class JsonParseUtil {
         String sourceAccessor = "$['source']";
         String externalIdAccessor = "$['externalId']";
         String triggerAccessor = "$['trigger']";
-        String latestInvocationTimeAccessor = "$['latest']"; // number of ms since 1st Jan 1970, 00:00:00
+        String latestInvocationTimeAccessor = "$['latest']"; // Time string
         String conflictAccessor = "$['conflict']";
         String durationAccessor = "$['duration']"; // in milliseconds
 
         List<String> resources = parsed.read(resourcesListAccessor);
         String source = parsed.read(sourceAccessor);
         String externalId = parsed.read(externalIdAccessor);
-        long latestInvocationTimeNb = parsed.read(latestInvocationTimeAccessor);
-        Instant latestInvocationTime = Instant.ofEpochMilli(latestInvocationTimeNb);
+        String latestInvocationTimeNb = parsed.read(latestInvocationTimeAccessor);
+        Instant latestInvocationTime = latestInvocationTimeNb != null ? Instant.parse(latestInvocationTimeNb) : null;
         ConflictStrategy conflictStrategy = ConflictStrategy.valueOf(parsed.read(conflictAccessor));
-        long duration = parsed.read(durationAccessor);
+        long duration = ((Number) parsed.read(durationAccessor)).longValue();
         AbstractSchedulingTrigger trigger = parseTrigger(parsed.read(triggerAccessor));
         // Parse the request
         Map<String, Object> requestMap = parsed.read(requestAccessor);
@@ -283,8 +283,8 @@ public class JsonParseUtil {
             List<String> resources = (List<String>) item.get("resources");
             String source = (String) item.get("source");
             String externalId = (String) item.get("externalId");
-            long latestInvocationTimeNb = ((Number) item.get("latest")).longValue();
-            Instant latestInvocationTime = Instant.ofEpochMilli(latestInvocationTimeNb);
+            String latestInvocationTimeNb = ((String) item.get("latest"));
+            Instant latestInvocationTime = latestInvocationTimeNb != null ? Instant.parse(latestInvocationTimeNb) : null;
             ConflictStrategy conflictStrategy = ConflictStrategy.valueOf((String) item.get("conflict"));
             long duration = ((Number) item.get("duration")).longValue();
             AbstractSchedulingTrigger trigger = parseTrigger((Map<String, Object>) item.get("trigger"));
@@ -303,8 +303,8 @@ public class JsonParseUtil {
             case "now":
                 return new NowSchedulingTrigger();
             case "absolute":
-                long timeNb = ((Number) read.get("time")).longValue();
-                Instant releaseTime = Instant.ofEpochMilli(timeNb);
+                String timeNb = ((String) read.get("startTime")); // Time string
+                Instant releaseTime = Instant.parse(timeNb);
                 return new AbsoluteTimeSchedulingTrigger(releaseTime);
             case "relative":
                 List<String> predecessors = (List<String>) read.get("predecessors");

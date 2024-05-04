@@ -539,6 +539,17 @@ public class Scheduler implements IScheduler, IInternalResolver {
                 throw new SchedulingException("Supplied external ID is already assigned to one scheduled activity: " + request.getExternalId());
             }
         }
+        // Check if the resources are specified correctly (no whitespaces)
+        if(request.getResources() == null) {
+            throw new SchedulingException("Resources cannot be null");
+        }
+        for(String res : request.getResources()) {
+            if(res.isBlank()) {
+                throw new SchedulingException("Resource '" + res + "' is blank");
+            } else if(res.indexOf(' ') != -1) {
+                throw new SchedulingException("Resource '" + res + "' contains whitespaces (forbidden)");
+            }
+        }
         // Check if the creation conflict strategy allows for the scheduling
         List<ScheduledTask> conflictingTasks = computeConflicts(Collections.singletonList(request));
         if (conflictingTasks.isEmpty() || conflictStrategy == CreationConflictStrategy.ADD_ANYWAY) {

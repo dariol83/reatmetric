@@ -492,6 +492,10 @@ class ReatMetric {
             "&" + RTMT_SOURCE_ARG + "=" + source;
          const response = await fetch(toFetch, this.fetchInit('POST', JSON.stringify(schedulingRequests)));
      }
+
+     schedulingRequest(request, resources, source, externalId, trigger, latest, conflict, duration) {
+         return new SchedulingRequest(request, resources, source, externalId, trigger, latest, conflict, duration);
+     }
 }
 
 class ActivityFilter {

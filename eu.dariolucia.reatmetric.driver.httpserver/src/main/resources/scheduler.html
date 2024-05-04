@@ -61,7 +61,7 @@
 
         subscriptionKey = "scheduler";
         // Create table node
-        var thTextArray = ['Path', 'Release Time', 'State'];
+        var thTextArray = ['ID', 'Release Time', 'State'];
         var thWidthArray = [30, 40, 30];
         tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
         parameterMap = [];
@@ -93,18 +93,19 @@
     }
 
     async function scheduleActivity() {
-        var divToAttach = document.getElementById('div1');
-        divToAttach.textContent = '';
-
         args = [];
-        args.push(reatmetric.plainArgument('arg1','PARAM1',true));
-        args.push(reatmetric.plainArgument('arg2',0.0092,true));
-        args.push(reatmetric.plainArgument('arg3',123434321,true));
-        args.push(reatmetric.plainArgument('arg4',-47,true));
-        var actRequest = reatmetric.activityRequest(1111001, 'STATION.AUTOMATION.SCRIPT2', args, 'Groovy Automation Engine', 'Web Page', { "aaa" : "bbb", "CCC" : "test" });
-
-        activityIdentifier = await reatmetric.invoke(actRequest);
-        console.log("Activity id: " + activityIdentifier);
+        args.push(reatmetric.plainArgument('ARG1', 60, false));
+        var actRequest = reatmetric.activityRequest(753, 'STATION.VENTILATION.SELF_TEST', args, 'STATION ROUTE', 'Web Page', { "aaa" : "bbb", "CCC" : "test" });
+        var schedRequest = reatmetric.schedulingRequest(actRequest,
+                    [ "resource_test" ],
+                    actRequest.source,
+                    "ID" + Math.floor(Math.random() * 10000),
+                    new AbsoluteTrigger(new Date(new Date().getTime() + 120000).toJSON()),
+                    null,
+                    "WAIT",
+                    60000);
+        scheduledItemIdentifier = await reatmetric.schedule(schedRequest,"ADD_ANYWAY");
+        console.log("Schedule id: " + scheduledItemIdentifier);
     }
 
         </script>

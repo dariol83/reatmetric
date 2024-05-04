@@ -47,22 +47,22 @@ public class SchedulerRequestHandler extends AbstractHttpRequestHandler {
 
         // Get the requested URI and, on the basis of the URI, understand what has to be done
         String path = exchange.getRequestURI().getPath();
-        if(path.startsWith(HTTP_PATH_SEPARATOR + getDriver().getSystemName() + HTTP_PATH_SEPARATOR + SCHEDULER_PATH)) {
+        if (path.startsWith(HTTP_PATH_SEPARATOR + getDriver().getSystemName() + HTTP_PATH_SEPARATOR + SCHEDULER_PATH)) {
             // Shorten the path
             path = path.substring((HTTP_PATH_SEPARATOR + getDriver().getSystemName() + HTTP_PATH_SEPARATOR + SCHEDULER_PATH).length());
-            if(path.startsWith(HTTP_PATH_SEPARATOR)) {
+            if (path.startsWith(HTTP_PATH_SEPARATOR)) {
                 path = path.substring(HTTP_PATH_SEPARATOR.length());
             }
-            if(path.isBlank() && exchange.getRequestMethod().equals(HTTP_METHOD_GET)) {
+            if (path.isBlank() && exchange.getRequestMethod().equals(HTTP_METHOD_GET)) {
                 // Fetch full scheduler status
                 handled = handleSchedulerStateGetRequest(exchange);
-            } else if(!path.isBlank() && exchange.getRequestMethod().equals(HTTP_METHOD_GET)) {
+            } else if (!path.isBlank() && exchange.getRequestMethod().equals(HTTP_METHOD_GET)) {
                 // Fetch single scheduled item status
                 handled = handleScheduledItemStateGetRequest(path, exchange);
-            } else if(!path.isBlank() && exchange.getRequestMethod().equals(HTTP_METHOD_DELETE)) {
+            } else if (!path.isBlank() && exchange.getRequestMethod().equals(HTTP_METHOD_DELETE)) {
                 // Delete scheduled item
                 handled = handleDeleteScheduledItemRequest(path, exchange);
-            } else if(!path.isBlank() && exchange.getRequestMethod().equals(HTTP_METHOD_POST)) {
+            } else if (!path.isBlank() && exchange.getRequestMethod().equals(HTTP_METHOD_POST)) {
                 // Check the path value:
                 switch (path) {
                     case ENABLE_PATH:

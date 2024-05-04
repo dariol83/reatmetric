@@ -810,7 +810,7 @@ GET     http://<host>:<port>/<system name>/scheduler
 ----
 
 The request returns a JSON structure containing the status of the scheduler (enabled, disabled) and
-the list of the scheduled items, so defined:
+the list of the scheduled items (only in state SCHEDULED, WAITING and RUNNING), so defined:
 
 ----
 {
@@ -842,10 +842,10 @@ The structure of a ScheduledActivityData is defined as follows:
 The structure of a scheduling trigger is defined as follows:
 
 ----
-// Trigger execution as soon as the request is submitted
-{
-"type" : "now"
-}
+    // Trigger execution as soon as the request is submitted
+    {
+    "type" : "now"
+    }
 
     // Trigger execution at the specified time
     {
@@ -876,8 +876,8 @@ The structure of a scheduling trigger is defined as follows:
 ----
 GET     http://<host>:<port>/<system name>/scheduler/<scheduled item internal ID>
 ----
-
-The request returns the scheduler item status, using the same format defined for the scheduler state as ScheduledActivityData.
+The request returns the scheduled item status, using the same format defined for the scheduler state as ScheduledActivityData.
+Only scheduled items in state SCHEDULED, WAITING and RUNNING can be retrieved.
 
 *Javascript library function*: async getScheduledItem(ID) : return the scheduler item object
 
@@ -909,7 +909,7 @@ POST     http://<host>:<port>/<system name>/scheduler/<scheduled item internal I
 ----
 The request updates the indicated scheduled item with the SchedulingRequest information provided in the body. The
 creation conflict strategy is one of the values defined by the CreationConflictStrategy enumeration in the eu.dariolucia.reatmetric.api.scheduler
-package.
+package. This method can be invoked as long as the request is in SCHEDULED state.
 
 The body is:
 
@@ -942,6 +942,8 @@ The response returns in its body an id value according to the structure defined 
 ----
 
 *Javascript library function*: async schedule(newRequest, creationConflictStrategy) : the ID of the newly created scheduled item
+
+*Javascript library function*: schedulingRequest(request, resources, source, externalId, trigger, latest, conflict, duration) : return a SchedulingRequest object.
 
 ----
 POST     http://<host>:<port>/<system name>/scheduler/load?conflict=<creation conflict strategy>&startTime=<time in ms from UNIX epoch>&endTime=<time in ms from UNIX epoch>&source=<source>
