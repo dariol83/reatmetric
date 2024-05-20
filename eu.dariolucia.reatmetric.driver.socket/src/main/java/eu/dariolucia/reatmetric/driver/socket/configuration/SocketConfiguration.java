@@ -40,6 +40,9 @@ public class SocketConfiguration {
     private static final String HOME_VAR = "$HOME";
     private static final String HOME_DIR = System.getProperty("user.home");
 
+    private static final String PREFIX_VAR = "$PREFIX";
+    private static final String PREFIX_DIR = System.getProperty("reatmetric.prefix.dir", "");
+
     public static SocketConfiguration load(InputStream is) throws IOException {
         try {
             JAXBContext jc = JAXBContext.newInstance(SocketConfiguration.class);
@@ -49,6 +52,7 @@ public class SocketConfiguration {
                 for (MessageDefinition<?> md : sc.getMessageDefinitions()) {
                     if(md instanceof BinaryMessageDefinition) {
                         ((BinaryMessageDefinition) md).setLocation(((BinaryMessageDefinition) md).getLocation().replace(HOME_VAR, HOME_DIR));
+                        ((BinaryMessageDefinition) md).setLocation(((BinaryMessageDefinition) md).getLocation().replace(PREFIX_VAR, PREFIX_DIR));
                     }
                 }
             }

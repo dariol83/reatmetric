@@ -140,7 +140,6 @@ Example of remoting configuration:
 ## Roadmap
 
 ### To version 1.1.0
-- Add support for a prefix tag (.e.g. $REATMETRIC) in ReatMetric configuration modules, in addition to $HOME, to allow the specification of a root path for the configuration via Java system property
 - persist implementation based on PostgreSQL and Timeseries
 - SNMP driver
 - SNMP generator for SNMP driver

@@ -31,23 +31,30 @@ public class ServiceCoreConfiguration {
     private static final String HOME_VAR = "$HOME";
     private static final String HOME_DIR = System.getProperty("user.home");
 
+    private static final String PREFIX_VAR = "$PREFIX";
+    private static final String PREFIX_DIR = System.getProperty("reatmetric.prefix.dir", "");
+
     public static ServiceCoreConfiguration load(InputStream is) throws JAXBException {
         JAXBContext jc = JAXBContext.newInstance(ServiceCoreConfiguration.class);
         Unmarshaller u = jc.createUnmarshaller();
         ServiceCoreConfiguration configuration = (ServiceCoreConfiguration) u.unmarshal(is);
-        // Update $HOME
+        // Update $HOME and $PREFIX
         if(configuration.getArchiveLocation() != null) {
             configuration.setArchiveLocation(configuration.getArchiveLocation().replace(HOME_VAR, HOME_DIR));
+            configuration.setArchiveLocation(configuration.getArchiveLocation().replace(PREFIX_VAR, PREFIX_DIR));
         }
         configuration.setDefinitionsLocation(configuration.getDefinitionsLocation().replace(HOME_VAR, HOME_DIR));
         if(configuration.getLogPropertyFile() != null) {
             configuration.setLogPropertyFile(configuration.getLogPropertyFile().replace(HOME_VAR, HOME_DIR));
+            configuration.setLogPropertyFile(configuration.getLogPropertyFile().replace(PREFIX_VAR, PREFIX_DIR));
         }
         if(configuration.getSchedulerConfiguration() != null) {
             configuration.setSchedulerConfiguration(configuration.getSchedulerConfiguration().replace(HOME_VAR, HOME_DIR));
+            configuration.setSchedulerConfiguration(configuration.getSchedulerConfiguration().replace(PREFIX_VAR, PREFIX_DIR));
         }
         for(DriverConfiguration dc : configuration.getDrivers()) {
             dc.setConfiguration(dc.getConfiguration().replace(HOME_VAR, HOME_DIR));
+            dc.setConfiguration(dc.getConfiguration().replace(PREFIX_VAR, PREFIX_DIR));
         }
         //
         return configuration;
