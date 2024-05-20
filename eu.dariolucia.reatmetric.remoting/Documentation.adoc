@@ -22,4 +22,23 @@ This module has one internal dependency:
 This module has no external dependencies.
 
 ==== Configuration
-None.
+It is possible to configure the TCP port to be used by RMI-exported objects by setting the system property:
+
+----
+-Dreatmetric.remoting.rmi.export.port=<port number>
+----
+
+If the system property is not specified, this value is set to 0 by default, implying that a random port will be selected
+and announced to the remote RMI clients. If the remoting system is running behing a firewall, this behaviour would prevent
+remote clients to connect to the exported objects.
+
+RMI-exported objects will announce their reachability for responses and in case of callbacks, using an IP address that it
+is taken by the Java RMI implementation using one of those available on the machine besides localhost. If it is needed
+to force the selection of the IP address that is communicated to the remote objects, the following system property
+shall be used. On the server side (i.e. ReatMetric system backend) this is rarely needed. One situation that requires this
+configuration is when the ReatMetric instance runs inside a Docker container and the IP to be announced is the one of
+the host machine and not the one of the container.
+
+----
+java -Djava.rmi.server.hostname=<server IP to use for local connections>
+----
