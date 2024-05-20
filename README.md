@@ -1,4 +1,4 @@
-![ReatMetric](eu.dariolucia.reatmetric.ui/src/main/resources/eu/dariolucia/reatmetric/ui/fxml/images/logos/logo-full-color-640px.png)
+![ReatMetric](docs/docimg/ReatMetric-Logo.png)
 
 ReatMetric is a well-documented Java-based software infrastructure for the implementation of Monitoring & Control (M&C) systems, 
 with a strong focus on the space domain. ReatMetric components provide a simple but efficient implementation of the typical 
