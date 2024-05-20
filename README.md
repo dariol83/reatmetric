@@ -27,8 +27,9 @@ ReatMetric is based on a very limited set of dependencies:
 - [Jython](https://www.jython.org/): for the Python language support in the _automation_ modules;
 - [Json Path](https://github.com/json-path/JsonPath): for the parsing of JSON objects and files.
 
-Including also the indirect dependencies, a typical ReatMetric backend deployment (i.e. without UI) is composed by 33 Jars,
-10 from ReatMetric and 23 from external dependencies, for a total of 19.4 MB.
+Including also the indirect dependencies, a typical ReatMetric backend deployment (i.e. without UI) is composed by 38 Jars,
+15 from ReatMetric and 23 from external dependencies, for a total of **15.9 MB**. This size can be further reduced depending 
+on the needs, since some drivers and related dependencies might not be needed. 
 
 ## Performance
 The performance of the processing model and of the spacecraft driver have been measured on the following 2 platforms:
@@ -139,7 +140,7 @@ Example of remoting configuration:
 ## Roadmap
 
 ### To version 1.1.0
-- Add support for a prefix tag (.e.g. $REAMETRIC) in ReatMetric configuration modules, in addition to $HOME, to allow the specification of a root path for the configuration via Java system property
+- Add support for a prefix tag (.e.g. $REATMETRIC) in ReatMetric configuration modules, in addition to $HOME, to allow the specification of a root path for the configuration via Java system property
 - persist implementation based on PostgreSQL and Timeseries
 - SNMP driver
 - SNMP generator for SNMP driver
