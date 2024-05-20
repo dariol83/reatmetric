@@ -139,13 +139,15 @@ Example of remoting configuration:
 ## Roadmap
 
 ### To version 1.1.0
+- Add support for a prefix tag (.e.g. $REAMETRIC) in ReatMetric configuration modules, in addition to $HOME, to allow the specification of a root path for the configuration via Java system property
+- persist implementation based on PostgreSQL and Timeseries
 - SNMP driver
 - SNMP generator for SNMP driver
+- Container template for easy Docker image creation
 
 ### Future ideas
 - Drop Javascript automation driver, due to GraalVM memory leak?
 - Use JEP for Python support in automation, drop Jython
-- persist implementation based on PostgreSQL and Timeseries
 - Report generation module (driver? activity mapped?)
 - File circulation/distribution driver, based on FTP/SFTP/SCP/HTTP/REST
 - Export data function
