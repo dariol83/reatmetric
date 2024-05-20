@@ -363,9 +363,9 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         // Now scan and get rid of the startItem object: in order to work, equality must work correctly (typically only on the internalId)
         int position = largeSize.indexOf(startItem);
         if (position == -1) {
-            return largeSize.subList(0, Math.min(numRecords, largeSize.size()));
+            return new ArrayList<>(largeSize.subList(0, Math.min(numRecords, largeSize.size())));
         } else {
-            return largeSize.subList(position + 1, position + 1 + Math.min(numRecords, largeSize.size() - position - 1));
+            return new ArrayList<>(largeSize.subList(position + 1, position + 1 + Math.min(numRecords, largeSize.size() - position - 1)));
         }
     }
 
