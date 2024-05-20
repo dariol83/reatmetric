@@ -38,7 +38,7 @@ import java.util.logging.Logger;
  */
 public class ReatmetricRemotingServer {
 
-    private static final Logger LOG = Logger.getLogger(ReatmetricSystemRemoting.class.getName());
+    private static final Logger LOG = Logger.getLogger(ReatmetricRemotingServer.class.getName());
     private static final List<ReatmetricSystemRemoting> REMOTED_SYSTEMS = new CopyOnWriteArrayList<>();
 
     public static void main(String[] args) throws RemoteException {
