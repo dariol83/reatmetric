@@ -1,6 +1,6 @@
 = System Manual
 Dario Lucia <dario.lucia@gmail.com>
-v1.0.0, 2024-05-04
+v1.0.1, 2024-05-20
 :title-logo-image: image:docimg/ReatMetric-Logo.png[top=42%,align=left,pdfwidth=6in]
 :doctype: book
 :toc:

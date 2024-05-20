@@ -42,11 +42,30 @@ A commented example of such file is presented below.
 </ns1:connectors>
 ----
 
-When instantiated, the implementation looks for a system variable, containing the absolute path of the XML file with the
+When instantiated, the implementation looks for a system property, containing the absolute path of the XML file with the
 configuration. It is therefore mandatory to include such variable when starting up the application containing this
 module, or to set up such variable programmatically, before loading the corresponding service via the ServiceLoader.
 
 Example:
 ----
 java -Dreatmetric.remoting.connector.config=/home/reatmetric/rm.remoting.connector.config.xml ...
+----
+
+When instantiated, the implementation looks for an optional system property, containing the TCP port to be used when
+publishing RMI objects. This port will be communicated when callback objects are registered to the remote ReatMetric instance,
+which can be critical to allow bidirectional communication in the presence of firewalls. When not specified, the default
+value is 0, i.e. the connector will be a random available port as publication port for the exported RMI objects.
+
+Example:
+----
+java -Dreatmetric.remoting.connector.export.port=4500 ...
+----
+
+RMI-exported objects will announce their reachability for responses and in case of callbacks, using an IP address that it
+is taken by the Java RMI implementation using one of those available on the machine besides localhost. If it is needed
+to force the selection of the IP address that is communicated to the remote objects, the following system property
+shall be used.
+
+----
+java -Djava.rmi.server.hostname=<server IP to use for local connections>
 ----
