@@ -116,6 +116,7 @@
         <module>eu.dariolucia.reatmetric.ui.remoting</module>
         <module>eu.dariolucia.reatmetric.ui.spacecraft</module>
         <module>eu.dariolucia.reatmetric.ui.socket</module>
+        <module>eu.dariolucia.reatmetric.deployment</module>
     </modules>
 
     <build>
