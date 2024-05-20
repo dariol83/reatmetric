@@ -234,9 +234,6 @@ For instance, _raw data_ can be used to distribute and optioanlly store low leve
 level between ReatMetric and the target devices. In the same way, it can be used to store changes of state or internal
 states of modules and drivers, as required.
 
-=== ReatMetric Main Interface
-To be written
-
 === Drivers
 A _driver_ is the object that connect ReatMetric with an external device or system. A driver is responsible for:
 
