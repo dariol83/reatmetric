@@ -134,26 +134,6 @@ Example of remoting configuration:
 	    <connector local-name="Test System" remote-name="Test System" host="192.168.2.106" port="19000" />
     </ns1:connectors>
 
-## Roadmap
-
-### To version 1.0.0
-- UI: introduce dialog to show the details of an activity invocation 
-
-### To version 1.1.0
-- SNMP driver
-- SNMP generator for SNMP driver
-
-### Future ideas
-- Drop Javascript automation driver, due to GraalVM memory leak?
-- Use JEP for Python support in automation, drop Jython
-- persist implementation based on PostgreSQL and Timeseries
-- Report generation module (driver? activity mapped?)
-- File circulation/distribution driver, based on FTP/SFTP/SCP/HTTP/REST
-- Export data function
-- Helidon gRPC/REST remoting/Helidon gRPC/REST connector (requires Java 21)
-- Helidon gRPC/REST remoting driver (requires Java 21)
-- Hot redundancy at Reatmetric Core level (two instances fully synchronised, but only one has the connectors open and the scheduler active. When one goes down, the other takes over)
-
 ## Acknowledgements and Credits
 A special mention goes to Theresa Köster from the University of Gießen, who evaluated ReatMetric (among other tools) 
 against the Flying Laptop operational simulator. With her contributions, ideas and suggestions, she helped greatly to 
