@@ -48,7 +48,7 @@ public abstract class AbstractProvisionServiceProxy<T extends AbstractDataItem, 
         }
         Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
-            activeObject = ObjectActivationCache.instance().activate(subscriber, 0);
+            activeObject = ObjectActivationCache.instance().activate(subscriber);
             if(LOG.isLoggable(Level.FINE)) {
                 LOG.fine("Subscriber active object " + activeObject + " for " + subscriber + " to proxy " + getClass().getSimpleName() + " activated");
             }

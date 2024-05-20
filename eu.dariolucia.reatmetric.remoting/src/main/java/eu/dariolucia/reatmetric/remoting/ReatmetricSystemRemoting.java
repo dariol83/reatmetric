@@ -54,9 +54,14 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
 
     private static final Logger LOG = Logger.getLogger(ReatmetricSystemRemoting.class.getName());
 
+    private static final String JVM_PROPERTY_RMI_EXPORT_PORT_KEY = "reatmetric.remoting.rmi.export.port";
+    private static final int RMI_EXPORT_PORT_DEFAULT = 0;
+
     private final IReatmetricSystem system;
     private final int port;
     private final String name;
+
+    private int exportPort;
 
     private final Map<Object, Remote> exportedObjects = new ConcurrentHashMap<>();
 
@@ -96,6 +101,16 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
             throw new IllegalStateException("Object already activated");
         }
 
+        String rmiExportPortStr = System.getProperty(JVM_PROPERTY_RMI_EXPORT_PORT_KEY);
+        this.exportPort = RMI_EXPORT_PORT_DEFAULT;
+        try {
+            if(rmiExportPortStr != null) {
+                this.exportPort = Integer.parseInt(rmiExportPortStr);
+            }
+        } catch (Exception e) {
+            LOG.severe("Cannot initialise RMI export port from system property " + JVM_PROPERTY_RMI_EXPORT_PORT_KEY + ": " + rmiExportPortStr + ": " + e.getMessage());
+        }
+
         if (this.registry == null) {
             if (this.port == 0) {
                 throw new IllegalStateException("Port not specified, cannot create registry");
@@ -105,7 +120,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
         } else {
             LOG.info("Activating ReatMetric Remoting on registry " + registry + " with name " + this.name);
         }
-        this.activatedObject = (IReatmetricSystem) UnicastRemoteObject.exportObject(this, 0);
+        this.activatedObject = (IReatmetricSystem) UnicastRemoteObject.exportObject(this, this.exportPort);
         this.registry.bind(this.name, this.activatedObject);
     }
 
@@ -282,7 +297,7 @@ public class ReatmetricSystemRemoting implements IReatmetricSystem {
     protected <T extends Remote> Remote exportObject(T instance) throws RemoteException {
         Remote remote = exportedObjects.get(instance);
         if (remote == null) {
-            remote = UnicastRemoteObject.exportObject(instance, 0);
+            remote = UnicastRemoteObject.exportObject(instance, this.exportPort);
             exportedObjects.put(instance, remote);
         }
         return remote;

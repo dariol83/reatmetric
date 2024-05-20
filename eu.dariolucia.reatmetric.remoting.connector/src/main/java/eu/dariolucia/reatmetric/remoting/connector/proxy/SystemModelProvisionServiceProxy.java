@@ -44,7 +44,7 @@ public class SystemModelProvisionServiceProxy implements ISystemModelProvisionSe
     public void subscribe(ISystemModelSubscriber subscriber) throws RemoteException {
         Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
-            activeObject = ObjectActivationCache.instance().activate(subscriber, 0);
+            activeObject = ObjectActivationCache.instance().activate(subscriber);
             subscriber2remote.put(subscriber, activeObject);
         }
         delegate.subscribe((ISystemModelSubscriber) activeObject);

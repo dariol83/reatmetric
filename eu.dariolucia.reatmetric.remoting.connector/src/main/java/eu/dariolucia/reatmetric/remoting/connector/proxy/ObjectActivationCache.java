@@ -34,6 +34,9 @@ import java.util.logging.Logger;
  */
 public final class ObjectActivationCache {
 
+    private static final String JVM_PROPERTY_RMI_EXPORT_PORT_KEY = "reatmetric.remoting.connector.export.port";
+    private static final int RMI_EXPORT_PORT_DEFAULT = 0;
+
     private static final Logger LOG = Logger.getLogger(ObjectActivationCache.class.getName());
 
     private static final ObjectActivationCache INSTANCE = new ObjectActivationCache();
@@ -44,12 +47,26 @@ public final class ObjectActivationCache {
 
     private final Map<Object, Pair<Remote, AtomicInteger>> cache = new HashMap<>();
 
-    synchronized Remote activate(Remote o, int port) throws RemoteException {
+    private int exportPort;
+
+    private ObjectActivationCache() {
+        String rmiExportPortStr = System.getProperty(JVM_PROPERTY_RMI_EXPORT_PORT_KEY);
+        this.exportPort = RMI_EXPORT_PORT_DEFAULT;
+        try {
+            if(rmiExportPortStr != null) {
+                this.exportPort = Integer.parseInt(rmiExportPortStr);
+            }
+        } catch (Exception e) {
+            LOG.severe("Cannot initialise RMI connector export port from system property " + JVM_PROPERTY_RMI_EXPORT_PORT_KEY + ": " + rmiExportPortStr + ": " + e.getMessage());
+        }
+    }
+
+    synchronized Remote activate(Remote o) throws RemoteException {
         LOG.log(Level.INFO, "Requesting export of object " + o);
         Pair<Remote, AtomicInteger> item = cache.get(o);
         if(item == null) {
             // First activation
-            item = Pair.of(UnicastRemoteObject.exportObject(o, port), new AtomicInteger(0));
+            item = Pair.of(UnicastRemoteObject.exportObject(o, this.exportPort), new AtomicInteger(0));
             LOG.log(Level.INFO, "Object activated: " + item.getFirst());
             cache.put(o, item);
         }

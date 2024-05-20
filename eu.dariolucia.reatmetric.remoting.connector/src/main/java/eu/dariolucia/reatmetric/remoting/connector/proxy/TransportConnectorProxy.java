@@ -131,7 +131,7 @@ public class TransportConnectorProxy implements ITransportConnector {
         }
         Remote activeObject = subscriber2remote.get(subscriber);
         if(activeObject == null) {
-            activeObject = ObjectActivationCache.instance().activate(subscriber, 0);
+            activeObject = ObjectActivationCache.instance().activate(subscriber);
             subscriber2remote.put(subscriber, activeObject);
         }
         delegate.register((ITransportSubscriber) activeObject);
