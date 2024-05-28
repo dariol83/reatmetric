@@ -1,0 +1,32 @@
+==== Overview
+The eu.dariolucia.reatmetric.driver.snmp module provides a driver that allows the access to devices via SNMP protocol.
+
+Being a driver, a _snmp_ module must be registered as such in the system Core's configuration.
+
+==== General Concepts
+To be written
+
+==== Configuration
+Being a driver, the _snmp_ module must be registered as such in the system configuration file. You need to have a
+snmp module registration for each endpoint that requires such driver.
+
+[source,xml]
+----
+<ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
+    <name>Test System</name>
+    <log-property-file>$HOME\Reatmetric\reatmetric_test\log.properties</log-property-file>
+    <definitions-location>$HOME\Reatmetric\reatmetric_test\processing</definitions-location>
+    <driver name="Equipment 1 SNMP Driver" type="eu.dariolucia.reatmetric.driver.snmp.SnmpDriver"
+    configuration="$HOME\Reatmetric\reatmetric_test\snmp1"/>
+</ns1:core>
+----
+
+The folder specified in the _configuration_ attribute of the _driver_ element must contain a file named _configuration.xml_,
+which defines the configuration properties of the driver.
+
+===== Main Configuration File
+The configuration structure of the eu.dariolucia.reatmetric.driver.snmp module is defined in the package
+eu.dariolucia.reatmetric.driver.snmp.configuration. It is an XML file named _configuration.xml_ using
+namespace definition _http://dariolucia.eu/reatmetric/driver/snmp_.
+
+To be written
