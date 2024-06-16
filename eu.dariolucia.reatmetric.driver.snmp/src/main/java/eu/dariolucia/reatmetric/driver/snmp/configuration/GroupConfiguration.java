@@ -19,7 +19,45 @@ package eu.dariolucia.reatmetric.driver.snmp.configuration;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
+
+import java.util.LinkedList;
+import java.util.List;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class GroupConfiguration {
+
+    @XmlAttribute(name = "name", required = true)
+    private String name;
+
+    @XmlAttribute(name = "polling-time")
+    private int pollingTime = 2000;
+
+    @XmlElement(name = "entry")
+    private List<OidEntry> oidEntryList = new LinkedList<>();
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getPollingTime() {
+        return pollingTime;
+    }
+
+    public void setPollingTime(int pollingTime) {
+        this.pollingTime = pollingTime;
+    }
+
+    public List<OidEntry> getOidEntryList() {
+        return oidEntryList;
+    }
+
+    public void setOidEntryList(List<OidEntry> oidEntryList) {
+        this.oidEntryList = oidEntryList;
+    }
 }

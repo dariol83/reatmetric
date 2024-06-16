@@ -17,15 +17,40 @@
 
 package eu.dariolucia.reatmetric.driver.snmp.configuration;
 
+import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class SetCommandConfiguration {
+public class OidEntry {
+
+    @XmlAttribute(name = "oid", required = true)
+    private String oid;
 
     @XmlAttribute(name = "path", required = true)
     private String path;
+
+    @XmlAttribute(name = "type", required = true)
+    private ValueTypeEnum type;
+
+    public OidEntry() {
+        // Nothing
+    }
+
+    public OidEntry(String oid, String path, ValueTypeEnum type) {
+        this.oid = oid;
+        this.path = path;
+        this.type = type;
+    }
+
+    public String getOid() {
+        return oid;
+    }
+
+    public void setOid(String oid) {
+        this.oid = oid;
+    }
 
     public String getPath() {
         return path;
@@ -33,5 +58,18 @@ public class SetCommandConfiguration {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public ValueTypeEnum getType() {
+        return type;
+    }
+
+    public void setType(ValueTypeEnum type) {
+        this.type = type;
+    }
+
+    @Override
+    public String toString() {
+        return "{'" + oid + "' -> " + path + " (" + type + ')';
     }
 }
