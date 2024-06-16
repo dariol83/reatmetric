@@ -28,11 +28,14 @@ public class SnmpDevice {
     @XmlAttribute(name = "name", required = true)
     private String name;
 
-    @XmlAttribute(name = "host", required = true)
-    private String host;
+    @XmlAttribute(name = "connection-string", required = true)
+    private String connectionString;
 
-    @XmlAttribute(name = "port")
-    private int port = 161;
+    @XmlAttribute(name = "timeout")
+    private int timeout = 2000; // in ms
+
+    @XmlAttribute(name = "retries")
+    private int retries = 2;
 
     @XmlAttribute(name = "user")
     private String user;
@@ -63,20 +66,12 @@ public class SnmpDevice {
         this.name = name;
     }
 
-    public String getHost() {
-        return host;
+    public String getConnectionString() {
+        return connectionString;
     }
 
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
+    public void setConnectionString(String connectionString) {
+        this.connectionString = connectionString;
     }
 
     public String getUser() {
@@ -133,6 +128,22 @@ public class SnmpDevice {
 
     public void setSetCommandConfiguration(SetCommandConfiguration setCommandConfiguration) {
         this.setCommandConfiguration = setCommandConfiguration;
+    }
+
+    public int getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
+    public int getRetries() {
+        return retries;
+    }
+
+    public void setRetries(int retries) {
+        this.retries = retries;
     }
 
     @XmlTransient

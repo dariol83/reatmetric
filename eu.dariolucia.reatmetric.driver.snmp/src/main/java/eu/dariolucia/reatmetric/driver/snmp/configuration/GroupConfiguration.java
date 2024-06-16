@@ -17,11 +17,14 @@
 
 package eu.dariolucia.reatmetric.driver.snmp.configuration;
 
+import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlElement;
 import org.snmp4j.PDU;
+import org.snmp4j.event.ResponseEvent;
 import org.snmp4j.smi.VariableBinding;
 
 import java.util.LinkedList;
@@ -63,6 +66,10 @@ public class GroupConfiguration {
         this.oidEntryList = oidEntryList;
     }
 
+    public void initialise(String prefix, IProcessingModel processingModel) {
+        // TODO:
+    }
+
     public PDU preparePollRequest() {
         PDU pdu = new PDU();
         for(OidEntry oid : oidEntryList) {
@@ -70,5 +77,10 @@ public class GroupConfiguration {
         }
         pdu.setType(PDU.GET);
         return pdu;
+    }
+
+    public List<ParameterSample> mapResponse(SnmpDevice device, ResponseEvent responseEvent) {
+        // TODO:
+        return null;
     }
 }

@@ -17,8 +17,20 @@
 
 package eu.dariolucia.reatmetric.driver.snmp.configuration;
 
+import org.snmp4j.mp.SnmpConstants;
+
 public enum SnmpVersionEnum {
-    V1,
-    V2,
-    V3
+    V1(SnmpConstants.version1),
+    V2(SnmpConstants.version2c),
+    V3(SnmpConstants.version3);
+
+    private final int value;
+
+    SnmpVersionEnum(int value) {
+        this.value = value;
+    }
+
+    public int toValue() {
+        return value;
+    }
 }

@@ -20,19 +20,30 @@ package eu.dariolucia.reatmetric.driver.snmp;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.api.transport.AbstractTransportConnector;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.driver.snmp.configuration.GroupConfiguration;
 import eu.dariolucia.reatmetric.driver.snmp.configuration.SnmpDevice;
+import eu.dariolucia.reatmetric.driver.snmp.configuration.SnmpVersionEnum;
+import org.snmp4j.CommunityTarget;
+import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.TransportMapping;
+import org.snmp4j.event.ResponseEvent;
+import org.snmp4j.mp.SnmpConstants;
+import org.snmp4j.smi.Address;
+import org.snmp4j.smi.GenericAddress;
+import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
+import java.util.Date;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -42,6 +53,7 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
     private final IRawDataBroker rawDataBroker;
     private final IProcessingModel processingModel;
     private final Timer deviceTimer;
+    private final CommunityTarget<Address> target;
     private volatile Snmp connection;
 
     protected SnmpTransportConnector(SnmpDevice device, IRawDataBroker rawDataBroker, IProcessingModel processingModel) {
@@ -50,6 +62,14 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
         this.rawDataBroker = rawDataBroker;
         this.processingModel = processingModel;
         this.deviceTimer = new Timer("SNMP Device " + getName() + " Timer Service", true);
+        // Build the target
+        this.target = new CommunityTarget<>();
+        Address targetAddress = GenericAddress.parse(device.getConnectionString());
+        this.target.setCommunity(new OctetString(device.getCommunity()));
+        this.target.setAddress(targetAddress);
+        this.target.setRetries(device.getRetries());
+        this.target.setTimeout(device.getTimeout());
+        this.target.setVersion(device.getVersion().toValue());
     }
 
     @Override
@@ -95,11 +115,35 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
             public void run() {
                 Snmp theConnection = connection;
                 if(theConnection == null) {
+                    this.cancel();
                     return;
                 }
-                // TODO: implement query of group
+                PDU request = group.preparePollRequest();
+                try {
+                    ResponseEvent<?> responseEvent = sendRequest(request);
+                    if ((responseEvent != null) && (responseEvent.getResponse() != null)) {
+                        List<ParameterSample> parameterSamples = group.mapResponse(device, responseEvent);
+                        injectSamples(parameterSamples);
+                    } else {
+                        // TODO: log
+                        // "Response from endpoint " + url + " not received/null for group " + group
+                        updateAlarmState(AlarmState.ALARM);
+                    }
+                } catch (IOException e) {
+                    // TODO: log
+                    // "Request to endpoint " + url + " returned an exception"
+                    updateAlarmState(AlarmState.ALARM);
+                }
             }
         };
+    }
+
+    private void injectSamples(List<ParameterSample> parameterSamples) {
+        this.processingModel.injectParameters(parameterSamples);
+    }
+
+    private ResponseEvent<?> sendRequest(PDU request) throws IOException {
+        return this.connection.send(request, target, null);
     }
 
     @Override
