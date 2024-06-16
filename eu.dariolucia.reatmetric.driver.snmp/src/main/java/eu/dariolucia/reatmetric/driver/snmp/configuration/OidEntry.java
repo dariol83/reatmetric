@@ -21,6 +21,7 @@ import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
+import org.snmp4j.smi.OID;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class OidEntry {
@@ -50,6 +51,10 @@ public class OidEntry {
 
     public void setOid(String oid) {
         this.oid = oid;
+    }
+
+    public OID toOid() {
+        return new OID(oid);
     }
 
     public String getPath() {

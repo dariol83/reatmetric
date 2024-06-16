@@ -22,19 +22,18 @@ import eu.dariolucia.reatmetric.api.common.SystemStatus;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
+import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.core.api.AbstractDriver;
 import eu.dariolucia.reatmetric.core.api.IRawDataRenderer;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.core.api.exceptions.DriverException;
 import eu.dariolucia.reatmetric.core.configuration.ServiceCoreConfiguration;
 import eu.dariolucia.reatmetric.driver.snmp.configuration.SnmpConfiguration;
+import eu.dariolucia.reatmetric.driver.snmp.configuration.SnmpDevice;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Timer;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -50,8 +49,9 @@ public class SnmpDriver extends AbstractDriver implements IRawDataRenderer {
     public static final String SNMP_MESSAGE_TYPE = "SNMP";
 
     private SnmpConfiguration configuration;
-    private IRawDataArchive rawDataArchive;
     private ExecutorService actionThreadPool;
+
+    private Map<String, SnmpTransportConnector> transportConnectorMap = new LinkedHashMap<>();
 
     @Override
     public List<DebugInformation> currentDebugInfo() {
@@ -59,9 +59,13 @@ public class SnmpDriver extends AbstractDriver implements IRawDataRenderer {
     }
 
     @Override
+    public List<ITransportConnector> getTransportConnectors() {
+        return new LinkedList<>(transportConnectorMap.values());
+    }
+
+    @Override
     protected SystemStatus startProcessing() throws DriverException {
         // Init data
-        this.rawDataArchive = getContext().getArchive() != null ? getContext().getArchive().getArchive(IRawDataArchive.class) : null;
         this.actionThreadPool = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r);
             t.setDaemon(true);
@@ -81,7 +85,13 @@ public class SnmpDriver extends AbstractDriver implements IRawDataRenderer {
     }
 
     private void createTransportConnectors() {
-        // TODO: implement
+        for(SnmpDevice device : this.configuration.getSnmpDeviceList()) {
+            SnmpTransportConnector connector = new SnmpTransportConnector(device,
+                    getContext().getRawDataBroker(),
+                    getContext().getProcessingModel());
+            connector.prepare();
+            transportConnectorMap.put(device.getName(), connector);
+        }
     }
 
     @Override

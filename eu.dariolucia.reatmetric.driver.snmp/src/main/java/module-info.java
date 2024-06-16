@@ -8,5 +8,7 @@ open module eu.dariolucia.reatmetric.driver.snmp {
     requires eu.dariolucia.reatmetric.api;
     requires eu.dariolucia.reatmetric.core;
 
+    requires org.snmp4j;
+
     provides eu.dariolucia.reatmetric.core.api.IDriver with SnmpDriver;
 }

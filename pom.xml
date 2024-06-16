@@ -73,6 +73,7 @@
         <usb4java.version>1.3.0</usb4java.version>
         <jserialcomm.version>2.8.0</jserialcomm.version>
         <jsonpath.version>2.7.0</jsonpath.version>
+        <snmp4j.version>3.8.2</snmp4j.version>
         <!--
         <tiwulf.version>0.1</tiwulf.version>
         -->

@@ -21,6 +21,8 @@ import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
 import jakarta.xml.bind.annotation.XmlElement;
+import org.snmp4j.PDU;
+import org.snmp4j.smi.VariableBinding;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -59,5 +61,14 @@ public class GroupConfiguration {
 
     public void setOidEntryList(List<OidEntry> oidEntryList) {
         this.oidEntryList = oidEntryList;
+    }
+
+    public PDU preparePollRequest() {
+        PDU pdu = new PDU();
+        for(OidEntry oid : oidEntryList) {
+            pdu.add(new VariableBinding(oid.toOid()));
+        }
+        pdu.setType(PDU.GET);
+        return pdu;
     }
 }
