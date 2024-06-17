@@ -29,7 +29,7 @@ public class SnmpDevice {
     private String name;
 
     @XmlAttribute(name = "connection-string", required = true)
-    private String connectionString;
+    private String connectionString; // example: udp:192.168.0.1/161
 
     @XmlAttribute(name = "timeout")
     private int timeout = 2000; // in ms
@@ -37,11 +37,12 @@ public class SnmpDevice {
     @XmlAttribute(name = "retries")
     private int retries = 2;
 
-    @XmlAttribute(name = "user")
-    private String user;
+    // TODO: security model missing, enum for level missing
+    @XmlAttribute(name = "security-name")
+    private String securityName;
 
-    @XmlAttribute(name = "password")
-    private String password;
+    @XmlAttribute(name = "security-level")
+    private String securityLevel;
 
     @XmlAttribute(name = "community")
     private String community = "public";
@@ -74,20 +75,20 @@ public class SnmpDevice {
         this.connectionString = connectionString;
     }
 
-    public String getUser() {
-        return user;
+    public String getSecurityName() {
+        return securityName;
     }
 
-    public void setUser(String user) {
-        this.user = user;
+    public void setSecurityName(String securityName) {
+        this.securityName = securityName;
     }
 
-    public String getPassword() {
-        return password;
+    public String getSecurityLevel() {
+        return securityLevel;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setSecurityLevel(String securityLevel) {
+        this.securityLevel = securityLevel;
     }
 
     public String getCommunity() {

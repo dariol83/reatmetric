@@ -21,7 +21,12 @@ import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlTransient;
 import org.snmp4j.smi.OID;
+import org.snmp4j.smi.OctetString;
+import org.snmp4j.smi.Variable;
+
+import java.util.logging.Level;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class OidEntry {
@@ -76,5 +81,78 @@ public class OidEntry {
     @Override
     public String toString() {
         return "{'" + oid + "' -> " + path + " (" + type + ')';
+    }
+
+    @XmlTransient
+    private int externalId;
+
+    public void setExternalId(int id) {
+        this.externalId = id;
+    }
+
+    public int getExternalId() {
+        return externalId;
+    }
+
+    public Object extractValue(Variable variable) {
+        switch (type) {
+            case ENUMERATED: return extractInt(variable);
+            case SIGNED_INTEGER:
+            case UNSIGNED_INTEGER: return extractLong(variable);
+            case OCTET_STRING: return extractByteArray(variable);
+            case CHARACTER_STRING: return extractString(variable);
+            case REAL: return extractReal(variable);
+            default: return null;
+        }
+    }
+
+    private Object extractReal(Variable variable) {
+        if (variable instanceof OctetString) {
+            String itemValue = variable.toString();
+            try {
+                return Double.parseDouble(itemValue);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private Object extractByteArray(Variable variable) {
+        if (variable instanceof OctetString) {
+            return ((OctetString) variable).toByteArray();
+        }
+        return null;
+    }
+
+    private Object extractString(Variable variable) {
+        if (variable instanceof OctetString) {
+            return variable.toString();
+        }
+        return null;
+    }
+
+    private Object extractLong(Variable variable) {
+        if (variable instanceof OctetString) {
+            String itemValue = variable.toString();
+            try {
+                return Long.parseLong(itemValue);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return variable.toLong();
+    }
+
+    private Object extractInt(Variable variable) {
+        if (variable instanceof OctetString) {
+            String itemValue = variable.toString();
+            try {
+                return Integer.parseInt(itemValue);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return variable.toInt();
     }
 }

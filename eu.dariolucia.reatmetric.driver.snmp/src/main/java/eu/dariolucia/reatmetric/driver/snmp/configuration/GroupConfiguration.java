@@ -17,21 +17,28 @@
 
 package eu.dariolucia.reatmetric.driver.snmp.configuration;
 
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlAttribute;
-import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.*;
 import org.snmp4j.PDU;
 import org.snmp4j.event.ResponseEvent;
+import org.snmp4j.smi.OID;
 import org.snmp4j.smi.VariableBinding;
 
+import java.time.Instant;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class GroupConfiguration {
+
+    private static final Logger LOG = Logger.getLogger(GroupConfiguration.class.getName());
 
     @XmlAttribute(name = "name", required = true)
     private String name;
@@ -66,8 +73,22 @@ public class GroupConfiguration {
         this.oidEntryList = oidEntryList;
     }
 
+    @XmlTransient
+    private final Map<OID, OidEntry> oid2parameterMap = new HashMap<>();
+
     public void initialise(String prefix, IProcessingModel processingModel) {
-        // TODO:
+        // Map all OIDs to parameter IDs
+        for(OidEntry e : getOidEntryList()) {
+            // Build path
+            SystemEntityPath path = SystemEntityPath.fromString(prefix + "." + e.getPath());
+            try {
+                int id = processingModel.getExternalIdOf(path);
+                e.setExternalId(id);
+                oid2parameterMap.put(e.toOid(), e);
+            } catch (ReatmetricException ex) {
+                LOG.log(Level.SEVERE, "Cannot resolve parameter path " + path + " linked to OID " + e.getOid() + " to external ID: " + ex.getMessage(), e);
+            }
+        }
     }
 
     public PDU preparePollRequest() {
@@ -79,8 +100,29 @@ public class GroupConfiguration {
         return pdu;
     }
 
-    public List<ParameterSample> mapResponse(SnmpDevice device, ResponseEvent responseEvent) {
-        // TODO:
-        return null;
+    public List<ParameterSample> mapResponse(SnmpDevice device, ResponseEvent<?> responseEvent) {
+        List<ParameterSample> toReturn = new LinkedList<>();
+        Instant receptionTime = Instant.now();
+        String route = device.getName();
+        for(VariableBinding vb : responseEvent.getResponse().getAll()) {
+            OID theOid = vb.getOid();
+            OidEntry theEntry = oid2parameterMap.get(theOid);
+            if(theEntry != null) {
+                Object value = theEntry.extractValue(vb.getVariable());
+                if(value != null) {
+                    ParameterSample sample = ParameterSample.of(theEntry.getExternalId(), receptionTime, receptionTime, null, value, route, null);
+                    toReturn.add(sample);
+                } else {
+                    if(LOG.isLoggable(Level.WARNING)) {
+                        LOG.log(Level.WARNING, String.format("OID %s value is null, actual value was %s", theOid, vb.getVariable().toString()));
+                    }
+                }
+            } else {
+                if(LOG.isLoggable(Level.WARNING)) {
+                    LOG.log(Level.WARNING, String.format("OID %s not known, ignoring...", theOid));
+                }
+            }
+        }
+        return toReturn;
     }
 }

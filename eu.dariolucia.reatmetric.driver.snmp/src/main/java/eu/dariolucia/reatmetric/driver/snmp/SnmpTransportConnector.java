@@ -27,13 +27,11 @@ import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.driver.snmp.configuration.GroupConfiguration;
 import eu.dariolucia.reatmetric.driver.snmp.configuration.SnmpDevice;
-import eu.dariolucia.reatmetric.driver.snmp.configuration.SnmpVersionEnum;
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.TransportMapping;
 import org.snmp4j.event.ResponseEvent;
-import org.snmp4j.mp.SnmpConstants;
 import org.snmp4j.smi.Address;
 import org.snmp4j.smi.GenericAddress;
 import org.snmp4j.smi.OctetString;
@@ -42,12 +40,15 @@ import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import java.io.IOException;
 import java.rmi.RemoteException;
-import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SnmpTransportConnector extends AbstractTransportConnector {
+
+    private static final Logger LOG = Logger.getLogger(SnmpTransportConnector.class.getName());
 
     private final SnmpDevice device;
     private final IRawDataBroker rawDataBroker;
@@ -120,18 +121,18 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
                 }
                 PDU request = group.preparePollRequest();
                 try {
-                    ResponseEvent<?> responseEvent = sendRequest(request);
+                    ResponseEvent<?> responseEvent = sendRequest(theConnection, request);
                     if ((responseEvent != null) && (responseEvent.getResponse() != null)) {
                         List<ParameterSample> parameterSamples = group.mapResponse(device, responseEvent);
                         injectSamples(parameterSamples);
                     } else {
-                        // TODO: log
-                        // "Response from endpoint " + url + " not received/null for group " + group
+                        if(LOG.isLoggable(Level.WARNING)) {
+                            LOG.warning("Response from endpoint " + connection + " not received/null for group " + group);
+                        }
                         updateAlarmState(AlarmState.ALARM);
                     }
                 } catch (IOException e) {
-                    // TODO: log
-                    // "Request to endpoint " + url + " returned an exception"
+                    LOG.log(Level.WARNING, "Request to endpoint " + connection + " returned an exception for group " + group + ": " + e.getMessage(), e);
                     updateAlarmState(AlarmState.ALARM);
                 }
             }
@@ -142,8 +143,10 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
         this.processingModel.injectParameters(parameterSamples);
     }
 
-    private ResponseEvent<?> sendRequest(PDU request) throws IOException {
-        return this.connection.send(request, target, null);
+    private ResponseEvent<?> sendRequest(Snmp theConnection, PDU request) throws IOException {
+        synchronized (theConnection) {
+            return theConnection.send(request, target, null);
+        }
     }
 
     @Override
