@@ -18,9 +18,12 @@
 package eu.dariolucia.reatmetric.driver.snmp;
 
 import eu.dariolucia.reatmetric.api.common.Pair;
+import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
+import eu.dariolucia.reatmetric.api.rawdata.Quality;
+import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.AbstractTransportConnector;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
 import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
@@ -38,8 +41,12 @@ import org.snmp4j.smi.OctetString;
 import org.snmp4j.smi.UdpAddress;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.rmi.RemoteException;
+import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -50,6 +57,7 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
 
     private static final Logger LOG = Logger.getLogger(SnmpTransportConnector.class.getName());
 
+    private final String driverName;
     private final SnmpDevice device;
     private final IRawDataBroker rawDataBroker;
     private final IProcessingModel processingModel;
@@ -57,8 +65,9 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
     private final CommunityTarget<Address> target;
     private volatile Snmp connection;
 
-    protected SnmpTransportConnector(SnmpDevice device, IRawDataBroker rawDataBroker, IProcessingModel processingModel) {
+    protected SnmpTransportConnector(String driverName, SnmpDevice device, IRawDataBroker rawDataBroker, IProcessingModel processingModel) {
         super(device.getName(), "");
+        this.driverName = driverName;
         this.device = device;
         this.rawDataBroker = rawDataBroker;
         this.processingModel = processingModel;
@@ -114,17 +123,23 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
         return new TimerTask() {
             @Override
             public void run() {
-                Snmp theConnection = connection;
-                if(theConnection == null) {
-                    this.cancel();
-                    return;
+                Snmp theConnection = null;
+                synchronized (SnmpTransportConnector.this) {
+                    theConnection = connection;
+                    if (theConnection == null) {
+                        this.cancel();
+                        return;
+                    }
                 }
                 PDU request = group.preparePollRequest();
                 try {
                     ResponseEvent<?> responseEvent = sendRequest(theConnection, request);
                     if ((responseEvent != null) && (responseEvent.getResponse() != null)) {
-                        List<ParameterSample> parameterSamples = group.mapResponse(device, responseEvent);
+                        Instant generationTime = Instant.now();
+                        distributeRawData(responseEvent, generationTime, group);
+                        List<ParameterSample> parameterSamples = group.mapResponse(device, responseEvent, generationTime);
                         injectSamples(parameterSamples);
+                        updateAlarmState(AlarmState.NOMINAL);
                     } else {
                         if(LOG.isLoggable(Level.WARNING)) {
                             LOG.warning("Response from endpoint " + connection + " not received/null for group " + group);
@@ -134,9 +149,35 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
                 } catch (IOException e) {
                     LOG.log(Level.WARNING, "Request to endpoint " + connection + " returned an exception for group " + group + ": " + e.getMessage(), e);
                     updateAlarmState(AlarmState.ALARM);
+                } catch (Exception e) {
+                    LOG.log(Level.WARNING, "Request to endpoint " + connection + " returned an unknown exception for group " + group + ": " + e.getMessage(), e);
+                    updateAlarmState(AlarmState.ALARM);
                 }
             }
         };
+    }
+
+    private void distributeRawData(ResponseEvent<?> responseEvent, Instant generationTime, GroupConfiguration group) {
+        if(!group.isDistributePdu()) {
+            return;
+        }
+        try {
+            PDU response = responseEvent.getResponse();
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(response);
+            oos.close();
+            byte[] serialize = bos.toByteArray();
+            RawData rd = new RawData(rawDataBroker.nextRawDataId(), generationTime, group.getName(),
+                    SnmpDriver.SNMP_MESSAGE_TYPE, device.getName(), device.getName(), Quality.GOOD, null, serialize,
+                    generationTime, driverName, null);
+            rd.setData(response);
+            rawDataBroker.distribute(Collections.singletonList(rd));
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Error while distributing SNMP PDU from route " + device.getName(), e);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Error while encoding SNMP PDU for distribution from route " + device.getName(), e);
+        }
     }
 
     private void injectSamples(List<ParameterSample> parameterSamples) {
@@ -166,10 +207,17 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
     }
 
     @Override
-    protected void doDispose() {
+    protected synchronized void doDispose() {
         this.deviceTimer.purge();
         this.deviceTimer.cancel();
-        // TODO: check what you need to do
+        try {
+            if(this.connection != null) {
+                this.connection.close();
+            }
+        } catch (IOException ex) {
+            // Ignore
+        }
+        this.connection = null;
     }
 
     @Override

@@ -46,6 +46,9 @@ public class GroupConfiguration {
     @XmlAttribute(name = "polling-time")
     private int pollingTime = 2000;
 
+    @XmlAttribute(name = "distribute-pdu")
+    private boolean distributePdu = false;
+
     @XmlElement(name = "entry")
     private List<OidEntry> oidEntryList = new LinkedList<>();
 
@@ -71,6 +74,14 @@ public class GroupConfiguration {
 
     public void setOidEntryList(List<OidEntry> oidEntryList) {
         this.oidEntryList = oidEntryList;
+    }
+
+    public boolean isDistributePdu() {
+        return distributePdu;
+    }
+
+    public void setDistributePdu(boolean distributePdu) {
+        this.distributePdu = distributePdu;
     }
 
     @XmlTransient
@@ -100,9 +111,8 @@ public class GroupConfiguration {
         return pdu;
     }
 
-    public List<ParameterSample> mapResponse(SnmpDevice device, ResponseEvent<?> responseEvent) {
+    public List<ParameterSample> mapResponse(SnmpDevice device, ResponseEvent<?> responseEvent, Instant generationTime) {
         List<ParameterSample> toReturn = new LinkedList<>();
-        Instant receptionTime = Instant.now();
         String route = device.getName();
         for(VariableBinding vb : responseEvent.getResponse().getAll()) {
             OID theOid = vb.getOid();
@@ -110,7 +120,7 @@ public class GroupConfiguration {
             if(theEntry != null) {
                 Object value = theEntry.extractValue(vb.getVariable());
                 if(value != null) {
-                    ParameterSample sample = ParameterSample.of(theEntry.getExternalId(), receptionTime, receptionTime, null, value, route, null);
+                    ParameterSample sample = ParameterSample.of(theEntry.getExternalId(), generationTime, generationTime, null, value, route, null);
                     toReturn.add(sample);
                 } else {
                     if(LOG.isLoggable(Level.WARNING)) {

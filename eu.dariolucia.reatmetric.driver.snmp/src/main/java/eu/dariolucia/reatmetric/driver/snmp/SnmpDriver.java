@@ -86,7 +86,8 @@ public class SnmpDriver extends AbstractDriver implements IRawDataRenderer {
 
     private void createTransportConnectors() {
         for(SnmpDevice device : this.configuration.getSnmpDeviceList()) {
-            SnmpTransportConnector connector = new SnmpTransportConnector(device,
+            SnmpTransportConnector connector = new SnmpTransportConnector(getName(),
+                    device,
                     getContext().getRawDataBroker(),
                     getContext().getProcessingModel());
             connector.prepare();
