@@ -186,7 +186,7 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
 
     private ResponseEvent<?> sendRequest(Snmp theConnection, PDU request) throws IOException {
         synchronized (theConnection) {
-            return theConnection.send(request, target, null);
+            return theConnection.send(request, target);
         }
     }
 
