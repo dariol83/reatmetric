@@ -16,8 +16,8 @@ snmp module registration for each endpoint that requires such driver.
     <name>Test System</name>
     <log-property-file>$HOME\Reatmetric\reatmetric_test\log.properties</log-property-file>
     <definitions-location>$HOME\Reatmetric\reatmetric_test\processing</definitions-location>
-    <driver name="Equipment 1 SNMP Driver" type="eu.dariolucia.reatmetric.driver.snmp.SnmpDriver"
-    configuration="$HOME\Reatmetric\reatmetric_test\snmp1"/>
+    <driver name="SNMP Driver" type="eu.dariolucia.reatmetric.driver.snmp.SnmpDriver"
+    configuration="$HOME\Reatmetric\reatmetric_test\snmp"/>
 </ns1:core>
 ----
 
@@ -30,3 +30,5 @@ eu.dariolucia.reatmetric.driver.snmp.configuration. It is an XML file named _con
 namespace definition _http://dariolucia.eu/reatmetric/driver/snmp_.
 
 To be written
+
+===== Device Configuration File

@@ -16,14 +16,19 @@
 
 package eu.dariolucia.reatmetric.driver.snmp.configuration;
 
-import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
+import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
 import jakarta.xml.bind.Unmarshaller;
-import jakarta.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -35,10 +40,19 @@ public class SnmpDeviceConfiguration {
         try {
             JAXBContext jc = JAXBContext.newInstance(SnmpDeviceConfiguration.class);
             Unmarshaller u = jc.createUnmarshaller();
-            SnmpDeviceConfiguration sc = (SnmpDeviceConfiguration) u.unmarshal(is);
-            sc.initialise();
-            return sc;
-        } catch (JAXBException | ReatmetricException e) {
+            return (SnmpDeviceConfiguration) u.unmarshal(is);
+        } catch (JAXBException e) {
+            throw new IOException(e);
+        }
+    }
+
+    public static void save(SnmpDeviceConfiguration d, OutputStream out) throws IOException {
+        try {
+            JAXBContext context = JAXBContext.newInstance(SnmpDeviceConfiguration.class);
+            Marshaller marshaller = context.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
+            marshaller.marshal(d, out);
+        } catch (JAXBException e) {
             throw new IOException(e);
         }
     }
@@ -54,7 +68,7 @@ public class SnmpDeviceConfiguration {
         this.groupConfigurationList = groupConfigurationList;
     }
 
-    private void initialise() throws ReatmetricException {
-        //
+    public void initialise(String prefix, IProcessingModel theModel) {
+        this.groupConfigurationList.forEach(gc -> gc.initialise(prefix, theModel));
     }
 }

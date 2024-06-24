@@ -38,13 +38,13 @@ public class OidEntry {
     private String path;
 
     @XmlAttribute(name = "type", required = true)
-    private ValueTypeEnum type;
+    private OidEntryType type;
 
     public OidEntry() {
         // Nothing
     }
 
-    public OidEntry(String oid, String path, ValueTypeEnum type) {
+    public OidEntry(String oid, String path, OidEntryType type) {
         this.oid = oid;
         this.path = path;
         this.type = type;
@@ -70,11 +70,11 @@ public class OidEntry {
         this.path = path;
     }
 
-    public ValueTypeEnum getType() {
+    public OidEntryType getType() {
         return type;
     }
 
-    public void setType(ValueTypeEnum type) {
+    public void setType(OidEntryType type) {
         this.type = type;
     }
 
@@ -96,14 +96,19 @@ public class OidEntry {
 
     public Object extractValue(Variable variable) {
         switch (type) {
-            case ENUMERATED: return extractInt(variable);
-            case SIGNED_INTEGER:
-            case UNSIGNED_INTEGER: return extractLong(variable);
-            case OCTET_STRING: return extractByteArray(variable);
-            case CHARACTER_STRING: return extractString(variable);
-            case REAL: return extractReal(variable);
+            case INTEGER: return extractInt(variable);
+            case LONG: return extractLong(variable);
+            case BYTE_ARRAY: return extractByteArray(variable);
+            case STRING: return extractString(variable);
+            case DOUBLE: return extractReal(variable);
+            case OID: return extractOidLastValue(variable);
             default: return null;
         }
+    }
+
+    private Object extractOidLastValue(Variable variable) {
+        String typeString = variable.toString();
+        return Integer.parseInt(typeString.substring(typeString.lastIndexOf('.') + 1));
     }
 
     private Object extractReal(Variable variable) {

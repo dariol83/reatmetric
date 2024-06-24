@@ -1,5 +1,0 @@
-==== Overview
-The eu.dariolucia.reatmetric.driver.snmp.util module provides utility software for the ReatMetric SNMP driver.
-
-==== General Concepts
-To be written

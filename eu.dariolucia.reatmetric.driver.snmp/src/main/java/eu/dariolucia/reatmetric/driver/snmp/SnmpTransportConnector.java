@@ -72,6 +72,8 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
         this.rawDataBroker = rawDataBroker;
         this.processingModel = processingModel;
         this.deviceTimer = new Timer("SNMP Device " + getName() + " Timer Service", true);
+        // Initialise
+        this.device.getDeviceConfiguration().initialise(device.getPath(), this.processingModel);
         // Build the target
         this.target = new CommunityTarget<>();
         Address targetAddress = GenericAddress.parse(device.getConnectionString());

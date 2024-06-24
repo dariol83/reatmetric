@@ -20,9 +20,9 @@ package eu.dariolucia.reatmetric.driver.snmp.util;
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.driver.snmp.configuration.GroupConfiguration;
 import eu.dariolucia.reatmetric.driver.snmp.configuration.OidEntry;
+import eu.dariolucia.reatmetric.driver.snmp.configuration.OidEntryType;
 import eu.dariolucia.reatmetric.driver.snmp.configuration.SnmpDeviceConfiguration;
-import eu.dariolucia.reatmetric.processing.definition.ParameterProcessingDefinition;
-import eu.dariolucia.reatmetric.processing.definition.ProcessingDefinition;
+import eu.dariolucia.reatmetric.processing.definition.*;
 import org.snmp4j.CommunityTarget;
 import org.snmp4j.Snmp;
 import org.snmp4j.TransportMapping;
@@ -36,7 +36,11 @@ import org.snmp4j.util.DefaultPDUFactory;
 import org.snmp4j.util.TableEvent;
 import org.snmp4j.util.TableUtils;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 public class BasicComputerDriverGenerator {
@@ -71,22 +75,22 @@ public class BasicComputerDriverGenerator {
     private static final OID interfaceOutErrorsOID = new OID(".1.3.6.1.2.1.2.2.1.20"); // interface out errors prefix
     private static final OID interfaceOutDiscardsOID = new OID(".1.3.6.1.2.1.2.2.1.20"); // interface out discards prefix
 
-    private final Snmp snmp;
+    private Snmp snmp;
     private int externalIdStart;
     private String pathPrefix;
-
     private ProcessingDefinition processingDefinition;
     private SnmpDeviceConfiguration snmpDeviceConfiguration;
 
-    public BasicComputerDriverGenerator() throws IOException {
+    public void export(String snmpConnectionUrl, String community, int externalIdStart, String pathPrefix) throws IOException {
         TransportMapping<UdpAddress> transport = new DefaultUdpTransportMapping();
         this.snmp = new Snmp(transport);
         transport.listen();
-    }
 
-    public void export(String snmpConnectionUrl, String community, int externalIdStart, String pathPrefix) {
         CommunityTarget<UdpAddress> target = buildTarget(snmpConnectionUrl, community);
         this.externalIdStart = externalIdStart;
+        if(pathPrefix.endsWith(".")) {
+            pathPrefix = pathPrefix.substring(0, pathPrefix.length() - 1);
+        }
         this.pathPrefix = pathPrefix;
         initialise();
         processSystem(target);
@@ -94,16 +98,35 @@ public class BasicComputerDriverGenerator {
         processStorage(target);
         processNetwork(target);
         finalise();
+
+        this.snmp.close();
     }
 
-    private void finalise() {
-        // TODO
+    private void finalise() throws IOException {
+        File modelFile = new File(pathPrefix.replace(".", "_") + "_" + "model.xml");
+        if(!modelFile.exists()) {
+            modelFile.createNewFile();
+        }
+        FileOutputStream fos = new FileOutputStream(modelFile);
+        ProcessingDefinition.save(this.processingDefinition, fos);
+        fos.close();
+
+        File snmpDeviceFile = new File(pathPrefix.replace(".", "_") + "_" + "device.xml");
+        if(!snmpDeviceFile.exists()) {
+            snmpDeviceFile.createNewFile();
+        }
+        FileOutputStream fos2 = new FileOutputStream(snmpDeviceFile);
+        SnmpDeviceConfiguration.save(this.snmpDeviceConfiguration, fos2);
+        fos2.close();
     }
 
     private void initialise() {
         processingDefinition = new ProcessingDefinition();
-        processingDefinition.setPathPrefix(this.pathPrefix);
-
+        String thePathPrefix = this.pathPrefix;
+        if(!thePathPrefix.endsWith(".")) {
+            thePathPrefix += ".";
+        }
+        processingDefinition.setPathPrefix(thePathPrefix);
         snmpDeviceConfiguration = new SnmpDeviceConfiguration();
     }
 
@@ -118,7 +141,6 @@ public class BasicComputerDriverGenerator {
         // Storage table
         TableUtils tUtils = new TableUtils(this.snmp, new DefaultPDUFactory());
         List<TableEvent> events = tUtils.getTable(target, new OID[] { storageTableOID }, null, null);
-        int storageNb = 0;
         for (TableEvent event : events) {
             if (event.isError()) {
                 System.err.println("Error event when parsing storage block");
@@ -126,43 +148,69 @@ public class BasicComputerDriverGenerator {
             }
             for (VariableBinding vb : event.getColumns()) {
                 OID key = vb.getOid();
+                int storageNb = key.get(key.size() - 1);
                 // Get the idx
                 if (key.startsWith(storageTypeOID)) {
                     // Type
-                    addParameter(gc, groupName + storageNb, "Type", ValueTypeEnum.SIGNED_INTEGER, key);
+                    addParameter(gc, groupName + storageNb, "Type", OidEntryType.OID, key, null, storageTypeCalibration());
                 } else if (key.startsWith(storageDescrOID)) {
                     // Description
-                    addParameter(gc, groupName + storageNb, "Description", ValueTypeEnum.CHARACTER_STRING, key);
+                    addParameter(gc, groupName + storageNb, "Description", OidEntryType.STRING, key);
                 } else if (key.startsWith(storageAllocUnitOID)) {
                     // Allocation Unit
-                    addParameter(gc, groupName + storageNb, "Allocation_Unit", ValueTypeEnum.SIGNED_INTEGER, key);
+                    addParameter(gc, groupName + storageNb, "Allocation_Unit", OidEntryType.LONG, key);
                 } else if (key.startsWith(storageSizeOID)) {
                     // Storage size
-                    addParameter(gc, groupName + storageNb, "Storage_Size", ValueTypeEnum.SIGNED_INTEGER, key, "bytes");
+                    addParameter(gc, groupName + storageNb, "Storage_Size", OidEntryType.LONG, key, "bytes");
                 } else if (key.startsWith(storageUsedOID)) {
                     // Storage used
-                    addParameter(gc, groupName + storageNb, "Storage_Used", ValueTypeEnum.SIGNED_INTEGER, key, "bytes");
+                    addParameter(gc, groupName + storageNb, "Storage_Used", OidEntryType.LONG, key, "bytes");
                 }
             }
-            ++storageNb;
         }
     }
 
-    private void addParameter(GroupConfiguration gc, String parent, String name, ValueTypeEnum type, OID key, String unit) {
+    private static EnumCalibration storageTypeCalibration() {
+        EnumCalibration calibration = new EnumCalibration();
+        calibration.setDefaultValue("Unknown");
+        calibration.setApplicability(null);
+        calibration.setPoints(new LinkedList<>());
+        calibration.getPoints().add(new EnumCalibrationPoint(1, "Other"));
+        calibration.getPoints().add(new EnumCalibrationPoint(2, "RAM"));
+        calibration.getPoints().add(new EnumCalibrationPoint(3, "Virtual Memory"));
+        calibration.getPoints().add(new EnumCalibrationPoint(4, "Fixed Disk"));
+        calibration.getPoints().add(new EnumCalibrationPoint(5, "Removable Disk"));
+        calibration.getPoints().add(new EnumCalibrationPoint(6, "Floppy Disk"));
+        calibration.getPoints().add(new EnumCalibrationPoint(7, "Compact Disk"));
+        calibration.getPoints().add(new EnumCalibrationPoint(8, "RAM Disk"));
+        return calibration;
+    }
+
+    private void addParameter(GroupConfiguration gc, String parent, String name, OidEntryType type, OID key, String unit, CalibrationDefinition calibration) {
         // Add mapping to group
         gc.getOidEntryList().add(new OidEntry(key.format(), parent + "." + name, type));
         // Add parameter to model
         ParameterProcessingDefinition ppd = new ParameterProcessingDefinition();
         ppd.setUnit(unit);
-        ppd.setRawType(type);
-        ppd.setEngineeringType(type);
+        ppd.setRawType(type.toValueTypeEnum());
+        ppd.setEngineeringType(type.toValueTypeEnum());
         ppd.setId(externalIdStart++);
         ppd.setLocation(parent + "." + name);
+        if(calibration != null) {
+            ppd.setCalibrations(new LinkedList<>(Collections.singletonList(calibration)));
+            if(calibration instanceof EnumCalibration) {
+                ppd.setEngineeringType(ValueTypeEnum.CHARACTER_STRING);
+            }
+        }
         processingDefinition.getParameterDefinitions().add(ppd);
     }
 
-    private void addParameter(GroupConfiguration gc, String parent, String name, ValueTypeEnum type, OID key) {
-        addParameter(gc, parent, name, type, key, null);
+    private void addParameter(GroupConfiguration gc, String parent, String name, OidEntryType type, OID key, String unit) {
+        addParameter(gc, parent, name, type, key, unit, null);
+    }
+
+    private void addParameter(GroupConfiguration gc, String parent, String name, OidEntryType type, OID key) {
+        addParameter(gc, parent, name, type, key, null, null);
     }
 
     private void processNetwork(CommunityTarget<UdpAddress> target) {
@@ -173,7 +221,6 @@ public class BasicComputerDriverGenerator {
         gc.setPollingTime(2 * 60000); // Once every 2 minutes is enough
         this.snmpDeviceConfiguration.getGroupConfigurationList().add(gc);
 
-        int networkNb = 0;
         // Network table
         TableUtils tUtils = new TableUtils(this.snmp, new DefaultPDUFactory());
         List<TableEvent> events = tUtils.getTable(target, new OID[] { interfaceTableOID }, null, null);
@@ -184,37 +231,47 @@ public class BasicComputerDriverGenerator {
             }
             for (VariableBinding vb : event.getColumns()) {
                 OID key = vb.getOid();
+                int networkNb = key.get(key.size() - 1);
                 // Get the idx
                 if (key.startsWith(interfaceDescrOID)) {
-                    addParameter(gc, groupName + networkNb, "Description", ValueTypeEnum.CHARACTER_STRING, key);
+                    addParameter(gc, groupName + networkNb, "Description", OidEntryType.STRING, key);
                 } else if (key.startsWith(interfaceMacOID)) {
-                    addParameter(gc, groupName + networkNb, "MAC", ValueTypeEnum.CHARACTER_STRING, key);
+                    addParameter(gc, groupName + networkNb, "MAC", OidEntryType.STRING, key);
                 } else if (key.startsWith(interfaceSpeedOID)) {
-                    addParameter(gc, groupName + networkNb, "Speed", ValueTypeEnum.UNSIGNED_INTEGER, key);
+                    addParameter(gc, groupName + networkNb, "Speed", OidEntryType.LONG, key);
                 } else if (key.startsWith(interfaceTypeOID)) {
-                    addParameter(gc, groupName + networkNb, "Type", ValueTypeEnum.UNSIGNED_INTEGER, key);
+                    addParameter(gc, groupName + networkNb, "Type", OidEntryType.INTEGER, key); // TODO: add calibration
                 } else if (key.startsWith(interfaceAdminOID)) {
-                    addParameter(gc, groupName + networkNb, "Admin_Status", ValueTypeEnum.ENUMERATED, key);
+                    addParameter(gc, groupName + networkNb, "Admin_Status", OidEntryType.INTEGER, key, null, networkStatusCalibration()); // 0: down; 1: up
                 } else if (key.startsWith(interfaceOperOID)) {
-                    addParameter(gc, groupName + networkNb, "Operational_Status", ValueTypeEnum.ENUMERATED, key);
+                    addParameter(gc, groupName + networkNb, "Operational_Status", OidEntryType.INTEGER, key, null, networkStatusCalibration());  // 0: down; 1: up
                 } else if (key.startsWith(interfaceInOctOID)) {
-                    addParameter(gc, groupName + networkNb, "In_Octets", ValueTypeEnum.UNSIGNED_INTEGER, key, "bytes");
+                    addParameter(gc, groupName + networkNb, "In_Octets", OidEntryType.LONG, key, "bytes");
                 } else if (key.startsWith(interfaceInErrorsOID)) {
-                    addParameter(gc, groupName + networkNb, "In_Errors", ValueTypeEnum.UNSIGNED_INTEGER, key, "bytes");
+                    addParameter(gc, groupName + networkNb, "In_Errors", OidEntryType.LONG, key, "bytes");
                 } else if (key.startsWith(interfaceInDiscardOID)) {
-                    addParameter(gc, groupName + networkNb, "In_Discards", ValueTypeEnum.UNSIGNED_INTEGER, key, "bytes");
+                    addParameter(gc, groupName + networkNb, "In_Discards", OidEntryType.LONG, key, "bytes");
                 } else if (key.startsWith(interfaceInUnknownOID)) {
-                    addParameter(gc, groupName + networkNb, "In_Unknown", ValueTypeEnum.UNSIGNED_INTEGER, key, "bytes");
+                    addParameter(gc, groupName + networkNb, "In_Unknown", OidEntryType.LONG, key, "bytes");
                 } else if (key.startsWith(interfaceOutOctOID)) {
-                    addParameter(gc, groupName + networkNb, "Out_Octets", ValueTypeEnum.UNSIGNED_INTEGER, key, "bytes");
+                    addParameter(gc, groupName + networkNb, "Out_Octets", OidEntryType.LONG, key, "bytes");
                 } else if (key.startsWith(interfaceOutDiscardsOID)) {
-                    addParameter(gc, groupName + networkNb, "Out_Discards", ValueTypeEnum.UNSIGNED_INTEGER, key, "bytes");
+                    addParameter(gc, groupName + networkNb, "Out_Discards", OidEntryType.LONG, key, "bytes");
                 } else if (key.startsWith(interfaceOutErrorsOID)) {
-                    addParameter(gc, groupName + networkNb, "Out_Errors", ValueTypeEnum.UNSIGNED_INTEGER, key, "bytes");
+                    addParameter(gc, groupName + networkNb, "Out_Errors", OidEntryType.LONG, key, "bytes");
                 }
             }
-            ++networkNb;
         }
+    }
+
+    private static EnumCalibration networkStatusCalibration() {
+        EnumCalibration calibration = new EnumCalibration();
+        calibration.setDefaultValue("Unknown");
+        calibration.setApplicability(null);
+        calibration.setPoints(new LinkedList<>());
+        calibration.getPoints().add(new EnumCalibrationPoint(0, "Down"));
+        calibration.getPoints().add(new EnumCalibrationPoint(1, "Up"));
+        return calibration;
     }
 
     private void processDevices(CommunityTarget<UdpAddress> target) {
@@ -228,19 +285,19 @@ public class BasicComputerDriverGenerator {
         // Processor table
         TableUtils tUtils = new TableUtils(this.snmp, new DefaultPDUFactory());
         List<TableEvent> events = tUtils.getTable(target, new OID[] { processorTableOID }, null, null);
-        int processorNb = 0;
         for (TableEvent event : events) {
             if (event.isError()) {
                 System.err.println("Error event when parsing processor block");
                 continue;
             }
+            int processorNb = 0;
             for (VariableBinding vb : event.getColumns()) {
                 OID key = vb.getOid();
                 if (key.startsWith(processorLoadOID)) {
-                    addParameter(gc, groupName + processorNb, "Load", ValueTypeEnum.UNSIGNED_INTEGER, key);
+                    addParameter(gc, groupName + processorNb, "Load", OidEntryType.LONG, key);
                 }
+                ++processorNb;
             }
-            ++processorNb;
         }
 
         groupName = "Disk";
@@ -252,19 +309,20 @@ public class BasicComputerDriverGenerator {
 
         // Disk table
         events = tUtils.getTable(target, new OID[] { diskStorageTableOID }, null, null);
-        int diskNb = 0;
+
         for (TableEvent event : events) {
             if (event.isError()) {
                 System.err.println("Error event when parsing disk block");
                 continue;
             }
+            int diskNb = 0;
             for (VariableBinding vb : event.getColumns()) {
                 OID key = vb.getOid();
                 if (key.startsWith(diskCapacityOID)) {
-                    addParameter(gc, groupName + diskNb, "Capacity", ValueTypeEnum.SIGNED_INTEGER, key, "KB");
+                    addParameter(gc, groupName + diskNb, "Capacity", OidEntryType.LONG, key, "KB");
                 }
+                ++diskNb;
             }
-            ++diskNb;
         }
     }
 
@@ -276,12 +334,12 @@ public class BasicComputerDriverGenerator {
         gc.setPollingTime(60000); // Once per minute
         this.snmpDeviceConfiguration.getGroupConfigurationList().add(gc);
 
-        addParameter(gc, groupName, "Uptime", ValueTypeEnum.UNSIGNED_INTEGER, systemUptimeOID, "seconds");
-        addParameter(gc, groupName, "Date", ValueTypeEnum.CHARACTER_STRING, systemDateOID, null);
-        addParameter(gc, groupName, "Nb_Users", ValueTypeEnum.UNSIGNED_INTEGER, numUsersOID, null);
-        addParameter(gc, groupName, "Description", ValueTypeEnum.CHARACTER_STRING, systemDescrOID, null);
-        addParameter(gc, groupName, "Name", ValueTypeEnum.CHARACTER_STRING, systemNameOID, null);
-        addParameter(gc, groupName, "Memory", ValueTypeEnum.UNSIGNED_INTEGER, memorySizeOID, "bytes");
+        addParameter(gc, groupName, "Uptime", OidEntryType.LONG, systemUptimeOID, "seconds");
+        addParameter(gc, groupName, "Date", OidEntryType.STRING, systemDateOID, null);
+        addParameter(gc, groupName, "Nb_Users", OidEntryType.LONG, numUsersOID, null);
+        addParameter(gc, groupName, "Description", OidEntryType.STRING, systemDescrOID, null);
+        addParameter(gc, groupName, "Name", OidEntryType.STRING, systemNameOID, null);
+        addParameter(gc, groupName, "Memory", OidEntryType.LONG, memorySizeOID, "bytes");
     }
 
     private CommunityTarget<UdpAddress> buildTarget(String snmpConnectionUrl, String community) {
@@ -298,7 +356,7 @@ public class BasicComputerDriverGenerator {
     public static void main(String[] args) throws IOException {
         if(args.length != 4) {
             System.err.println("Usage: BasicComputerDriverGenerator <connection URL> <community name> <path prefix> <first external ID>");
-            System.err.println("- <connection URL> e.g. udp:192.168.0.1/161");
+            System.err.println("- <connection URL> e.g. 192.168.0.1/161 (UDP protocol used)");
             System.err.println("- <community name> must be provided;");
             System.err.println("- <path prefix> is the location prefix to be used for processing model parameters (e.g. \"SYSTEM.SERVERS\").");
             System.err.println("- <first external ID> is the first ID to be used when creating processing model parameters.");

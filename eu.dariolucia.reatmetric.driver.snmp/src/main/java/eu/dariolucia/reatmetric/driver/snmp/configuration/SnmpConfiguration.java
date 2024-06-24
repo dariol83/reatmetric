@@ -21,16 +21,14 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlAttribute;
-import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
 
+@XmlRootElement(name = "snmp-configuration", namespace = "http://dariolucia.eu/reatmetric/driver/snmp")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SnmpConfiguration {
 
