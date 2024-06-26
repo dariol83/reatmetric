@@ -46,10 +46,7 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.rmi.RemoteException;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -64,6 +61,8 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
     private final Timer deviceTimer;
     private final CommunityTarget<Address> target;
     private volatile Snmp connection;
+
+    private final List<TimerTask> pollingTasks = new LinkedList<>();
 
     protected SnmpTransportConnector(String driverName, SnmpDevice device, IRawDataBroker rawDataBroker, IProcessingModel processingModel) {
         super(device.getName(), "");
@@ -105,7 +104,10 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
             updateConnectionStatus(TransportConnectionStatus.OPEN);
             // Now activate the periodic pollings
             for(GroupConfiguration gc : device.getDeviceConfiguration().getGroupConfigurationList()) {
-                this.deviceTimer.schedule(buildTimerTask(gc), 0, gc.getPollingTime());
+                TimerTask task = buildTimerTask(gc);
+                // Remember timer tasks, so that disconnect can stop these tasks
+                this.pollingTasks.add(task);
+                this.deviceTimer.schedule(task, 0, gc.getPollingTime());
             }
         } catch (IOException e) {
             updateConnectionStatus(TransportConnectionStatus.ERROR);
@@ -129,7 +131,8 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
                 synchronized (SnmpTransportConnector.this) {
                     theConnection = connection;
                     if (theConnection == null) {
-                        this.cancel();
+                        // This is weird, do nothing
+                        LOG.log(Level.WARNING, "SNMP Polling Task for group " + group.getName() + " started but no connection is available");
                         return;
                     }
                 }
@@ -199,6 +202,8 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
         }
         updateAlarmState(AlarmState.NOT_APPLICABLE);
         updateConnectionStatus(TransportConnectionStatus.DISCONNECTING);
+        this.pollingTasks.forEach(TimerTask::cancel);
+        this.pollingTasks.clear();
         try {
             this.connection.close();
         } catch (IOException ex) {
