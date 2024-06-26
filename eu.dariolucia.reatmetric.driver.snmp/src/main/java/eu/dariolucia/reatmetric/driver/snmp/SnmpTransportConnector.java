@@ -20,7 +20,9 @@ package eu.dariolucia.reatmetric.driver.snmp;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
+import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
+import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
@@ -230,5 +232,17 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
     @Override
     public void abort() throws TransportException, RemoteException {
         disconnect();
+    }
+
+    public synchronized void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        if(connection == null || getConnectionStatus() != TransportConnectionStatus.OPEN) {
+            throw new ActivityHandlingException("Connector " + getName() + " not started");
+        }
+        // OK, forward in separate task
+        dispatchActivity(activityInvocation);
+    }
+
+    private void dispatchActivity(IActivityHandler.ActivityInvocation activityInvocation) {
+        // TODO implement handling
     }
 }
