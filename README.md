@@ -25,10 +25,11 @@ ReatMetric is based on a very limited set of dependencies:
 - [Groovy](https://groovy-lang.org): for the Groovy language support in the _processing_ and _automation_ modules (best choice);
 - [GraalVM](https://www.graalvm.org): for the Javascript language support in the _automation_ modules;
 - [Jython](https://www.jython.org/): for the Python language support in the _automation_ modules;
-- [Json Path](https://github.com/json-path/JsonPath): for the parsing of JSON objects and files.
+- [Json Path](https://github.com/json-path/JsonPath): for the parsing of JSON objects and files;
+- [SNMP4J](https://www.snmp4j.org/): for the support of SNMP in the _snmp_ module;
 
-Including also the indirect dependencies, a typical ReatMetric backend deployment (i.e. without UI) is composed by 38 Jars,
-15 from ReatMetric and 23 from external dependencies, for a total of **15.9 MB**. This size can be further reduced depending 
+Including also the indirect dependencies, a typical ReatMetric backend deployment (i.e. without UI) is composed by 40 Jars,
+16 from ReatMetric and 24 from external dependencies, for a total of **16.5 MB**. This size can be further reduced depending 
 on the needs, since some drivers and related dependencies might not be needed. 
 
 ## Performance
@@ -141,8 +142,7 @@ Example of remoting configuration:
 
 ### To version 1.1.0
 - persist implementation based on PostgreSQL and Timeseries
-- SNMP driver
-- SNMP generator for SNMP driver
+- Weakly consistent synthetic parameters
 - Container template for easy Docker image creation
 
 ### Future ideas
