@@ -10,6 +10,7 @@ open module eu.dariolucia.reatmetric.driver.snmp {
 
     requires org.snmp4j;
 
+    exports eu.dariolucia.reatmetric.driver.snmp;
     exports eu.dariolucia.reatmetric.driver.snmp.configuration;
 
     provides eu.dariolucia.reatmetric.core.api.IDriver with SnmpDriver;

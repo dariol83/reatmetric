@@ -17,12 +17,17 @@
 
 package eu.dariolucia.reatmetric.driver.snmp;
 
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceReport;
+import eu.dariolucia.reatmetric.api.activity.ActivityOccurrenceState;
+import eu.dariolucia.reatmetric.api.activity.ActivityReportState;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.processing.IActivityHandler;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModel;
 import eu.dariolucia.reatmetric.api.processing.exceptions.ActivityHandlingException;
+import eu.dariolucia.reatmetric.api.processing.input.ActivityProgress;
 import eu.dariolucia.reatmetric.api.processing.input.ParameterSample;
 import eu.dariolucia.reatmetric.api.rawdata.Quality;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
@@ -37,10 +42,7 @@ import org.snmp4j.PDU;
 import org.snmp4j.Snmp;
 import org.snmp4j.TransportMapping;
 import org.snmp4j.event.ResponseEvent;
-import org.snmp4j.smi.Address;
-import org.snmp4j.smi.GenericAddress;
-import org.snmp4j.smi.OctetString;
-import org.snmp4j.smi.UdpAddress;
+import org.snmp4j.smi.*;
 import org.snmp4j.transport.DefaultUdpTransportMapping;
 
 import java.io.ByteArrayOutputStream;
@@ -55,6 +57,7 @@ import java.util.logging.Logger;
 public class SnmpTransportConnector extends AbstractTransportConnector {
 
     private static final Logger LOG = Logger.getLogger(SnmpTransportConnector.class.getName());
+    public static final String EXECUTION_REPORT_NAME = "Execution";
 
     private final String driverName;
     private final SnmpDevice device;
@@ -149,15 +152,15 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
                         updateAlarmState(AlarmState.NOMINAL);
                     } else {
                         if(LOG.isLoggable(Level.WARNING)) {
-                            LOG.warning("Response from endpoint " + connection + " not received/null for group " + group);
+                            LOG.log(Level.WARNING, "Response from endpoint " + device.getConnectionString() + " not received/null for group " + group.getName(), new Object[] { device.getName() });
                         }
                         updateAlarmState(AlarmState.ALARM);
                     }
                 } catch (IOException e) {
-                    LOG.log(Level.WARNING, "Request to endpoint " + connection + " returned an exception for group " + group + ": " + e.getMessage(), e);
+                    LOG.log(Level.WARNING, "Request to endpoint " + device.getConnectionString() + " returned an exception for group " + group.getName() + ": " + e.getMessage(), e);
                     updateAlarmState(AlarmState.ALARM);
                 } catch (Exception e) {
-                    LOG.log(Level.WARNING, "Request to endpoint " + connection + " returned an unknown exception for group " + group + ": " + e.getMessage(), e);
+                    LOG.log(Level.WARNING, "Request to endpoint " + device.getConnectionString() + " returned an unknown exception for group " + group.getName() + ": " + e.getMessage(), e);
                     updateAlarmState(AlarmState.ALARM);
                 }
             }
@@ -171,9 +174,8 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
         try {
             PDU response = responseEvent.getResponse();
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(bos);
-            oos.writeObject(response);
-            oos.close();
+            response.encodeBER(bos);
+            bos.close();
             byte[] serialize = bos.toByteArray();
             RawData rd = new RawData(rawDataBroker.nextRawDataId(), generationTime, group.getName(),
                     SnmpDriver.SNMP_MESSAGE_TYPE, device.getName(), device.getName(), Quality.GOOD, null, serialize,
@@ -213,6 +215,7 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
         }
         this.connection = null;
         updateConnectionStatus(TransportConnectionStatus.IDLE);
+        updateAlarmState(AlarmState.NOMINAL);
     }
 
     @Override
@@ -238,11 +241,102 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
         if(connection == null || getConnectionStatus() != TransportConnectionStatus.OPEN) {
             throw new ActivityHandlingException("Connector " + getName() + " not started");
         }
-        // OK, forward in separate task
-        dispatchActivity(activityInvocation);
+        // OK, forward in separate task, use timer, one-off
+        this.deviceTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                dispatchActivity(activityInvocation);
+            }
+        }, 0);
     }
 
     private void dispatchActivity(IActivityHandler.ActivityInvocation activityInvocation) {
-        // TODO implement handling
+        Instant time = Instant.now();
+        // Notify attempt to dispatch
+        reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.PENDING,
+                ActivityOccurrenceState.TRANSMISSION);
+        // Get the connection
+        Snmp theConnection = null;
+        synchronized (SnmpTransportConnector.this) {
+            theConnection = connection;
+            if (theConnection == null) {
+                // No connection, release failed
+                reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                        ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL,
+                        ActivityOccurrenceState.RELEASE);
+                return;
+            }
+        }
+
+        PDU request = encodeSetRequest(activityInvocation);
+        if(request == null) {
+            LOG.log(Level.SEVERE, "Response from endpoint " + device.getConnectionString() + " not received/null for activity " + activityInvocation.getPath(), new Object[] { device.getName() });
+            // Cannot encode request
+            reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                    ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.FATAL,
+                    ActivityOccurrenceState.RELEASE);
+            return;
+        }
+        try {
+            reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                    ActivityOccurrenceState.RELEASE, ActivityOccurrenceReport.RELEASE_REPORT_NAME, ActivityReportState.OK,
+                    ActivityOccurrenceState.EXECUTION);
+            reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                    ActivityOccurrenceState.EXECUTION, EXECUTION_REPORT_NAME, ActivityReportState.PENDING,
+                    ActivityOccurrenceState.EXECUTION);
+            ResponseEvent<?> responseEvent = sendRequest(theConnection, request);
+            if ((responseEvent != null) && (responseEvent.getResponse() != null)) {
+                reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                        ActivityOccurrenceState.EXECUTION, EXECUTION_REPORT_NAME, ActivityReportState.OK,
+                        ActivityOccurrenceState.VERIFICATION);
+            } else {
+                reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                        ActivityOccurrenceState.EXECUTION, EXECUTION_REPORT_NAME, ActivityReportState.FATAL,
+                        ActivityOccurrenceState.EXECUTION);
+                if(LOG.isLoggable(Level.WARNING)) {
+                    LOG.log(Level.SEVERE, "Response from endpoint " + device.getConnectionString() + " not received/null for activity " + activityInvocation.getPath(), new Object[] { device.getName() });
+                }
+            }
+        } catch (IOException e) {
+            reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                    ActivityOccurrenceState.EXECUTION, EXECUTION_REPORT_NAME, ActivityReportState.FATAL,
+                    ActivityOccurrenceState.EXECUTION);
+            LOG.log(Level.SEVERE, "Request to endpoint " + device.getConnectionString() + " returned an exception for activity " + activityInvocation.getPath() + ": " + e.getMessage(), e);
+        } catch (Exception e) {
+            reportActivityState(activityInvocation.getActivityId(), activityInvocation.getActivityOccurrenceId(), time,
+                    ActivityOccurrenceState.EXECUTION, EXECUTION_REPORT_NAME, ActivityReportState.FATAL,
+                    ActivityOccurrenceState.EXECUTION);
+            LOG.log(Level.SEVERE, "Request to endpoint " + device.getConnectionString() + " returned an unknown exception for activity " + activityInvocation.getPath() + ": " + e.getMessage(), e);
+        }
+    }
+
+    private PDU encodeSetRequest(IActivityHandler.ActivityInvocation activityInvocation) {
+        try {
+            PDU pdu = new PDU();
+            String oid = activityInvocation.getArguments().get("OID").toString();
+            OID theOid = new OID(oid);
+            Object value = activityInvocation.getArguments().get("Value");
+            Variable theVar;
+            if(value == null) {
+                theVar = new Null();
+            } else if(value instanceof String) {
+                theVar = new OctetString((String) value);
+            } else if(value instanceof Number) {
+                theVar = new Integer32(((Number) value).intValue());
+            } else {
+                throw new IllegalArgumentException("value type " + value.getClass().getSimpleName() + " not supported");
+            }
+            pdu.setVariableBindings(Collections.singletonList(new VariableBinding(theOid, theVar)));
+            pdu.setType(PDU.SET);
+            return pdu;
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Cannot encode SNMP set request: " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public void reportActivityState(int activityId, IUniqueId activityOccurrenceId, Instant time, ActivityOccurrenceState state, String releaseReportName, ActivityReportState status, ActivityOccurrenceState nextState) {
+        processingModel.reportActivityProgress(ActivityProgress.of(activityId, activityOccurrenceId, releaseReportName, time, state, null, status, nextState, null));
     }
 }

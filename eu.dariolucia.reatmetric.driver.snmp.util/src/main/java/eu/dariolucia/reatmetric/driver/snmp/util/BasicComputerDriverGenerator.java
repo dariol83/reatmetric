@@ -18,6 +18,7 @@
 package eu.dariolucia.reatmetric.driver.snmp.util;
 
 import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
+import eu.dariolucia.reatmetric.driver.snmp.SnmpDriver;
 import eu.dariolucia.reatmetric.driver.snmp.configuration.GroupConfiguration;
 import eu.dariolucia.reatmetric.driver.snmp.configuration.OidEntry;
 import eu.dariolucia.reatmetric.driver.snmp.configuration.OidEntryType;
@@ -49,6 +50,7 @@ public class BasicComputerDriverGenerator {
     private static final OID numUsersOID = new OID(".1.3.6.1.2.1.25.1.5.0"); // num users
     private static final OID systemDescrOID = new OID(".1.3.6.1.2.1.1.1.0"); // system description
     private static final OID systemNameOID = new OID(".1.3.6.1.2.1.1.5.0"); // system name
+    private static final OID contactNameOID = new OID(".1.3.6.1.2.1.1.4.0"); // contact name
     private static final OID memorySizeOID = new OID(".1.3.6.1.2.1.25.2.2.0"); // memory size (KB)
     private static final OID processorTableOID = new OID(".1.3.6.1.2.1.25.3.3"); // processor table
     private static final OID processorLoadOID = new OID(".1.3.6.1.2.1.25.3.3.1.2"); // processor load prefix
@@ -81,7 +83,7 @@ public class BasicComputerDriverGenerator {
     private ProcessingDefinition processingDefinition;
     private SnmpDeviceConfiguration snmpDeviceConfiguration;
 
-    public void export(String snmpConnectionUrl, String community, int externalIdStart, String pathPrefix) throws IOException {
+    public void export(String snmpConnectionUrl, String community, int externalIdStart, String pathPrefix, String deviceName) throws IOException {
         TransportMapping<UdpAddress> transport = new DefaultUdpTransportMapping();
         this.snmp = new Snmp(transport);
         transport.listen();
@@ -92,7 +94,7 @@ public class BasicComputerDriverGenerator {
             pathPrefix = pathPrefix.substring(0, pathPrefix.length() - 1);
         }
         this.pathPrefix = pathPrefix;
-        initialise();
+        initialise(deviceName);
         processSystem(target);
         processDevices(target);
         processStorage(target);
@@ -120,14 +122,42 @@ public class BasicComputerDriverGenerator {
         fos2.close();
     }
 
-    private void initialise() {
+    private void initialise(String deviceName) {
         processingDefinition = new ProcessingDefinition();
         String thePathPrefix = this.pathPrefix;
         if(!thePathPrefix.endsWith(".")) {
             thePathPrefix += ".";
         }
         processingDefinition.setPathPrefix(thePathPrefix);
+        // Add setter
+        addSetter(deviceName);
         snmpDeviceConfiguration = new SnmpDeviceConfiguration();
+    }
+
+    private void addSetter(String deviceName) {
+        ActivityProcessingDefinition apd = new ActivityProcessingDefinition();
+        apd.setLocation("Setter");
+        apd.setType(SnmpDriver.SNMP_MESSAGE_TYPE);
+        apd.setId(externalIdStart++);
+        apd.setDescription("OID setter activity");
+        apd.setDefaultRoute(deviceName);
+        apd.setArguments(new LinkedList<>());
+        // First argument: OID in string format
+        PlainArgumentDefinition pad1 = new PlainArgumentDefinition();
+        pad1.setDescription("OID to set (string)");
+        pad1.setName("OID");
+        pad1.setRawType(ValueTypeEnum.CHARACTER_STRING);
+        pad1.setEngineeringType(ValueTypeEnum.CHARACTER_STRING);
+        apd.getArguments().add(pad1);
+        // Second argument: value
+        PlainArgumentDefinition pad2 = new PlainArgumentDefinition();
+        pad2.setDescription("Value");
+        pad2.setName("Value");
+        pad2.setRawType(ValueTypeEnum.DERIVED);
+        pad2.setEngineeringType(ValueTypeEnum.DERIVED);
+        apd.getArguments().add(pad2);
+        // Add to definition
+        this.processingDefinition.getActivityDefinitions().add(apd);
     }
 
     private void processStorage(CommunityTarget<UdpAddress> target) {
@@ -186,11 +216,12 @@ public class BasicComputerDriverGenerator {
         return calibration;
     }
 
-    private void addParameter(GroupConfiguration gc, String parent, String name, OidEntryType type, OID key, String unit, CalibrationDefinition calibration) {
+    private ParameterProcessingDefinition addParameter(GroupConfiguration gc, String parent, String name, OidEntryType type, OID key, String unit, CalibrationDefinition calibration) {
         // Add mapping to group
         gc.getOidEntryList().add(new OidEntry(key.format(), parent + "." + name, type));
         // Add parameter to model
         ParameterProcessingDefinition ppd = new ParameterProcessingDefinition();
+        ppd.setDescription(key.toString());
         ppd.setUnit(unit);
         ppd.setRawType(type.toValueTypeEnum());
         ppd.setEngineeringType(type.toValueTypeEnum());
@@ -203,14 +234,15 @@ public class BasicComputerDriverGenerator {
             }
         }
         processingDefinition.getParameterDefinitions().add(ppd);
+        return ppd;
     }
 
-    private void addParameter(GroupConfiguration gc, String parent, String name, OidEntryType type, OID key, String unit) {
-        addParameter(gc, parent, name, type, key, unit, null);
+    private ParameterProcessingDefinition addParameter(GroupConfiguration gc, String parent, String name, OidEntryType type, OID key, String unit) {
+        return addParameter(gc, parent, name, type, key, unit, null);
     }
 
-    private void addParameter(GroupConfiguration gc, String parent, String name, OidEntryType type, OID key) {
-        addParameter(gc, parent, name, type, key, null, null);
+    private ParameterProcessingDefinition addParameter(GroupConfiguration gc, String parent, String name, OidEntryType type, OID key) {
+        return addParameter(gc, parent, name, type, key, null, null);
     }
 
     private void processNetwork(CommunityTarget<UdpAddress> target) {
@@ -240,7 +272,7 @@ public class BasicComputerDriverGenerator {
                 } else if (key.startsWith(interfaceSpeedOID)) {
                     addParameter(gc, groupName + networkNb, "Speed", OidEntryType.LONG, key);
                 } else if (key.startsWith(interfaceTypeOID)) {
-                    addParameter(gc, groupName + networkNb, "Type", OidEntryType.INTEGER, key); // TODO: add calibration
+                    addParameter(gc, groupName + networkNb, "Type", OidEntryType.INTEGER, key, null, interfaceTypeCalibration());
                 } else if (key.startsWith(interfaceAdminOID)) {
                     addParameter(gc, groupName + networkNb, "Admin_Status", OidEntryType.INTEGER, key, null, networkStatusCalibration()); // 0: down; 1: up
                 } else if (key.startsWith(interfaceOperOID)) {
@@ -262,6 +294,46 @@ public class BasicComputerDriverGenerator {
                 }
             }
         }
+    }
+
+    private EnumCalibration interfaceTypeCalibration() {
+        EnumCalibration calibration = new EnumCalibration();
+        calibration.setDefaultValue("Unknown");
+        calibration.setApplicability(null);
+        calibration.setPoints(new LinkedList<>());
+        calibration.getPoints().add(new EnumCalibrationPoint(1, "other"));
+        calibration.getPoints().add(new EnumCalibrationPoint(2, "regular1822"));
+        calibration.getPoints().add(new EnumCalibrationPoint(3, "hdh1822"));
+        calibration.getPoints().add(new EnumCalibrationPoint(4, "ddn-x25"));
+        calibration.getPoints().add(new EnumCalibrationPoint(5, "rfc877-x25"));
+        calibration.getPoints().add(new EnumCalibrationPoint(6, "ethernet-csmacd"));
+        calibration.getPoints().add(new EnumCalibrationPoint(7, "iso88023-csmacd"));
+        calibration.getPoints().add(new EnumCalibrationPoint(8, "iso88024-tokenBus"));
+        calibration.getPoints().add(new EnumCalibrationPoint(9, "iso88025-tokenRing"));
+        calibration.getPoints().add(new EnumCalibrationPoint(10, "iso88026-man"));
+        calibration.getPoints().add(new EnumCalibrationPoint(11, "starLan"));
+        calibration.getPoints().add(new EnumCalibrationPoint(12, "proteon-10Mbit"));
+        calibration.getPoints().add(new EnumCalibrationPoint(13, "proteon-80Mbit"));
+        calibration.getPoints().add(new EnumCalibrationPoint(14, "hyperchannel"));
+        calibration.getPoints().add(new EnumCalibrationPoint(15, "fddi"));
+        calibration.getPoints().add(new EnumCalibrationPoint(16, "lapb"));
+        calibration.getPoints().add(new EnumCalibrationPoint(17, "sdlc"));
+        calibration.getPoints().add(new EnumCalibrationPoint(18, "ds1"));
+        calibration.getPoints().add(new EnumCalibrationPoint(19, "e1"));
+        calibration.getPoints().add(new EnumCalibrationPoint(20, "basicISDN"));
+        calibration.getPoints().add(new EnumCalibrationPoint(21, "primaryISDN"));
+        calibration.getPoints().add(new EnumCalibrationPoint(22, "propPointToPointSerial"));
+        calibration.getPoints().add(new EnumCalibrationPoint(23, "ppp"));
+        calibration.getPoints().add(new EnumCalibrationPoint(24, "softwareLoopback"));
+        calibration.getPoints().add(new EnumCalibrationPoint(25, "eon"));
+        calibration.getPoints().add(new EnumCalibrationPoint(26, "ethernet-3Mbit"));
+        calibration.getPoints().add(new EnumCalibrationPoint(27, "nsip"));
+        calibration.getPoints().add(new EnumCalibrationPoint(28, "slip"));
+        calibration.getPoints().add(new EnumCalibrationPoint(29, "ultra"));
+        calibration.getPoints().add(new EnumCalibrationPoint(30, "ds3"));
+        calibration.getPoints().add(new EnumCalibrationPoint(31, "sip"));
+        calibration.getPoints().add(new EnumCalibrationPoint(32, "frame-relay"));
+        return calibration;
     }
 
     private static EnumCalibration networkStatusCalibration() {
@@ -330,7 +402,7 @@ public class BasicComputerDriverGenerator {
         String groupName = "System";
         GroupConfiguration gc = new GroupConfiguration();
         gc.setName(groupName);
-        gc.setDistributePdu(false);
+        gc.setDistributePdu(true);
         gc.setPollingTime(60000); // Once per minute
         this.snmpDeviceConfiguration.getGroupConfigurationList().add(gc);
 
@@ -339,7 +411,22 @@ public class BasicComputerDriverGenerator {
         addParameter(gc, groupName, "Nb_Users", OidEntryType.LONG, numUsersOID, null);
         addParameter(gc, groupName, "Description", OidEntryType.STRING, systemDescrOID, null);
         addParameter(gc, groupName, "Name", OidEntryType.STRING, systemNameOID, null);
+        addWritableParameter(gc, groupName, "Contact", OidEntryType.STRING, contactNameOID, null);
         addParameter(gc, groupName, "Memory", OidEntryType.LONG, memorySizeOID, "bytes");
+    }
+
+    private ParameterProcessingDefinition addWritableParameter(GroupConfiguration gc, String groupName, String name, OidEntryType oidType, OID oid, String unit) {
+        ParameterProcessingDefinition ppd = addParameter(gc, groupName, name, oidType, oid, unit);
+        ParameterSetterDefinition setter = new ParameterSetterDefinition();
+        setter.setActivity(this.processingDefinition.getActivityDefinitions().get(0)); // only one defined
+        PlainArgumentInvocationDefinition oidArg = new PlainArgumentInvocationDefinition();
+        oidArg.setName("OID");
+        oidArg.setRawValue(true);
+        oidArg.setValue(oid.toString());
+        setter.getArguments().add(oidArg);
+        setter.setSetArgument("Value");
+        ppd.setSetter(setter);
+        return ppd;
     }
 
     private CommunityTarget<UdpAddress> buildTarget(String snmpConnectionUrl, String community) {
@@ -354,20 +441,22 @@ public class BasicComputerDriverGenerator {
     }
 
     public static void main(String[] args) throws IOException {
-        if(args.length != 4) {
-            System.err.println("Usage: BasicComputerDriverGenerator <connection URL> <community name> <path prefix> <first external ID>");
+        if(args.length != 5) {
+            System.err.println("Usage: BasicComputerDriverGenerator <connection URL> <community name> <path prefix> <first external ID> <device name>");
             System.err.println("- <connection URL> e.g. 192.168.0.1/161 (UDP protocol used)");
             System.err.println("- <community name> must be provided;");
             System.err.println("- <path prefix> is the location prefix to be used for processing model parameters (e.g. \"SYSTEM.SERVERS\").");
             System.err.println("- <first external ID> is the first ID to be used when creating processing model parameters.");
+            System.err.println("- <device name> is the name of the device (used as default route for setter activity)");
             System.exit(1);
         }
         String connectionUrl = args[0];
         String community = args[1];
         String pathPrefix = args[2];
+        String deviceName = args[4];
         int firstExternalId = Integer.parseInt(args[3]);
         BasicComputerDriverGenerator generator = new BasicComputerDriverGenerator();
-        generator.export(connectionUrl, community, firstExternalId, pathPrefix);
+        generator.export(connectionUrl, community, firstExternalId, pathPrefix, deviceName);
         // Files are generated in the current working directory
     }
 }
