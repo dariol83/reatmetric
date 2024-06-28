@@ -21,9 +21,13 @@ import jakarta.xml.bind.annotation.*;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SnmpDevice {
+
+    private static final Logger LOG = Logger.getLogger(SnmpDevice.class.getName());
 
     @XmlAttribute(name = "name", required = true)
     private String name;
@@ -154,8 +158,7 @@ public class SnmpDevice {
         try {
             this.deviceConfiguration = SnmpDeviceConfiguration.load(new FileInputStream(getConfiguration()));
         } catch (IOException e) {
-            // TODO: log
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Cannot initialise device configuration file " + getConfiguration() + ": " + e.getMessage(), e);
         }
     }
 
