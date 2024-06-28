@@ -1,5 +1,10 @@
 CREDITS
 ------------------------------------------------------------------------------
+eu.dariolucia.reatmetric.driver.snmp.util uses the SNMP4J library.
+(https://www.snmp4j.org/)
+
+SNMP4J is licensed under the Apache License 2.0
+(https://www.apache.org/licenses/LICENSE-2.0.html)
 ------------------------------------------------------------------------------
 eu.dariolucia.reatmetric.driver.snmp.util
 
