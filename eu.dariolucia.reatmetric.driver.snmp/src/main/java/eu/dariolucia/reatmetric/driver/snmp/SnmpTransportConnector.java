@@ -238,8 +238,16 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
     }
 
     public synchronized void executeActivity(IActivityHandler.ActivityInvocation activityInvocation) throws ActivityHandlingException {
+        if(device.getSetCommandConfiguration() == null) {
+            throw new ActivityHandlingException("No device set-command configuration provided, connector " + getName() + " cannot forward");
+        }
         if(connection == null || getConnectionStatus() != TransportConnectionStatus.OPEN) {
             throw new ActivityHandlingException("Connector " + getName() + " not started");
+        }
+        if(!activityInvocation.getPath().asString().equals(device.getSetCommandConfiguration().getPath())) {
+            throw new ActivityHandlingException("Activity occurrence of path " + activityInvocation.getPath() + " provided to connector " + getName() + ", " +
+                    "but the device configuration set command is specified as " + device.getSetCommandConfiguration().getPath() + ": activity occurrence cannot be " +
+                    "processed by this connector");
         }
         // OK, forward in separate task, use timer, one-off
         this.deviceTimer.schedule(new TimerTask() {
