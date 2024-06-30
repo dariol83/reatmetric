@@ -20,14 +20,11 @@ import eu.dariolucia.reatmetric.processing.impl.operations.AbstractModelOperatio
 import eu.dariolucia.reatmetric.processing.impl.operations.SystemEntityUpdateOperation;
 import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityProcessor;
 
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class EntityVertex {
 
-    private List<AbstractModelOperation> updateOperationsForAffectedEntities = null;
+    private List<AbstractModelOperation<?>> updateOperationsForAffectedEntities = null;
     private int orderingId;
 
     private final AbstractSystemEntityProcessor processor;
@@ -39,6 +36,7 @@ public class EntityVertex {
         this.processor = processor;
         this.updateOperation = new SystemEntityUpdateOperation();
         this.updateOperation.setProcessor(this.processor);
+        this.processor.setEntityVertex(this);
     }
 
     public int getSystemEntityId() {
@@ -71,7 +69,12 @@ public class EntityVertex {
         operation.setProcessor(processor);
     }
 
-    public synchronized List<AbstractModelOperation> getUpdateOperationsForAffectedEntities() {
+    public synchronized List<AbstractModelOperation<?>> getUpdateOperationsForAffectedEntities(boolean includeWeaklyConsistent) {
+        // If we are processing only consistent system elements, then this object, being weakly consistent, will be evaluated,
+        // but it will not contribute with update operations to affected entities
+        if(!includeWeaklyConsistent && getProcessor().isWeaklyConsistent()) {
+            return Collections.emptyList();
+        }
         // The method is synchronized to avoid double computation
         if(updateOperationsForAffectedEntities == null) {
             // The affected entities are the vertex's predecessors + their affected entities
@@ -83,7 +86,7 @@ public class EntityVertex {
                 updateOperationsForAffectedEntities.add(de.getSource().getUpdateOperation());
                 processed.add(de.getSource().getSystemEntityId());
                 // The items affected by the predecessor
-                for(AbstractModelOperation amd : de.getSource().getUpdateOperationsForAffectedEntities()) {
+                for(AbstractModelOperation<?> amd : de.getSource().getUpdateOperationsForAffectedEntities(includeWeaklyConsistent)) {
                     if(!processed.contains(amd.getSystemEntityId())) {
                         processed.add(amd.getSystemEntityId());
                         updateOperationsForAffectedEntities.add(amd);

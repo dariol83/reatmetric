@@ -33,14 +33,17 @@ public class ProcessingTask extends FutureTask<List<AbstractDataItem>> {
 
     private final Job job;
 
-    ProcessingTask(Job toRun) {
+    private final boolean includeWeaklyConsistent;
+
+    ProcessingTask(Job toRun, boolean includeWeaklyConsistent) {
         super(toRun);
         this.job = toRun;
+        this.includeWeaklyConsistent = includeWeaklyConsistent;
     }
 
     void prepareTask(GraphModel graphModel) {
         // Delegate
-        job.prepareTask(graphModel);
+        job.prepareTask(graphModel, this.includeWeaklyConsistent);
     }
 
     Set<Integer> getAffectedItems() {
@@ -88,13 +91,15 @@ public class ProcessingTask extends FutureTask<List<AbstractDataItem>> {
             return result;
         }
 
-        void prepareTask(GraphModel graphModel) {
+        void prepareTask(GraphModel graphModel, boolean includeWeakConsistent) {
             // Finalize the list by extending it with the necessary re-evaluations, the setting of the processors
             // and order by topological sort
-            operations = graphModel.finalizeOperationList(operations);
-            // Build the set of affected items by ID
+            operations = graphModel.finalizeOperationList(operations, includeWeakConsistent);
+            // Build the set of affected items by ID: do not put items that are weakly consistent
             for (AbstractModelOperation<?> amo : operations) {
-                this.affectedItems.add(amo.getSystemEntityId());
+                if(!amo.getProcessor().isWeaklyConsistent() || includeWeakConsistent) {
+                    this.affectedItems.add(amo.getSystemEntityId());
+                }
             }
         }
 

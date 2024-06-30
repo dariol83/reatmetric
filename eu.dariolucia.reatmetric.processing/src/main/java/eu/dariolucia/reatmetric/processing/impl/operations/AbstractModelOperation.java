@@ -31,7 +31,7 @@ public abstract class AbstractModelOperation<K extends AbstractSystemEntityProce
 
     protected K processor;
 
-    protected K getProcessor() {
+    public K getProcessor() {
         return processor;
     }
 

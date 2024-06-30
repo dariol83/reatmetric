@@ -259,7 +259,9 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations, int dispatchingQueue, boolean internalRequest) {
         // Create the processing task
-        ProcessingTask taskToRun = new ProcessingTask(new ProcessingTask.Job(operations, outputRedirector, workingSet));
+        // TODO: push the includeWeaklyConsistent as method argument, to be called by the appropriate manager
+        // TODO: add weakly consistent parameter manager
+        ProcessingTask taskToRun = new ProcessingTask(new ProcessingTask.Job(operations, outputRedirector, workingSet), false);
         // Add the task to be done to the queue
         switch(dispatchingQueue) {
             case COMMAND_DISPATCHING_QUEUE:
