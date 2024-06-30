@@ -170,6 +170,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             LOG.log(Level.SEVERE, String.format("Parameter %d (%s) is a synthetic parameter, but a sample was injected. Processing ignored.", definition.getId(), definition.getLocation()));
             return Collections.emptyList();
         }
+        // TODO: optimisation? if weakly and not dirty, return empty list
         // To be returned at the end of the processing
         List<AbstractDataItem> generatedStates = new ArrayList<>(3);
         // Re-evaluation: for mirrored parameters the re-evaluation does not make sense.
@@ -336,6 +337,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         finalizeAlarmParameterData(generatedStates, alarmData);
         // At this stage, check the triggers and, for each of them, derive the correct behaviour
         activateTriggers(newValue, previousValue, wasInAlarm, stateChanged);
+        // TODO: if weakly consistent, clear dirty state
         // Return the list
         return generatedStates;
     }
