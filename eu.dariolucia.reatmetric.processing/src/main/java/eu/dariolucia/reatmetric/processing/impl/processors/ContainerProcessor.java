@@ -63,8 +63,9 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
         this.systemEntityBuilder.setStatus(entityStatus);
         this.systemEntityBuilder.setAlarmState(AlarmState.NOT_APPLICABLE);
         if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
-            this.state = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
-            this.entityState = this.state;
+            SystemEntity newState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
+            this.state.set(newState);
+            this.entityState = newState;
             return List.of(this.entityState);
         } else {
             // No reason to send out anything relevant

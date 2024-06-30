@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 
 public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityProcessingDefinition, ActivityOccurrenceData, ActivityProgress> {
 
-    private final static Logger LOG = Logger.getLogger(ActivityProcessor.class.getName());
+    private static final Logger LOG = Logger.getLogger(ActivityProcessor.class.getName());
 
     private final Map<IUniqueId, ActivityOccurrenceProcessor> id2occurrence = new ConcurrentHashMap<>();
     private final Map<String, AbstractArgumentDefinition> name2argumentDefinition = new TreeMap<>();

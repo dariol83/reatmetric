@@ -28,6 +28,7 @@ import eu.dariolucia.reatmetric.processing.impl.processors.builders.SystemEntity
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This class is the parent class of all processing elements of the system entity model. A processing class is defined
@@ -45,7 +46,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
 
     protected volatile SystemEntity entityState;
 
-    protected volatile T state;
+    protected final AtomicReference<T> state = new AtomicReference<>();
 
     protected volatile Status entityStatus;
 
@@ -119,7 +120,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     }
 
     public final T getState() {
-        return state;
+        return state.get();
     }
 
     public final SystemEntity getEntityState() {

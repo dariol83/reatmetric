@@ -41,6 +41,7 @@ import eu.dariolucia.reatmetric.processing.impl.processors.builders.ParameterDat
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 /**
@@ -56,7 +57,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     private final AlarmParameterDataBuilder alarmBuilder;
 
-    private volatile AlarmParameterData currentAlarmData;
+    private final AtomicReference<AlarmParameterData> currentAlarmData = new AtomicReference<>();
 
     private final ParameterDescriptor descriptor;
 
@@ -130,17 +131,18 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         // Sanitize the reception time
         this.builder.setReceptionTime(Instant.EPOCH);
         // Replace the state
-        this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
+        this.state.set(this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class))));
     }
 
     private void initialise(IProcessingModelInitialiser initialiser) throws ReatmetricException {
         List<AbstractDataItem> stateList = initialiser.getState(getSystemEntityId(), SystemEntityType.PARAMETER);
         if(!stateList.isEmpty()) {
-            this.state = (ParameterData) stateList.get(0);
-            this.builder.setInitialisation(this.state);
+            ParameterData toSet = (ParameterData) stateList.get(0);
+            this.state.set(toSet);
+            this.builder.setInitialisation(toSet);
             if (stateList.size() > 1) {
                 AlarmParameterData alarmData = (AlarmParameterData) stateList.get(1);
-                this.currentAlarmData = alarmData;
+                this.currentAlarmData.set(alarmData);
                 this.alarmBuilder.setInitialisation(alarmData);
             }
         }
@@ -148,10 +150,11 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     @Override
     protected AlarmState getInitialAlarmState() {
-        if(state == null) {
+        ParameterData currentState = getState();
+        if(currentState == null) {
             return AlarmState.UNKNOWN;
         } else {
-            return state.getAlarmState();
+            return currentState.getAlarmState();
         }
     }
 
@@ -177,7 +180,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             computeSystemEntityState(false, generatedStates);
             return generatedStates;
         }
-        if(newValue == null && definition.getExpression() == null && (this.state == null || this.state.getSourceValue() == null)) {
+        ParameterData currentState = getState();
+        if(newValue == null && definition.getExpression() == null && (currentState == null || currentState.getSourceValue() == null)) {
             if(LOG.isLoggable(Level.FINEST)) {
                 LOG.log(Level.FINEST, String.format("Skipping re-evaluation of parameter %d (%s) as there is no previous sample", definition.getId(), definition.getLocation()));
             }
@@ -186,9 +190,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             return generatedStates;
         }
         // Previous value
-        Object previousValue = this.state == null ? null : this.state.getEngValue();
+        Object previousValue = currentState == null ? null : currentState.getEngValue();
         // Was in alarm?
-        boolean wasInAlarm = this.state != null && this.state.getAlarmState().isAlarm();
+        boolean wasInAlarm = currentState != null && currentState.getAlarmState().isAlarm();
         // Required to take decision at the end
         boolean stateChanged = false;
         // The placeholder for the AlarmParameterData to be created, if needed
@@ -199,14 +203,14 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             AlarmState alarmState = AlarmState.UNKNOWN;
             Object engValue = null;
             // Derive the source value to use and the times
-            Object previousSourceValue =  this.state == null ? null : this.state.getSourceValue();
+            Object previousSourceValue =  currentState == null ? null : currentState.getSourceValue();
             Object sourceValue = newValue != null ? verifySourceValue(newValue.getValue()) : previousSourceValue;
-            Instant generationTime = this.state == null ? null : this.state.getGenerationTime();
+            Instant generationTime = currentState == null ? null : currentState.getGenerationTime();
             generationTime = newValue != null ? newValue.getGenerationTime() : generationTime;
             // Immediate check: if there is a sample and its generation time is before the current (not null) one, then exist now
-            if(this.state != null && newValue != null && newValue.getGenerationTime().isBefore(state.getGenerationTime())) {
+            if(currentState != null && newValue != null && newValue.getGenerationTime().isBefore(currentState.getGenerationTime())) {
                 if(LOG.isLoggable(Level.FINE)) {
-                    LOG.log(Level.FINE, String.format("Sample of parameter %d (%s) discarded, generation time %s is before current time %s", definition.getId(), definition.getLocation(), newValue.getGenerationTime(), state.getGenerationTime()));
+                    LOG.log(Level.FINE, String.format("Sample of parameter %d (%s) discarded, generation time %s is before current time %s", definition.getId(), definition.getLocation(), newValue.getGenerationTime(), currentState.getGenerationTime()));
                 }
                 // Before existing, compute the system entity state if needed
                 computeSystemEntityState(false, generatedStates);
@@ -285,23 +289,24 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 receptionTime = newValue.getReceptionTime(); // This can never be null
             } else {
                 // We are in the case of re-evaluation
-                this.builder.setRoute(state == null ? null : state.getRoute());
-                this.builder.setContainerId(state == null ? null : state.getRawDataContainerId());
+                this.builder.setRoute(currentState == null ? null : currentState.getRoute());
+                this.builder.setContainerId(currentState == null ? null : currentState.getRawDataContainerId());
                 // What is the reception time?
                 if(definition.getExpression() != null && this.builder.isChangedSinceLastBuild()) {
                     // Re-evaluation, set reception time to now if it is an expression and if the builder is in a changed state.
                     receptionTime = Instant.now();
                 } else {
                     // Re-evaluation, do not change the reception time if it is not an expression.
-                    receptionTime = state == null || state.getReceptionTime() == null ? generationTime : state.getReceptionTime();
+                    receptionTime = currentState == null || currentState.getReceptionTime() == null ? generationTime : currentState.getReceptionTime();
                 }
             }
             // Set the reception time
             this.builder.setReceptionTime(receptionTime);
             // Replace the state
             if(this.builder.isChangedSinceLastBuild()) {
-                this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
-                generatedStates.add(this.state);
+                ParameterData newState = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
+                this.state.set(newState);
+                generatedStates.add(newState);
                 stateChanged = true;
             } else {
                 if(LOG.isLoggable(Level.FINEST)) {
@@ -315,8 +320,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             this.builder.setValidity(Validity.DISABLED);
             // Replace the state
             if(this.builder.isChangedSinceLastBuild()) {
-                this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
-                generatedStates.add(this.state);
+                ParameterData newState = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
+                this.state.set(newState);
+                generatedStates.add(newState);
                 stateChanged = true;
             }
             // Completely ignore the processing
@@ -337,25 +343,26 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     private void finalizeAlarmParameterData(List<AbstractDataItem> generatedStates, AlarmParameterData alarmData) {
         if(alarmData != null) {
             generatedStates.add(alarmData);
-            currentAlarmData = alarmData;
+            currentAlarmData.set(alarmData);
             // Generate alarm message
             generateAlarmMessage(alarmData);
         } else {
             // Remove the alarm data
-            currentAlarmData = null;
+            currentAlarmData.set(null);
             latestGeneratedAlarmSeverityMessage = null;
         }
     }
 
     private AlarmParameterData computeAlarmParameterData(boolean stateChanged) {
+        ParameterData currentState = getState();
         AlarmParameterData alarmData = null;
         if(stateChanged && valid()) {
             // If nominal, set the last nominal value
             if(!inAlarm()) {
-                this.alarmBuilder.setLastNominalValue(this.state.getEngValue(), this.state.getGenerationTime());
+                this.alarmBuilder.setLastNominalValue(currentState.getEngValue(), currentState.getGenerationTime());
             }
             // Set current values
-            this.alarmBuilder.setCurrentValue(this.state.getAlarmState(), this.state.getEngValue(), this.state.getGenerationTime(), this.state.getReceptionTime());
+            this.alarmBuilder.setCurrentValue(currentState.getAlarmState(), currentState.getEngValue(), currentState.getGenerationTime(), currentState.getReceptionTime());
             if(this.alarmBuilder.isChangedSinceLastBuild()) {
                 alarmData = this.alarmBuilder.build(new LongUniqueId(processor.getNextId(AlarmParameterData.class)));
                 if(LOG.isLoggable(Level.FINER)) {
@@ -384,8 +391,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 this.builder.setAlarmState(AlarmState.IGNORED);
             }
             // You must always build an update
-            this.state = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
-            generatedStates.add(this.state);
+            ParameterData newState = this.builder.build(new LongUniqueId(processor.getNextId(ParameterData.class)));
+            this.state.set(newState);
+            generatedStates.add(newState);
             // Compute alarm state
             alarmData = computeAlarmParameterData(true);
             // Finalize entity state and prepare for the returned list of data items
@@ -441,7 +449,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     private void computeSystemEntityState(boolean stateChanged, List<AbstractDataItem> generatedStates) {
         if(stateChanged) {
-            this.systemEntityBuilder.setAlarmState(this.state.getAlarmState());
+            this.systemEntityBuilder.setAlarmState(getState().getAlarmState());
         }
         this.systemEntityBuilder.setStatus(entityStatus);
         if(this.systemEntityBuilder.isChangedSinceLastBuild()) {
@@ -451,12 +459,13 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     private void activateTriggers(ParameterSample sample, Object previousValue, boolean wasInAlarm, boolean stateChanged) {
+        ParameterData currentState = getState();
         for(ParameterTriggerDefinition ptd : definition.getTriggers()) {
             try {
                 if ((ptd.getTriggerCondition() == TriggerCondition.ON_NEW_SAMPLE && sample != null && stateChanged) ||
                         (ptd.getTriggerCondition() == TriggerCondition.ON_ALARM_RAISED && !wasInAlarm && inAlarm()) ||
                         (ptd.getTriggerCondition() == TriggerCondition.ON_BACK_TO_NOMINAL && wasInAlarm && !inAlarm()) ||
-                        (ptd.getTriggerCondition() == TriggerCondition.ON_VALUE_CHANGE && !Objects.equals(previousValue, this.state == null ? null : this.state.getEngValue()))) {
+                        (ptd.getTriggerCondition() == TriggerCondition.ON_VALUE_CHANGE && !Objects.equals(previousValue, currentState == null ? null : currentState.getEngValue()))) {
                     // Raise event
                     raiseEvent(ptd.getEvent().getId());
                 }
@@ -721,7 +730,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     @Override
     public void visit(IProcessingModelVisitor visitor) {
         visitor.onVisit(getState());
-        AlarmParameterData currAlarmData = currentAlarmData;
+        AlarmParameterData currAlarmData = currentAlarmData.get();
         if(currAlarmData != null) {
             visitor.onVisit(currAlarmData);
         }
@@ -730,7 +739,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     @Override
     public void putCurrentStates(List<AbstractDataItem> items) {
         items.add(getState());
-        AlarmParameterData currAlarmData = currentAlarmData;
+        AlarmParameterData currAlarmData = currentAlarmData.get();
         if(currAlarmData != null) {
             items.add(currAlarmData);
         }
@@ -743,38 +752,45 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     @Override
     public Object rawValue() {
-        return this.state == null ? null : this.state.getSourceValue();
+        ParameterData currentState = getState();
+        return currentState == null ? null : currentState.getSourceValue();
     }
 
     @Override
     public Object value() {
-        return this.state == null ? null : this.state.getEngValue();
+        ParameterData currentState = getState();
+        return currentState == null ? null : currentState.getEngValue();
     }
 
     @Override
     public AlarmState alarmState() {
-        return this.state == null ? AlarmState.UNKNOWN : this.state.getAlarmState();
+        ParameterData currentState = getState();
+        return currentState == null ? AlarmState.UNKNOWN : currentState.getAlarmState();
     }
 
     @Override
     public boolean inAlarm() {
-        return this.state != null &&
-                this.state.getAlarmState().isAlarm();
+        ParameterData currentState = getState();
+        return currentState != null &&
+                currentState.getAlarmState().isAlarm();
     }
 
     @Override
     public boolean valid() {
-        return this.state != null && this.state.getValidity() == Validity.VALID;
+        ParameterData currentState = getState();
+        return currentState != null && currentState.getValidity() == Validity.VALID;
     }
 
     @Override
     public Validity validity() {
-        return this.state == null ? Validity.UNKNOWN : this.state.getValidity();
+        ParameterData currentState = getState();
+        return currentState == null ? Validity.UNKNOWN : currentState.getValidity();
     }
 
     @Override
     public Long containerId() {
-        return this.state == null || this.state.getRawDataContainerId() == null ? null : this.state.getRawDataContainerId().asLong();
+        ParameterData currentState = getState();
+        return currentState == null || currentState.getRawDataContainerId() == null ? null : currentState.getRawDataContainerId().asLong();
     }
 
     @Override
@@ -789,16 +805,19 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     @Override
     public String route() {
-        return this.state == null ? null : this.state.getRoute();
+        ParameterData currentState = getState();
+        return currentState == null ? null : currentState.getRoute();
     }
 
     @Override
     public Instant generationTime() {
-        return this.state == null ? null : this.state.getGenerationTime();
+        ParameterData currentState = getState();
+        return currentState == null ? null : currentState.getGenerationTime();
     }
 
     @Override
     public Instant receptionTime() {
-        return this.state == null ? null : this.state.getReceptionTime();
+        ParameterData currentState = getState();
+        return currentState == null ? null : currentState.getReceptionTime();
     }
 }
