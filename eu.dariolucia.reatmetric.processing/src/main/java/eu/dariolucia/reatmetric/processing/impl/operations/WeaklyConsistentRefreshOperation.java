@@ -1,5 +1,5 @@
 /*
- * Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2024 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import eu.dariolucia.reatmetric.processing.impl.processors.AbstractSystemEntityP
 import java.time.Instant;
 import java.util.List;
 
-public class SystemEntityUpdateOperation extends AbstractModelOperation<AbstractSystemEntityProcessor<?,?,?>> {
+public class WeaklyConsistentRefreshOperation extends AbstractModelOperation<AbstractSystemEntityProcessor<?,?,?>> {
 
     private final Instant creationTime = Instant.now();
 
@@ -34,7 +34,7 @@ public class SystemEntityUpdateOperation extends AbstractModelOperation<Abstract
 
     @Override
     protected List<AbstractDataItem> doProcess() throws ProcessingModelException {
-        return getProcessor().evaluate(!getProcessor().isWeaklyConsistent());
+        return getProcessor().evaluate(true);
     }
 
     @Override
@@ -44,6 +44,6 @@ public class SystemEntityUpdateOperation extends AbstractModelOperation<Abstract
 
     @Override
     public String toString() {
-        return "'Update system entity " + getSystemEntityId() + " state'";
+        return "'Refresh weakly consistent system entity " + getSystemEntityId() + " state'";
     }
 }

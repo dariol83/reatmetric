@@ -728,11 +728,18 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     @Override
-    public List<AbstractDataItem> evaluate() throws ProcessingModelException {
-        // TODO: add argument to evaluate(): includeWeaklyConsistent - if true, then processing is done. If false, then only compute dirty for weakly consistent parameters
-        // TODO: extend this class or change behaviour: if evaluate() and weakly consistent, then derive only the dirty status and inform manager if dirty
-        // TODO: dirty derivation: get entity vertex --> successors (i.e. affecting this object) --> local map successor ID -> last gen. time --> if change in time, mark as dirty
-        return process(null);
+    public List<AbstractDataItem> evaluate(boolean includeWeakly) throws ProcessingModelException {
+        if(!includeWeakly && isWeaklyConsistent()) {
+            return computeDirtyState();
+        } else {
+            return process(null);
+        }
+    }
+
+    private synchronized List<AbstractDataItem> computeDirtyState() {
+        // TODO: derive only the dirty status and inform manager if dirty
+        // TODO: dirty derivation: get entity vertex --> successors (i.e. affecting this object) --> local map successor ID -> last gen. time --> if time in map < the time, mark as dirty
+        return null;
     }
 
     @Override

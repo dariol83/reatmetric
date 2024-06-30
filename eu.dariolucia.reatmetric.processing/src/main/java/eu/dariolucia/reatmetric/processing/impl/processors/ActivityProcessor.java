@@ -488,7 +488,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     @Override
-    public List<AbstractDataItem> evaluate() {
+    public List<AbstractDataItem> evaluate(boolean includeWeakly) {
         if(LOG.isLoggable(Level.FINER)) {
             LOG.finer("Evaluating all activity occurrences for activity " + getSystemEntityId());
         }

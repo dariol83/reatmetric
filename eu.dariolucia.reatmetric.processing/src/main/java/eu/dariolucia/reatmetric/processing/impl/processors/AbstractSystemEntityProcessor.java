@@ -89,7 +89,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     public List<AbstractDataItem> enable() throws ProcessingModelException {
         if(this.entityStatus != Status.ENABLED) {
             this.entityStatus = Status.ENABLED;
-            return evaluate();
+            return evaluate(true);
         } else {
             return Collections.emptyList();
         }
@@ -98,7 +98,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     public List<AbstractDataItem> disable() throws ProcessingModelException {
         if(this.entityStatus != Status.DISABLED) {
             this.entityStatus = Status.DISABLED;
-            return evaluate();
+            return evaluate(true);
         } else {
             return Collections.emptyList();
         }
@@ -107,7 +107,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     public List<AbstractDataItem> ignore() throws ProcessingModelException {
         if(this.entityStatus != Status.IGNORED) {
             this.entityStatus = Status.IGNORED;
-            return evaluate();
+            return evaluate(true);
         } else {
             return Collections.emptyList();
         }
@@ -115,7 +115,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
 
     public abstract List<AbstractDataItem> process(K input) throws ProcessingModelException;
 
-    public abstract List<AbstractDataItem> evaluate() throws ProcessingModelException;
+    public abstract List<AbstractDataItem> evaluate(boolean includeWeakly) throws ProcessingModelException;
 
     /**
      * Override when necessary.

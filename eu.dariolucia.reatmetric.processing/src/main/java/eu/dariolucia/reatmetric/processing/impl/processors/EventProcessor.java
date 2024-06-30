@@ -253,7 +253,7 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     }
 
     @Override
-    public List<AbstractDataItem> evaluate() {
+    public List<AbstractDataItem> evaluate(boolean includeWeakly) {
         return process(null);
     }
 

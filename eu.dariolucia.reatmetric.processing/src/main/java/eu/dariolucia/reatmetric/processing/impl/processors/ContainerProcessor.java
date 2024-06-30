@@ -74,7 +74,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
     }
 
     @Override
-    public List<AbstractDataItem> evaluate() {
+    public List<AbstractDataItem> evaluate(boolean includeWeakly) {
         return process(VoidInputDataItem.instance());
     }
 

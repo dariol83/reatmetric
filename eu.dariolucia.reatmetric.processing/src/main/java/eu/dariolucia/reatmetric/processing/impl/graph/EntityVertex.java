@@ -85,9 +85,9 @@ public class EntityVertex {
                 // The direct predecessor
                 updateOperationsForAffectedEntities.add(de.getSource().getUpdateOperation());
                 processed.add(de.getSource().getSystemEntityId());
-                // The items affected by the predecessor
-                for(AbstractModelOperation<?> amd : de.getSource().getUpdateOperationsForAffectedEntities(includeWeaklyConsistent)) {
-                    if(!processed.contains(amd.getSystemEntityId())) {
+                // The items affected by the predecessor: we always force the exclusion of weakly consistent parameters here: this is right, do not modify it! :)
+                for (AbstractModelOperation<?> amd : de.getSource().getUpdateOperationsForAffectedEntities(false)) {
+                    if (!processed.contains(amd.getSystemEntityId())) {
                         processed.add(amd.getSystemEntityId());
                         updateOperationsForAffectedEntities.add(amd);
                     }
