@@ -41,18 +41,11 @@ public class SnmpDevice {
     @XmlAttribute(name = "retries")
     private int retries = 2;
 
-    // TODO: security model missing, enum for level missing
-    @XmlAttribute(name = "security-name")
-    private String securityName;
-
-    @XmlAttribute(name = "security-level")
-    private String securityLevel;
-
     @XmlAttribute(name = "community")
     private String community = "public";
 
     @XmlAttribute(name = "version")
-    private SnmpVersionEnum version = SnmpVersionEnum.V3;
+    private SnmpVersionEnum version = SnmpVersionEnum.V2;
 
     @XmlAttribute(name = "path", required = true)
     private String path;
@@ -77,22 +70,6 @@ public class SnmpDevice {
 
     public void setConnectionString(String connectionString) {
         this.connectionString = connectionString;
-    }
-
-    public String getSecurityName() {
-        return securityName;
-    }
-
-    public void setSecurityName(String securityName) {
-        this.securityName = securityName;
-    }
-
-    public String getSecurityLevel() {
-        return securityLevel;
-    }
-
-    public void setSecurityLevel(String securityLevel) {
-        this.securityLevel = securityLevel;
     }
 
     public String getCommunity() {

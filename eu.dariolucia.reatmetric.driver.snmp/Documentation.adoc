@@ -10,6 +10,9 @@ in groups: each group can have a different polling period and a different raw da
 
 The driver also supports the setting of SNMP values of type string and integer.
 
+The _snmp_ driver supports version 1 and version 2c. SNMP version 3 is at the moment not supported: the support can be
+added if there is a request for it.
+
 ==== Configuration
 Being a driver, the _snmp_ module must be registered as such in the system configuration file. You need to have a
 snmp module registration for each endpoint that requires such driver.
@@ -58,7 +61,7 @@ The following attributes are defined:
 messages and as route for outgoing SNMP SET commands.
 * _connection-string_ (mandatory, string): the connection string in the form _<udp|tcp>:<ip>/port.
 * _community_ (optional, string, default: public): the community name for SNMP version V1 and V2.
-* _version_ (optional, enum: V1, V2, V3, default: V3): the community name for SNMP version V1 and V2.
+* _version_ (optional, enum: V1, V2, default: V2): the community name for SNMP version V1 and V2.
 * _timeout_ (optional, integer, default: 2000): the response timeout in milliseconds.
 * _retries_ (optional, integer, default: 2): the number of retries before considering the SNMP request as failed.
 * _security-name_ (optional, string): the security name (only SNMP V3 - currently not supported).
