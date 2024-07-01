@@ -35,6 +35,7 @@ import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.processing.definition.*;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
+import eu.dariolucia.reatmetric.processing.impl.graph.DependencyEdge;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.AlarmParameterDataBuilder;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.ParameterDataBuilder;
 
@@ -65,6 +66,10 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     private Instant lastReportedLogTime = null;
     private int skippedLogMessagesCounter = 0;
+
+    private Map<Integer, ParameterData> lastDependingElementState = null;
+
+    private boolean dirty;
 
     public ParameterProcessor(ParameterProcessingDefinition definition, ProcessingModelImpl processor) {
         super(definition, processor, SystemEntityType.PARAMETER);
@@ -170,7 +175,6 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             LOG.log(Level.SEVERE, String.format("Parameter %d (%s) is a synthetic parameter, but a sample was injected. Processing ignored.", definition.getId(), definition.getLocation()));
             return Collections.emptyList();
         }
-        // TODO: optimisation? if weakly and not dirty, return empty list
         // To be returned at the end of the processing
         List<AbstractDataItem> generatedStates = new ArrayList<>(3);
         // Re-evaluation: for mirrored parameters the re-evaluation does not make sense.
@@ -181,6 +185,13 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             computeSystemEntityState(false, generatedStates);
             return generatedStates;
         }
+        // Optimisation: if weakly and not dirty...
+        if(isWeaklyConsistent() && !this.dirty) {
+            // ... no update needed, no change, just recompute entity state
+            computeSystemEntityState(false, generatedStates);
+            return generatedStates;
+        }
+        //
         ParameterData currentState = getState();
         if(newValue == null && definition.getExpression() == null && (currentState == null || currentState.getSourceValue() == null)) {
             if(LOG.isLoggable(Level.FINEST)) {
@@ -331,13 +342,12 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 LOG.log(Level.FINE, "Parameter sample not computed for parameter " + path() + ": parameter processing is disabled");
             }
         }
-        // Finalize entity state and prepare for the returned list of data items
+        // Finalize entity state and prepare for the returned list of data items, clearing the dirty state
         computeSystemEntityState(stateChanged, generatedStates);
         // If there is an AlarmParameterData, then report it and save it
         finalizeAlarmParameterData(generatedStates, alarmData);
         // At this stage, check the triggers and, for each of them, derive the correct behaviour
         activateTriggers(newValue, previousValue, wasInAlarm, stateChanged);
-        // TODO: if weakly consistent, clear dirty state
         // Return the list
         return generatedStates;
     }
@@ -441,6 +451,9 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                     }
                 }
                 break;
+                default:
+                    // Nothing to be done here
+                break;
             }
             lastReportedLogTime = now;
             skippedLogMessagesCounter = 0;
@@ -458,6 +471,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             this.entityState = this.systemEntityBuilder.build(new LongUniqueId(processor.getNextId(SystemEntity.class)));
             generatedStates.add(this.entityState);
         }
+        // Clear the dirty state here
+        this.dirty = false;
     }
 
     private void activateTriggers(ParameterSample sample, Object previousValue, boolean wasInAlarm, boolean stateChanged) {
@@ -603,9 +618,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 }
             }
             // Overwrite with the setter properties
-            for (Map.Entry<String, String> kv : request.getProperties().entrySet()) {
-                propertyMap.put(kv.getKey(), kv.getValue());
-            }
+            propertyMap.putAll(request.getProperties());
             return new ActivityRequest(setter.getActivity().getId(), SystemEntityPath.fromString(setter.getActivity().getLocation()), buildSetArgumentList(request, setter), propertyMap, request.getRoute(), request.getSource());
         }
     }
@@ -739,9 +752,51 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
     }
 
     private synchronized List<AbstractDataItem> computeDirtyState() {
-        // TODO: derive only the dirty status and inform manager if dirty
-        // TODO: dirty derivation: get entity vertex --> successors (i.e. affecting this object) --> local map successor ID -> last gen. time --> if time in map < the time, mark as dirty
-        return null;
+        // Already marked as dirty, do nothing
+        if(this.dirty) {
+            return Collections.emptyList();
+        }
+        if(lastDependingElementState == null) {
+            lastDependingElementState = new HashMap<>();
+        }
+        boolean dirtyFlag = false;
+        Set<DependencyEdge> successorEdges = getEntityVertex().getSuccessors();
+        for(DependencyEdge edge : successorEdges) {
+            if(edge.getDestination().getProcessor().getDescriptor().getType() == SystemEntityType.PARAMETER) {
+                // Get current state
+                ParameterData currentState = (ParameterData) edge.getDestination().getProcessor().getState();
+                // Get old state
+                ParameterData oldState = lastDependingElementState.get(edge.getDestination().getSystemEntityId());
+                // Check if recomputation is required
+                boolean isDirty = checkDirty(currentState, oldState);
+                lastDependingElementState.put(edge.getDestination().getSystemEntityId(), currentState);
+                if(isDirty) {
+                    dirtyFlag = true;
+                    break;
+                }
+            }
+        }
+        if(dirtyFlag && !this.dirty) {
+            this.dirty = true;
+            this.processor.newDirtyParameter(getSystemEntityId());
+        }
+        return Collections.emptyList();
+    }
+
+    private boolean checkDirty(ParameterData currentState, ParameterData oldState) {
+        if(oldState == null) {
+            return true;
+        }
+        if(!Objects.equals(currentState.getSourceValue(), oldState.getSourceValue())) {
+            return true;
+        }
+        if(!Objects.equals(currentState.getEngValue(), oldState.getEngValue())) {
+            return true;
+        }
+        if(!Objects.equals(currentState.getValidity(), oldState.getValidity())) {
+            return true;
+        }
+        return !Objects.equals(currentState.getAlarmState(), oldState.getAlarmState());
     }
 
     @Override

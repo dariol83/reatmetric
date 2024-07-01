@@ -123,7 +123,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
             ops.add(new EnableDisableOperation(proc.getSystemEntityId(), toBeApplied));
         }
         // Schedule operation
-        processor.scheduleTask(ops, ProcessingModelImpl.COMMAND_DISPATCHING_QUEUE, true);
+        processor.scheduleTask(ops, ProcessingModelImpl.COMMAND_DISPATCHING_QUEUE, true, true); // TODO: check if this is OK (should be)
     }
 
     @Override

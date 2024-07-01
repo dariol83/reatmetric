@@ -27,6 +27,12 @@ public class WeaklyConsistentRefreshOperation extends AbstractModelOperation<Abs
 
     private final Instant creationTime = Instant.now();
 
+    private final int systemEntityId;
+
+    public WeaklyConsistentRefreshOperation(int id) {
+        this.systemEntityId = id;
+    }
+
     @Override
     public Instant getTime() {
         return creationTime;
@@ -39,7 +45,7 @@ public class WeaklyConsistentRefreshOperation extends AbstractModelOperation<Abs
 
     @Override
     public int getSystemEntityId() {
-        return getProcessor().getSystemEntityId();
+        return systemEntityId;
     }
 
     @Override
