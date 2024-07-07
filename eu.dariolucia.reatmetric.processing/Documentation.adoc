@@ -281,6 +281,15 @@ not via a setter element, which is mapped to an activity for dispatching and rem
 considered 'internal' parameters, which can be useful to define globally available values and properties, with all the
 processing capabilities of validity, calibrations, checks and triggers available for standard parameters.
 
+_weak_consistency_: default is 'false'. A weakly consistent parameter (applicable only for synthetic parameters) is a parameter that
+will not be considered to compute overlaps in the working set processing of the processing model, and will not add itself and its
+dependant objects to the working set during normal (input-based) processing.
+Weakly consistent parameters are computed in an "inconsistent" way, i.e. access the status of the objects they depend
+on, without blocking the normal processing of the working set. Their processing is organised independently of the
+processing of the inputs to the processing model: when an inconsistent object is processed, all its dependant (hard-consistent) objects are also processed and this is done via the standard update process of the processing models.
+Only synthetic parameters can have this flag set to true. If this is set on other types of parameters, the flag is
+simply ignored.
+
 The _parameter_ node has the following sub-elements:
 
 _validity_: optional, if not provided the parameter is always considered valid. The _validity_ element can contain either
