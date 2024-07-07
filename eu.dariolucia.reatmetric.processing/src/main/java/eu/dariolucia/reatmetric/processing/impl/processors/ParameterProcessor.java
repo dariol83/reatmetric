@@ -66,6 +66,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
 
     private Instant lastReportedLogTime = null;
     private int skippedLogMessagesCounter = 0;
+    private Map<Integer, Instant> referenceTimeMap;
 
     private Map<Integer, ParameterData> lastDependingElementState = null;
 
@@ -235,19 +236,25 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             if(validity == Validity.VALID) {
                 // If there is an expression, derive the sourceValue from the expression and also the generation time
                 if(definition.getExpression() != null) {
+                    // This map is used to store the generation time of all the reference parameters
+                    Map<Integer, Instant> reference2genTime = new HashMap<>();
                     // Check if re-evalutation is needed: for each mapping item in the expression, get the newest generation time
                     Instant latestGenerationTime = null;
                     for(SymbolDefinition sd : definition.getExpression().getSymbols()) {
                         Instant theGenTime = processor.resolve(sd.getReference()).generationTime();
+                        // Remember the generation time of the reference
+                        reference2genTime.put(sd.getReference(), theGenTime);
                         if(latestGenerationTime == null || (theGenTime != null && theGenTime.isAfter(latestGenerationTime))) {
                             latestGenerationTime = theGenTime;
                         }
                     }
                     // At this stage, if latestGenerationTime is null, it means that there is no value coming from the depending samples. So skip.
                     // If latestGenerationTime is after the current generation time, then expression shall be re-evaluated.
-                    if(latestGenerationTime != null && (generationTime == null || latestGenerationTime.isAfter(generationTime))) {
+                    if(latestGenerationTime != null && (generationTime == null || latestGenerationTime.isAfter(generationTime) || checkWithLastEvaluationTimeMap(reference2genTime))) {
                         // Use the latest generation time
                         generationTime = latestGenerationTime;
+                        // Remember the reference-gentime map
+                        this.referenceTimeMap = reference2genTime;
                         try {
                             sourceValue = definition.getExpression().execute(processor, null, definition.getRawType());
                             sourceValue = ValueUtil.convert(sourceValue, definition.getRawType());
@@ -350,6 +357,19 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         activateTriggers(newValue, previousValue, wasInAlarm, stateChanged);
         // Return the list
         return generatedStates;
+    }
+
+    private boolean checkWithLastEvaluationTimeMap(Map<Integer, Instant> reference2genTime) {
+        if(this.referenceTimeMap == null) {
+            return true;
+        }
+        for(Map.Entry<Integer, Instant> refEntry : reference2genTime.entrySet()) {
+            Instant oldTime = this.referenceTimeMap.get(refEntry.getKey());
+            if(oldTime == null || oldTime.isBefore(refEntry.getValue())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void finalizeAlarmParameterData(List<AbstractDataItem> generatedStates, AlarmParameterData alarmData) {

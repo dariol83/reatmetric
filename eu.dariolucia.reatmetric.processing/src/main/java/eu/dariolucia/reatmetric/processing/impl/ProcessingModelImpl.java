@@ -413,10 +413,8 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                     refreshDirtyParameters();
                 }
             };
-            // TODO: check if this works: if yes, remove configuration per parameter, introduce constant.
-            //  If no, use configuration per parameter (and increase complexity :()
-            // Schedule task to run in 2 seconds (hardcoded)
-            scheduleAt(Instant.now().plusSeconds(2), task);
+            // Schedule task to run in 1 second (hardcoded)
+            scheduleAt(Instant.now().plusSeconds(1), task);
         }
     }
 
@@ -425,6 +423,9 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         synchronized (this.dirtyParametersSet) {
             parametersToRefresh = new HashSet<>(this.dirtyParametersSet);
             this.dirtyParametersSet.clear();
+        }
+        if(LOG.isLoggable(Level.FINEST)) {
+            LOG.log(Level.FINEST, "Refreshing dirty parameters " + parametersToRefresh);
         }
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = parametersToRefresh.stream().map(WeaklyConsistentRefreshOperation::new).collect(Collectors.toList());

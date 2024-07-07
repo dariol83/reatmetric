@@ -61,9 +61,6 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlAttribute(name = "weak_consistency")
     private boolean weakConsistency = false;
 
-    @XmlAttribute(name = "consistency_period")
-    private int consistencyPeriod = 2; // in seconds
-
     @XmlElement(name = "validity")
     private ValidityCondition validity;
 
@@ -330,23 +327,6 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
 
     public void setWeakConsistency(boolean weakConsistency) {
         this.weakConsistency = weakConsistency;
-    }
-
-    /**
-     * Return the consistency period for this weakly consistent parameter, in seconds. Such period is the maximum latency period
-     * between an update that makes the parameter "dirty", i.e. in need of a refresh, to the actual processing of the
-     * parameter.
-     * <br />
-     * This parameter is only considered for weakly consistent parameters.
-     *
-     * @return the consistency period
-     */
-    public int getConsistencyPeriod() {
-        return consistencyPeriod;
-    }
-
-    public void setConsistencyPeriod(int consistencyPeriod) {
-        this.consistencyPeriod = consistencyPeriod;
     }
 
     /**

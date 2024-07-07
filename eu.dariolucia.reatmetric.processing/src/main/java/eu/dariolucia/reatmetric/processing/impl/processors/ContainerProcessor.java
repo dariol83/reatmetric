@@ -40,7 +40,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
 
     private static final Logger LOG = Logger.getLogger(ContainerProcessor.class.getName());
 
-    private final List<AbstractSystemEntityProcessor> childProcessors = new ArrayList<>();
+    private final List<AbstractSystemEntityProcessor<?,?,?>> childProcessors = new ArrayList<>();
 
     private final ContainerDescriptor descriptor;
 
@@ -52,7 +52,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
         this.descriptor = new ContainerDescriptor(getPath());
     }
 
-    public void addChildProcessor(AbstractSystemEntityProcessor processor) {
+    public void addChildProcessor(AbstractSystemEntityProcessor<?,?,?> processor) {
         if(!this.childProcessors.contains(processor)) {
             this.childProcessors.add(processor);
         }
@@ -80,7 +80,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
 
     @Override
     public void visit(IProcessingModelVisitor visitor) {
-        for(AbstractSystemEntityProcessor proc : childProcessors) {
+        for(AbstractSystemEntityProcessor<?,?,?> proc : childProcessors) {
             SystemEntity toVisit = proc.getEntityState();
             if(visitor.shouldDescend(toVisit)) {
                 visitor.startVisit(toVisit);
@@ -119,11 +119,11 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
     private void propagateEnablement(Status toBeApplied) {
         // One layer only
         List<AbstractModelOperation<?>> ops = new ArrayList<>(childProcessors.size());
-        for(AbstractSystemEntityProcessor proc : childProcessors) {
+        for(AbstractSystemEntityProcessor<?,?,?> proc : childProcessors) {
             ops.add(new EnableDisableOperation(proc.getSystemEntityId(), toBeApplied));
         }
         // Schedule operation
-        processor.scheduleTask(ops, ProcessingModelImpl.COMMAND_DISPATCHING_QUEUE, true, true); // TODO: check if this is OK (should be)
+        processor.scheduleTask(ops, ProcessingModelImpl.COMMAND_DISPATCHING_QUEUE, true, true);
     }
 
     @Override
@@ -136,7 +136,7 @@ public class ContainerProcessor extends AbstractSystemEntityProcessor<ContainerP
 
     public List<SystemEntity> getContainedEntities() {
         List<SystemEntity> states = new ArrayList<>(childProcessors.size());
-        for(AbstractSystemEntityProcessor proc : childProcessors) {
+        for(AbstractSystemEntityProcessor<?,?,?> proc : childProcessors) {
             states.add(proc.getEntityState());
         }
         return states;
