@@ -142,7 +142,7 @@ Example of remoting configuration:
 
 ### To version 1.1.0
 - persist implementation based on PostgreSQL and Timeseries
-- Weakly consistent synthetic parameters
+- Apache Kafka driver (for raw data broker in/out, operational messages in/out, processed data in (mirroring)/out) 
 - Container template for easy Docker image creation
 
 ### Future ideas
