@@ -115,6 +115,11 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
      */
     private final Set<ActivityProcessor> activeActivityProcessors = new HashSet<>();
 
+    /**
+     * Set of parameter IDs that are reported as currently dirty.
+     */
+    private final Set<Integer> dirtyParametersSet = new HashSet<>();
+
     public ProcessingModelImpl(ProcessingDefinition processingDefinition, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialSequencerMap, IProcessingModelInitialiser initialiser) throws ProcessingModelException {
         this.processingDefinition = processingDefinition;
         // Start off the preloader thread: one off, using internal executor for parallel preloading
@@ -254,12 +259,12 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations, int dispatchingQueue) {
-        return scheduleTask(operations, dispatchingQueue, false);
+        return scheduleTask(operations, dispatchingQueue, false, false);
     }
 
-    public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations, int dispatchingQueue, boolean internalRequest) {
+    public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations, int dispatchingQueue, boolean internalRequest, boolean includeWeaklyConsistent) {
         // Create the processing task
-        ProcessingTask taskToRun = new ProcessingTask(new ProcessingTask.Job(operations, outputRedirector, workingSet));
+        ProcessingTask taskToRun = new ProcessingTask(new ProcessingTask.Job(operations, outputRedirector, workingSet), includeWeaklyConsistent);
         // Add the task to be done to the queue
         switch(dispatchingQueue) {
             case COMMAND_DISPATCHING_QUEUE:
@@ -393,6 +398,39 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     public ProcessingDefinition getDefinitions() {
         return this.processingDefinition;
+    }
+
+    public void newDirtyParameter(int systemEntityId) {
+        boolean wasEmpty;
+        synchronized (this.dirtyParametersSet) {
+            wasEmpty = this.dirtyParametersSet.isEmpty();
+            this.dirtyParametersSet.add(systemEntityId);
+        }
+        if(wasEmpty) {
+            TimerTask task = new TimerTask() {
+                @Override
+                public void run() {
+                    refreshDirtyParameters();
+                }
+            };
+            // Schedule task to run in 1 second (hardcoded)
+            scheduleAt(Instant.now().plusSeconds(1), task);
+        }
+    }
+
+    private void refreshDirtyParameters() {
+        Set<Integer> parametersToRefresh;
+        synchronized (this.dirtyParametersSet) {
+            parametersToRefresh = new HashSet<>(this.dirtyParametersSet);
+            this.dirtyParametersSet.clear();
+        }
+        if(LOG.isLoggable(Level.FINEST)) {
+            LOG.log(Level.FINEST, "Refreshing dirty parameters " + parametersToRefresh);
+        }
+        // Build the list of operations to be performed
+        List<AbstractModelOperation<?>> operations = parametersToRefresh.stream().map(WeaklyConsistentRefreshOperation::new).collect(Collectors.toList());
+        // Schedule task
+        scheduleTask(operations, REPORTING_DISPATCHING_QUEUE, false, true);
     }
 
     @Override

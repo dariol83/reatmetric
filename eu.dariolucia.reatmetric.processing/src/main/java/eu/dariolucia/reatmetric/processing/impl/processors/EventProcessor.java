@@ -25,7 +25,6 @@ import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDescriptor;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.api.model.*;
-import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelInitialiser;
 import eu.dariolucia.reatmetric.api.processing.IProcessingModelVisitor;
 import eu.dariolucia.reatmetric.api.processing.input.EventOccurrence;
@@ -85,8 +84,9 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     private void initialise(IProcessingModelInitialiser initialiser) throws ReatmetricException {
         List<AbstractDataItem> stateList = initialiser.getState(getSystemEntityId(), SystemEntityType.EVENT);
         if(!stateList.isEmpty()) {
-            this.state = (EventData) stateList.get(0);
-            builder.setInitialisation(this.state);
+            EventData toSet = (EventData) stateList.get(0);
+            this.state.set(toSet);
+            builder.setInitialisation(toSet);
         }
     }
 
@@ -118,8 +118,9 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
         }
         // If the object is enabled, then you have to process it as usual
         if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
+            EventData currentState = getState();
             // Prepare the time values
-            Instant generationTime = this.state == null ? Instant.now() : this.state.getGenerationTime();
+            Instant generationTime = currentState == null ? Instant.now() : currentState.getGenerationTime();
             generationTime = newValue != null ? newValue.getGenerationTime() : generationTime;
             if(definition.getCondition() != null) {
                 // If there is an expression, then evaluate the expression and check for a transition false -> true
@@ -181,8 +182,9 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                     Instant receptionTime = newValue != null ? newValue.getReceptionTime() : now;
                     this.builder.setReceptionTime(receptionTime);
                     // Replace the state
-                    this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
-                    generatedStates.add(this.state);
+                    EventData newState = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
+                    this.state.set(newState);
+                    generatedStates.add(newState);
                     // Log the event if log is not suppressed and you are not ignoring this event
                     generateLogMessage(now);
                 }
@@ -204,7 +206,7 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     private void generateLogMessage(Instant now) {
         if(definition.isLogEnabled() && getEntityStatus() != Status.IGNORED) {
             if(lastReportedLogTime == null || lastReportedLogTime.plusMillis(definition.getLogRepetitionPeriod()).isBefore(now)) {
-                String logSource = definition.getLocation(); // this.state.getSource();
+                String logSource = definition.getLocation(); //
                 String suffix = skippedLogMessagesCounter == 0 ? "" : " (skipped: " + skippedLogMessagesCounter + ")";
                 switch (definition.getSeverity()) {
                     case ALARM:
@@ -251,7 +253,7 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
     }
 
     @Override
-    public List<AbstractDataItem> evaluate() {
+    public List<AbstractDataItem> evaluate(boolean includeWeakly) {
         return process(null);
     }
 
@@ -272,37 +274,44 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
 
     @Override
     public Severity severity() {
-        return this.state == null ? null : this.state.getSeverity();
+        EventData currentState = getState();
+        return currentState == null ? null : currentState.getSeverity();
     }
 
     @Override
     public String route() {
-        return this.state == null ? null : this.state.getRoute();
+        EventData currentState = getState();
+        return currentState == null ? null : currentState.getRoute();
     }
 
     @Override
     public String source() {
-        return this.state == null ? null : this.state.getSource();
+        EventData currentState = getState();
+        return currentState == null ? null : currentState.getSource();
     }
 
     @Override
     public String type() {
-        return this.state == null ? null : this.state.getType();
+        EventData currentState = getState();
+        return currentState == null ? null : currentState.getType();
     }
 
     @Override
     public String qualifier() {
-        return this.state == null ? null : this.state.getQualifier();
+        EventData currentState = getState();
+        return currentState == null ? null : currentState.getQualifier();
     }
 
     @Override
     public Object report() {
-        return this.state == null ? null : this.state.getReport();
+        EventData currentState = getState();
+        return currentState == null ? null : currentState.getReport();
     }
 
     @Override
     public Long containerId() {
-        return this.state == null || this.state.getRawDataContainerId() == null ? null : this.state.getRawDataContainerId().asLong();
+        EventData currentState = getState();
+        return currentState == null || currentState.getRawDataContainerId() == null ? null : currentState.getRawDataContainerId().asLong();
     }
 
     @Override
@@ -317,12 +326,14 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
 
     @Override
     public Instant generationTime() {
-        return this.state == null ? null : this.state.getGenerationTime();
+        EventData currentState = getState();
+        return currentState == null ? null : currentState.getGenerationTime();
     }
 
     @Override
     public Instant receptionTime() {
-        return this.state == null ? null : this.state.getReceptionTime();
+        EventData currentState = getState();
+        return currentState == null ? null : currentState.getReceptionTime();
     }
 
     public List<AbstractDataItem> mirror(EventData itemToMirror) {
@@ -338,8 +349,9 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
             // Copy the status into the builder
             this.builder.setInitialisation(itemToMirror);
             // You must always build an update
-            this.state = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
-            generatedStates.add(this.state);
+            EventData newState = this.builder.build(new LongUniqueId(processor.getNextId(EventData.class)));
+            this.state.set(newState);
+            generatedStates.add(newState);
             // Finalize entity state and prepare for the returned list of data items
             computeEntityState(generatedStates);
             // Check if a log message must be raised (using the properties defined in the definition)

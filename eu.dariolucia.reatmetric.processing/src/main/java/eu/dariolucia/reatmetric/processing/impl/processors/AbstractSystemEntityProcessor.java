@@ -24,10 +24,12 @@ import eu.dariolucia.reatmetric.api.processing.exceptions.ProcessingModelExcepti
 import eu.dariolucia.reatmetric.api.processing.input.AbstractInputDataItem;
 import eu.dariolucia.reatmetric.processing.definition.AbstractProcessingDefinition;
 import eu.dariolucia.reatmetric.processing.impl.ProcessingModelImpl;
+import eu.dariolucia.reatmetric.processing.impl.graph.EntityVertex;
 import eu.dariolucia.reatmetric.processing.impl.processors.builders.SystemEntityBuilder;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * This class is the parent class of all processing elements of the system entity model. A processing class is defined
@@ -45,7 +47,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
 
     protected volatile SystemEntity entityState;
 
-    protected volatile T state;
+    protected final AtomicReference<T> state = new AtomicReference<>();
 
     protected volatile Status entityStatus;
 
@@ -56,6 +58,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     protected final SystemEntityPath path;
 
     protected final SystemEntityBuilder systemEntityBuilder;
+    private EntityVertex entityVertex;
 
     protected AbstractSystemEntityProcessor(J definition, ProcessingModelImpl processor, SystemEntityType type) {
         this.definition = definition;
@@ -86,7 +89,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     public List<AbstractDataItem> enable() throws ProcessingModelException {
         if(this.entityStatus != Status.ENABLED) {
             this.entityStatus = Status.ENABLED;
-            return evaluate();
+            return evaluate(true);
         } else {
             return Collections.emptyList();
         }
@@ -95,7 +98,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     public List<AbstractDataItem> disable() throws ProcessingModelException {
         if(this.entityStatus != Status.DISABLED) {
             this.entityStatus = Status.DISABLED;
-            return evaluate();
+            return evaluate(true);
         } else {
             return Collections.emptyList();
         }
@@ -104,7 +107,7 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     public List<AbstractDataItem> ignore() throws ProcessingModelException {
         if(this.entityStatus != Status.IGNORED) {
             this.entityStatus = Status.IGNORED;
-            return evaluate();
+            return evaluate(true);
         } else {
             return Collections.emptyList();
         }
@@ -112,14 +115,23 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
 
     public abstract List<AbstractDataItem> process(K input) throws ProcessingModelException;
 
-    public abstract List<AbstractDataItem> evaluate() throws ProcessingModelException;
+    public abstract List<AbstractDataItem> evaluate(boolean includeWeakly) throws ProcessingModelException;
+
+    /**
+     * Override when necessary.
+     *
+     * @return true if weakly consistent.
+     */
+    public boolean isWeaklyConsistent() {
+        return false;
+    }
 
     public final int getSystemEntityId() {
         return definition.getId();
     }
 
     public final T getState() {
-        return state;
+        return state.get();
     }
 
     public final SystemEntity getEntityState() {
@@ -131,4 +143,12 @@ public abstract class AbstractSystemEntityProcessor<J extends AbstractProcessing
     public abstract void putCurrentStates(List<AbstractDataItem> items);
 
     public abstract AbstractSystemEntityDescriptor getDescriptor();
+
+    public void setEntityVertex(EntityVertex entityVertex) {
+        this.entityVertex = entityVertex;
+    }
+
+    protected EntityVertex getEntityVertex() {
+        return this.entityVertex;
+    }
 }

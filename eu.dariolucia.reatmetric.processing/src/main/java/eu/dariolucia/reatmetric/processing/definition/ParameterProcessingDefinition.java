@@ -58,6 +58,9 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
     @XmlAttribute(name = "user_parameter")
     private boolean userParameter = false;
 
+    @XmlAttribute(name = "weak_consistency")
+    private boolean weakConsistency = false;
+
     @XmlElement(name = "validity")
     private ValidityCondition validity;
 
@@ -298,6 +301,32 @@ public class ParameterProcessingDefinition extends AbstractProcessingDefinition 
 
     public void setUserParameter(boolean userParameter) {
         this.userParameter = userParameter;
+    }
+
+    /**
+     * A weakly consistent parameter (applicable only for synthetic parameters) is a parameter that:
+     * <ul>
+     *     <li>will not be considered to compute overlaps in the working set processing of the processing model</li>
+     *     <li>will not add itself and its dependant objects to the working set during normal (input-based) processing</li>
+     * </ul>
+     *
+     * Weakly consistent parameters are computed at most according to the timeout expressed in the related attribute, in an
+     * "inconsistent" way, i.e. access the status of the objects they depend on, without blocking the normal processing
+     * of the working set. Their processing is organised independently of the processing of the inputs to the processing
+     * model: when an inconsistent object is processed, all its dependant objects are also processed and this is done via
+     * the standard update process of the processing models.
+     * <br />
+     * Only synthetic parameters can have this flag set to true. If this is set on other types of parameters, the flag is
+     * simply ignored.
+     *
+     * @return true if the parameter is weakly consistent, otherwise false.
+     */
+    public boolean isWeakConsistency() {
+        return weakConsistency;
+    }
+
+    public void setWeakConsistency(boolean weakConsistency) {
+        this.weakConsistency = weakConsistency;
     }
 
     /**

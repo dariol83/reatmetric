@@ -67,7 +67,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * TODO: implement activity occurrence visualisation details
+ * Main view class
  *
  * @author Dario Lucia
  */

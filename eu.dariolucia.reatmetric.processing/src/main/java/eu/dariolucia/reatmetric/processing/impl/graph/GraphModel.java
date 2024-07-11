@@ -366,17 +366,18 @@ public class GraphModel {
 
     /**
      * This method expands the provided list of operations adding the required object re-evaluations, depending on the
-     * dependencies of the affected processors.
+     * dependencies of the affected processors. Objects that are weakly consistent remain in this list but do not trigger
+     * expansions, i.e. dependant objects are not added.
      *
      * @param operations the list of operations to be performed
      * @return the extended list of operations to be performed, including dependency re-evaluation
      */
-    public List<AbstractModelOperation<?>> finalizeOperationList(List<AbstractModelOperation<?>> operations) {
+    public List<AbstractModelOperation<?>> finalizeOperationList(List<AbstractModelOperation<?>> operations, boolean includeWeaklyConsistent) {
         Set<Integer> alreadyPresent = new HashSet<>();
         List<AbstractModelOperation<?>> extendedOperations = new LinkedList<>();
         // Add the entity IDs to the alreadyPresent set
         operations.forEach(o -> alreadyPresent.add(o.getSystemEntityId()));
-        for(AbstractModelOperation operation : operations) {
+        for(AbstractModelOperation<?> operation : operations) {
             EntityVertex entityVertex = getVertexOf(operation.getSystemEntityId());
             if(entityVertex == null) {
                 LOG.log(Level.SEVERE, "Cannot locate entity with ID " + operation.getSystemEntityId() + ", processing skipped");
@@ -384,10 +385,10 @@ public class GraphModel {
             }
             // Set the correct processors to the provided operations
             entityVertex.assignProcessor(operation);
-            // Add the affected processors for evaluation
-            List<AbstractModelOperation> updateOperationsForProvidedOperation = entityVertex.getUpdateOperationsForAffectedEntities();
-            for(AbstractModelOperation updateOperation : updateOperationsForProvidedOperation) {
-                if(!alreadyPresent.contains(updateOperation.getSystemEntityId())) {
+            // Add the affected processors for evaluation, if the processor of the operation is not weakly consistent
+            List<AbstractModelOperation<?>> updateOperationsForProvidedOperation = entityVertex.getUpdateOperationsForAffectedEntities(includeWeaklyConsistent);
+            for (AbstractModelOperation<?> updateOperation : updateOperationsForProvidedOperation) {
+                if (!alreadyPresent.contains(updateOperation.getSystemEntityId())) {
                     alreadyPresent.add(updateOperation.getSystemEntityId());
                     extendedOperations.add(updateOperation);
                 }

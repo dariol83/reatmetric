@@ -32,6 +32,10 @@ public class SpacecraftConfiguration {
 
     private static final String HOME_VAR = "$HOME";
     private static final String HOME_DIR = System.getProperty("user.home");
+
+    private static final String PREFIX_VAR = "$PREFIX";
+    private static final String PREFIX_DIR = System.getProperty("reatmetric.prefix.dir", "");
+
     public static SpacecraftConfiguration load(InputStream is) throws IOException {
         try {
             JAXBContext jc = JAXBContext.newInstance(SpacecraftConfiguration.class);
@@ -40,6 +44,7 @@ public class SpacecraftConfiguration {
             if(o.getPacketServiceConfiguration() != null) {
                 for (ServiceConfiguration sc : o.getPacketServiceConfiguration().getServices()) {
                     sc.setConfiguration(sc.getConfiguration().replace(HOME_VAR, HOME_DIR));
+                    sc.setConfiguration(sc.getConfiguration().replace(PREFIX_VAR, PREFIX_DIR));
                 }
             }
             return o;

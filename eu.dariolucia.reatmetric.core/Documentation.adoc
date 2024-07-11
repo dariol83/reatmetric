@@ -62,7 +62,12 @@ eu.dariolucia.reatmetric.core.configuration. It is an XML file using namespace d
 _http://dariolucia.eu/reatmetric/core/configuration_.
 
 The elements that can contain a path support the special value $HOME, which is replaced at runtime with the contents
-of the _user.home_ system variable.
+of the _user.home_ system variable. A special value $PREFIX can also be used, which is replaced at runtime with the
+contents of the _reatmetric.prefix.dir_ system variable, which can be provided as Java property at start-up:
+
+----
+-Dreatmetric.prefix.dir=<path>
+----
 
 A commented example of such file is presented below.
 

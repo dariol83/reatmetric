@@ -1,0 +1,75 @@
+<!--
+  ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~          http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
+    <parameters>
+        <!-- All types-->
+        <parameter id="#101" location="ROOT.ELEMENT1.PARAM1" description="Parameter 1" raw_type="BOOLEAN" eng_type="BOOLEAN" eng_unit="" />
+        <parameter id="#102" location="ROOT.ELEMENT1.PARAM2" description="Parameter 2" raw_type="ENUMERATED" eng_type="ENUMERATED" eng_unit="">
+            <default_value type="RAW" value="0" />
+        </parameter>
+        <parameter id="#103" location="ROOT.ELEMENT1.PARAM3" description="Parameter 3" raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="" >
+            <default_value type="RAW" value="0" />
+        </parameter>
+        <parameter id="#104" location="ROOT.ELEMENT1.PARAM4" description="Parameter 4" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="" >
+            <default_value type="RAW" value="0" />
+        </parameter>
+        <parameter id="#105" location="ROOT.ELEMENT1.PARAM5" description="Parameter 5" raw_type="REAL" eng_type="REAL" eng_unit="" >
+            <default_value type="ENGINEERING" value="0.0" />
+        </parameter>
+        <parameter id="#106" location="ROOT.ELEMENT1.PARAM6" description="Parameter 6" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="" >
+            <default_value type="RAW" value="0" />
+        </parameter>
+        <parameter id="#107" location="ROOT.ELEMENT1.PARAM7" description="Parameter 7" raw_type="REAL" eng_type="REAL" eng_unit="" >
+            <default_value type="ENGINEERING" value="0.0" />
+        </parameter>
+        <parameter id="#108" location="ROOT.ELEMENT1.PARAM8" description="Parameter 8" raw_type="REAL" eng_type="REAL" eng_unit="" >
+            <default_value type="ENGINEERING" value="0.0" />
+        </parameter>
+
+        <!-- Expression with binding properties -->
+        <parameter id="#1031" location="ROOT.EXPTEST.EXP1" description="Parameter with expression 1 (hard consistence)" raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="">
+            <synthetic>
+                <expression>A + B</expression>
+                <symbol name="A" reference="#104" binding="SOURCE_VALUE" />
+                <symbol name="B" reference="#106" binding="SOURCE_VALUE" />
+            </synthetic>
+        </parameter>
+        <parameter id="#1032" location="ROOT.EXPTEST.EXP2" description="Parameter with expression 2 (hard consistence)" raw_type="REAL" eng_type="REAL" eng_unit="">
+            <synthetic>
+                <expression>A + B + C</expression>
+                <symbol name="A" reference="#105" binding="ENG_VALUE" />
+                <symbol name="B" reference="#107" binding="ENG_VALUE" />
+                <symbol name="C" reference="#108" binding="ENG_VALUE" />
+            </synthetic>
+        </parameter>
+        <parameter id="#1033" location="ROOT.EXPTEST.EXP3_W" description="Parameter with expression 3 (weak consistence)" raw_type="REAL" eng_type="REAL" eng_unit=""
+                   weak_consistency="true">
+            <synthetic>
+                <expression>A * K</expression>
+                <symbol name="A" reference="#1032" binding="ENG_VALUE" />
+                <symbol name="K" reference="#102" binding="SOURCE_VALUE" />
+            </synthetic>
+        </parameter>
+        <parameter id="#1034" location="ROOT.EXPTEST.EXP4_W" description="Parameter with expression 4 (weak consistence)" raw_type="REAL" eng_type="REAL" eng_unit=""
+                   weak_consistency="true">
+            <synthetic>
+                <expression>A * A</expression>
+                <symbol name="A" reference="#1033" binding="ENG_VALUE" />
+            </synthetic>
+        </parameter>
+    </parameters>
+</ns1:processing>

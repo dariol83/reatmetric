@@ -31,6 +31,9 @@ public class AutomationConfiguration {
     private static final String HOME_VAR = "$HOME";
     private static final String HOME_DIR = System.getProperty("user.home");
 
+    private static final String PREFIX_VAR = "$PREFIX";
+    private static final String PREFIX_DIR = System.getProperty("reatmetric.prefix.dir", "");
+
     public static AutomationConfiguration load(InputStream is) throws IOException {
         try {
             JAXBContext jc = JAXBContext.newInstance(AutomationConfiguration.class);
@@ -38,6 +41,7 @@ public class AutomationConfiguration {
             AutomationConfiguration o = (AutomationConfiguration) u.unmarshal(is);
             if(o.getScriptFolder() != null) {
                 o.setScriptFolder(o.getScriptFolder().replace(HOME_VAR, HOME_DIR));
+                o.setScriptFolder(o.getScriptFolder().replace(PREFIX_VAR, PREFIX_DIR));
             }
             return o;
         } catch (JAXBException e) {

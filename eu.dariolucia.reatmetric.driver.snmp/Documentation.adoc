@@ -1,0 +1,155 @@
+==== Overview
+The eu.dariolucia.reatmetric.driver.snmp module provides a driver that allows the access to devices via SNMP protocol.
+
+Being a driver, a _snmp_ module must be registered as such in the system Core's configuration.
+
+==== General Concepts
+A single instance of the _snmp_ driver can monitor and control several SNMP devices, as specified by the configuration
+of the driver. For each device, the driver periodically polls the specified OID parameters. Such parameters are partitioned
+in groups: each group can have a different polling period and a different raw data distribution behaviour.
+
+The driver also supports the setting of SNMP values of type string and integer.
+
+The _snmp_ driver supports version 1 and version 2c. SNMP version 3 is at the moment not supported: the support can be
+added if there is a request for it.
+
+==== Configuration
+Being a driver, the _snmp_ module must be registered as such in the system configuration file. You need to have a
+snmp module registration for each endpoint that requires such driver.
+
+[source,xml]
+----
+<ns1:core xmlns:ns1="http://dariolucia.eu/reatmetric/core/configuration">
+    <name>Test System</name>
+    <log-property-file>$HOME\Reatmetric\reatmetric_test\log.properties</log-property-file>
+    <definitions-location>$HOME\Reatmetric\reatmetric_test\processing</definitions-location>
+    <driver name="SNMP Driver" type="eu.dariolucia.reatmetric.driver.snmp.SnmpDriver"
+    configuration="$HOME\Reatmetric\reatmetric_test\snmp"/>
+</ns1:core>
+----
+
+The folder specified in the _configuration_ attribute of the _driver_ element must contain a file named _configuration.xml_,
+which defines the configuration properties of the driver.
+
+===== Main Configuration File
+The configuration structure of the eu.dariolucia.reatmetric.driver.snmp module is defined in the package
+eu.dariolucia.reatmetric.driver.snmp.configuration. It is an XML file named _configuration.xml_ using
+namespace definition _http://dariolucia.eu/reatmetric/driver/snmp_.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns2:snmp-configuration xmlns:ns2="http://dariolucia.eu/reatmetric/driver/snmp" name="SNMP Configuration">
+    <device name="OpenSuse 15.3" connection-string="udp:192.168.2.119/161" community="public" version="V2"
+	path="STATION.OPENSUSE15_3">
+		<configuration>$HOME\Reatmetric\reatmetric_snmp\snmp\STATION_OPENSUSE15_3_device.xml</configuration>
+		<set-command path="STATION.OPENSUSE15_3.Setter" />
+	</device>
+	<device name="Manjaro" connection-string="udp:192.168.2.120/161" community="public" version="V2"
+	path="STATION.MANJARO">
+		<configuration>$HOME\Reatmetric\reatmetric_snmp\snmp\STATION_MANJARO_device.xml</configuration>
+		<set-command path="STATION.MANJARO.Setter" />
+	</device>
+</ns2:snmp-configuration>
+----
+
+Element *<device>*: this element defines a UDP or TCP SNMP connection to a device with the provided characteristics.
+
+The following attributes are defined:
+
+* _name_ (mandatory, string): the name of the device. This string will be used also as route and source of incoming SNMP
+messages and as route for outgoing SNMP SET commands.
+* _connection-string_ (mandatory, string): the connection string in the form _<udp|tcp>:<ip>/port.
+* _community_ (optional, string, default: public): the community name for SNMP version V1 and V2.
+* _version_ (optional, enum: V1, V2, default: V2): the community name for SNMP version V1 and V2.
+* _timeout_ (optional, integer, default: 2000): the response timeout in milliseconds.
+* _retries_ (optional, integer, default: 2): the number of retries before considering the SNMP request as failed.
+* _security-name_ (optional, string): the security name (only SNMP V3 - currently not supported).
+* _security-level_ (optional, string): the security level (only SNMP V3 - currently not supported.
+* _path_ (mandatory, string): the location of the device in the processing model. This information will be attached as prefix
+to the mapping paths specified in the specified device configuration file.
+
+The *<device>* element has the following two sub-elements:
+
+* *<configuration>*: absolute path to the device configuration file.
+* *<set-command>*: the absolute location in the processing model of the activity that can be used to set OID values for
+this device. Each device must have its own setter specified in the processing model.
+
+Each *<device>* element will cause the creation of a specific _connector_ that can be used to enable or disable the SNMP
+connection to the linked device.
+
+===== Device Configuration File
+The configuration structure of the device configuration file is defined in the package
+eu.dariolucia.reatmetric.driver.snmp.configuration. It is an XML file using
+namespace definition _http://dariolucia.eu/reatmetric/driver/snmp/device_.
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns2:snmp-device xmlns:ns2="http://dariolucia.eu/reatmetric/driver/snmp/device">
+    <group name="System" polling-time="60000" distribute-pdu="true">
+        <entry oid="1.3.6.1.2.1.25.1.1.0" path="System.Uptime" type="LONG"/>
+        <entry oid="1.3.6.1.2.1.25.1.2.0" path="System.Date" type="STRING"/>
+        <entry oid="1.3.6.1.2.1.25.1.5.0" path="System.Nb_Users" type="LONG"/>
+        <entry oid="1.3.6.1.2.1.1.1.0" path="System.Description" type="STRING"/>
+        <entry oid="1.3.6.1.2.1.1.5.0" path="System.Name" type="STRING"/>
+        <entry oid="1.3.6.1.2.1.1.4.0" path="System.Contact" type="STRING"/>
+        <entry oid="1.3.6.1.2.1.25.2.2.0" path="System.Memory" type="LONG"/>
+    </group>
+    <group name="CPU" polling-time="60000" distribute-pdu="false">
+        <entry oid="1.3.6.1.2.1.25.3.3.1.2.196608" path="CPU0.Load" type="LONG"/>
+    </group>
+    <group name="Disk" polling-time="3600000" distribute-pdu="false">
+        <entry oid="1.3.6.1.2.1.25.3.6.1.4.393232" path="Disk0.Capacity" type="LONG"/>
+    </group>
+    <group name="Storage" polling-time="120000" distribute-pdu="false">
+    ...
+    </group>
+    <group name="Network" polling-time="120000" distribute-pdu="false">
+    ...
+    </group>
+</ns2:snmp-device>
+----
+
+The structure is very simple and self-explanatory: the file specifies groups, with related name, polling time (in milliseconds)
+and attribute (_distribute-pdu_) to specify whether the response PDU must be distributed and stored as raw data item.
+Upon establishing of the connection, polling PDUs for each group are constructed and sent with the specified period.
+Returned OID values are mapped to the parameters specified the _path_ attribute, prefixed with the _path_ value specified
+for the device inside the _configuration.xml_ file of the SNMP driver. In this way, the same device configuration file can be
+actually re-used for many devices, if they all share the same SNMP configuration.
+
+One point to consider is the mapping between the attribute _type_ and the raw type of the parameter in the processing model.
+The following mapping is defined:
+
+* OID -> ValueTypeEnum.ENUMERATED (the last OID field is used)
+* STRING -> return ValueTypeEnum.CHARACTER_STRING
+* BYTE_ARRAY -> ValueTypeEnum.OCTET_STRING
+* INTEGER -> ValueTypeEnum.ENUMERATED
+* LONG -> ValueTypeEnum.SIGNED_INTEGER
+* DOUBLE -> ValueTypeEnum.REAL
+
+===== Utility for generation of device configuration file and corresponding processing model
+The eu.dariolucia.reatmetric.driver.snmp.util module contains a utility program called BasicComputerDriverGenerator,
+which allows the rapid generation of a SNMP configuration for a computer. It is sufficient to run the program.
+
+----
+BasicComputerDriverGenerator <connection URL> <community name> <path prefix> <first external ID> <device name>
+
+<connection URL> e.g. 192.168.0.1/161 (UDP protocol used)
+<community name> must be provided
+<path prefix> is the location prefix to be used for processing model parameters (e.g. "SYSTEM.SERVERS").
+<first external ID> is the first ID to be used when creating processing model parameters.
+<device name> is the name of the device (used as default route for setter activity)
+----
+
+The utility program creates two files:
+
+* the device configuration file
+* the processing model file
+
+It is of course important to remember, to update the configuration.xml file of the _snmp_ driver to include the device
+and the location of the device configuration file, and to copy the processing model file inside the folder that ReatMetric
+will inspect when loading the processing model.
+
+As final note: it is important that the utility program has access to the device, because it will make some queries to
+identify e.g. how many CPU parameters will have to create.

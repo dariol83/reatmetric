@@ -104,7 +104,7 @@ public class SocketDriver extends AbstractDriver implements IDataProcessor, IRaw
         // Init data
         this.rawDataArchive = getContext().getArchive() != null ? getContext().getArchive().getArchive(IRawDataArchive.class) : null;
         this.globalDriverTimer = new Timer(getName() + " Timer Service", true);
-        this.actionThreadPool = Executors.newSingleThreadExecutor((r) -> {
+        this.actionThreadPool = Executors.newSingleThreadExecutor(r -> {
            Thread t = new Thread(r);
            t.setDaemon(true);
            t.setName(getName() + " Worker Thread");

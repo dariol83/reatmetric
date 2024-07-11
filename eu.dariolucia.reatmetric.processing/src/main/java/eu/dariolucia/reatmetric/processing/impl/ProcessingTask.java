@@ -33,14 +33,17 @@ public class ProcessingTask extends FutureTask<List<AbstractDataItem>> {
 
     private final Job job;
 
-    ProcessingTask(Job toRun) {
+    private final boolean includeWeaklyConsistent;
+
+    ProcessingTask(Job toRun, boolean includeWeaklyConsistent) {
         super(toRun);
         this.job = toRun;
+        this.includeWeaklyConsistent = includeWeaklyConsistent;
     }
 
     void prepareTask(GraphModel graphModel) {
         // Delegate
-        job.prepareTask(graphModel);
+        job.prepareTask(graphModel, this.includeWeaklyConsistent);
     }
 
     Set<Integer> getAffectedItems() {
@@ -88,14 +91,28 @@ public class ProcessingTask extends FutureTask<List<AbstractDataItem>> {
             return result;
         }
 
-        void prepareTask(GraphModel graphModel) {
+        void prepareTask(GraphModel graphModel, boolean includeWeakConsistent) {
             // Finalize the list by extending it with the necessary re-evaluations, the setting of the processors
             // and order by topological sort
-            operations = graphModel.finalizeOperationList(operations);
-            // Build the set of affected items by ID
-            for (AbstractModelOperation<?> amo : operations) {
-                this.affectedItems.add(amo.getSystemEntityId());
+            List<AbstractModelOperation<?>> newOperations = graphModel.finalizeOperationList(operations, includeWeakConsistent);
+            // Build the set of affected items by ID: do not put items that are weakly consistent,
+            // unless they appear in the original request
+            for (AbstractModelOperation<?> amo : newOperations) {
+                if (!amo.getProcessor().isWeaklyConsistent() || (includeWeakConsistent && isInOriginalOperations(amo.getProcessor().getSystemEntityId()))) {
+                    this.affectedItems.add(amo.getSystemEntityId());
+                }
             }
+            // Assign the new operations list
+            operations = newOperations;
+        }
+
+        private boolean isInOriginalOperations(int systemEntityId) {
+            for (AbstractModelOperation<?> amo : operations) {
+                if (amo.getProcessor().getSystemEntityId() == systemEntityId) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public Set<Integer> getAffectedItems() {

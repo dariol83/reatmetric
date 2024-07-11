@@ -34,7 +34,7 @@ public class SystemEntityUpdateOperation extends AbstractModelOperation<Abstract
 
     @Override
     protected List<AbstractDataItem> doProcess() throws ProcessingModelException {
-        return getProcessor().evaluate();
+        return getProcessor().evaluate(!getProcessor().isWeaklyConsistent());
     }
 
     @Override
