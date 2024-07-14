@@ -258,13 +258,13 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
     /**
      * This method derives the aggregated status of the activity occurrence. The status of the activity: can be OK, FAIL,
      * PENDING, UNKNOWN, TIMEOUT (not others).
-     *
-     * OK -> Activity is COMPLETED && no FATAL present && last state in verification or execution state is OK
-     * TIMEOUT -> Activity is COMPLETED && no FATAL present && no verification expression defined && last state is TIMEOUT
-     * FAIL -> Activity is COMPLETED && (FATAL present || last state in verification or execution state is FAIL)
-     * UNKNOWN -> Activity is COMPLETED && no FATAL, FAIL, OK, TIMEOUT present && no execution state reported
-     * PENDING -> Activity is not completed
-     *
+     * <ul>
+     * <li>OK: Activity is COMPLETED AND no FATAL present AND last state in verification or execution state is OK</li>
+     * <li>TIMEOUT: Activity is COMPLETED AND no FATAL present AND no verification expression defined AND last state is TIMEOUT</li>
+     * <li>FAIL: Activity is COMPLETED AND (FATAL present OR last state in verification or execution state is FAIL)</li>
+     * <li>UNKNOWN: Activity is COMPLETED AND no FATAL, FAIL, OK, TIMEOUT present AND no execution state reported</li>
+     * <li>PENDING: Activity is not completed</li>
+     * </ul>
      * @return the aggregated status
      */
     public ActivityReportState aggregateStatus() {

@@ -2,12 +2,14 @@
 
 ReatMetric is a well-documented Java-based software infrastructure for the implementation of Monitoring & Control (M&C) systems.
 
-![GitHub Release](https://img.shields.io/github/v/release/dariol83/reatmetric)
+![GitHub Release](https://img.shields.io/github/v/release/dariol83/reatmetric) [<img src="https://img.shields.io/maven-central/v/eu.dariolucia.reatmetric/eu.dariolucia.reatmetric?color=greem&style=flat">](https://search.maven.org/search?q=eu.dariolucia.reatmetric)
 
 ![Displays](docs/images/reatmetric-windows-01.PNG "ReatMetric")
 
 ## Documentation
 The system concepts, design, configuration and usage are described in the [documentation](docs/ReatMetric%20System%20Manual.adoc).
+
+The development of ReatMetric is considered completed and no further updates will be performed.
 
 ## Dependencies
 ReatMetric is based on a very limited set of dependencies:
@@ -76,9 +78,6 @@ Example of remoting configuration:
     <ns1:connectors xmlns:ns1="http://dariolucia.eu/reatmetric/remoting/connector/configuration">
 	    <connector local-name="Test System" remote-name="Test System" host="192.168.2.106" port="19000" />
     </ns1:connectors>
-
-## Roadmap
-The development of ReatMetric is considered completed and no further updates will be performed.
 
 ## Acknowledgements and Credits
 A special mention goes to Theresa Köster from the University of Gießen, who evaluated ReatMetric (among other tools) 

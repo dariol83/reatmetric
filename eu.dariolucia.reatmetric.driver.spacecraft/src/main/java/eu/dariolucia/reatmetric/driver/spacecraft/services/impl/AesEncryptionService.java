@@ -62,7 +62,7 @@ import java.util.logging.Logger;
  * header field, transfer frame secondary header field (if present), segment header (if present) and data field before
  * the encryption.
  * This implementation, if activated, performs encryption/decryption on all virtual channels.
- * <p />
+ * <br />
  * It must be noted that, even if the approach is quite in line with the one described in CCSDS 355.0-B-2, not all aspects
  * are covered. Nevertheless, this class represents a starting point.
  */

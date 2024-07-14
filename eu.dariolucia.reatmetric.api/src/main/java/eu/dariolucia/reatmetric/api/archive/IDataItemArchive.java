@@ -62,8 +62,8 @@ public interface IDataItemArchive<T extends AbstractDataItem, K extends Abstract
 
     /**
      * Retrieve data items, between the provided startItem and the provided endTime (included), and matching the provided filter.
-     * The returned list is ordered according to generation time (ascending order if startItem < endTime, descending order
-     * if startItem > endTime).
+     * The returned list is ordered according to generation time (ascending order if startItem less than endTime, descending order
+     * if startItem greater than endTime).
      *
      * @param startTime the start time used as reference for the retrieval
      * @param endTime the end time used as reference for the retrieval
@@ -161,7 +161,7 @@ public interface IDataItemArchive<T extends AbstractDataItem, K extends Abstract
     void remove(K filter) throws ArchiveException;
 
     /**
-     * Delete all entries in the archive strictly following (generationTime > referenceTime) or preceeding (generationTime < referenceTime)
+     * Delete all entries in the archive strictly following (generationTime &gt; referenceTime) or preceeding (generationTime &lt; referenceTime)
      * the provided time.
      *
      * @param referenceTime the reference time

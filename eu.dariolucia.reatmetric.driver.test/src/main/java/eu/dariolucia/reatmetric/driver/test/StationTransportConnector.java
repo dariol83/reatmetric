@@ -40,7 +40,7 @@ import java.util.logging.Logger;
  * The objective of this connector is to forward commands to the controlled system, and provides monitoring data and
  * events back to the ReatMetric system. The raw data broker is used to provide raw data into the system for further
  * processing by the driver. {@link eu.dariolucia.reatmetric.api.transport.ITransportConnector} are meant to be simple
- * communication media to connect the M&C system to the controlled system, and they are not meant to do any processing,
+ * communication media to connect the M&amp;C system to the controlled system, and they are not meant to do any processing,
  * besides recognizing the type of data and giving it a name.
  */
 public class StationTransportConnector extends AbstractTransportConnector implements IStationMonitor {
