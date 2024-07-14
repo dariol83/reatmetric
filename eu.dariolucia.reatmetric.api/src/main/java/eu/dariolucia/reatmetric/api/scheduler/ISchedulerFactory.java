@@ -47,5 +47,5 @@ public interface ISchedulerFactory {
      * @return an implementation of {@link IScheduler} interface
      * @throws SchedulingException in case of problems arising from the construction of the specific {@link IScheduler} object
      */
-   IScheduler buildScheduler(String schedulerConfigurationLocation, IArchive archive, IActivityExecutionService activityExecutor, IEventDataProvisionService eventMonService, IActivityOccurrenceDataProvisionService activityMonService, IParameterDataProvisionService parameterMonService);
+   IScheduler buildScheduler(String schedulerConfigurationLocation, IArchive archive, IActivityExecutionService activityExecutor, IEventDataProvisionService eventMonService, IActivityOccurrenceDataProvisionService activityMonService, IParameterDataProvisionService parameterMonService) throws SchedulingException;
 }
