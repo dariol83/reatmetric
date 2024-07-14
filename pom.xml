@@ -22,7 +22,7 @@
 
     <groupId>eu.dariolucia.reatmetric</groupId>
     <artifactId>eu.dariolucia.reatmetric</artifactId>
-    <version>1.0.2</version>
+    <version>1.0.2.1</version>
     <packaging>pom</packaging>
 
     <name>REATMETRIC</name>
@@ -87,6 +87,7 @@
         <maven.compiler.version>3.11.0</maven.compiler.version>
         <maven.gpg.version>1.6</maven.gpg.version>
         <maven.version>2.5</maven.version>
+        <maven.sonatype.version>0.4.0</maven.sonatype.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
     </properties>
@@ -97,8 +98,6 @@
         <module>eu.dariolucia.reatmetric.core</module>
         <module>eu.dariolucia.reatmetric.remoting</module>
         <module>eu.dariolucia.reatmetric.remoting.connector</module>
-        <module>eu.dariolucia.reatmetric.remoting.test</module>
-        <module>eu.dariolucia.reatmetric.remoting.spacecraft</module>
         <module>eu.dariolucia.reatmetric.persist</module>
         <module>eu.dariolucia.reatmetric.scheduler</module>
         <module>eu.dariolucia.reatmetric.driver.automation.base</module>
@@ -115,12 +114,6 @@
         <module>eu.dariolucia.reatmetric.driver.snmp</module>
         <module>eu.dariolucia.reatmetric.driver.snmp.util</module>
         <module>eu.dariolucia.reatmetric.ui</module>
-        <module>eu.dariolucia.reatmetric.ui.test</module>
-        <module>eu.dariolucia.reatmetric.ui.remoting</module>
-        <module>eu.dariolucia.reatmetric.ui.spacecraft</module>
-        <module>eu.dariolucia.reatmetric.ui.socket</module>
-        <module>eu.dariolucia.reatmetric.ui.snmp</module>
-        <module>eu.dariolucia.reatmetric.deployment</module>
     </modules>
 
     <build>
@@ -200,12 +193,6 @@
     <profiles>
         <profile>
             <id>release</id>
-            <distributionManagement>
-                <repository>
-                    <id>ossrh</id>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
             <build>
                 <plugins>
                     <plugin>
@@ -222,8 +209,30 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>${maven.sonatype.version}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <excludeArtifacts>
+                                <artifact>eu.dariolucia.reatmetric.deployment</artifact>
+                                <artifact>eu.dariolucia.reatmetric.driver.example</artifact>
+                                <artifact>eu.dariolucia.reatmetric.driver.example.test</artifact>
+                                <artifact>eu.dariolucia.reatmetric.remoting.test</artifact>
+                                <artifact>eu.dariolucia.reatmetric.remoting.ui.remoting</artifact>
+                                <artifact>eu.dariolucia.reatmetric.remoting.ui.snmp</artifact>
+                                <artifact>eu.dariolucia.reatmetric.remoting.ui.socket</artifact>
+                                <artifact>eu.dariolucia.reatmetric.remoting.ui.spacecraft</artifact>
+                                <artifact>eu.dariolucia.reatmetric.remoting.ui.test</artifact>
+                            </excludeArtifacts>
+                            <publishingServerId>central</publishingServerId>
+                            <tokenAuth>true</tokenAuth>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
     </profiles>
+
 </project>
