@@ -9,7 +9,8 @@ ReatMetric is a well-documented Java-based software infrastructure for the imple
 ## Documentation
 The system concepts, design, configuration and usage are described in the [documentation](docs/ReatMetric%20System%20Manual.adoc).
 
-The development of ReatMetric is considered completed and no further updates will be performed.
+As of version 1.1.0, released on 22 July 2024, the development of ReatMetric is considered completed and no further 
+updates will be released.
 
 ## Dependencies
 ReatMetric is based on a very limited set of dependencies:
@@ -24,6 +25,8 @@ ReatMetric is based on a very limited set of dependencies:
 - [eu.dariolucia.ccsds](https://www.github.com/dariol83/ccsds): providing support for SLE/TM/TC/PUS handling of the _spacecraft_ driver;
 - [Json Path](https://github.com/json-path/JsonPath): for the parsing of JSON objects and files;
 - [SNMP4J](https://www.snmp4j.org/): for the support of SNMP in the _snmp_ module;
+- [PostgreSQL](https://www.postgresql.org/): providing the storage backend of the _persist.timescale_ module;
+- [TimescaleDB](https://www.timescale.com/): providing the storage backend extension for the _persist.timescale_ module;
 
 Including also the indirect dependencies, a typical ReatMetric backend deployment (i.e. without UI) is composed by 40 Jars,
 16 from ReatMetric and 24 from external dependencies, for a total of **16.5 MB**. This size can be further reduced depending 
