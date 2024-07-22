@@ -1,13 +1,13 @@
 = System Manual
 Dario Lucia <dario.lucia@gmail.com>
-v1.0.2, 2024-07-11
+v1.1.0, 2024-07-22
 :title-logo-image: image:docimg/ReatMetric-Logo.png[top=42%,align=left,pdfwidth=6in]
 :doctype: book
 :toc:
 :homepage: https://github.com/dariol83/reatmetric
 
 == Applicable Version
-This manual described the design, behaviour and configuration of ReatMetric version 1.0.2.
+This manual described the design, behaviour and configuration of ReatMetric version 1.1.0.
 
 == System Overview
 ReatMetric is a Java-based software infrastructure for the implementation of Monitoring & Control (M&C) systems,
@@ -279,8 +279,11 @@ include::../eu.dariolucia.reatmetric.api/Documentation.adoc[]
 === Processing
 include::../eu.dariolucia.reatmetric.processing/Documentation.adoc[]
 
-=== Persist
+=== Persist with Apache Derby
 include::../eu.dariolucia.reatmetric.persist/Documentation.adoc[]
+
+=== Persist with PostgreSQL/Timescaledb
+include::../eu.dariolucia.reatmetric.persist.timescale/Documentation.adoc[]
 
 === Scheduler
 include::../eu.dariolucia.reatmetric.scheduler/Documentation.adoc[]

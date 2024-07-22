@@ -1,28 +1,16 @@
 ==== Overview
-The eu.dariolucia.reatmetric.persist module is the implementation of a storage system for ReatMetric data such as parameters,
-events, activity occurrences, raw data and operational messages. The implementation is based on the Apache Derby RDBMS,
-and it can be used in file-based and client-server deployments, depending on the way the argument "archiveLocation" is
-provided:
-
-* If the path to a folder is provided, then the file-based archive is used;
-* If a '//<server>[:<port>]/<databaseName>[;user=<value>;password=<value>[;...]]' string is provided, then a client
-connection to the server is established. The server must have been already started in advance.
-
-In case the path to a folder is provided:
-
-* If the folder exists, it is expected to contain an Apache Derby database. If not, an error is returned;
-* If the folder does not exist, an Apache Derby database is created and configured according to the database schema defined
-by this module.
+The eu.dariolucia.reatmetric.persist.timescale module is the basic implementation of a storage system for ReatMetric data such
+as parameters, events, activity occurrences, raw data and operational messages, based on the PostgreSQL RDBMS with the
+timescaledb extension.
 
 Including this module in a ReatMetric system is not mandatory: if not present, the system will work as usual, but it will
 not store any data. In the same way, it will not be possible to retrieve any historical data, but only monitor the live
 state of the external devices/systems.
 
 This module can be deployed outside a ReatMetric system, if a means to access the stored data outside the ReatMetric
-system is desirable, keeping in mind that:
-
-* File-based archives can be accessed only by a single system at once;
-* Archives in a client-server deployment can be accessed in parallel by more than a single system.
+system is desirable, keeping in mind that archives in a client-server deployment can be accessed in parallel by more than
+a single system. If this module wants to be used for this purpose, the constructor argument string of the Archive class
+must take a JDBC connection string (see configuration).
 
 This module has one internal dependency:
 
@@ -30,7 +18,27 @@ This module has one internal dependency:
 
 This module has one external dependency:
 
-* On Apache Derby.
+* On PostgreSQL JDBC connector.
 
 ==== Configuration
-None.
+The *archive-location* element in the ReatMetric Core configuration file shall be set to a string with the following
+format:
+
+----
+jdbc:postgresql://<ip>:<port>/<database name>?user=<username>&password=<password>
+----
+
+This archive implementation does not create the database automatically: the database must be created in advance and the
+right priviledges must be assigned to the user configured in the ReatMetric system.
+The following instructions can be performed as user 'postgres' for this purpose, or with any user that has the right to
+create databases, to manage users and roles, and to activate extensions on PostgreSQL. If you use another user,
+make sure that you change it also in the 4th command below.
+
+----
+CREATE DATABASE reatmetric_db;
+CREATE USER reatmetric_user WITH ENCRYPTED PASSWORD 'reatmetric_password';
+GRANT ALL PRIVILEGES ON DATABASE reatmetric_db TO reatmetric_user;
+\c reatmetric_db postgres
+GRANT ALL ON SCHEMA public TO reatmetric_user;
+CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
+----

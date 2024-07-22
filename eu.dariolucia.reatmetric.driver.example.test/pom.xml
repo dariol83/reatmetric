@@ -22,7 +22,7 @@
     <groupId>eu.dariolucia.reatmetric.example</groupId>
     <artifactId>eu.dariolucia.reatmetric.driver.example.test</artifactId>
     <name>REATMETRIC - Example Test</name>
-    <version>1.0.2.1</version>
+    <version>1.1.0</version>
     <description>REATMETRIC Example Test for deployment</description>
 
     <properties>
@@ -65,48 +65,48 @@
         <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.api</artifactId>
-            <version>1.0.2.1</version>
+            <version>1.1.0</version>
         </dependency>
 	    <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.core</artifactId>
-            <version>1.0.2.1</version>
+            <version>1.1.0</version>
         </dependency>
         <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.scheduler</artifactId>
-            <version>1.0.2.1</version>
+            <version>1.1.0</version>
         </dependency>
 	    <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.ui</artifactId>
-            <version>1.0.2.1</version>
+            <version>1.1.0</version>
         </dependency>
         <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.driver.automation.groovy</artifactId>
-            <version>1.0.2.1</version>
+            <version>1.1.0</version>
         </dependency>
         <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.persist</artifactId>
-            <version>1.0.2.1</version>
+            <version>1.1.0</version>
         </dependency>
 	    <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.processing</artifactId>
-            <version>1.0.2.1</version>
+            <version>1.1.0</version>
         </dependency>
         <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.driver.httpserver</artifactId>
-            <version>1.0.2.1</version>
+            <version>1.1.0</version>
         </dependency>
         <!-- The new driver -->
         <dependency>
             <groupId>eu.dariolucia.reatmetric.example</groupId>
             <artifactId>eu.dariolucia.reatmetric.driver.example</artifactId>
-            <version>1.0.2.1</version>
+            <version>1.1.0</version>
         </dependency>
     </dependencies>
 </project>
