@@ -27,7 +27,6 @@ import eu.dariolucia.reatmetric.api.messages.OperationalMessageFilter;
 import eu.dariolucia.reatmetric.api.messages.Severity;
 import eu.dariolucia.reatmetric.persist.timescale.Archive;
 
-import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
 import java.util.Arrays;
@@ -61,12 +60,7 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
         } else {
             storeStatement.setInt(7, item.getLinkedEntityId());
         }
-        Object extension = item.getExtension();
-        if(extension == null) {
-            storeStatement.setNull(8, Types.BLOB);
-        } else {
-            storeStatement.setBlob(8, toInputstream(item.getExtension()));
-        }
+        storeStatement.setBytes(8, toBytes(item.getExtension()));
     }
 
     @Override
@@ -170,11 +164,11 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
     }
 
     @Override
-    protected OperationalMessage mapToItem(ResultSet rs, OperationalMessageFilter usedFilter) throws SQLException, IOException {
-        return mapToItem(rs, usedFilter, 0);
+    protected OperationalMessage mapToItem(ResultSet rs, OperationalMessageFilter usedFilter) throws SQLException {
+        return mapToItem(rs, 0);
     }
 
-    static OperationalMessage mapToItem(ResultSet rs, OperationalMessageFilter usedFilter, int offset) throws SQLException, IOException {
+    static OperationalMessage mapToItem(ResultSet rs, int offset) throws SQLException {
         long uniqueId = rs.getLong(offset + 1);
         Timestamp genTime = rs.getTimestamp(offset + 2);
         String messageId = rs.getString(offset + 3);
@@ -185,7 +179,7 @@ public class OperationalMessageArchive extends AbstractDataItemArchive<Operation
         if(rs.wasNull()) {
             linkedEntityId = null;
         }
-        Blob extensionBlob = rs.getBlob(offset + 8);
+        byte[] extensionBlob = rs.getBytes(offset + 8);
         Object extension = null;
         if(extensionBlob != null && !rs.wasNull()) {
             extension = toObject(extensionBlob);

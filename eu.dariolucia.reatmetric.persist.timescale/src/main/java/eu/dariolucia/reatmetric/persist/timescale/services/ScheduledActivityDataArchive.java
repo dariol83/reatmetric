@@ -100,7 +100,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
     private void tryUpdate(Connection connection, ScheduledActivityData item) throws SQLException {
         try (PreparedStatement storeStatement = connection.prepareStatement(UPDATE_STATEMENT)) {
             storeStatement.setTimestamp(1, toTimestamp(item.getGenerationTime()));
-            storeStatement.setBlob(2, toInputstream(item.getRequest()));
+            storeStatement.setBytes(2, toBytes(item.getRequest()));
             storeStatement.setString(3, item.getRequest().getPath().asString());
             if(item.getActivityOccurrence() != null) {
                 storeStatement.setLong(4, item.getActivityOccurrence().asLong());
@@ -111,7 +111,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
             storeStatement.setString(5, resources);
             storeStatement.setString(6, item.getSource());
             storeStatement.setString(7, item.getExternalId());
-            storeStatement.setBlob(8, toInputstream(item.getTrigger()));
+            storeStatement.setBytes(8, toBytes(item.getTrigger()));
             if(item.getLatestInvocationTime() != null) {
                 storeStatement.setTimestamp(9, toTimestamp(item.getLatestInvocationTime()));
             } else {
@@ -121,12 +121,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
             storeStatement.setInt(11, (int) item.getDuration().toSeconds());
             storeStatement.setShort(12, (short) item.getConflictStrategy().ordinal());
             storeStatement.setShort(13, (short) item.getState().ordinal());
-            Object extension = item.getExtension();
-            if(extension == null) {
-                storeStatement.setNull(14, Types.BLOB);
-            } else {
-                storeStatement.setBlob(14, toInputstream(item.getExtension()));
-            }
+            storeStatement.setBytes(14, toBytes(item.getExtension()));
             storeStatement.setLong(15, item.getInternalId().asLong());
             storeStatement.addBatch();
             int[] numUpdates = storeStatement.executeBatch();
@@ -153,7 +148,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         try (PreparedStatement storeStatement = connection.prepareStatement(INSERT_STATEMENT)) {
             storeStatement.setLong(1, item.getInternalId().asLong());
             storeStatement.setTimestamp(2, toTimestamp(item.getGenerationTime()));
-            storeStatement.setBlob(3, toInputstream(item.getRequest()));
+            storeStatement.setBytes(3, toBytes(item.getRequest()));
             storeStatement.setString(4, item.getRequest().getPath().asString());
             if(item.getActivityOccurrence() != null) {
                 storeStatement.setLong(5, item.getActivityOccurrence().asLong());
@@ -164,7 +159,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
             storeStatement.setString(6, resources);
             storeStatement.setString(7, item.getSource());
             storeStatement.setString(8, item.getExternalId());
-            storeStatement.setBlob(9, toInputstream(item.getTrigger()));
+            storeStatement.setBytes(9, toBytes(item.getTrigger()));
             if(item.getLatestInvocationTime() != null) {
                 storeStatement.setTimestamp(10, toTimestamp(item.getLatestInvocationTime()));
             } else {
@@ -174,11 +169,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
             storeStatement.setInt(12, (int) item.getDuration().toSeconds());
             storeStatement.setShort(13, (short) item.getConflictStrategy().ordinal());
             storeStatement.setShort(14, (short) item.getState().ordinal());
-            if(item.getExtension() == null) {
-                storeStatement.setNull(15, Types.BLOB);
-            } else {
-                storeStatement.setBlob(15, toInputstream(item.getExtension()));
-            }
+            storeStatement.setBytes(15, toBytes(item.getExtension()));
             storeStatement.addBatch();
             int[] numUpdates = storeStatement.executeBatch();
             if (LOG.isLoggable(Level.FINEST)) {
@@ -313,7 +304,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
     protected ScheduledActivityData mapToItem(ResultSet rs, ScheduledActivityDataFilter usedFilter) throws SQLException, IOException {
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
-        ActivityRequest request = (ActivityRequest) toObject(rs.getBlob(3));
+        ActivityRequest request = (ActivityRequest) toObject(rs.getBytes(3));
         Long actOcc = rs.getLong(5);
         if(rs.wasNull()) {
             actOcc = null;
@@ -321,7 +312,7 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
         Set<String> resources = parseResources(rs.getString(6));
         String source = rs.getString(7);
         String extId = rs.getString(8);
-        AbstractSchedulingTrigger trigger = (AbstractSchedulingTrigger) toObject(rs.getBlob(9));
+        AbstractSchedulingTrigger trigger = (AbstractSchedulingTrigger) toObject(rs.getBytes(9));
         Timestamp latestInvokeTime = rs.getTimestamp(10);
         if(rs.wasNull()) {
             latestInvokeTime = null;
@@ -332,10 +323,10 @@ public class ScheduledActivityDataArchive extends AbstractDataItemArchive<Schedu
 
         ConflictStrategy conflictStrategy = ConflictStrategy.values()[rs.getShort(13)];
         SchedulingState state = SchedulingState.values()[rs.getShort(14)];
-        Blob extensionBlob = rs.getBlob(15);
+        byte[] extensionData = rs.getBytes(15);
         Object extension = null;
-        if(extensionBlob != null && !rs.wasNull()) {
-            extension = toObject(extensionBlob);
+        if(extensionData != null && !rs.wasNull()) {
+            extension = toObject(extensionData);
         }
         return new ScheduledActivityData(new LongUniqueId(uniqueId), toInstant(genTime), request,
                 actOcc == null ? null : new LongUniqueId(actOcc), resources, source, extId, trigger, toInstant(latestInvokeTime), toInstant(startTime), Duration.ofSeconds(duration), conflictStrategy, state, extension);

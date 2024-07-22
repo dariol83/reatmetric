@@ -59,16 +59,8 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
         storeStatement.setInt(3, item.getExternalId());
         storeStatement.setString(4, item.getName());
         storeStatement.setString(5, item.getPath().asString());
-        if(item.getEngValue() == null) {
-            storeStatement.setNull(6, Types.BLOB);
-        } else {
-            storeStatement.setBlob(6, toInputstream(item.getEngValue()));
-        }
-        if(item.getSourceValue() == null) {
-            storeStatement.setNull(7, Types.BLOB);
-        } else {
-            storeStatement.setBlob(7, toInputstream(item.getSourceValue()));
-        }
+        storeStatement.setBytes(6, toBytes(item.getEngValue()));
+        storeStatement.setBytes(7, toBytes(item.getSourceValue()));
         storeStatement.setTimestamp(8, toTimestamp(item.getReceptionTime()));
         if(item.getRoute() == null) {
             storeStatement.setNull(9, Types.VARCHAR);
@@ -82,12 +74,7 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
         } else {
             storeStatement.setLong(12, item.getRawDataContainerId().asLong());
         }
-        Object extension = item.getExtension();
-        if(extension == null) {
-            storeStatement.setNull(13, Types.BLOB);
-        } else {
-            storeStatement.setBlob(13, toInputstream(item.getExtension()));
-        }
+        storeStatement.setBytes(13, toBytes(item.getExtension()));
     }
 
     @Override
@@ -215,8 +202,8 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
         int externalId = rs.getInt(3);
         String name = rs.getString(4);
         String path = rs.getString(5);
-        Object engValue = toObject(rs.getBlob(6));
-        Object sourceValue = toObject(rs.getBlob(7));
+        Object engValue = toObject(rs.getBytes(6));
+        Object sourceValue = toObject(rs.getBytes(7));
         Timestamp receptionTime = rs.getTimestamp(8);
         String route = rs.getString(9);
         Validity validity = Validity.values()[rs.getShort(10)];
@@ -225,10 +212,10 @@ public class ParameterDataArchive extends AbstractDataItemArchive<ParameterData,
         if(rs.wasNull()) {
             containerId = null;
         }
-        Blob extensionBlob = rs.getBlob(13);
+        byte[] extensionData = rs.getBytes(13);
         Object extension = null;
-        if(extensionBlob != null && !rs.wasNull()) {
-            extension = toObject(extensionBlob);
+        if(extensionData != null && !rs.wasNull()) {
+            extension = toObject(extensionData);
         }
         return new ParameterData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), engValue, sourceValue, route, validity, alarmState, containerId == null ? null : new LongUniqueId(containerId), toInstant(receptionTime), extension);
     }

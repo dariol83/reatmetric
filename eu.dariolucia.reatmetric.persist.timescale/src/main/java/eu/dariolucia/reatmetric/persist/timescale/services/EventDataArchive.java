@@ -69,17 +69,8 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
         } else {
             storeStatement.setLong(12, item.getRawDataContainerId().asLong());
         }
-        if(item.getReport() == null) {
-            storeStatement.setNull(13, Types.BLOB);
-        } else {
-            storeStatement.setBlob(13, toInputstream(item.getReport()));
-        }
-        Object extension = item.getExtension();
-        if(extension == null) {
-            storeStatement.setNull(14, Types.BLOB);
-        } else {
-            storeStatement.setBlob(14, toInputstream(item.getExtension()));
-        }
+        storeStatement.setBytes(13, toBytes(item.getReport()));
+        storeStatement.setBytes(14, toBytes(item.getExtension()));
     }
 
     @Override
@@ -226,15 +217,14 @@ public class EventDataArchive extends AbstractDataItemArchive<EventData, EventDa
         if(rs.wasNull()) {
             containerId = null;
         }
-        Object report = toObject(rs.getBlob(13));
-        Blob extensionBlob = rs.getBlob(14);
+        Object report = toObject(rs.getBytes(13));
+        byte[] extensionData = rs.getBytes(14);
         Object extension = null;
-        if(extensionBlob != null && !rs.wasNull()) {
-            extension = toObject(extensionBlob);
+        if(extensionData != null && !rs.wasNull()) {
+            extension = toObject(extensionData);
         }
         return new EventData(new LongUniqueId(uniqueId), toInstant(genTime), externalId, name, SystemEntityPath.fromString(path), qualifier, type, route, source, severity, report, containerId == null ? null : new LongUniqueId(containerId), toInstant(receptionTime), extension);
     }
-
 
     @Override
     public synchronized List<EventData> retrieve(Instant time, EventDataFilter filter, Instant maxLookbackTime) throws ArchiveException {

@@ -136,18 +136,9 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         storeStatement.setShort(5, (short) item.getState().ordinal());
         storeStatement.setShort(6, (short) item.getStateTransition().ordinal());
         storeStatement.setShort(7, (short) item.getStatus().ordinal());
-        if(item.getResult() == null) {
-            storeStatement.setNull(8, Types.BLOB);
-        } else {
-            storeStatement.setBlob(8, toInputstream(item.getResult()));
-        }
+        storeStatement.setBytes(8, toBytes(item.getResult()));
         storeStatement.setLong(9, parent.getInternalId().asLong());
-        Object extension = item.getExtension();
-        if(extension == null) {
-            storeStatement.setNull(10, Types.BLOB);
-        } else {
-            storeStatement.setBlob(10, toInputstream(item.getExtension()));
-        }
+        storeStatement.setBytes(10, toBytes(item.getExtension()));
     }
 
     @Override
@@ -160,14 +151,9 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         storeStatement.setString(6, item.getType());
         storeStatement.setString(7, item.getRoute() != null && item.getRoute().length() > 48 ? item.getRoute().substring(0, 48): item.getRoute());
         storeStatement.setString(8, item.getSource());
-        storeStatement.setBlob(9, toInputstream(item.getArguments()));
-        storeStatement.setBlob(10, toInputstream(item.getProperties()));
-        Object extension = item.getExtension();
-        if(extension == null) {
-            storeStatement.setNull(11, Types.BLOB);
-        } else {
-            storeStatement.setBlob(11, toInputstream(item.getExtension()));
-        }
+        storeStatement.setBytes(9, toBytes(item.getArguments()));
+        storeStatement.setBytes(10, toBytes(item.getProperties()));
+        storeStatement.setBytes(11, toBytes(item.getExtension()));
     }
 
     @Override
@@ -235,11 +221,11 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         ActivityOccurrenceState state = ActivityOccurrenceState.values()[rs.getShort(offset + 5)];
         ActivityOccurrenceState nextState = ActivityOccurrenceState.values()[rs.getShort(offset + 6)];
         ActivityReportState reportStatus = ActivityReportState.values()[rs.getShort(offset + 7)];
-        Object result = toObject(rs.getBlob(offset + 8));
-        Blob extensionBlob = rs.getBlob(offset + 10);
+        Object result = toObject(rs.getBytes(offset + 8));
+        byte[] extensionData = rs.getBytes(offset + 10);
         Object extension = null;
-        if(extensionBlob != null && !rs.wasNull()) {
-            extension = toObject(extensionBlob);
+        if(extensionData != null && !rs.wasNull()) {
+            extension = toObject(extensionData);
         }
         return new ActivityOccurrenceReport(new LongUniqueId(uniqueId),toInstant(genTime),extension, name, state, toInstant(execTime),reportStatus, nextState, result);
     }
@@ -253,12 +239,12 @@ public class ActivityOccurrenceDataArchive extends AbstractDataItemArchive<Activ
         String type = rs.getString(6);
         String route = rs.getString(7);
         String source = rs.getString(8);
-        Map<String, Object> arguments = (Map<String, Object>) toObject(rs.getBlob(9));
-        Map<String, String> properties = (Map<String, String>) toObject(rs.getBlob(10));
-        Blob extensionBlob = rs.getBlob(11);
+        Map<String, Object> arguments = (Map<String, Object>) toObject(rs.getBytes(9));
+        Map<String, String> properties = (Map<String, String>) toObject(rs.getBytes(10));
+        byte[] extensionData = rs.getBytes(11);
         Object extension = null;
-        if(extensionBlob != null && !rs.wasNull()) {
-            extension = toObject(extensionBlob);
+        if(extensionData != null && !rs.wasNull()) {
+            extension = toObject(extensionData);
         }
         return new ActivityOccurrenceData(new LongUniqueId(uniqueId), toInstant(genTime),
                 extension, externalId, name, SystemEntityPath.fromString(path),

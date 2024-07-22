@@ -27,7 +27,6 @@ import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.rawdata.RawDataFilter;
 import eu.dariolucia.reatmetric.persist.timescale.Archive;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.sql.*;
 import java.time.Instant;
@@ -66,16 +65,11 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
             storeStatement.setLong(10, item.getRelatedItem().asLong());
         }
         if(item.isContentsSet()) {
-            storeStatement.setBlob(11, new ByteArrayInputStream(item.getContents()));
+            storeStatement.setBytes(11, item.getContents());
         } else {
-            storeStatement.setNull(11, Types.BLOB);
+            storeStatement.setBytes(11, null);
         }
-        Object extension = item.getExtension();
-        if(extension == null) {
-            storeStatement.setNull(12, Types.BLOB);
-        } else {
-            storeStatement.setBlob(12, toInputstream(extension));
-        }
+        storeStatement.setBytes(12, toBytes(item.getExtension()));
     }
 
     @Override
@@ -208,12 +202,9 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         // retrieve Contents if present
         byte[] contents = null;
         if(usedFilter == null || usedFilter.isWithData()) {
-            Blob blob = rs.getBlob(11);
-            if(blob != null && !rs.wasNull()) {
-                contents = toByteArray(blob.getBinaryStream());
-            }
+            contents = rs.getBytes(11);
         }
-        Blob extensionBlob = rs.getBlob(12);
+        byte[] extensionBlob = rs.getBytes(12);
         Object extension = null;
         if(extensionBlob != null && !rs.wasNull()) {
             extension = toObject(extensionBlob);

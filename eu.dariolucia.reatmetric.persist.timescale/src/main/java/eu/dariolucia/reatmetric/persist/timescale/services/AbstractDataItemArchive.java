@@ -690,6 +690,20 @@ public abstract class AbstractDataItemArchive<T extends AbstractDataItem, K exte
         return is.readAllBytes();
     }
 
+    protected static byte[] toBytes(Object data) {
+        if (data == null) {
+            return null;
+        }
+        return ValueUtil.serialize(data);
+    }
+
+    protected static Object toObject(byte[] data) {
+        if (data == null) {
+            return null;
+        }
+        return ValueUtil.deserialize(data);
+    }
+
     protected static <E extends Enum<E>> String toEnumFilterListString(Set<E> enumList) {
         return toFilterListString(enumList, Enum::ordinal, null);
     }

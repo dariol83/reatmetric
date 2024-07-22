@@ -95,12 +95,7 @@ public class AcknowledgedMessageArchive extends AbstractDataItemArchive<Acknowle
                 storeStatement.setString(4, item.getUser());
             }
             storeStatement.setTimestamp(5, toTimestamp(item.getAcknowledgementTime()));
-            Object extension = item.getExtension();
-            if(extension == null) {
-                storeStatement.setNull(6, Types.BLOB);
-            } else {
-                storeStatement.setBlob(6, toInputstream(item.getExtension()));
-            }
+            storeStatement.setBytes(6, toBytes(item.getExtension()));
             storeStatement.setLong(7, item.getInternalId().asLong());
             storeStatement.addBatch();
             int[] numUpdates = storeStatement.executeBatch();
@@ -135,11 +130,7 @@ public class AcknowledgedMessageArchive extends AbstractDataItemArchive<Acknowle
                 storeStatement.setString(5, item.getUser());
             }
             storeStatement.setTimestamp(6, toTimestamp(item.getAcknowledgementTime()));
-            if (item.getExtension() == null) {
-                storeStatement.setNull(7, Types.BLOB);
-            } else {
-                storeStatement.setBlob(7, toInputstream(item.getExtension()));
-            }
+            storeStatement.setBytes(7, toBytes(item.getExtension()));
             storeStatement.addBatch();
             int[] numUpdates = storeStatement.executeBatch();
             if (LOG.isLoggable(Level.FINEST)) {
@@ -254,13 +245,13 @@ public class AcknowledgedMessageArchive extends AbstractDataItemArchive<Acknowle
 
     @Override
     protected AcknowledgedMessage mapToItem(ResultSet rs, AcknowledgedMessageFilter usedFilder) throws SQLException, IOException {
-        OperationalMessage om = OperationalMessageArchive.mapToItem(rs, null, 6);
+        OperationalMessage om = OperationalMessageArchive.mapToItem(rs, 6);
         long uniqueId = rs.getLong(1);
         Timestamp genTime = rs.getTimestamp(2);
         AcknowledgementState state = AcknowledgementState.values()[rs.getShort(3)];
         String user = rs.getString(4);
         Timestamp ackTime = rs.getTimestamp(5);
-        Blob extensionBlob = rs.getBlob(6);
+        byte[] extensionBlob = rs.getBytes(6);
         Object extension = null;
         if(extensionBlob != null && !rs.wasNull()) {
             extension = toObject(extensionBlob);

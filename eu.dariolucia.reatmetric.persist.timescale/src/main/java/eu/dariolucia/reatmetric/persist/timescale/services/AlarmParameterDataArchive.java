@@ -59,16 +59,11 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
         storeStatement.setString(4, item.getName());
         storeStatement.setString(5, item.getPath().asString());
         storeStatement.setShort(6, (short) item.getCurrentAlarmState().ordinal());
-        storeStatement.setBlob(7, toInputstream(item.getCurrentValue()));
+        storeStatement.setBytes(7, toBytes(item.getCurrentValue()));
         storeStatement.setTimestamp(8, toTimestamp(item.getReceptionTime()));
-        storeStatement.setBlob(9, toInputstream(item.getLastNominalValue()));
+        storeStatement.setBytes(9, toBytes(item.getLastNominalValue()));
         storeStatement.setTimestamp(10, toTimestamp(item.getLastNominalValueTime()));
-        Object extension = item.getExtension();
-        if(extension == null) {
-            storeStatement.setNull(11, Types.BLOB);
-        } else {
-            storeStatement.setBlob(11, toInputstream(item.getExtension()));
-        }
+        storeStatement.setBytes(11, toBytes(item.getExtension()));
     }
 
     @Override
@@ -179,11 +174,11 @@ public class AlarmParameterDataArchive extends AbstractDataItemArchive<AlarmPara
         String name = rs.getString(4);
         String path = rs.getString(5);
         AlarmState currentAlarmState = AlarmState.values()[rs.getShort(6)];
-        Object currentValue = toObject(rs.getBlob(7));
+        Object currentValue = toObject(rs.getBytes(7));
         Timestamp receptionTime = rs.getTimestamp(8);
-        Object lastNominalValue = toObject(rs.getBlob(9));
+        Object lastNominalValue = toObject(rs.getBytes(9));
         Timestamp lastNominalValueTime = rs.getTimestamp(10);
-        Blob extensionBlob = rs.getBlob(11);
+        byte[] extensionBlob = rs.getBytes(11);
         Object extension = null;
         if(extensionBlob != null && !rs.wasNull()) {
             extension = toObject(extensionBlob);
