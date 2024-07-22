@@ -74,6 +74,7 @@
         <jserialcomm.version>2.8.0</jserialcomm.version>
         <jsonpath.version>2.7.0</jsonpath.version>
         <snmp4j.version>3.8.2</snmp4j.version>
+        <postgresql.version>42.7.3</postgresql.version>
         <!--
         <tiwulf.version>0.1</tiwulf.version>
         -->
@@ -99,6 +100,7 @@
         <module>eu.dariolucia.reatmetric.remoting</module>
         <module>eu.dariolucia.reatmetric.remoting.connector</module>
         <module>eu.dariolucia.reatmetric.persist</module>
+        <module>eu.dariolucia.reatmetric.persist.timescale</module>
         <module>eu.dariolucia.reatmetric.scheduler</module>
         <module>eu.dariolucia.reatmetric.driver.automation.base</module>
         <module>eu.dariolucia.reatmetric.driver.automation.groovy</module>
