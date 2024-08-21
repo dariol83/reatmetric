@@ -86,9 +86,7 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
             }
         } else {
             // Check presence of default value: if so, build the state right away
-            if (definition.getDefaultValue() != null) {
-                buildDefaultState();
-            }
+            buildDefaultState(definition.getDefaultValue());
         }
         // Check if it is a synthetic parameter and if it has to start disabled
         if(definition.getExpression() != null && !processor.getDefinitions().isSyntheticParameterProcessingEnabled()) {
@@ -114,14 +112,16 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                 definition.buildExpectedValuesEng());
     }
 
-    private void buildDefaultState() {
+    private void buildDefaultState(FixedDefaultValue defaultValue) {
         Object sourceValue = null;
         Object engValue = null;
-        String valueStr = definition.getDefaultValue().getValue();
-        if(definition.getDefaultValue().getType() == DefaultValueType.RAW) {
-            sourceValue = ValueUtil.parse(definition.getRawType(), valueStr);
-        } else {
-            engValue = ValueUtil.parse(definition.getEngineeringType(), valueStr);
+        if(defaultValue != null) {
+            String valueStr = defaultValue.getValue();
+            if (defaultValue.getType() == DefaultValueType.RAW) {
+                sourceValue = ValueUtil.parse(definition.getRawType(), valueStr);
+            } else {
+                engValue = ValueUtil.parse(definition.getEngineeringType(), valueStr);
+            }
         }
         // Set validity
         this.builder.setValidity(Validity.UNKNOWN);
