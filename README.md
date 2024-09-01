@@ -9,7 +9,7 @@ ReatMetric is a well-documented Java-based software infrastructure for the imple
 ## Documentation
 The system concepts, design, configuration and usage are described in the [documentation](docs/ReatMetric%20System%20Manual.adoc).
 
-As of version 1.1.0, released on 22 July 2024, the development of ReatMetric is considered completed and no further 
+As of version 1.1.2, released on 21 August 2024, the development of ReatMetric is considered completed and no further 
 updates will be released.
 
 ## Dependencies
