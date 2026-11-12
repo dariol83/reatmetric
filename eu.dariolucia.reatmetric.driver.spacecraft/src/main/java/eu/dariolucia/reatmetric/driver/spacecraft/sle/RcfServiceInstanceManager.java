@@ -21,6 +21,7 @@ import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.rcf.outgoing
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.rcf.structures.AntennaId;
 import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.rcf.RcfServiceInstanceConfiguration;
+import eu.dariolucia.ccsds.sle.utl.si.DeliveryModeEnum;
 import eu.dariolucia.ccsds.sle.utl.si.LockStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ProductionStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ServiceInstanceBindingStateEnum;
@@ -48,6 +49,11 @@ public class RcfServiceInstanceManager extends SleServiceInstanceManager<RcfServ
     @Override
     protected RcfServiceInstance createServiceInstance(PeerConfiguration peerConfiguration, RcfServiceInstanceConfiguration siConfiguration) {
         return new RcfServiceInstance(peerConfiguration, siConfiguration);
+    }
+
+    @Override
+    protected boolean isLive() {
+        return !super.siConfiguration.getDeliveryMode().equals(DeliveryModeEnum.OFFLINE);
     }
 
     @Override

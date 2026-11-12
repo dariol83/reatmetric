@@ -41,6 +41,7 @@ import eu.dariolucia.reatmetric.api.rawdata.IRawDataArchive;
 import eu.dariolucia.reatmetric.api.rawdata.RawData;
 import eu.dariolucia.reatmetric.api.transport.ITransportConnector;
 import eu.dariolucia.reatmetric.api.transport.TransportConnectionStatus;
+import eu.dariolucia.reatmetric.api.transport.exceptions.TransportException;
 import eu.dariolucia.reatmetric.core.api.IDriver;
 import eu.dariolucia.reatmetric.core.api.IDriverListener;
 import eu.dariolucia.reatmetric.core.api.IRawDataRenderer;
@@ -208,7 +209,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             if (provider.isPresent()) {
                 ICltuConnector connector = provider.get().get();
                 try {
-                    connector.configure(this.name, this.configuration, this.context, dc.getConfiguration());
+                    connector.configure(this.name, this.configuration, this.context, dc.getConfiguration(), dc.isLive());
                     connector.prepare();
                 } catch (RemoteException e) {
                     // Cannot happen
@@ -223,7 +224,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             if (provider.isPresent()) {
                 ITcFrameConnector connector = provider.get().get();
                 try {
-                    connector.configure(this.name, this.configuration, this.context, dc.getConfiguration());
+                    connector.configure(this.name, this.configuration, this.context, dc.getConfiguration(), dc.isLive());
                     connector.prepare();
                 } catch (RemoteException e) {
                     // Cannot happen
@@ -238,7 +239,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             if (provider.isPresent()) {
                 ITcPacketConnector connector = provider.get().get();
                 try {
-                    connector.configure(this.name, this.configuration, this.context, this.serviceBroker, this.packetIdentifier, dc.getConfiguration());
+                    connector.configure(this.name, this.configuration, this.context, this.serviceBroker, this.packetIdentifier, dc.getConfiguration(), dc.isLive());
                     connector.prepare();
                 } catch (RemoteException e) {
                     // Cannot happen
@@ -253,7 +254,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
             if (provider.isPresent()) {
                 IReceptionOnlyConnector connector = provider.get().get();
                 try {
-                    connector.configure(this.name, this.configuration, this.context, this.serviceBroker, dc.getConfiguration());
+                    connector.configure(this.name, this.configuration, this.context, this.serviceBroker, dc.getConfiguration(), dc.isLive());
                     connector.prepare();
                 } catch (RemoteException e) {
                     // Cannot happen
@@ -302,7 +303,10 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.rawDataRenderers.put(Constants.T_TM_FRAME, tmDataLinkProcessor::renderTmFrame);
         this.rawDataRenderers.put(Constants.T_BAD_TM, tmDataLinkProcessor::renderBadTm);
         this.rawDataRenderers.put(Constants.T_AOS_FRAME, tmDataLinkProcessor::renderAosFrame);
+        this.rawDataRenderers.put(Constants.T_RAW_FRAME, tmDataLinkProcessor::renderTmRawTransferFrame);
         this.rawDataRenderers.put(Constants.T_TM_PACKET, tmPacketProcessor::renderTmPacket);
+        this.rawDataRenderers.put(Constants.T_TM_VCA, tmPacketProcessor::renderTmVca);
+        this.rawDataRenderers.put(Constants.T_TM_RAW, tmPacketProcessor::renderTmRaw);
         this.rawDataRenderers.put(Constants.T_IDLE_PACKET, tmPacketProcessor::renderTmPacket);
         this.rawDataRenderers.put(Constants.T_BAD_PACKET, tmPacketProcessor::renderBadPacket);
         this.rawDataRenderers.put(Constants.T_TC_PACKET, tcPacketProcessor::renderTcPacket);
@@ -405,7 +409,7 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     private void createCltuServiceInstance(PeerConfiguration peerConfiguration, CltuServiceInstanceConfiguration sic) {
         LOG.info("Creating SLE CLTU endpoint for " + sic.getServiceInstanceIdentifier());
         CltuServiceInstanceManager m = new CltuServiceInstanceManager(this.name, peerConfiguration, sic, configuration, context);
-        m.configure(this.name, configuration, context, null);
+        m.configure(this.name, configuration, context, null, true);
         m.prepare();
         this.sleManagers.add(m);
         // Register as activity executor
@@ -466,6 +470,13 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
     public void dispose() {
         this.sleManagers.forEach(SleServiceInstanceManager::abort);
         this.sleManagers.clear();
+        this.allConnectors.forEach(connector -> {
+            try {
+                connector.abort();
+            } catch (TransportException | RemoteException e) {
+                LOG.warning("Problem when aborting external connector on shutdown: " + e.getMessage());
+            }
+        });
         this.tmDataLinkProcessor.dispose();
         this.tmPacketProcessor.dispose();
         this.serviceBroker.dispose();

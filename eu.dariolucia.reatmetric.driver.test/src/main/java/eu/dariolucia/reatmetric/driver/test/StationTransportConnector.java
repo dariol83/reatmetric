@@ -127,7 +127,7 @@ public class StationTransportConnector extends AbstractTransportConnector implem
             byte first = dis.readByte();
             int type = first & 0x0F;
             long timestamp = dis.readLong();
-            RawData rd = new RawData(broker.nextRawDataId(), Instant.ofEpochMilli(timestamp), getRawDataName(first), getRawDataType(type), TestDriver.STATION_ROUTE, TestDriver.STATION_SOURCE, Quality.GOOD, null, data, Instant.now(), driverName, null);
+            RawData rd = new RawData(broker.nextRawDataId(), Instant.ofEpochMilli(timestamp), getRawDataName(first), getRawDataType(type), TestDriver.STATION_ROUTE, TestDriver.STATION_SOURCE, Quality.GOOD, null, data, Instant.now(), driverName, true, null);
             broker.distribute(Collections.singletonList(rd));
         } catch (IOException | ReatmetricException e) {
             LOG.log(Level.SEVERE, "Packet notification error: " + e.getMessage(), e);

@@ -29,8 +29,10 @@ public class Constants {
     // RawData Types
     public static final String T_TM_FRAME = "TM FRAME";
     public static final String T_AOS_FRAME = "AOS FRAME";
+    public static final String T_RAW_FRAME = "RAW FRAME"; // This is for raw data distribution
     public static final String T_TM_PACKET = "TM PACKET";
     public static final String T_TM_VCA = "TM VCA";
+    public static final String T_TM_RAW = "TM RAW"; // This is for processing at TM packet processing level (parameter extraction)
     public static final String T_IDLE_PACKET = "IDLE PACKET";
     public static final String T_TC_PACKET = "TC PACKET";
     public static final String T_TC_VCA = "TC VCA";
@@ -42,12 +44,14 @@ public class Constants {
 
     // Annotations at AbstractTransferFrame/SpacePacket level
     public static final String ANNOTATION_ROUTE = "##ROUTE";
+    public static final String ANNOTATION_FRAME_QUALITY = "##FRAME_QUALITY";
     public static final String ANNOTATION_SOURCE = "##SOURCE";
     public static final String ANNOTATION_GEN_TIME = "##GENTIME";
     public static final String ANNOTATION_RCP_TIME = "##RCPTIME";
     public static final String ANNOTATION_TM_PUS_HEADER = "##TM_PUS_HEADER";
     public static final String ANNOTATION_UNIQUE_ID = "##UNIQUE_ID";
     public static final String ANNOTATION_VCID = "##VCID";
+    public static final String ANNOTATION_LIVE = "##LIVE";
     public static final String ANNOTATION_TC_TRACKER = "##TC_TRACKER";
     public static final String ANNOTATION_TC_PUS_HEADER = "##TC_PUS_HEADER";
     public static final String ANNOTATION_TC_FRAME_ID = "##TC_FRAME_TRACKING_ID";

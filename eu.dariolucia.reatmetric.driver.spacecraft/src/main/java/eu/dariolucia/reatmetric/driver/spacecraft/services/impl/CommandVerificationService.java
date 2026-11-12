@@ -69,7 +69,7 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
     protected void initialiseModelFrom(IArchive archiveToUse, Instant latestGenerationTime) throws ReatmetricException {
         IRawDataArchive rawDataArchive = archiveToUse.getArchive(IRawDataArchive.class);
         IActivityOccurrenceDataArchive actOccArchive = archiveToUse.getArchive(IActivityOccurrenceDataArchive.class);
-        List<RawData> data = rawDataArchive.retrieve(latestGenerationTime, 1, RetrievalDirection.TO_PAST, new RawDataFilter(true, Constants.N_TC_VERIFICATION_MAP, null, Collections.singletonList(Constants.T_TC_VERIFICATION_MAP), Collections.singletonList(String.valueOf(spacecraftConfiguration().getId())), Collections.singletonList(Quality.GOOD)));
+        List<RawData> data = rawDataArchive.retrieve(latestGenerationTime, 1, RetrievalDirection.TO_PAST, new RawDataFilter(true, Constants.N_TC_VERIFICATION_MAP, null, Collections.singletonList(Constants.T_TC_VERIFICATION_MAP), Collections.singletonList(String.valueOf(spacecraftConfiguration().getId())), Collections.singletonList(Quality.GOOD), true));
         if(!data.isEmpty()) {
             String serializedMap = new String(data.get(0).getContents(), StandardCharsets.US_ASCII);
             String[] entries = serializedMap.split("#", -1);
@@ -296,7 +296,7 @@ public class CommandVerificationService extends AbstractPacketService<Object> {
     private void storeVerificationMap() {
         Instant now = Instant.now();
         String serializedMap = serializeOpenVerificationMap();
-        RawData rd = new RawData(context().getRawDataBroker().nextRawDataId(), now, Constants.N_TC_VERIFICATION_MAP, Constants.T_TC_VERIFICATION_MAP, "", String.valueOf(spacecraftConfiguration().getId()), Quality.GOOD, null, serializedMap.getBytes(StandardCharsets.US_ASCII), now, driverName(), null);
+        RawData rd = new RawData(context().getRawDataBroker().nextRawDataId(), now, Constants.N_TC_VERIFICATION_MAP, Constants.T_TC_VERIFICATION_MAP, "", String.valueOf(spacecraftConfiguration().getId()), Quality.GOOD, null, serializedMap.getBytes(StandardCharsets.US_ASCII), now, driverName(), true, null);
         try {
             context().getRawDataBroker().distribute(Collections.singletonList(rd));
         } catch (ReatmetricException e) {

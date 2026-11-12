@@ -149,12 +149,12 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
             }
         }
         this.defaultTcVcId = configuration.getTcDataLinkConfiguration().getDefaultTcVc();
-        // Register for frames to the raw data broker
+        // Register for frames to the raw data broker: this is required for COP-1 verification, so only live frames
         this.context.getRawDataBroker().subscribe(this, null,
                 new RawDataFilter(true, null, null,
                         Arrays.asList(Constants.T_AOS_FRAME, Constants.T_TM_FRAME),
                         Collections.singletonList(String.valueOf(configuration.getId())),
-                        Collections.singletonList(Quality.GOOD)), null);
+                        Collections.singletonList(Quality.GOOD), true), null);
         // Register to the cltu senders
         this.cltuSenders = new TreeMap<>();
 

@@ -390,7 +390,7 @@
         var thWidthArray = [15, 20, 30, 20, 15];
         tableBodyVar = createTable(divToAttach, thTextArray, thWidthArray);
 
-        var filter = reatmetric.rawDataFilter(false, null, null, null, null, null);
+        var filter = reatmetric.rawDataFilter(false, null, null, null, null, null, null);
 
         subscriptionKey = await reatmetric.registerToRawData(filter);
         console.log("Raw data subscription key: " + subscriptionKey);
@@ -410,7 +410,7 @@
         var divToAttach = document.getElementById('div1');
         divToAttach.textContent = '';
 
-        var filter = reatmetric.rawDataFilter(false, null, null, null, null, null);
+        var filter = reatmetric.rawDataFilter(false, null, null, null, null, null, null);
 
         // Create table node
         var thTextArray = ['Quality', 'Gen. Time', 'Name', 'Route', 'Source'];

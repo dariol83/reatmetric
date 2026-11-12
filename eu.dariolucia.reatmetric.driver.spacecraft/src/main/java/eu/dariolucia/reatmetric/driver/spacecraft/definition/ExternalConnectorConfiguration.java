@@ -32,6 +32,9 @@ public class ExternalConnectorConfiguration {
     @XmlAttribute(name = "configuration", required = true)
     private String configuration;
 
+    @XmlAttribute
+    private boolean live = true;
+
     public DataUnitType getDataUnitType() {
         return dataUnitType;
     }
@@ -54,5 +57,13 @@ public class ExternalConnectorConfiguration {
 
     public void setConfiguration(String configuration) {
         this.configuration = configuration;
+    }
+
+    public boolean isLive() {
+        return live;
+    }
+
+    public void setLive(boolean live) {
+        this.live = live;
     }
 }

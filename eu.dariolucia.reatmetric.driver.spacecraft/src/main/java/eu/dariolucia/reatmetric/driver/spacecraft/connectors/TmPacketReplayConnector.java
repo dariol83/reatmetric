@@ -147,7 +147,8 @@ public class TmPacketReplayConnector extends AbstractTransportConnector implemen
     private void extract(Instant startTime, Instant endTime, String spacecraftId) {
         IArchive arc = externalArchive;
         IRawDataArchive rawDataArch = arc.getArchive(IRawDataArchive.class);
-        RawDataFilter rdf = new RawDataFilter(true, null, null, Collections.singletonList(Constants.T_TM_PACKET), Collections.singletonList(spacecraftId), Collections.singletonList(Quality.GOOD));
+        // We replay all TM packets (live and not live)
+        RawDataFilter rdf = new RawDataFilter(true, null, null, Collections.singletonList(Constants.T_TM_PACKET), Collections.singletonList(spacecraftId), Collections.singletonList(Quality.GOOD), null);
         RawData lastExtracted = null;
         boolean errorDetected = false;
         while(extracting) {
@@ -206,7 +207,8 @@ public class TmPacketReplayConnector extends AbstractTransportConnector implemen
     }
 
     private RawData mapPacket(RawData pkt) {
-        RawData toReturn = new RawData(broker.nextRawDataId(), pkt.getGenerationTime(), pkt.getName(), pkt.getType(), pkt.getRoute(), pkt.getSource(), pkt.getQuality(), pkt.getRelatedItem(), pkt.getContents(), pkt.getReceptionTime(), driverName, pkt.getExtension());
+        // When you replay data you never set the live flag to 'true'
+        RawData toReturn = new RawData(broker.nextRawDataId(), pkt.getGenerationTime(), pkt.getName(), pkt.getType(), pkt.getRoute(), pkt.getSource(), pkt.getQuality(), pkt.getRelatedItem(), pkt.getContents(), pkt.getReceptionTime(), driverName, false, pkt.getExtension());
         // Create also the packet object
         SpacePacket sp = new SpacePacket(toReturn.getContents(), pkt.getQuality() == Quality.GOOD);
         toReturn.setData(sp);
@@ -233,7 +235,7 @@ public class TmPacketReplayConnector extends AbstractTransportConnector implemen
     }
 
     @Override
-    public void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, String connectorInformation) throws RemoteException {
+    public void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, String connectorInformation, boolean live) throws RemoteException {
         this.driverName = driverName;
         this.broker = context.getRawDataBroker();
         this.spacecraftConfiguration = configuration;

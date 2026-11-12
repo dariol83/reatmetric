@@ -62,6 +62,7 @@ public class AlarmParameterDataBuilder extends AbstractDataItemBuilder<AlarmPara
 
     @Override
     public AlarmParameterData build(IUniqueId updateId) {
+        this.changedSinceLastBuild = false;
         return new AlarmParameterData(updateId, generationTime, id, path.getLastPathElement(), path, currentState, currentValue, lastNominalValue, lastNominalValueTime, receptionTime, null);
     }
 
@@ -73,5 +74,6 @@ public class AlarmParameterDataBuilder extends AbstractDataItemBuilder<AlarmPara
         this.currentValue = item.getCurrentValue();
         this.lastNominalValue = item.getLastNominalValue();
         this.lastNominalValueTime = item.getLastNominalValueTime();
+        this.changedSinceLastBuild = false;
     }
 }

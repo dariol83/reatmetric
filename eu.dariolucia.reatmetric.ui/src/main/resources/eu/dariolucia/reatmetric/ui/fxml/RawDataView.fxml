@@ -162,6 +162,7 @@
                 <TableColumn fx:id="recTimeCol" editable="false" prefWidth="200.0" sortable="false" text="Rec. Time" />
                 <TableColumn fx:id="qualityCol" editable="false" prefWidth="100.0" sortable="false" text="Quality" />
                 <TableColumn fx:id="sourceCol" editable="false" prefWidth="100.0" sortable="false" text="Source" />
+                <TableColumn fx:id="liveCol" editable="false" prefWidth="100.0" sortable="false" text="Live" />
               </columns>
                <contextMenu>
                   <ContextMenu>

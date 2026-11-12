@@ -348,9 +348,8 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
                 if (previousState != ActivityOccurrenceState.VERIFICATION && currentState == ActivityOccurrenceState.VERIFICATION) {
                     generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETED);
                 }
-            } else {
-                // Case 2): apply the COMPLETION stage if the progress hits that: do nothing, as this step is done already.
             }
+            // else Case 2): apply the COMPLETION stage if the progress hits that: do nothing, as this step is done already.
         } // End processing part
 
         if (LOG.isLoggable(Level.FINER)) {
@@ -469,25 +468,33 @@ public class ActivityOccurrenceProcessor implements Supplier<ActivityOccurrenceD
         boolean expired = verifyTimeout();
         // If currentState is VERIFICATION, check expression: if OK, then announce ActivityOccurrenceReport OK and move to COMPLETION
         if (currentState == ActivityOccurrenceState.VERIFICATION) {
-            try {
-                Boolean verificationResult = (Boolean) parent.getDefinition().getVerification().execute(parent.processor, Map.of(SELF_BINDING, this), ValueTypeEnum.BOOLEAN);
-                if (verificationResult) {
-                    if (LOG.isLoggable(Level.INFO)) {
-                        LOG.log(Level.INFO, String.format("Verification of activity occurrence %s of activity %s completed", occurrenceId, parent.getPath()));
+            if(parent.getDefinition().getVerification() != null) {
+                try {
+                    Boolean verificationResult = (Boolean) parent.getDefinition().getVerification().execute(parent.processor, Map.of(SELF_BINDING, this), ValueTypeEnum.BOOLEAN);
+                    if (verificationResult) {
+                        if (LOG.isLoggable(Level.INFO)) {
+                            LOG.log(Level.INFO, String.format("Verification of activity occurrence %s of activity %s completed", occurrenceId, parent.getPath()));
+                        }
+                        // Activity occurrence confirmed by parameter data, add report with OK state and move state to COMPLETION
+                        generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETED);
+                    } else if (expired) {
+                        if (LOG.isLoggable(Level.WARNING)) {
+                            LOG.log(Level.WARNING, String.format("Verification of activity occurrence %s of activity %s failed", occurrenceId, parent.getPath()));
+                        }
+                        // No timeout, so derive the final state now
+                        generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.FAIL, null, ActivityOccurrenceState.COMPLETED);
                     }
-                    // Activity occurrence confirmed by parameter data, add report with OK state and move state to COMPLETION
-                    generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.OK, null, ActivityOccurrenceState.COMPLETED);
-                } else if (expired) {
-                    if (LOG.isLoggable(Level.WARNING)) {
-                        LOG.log(Level.WARNING, String.format("Verification of activity occurrence %s of activity %s failed", occurrenceId, parent.getPath()));
-                    }
-                    // No timeout, so derive the final state now
-                    generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.FAIL, null, ActivityOccurrenceState.COMPLETED);
+                } catch (ScriptException | ClassCastException e) {
+                    // Expression has a radical error
+                    LOG.log(Level.SEVERE, String.format("Error while evaluating verification expression of activity occurrence %s of activity %s: %s", occurrenceId, parent.getPath(), e.getMessage()), e);
+                    generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.ERROR, null, ActivityOccurrenceState.COMPLETED);
                 }
-            } catch (ScriptException | ClassCastException e) {
-                // Expression has a radical error
-                LOG.log(Level.SEVERE, String.format("Error while evaluating verification expression of activity occurrence %s of activity %s: %s", occurrenceId, parent.getPath(), e.getMessage()), e);
-                generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.ERROR, null, ActivityOccurrenceState.COMPLETED);
+            } else {
+                if (LOG.isLoggable(Level.FINE)) {
+                    LOG.log(Level.FINE, String.format("Verification of activity occurrence %s of activity %s completed: no expression defined", occurrenceId, parent.getPath()));
+                }
+                // If no expression is defined, move currentState to COMPLETION
+                generateReport(ActivityOccurrenceReport.VERIFICATION_REPORT_NAME, Instant.now(), null, ActivityOccurrenceState.VERIFICATION, ActivityReportState.NOT_AVAILABLE, null, ActivityOccurrenceState.COMPLETED);
             }
         }
         // Return list

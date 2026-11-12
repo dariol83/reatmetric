@@ -344,12 +344,16 @@ The request must provide in its body a RawDataFilter in JSON format, according t
 {
 "nameContains" : <string>,
 "contentSet" : <boolean>,
+"liveSet" : <boolean> or null,
 "routeList" : <array of string> or null,
 "typeList" : <array of string> or null,
 "sourceList" : <array of string> or null,
 "qualityList" : <array of string> or null // See Quality enum names in eu.dariolucia.reatmetric.api.rawdata
 }
 ----
+
+The _liveSet_ attribute selects only live raw data when set to true, only repatriated raw data when set to false, and
+both live and repatriated raw data when set to null or omitted.
 
 The response returns in its body a key value according to the structure defined above.
 
@@ -358,7 +362,7 @@ raw data via a GET request (see below).
 
 *Javascript library function*: async registerToRawData(filter) : return the key value as string.
 
-*Javascript library function*: rawDataFilter(contentSet, nameContains, sourceList, routeList, typeList, qualityList) : return a raw data filter object.
+*Javascript library function*: rawDataFilter(contentSet, nameContains, sourceList, routeList, typeList, qualityList, liveSet) : return a raw data filter object.
 
 **Removal of subscription**
 ----
@@ -369,7 +373,7 @@ The effect of this invocation is the removal, on the server side, of the subscri
 
 *Javascript library function*: async deregisterFromRawData(key) : *void*
 
-**Event fetch**
+**Raw Data fetch**
 ----
 GET     http://<host>:<port>/<system name>/rawdata/get/<key>
 ----
@@ -387,6 +391,7 @@ server side queue. The array of objects is so defined.
 "route" : <string> or null,
 "source" : <string> or null,
 "quality" : <string>, // See Quality enum names in eu.dariolucia.reatmetric.api.rawdata
+"live" : <boolean>,
 "data" : <Base64 encoded string> or null
 }
 ----

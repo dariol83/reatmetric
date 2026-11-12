@@ -61,7 +61,7 @@
       </TextField>
       <HBox prefWidth="200.0">
          <children>
-            <Button fx:id="selectBtn" mnemonicParsing="false" onAction="#selectButtonPressed" text="Select" />
+            <Button fx:id="selectBtn" mnemonicParsing="false" onAction="#selectButtonPressed" text="Apply" />
          </children>
          <padding>
             <Insets top="5.0" />

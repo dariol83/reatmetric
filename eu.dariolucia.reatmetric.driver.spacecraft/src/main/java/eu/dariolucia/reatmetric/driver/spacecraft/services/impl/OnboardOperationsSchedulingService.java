@@ -69,7 +69,7 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
     @Override
     protected void initialiseModelFrom(IArchive archiveToUse, Instant time) throws ReatmetricException {
         IRawDataArchive archive = archiveToUse.getArchive(IRawDataArchive.class);
-        List<RawData> data = archive.retrieve(time, 1, RetrievalDirection.TO_PAST, new RawDataFilter(true, Constants.N_SCHEDULE_MODEL_STATE, null, Collections.singletonList(Constants.T_SCHEDULE_MODEL_STATE), Collections.singletonList(String.valueOf(spacecraftConfiguration().getId())), Collections.singletonList(Quality.GOOD)));
+        List<RawData> data = archive.retrieve(time, 1, RetrievalDirection.TO_PAST, new RawDataFilter(true, Constants.N_SCHEDULE_MODEL_STATE, null, Collections.singletonList(Constants.T_SCHEDULE_MODEL_STATE), Collections.singletonList(String.valueOf(spacecraftConfiguration().getId())), Collections.singletonList(Quality.GOOD), true));
         if(!data.isEmpty()) {
             try {
                 Map<IUniqueId, LinkedTcTracker> theMap = (Map<IUniqueId, LinkedTcTracker>) new ObjectInputStream(new ByteArrayInputStream(data.get(0).getContents())).readObject();
@@ -175,7 +175,7 @@ public class OnboardOperationsSchedulingService extends AbstractPacketService<On
             ObjectOutputStream oos = new ObjectOutputStream(bos);
             oos.writeObject(this.linkedActivityOccurrence2tcTracker);
             oos.flush();
-            RawData rd = new RawData(context().getRawDataBroker().nextRawDataId(), Instant.now(), Constants.N_SCHEDULE_MODEL_STATE, Constants.T_SCHEDULE_MODEL_STATE, "", String.valueOf(spacecraftConfiguration().getId()), Quality.GOOD, null, bos.toByteArray(), Instant.now(), driverName(), null);
+            RawData rd = new RawData(context().getRawDataBroker().nextRawDataId(), Instant.now(), Constants.N_SCHEDULE_MODEL_STATE, Constants.T_SCHEDULE_MODEL_STATE, "", String.valueOf(spacecraftConfiguration().getId()), Quality.GOOD, null, bos.toByteArray(), Instant.now(), driverName(), true, null);
             context().getRawDataBroker().distribute(Collections.singletonList(rd));
         } catch (ReatmetricException | IOException e) {
             LOG.log(Level.SEVERE, "Cannot store on-board schedule model for spacecraft " + spacecraftConfiguration().getId() + ": " + e.getMessage(), e);

@@ -44,6 +44,7 @@ import eu.dariolucia.reatmetric.processing.util.ThreadUtil;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -51,7 +52,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
+public class ProcessingModelImpl implements IBindingResolver, IProcessingModel, IDisposable {
 
     private static final Logger LOG = Logger.getLogger(ProcessingModelImpl.class.getName());
 
@@ -79,15 +80,12 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     private final BlockingQueue<ProcessingTask> reportingUpdateTaskQueue = new ArrayBlockingQueue<>(REPORTING_TASK_CAPACITY);
     private final ArrayBlockingQueue<ProcessingTask> activityUpdateTaskQueue = new ArrayBlockingQueue<>(COMMAND_TASK_CAPACITY * 2);
 
+    // Thread pools/executors/timers - to be shutdown at dispose time
     private final ExecutorService taskProcessors = ThreadUtil.newThreadExecutor(Runtime.getRuntime().availableProcessors(), "Reatmetric Processing - Task Processor");
-
     private final ExecutorService tmDispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing - TM Dispatcher");
     private final ExecutorService activityDispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing - Activity Dispatcher");
-
     private final ExecutorService notifier = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing - Notifier");
-
     private final ExecutorService activityOccurrenceDispatcher = ThreadUtil.newSingleThreadExecutor("Reatmetric Processing - Activity Occurrence Dispatcher");
-
     private final Timer operationScheduler = new Timer("Reatmetric Processing - Scheduler", true);
 
     private final WorkingSet workingSet = new WorkingSet();
@@ -120,10 +118,16 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
      */
     private final Set<Integer> dirtyParametersSet = new HashSet<>();
 
+    private final AtomicBoolean disposedFlag = new AtomicBoolean(false);
+
+    private final Thread preloadThread;
+
     public ProcessingModelImpl(ProcessingDefinition processingDefinition, IProcessingModelOutput output, Map<Class<? extends AbstractDataItem>, Long> initialSequencerMap, IProcessingModelInitialiser initialiser) throws ProcessingModelException {
         this.processingDefinition = processingDefinition;
         // Start off the preloader thread: one off, using internal executor for parallel preloading
-        new Thread(this::preloadDefinitions, "Reatmetric Processing - Preloader").start();
+        this.preloadThread = new Thread(this::preloadDefinitions, "Reatmetric Processing - Preloader");
+        this.preloadThread.setDaemon(true);
+        this.preloadThread.start();
         //
         this.output = output;
         this.initialiser = initialiser;
@@ -152,9 +156,15 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private void preloadDefinitions() {
         LOG.log(Level.INFO, "Processing definition preloading started");
-        ExecutorService service = Executors.newFixedThreadPool(4);
+        ExecutorService preloadExecutor = Executors.newFixedThreadPool(4, r -> {
+            Thread t = new Thread(r);
+            t.setName("ReatMetric Processing Model Definition Preloader");
+            t.setDaemon(true);
+            return t;
+        });
+
         for(ParameterProcessingDefinition d : processingDefinition.getParameterDefinitions()) {
-            service.submit(() -> {
+            preloadExecutor.submit(() -> {
                 try {
                     d.preload();
                 } catch (Exception e) {
@@ -163,7 +173,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
             });
         }
         for(EventProcessingDefinition d : processingDefinition.getEventDefinitions()) {
-            service.submit(() -> {
+            preloadExecutor.submit(() -> {
                 try {
                     d.preload();
                 } catch (Exception e) {
@@ -172,7 +182,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
             });
         }
         for(ActivityProcessingDefinition d : processingDefinition.getActivityDefinitions()) {
-            service.submit(() -> {
+            preloadExecutor.submit(() -> {
                 try {
                     d.preload();
                 } catch (Exception e) {
@@ -180,16 +190,28 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 }
             });
         }
-        service.shutdown();
-        try {
-            service.awaitTermination(120, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            // Nothing here
+        preloadExecutor.shutdown();
+        // Now wait until either the executor has terminated or the model is disposed
+        boolean terminated = false;
+        while(!terminated && !disposedFlag.get()) {
+            try {
+                terminated = preloadExecutor.awaitTermination(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                // Nothing to be done here
+            }
+        }
+        // Let's check and be hard here,
+        if(disposedFlag.get()) {
+            preloadExecutor.shutdownNow();
         }
         LOG.log(Level.INFO, "Processing definition preloading completed");
     }
 
     private void sample() {
+        if(disposedFlag.get()) {
+            // Disposed, don't even try to do anything
+            return;
+        }
         synchronized (performanceSampler) {
             Instant genTime = Instant.now();
             if (lastSampleGenerationTime == null) {
@@ -220,6 +242,10 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     private Consumer<List<AbstractDataItem>> createOutputRedirector() {
         return items -> notifier.submit(() -> {
+            if(disposedFlag.get()) {
+                // Stop here - the model is shut down (or about to)
+                return;
+            }
             synchronized (performanceSampler) {
                 dataItemOutput += items.size();
             }
@@ -230,18 +256,32 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     private void doDispatch(ExecutorService executor, BlockingQueue<ProcessingTask> queue) {
         while(!executor.isShutdown()) {
             try {
-                // Get the task
-                ProcessingTask toProcess = queue.take();
-                // Prepare the task
-                toProcess.prepareTask(graphModel);
-                // Check if the working set allows the processing of the items (blocking call)
-                this.workingSet.add(toProcess.getAffectedItems());
-                // Ready to be processed, submit the task
-                this.taskProcessors.submit(toProcess);
-                // If the queue is the command queue, notify for potential waiters
-                if (queue == this.activityUpdateTaskQueue) {
-                    synchronized (this.activityUpdateTaskQueue) {
-                        this.activityUpdateTaskQueue.notifyAll();
+                if(disposedFlag.get()) {
+                    // Stop here - the executor is shut down
+                    return;
+                }
+                // Get the task - if you don't get any in one second, exit anyway and retry - maybe the executor was killed
+                ProcessingTask toProcess = queue.poll(1, TimeUnit.SECONDS);
+                if(disposedFlag.get()) {
+                    // Stop here - the executor is shut down
+                    return;
+                }
+                if(toProcess != null) {
+                    // Prepare the task
+                    toProcess.prepareTask(graphModel);
+                    // Check if the working set allows the processing of the items (blocking call)
+                    boolean registered = this.workingSet.add(toProcess.getAffectedItems());
+                    if (registered) {
+                        // Ready to be processed, submit the task
+                        this.taskProcessors.submit(toProcess);
+                        // If the queue is the command queue, notify for potential waiters
+                        if (queue == this.activityUpdateTaskQueue) {
+                            synchronized (this.activityUpdateTaskQueue) {
+                                this.activityUpdateTaskQueue.notifyAll();
+                            }
+                        }
+                    } else {
+                        LOG.log(Level.WARNING, "Processing task queue not dispatched - WorkingSet did not register the tasks. If the model is shutting down, this is normal.");
                     }
                 }
             } catch(Exception e) {
@@ -263,6 +303,10 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     public ProcessingTask scheduleTask(List<AbstractModelOperation<?>> operations, int dispatchingQueue, boolean internalRequest, boolean includeWeaklyConsistent) {
+        if(disposedFlag.get()) {
+            // Stop here - the executor is shut down, there is no reason to continue
+            return null;
+        }
         // Create the processing task
         ProcessingTask taskToRun = new ProcessingTask(new ProcessingTask.Job(operations, outputRedirector, workingSet), includeWeaklyConsistent);
         // Add the task to be done to the queue
@@ -270,23 +314,28 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
             case COMMAND_DISPATCHING_QUEUE:
                 // Blocking queue -> this blocking call can introduce a potential deadlock if the queue becomes full, the call is stuck and the
                 // call comes from the Processing Model internal classes. This is the reason why the internalRequest flag must be checked:
-                // if such flag is set to true, then the request must be honoured.
+                // if such flag is set to true, then the request must be honored.
                 // The approach below reserves half of the queue size for mixed operations (internal/external) and the other half for
                 // internal operations only. Yes, it can still block, but only for internal operations (timers and propagations),
                 // which naturally decrease over time if no further activity operations can be requested, which is the case until
-                // the queue utilisation is > 50%. Total queue size is COMMAND_TASK_CAPACITY x 2.
+                // the queue utilization is > 50%. Total queue size is COMMAND_TASK_CAPACITY x 2.
                 synchronized (activityUpdateTaskQueue) {
                     try {
                         // Non-internal request might wait a bit
                         while (!internalRequest && activityUpdateTaskQueue.remainingCapacity() < COMMAND_TASK_CAPACITY) {
                             activityUpdateTaskQueue.wait();
                         }
+                        if(disposedFlag.get()) {
+                            // Stop here - the executor is shut down, there is no reason to continue
+                            return null;
+                        }
                         // If I reach this point, I have some breathing space, so I should be able to add without risking to be blocked.
                         // The sync block in fact prevents that to happen :)
                         activityUpdateTaskQueue.put(taskToRun);
                     } catch (InterruptedException e) {
-                        Thread.interrupted();
-                        LOG.log(Level.FINE, "Thread interrupted while inserting element inside the activity update queue", e);
+                        Thread.currentThread().interrupt();
+                        LOG.log(Level.WARNING, "Thread interrupted while inserting element inside the activity update queue", e);
+                        return null;
                     }
                 }
                 break;
@@ -296,8 +345,9 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
                 try {
                     reportingUpdateTaskQueue.put(taskToRun);
                 } catch (InterruptedException e) {
-                    Thread.interrupted();
-                    LOG.log(Level.FINE, "Thread interrupted while inserting element inside the reporting update queue", e);
+                    Thread.currentThread().interrupt();
+                    LOG.log(Level.WARNING, "Thread interrupted while inserting element inside the reporting update queue", e);
+                    return null;
                 }
                 break;
         }
@@ -306,10 +356,19 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     public void scheduleAt(Instant executionDate, TimerTask task) {
+        if(disposedFlag.get()) {
+            // Don't schedule, disposed
+            return;
+        }
         this.operationScheduler.schedule(task, new Date(executionDate.toEpochMilli()));
     }
 
     public void forwardActivityToHandler(IUniqueId occurrenceId, int activityId, Instant creationTime, SystemEntityPath path, String type, Map<String, Object> arguments, Map<String, String> properties, String route, String source) throws ProcessingModelException {
+        // Check if the model is alive
+        if(disposedFlag.get() || this.activityOccurrenceDispatcher.isShutdown()) {
+            // Stop here - the executor is shut down
+            throw new ProcessingModelException("Processing model is disposed or under shutdown sequence, activity " + occurrenceId + " (" + path.toString() + ") not forwarded to handler");
+        }
         // Check if the route exist
         IActivityHandler handler = checkHandlerAvailability(route, type);
         // Assume positive dispatch at this stage
@@ -317,6 +376,10 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         // All fine, schedule the dispatch
         this.activityOccurrenceDispatcher.execute(() -> {
             try {
+                if(disposedFlag.get() || this.activityOccurrenceDispatcher.isShutdown()) {
+                    // Stop here - the executor is shut down
+                    throw new ActivityHandlingException("Processing model is disposed or under shutdown sequence, activity " + occurrenceId + " (" + path.toString() + ") not forwarded to handler");
+                }
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.fine(String.format("Forwarding activity occurrence %s of activity %s to the activity handler on route %s", occurrenceId, path, route));
                 }
@@ -333,6 +396,11 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     public void forwardAbortToHandler(IUniqueId occurrenceId, int activityId, String route, String type) throws ProcessingModelException {
+        // Check if the model is alive
+        if(disposedFlag.get() || this.activityOccurrenceDispatcher.isShutdown()) {
+            // Stop here - the executor is shut down
+            throw new ProcessingModelException("Processing model is disposed or under shutdown sequence, abort of activity " + occurrenceId + " (" + activityId + ") not forwarded to handler");
+        }
         IActivityHandler handler = checkHandlerAvailability(route, type);
         // All fine, schedule the dispatch
         this.activityOccurrenceDispatcher.execute(() -> {
@@ -419,6 +487,10 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
     }
 
     private void refreshDirtyParameters() {
+        if(disposedFlag.get()) {
+            // Don't run, disposed
+            return;
+        }
         Set<Integer> parametersToRefresh;
         synchronized (this.dirtyParametersSet) {
             parametersToRefresh = new HashSet<>(this.dirtyParametersSet);
@@ -435,6 +507,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void injectParameters(List<ParameterSample> sampleList) {
+        checkDisposed();
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = sampleList.stream().map(ParameterSampleProcessOperation::new).collect(Collectors.toList());
         // Schedule task
@@ -443,6 +516,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void raiseEvent(EventOccurrence event) {
+        checkDisposed();
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = Collections.singletonList(new RaiseEventOperation(event));
         // Schedule task
@@ -451,6 +525,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public IUniqueId startActivity(ActivityRequest request) throws ProcessingModelException {
+        checkDisposed();
         if(request == null) {
             throw new IllegalArgumentException("Null request");
         }
@@ -462,6 +537,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public IUniqueId createActivity(ActivityRequest request, ActivityProgress progress) throws ProcessingModelException {
+        checkDisposed();
         if(request == null) {
             throw new IllegalArgumentException("Null request");
         }
@@ -476,6 +552,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void reportActivityProgress(ActivityProgress progress) {
+        checkDisposed();
         if(progress == null) {
             throw new IllegalArgumentException("Null progress");
         }
@@ -487,6 +564,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) {
+        checkDisposed();
         // Build the list of operations to be performed
         List<AbstractModelOperation<?>> operations = activityOccurrenceIds.stream().map(PurgeActivityOperation::new).collect(Collectors.toList());
         // Schedule task
@@ -495,6 +573,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void abortActivity(int activityId, IUniqueId activityOccurrenceId) {
+        checkDisposed();
         if(activityOccurrenceId == null) {
             throw new IllegalArgumentException("Null activity occurrence ID");
         }
@@ -506,6 +585,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public List<ActivityOccurrenceData> getActiveActivityOccurrences() {
+        checkDisposed();
         synchronized (this.activeActivityProcessors) {
             return this.activeActivityProcessors.stream()
                     .map(ActivityProcessor::getActiveActivityOccurrences) // Get the List of ActivityOccurrenceData
@@ -516,6 +596,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public IUniqueId setParameterValue(SetParameterRequest request) throws ProcessingModelException {
+        checkDisposed();
         if(request == null) {
             throw new IllegalArgumentException("Null request");
         }
@@ -541,11 +622,13 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void visit(IProcessingModelVisitor visitor) {
+        checkDisposed();
         graphModel.navigate(visitor);
     }
 
     @Override
     public List<AbstractDataItem> get(AbstractDataItemFilter<?> filter) {
+        checkDisposed();
         DataCollectorVisitor visitor = new DataCollectorVisitor(filter);
         graphModel.navigate(visitor);
         return visitor.getCollectedData();
@@ -553,18 +636,23 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public List<AbstractDataItem> getByPath(List<SystemEntityPath> paths) throws ProcessingModelException {
+        checkDisposed();
         return graphModel.getByPath(paths);
     }
 
     @Override
     public List<AbstractDataItem> getById(List<Integer> ids) throws ProcessingModelException {
+        checkDisposed();
         return graphModel.getById(ids);
     }
 
     private IUniqueId scheduleActivityOperation(ActivityRequest request, List<AbstractModelOperation<?>> operations, String type) throws ProcessingModelException {
         // Schedule task
         ProcessingTask pt = scheduleTask(operations, COMMAND_DISPATCHING_QUEUE);
-
+        // If null, it means that the scheduleTask operation could not complete due to thread interruption, stop here and report
+        if(pt == null) {
+            throw new ProcessingModelException("Activity operation request " + request + " could not be scheduled - Schedule of task failed due to thread processing interruption");
+        }
         List<AbstractDataItem> executionResult;
         // Wait for the activity creation
         try {
@@ -590,13 +678,17 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void registerActivityHandler(IActivityHandler handler) throws ProcessingModelException {
-        this.activityHandlersList.add(handler);
-        for(String route : handler.getSupportedRoutes()) {
+        // First route validation
+        List<String> handlerSupportedRoutes = handler.getSupportedRoutes();
+        for(String route : handlerSupportedRoutes) {
             if(this.route2activityHandler.containsKey(route)) {
                 throw new ProcessingModelException("Duplicated route: " + route + " is supported by handler " + handler + " but also by handler " + this.route2activityHandler.get(route));
             }
-            this.route2activityHandler.put(route, handler);
         }
+        // If we reach this stage, it means that the handler has correct route definition
+        // No risk of concurrency, registration is done sequentially in a single thread
+        handlerSupportedRoutes.forEach(route -> this.route2activityHandler.put(route, handler));
+        this.activityHandlersList.add(handler);
         handler.registerModel(this);
     }
 
@@ -616,7 +708,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public List<ActivityRouteState> getRouteAvailability(String type) {
-        List<ActivityRouteState> states = new LinkedList<>();
+        List<ActivityRouteState> states = new ArrayList<>(Math.max(8, this.activityHandlersList.size() * 3)); // Assume 3 routes per handler
         for(IActivityHandler h : this.activityHandlersList) {
             if(type != null && !h.getSupportedActivityTypes().contains(type)) {
                 continue;
@@ -649,6 +741,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void enable(SystemEntityPath path) throws ProcessingModelException {
+        checkDisposed();
         if(LOG.isLoggable(Level.INFO)) {
             LOG.info("Enabling system entity " + path);
         }
@@ -657,6 +750,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void disable(SystemEntityPath path) throws ProcessingModelException {
+        checkDisposed();
         if(LOG.isLoggable(Level.INFO)) {
             LOG.info("Disabling system entity " + path);
         }
@@ -665,6 +759,7 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public void ignore(SystemEntityPath path) throws ProcessingModelException {
+        checkDisposed();
         if(LOG.isLoggable(Level.INFO)) {
             LOG.info("Ignoring system entity " + path);
         }
@@ -682,48 +777,57 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
 
     @Override
     public SystemEntity getRoot() throws ProcessingModelException {
+        checkDisposed();
         return graphModel.getRoot();
     }
 
     @Override
     public List<SystemEntity> getContainedEntities(SystemEntityPath path) throws ProcessingModelException {
+        checkDisposed();
         return graphModel.getContainedEntities(getExternalIdOf(path));
     }
 
     @Override
     public SystemEntity getSystemEntityAt(SystemEntityPath path) throws ProcessingModelException {
+        checkDisposed();
         return getSystemEntityOf(graphModel.getIdOf(path));
     }
 
     @Override
     public SystemEntity getSystemEntityOf(int externalId) throws ProcessingModelException {
+        checkDisposed();
         return graphModel.getSystemEntityOf(externalId);
     }
 
     @Override
     public int getExternalIdOf(SystemEntityPath path) throws ProcessingModelException {
+        checkDisposed();
         return graphModel.getIdOf(path);
     }
 
     @Override
     public SystemEntityPath getPathOf(int externalId) throws ProcessingModelException {
+        checkDisposed();
         return graphModel.getPathOf(externalId);
     }
 
     @Override
     public AbstractSystemEntityDescriptor getDescriptorOf(int externalId) throws ProcessingModelException {
+        checkDisposed();
         return graphModel.getDescriptorOf(externalId);
     }
 
     @Override
     public AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ProcessingModelException {
+        checkDisposed();
         return graphModel.getDescriptorOf(path);
     }
 
     @Override
     public void mirror(List<AbstractDataItem> items) {
+        checkDisposed();
         // Build the list of operations to be performed
-        List<AbstractModelOperation<?>> operations = new LinkedList<>();
+        List<AbstractModelOperation<?>> operations = new ArrayList<>(Math.max(4, items.size()));
         for(AbstractDataItem adi : items) {
             if(adi instanceof ParameterData) {
                 operations.add(new ParameterMirrorOperation((ParameterData) adi));
@@ -746,4 +850,53 @@ public class ProcessingModelImpl implements IBindingResolver, IProcessingModel {
         return graphModel.getBinding(systemEntityId);
     }
 
+    /*
+     * IDisposable implementation
+     */
+
+    private void checkDisposed() {
+        if(disposedFlag.get()) {
+            throw new RuntimeException("Processing model disposed");
+        }
+    }
+
+    @Override
+    public void dispose() {
+        boolean disposed = disposedFlag.getAndSet(true);
+        if(!disposed) {
+            if(LOG.isLoggable(Level.INFO)) {
+                LOG.info("Disposing processing model");
+            }
+            // Let's start with interrupting the preload thread, in case it is still running
+            preloadThread.interrupt();
+            // Mark working set as disposed - no additional objects can be added
+            workingSet.dispose();
+            // Time to dispose timers first
+            performanceSampler.cancel();
+            operationScheduler.cancel();
+            // Then the one for activity implementation and the actual processors
+            activityOccurrenceDispatcher.shutdown();
+            taskProcessors.shutdown();
+            // Time to dispose processing inputs: these are freeing up the queues
+            tmDispatcher.shutdown();
+            activityDispatcher.shutdown();
+            // At least, the notifier
+            notifier.shutdown();
+            // Let's wait for termination
+            try {
+                activityOccurrenceDispatcher.awaitTermination(10, TimeUnit.SECONDS);
+                taskProcessors.awaitTermination(10, TimeUnit.SECONDS);
+                tmDispatcher.awaitTermination(10, TimeUnit.SECONDS);
+                activityDispatcher.awaitTermination(10, TimeUnit.SECONDS);
+                notifier.awaitTermination(10, TimeUnit.SECONDS);
+                if(LOG.isLoggable(Level.INFO)) {
+                    LOG.info("Processing model disposed");
+                }
+            } catch (InterruptedException e) {
+                if(LOG.isLoggable(Level.INFO)) {
+                    LOG.info("InterruptedException caught during shutdown, assuming that the processing model is terminated");
+                }
+            }
+        }
+    }
 }

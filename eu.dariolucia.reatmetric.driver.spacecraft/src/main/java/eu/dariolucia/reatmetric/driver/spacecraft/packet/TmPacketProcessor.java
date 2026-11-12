@@ -38,11 +38,13 @@ import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.*;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPacketConfiguration;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmPusConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.ITimeCorrelation;
 import eu.dariolucia.reatmetric.driver.spacecraft.tmtc.TmFrameDescriptor;
-import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
 import eu.dariolucia.reatmetric.driver.spacecraft.util.BoundedExecutorService;
 
 import java.time.Instant;
@@ -170,14 +172,22 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
     }
 
     private void subscribeToBroker() {
-        // We want to receive only good space packets/VCAs, quality must be good, from the configured spacecraft, not idle
-        RawDataFilter filter = new RawDataFilter(true, null, null, Arrays.asList(Constants.T_TM_PACKET, Constants.T_TM_VCA), Collections.singletonList(spacecraft), Collections.singletonList(Quality.GOOD));
+        // We want to receive only configured space packets/VCAs/raw units from the configured spacecraft
+        RawDataFilter filter = new RawDataFilter(true, null, null,
+                Arrays.asList(Constants.T_TM_PACKET, Constants.T_TM_VCA, Constants.T_TM_RAW),
+                Collections.singletonList(spacecraft),
+                configuration.getRequiredQuality().getRequiredQualities(),
+                configuration.isOnlyLiveProcessing() ? true : null);
         // We want to get only packets that need to be processed, according to VC ID
         broker.subscribe(this, null, filter, buildPostFilter());
     }
 
     private Predicate<RawData> buildPostFilter() {
         return o -> {
+            // Raw TM : process always - you have no virtual channel ID
+            if(o.getType().equals(Constants.T_TM_RAW)) {
+                return true;
+            }
             // If the data has VC information, then check if it falls in the provided set. If the data has no VC information, then discard it.
             Integer vcId = extractVcIdInformation(o);
             return vcId != null;
@@ -223,7 +233,6 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         // That's it
     }
 
-
     private void dispatcherThreadMain() {
         List<RawData> itemsToProcess = new ArrayList<>(MAX_INPUT_QUEUE_SIZE);
         while(!dispatcherService.isShutdown()) {
@@ -252,6 +261,8 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
                 results.add(decoderService.submit(() -> processSpacePacket(rd)));
             } else if(rd.getType().equals(Constants.T_TM_VCA)) {
                 results.add(decoderService.submit(() -> processVca(rd)));
+            } else if(rd.getType().equals(Constants.T_TM_RAW)) {
+                results.add(decoderService.submit(() -> processRaw(rd)));
             }
         }
         for(Future<ItemDecodingResult> fpdt : results) {
@@ -290,6 +301,25 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
             return new ItemDecodingResult(rd, vcUnit, null, result);
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Unforeseen exception when processing packet " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private ItemDecodingResult processRaw(RawData rd) {
+        try {
+            // Expectation is that the definitions refer to the start of the raw frame/unit
+            DecodingResult result = null;
+            int offset = 0;
+            try {
+                result = packetDecoder.decode(rd.getName(), rd.getContents(), offset, rd.getContents().length - offset);
+            } catch (DecodingException e) {
+                LOG.log(Level.SEVERE, "Cannot decode raw frame " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
+            }
+
+            // Return result
+            return new ItemDecodingResult(rd, null, null, result);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Unforeseen exception when processing raw frame " + rd.getName() + " from route " + rd.getRoute() + ": " + e.getMessage(), e);
             return null;
         }
     }
@@ -334,6 +364,7 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
     }
 
     private void notifySpacePacketResults(RawData rd, AnnotatedObject item, TmPusHeader pusHeader, DecodingResult result) {
+        // item can be null, in case of raw information
         if(!notifierService.isShutdown()) {
             notifierService.execute(() -> {
                 // Forward to processing model and ...
@@ -346,11 +377,14 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         }
     }
 
-    private void notifyExtensionServices(RawData rd, AnnotatedObject unit, TmPusHeader pusHeader, DecodingResult result) {
-        if(unit instanceof SpacePacket) {
-            this.serviceBroker.distributeTmPacket(rd, (SpacePacket) unit, pusHeader, result);
-        } else if(unit instanceof VirtualChannelUnit) {
-            this.serviceBroker.distributeTmVcUnit(rd, (VirtualChannelUnit) unit, result);
+    private void notifyExtensionServices(RawData rd, AnnotatedObject item, TmPusHeader pusHeader, DecodingResult result) {
+        if(item instanceof SpacePacket) {
+            this.serviceBroker.distributeTmPacket(rd, (SpacePacket) item, pusHeader, result);
+        } else if(item instanceof VirtualChannelUnit) {
+            this.serviceBroker.distributeTmVcUnit(rd, (VirtualChannelUnit) item, result);
+        } else {
+            // If you need to process it as raw data, you have no idea what that is
+            this.serviceBroker.distributeTmRawUnit(rd, result);
         }
     }
 
@@ -463,6 +497,81 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         return toReturn;
     }
 
+    public LinkedHashMap<String, String> renderTmVca(RawData rawData) {
+        LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
+        VirtualChannelUnit sp = getVcaFromRawData(rawData);
+        renderCommonTmVcaAttributes(rawData, toReturn, sp);
+        // Packet parameters
+        DecodingResult result = null;
+        try {
+            result = packetDecoder.decode(rawData.getName(), rawData.getContents(), 0, rawData.getContents().length, null);
+        } catch (DecodingException e) {
+            LOG.log(Level.SEVERE, "Cannot decode VCA unit " + rawData.getName() + " from route " + rawData.getRoute() + ": " + e.getMessage(), e);
+        }
+        if(result != null) {
+            Map<String, Object> paramMap = result.getDecodedItemsAsMap();
+            if(!paramMap.isEmpty()) {
+                toReturn.put("Raw Parameters", null);
+                for (Map.Entry<String, Object> params : paramMap.entrySet()){
+                    toReturn.put(params.getKey(), ValueUtil.toString(params.getValue()));
+                }
+            }
+        }
+        return toReturn;
+    }
+
+    private void renderCommonTmVcaAttributes(RawData rawData, LinkedHashMap<String, String> toReturn, VirtualChannelUnit vcaUnit) {
+        TmFrameDescriptor frameDescriptor = (TmFrameDescriptor) rawData.getExtension();
+        toReturn.put("Length", String.valueOf(vcaUnit.getLength()));
+        addFrameDescriptorInformationIfPresent(toReturn, frameDescriptor);
+    }
+
+    private VirtualChannelUnit getVcaFromRawData(RawData rawData) {
+        VirtualChannelUnit vcaUnit = (VirtualChannelUnit) rawData.getData();
+        if(vcaUnit == null) {
+            vcaUnit = new VirtualChannelUnit(rawData.getContents());
+        }
+        return vcaUnit;
+    }
+
+    public LinkedHashMap<String, String> renderTmRaw(RawData rawData) {
+        LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
+        renderCommonTmRawAttributes(rawData, toReturn);
+        // Packet parameters
+        DecodingResult result = null;
+        try {
+            result = packetDecoder.decode(rawData.getName(), rawData.getContents(), 0, rawData.getContents().length, null);
+        } catch (DecodingException e) {
+            LOG.log(Level.SEVERE, "Cannot decode TM raw unit " + rawData.getName() + " from route " + rawData.getRoute() + ": " + e.getMessage(), e);
+        }
+        if(result != null) {
+            Map<String, Object> paramMap = result.getDecodedItemsAsMap();
+            if(!paramMap.isEmpty()) {
+                toReturn.put("Raw Parameters", null);
+                for (Map.Entry<String, Object> params : paramMap.entrySet()){
+                    toReturn.put(params.getKey(), ValueUtil.toString(params.getValue()));
+                }
+            }
+        }
+        return toReturn;
+    }
+
+    private void renderCommonTmRawAttributes(RawData rawData, LinkedHashMap<String, String> toReturn) {
+        TmFrameDescriptor frameDescriptor = null;
+        String externalTmUnitType = null;
+        if(rawData.getExtension() instanceof TmFrameDescriptor) {
+            frameDescriptor = (TmFrameDescriptor) rawData.getExtension();
+        }
+        if(rawData.getExtension() instanceof String) {
+            externalTmUnitType = (String) rawData.getExtension();
+        }
+        toReturn.put("Length", String.valueOf(rawData.getContents().length));
+        addFrameDescriptorInformationIfPresent(toReturn, frameDescriptor);
+        if(externalTmUnitType != null) {
+            toReturn.put("External TM Unit Type", externalTmUnitType);
+        }
+    }
+
     public LinkedHashMap<String, String> renderBadPacket(RawData rawData) {
         LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
         SpacePacket sp = getSpacePacketFromRawData(rawData);
@@ -503,6 +612,10 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
             toReturn.put("Packet Subcounter", String.valueOf(pusHeader.getPacketSubCounter()));
             toReturn.put("OBT", String.valueOf(pusHeader.getAbsoluteTime()));
         }
+        addFrameDescriptorInformationIfPresent(toReturn, frameDescriptor);
+    }
+
+    private static void addFrameDescriptorInformationIfPresent(LinkedHashMap<String, String> toReturn, TmFrameDescriptor frameDescriptor) {
         if(frameDescriptor != null) {
             toReturn.put("Parent (first) TM Frame", null);
             toReturn.put("Virtual Channel ID", String.valueOf(frameDescriptor.getVirtualChannelId()));

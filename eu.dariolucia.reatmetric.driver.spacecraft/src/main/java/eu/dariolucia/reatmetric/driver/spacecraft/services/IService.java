@@ -106,6 +106,11 @@ public interface IService extends IServicePacketSubscriber {
         // Override if needed
     }
 
+    @Override
+    default void onTmRawUnit(RawData rawData, DecodingResult decoded) {
+        // Override if needed
+    }
+
     /**
      * This method is called to inform implementations that the locate(...) function on the service broker is available and it
      * can be used to look up for implementations.

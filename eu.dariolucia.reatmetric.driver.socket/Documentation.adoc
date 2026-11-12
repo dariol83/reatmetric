@@ -388,6 +388,8 @@ command to be sent and alive on the connection. The lifecycle of the command mus
 following command. This type of configuration is typically used for communication patterns of type request/response or
 request/progress/response, where there is no way to identify the command in the protocol, for further verification with
 responses.
+* Attribute _live_ (optional, boolean, default: true): if true, raw data generated from incoming PDUs on this route is
+reported as live data. If false, the raw data is reported as repatriated data.
 * Element *<activity-types>* (mandatory, one) with sub-elements *<type>* (string): this list identifies the types of the
 activity, as specified in the processing model, so that the driver can inform the processing model about its capability
 to encode and process such activities.

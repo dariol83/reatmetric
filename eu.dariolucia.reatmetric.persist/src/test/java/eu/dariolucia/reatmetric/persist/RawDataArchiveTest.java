@@ -71,12 +71,13 @@ class RawDataArchiveTest {
             assertEquals(1, items.size());
             assertEquals(0L, items.get(0).getInternalId().asLong());
             assertEquals(Quality.GOOD, items.get(0).getQuality());
+            assertTrue(items.get(0).isLive());
             assertArrayEquals(new byte[] { 0,1, 2, 3, 4 }, items.get(0).getContents());
             // add a batch for filtered retrieval
             rawDataArchive.store(Arrays.asList(
                     new RawData(new LongUniqueId(1), t, "nameAA1", "TCPacket", "Route1", "Source1", Quality.BAD, null, new byte[] { 0,1, 2, 3, 4 }, t, "TestHandler", new Object[0]),
                     new RawData(new LongUniqueId(2), t, "nameAA1", "TCPacket", "Route2", "Source1", Quality.GOOD, null, new byte[] { 0,1, 2, 3, 4 }, t, "TestHandler", new Object[0]),
-                    new RawData(new LongUniqueId(3), t, "nameAA2", "TMPacket", "Route2", "Source2", Quality.GOOD, null, new byte[] { 0,1, 2, 3, 4 }, t, "TestHandler", new Object[0]),
+                    new RawData(new LongUniqueId(3), t, "nameAA2", "TMPacket", "Route2", "Source2", Quality.GOOD, null, new byte[] { 0,1, 2, 3, 4 }, t, "TestHandler", false, new Object[0]),
                     new RawData(new LongUniqueId(4), t, "name3", "TMPacket", "Route3", "Source2", Quality.GOOD, null, new byte[] { 0,1, 2, 3, 4 }, t, "TestHandler", new Object[0]),
                     new RawData(new LongUniqueId(5), t, "name4", "TMPacket", "Route2", "Source2", Quality.GOOD, new LongUniqueId(100), new byte[] { 0,1, 2, 3, 4 }, t, "TestHandler", new Object[0]),
                     new RawData(new LongUniqueId(6), t, "name5", "TMFrame", "Route1", "Source1", Quality.UNKNOWN, new LongUniqueId(100), new byte[] { 0,1, 2, 3, 4 }, t, "TestHandler", new Object[0])
@@ -89,6 +90,14 @@ class RawDataArchiveTest {
             assertFalse(items.get(1).isContentsSet());
             assertFalse(items.get(2).isContentsSet());
             assertFalse(items.get(3).isContentsSet());
+            // retrieve live/repatriated data using the live filter
+            items = rawDataArchive.retrieve(t.minusSeconds(20), 10, RetrievalDirection.TO_FUTURE, new RawDataFilter(true, "ameAA", null, null, null, null, Boolean.TRUE));
+            assertEquals(3, items.size());
+            assertTrue(items.stream().allMatch(RawData::isLive));
+            items = rawDataArchive.retrieve(t.minusSeconds(20), 10, RetrievalDirection.TO_FUTURE, new RawDataFilter(true, "ameAA", null, null, null, null, Boolean.FALSE));
+            assertEquals(1, items.size());
+            assertFalse(items.get(0).isLive());
+            assertEquals(3L, items.get(0).getInternalId().asLong());
             archive.dispose();
         } finally {
             // Delete all

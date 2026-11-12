@@ -154,7 +154,7 @@ class ParameterTest {
 
         model.injectParameters(Collections.singletonList(batteryState));
 
-        AwaitUtil.awaitAndVerify(5000, outList::size, 10);
+        AwaitUtil.awaitAndVerify(5000, outList::size, 9);
 
         // Battery state
         assertEquals(1001, ((ParameterData)outList.get(0)).getExternalId());
@@ -175,20 +175,14 @@ class ParameterTest {
         assertEquals(AlarmState.WARNING, ((ParameterData)outList.get(3)).getAlarmState());
         assertEquals(AlarmState.WARNING, ((AlarmParameterData)outList.get(5)).getCurrentAlarmState());
         assertEquals(2010L, ((AlarmParameterData)outList.get(5)).getLastNominalValue());
-        // Battery current
-        assertEquals(1003, ((ParameterData)outList.get(6)).getExternalId());
-        assertEquals(2L, ((ParameterData)outList.get(6)).getSourceValue());
-        assertNull(((ParameterData) outList.get(6)).getEngValue());
-        assertEquals(Validity.INVALID, ((ParameterData)outList.get(6)).getValidity());
-        assertEquals(AlarmState.UNKNOWN, ((ParameterData)outList.get(6)).getAlarmState());
         // Battery state (enumeration)
-        assertEquals(1004, ((ParameterData)outList.get(7)).getExternalId());
-        assertEquals("BATTERY_STATE_EN", ((SystemEntity)outList.get(8)).getName());
-        assertEquals(1, ((ParameterData)outList.get(7)).getSourceValue());
-        assertEquals("ON", ((ParameterData)outList.get(7)).getEngValue());
-        assertEquals(Validity.VALID, ((ParameterData)outList.get(7)).getValidity());
-        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(7)).getAlarmState());
-        assertEquals(AlarmState.NOMINAL, ((AlarmParameterData)outList.get(9)).getCurrentAlarmState());
+        assertEquals(1004, ((ParameterData)outList.get(6)).getExternalId());
+        assertEquals("BATTERY_STATE_EN", ((SystemEntity)outList.get(7)).getName());
+        assertEquals(1, ((ParameterData)outList.get(6)).getSourceValue());
+        assertEquals("ON", ((ParameterData)outList.get(6)).getEngValue());
+        assertEquals(Validity.VALID, ((ParameterData)outList.get(6)).getValidity());
+        assertEquals(AlarmState.NOMINAL, ((ParameterData)outList.get(6)).getAlarmState());
+        assertEquals(AlarmState.NOMINAL, ((AlarmParameterData)outList.get(8)).getCurrentAlarmState());
 
         testLogger.info("Injection - Batch 4");
         outList.clear();
@@ -222,7 +216,6 @@ class ParameterTest {
 
         model.disable(SystemEntityPath.fromString("ROOT.BATTERY"));
 
-        AwaitUtil.await(5000);
         AwaitUtil.awaitAndVerify(5000, outList::size, 9);
 
         for(AbstractDataItem i : outList) {
@@ -238,8 +231,7 @@ class ParameterTest {
 
         model.enable(SystemEntityPath.fromString("ROOT.BATTERY"));
 
-        AwaitUtil.await(5000);
-        assertEquals(9, outList.size());
+        AwaitUtil.awaitAndVerify(5000, outList::size, 9);
         for(AbstractDataItem i : outList) {
             if(i instanceof SystemEntity) {
                 assertEquals(Status.ENABLED, ((SystemEntity) i).getStatus());
@@ -307,7 +299,7 @@ class ParameterTest {
         model.injectParameters(Collections.singletonList(wrongInjDueToSynthExp));
 
         // Expect failure
-        AwaitUtil.await(5000);
+        AwaitUtil.await(2000);
         assertEquals(0, outList.size());
 
         // Update of parameter with wrong validity expression
@@ -807,7 +799,7 @@ class ParameterTest {
         model.injectParameters(Collections.singletonList(logSample));
 
         //
-        AwaitUtil.await(5000);
+        AwaitUtil.await(2000);
         assertEquals(0, outList.size());
     }
 

@@ -400,4 +400,9 @@ public class AesEncryptionService implements ISecurityHandler, IParameterDataSub
     public void onTmVcUnit(RawData packetRawData, VirtualChannelUnit unit, DecodingResult decoded) {
         // Not processed by this implementation
     }
+
+    @Override
+    public void onTmRawUnit(RawData rawData, DecodingResult decoded) {
+        // Not processed by this implementation
+    }
 }

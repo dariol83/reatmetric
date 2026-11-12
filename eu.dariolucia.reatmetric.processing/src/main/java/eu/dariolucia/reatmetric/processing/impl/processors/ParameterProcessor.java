@@ -251,7 +251,8 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
                     }
                     // At this stage, if latestGenerationTime is null, it means that there is no value coming from the depending samples. So skip.
                     // If latestGenerationTime is after the current generation time, then expression shall be re-evaluated.
-                    if(latestGenerationTime != null && (generationTime == null || latestGenerationTime.isAfter(generationTime) || checkWithLastEvaluationTimeMap(reference2genTime))) {
+                    // If you have a change in validity at this stage, you must re-evaluate: the object could have been re-enabled and the result must be published.
+                    if((validityChanged(currentState, validity)) || (latestGenerationTime != null && (generationTime == null || latestGenerationTime.isAfter(generationTime) || checkWithLastEvaluationTimeMap(reference2genTime)))) {
                         // Use the latest generation time
                         generationTime = latestGenerationTime;
                         // Remember the reference-gentime map
@@ -364,6 +365,14 @@ public class ParameterProcessor extends AbstractSystemEntityProcessor<ParameterP
         activateTriggers(newValue, previousValue, wasInAlarm, stateChanged);
         // Return the list
         return generatedStates;
+    }
+
+    private boolean validityChanged(ParameterData currentState, Validity validity) {
+        if(currentState == null) {
+            // Something must be computed right now
+            return true;
+        }
+        return !Objects.equals(currentState.getValidity(), validity);
     }
 
     private boolean checkWithLastEvaluationTimeMap(Map<Integer, Instant> reference2genTime) {

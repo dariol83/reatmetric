@@ -1,17 +1,18 @@
 /*
- * Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
+ * Copyright (c)  2026 Dario Lucia (https://www.dariolucia.eu)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *          http://www.apache.org/licenses/LICENSE-2.0
+ *           http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 
@@ -30,21 +31,23 @@ import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.udd.*;
 import eu.dariolucia.reatmetric.ui.utils.ChartPreset;
+import eu.dariolucia.reatmetric.ui.utils.DialogUtils;
 import eu.dariolucia.reatmetric.ui.utils.FxUtils;
+import eu.dariolucia.reatmetric.ui.utils.PresetStorageManager;
 import eu.dariolucia.reatmetric.ui.utils.UserDisplayCoordinator;
+import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
+import eu.dariolucia.reatmetric.ui.widgets.EnhancedTitledPane;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.fxml.Initializable;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.chart.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.ToggleButton;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.Priority;
@@ -55,16 +58,36 @@ import javafx.stage.Window;
 
 import java.io.IOException;
 import java.net.URL;
+import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * FXML Controller class
  *
  * @author dario
  */
-public class UserDisplayTabWidgetController extends AbstractDisplayController implements Initializable, IChartDisplayController {
+public class ChartDisplayViewController extends AbstractDisplayController implements IChartDisplayController {
+
+    private static final Logger LOG = Logger.getLogger(ChartDisplayViewController.class.getName());
+
+    @FXML
+    protected TitledPane displayTitledPane;
+    @FXML
+    protected ToolBar toolbar;
+    @FXML
+    protected CheckMenuItem toggleShowToolbarItem;
+    @FXML
+    protected Menu loadMenu;
+    @FXML
+    protected MenuItem detachMenuItem;
+    @FXML
+    protected Button renameButton;
+    @FXML
+    protected Button saveButton;
 
     // Live/retrieval controls
     @FXML
@@ -123,7 +146,13 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
     private volatile boolean liveTimeTracker = true;
     private volatile boolean live = false;
 
+    private final PresetStorageManager presetManager = new PresetStorageManager();
     private Stage independentStage;
+    private Tab mainTab;
+    private String displayName;
+    private String presetName;
+    private boolean dirty;
+    private boolean loadingPreset;
 
     @Override
     public void doInitialize(URL url, ResourceBundle rb) {
@@ -162,26 +191,247 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
         this.live = true;
         // Register to the coordinator
         UserDisplayCoordinator.instance().register(this);
+
+        if(this.loadMenu != null) {
+            this.loadMenu.setOnShowing(this::onShowingPresetMenu);
+        }
+        if(this.displayTitledPane != null && this.toolbar != null && this.toggleShowToolbarItem != null) {
+            initialiseToolbarVisibility(this.displayTitledPane, this.toolbar, this.toggleShowToolbarItem);
+            if(this.displayTitledPane instanceof EnhancedTitledPane &&
+                    ((EnhancedTitledPane) this.displayTitledPane).getTitleContextMenu() != null) {
+                ((EnhancedTitledPane) this.displayTitledPane).getTitleContextMenu().setOnShowing(this::onShowingPresetMenu);
+            }
+        }
+        if(this.detachMenuItem != null) {
+            this.detachMenuItem.setDisable(true);
+        }
+    }
+
+    @Override
+    protected void mainTabConfigured(Tab tab) {
+        this.mainTab = tab;
+        setDisplayName(tab.getText());
+    }
+
+    @FXML
+    public void detachAttachItemAction(ActionEvent actionEvent) {
+        Window window = retrieveWindow();
+        if(window instanceof Stage && DetachedTabUtil.isDetached((Stage) window)) {
+            DetachedTabUtil.attachTab((Stage) window);
+            informDisplayAttached();
+        }
+    }
+
+    @Override
+    protected void informDisplayAttached() {
+        if(this.detachMenuItem != null) {
+            this.detachMenuItem.setDisable(true);
+        }
+    }
+
+    @Override
+    protected void informDisplayDetached() {
+        if(this.detachMenuItem != null) {
+            this.detachMenuItem.setDisable(false);
+        }
+    }
+
+    protected String doGetComponentId() {
+        return "ChartDisplayView";
+    }
+
+    private void onShowingPresetMenu(Event event) {
+        IReatmetricSystem currentSystem = getActiveSystem();
+        if(this.loadMenu == null || currentSystem == null) {
+            if(this.loadMenu != null) {
+                this.loadMenu.getItems().clear();
+                MenuItem noSystem = new MenuItem("No system connected");
+                noSystem.setDisable(true);
+                this.loadMenu.getItems().add(noSystem);
+            }
+            return;
+        }
+        String systemName;
+        try {
+            systemName = currentSystem.getName();
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
+            return;
+        }
+
+        this.loadMenu.getItems().clear();
+        List<String> presets = this.presetManager.getAvailablePresets(systemName, user, doGetComponentId());
+        if(presets.isEmpty()) {
+            MenuItem noPresets = new MenuItem("No Charts available");
+            noPresets.setDisable(true);
+            this.loadMenu.getItems().add(noPresets);
+            return;
+        }
+        for(String preset : presets) {
+            MenuItem mi = new MenuItem(preset);
+            mi.setOnAction(actionEvent -> openPresetFromMenu(preset));
+            this.loadMenu.getItems().add(mi);
+        }
+    }
+
+    private void openPresetFromMenu(String preset) {
+        if(isPristineDisplay()) {
+            open(preset);
+        } else {
+            AbstractDisplayController controller = MainViewController.instance().openPerspective("Charts");
+            if(controller instanceof ChartDisplayViewController) {
+                ((ChartDisplayViewController) controller).open(preset);
+            }
+        }
+    }
+
+    public void open(String preset) {
+        FxUtils.runLater(() -> ReatmetricUI.threadPool(getClass()).submit(() -> {
+            IReatmetricSystem currentSystem = getActiveSystem();
+            if(currentSystem == null) {
+                return;
+            }
+            String systemName;
+            try {
+                systemName = currentSystem.getName();
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
+                return;
+            }
+            ChartPreset loadedPreset = this.presetManager.load(systemName, user, preset, doGetComponentId(), ChartPreset.class);
+            if(loadedPreset != null) {
+                FxUtils.runLater(() -> loadPresetIntoDisplay(preset, loadedPreset));
+            }
+        }));
+    }
+
+    private void loadPresetIntoDisplay(String name, ChartPreset loadedPreset) {
+        loadPreset(loadedPreset);
+        this.presetName = name;
+        setDisplayName(name);
+        setDirty(false);
+    }
+
+    @FXML
+    public void saveButtonClicked(ActionEvent actionEvent) {
+        saveCurrentDisplay();
+    }
+
+    @FXML
+    public void renameButtonClicked(ActionEvent actionEvent) {
+        Optional<String> result = DialogUtils.input(getDisplayName(), "Rename Chart", "Change name of the Chart", "Please provide the name of the Chart:");
+        result.map(String::trim).filter(s -> !s.isEmpty()).ifPresent(s -> {
+            this.presetName = s;
+            setDisplayName(s);
+        });
+    }
+
+    private boolean saveCurrentDisplay() {
+        String nameToSave = this.presetName;
+        if(nameToSave == null || nameToSave.trim().isEmpty()) {
+            Optional<String> result = DialogUtils.input(getDisplayName(), "Save Chart", "Chart name", "Please provide the name of the Chart:");
+            if(result.isEmpty()) {
+                return false;
+            }
+            nameToSave = result.get().trim();
+            if(nameToSave.isEmpty()) {
+                return false;
+            }
+        }
+
+        IReatmetricSystem currentSystem = getActiveSystem();
+        if(currentSystem == null) {
+            DialogUtils.alert("Save Chart", null, "Cannot save Chart: no system connected");
+            return false;
+        }
+
+        try {
+            this.presetManager.save(currentSystem.getName(), user, nameToSave, doGetComponentId(), getChartDescription());
+            this.presetName = nameToSave;
+            setDisplayName(nameToSave);
+            setDirty(false);
+            return true;
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot save preset, system not responding", e);
+            DialogUtils.alert("Save Chart", null, "Cannot save Chart: system not responding");
+            return false;
+        }
+    }
+
+    @Override
+    protected boolean closeRequested() {
+        if(!this.dirty) {
+            return true;
+        }
+        DialogUtils.SaveDiscardCancelResult result = DialogUtils.saveDiscardCancel(
+                "Close Chart",
+                "About to close " + getDisplayName(),
+                "The Chart has unsaved changes."
+        );
+        switch (result) {
+            case SAVE_AND_CLOSE:
+                return saveCurrentDisplay();
+            case DISCARD_AND_CLOSE:
+                return true;
+            case CANCEL:
+            default:
+                return false;
+        }
+    }
+
+    private String getDisplayName() {
+        return this.displayName == null ? "Chart" : this.displayName;
+    }
+
+    private void setDisplayName(String name) {
+        this.displayName = name;
+        if(this.mainTab != null) {
+            this.mainTab.setText(name);
+        }
+        if(this.displayTitledPane != null) {
+            this.displayTitledPane.setText(name);
+        }
+        Window window = this.liveTgl != null && this.liveTgl.getScene() != null ? this.liveTgl.getScene().getWindow() : null;
+        if(window instanceof Stage && DetachedTabUtil.isDetached((Stage) window)) {
+            ((Stage) window).setTitle(name);
+        }
+    }
+
+    private void setDirty(boolean dirty) {
+        this.dirty = dirty;
+    }
+
+    private IReatmetricSystem getActiveSystem() {
+        return this.system != null ? this.system : ReatmetricUI.selectedSystem().getSystem();
+    }
+
+    private boolean isPristineDisplay() {
+        this.charts.removeIf(AbstractChartManager::isDeleted);
+        return !this.dirty && this.presetName == null && this.charts.isEmpty();
     }
 
     @FXML
     protected void addLineChartMenuItemSelected(ActionEvent e) {
         addLineChart();
+        setDirty(true);
     }
 
     @FXML
     protected void addAreaChartMenuItemSelected(ActionEvent e) {
         addAreaChart();
+        setDirty(true);
     }
 
     @FXML
     protected void addBarChartMenuItemSelected(ActionEvent e) {
         addBarChart();
+        setDirty(true);
     }
 
     @FXML
     protected void addScatterChartMenuItemSelected(ActionEvent e) {
         addScatterChart();
+        setDirty(true);
     }
 
     private void fetchRecords(final Instant minTime, final Instant maxTime, final boolean clear) {
@@ -667,6 +917,9 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
     protected void updateFilter() {
         // Remove all deleted charts if any
         this.charts.removeIf(AbstractChartManager::isDeleted);
+        if(!this.loadingPreset) {
+            setDirty(true);
+        }
         Set<SystemEntityPath> selectedParameters = new LinkedHashSet<>();
         Set<SystemEntityPath> selectedEvents = new LinkedHashSet<>();
         for (AbstractChartManager acm : this.charts) {
@@ -701,31 +954,50 @@ public class UserDisplayTabWidgetController extends AbstractDisplayController im
     }
 
     public void loadPreset(ChartPreset p) {
-        for (ChartPreset.Element chartSet : p.getElements()) {
-            String chartType = chartSet.getType();
-            AbstractChartManager chartManager = null;
-            List<String> items = Arrays.asList(chartSet.getNames());
-            switch (chartType) {
-                case "line": {
-                    chartManager = addLineChart();
+        this.loadingPreset = true;
+        try {
+            clearChartDisplay();
+            for (ChartPreset.Element chartSet : p.getElements()) {
+                String chartType = chartSet.getType();
+                AbstractChartManager chartManager = null;
+                List<String> items = Arrays.asList(chartSet.getNames());
+                switch (chartType) {
+                    case "line": {
+                        chartManager = addLineChart();
+                    }
+                    break;
+                    case "area": {
+                        chartManager = addAreaChart();
+                    }
+                    break;
+                    case "bar": {
+                        chartManager = addBarChart();
+                    }
+                    break;
+                    case "scatter": {
+                        chartManager = addScatterChart();
+                    }
+                    break;
                 }
-                break;
-                case "area": {
-                    chartManager = addAreaChart();
+                if (chartManager != null) {
+                    chartManager.addItems(items);
                 }
-                break;
-                case "bar": {
-                    chartManager = addBarChart();
-                }
-                break;
-                case "scatter": {
-                    chartManager = addScatterChart();
-                }
-                break;
             }
-            if (chartManager != null) {
-                chartManager.addItems(items);
+        } finally {
+            this.loadingPreset = false;
+        }
+    }
+
+    private void clearChartDisplay() {
+        for(AbstractChartManager chart : this.charts) {
+            if(!chart.isDeleted()) {
+                chart.clear();
             }
         }
+        this.innerBox.getChildren().clear();
+        this.charts.clear();
+        this.currentParameterFilter = new ParameterDataFilter(null, new LinkedList<>(), null, null, null, null);
+        this.currentEventFilter = new EventDataFilter(null, new LinkedList<>(), null, null, null, null, null);
+        UserDisplayCoordinator.instance().filterUpdated();
     }
 }

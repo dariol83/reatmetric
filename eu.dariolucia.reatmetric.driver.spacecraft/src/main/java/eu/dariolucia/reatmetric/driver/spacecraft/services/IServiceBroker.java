@@ -32,6 +32,7 @@ public interface IServiceBroker {
 
     void distributeTmPacket(RawData rawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded);
     void distributeTmVcUnit(RawData rawData, VirtualChannelUnit vcUnit, DecodingResult decoded);
+    void distributeTmRawUnit(RawData rawData, DecodingResult decoded);
 
     void informTc(TcPhase phase, Instant phaseTime, AbstractTcTracker trackerBean);
 

@@ -100,6 +100,9 @@ public class DeltaCheck extends CheckDefinition implements Serializable {
                 delta = Math.abs(delta);
             }
             violated = delta < lowLimit || delta > highLimit;
+            // Update current information
+            previousValue = toCheck;
+            previousGenerationTime = generationTime;
         }
         // Return result
         AlarmState result = deriveState(violated, currentViolations);

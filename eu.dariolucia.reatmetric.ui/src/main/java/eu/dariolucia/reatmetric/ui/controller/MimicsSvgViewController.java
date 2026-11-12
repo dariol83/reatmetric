@@ -223,7 +223,7 @@ public class MimicsSvgViewController implements Initializable {
 
         public void and(String name) {
             // Request the opening of the AND from the name
-            ParameterDisplayViewController controller = (ParameterDisplayViewController) MainViewController.instance().openPerspective("Monitoring AND");
+            ParameterDisplayTabWidgetController controller = (ParameterDisplayTabWidgetController) MainViewController.instance().openPerspective("Monitoring AND");
             if (controller != null) {
                 controller.open(name);
             }
@@ -231,7 +231,7 @@ public class MimicsSvgViewController implements Initializable {
 
         public void chart(String name) {
             // Request the opening of the chart from the name
-            UserDisplayViewController controller = (UserDisplayViewController) MainViewController.instance().openPerspective("Charts");
+            ChartDisplayViewController controller = (ChartDisplayViewController) MainViewController.instance().openPerspective("Charts");
             if (controller != null) {
                 controller.open(name);
             }

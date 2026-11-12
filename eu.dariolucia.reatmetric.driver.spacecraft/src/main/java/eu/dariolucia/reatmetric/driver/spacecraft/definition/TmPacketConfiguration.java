@@ -28,6 +28,12 @@ public class TmPacketConfiguration {
     @XmlAttribute(name = "parameter-id-offset")
     private int parameterIdOffset = 0;
 
+    @XmlAttribute(name = "required-quality")
+    private RequiredTmQuality requiredQuality = RequiredTmQuality.NOT_BAD;
+
+    @XmlAttribute(name = "only-live-processing")
+    private boolean onlyLiveProcessing = false;
+
     @XmlElement(name = "default-pus-configuration")
     private TmPusConfiguration defaultTmPusConfiguration;
 
@@ -44,6 +50,22 @@ public class TmPacketConfiguration {
 
     public void setParameterIdOffset(int parameterIdOffset) {
         this.parameterIdOffset = parameterIdOffset;
+    }
+
+    public RequiredTmQuality getRequiredQuality() {
+        return requiredQuality;
+    }
+
+    public void setRequiredQuality(RequiredTmQuality requiredQuality) {
+        this.requiredQuality = requiredQuality;
+    }
+
+    public boolean isOnlyLiveProcessing() {
+        return onlyLiveProcessing;
+    }
+
+    public void setOnlyLiveProcessing(boolean onlyLiveProcessing) {
+        this.onlyLiveProcessing = onlyLiveProcessing;
     }
 
     public TmPusConfiguration getDefaultTmPusConfiguration() {

@@ -46,6 +46,9 @@ public class TmDataLinkConfiguration {
     @XmlAttribute(name = "frame-length")
     private int frameLength = -1;
 
+    @XmlAttribute(name = "required-quality")
+    private RequiredTmQuality requiredQuality = RequiredTmQuality.NOT_BAD;
+
     public List<TmVcConfiguration> getTmVcConfigurations() {
         return tmVcConfigurations;
     }
@@ -108,5 +111,13 @@ public class TmDataLinkConfiguration {
 
     public int getFrameLength() {
         return frameLength;
+    }
+
+    public RequiredTmQuality getRequiredQuality() {
+        return requiredQuality;
+    }
+
+    public void setRequiredQuality(RequiredTmQuality requiredQuality) {
+        this.requiredQuality = requiredQuality;
     }
 }

@@ -195,6 +195,14 @@ public abstract class AbstractDisplayController implements Initializable, IReatm
         // Subclasses can override
     }
 
+    protected void mainTabConfigured(Tab tab) {
+        // Subclasses can override
+    }
+
+    protected boolean closeRequested() {
+        return true;
+    }
+
     protected void initialiseToolbarVisibility(TitledPane pane, ToolBar toolbar, CheckMenuItem linkedMenuEntry) {
         toolbar.visibleProperty().bind(linkedMenuEntry.selectedProperty());
         toolbar.visibleProperty().addListener((observableValue, oldValue, newValue) -> {

@@ -59,7 +59,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -82,6 +84,8 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     private static final String VIEW_LOCATION = "viewLocation";
     private static final String VIEW_NAME = "viewName";
     private static final String VIEW_IMAGE = "viewImage";
+    private static final String VIEW_MULTI_INSTANCE = "multiInstance";
+    private static final String VIEW_INSTANCE_NAME_PREFIX = "instanceNamePrefix";
 
     private static final String SYSTEM_LABEL_CSS_STYLE_NOALARM = "x-reatmetric-status-idle";
     private static final String SYSTEM_LABEL_CSS_STYLE_ALARM = "x-reatmetric-status-notify";
@@ -96,6 +100,7 @@ public class MainViewController implements Initializable, IReatmetricServiceList
     }
 
     private final ReatmetricPluginInspector serviceInspector = new ReatmetricPluginInspector();
+    private final Map<String, Integer> multiInstanceCounters = new HashMap<>();
 
     @FXML
     public Label timeLbl;
@@ -168,18 +173,20 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         if (viewButton.getProperties().get(VIEW_LOCATION) == null) {
             return null;
         }
+        boolean multiInstance = isMultiInstance(viewButton);
         // If a tab is already created, select it
-        Tab found = null;
-        for (Tab n : viewTabPane.getTabs()) {
-            if (n.getId() != null && n.getId().equals(viewButton.getProperties().get(VIEW_LOCATION))) {
-                found = n;
-                break;
+        if(!multiInstance) {
+            Tab found = null;
+            for (Tab n : viewTabPane.getTabs()) {
+                if (n.getId() != null && n.getId().equals(viewButton.getProperties().get(VIEW_LOCATION))) {
+                    found = n;
+                    break;
+                }
             }
-        }
-        if (found != null) {
-            viewTabPane.getSelectionModel().select(found);
-            return ((Pair<Node, AbstractDisplayController>) found.getUserData()).getSecond();
-        } else {
+            if (found != null) {
+                viewTabPane.getSelectionModel().select(found);
+                return ((Pair<Node, AbstractDisplayController>) found.getUserData()).getSecond();
+            }
             // Check if the view was detached
             Stage detachedStage = DetachedTabUtil.findDetachedTabById(Objects.toString(viewButton.getProperties().get(VIEW_LOCATION)));
             if(detachedStage != null) {
@@ -187,25 +194,25 @@ public class MainViewController implements Initializable, IReatmetricServiceList
                 detachedStage.requestFocus();
                 // Detaching always moves the user data from the tab to the stage user data
                 return ((Pair<Node, AbstractDisplayController>) detachedStage.getUserData()).getSecond();
-            } else {
-                try {
-                    return createView(viewButton);
-                } catch (IOException e) {
-                    LOG.log(Level.SEVERE, "Cannot load view: " + viewButton.getProperties().get(VIEW_LOCATION) + ": " + e.getMessage(), e);
-                    return null;
-                }
             }
+        }
+        try {
+            return createView(viewButton);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Cannot load view: " + viewButton.getProperties().get(VIEW_LOCATION) + ": " + e.getMessage(), e);
+            return null;
         }
     }
 
     private AbstractDisplayController createView(Node viewButton) throws IOException {
         String perspectiveId = viewButton.getProperties().get(VIEW_LOCATION).toString();
+        boolean multiInstance = isMultiInstance(viewButton);
         URL viewUrl = getClass().getResource(perspectiveId);
         FXMLLoader loader = new FXMLLoader(viewUrl);
         Node view = loader.load();
         final AbstractDisplayController ctrl = loader.getController();
 
-        Tab t = new Tab(getNodeText(viewButton), view);
+        Tab t = new Tab(getTabTitle(viewButton), view);
         Image img = getNodeImg(viewButton);
         if (img != null) {
             ImageView grphc = new ImageView(img);
@@ -222,18 +229,38 @@ public class MainViewController implements Initializable, IReatmetricServiceList
         cm.getItems().add(detachMenuItem);
         t.setContextMenu(cm);
 
-        t.setId(perspectiveId);
+        t.setId(multiInstance ? perspectiveId + "@" + System.identityHashCode(t) : perspectiveId);
         viewTabPane.getTabs().add(t);
-        // Add stop on tab close for any type of subscription in the controller
+        // Add close request and stop on tab close for any type of subscription in the controller
+        t.setOnCloseRequest(event -> {
+            if(!ctrl.closeRequested()) {
+                event.consume();
+            }
+        });
         t.setOnClosed(event -> {
             ctrl.dispose();
         });
         // Set the view and ctrl as user data in the tab
         t.setUserData(Pair.of(view, ctrl));
+        ctrl.mainTabConfigured(t);
 
         viewTabPane.getSelectionModel().select(t);
 
         return ctrl;
+    }
+
+    private boolean isMultiInstance(Node viewButton) {
+        return Boolean.parseBoolean(Objects.toString(viewButton.getProperties().get(VIEW_MULTI_INSTANCE), "false"));
+    }
+
+    private String getTabTitle(Node viewButton) {
+        if(isMultiInstance(viewButton)) {
+            String prefix = Objects.toString(viewButton.getProperties().get(VIEW_INSTANCE_NAME_PREFIX), getNodeText(viewButton));
+            int idx = this.multiInstanceCounters.merge(prefix, 1, Integer::sum);
+            return prefix + " " + idx;
+        } else {
+            return getNodeText(viewButton);
+        }
     }
 
     private Image getNodeImg(Node viewButton) {

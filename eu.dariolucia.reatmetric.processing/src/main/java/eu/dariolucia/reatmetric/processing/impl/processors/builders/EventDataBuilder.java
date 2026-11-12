@@ -77,6 +77,7 @@ public class EventDataBuilder extends AbstractDataItemBuilder<EventData> {
 
     @Override
     public EventData build(IUniqueId updateId) {
+        this.changedSinceLastBuild = false;
         return new EventData(updateId, generationTime, id, path.getLastPathElement(), path, qualifier, type, route,  source, severity, report, containerId, receptionTime, null);
     }
 
@@ -89,5 +90,6 @@ public class EventDataBuilder extends AbstractDataItemBuilder<EventData> {
         this.route = item.getRoute();
         this.qualifier = item.getQualifier();
         this.containerId = item.getRawDataContainerId();
+        this.changedSinceLastBuild = false;
     }
 }

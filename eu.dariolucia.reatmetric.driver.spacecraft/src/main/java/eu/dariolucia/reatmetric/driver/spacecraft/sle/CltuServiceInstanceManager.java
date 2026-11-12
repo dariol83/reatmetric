@@ -23,6 +23,7 @@ import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.common.pdus.
 import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.cltu.CltuServiceInstanceConfiguration;
 import eu.dariolucia.ccsds.sle.utl.pdu.PduFactoryUtil;
+import eu.dariolucia.ccsds.sle.utl.si.DeliveryModeEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ProductionStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ServiceInstance;
 import eu.dariolucia.ccsds.sle.utl.si.ServiceInstanceBindingStateEnum;
@@ -90,8 +91,14 @@ public class CltuServiceInstanceManager extends SleServiceInstanceManager<CltuSe
     }
 
     @Override
-    public void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, String connectorInformation) {
+    public void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, String connectorInformation, boolean live) {
         // Not needed
+    }
+
+    @Override
+    protected boolean isLive() {
+        // CLTU is always live commanding
+        return true;
     }
 
     @Override

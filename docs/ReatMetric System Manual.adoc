@@ -230,6 +230,10 @@ In ReatMetric, a _raw data_ is an semi-opaque data object, with the meaning that
 structure or data of the object, but only some meta-data attributes, such as the originating source, the route, the
 generation and reception time, and so on. Any module in the ReatMetric architecture can store and retrieve _raw data_.
 
+Raw data can be marked as _live_ or _repatriated_. Live raw data is received or produced as part of the current
+processing flow. Repatriated raw data is not live: it was stored somewhere else, or produced in the past, and then brought
+into ReatMetric for distribution, retrieval, or processing.
+
 For instance, _raw data_ can be used to distribute and optioanlly store low level PDUs that are exchanged at connection
 level between ReatMetric and the target devices. In the same way, it can be used to store changes of state or internal
 states of modules and drivers, as required.

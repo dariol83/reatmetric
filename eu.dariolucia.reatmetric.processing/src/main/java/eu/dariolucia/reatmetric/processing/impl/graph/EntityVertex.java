@@ -78,7 +78,7 @@ public class EntityVertex {
         // The method is synchronized to avoid double computation
         if(updateOperationsForAffectedEntities == null) {
             // The affected entities are the vertex's predecessors + their affected entities
-            updateOperationsForAffectedEntities = new LinkedList<>();
+            updateOperationsForAffectedEntities = new ArrayList<>();
             //
             Set<Integer> processed = new HashSet<>();
             for(DependencyEdge de : predecessors) {
@@ -104,7 +104,10 @@ public class EntityVertex {
 
     @Override
     public boolean equals(Object obj) {
-        return processor == obj;
+        if(obj instanceof EntityVertex) {
+            return processor == ((EntityVertex) obj).processor;
+        }
+        return false;
     }
 
     public AbstractSystemEntityProcessor getProcessor() {

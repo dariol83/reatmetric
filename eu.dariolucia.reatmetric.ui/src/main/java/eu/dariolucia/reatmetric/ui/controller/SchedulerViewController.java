@@ -423,7 +423,10 @@ public class SchedulerViewController extends AbstractDisplayController implement
     private void loadFilterPopup() {
         this.filterPopup.setAutoHide(true);
         this.filterPopup.setHideOnEscape(true);
-
+        this.filterPopup.addEventHandler(WindowEvent.WINDOW_HIDING, event -> {
+            // Reset/set the popup to the current filter
+            dataItemFilterController.setSelectedFilter(dataItemFilterController.getSelectedFilter());
+        });
         try {
             URL filterWidgetUrl = getClass().getClassLoader()
                     .getResource("eu/dariolucia/reatmetric/ui/fxml/SchedulerFilterWidget.fxml");
@@ -434,8 +437,8 @@ public class SchedulerViewController extends AbstractDisplayController implement
             this.filterPopup.getContent().addAll(filterSelector);
             // Load the controller hide with select
             this.dataItemFilterController.setActionAfterSelection(() -> {
-                this.filterPopup.hide();
                 applyFilter(this.dataItemFilterController.getSelectedFilter());
+                this.filterPopup.hide();
             });
         } catch (IOException e) {
             e.printStackTrace();

@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import eu.dariolucia.reatmetric.ui.widgets.EnhancedTitledPane?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.MenuButton?>
-<?import javafx.scene.control.TabPane?>
-<?import javafx.scene.control.TitledPane?>
+<?import javafx.scene.control.CheckMenuItem?>
+<?import javafx.scene.control.ContextMenu?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.ToolBar?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.VBox?>
 
 <!--
@@ -24,62 +32,84 @@
   ~ limitations under the License.
   -->
 
-<?import javafx.scene.layout.AnchorPane?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.image.Image?>
-<?import javafx.scene.control.Tooltip?>
-<?import eu.dariolucia.reatmetric.ui.widgets.EnhancedTitledPane?>
-
-<?import javafx.scene.control.ContextMenu?>
-<?import javafx.scene.control.MenuItem?>
-<?import javafx.scene.control.CheckMenuItem?>
-<EnhancedTitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Mimics Displays" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.MimicsDisplayViewController">
-   <content>
-      <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0">
-         <children>
-            <ToolBar fx:id="toolbar" maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
-               <items>
-                  <MenuButton fx:id="loadBtn" mnemonicParsing="false" text="Load..." prefHeight="25.0" prefWidth="100.0" />
-               </items>
-            </ToolBar>
-         <AnchorPane VBox.vgrow="ALWAYS">
+<EnhancedTitledPane fx:id="displayTitledPane" collapsible="false" maxHeight="1.7976931348623157E308"
+                    maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" text="Mimic"
+                    xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1"
+                    fx:controller="eu.dariolucia.reatmetric.ui.controller.MimicsDisplayViewController">
+    <content>
+        <VBox fx:id="parentVBox" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+              minHeight="1.0" minWidth="1.0">
             <children>
-               <TabPane fx:id="tabPane" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="1.0" minWidth="1.0" tabClosingPolicy="ALL_TABS" VBox.vgrow="ALWAYS"
-                        AnchorPane.topAnchor="0.0" AnchorPane.rightAnchor="0.0"
-                        AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
-               </TabPane>
-               <HBox AnchorPane.rightAnchor="1.0" AnchorPane.topAnchor="2.0">
-                  <children>
-                     <Button fx:id="detachButton" mnemonicParsing="false" prefHeight="16.0"
-                             prefWidth="16.0" onAction="#detachButtonClicked">
-                        <graphic>
-                           <ImageView pickOnBounds="true" preserveRatio="true">
-                              <image>
-                                 <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/pin.svg.png"/>
-                              </image>
-                           </ImageView>
-                        </graphic>
-                        <tooltip>
-                           <Tooltip text="Detach tab"/>
-                        </tooltip>
-                     </Button>
-                  </children>
-               </HBox>
+                <ToolBar fx:id="toolbar" maxWidth="1.7976931348623157E308" minWidth="1.0" prefHeight="32.0">
+                    <items>
+                        <ToggleButton fx:id="liveTgl" mnemonicParsing="false" onAction="#liveToggleSelected" selected="true" prefHeight="25.0" prefWidth="91.0" text="Live" />
+                        <Button fx:id="goToStartBtn" disable="true" mnemonicParsing="false" onAction="#goToStart">
+                            <graphic>
+                                <ImageView pickOnBounds="true" preserveRatio="true">
+                                    <image>
+                                        <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/fast-backward.svg.png" />
+                                    </image>
+                                </ImageView>
+                            </graphic>
+                        </Button>
+                        <Button fx:id="goBackOneBtn" disable="true" mnemonicParsing="false" onAction="#goBackOne">
+                            <graphic>
+                                <ImageView pickOnBounds="true" preserveRatio="true">
+                                    <image>
+                                        <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/back.svg.png" />
+                                    </image>
+                                </ImageView>
+                            </graphic>
+                        </Button>
+                        <Button fx:id="selectTimeBtn" disable="true" mnemonicParsing="false" onAction="#selectTimeButtonSelected" prefHeight="25.0" prefWidth="180.0" text="---" />
+                        <Button fx:id="goForwardOneBtn" disable="true" mnemonicParsing="false" onAction="#goForwardOne">
+                            <graphic>
+                                <ImageView pickOnBounds="true" preserveRatio="true">
+                                    <image>
+                                        <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/play.svg.png" />
+                                    </image>
+                                </ImageView>
+                            </graphic>
+                        </Button>
+                        <Button fx:id="goToEndBtn" disable="true" mnemonicParsing="false" onAction="#goToEnd">
+                            <graphic>
+                                <ImageView pickOnBounds="true" preserveRatio="true">
+                                    <image>
+                                        <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/fast-forward.svg.png" />
+                                    </image>
+                                </ImageView>
+                            </graphic>
+                        </Button>
+                        <Separator orientation="VERTICAL" />
+                        <ProgressIndicator fx:id="progressIndicator" prefHeight="25.0" prefWidth="25.0" visible="false" />
+                        <Separator orientation="VERTICAL" />
+                        <Button fx:id="printBtn" mnemonicParsing="false" onAction="#printButtonSelected">
+                            <graphic>
+                                <ImageView pickOnBounds="true" preserveRatio="true">
+                                    <image>
+                                        <Image url="@/eu/dariolucia/reatmetric/ui/fxml/images/16px/printer.svg.png" />
+                                    </image>
+                                </ImageView>
+                            </graphic>
+                        </Button>
+                    </items>
+                </ToolBar>
+                <VBox fx:id="innerBox" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" VBox.vgrow="ALWAYS" />
             </children>
-         </AnchorPane>
-         </children>
-         <padding>
-            <Insets top="0.01" />
-         </padding>
-      </VBox>
-   </content>
-   <titleContextMenu>
-      <ContextMenu>
-         <items>
-            <CheckMenuItem fx:id="toggleShowToolbarItem" mnemonicParsing="false" selected="true" text="Show toolbar" />
-            <MenuItem fx:id="detachMenuItem" onAction="#detachAttachItemAction" mnemonicParsing="false" text="Attach to tab pane" disable="true" />
-         </items>
-      </ContextMenu>
-   </titleContextMenu>
+            <padding>
+                <Insets top="0.01" />
+            </padding>
+        </VBox>
+    </content>
+    <titleContextMenu>
+        <ContextMenu>
+            <items>
+                <CheckMenuItem fx:id="toggleShowToolbarItem" mnemonicParsing="false" selected="true" text="Show toolbar" />
+                <SeparatorMenuItem mnemonicParsing="false" />
+                <Menu fx:id="loadMenu" mnemonicParsing="false" text="Load Mimic" />
+                <SeparatorMenuItem mnemonicParsing="false" />
+                <MenuItem fx:id="detachMenuItem" onAction="#detachAttachItemAction" mnemonicParsing="false" text="Attach to tab pane" disable="true" />
+            </items>
+        </ContextMenu>
+    </titleContextMenu>
 </EnhancedTitledPane>

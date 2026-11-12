@@ -42,6 +42,7 @@ public class DetachedTabUtil {
         t.setContent(null);
         // Save the action to invoke, when a tab closes
         final EventHandler<Event> closeHandler = t.getOnCloseRequest();
+        final EventHandler<Event> closedHandler = t.getOnClosed();
         t.setOnCloseRequest(null);
         tabPane.getTabs().remove(t);
         Scene scene = new Scene(tabContents, tabContents.getLayoutBounds().getWidth(), tabContents.getLayoutBounds().getHeight());
@@ -54,15 +55,19 @@ public class DetachedTabUtil {
         }
         // When closing the stage, the dispose() method of the controller is called
         stage.setOnCloseRequest(ev -> {
-            // contentsController.dispose();
             if(closeHandler != null) {
                 closeHandler.handle(ev);
             }
-            stage.close();
+            if(ev.isConsumed()) {
+                return;
+            }
+            if(closedHandler != null) {
+                closedHandler.handle(null);
+            }
             STAGE2INFO.remove(stage);
         });
 
-        STAGE2INFO.put(stage, new StageInformation(tabPane, t, closeHandler));
+        STAGE2INFO.put(stage, new StageInformation(tabPane, t, closeHandler, closedHandler));
         stage.show();
 
         return stage;
@@ -85,6 +90,7 @@ public class DetachedTabUtil {
         t.setContent(stageContents);
         // t.setText(title);
         t.setOnCloseRequest(si.getOriginalCloseHandler());
+        t.setOnClosed(si.getOriginalClosedHandler());
         t.setUserData(externalStage.getUserData());
         tabPane.getTabs().add(t);
 
@@ -100,11 +106,13 @@ public class DetachedTabUtil {
         private final TabPane originalTabPane;
         private final Tab originalTab;
         private final EventHandler<Event> originalCloseHandler;
+        private final EventHandler<Event> originalClosedHandler;
 
-        public StageInformation(TabPane originalTabPane, Tab originalTab, EventHandler<Event> originalCloseHandler) {
+        public StageInformation(TabPane originalTabPane, Tab originalTab, EventHandler<Event> originalCloseHandler, EventHandler<Event> originalClosedHandler) {
             this.originalTabPane = originalTabPane;
             this.originalTab = originalTab;
             this.originalCloseHandler = originalCloseHandler;
+            this.originalClosedHandler = originalClosedHandler;
         }
 
         public TabPane getOriginalTabPane() {
@@ -113,6 +121,10 @@ public class DetachedTabUtil {
 
         public EventHandler<Event> getOriginalCloseHandler() {
             return originalCloseHandler;
+        }
+
+        public EventHandler<Event> getOriginalClosedHandler() {
+            return originalClosedHandler;
         }
 
         public Tab getOriginalTab() {

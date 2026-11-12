@@ -6,8 +6,10 @@
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Tooltip?>
+<?import org.controlsfx.control.ToggleSwitch?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.Region?>
 
 <!--
   ~ Copyright (c)  2020 Dario Lucia (https://www.dariolucia.eu)
@@ -27,6 +29,13 @@
 
 <VBox spacing="5.0" styleClass="reatmetric-layover" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="eu.dariolucia.reatmetric.ui.controller.RawDataFilterWidgetController">
    <children>
+      <HBox>
+         <children>
+            <CheckBox fx:id="liveCheckbox" mnemonicParsing="false" text="Live" />
+            <Region HBox.hgrow="ALWAYS" />
+            <ToggleSwitch fx:id="liveToggleSwitch" mnemonicParsing="false" text="" selected="false" />
+         </children>
+      </HBox>
       <CheckBox fx:id="qualityCheckbox" mnemonicParsing="false" text="Severity" />
       <ListView fx:id="qualityList" prefHeight="80.0" VBox.vgrow="NEVER" />
       <CheckBox fx:id="sourceCheckbox" mnemonicParsing="false" text="Source" />
@@ -55,7 +64,7 @@
       </TextField>
       <HBox prefWidth="200.0">
          <children>
-            <Button fx:id="selectBtn" mnemonicParsing="false" onAction="#selectButtonPressed" text="Select" />
+            <Button fx:id="selectBtn" mnemonicParsing="false" onAction="#selectButtonPressed" text="Apply" />
          </children>
          <padding>
             <Insets top="5.0" />

@@ -259,8 +259,8 @@ class ReatMetric {
         return data;
     }
 
-    rawDataFilter(contentSet, nameContains, sourceList, routeList, typeList, qualityList) {
-        return new RawDataFilter(contentSet, nameContains, sourceList, routeList, typeList, qualityList);
+    rawDataFilter(contentSet, nameContains, sourceList, routeList, typeList, qualityList, liveSet) {
+        return new RawDataFilter(contentSet, nameContains, sourceList, routeList, typeList, qualityList, liveSet);
     }
 
     /*********************************************************
@@ -603,13 +603,14 @@ class EventFilter {
 }
 
 class RawDataFilter {
-    constructor(contentSet, nameContains, sourceList, routeList, typeList, qualityList) {
+    constructor(contentSet, nameContains, sourceList, routeList, typeList, qualityList, liveSet) {
         this.contentSet = contentSet;
         this.nameContains = nameContains;
         this.sourceList = sourceList;
         this.routeList = routeList;
         this.typeList = typeList;
         this.qualityList = qualityList;
+        this.liveSet = liveSet;
     }
 }
 

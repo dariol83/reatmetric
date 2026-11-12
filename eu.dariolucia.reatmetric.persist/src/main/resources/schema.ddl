@@ -49,6 +49,7 @@ CREATE TABLE RAW_DATA_TABLE (
    Source VARCHAR(64),
    Handler VARCHAR(32) NOT NULL,
    Quality SMALLINT NOT NULL,
+   Live BOOLEAN NOT NULL DEFAULT TRUE,
    RelatedItem BIGINT,
    Contents BLOB,
    AdditionalData BLOB,

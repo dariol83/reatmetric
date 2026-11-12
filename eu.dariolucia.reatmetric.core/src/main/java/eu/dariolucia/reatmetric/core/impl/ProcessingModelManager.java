@@ -318,6 +318,10 @@ public class ProcessingModelManager implements IProcessingModelOutput, ISystemMo
         eventDataAccessManager.dispose();
         alarmDataAccessManager.dispose();
         activityOccurrenceDataAccessManager.dispose();
+        // Stop the processing model
+        if(this.processingModel instanceof IDisposable) {
+            ((IDisposable) this.processingModel).dispose();
+        }
     }
 
     private static class SystemModelSubscriberWrapper {

@@ -16,21 +16,25 @@
 
 package eu.dariolucia.reatmetric.processing.impl;
 
+import eu.dariolucia.reatmetric.api.common.IDisposable;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class WorkingSet {
+public class WorkingSet implements IDisposable {
 
     private static final Logger LOG = Logger.getLogger(WorkingSet.class.getName());
 
     private final Set<Integer> workingSet = new HashSet<>();
 
-    public void add(Set<Integer> ids) {
+    private boolean disposed = false;
+
+    public boolean add(Set<Integer> ids) {
         synchronized (workingSet) {
-            while(!Collections.disjoint(workingSet, ids)) {
+            while(!disposed && !Collections.disjoint(workingSet, ids)) {
                 try {
                     if(LOG.isLoggable(Level.FINER)) {
                         LOG.finer("[Working set] Overlap of " + ids + " against " + workingSet + ": waiting...");
@@ -41,14 +45,20 @@ public class WorkingSet {
                     if(LOG.isLoggable(Level.FINE)) {
                         LOG.fine("[Working set] thread interrupted - returning...");
                     }
-                    return;
+                    Thread.currentThread().interrupt();
+                    return false;
                 }
+            }
+            if(disposed) {
+                // Shutdown in progress - do not add
+                return false;
             }
             if(LOG.isLoggable(Level.FINEST)) {
                 LOG.finest("[Working set] Adding " + ids);
             }
             workingSet.addAll(ids);
             workingSet.notifyAll();
+            return true;
         }
     }
 
@@ -58,6 +68,17 @@ public class WorkingSet {
                 LOG.finest("[Working set] Removing " + ids);
             }
             workingSet.removeAll(ids);
+            workingSet.notifyAll();
+        }
+    }
+
+    @Override
+    public void dispose() {
+        synchronized (workingSet) {
+            if(LOG.isLoggable(Level.FINEST)) {
+                LOG.finest("[Working set] Disposing");
+            }
+            this.disposed = true;
             workingSet.notifyAll();
         }
     }

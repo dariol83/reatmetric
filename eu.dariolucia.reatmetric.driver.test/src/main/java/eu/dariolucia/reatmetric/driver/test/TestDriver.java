@@ -330,7 +330,7 @@ public class TestDriver implements IDriver, IActivityHandler, IRawDataRenderer {
 
     private void storeRawData(IUniqueId activityOccurrenceId, SystemEntityPath path, Instant generationTime, String route, String type, String source, byte[] encodedCommand) throws ReatmetricException {
         IUniqueId internalId = context.getRawDataBroker().nextRawDataId();
-        RawData rd = new RawData(internalId, generationTime, path.getLastPathElement(), type, route, source, Quality.GOOD, activityOccurrenceId, encodedCommand, Instant.now(), this.name,null);
+        RawData rd = new RawData(internalId, generationTime, path.getLastPathElement(), type, route, source, Quality.GOOD, activityOccurrenceId, encodedCommand, Instant.now(), this.name, true, null);
         context.getRawDataBroker().distribute(Collections.singletonList(rd), true);
     }
 

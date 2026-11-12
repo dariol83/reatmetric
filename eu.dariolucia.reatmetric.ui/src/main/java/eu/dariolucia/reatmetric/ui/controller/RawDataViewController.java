@@ -43,10 +43,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.rmi.RemoteException;
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
+import java.util.*;
 
 /**
  * FXML Controller class
@@ -76,6 +73,8 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
     private TableColumn<RawData, Instant> recTimeCol;
     @FXML
     private TableColumn<RawData, String> sourceCol;
+    @FXML
+    private TableColumn<RawData, String> liveCol;
 
     // Inspector controller
     private RawDataDetailsWidgetController dataInspectionController;
@@ -132,6 +131,7 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
         this.genTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getGenerationTime()));
         this.recTimeCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getReceptionTime()));
         this.sourceCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(o.getValue().getSource()));
+        this.liveCol.setCellValueFactory(o -> new ReadOnlyObjectWrapper<>(Objects.toString(o.getValue().isLive())));
 
         this.genTimeCol.setCellFactory(getInstantCellCallback());
         this.recTimeCol.setCellFactory(getInstantCellCallback());
@@ -165,6 +165,7 @@ public class RawDataViewController extends AbstractDataItemLogViewController<Raw
         this.typeCol.setCellFactory(getNormalTextCellCallback());
         this.routeCol.setCellFactory(getNormalTextCellCallback());
         this.sourceCol.setCellFactory(getNormalTextCellCallback());
+        this.liveCol.setCellFactory(getNormalTextCellCallback());
 
         try {
             URL rawDataDetailsUrl = getClass().getResource("/eu/dariolucia/reatmetric/ui/fxml/RawDataDetailsWidget.fxml");

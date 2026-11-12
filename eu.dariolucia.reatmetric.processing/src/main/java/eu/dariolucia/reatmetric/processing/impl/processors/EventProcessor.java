@@ -173,8 +173,8 @@ public class EventProcessor extends AbstractSystemEntityProcessor<EventProcessin
                     LOG.log(Level.FINE, "Event occurrence not raised for event " + definition.getLocation() + ": event processing is inhibited");
                 }
                 mustBeRaised = false;
-                // Reset also the condition triggered state
-                conditionTriggerState = false;
+                // At this state I don't reset the condition triggered state, so I remember the situation and I won't release
+                // this exact event at the end of the inhibition without a transition true-false-true after inhibition.
             }
             // Check if you have to raise the event
             if(mustBeRaised) {

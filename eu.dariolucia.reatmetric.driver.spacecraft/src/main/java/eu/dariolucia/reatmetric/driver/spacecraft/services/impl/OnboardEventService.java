@@ -43,6 +43,7 @@ public class OnboardEventService extends AbstractPacketService<OnboardEventServi
 
     @Override
     public void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
+        // This implementation processes all packets regardless of their liveness
         // Get and store the offset to apply to the event IDs
         if(firstEvent) {
             firstEvent = false;

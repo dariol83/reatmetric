@@ -142,6 +142,7 @@ public class JsonParseUtil {
         DocumentContext parsed = JsonPath.parse(requestBody);
         String nameContainsAccessor = "$['nameContains']";
         String withDataAccessor = "$['contentSet']";
+        String liveSetAccessor = "$['liveSet']";
         String routeListAccessor = "$['routeList']";
         String typeListAccessor = "$['typeList']";
         String sourceListAccessor = "$['sourceList']";
@@ -149,6 +150,8 @@ public class JsonParseUtil {
 
         String nameContains = parsed.read(nameContainsAccessor);
         boolean withData = parsed.read(withDataAccessor);
+        Map<String, Object> rawFilterMap = parsed.read("$");
+        Boolean liveSet = rawFilterMap.containsKey("liveSet") ? parsed.read(liveSetAccessor) : null;
         List<String> routes = parsed.read(routeListAccessor);
         List<String> types = parsed.read(typeListAccessor);
         List<String> sources = parsed.read(sourceListAccessor);
@@ -161,7 +164,8 @@ public class JsonParseUtil {
                 routes,
                 types,
                 sources,
-                qualities
+                qualities,
+                liveSet
         );
     }
 
@@ -580,6 +584,7 @@ public class JsonParseUtil {
         sb.append(String.format("\"route\" : %s, ", valueToString(obj.getRoute())));
         sb.append(String.format("\"source\" : %s, ", valueToString(obj.getSource())));
         sb.append(String.format("\"quality\" : \"%s\", ", obj.getQuality().name()));
+        sb.append(String.format("\"live\" : %s, ", obj.isLive()));
         if(obj.isContentsSet()) {
             sb.append(String.format("\"data\" : \"%s\"", DatatypeConverter.printBase64Binary(obj.getContents())));
         } else {

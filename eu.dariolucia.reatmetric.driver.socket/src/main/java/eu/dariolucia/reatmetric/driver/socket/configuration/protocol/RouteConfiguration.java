@@ -67,6 +67,9 @@ public class RouteConfiguration {
     @XmlAttribute(name = "command-lock")
     private boolean commandLock = true;
 
+    @XmlAttribute
+    private boolean live = true;
+
     @XmlElementWrapper(name = "activity-types")
     @XmlElement(name="type")
     private List<String> activityTypes = new LinkedList<>();
@@ -123,6 +126,14 @@ public class RouteConfiguration {
 
     public void setCommandLock(boolean commandLock) {
         this.commandLock = commandLock;
+    }
+
+    public boolean isLive() {
+        return live;
+    }
+
+    public void setLive(boolean live) {
+        this.live = live;
     }
 
     /* ***************************************************************
@@ -205,7 +216,7 @@ public class RouteConfiguration {
         // Forward raw data
         RawData rawData = new RawData(dataProcessor.getNextRawDataId(), time, secondaryId != null ? secondaryId : messageId,
                 SocketDriver.SOCKET_MESSAGE_TYPE, getName(), getParentConnection().getSource(),
-                Quality.GOOD, null, rawMessage, time, driverName, null);
+                Quality.GOOD, null, rawMessage, time, driverName, isLive(), null);
         dataProcessor.forwardRawData(rawData);
         //
         if(secondaryId == null) {

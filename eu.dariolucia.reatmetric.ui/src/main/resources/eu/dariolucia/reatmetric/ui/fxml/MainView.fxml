@@ -135,7 +135,9 @@
                             </tooltip>
                             <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ParameterDisplayView.fxml"
                                         viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/ghost-org-square.svg.png"
-                                        viewName="Monitoring AND"/>
+                                        viewName="Monitoring AND"
+                                        multiInstance="true"
+                                        instanceNamePrefix="AND"/>
                         </Button>
                         <Button mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" maxWidth="64.0"
                                 onAction="#viewAction" disable="true">
@@ -154,9 +156,11 @@
                             <tooltip>
                                 <Tooltip text="Charts"/>
                             </tooltip>
-                            <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/UserDisplayView.fxml"
+                            <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/ChartDisplayView.fxml"
                                         viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/signal.svg.png"
-                                        viewName="Charts"/>
+                                        viewName="Charts"
+                                        multiInstance="true"
+                                        instanceNamePrefix="Chart"/>
                         </Button>
                         <Button mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" maxWidth="64.0"
                                 onAction="#viewAction" disable="true">
@@ -177,7 +181,9 @@
                             </tooltip>
                             <properties viewLocation="/eu/dariolucia/reatmetric/ui/fxml/MimicsDisplayView.fxml"
                                         viewImage="/eu/dariolucia/reatmetric/ui/fxml/images/16px/sitemap.svg.png"
-                                        viewName="Mimics"/>
+                                        viewName="Mimics"
+                                        multiInstance="true"
+                                        instanceNamePrefix="Mimic"/>
                         </Button>
                         <Button mnemonicParsing="false" prefHeight="64.0" minHeight="64.0" maxWidth="64.0"
                                 onAction="#viewAction" disable="true">

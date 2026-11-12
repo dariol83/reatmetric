@@ -100,6 +100,18 @@
 	-fx-text-fill: black;
 }
 
+.parameter-display-drop-before {
+	-fx-border-color: -fx-focus-color transparent transparent transparent;
+	-fx-border-width: 2 0 0 0;
+	-fx-border-insets: 0;
+}
+
+.parameter-display-drop-after {
+	-fx-border-color: transparent transparent -fx-focus-color transparent;
+	-fx-border-width: 0 0 2 0;
+	-fx-border-insets: 0;
+}
+
 .reatmetric-activity-state-release {
 	-fx-text-fill: #000000;
 }

@@ -27,9 +27,7 @@ import eu.dariolucia.reatmetric.api.parameters.IParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.parameters.ParameterDataFilter;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
-import eu.dariolucia.reatmetric.ui.controller.MimicsDisplayTabWidgetController;
 import eu.dariolucia.reatmetric.ui.controller.MimicsDisplayViewController;
-import eu.dariolucia.reatmetric.ui.controller.UserDisplayTabWidgetController;
 import eu.dariolucia.reatmetric.ui.plugin.IReatmetricServiceListener;
 import javafx.application.Platform;
 
@@ -52,7 +50,7 @@ public class MimicsDisplayCoordinator implements IReatmetricServiceListener {
         return INSTANCE;
     }
 
-    private final List<MimicsDisplayTabWidgetController> registeredViews = new CopyOnWriteArrayList<>();
+    private final List<MimicsDisplayViewController> registeredViews = new CopyOnWriteArrayList<>();
 
     public MimicsDisplayCoordinator() {
         ReatmetricUI.selectedSystem().addSubscriber(this);
@@ -84,16 +82,16 @@ public class MimicsDisplayCoordinator implements IReatmetricServiceListener {
         // Nothing
     }
 
-    public void register(MimicsDisplayTabWidgetController display) {
+    public void register(MimicsDisplayViewController display) {
         this.registeredViews.add(display);
     }
 
-    public void deregister(MimicsDisplayTabWidgetController display) {
+    public void deregister(MimicsDisplayViewController display) {
         this.registeredViews.remove(display);
     }
 
     public void dispose() {
-        for(MimicsDisplayTabWidgetController ctrl : registeredViews) {
+        for(MimicsDisplayViewController ctrl : registeredViews) {
             ctrl.dispose();
         }
         registeredViews.clear();

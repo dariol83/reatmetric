@@ -85,6 +85,21 @@ public class ServiceBroker implements IServiceBroker {
     }
 
     @Override
+    public void distributeTmRawUnit(RawData rawData, DecodingResult decoded) {
+        itemDistributor.execute(() -> {
+            for(Pair<IServicePacketSubscriber, IServicePacketFilter> s : subscribers) {
+                try {
+                    if(s.getSecond().filter(rawData, null, null, null, null, null)) {
+                        s.getFirst().onTmRawUnit(rawData, decoded);
+                    }
+                } catch (Exception e) {
+                    LOG.log(Level.SEVERE, "Cannot notify packet service subscriber " + subscribers + ": " + e.getMessage(), e);
+                }
+            }
+        });
+    }
+
+    @Override
     public void distributeTmVcUnit(RawData rawData, VirtualChannelUnit vcUnit, DecodingResult decoded) {
         itemDistributor.execute(() -> {
             for(Pair<IServicePacketSubscriber, IServicePacketFilter> s : subscribers) {

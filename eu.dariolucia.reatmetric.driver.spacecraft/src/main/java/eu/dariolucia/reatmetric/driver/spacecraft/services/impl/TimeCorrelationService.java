@@ -97,7 +97,7 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
     @Override
     protected void initialiseModelFrom(IArchive archiveToUse, Instant latestGenerationTime) throws ReatmetricException {
         IRawDataArchive archive = archiveToUse.getArchive(IRawDataArchive.class);
-        List<RawData> data = archive.retrieve(latestGenerationTime, 1, RetrievalDirection.TO_PAST, new RawDataFilter(true, Constants.N_TIME_COEFFICIENTS, null, Collections.singletonList(Constants.T_TIME_COEFFICIENTS), Collections.singletonList(String.valueOf(spacecraftId)), Collections.singletonList(Quality.GOOD)));
+        List<RawData> data = archive.retrieve(latestGenerationTime, 1, RetrievalDirection.TO_PAST, new RawDataFilter(true, Constants.N_TIME_COEFFICIENTS, null, Collections.singletonList(Constants.T_TIME_COEFFICIENTS), Collections.singletonList(String.valueOf(spacecraftId)), Collections.singletonList(Quality.GOOD), true));
         if(!data.isEmpty()) {
             String coeffs = new String(data.get(0).getContents(), StandardCharsets.US_ASCII);
             BigDecimal first = new BigDecimal(coeffs.substring(0, coeffs.indexOf('|')));
@@ -117,7 +117,8 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
                 null,
                 Arrays.asList(Constants.T_TM_FRAME, Constants.T_AOS_FRAME),
                 Collections.singletonList(String.valueOf(spacecraftId)),
-                Collections.singletonList(Quality.GOOD));
+                Collections.singletonList(Quality.GOOD),
+                true); // We only receive the live frames, in order to compute the time correlation
         // I do not put there the check on the generation period modulus, because
         // it can change at runtime
         context().getRawDataBroker().subscribe(this, null, frameFilter, o -> {
@@ -201,6 +202,10 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
 
     @Override
     public void onTmPacket(RawData packetRawData, SpacePacket spacePacket, TmPusHeader tmPusHeader, DecodingResult decoded) {
+        if(!packetRawData.isLive()) {
+            // Not-live time packets should not be used for processing
+            return;
+        }
         if(spacePacket.isTelemetryPacket() && spacePacket.getApid() == 0) {
             Instant onboardTime = extractOnboardTime(spacePacket);
             if (LOG.isLoggable(Level.INFO)) {
@@ -337,7 +342,7 @@ public class TimeCorrelationService extends AbstractPacketService<TimeCorrelatio
             String mCoeff = obt2gtCoefficients.getFirst().toPlainString();
             String qCoeff = obt2gtCoefficients.getSecond().toPlainString();
             String derivedString = mCoeff + "|" + qCoeff;
-            RawData rd = new RawData(context().getRawDataBroker().nextRawDataId(), generationTime, Constants.N_TIME_COEFFICIENTS, Constants.T_TIME_COEFFICIENTS, "", String.valueOf(spacecraftId), Quality.GOOD, null, derivedString.getBytes(StandardCharsets.US_ASCII), Instant.now(), driverName(), null);
+            RawData rd = new RawData(context().getRawDataBroker().nextRawDataId(), generationTime, Constants.N_TIME_COEFFICIENTS, Constants.T_TIME_COEFFICIENTS, "", String.valueOf(spacecraftId), Quality.GOOD, null, derivedString.getBytes(StandardCharsets.US_ASCII), Instant.now(), driverName(), true, null);
             try {
                 context().getRawDataBroker().distribute(Collections.singletonList(rd));
             } catch (ReatmetricException e) {

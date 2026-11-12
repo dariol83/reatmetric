@@ -19,5 +19,6 @@ package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 public enum VirtualChannelType {
     PACKET,
     VCA,
+    RAW,
     IGNORE
 }

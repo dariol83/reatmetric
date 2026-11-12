@@ -39,9 +39,10 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     private static final Logger LOG = Logger.getLogger(RawDataArchive.class.getName());
 
-    private static final String STORE_STATEMENT = "INSERT INTO RAW_DATA_TABLE(UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+    private static final String SELECT_FIELDS = "UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,Live,RelatedItem,Contents,AdditionalData";
+    private static final String STORE_STATEMENT = "INSERT INTO RAW_DATA_TABLE(UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,Live,RelatedItem,Contents,AdditionalData) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
     private static final String LAST_ID_QUERY = "SELECT UniqueId FROM RAW_DATA_TABLE ORDER BY UniqueId DESC FETCH FIRST ROW ONLY";
-    private static final String RETRIEVE_BY_ID_QUERY = "SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData FROM RAW_DATA_TABLE WHERE UniqueId=?";
+    private static final String RETRIEVE_BY_ID_QUERY = "SELECT " + SELECT_FIELDS + " FROM RAW_DATA_TABLE WHERE UniqueId=?";
     private static final String LAST_GENERATION_TIME_QUERY = "SELECT MAX(GenerationTime) FROM RAW_DATA_TABLE";
 
     public RawDataArchive(Archive controller) throws SQLException {
@@ -59,21 +60,22 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         storeStatement.setString(7, item.getSource());
         storeStatement.setString(8, item.getHandler());
         storeStatement.setShort(9, (short) item.getQuality().ordinal());
+        storeStatement.setBoolean(10, item.isLive());
         if(item.getRelatedItem() == null) {
-            storeStatement.setNull(10, Types.BIGINT);
+            storeStatement.setNull(11, Types.BIGINT);
         } else {
-            storeStatement.setLong(10, item.getRelatedItem().asLong());
+            storeStatement.setLong(11, item.getRelatedItem().asLong());
         }
         if(item.isContentsSet()) {
-            storeStatement.setBlob(11, new ByteArrayInputStream(item.getContents()));
+            storeStatement.setBlob(12, new ByteArrayInputStream(item.getContents()));
         } else {
-            storeStatement.setNull(11, Types.BLOB);
+            storeStatement.setNull(12, Types.BLOB);
         }
         Object extension = item.getExtension();
         if(extension == null) {
-            storeStatement.setNull(12, Types.BLOB);
+            storeStatement.setNull(13, Types.BLOB);
         } else {
-            storeStatement.setBlob(12, toInputstream(extension));
+            storeStatement.setBlob(13, toInputstream(extension));
         }
     }
 
@@ -92,28 +94,12 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     @Override
     protected String buildRetrieveQuery(Instant startTime, int numRecords, RetrievalDirection direction, RawDataFilter filter) {
-        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData");
+        StringBuilder query = new StringBuilder("SELECT " + SELECT_FIELDS);
         query.append(" FROM RAW_DATA_TABLE WHERE ");
         // add time info
         addTimeInfo(query, startTime, direction);
         // process filter
-        if(filter != null && !filter.isClear()) {
-            if(filter.getNameContains() != null) {
-                query.append("AND Name LIKE '%").append(filter.getNameContains()).append("%' ");
-            }
-            if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
-                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
-            }
-            if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
-                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
-            }
-            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
-                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
-            }
-            if(filter.getQualityList() != null && !filter.getQualityList().isEmpty()) {
-                query.append("AND Quality IN (").append(toEnumFilterListString(filter.getQualityList())).append(") ");
-            }
-        }
+        addFilterInfo(query, filter);
         // order by and limit
         if(direction == RetrievalDirection.TO_FUTURE) {
             query.append("ORDER BY GenerationTime ASC, UniqueId ASC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
@@ -125,28 +111,12 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     @Override
     protected String buildRetrieveQuery(Instant startTime, Instant endTime, boolean ascending, RawDataFilter filter) {
-        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData");
+        StringBuilder query = new StringBuilder("SELECT " + SELECT_FIELDS);
         query.append(" FROM RAW_DATA_TABLE WHERE ");
         // add time info
         addTimeRangeInfo(query, startTime, endTime, ascending);
         // process filter
-        if(filter != null && !filter.isClear()) {
-            if(filter.getNameContains() != null) {
-                query.append("AND Name LIKE '%").append(filter.getNameContains()).append("%' ");
-            }
-            if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
-                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
-            }
-            if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
-                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
-            }
-            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
-                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
-            }
-            if(filter.getQualityList() != null && !filter.getQualityList().isEmpty()) {
-                query.append("AND Quality IN (").append(toEnumFilterListString(filter.getQualityList())).append(") ");
-            }
-        }
+        addFilterInfo(query, filter);
         // order by and limit
         if(ascending) {
             query.append("ORDER BY GenerationTime ASC, UniqueId ASC");
@@ -158,28 +128,12 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
 
     @Override
     protected String buildRetrieveQuery(Instant startTime, IUniqueId internalId, int numRecords, RetrievalDirection direction, RawDataFilter filter) {
-        StringBuilder query = new StringBuilder("SELECT UniqueId,GenerationTime,Name,ReceptionTime,Type,Route,Source,Handler,Quality,RelatedItem,Contents,AdditionalData");
+        StringBuilder query = new StringBuilder("SELECT " + SELECT_FIELDS);
         query.append(" FROM RAW_DATA_TABLE WHERE ");
         // add time info
         addTimeInfo(query, startTime, internalId, direction);
         // process filter
-        if(filter != null && !filter.isClear()) {
-            if(filter.getNameContains() != null) {
-                query.append("AND Name LIKE '%").append(filter.getNameContains()).append("%' ");
-            }
-            if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
-                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
-            }
-            if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
-                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
-            }
-            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
-                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
-            }
-            if(filter.getQualityList() != null && !filter.getQualityList().isEmpty()) {
-                query.append("AND Quality IN (").append(toEnumFilterListString(filter.getQualityList())).append(") ");
-            }
-        }
+        addFilterInfo(query, filter);
         // order by and limit
         if(direction == RetrievalDirection.TO_FUTURE) {
             query.append("ORDER BY GenerationTime ASC, UniqueId ASC FETCH NEXT ").append(numRecords).append(" ROWS ONLY");
@@ -200,24 +154,48 @@ public class RawDataArchive extends AbstractDataItemArchive<RawData, RawDataFilt
         String source = rs.getString(7);
         String handler = rs.getString(8);
         Quality quality = Quality.values()[rs.getShort(9)];
-        Long relatedItemUniqueId = rs.getLong(10);
+        boolean live = rs.getBoolean(10);
+        Long relatedItemUniqueId = rs.getLong(11);
         if(rs.wasNull()) {
             relatedItemUniqueId = null;
         }
         // retrieve Contents if present
         byte[] contents = null;
         if(usedFilter == null || usedFilter.isWithData()) {
-            Blob blob = rs.getBlob(11);
+            Blob blob = rs.getBlob(12);
             if(blob != null && !rs.wasNull()) {
                 contents = toByteArray(blob.getBinaryStream());
             }
         }
-        Blob extensionBlob = rs.getBlob(12);
+        Blob extensionBlob = rs.getBlob(13);
         Object extension = null;
         if(extensionBlob != null && !rs.wasNull()) {
             extension = toObject(extensionBlob);
         }
-        return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, relatedItemUniqueId != null ? new LongUniqueId(relatedItemUniqueId) : null, contents, toInstant(receptionTime), handler, extension);
+        return new RawData(new LongUniqueId(uniqueId), toInstant(genTime), name, type, route, source, quality, relatedItemUniqueId != null ? new LongUniqueId(relatedItemUniqueId) : null, contents, toInstant(receptionTime), handler, live, extension);
+    }
+
+    private void addFilterInfo(StringBuilder query, RawDataFilter filter) {
+        if(filter != null && !filter.isClear()) {
+            if(filter.getLive() != null) {
+                query.append("AND Live = ").append(filter.getLive() ? "TRUE" : "FALSE").append(" ");
+            }
+            if(filter.getNameContains() != null) {
+                query.append("AND Name LIKE '%").append(filter.getNameContains()).append("%' ");
+            }
+            if(filter.getRouteList() != null && !filter.getRouteList().isEmpty()) {
+                query.append("AND Route IN (").append(toFilterListString(filter.getRouteList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getTypeList() != null && !filter.getTypeList().isEmpty()) {
+                query.append("AND Type IN (").append(toFilterListString(filter.getTypeList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getSourceList() != null && !filter.getSourceList().isEmpty()) {
+                query.append("AND Source IN (").append(toFilterListString(filter.getSourceList(), o -> o, "'")).append(") ");
+            }
+            if(filter.getQualityList() != null && !filter.getQualityList().isEmpty()) {
+                query.append("AND Quality IN (").append(toEnumFilterListString(filter.getQualityList())).append(") ");
+            }
+        }
     }
 
     @Override

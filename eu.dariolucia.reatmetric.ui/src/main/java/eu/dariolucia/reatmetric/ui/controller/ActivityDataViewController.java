@@ -50,6 +50,7 @@ import javafx.scene.text.Text;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 
 import java.io.IOException;
@@ -203,6 +204,10 @@ public class ActivityDataViewController extends AbstractDisplayController implem
 
         this.filterPopup.setAutoHide(true);
         this.filterPopup.setHideOnEscape(true);
+        this.filterPopup.addEventHandler(WindowEvent.WINDOW_HIDING, event -> {
+            // Reset/set the popup to the current filter
+            dataItemFilterController.setSelectedFilter(dataItemFilterController.getSelectedFilter());
+        });
 
         try {
             URL filterWidgetUrl = getClass().getClassLoader()
@@ -215,8 +220,8 @@ public class ActivityDataViewController extends AbstractDisplayController implem
             CssHandler.applyTo(this.filterPopup.getScene().getRoot());
             // Load the controller hide with select
             this.dataItemFilterController.setActionAfterSelection(() -> {
-                this.filterPopup.hide();
                 applyFilter(this.dataItemFilterController.getSelectedFilter());
+                this.filterPopup.hide();
             });
         } catch (IOException e) {
             e.printStackTrace();

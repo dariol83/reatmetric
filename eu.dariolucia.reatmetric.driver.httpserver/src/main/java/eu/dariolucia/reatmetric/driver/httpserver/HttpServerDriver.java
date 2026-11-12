@@ -266,6 +266,7 @@ public class HttpServerDriver implements IDriver {
                     }
                 });
                 this.server = secureServer;
+                this.server.bind(address, 10);
             } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException | UnrecoverableKeyException |
                      CertificateException e) {
                 LOG.log(Level.SEVERE, "Configuration of HTTPS server failed, falling back to HTTP server: " + e.getMessage(), e);

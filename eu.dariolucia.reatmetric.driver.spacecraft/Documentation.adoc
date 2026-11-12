@@ -256,6 +256,18 @@ TM frames from an external archive and ingest such data in the running ReatMetri
 Type: _eu.dariolucia.reatmetric.driver.spacecraft.connectors.TmPacketReplayConnector_
 Configuration: not required
 
+The driver also provides a SatDecode telemetry-only connector, which can ingest SatDecode v1 frame messages either from
+a ZeroMQ subscription or from a SatDecode frame-store file. When a monitoring endpoint is configured, status metrics are
+mapped to ReatMetric parameters below the configured parent path.
+
+Type: _eu.dariolucia.reatmetric.driver.spacecraft.connectors.SatDecodeConnector_
+Configuration: semicolon-separated properties: _dataUrl=zmq://<host>:<port>|file://<file path>;dataType=TM_FRAME|AOS_FRAME|RAW;statusUrl=zmq://<host>:<port>|;statusParentPath=<path>|;dataThrottle=<units per second>_
+
+Example:
+----
+dataUrl=zmq://192.168.4.35:5555;dataType=RAW;statusUrl=zmq://192.168.4.35:5556;statusParentPath=TEST.DECODER;dataThrottle=0
+----
+
 ===== Activity Invocation Properties
 ====== Packet level
 
@@ -396,17 +408,17 @@ following example provide extensive comments covering all elements and configura
             use-security="true" access-mode="VCA" />
 	</tc>
 	<!-- TM datalink configuration -->
-	<tm fecf="true" derandomize="false" frame-length="1115">
-		<!-- TM VC configuration -->
-        <tm-vc-descriptor id="0" process-type="PACKET" />
-        <tm-vc-descriptor id="1" process-type="PACKET" />
+	<tm fecf="true" derandomize="false" frame-length="1115" required-quality="NOT_BAD">
+        <!-- TM VC configuration -->
+        <tm-vc-descriptor id="0" process-type="PACKET" override-live="INHERIT" />
+        <tm-vc-descriptor id="1" process-type="PACKET" enable-gap-warning="false" />
         <tm-vc-descriptor id="2" process-type="VCA" />
         <tm-vc-descriptor id="7" process-type="IGNORE" />
         <!-- Protocol type -->
 		<type>TM</type>
 	</tm>
 	<!-- TM packet configuration -->
-	<tm-packet parameter-id-offset="100000">
+	<tm-packet parameter-id-offset="100000" required-quality="NOT_BAD" only-live-processing="false">
         <!-- Default PUS configuration -->
 		<default-pus-configuration
 			destination-field-length="0"
@@ -452,7 +464,7 @@ following example provide extensive comments covering all elements and configura
 	</services>
     <!-- External connectors -->
 	<external-connectors>
-		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.CltuCaduTcpConnector" configuration="127.0.0.1:23532:1279:4" data-unit-type="CLTU" />
+		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.CltuCaduTcpConnector" configuration="127.0.0.1:23532:1279:4" data-unit-type="CLTU" live="true" />
 		<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.SpacePacketTcpConnector" configuration="127.0.0.1:33532" data-unit-type="TC_PACKET" />
         <!--
         <external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.TmPacketReplayConnector" configuration="" data-unit-type="NONE" />
@@ -529,15 +541,30 @@ if type = AOS.
 to connectors that require it, e.g. to read CADUs and frames from external sources. SLE connectors do not require this
 information. It is *strongly* suggested to set this value, to avoid undefined behaviours when using connectors that are
 not SLE connectors, which might rely on this setting.
+- _required-quality_ (optional, enumeration: ALL, GOOD_ONLY, NOT_BAD, default: NOT_BAD): the quality of the TM frames
+subscribed by the TM data link processor. If set to ALL, TM frames with GOOD, BAD and UNKNOWN quality are subscribed.
+If set to GOOD_ONLY, only TM frames with GOOD quality are subscribed. If set to NOT_BAD, TM frames with GOOD and UNKNOWN
+quality are subscribed.
 
 Sub-element *<tm><tm-vc-descriptor>* (optional). This element defines the characteristics of a TM virtual channel.
 The following attributes are defined:
 
 - _id_ (mandatory, integer): the virtual channel id.
-- _process-type_ (optional, enumeration: PACKET, VCA, IGNORE, default: PACKET): the data delivered by the virtual
+- _process-type_ (optional, enumeration: PACKET, VCA, RAW, IGNORE, default: PACKET): the data delivered by the virtual
 channel. If PACKET is set, then space packets are assumed to be delivered by the virtual channel. If VCA is
 set, then it is assumed that raw data is written in each transfer frame, not encapsulated in space packets.
+If RAW is set, then the complete transfer frame is processed and distributed as a raw TM unit for the configured
+virtual channel.
 If IGNORE is set, then transfer frames are not further processed.
+- _override-live_ (optional, enumeration: LIVE, NOT_LIVE, INHERIT, default: INHERIT): controls the live flag assigned
+to space packets, VC access units and raw TM units extracted from TM or AOS frames on this virtual channel. LIVE forces
+the generated raw data items to be live, NOT_LIVE forces them to be repatriated, and INHERIT copies the live flag from
+the originating transfer frame raw data item. If no specific VC processing is configured, INHERIT is used for all
+virtual channels. Raw transfer frames are not affected by this setting because they do not carry virtual channel
+information.
+- _enable-gap-warning_ (optional, boolean, default: true): controls whether telemetry frame gaps detected on this
+virtual channel generate WARNING messages. If no specific VC processing is configured for a virtual channel, gap
+warning generation is always enabled for that virtual channel.
 
 Sub-element *<tm><type>* (optional, enumeration: TM, AOS, default: TM): data link protocol used to deliver telemetry
 data.
@@ -552,6 +579,12 @@ specified in this field is then added to the parameter's external-id to compute 
 ReatMetric processing model. This approach simplifies the configuration in case of identical spacecraft (sharing the
 TM/TC structure definition), which can be both included in a single processing model, keeping the same structure
 definition but using different offsets.
+- _required-quality_ (optional, enumeration: ALL, GOOD_ONLY, NOT_BAD, default: NOT_BAD): the quality of the TM packets,
+VC units and raw TM units subscribed by the TM packet processor. If set to ALL, TM data with GOOD, BAD and UNKNOWN
+quality is subscribed. If set to GOOD_ONLY, only TM data with GOOD quality is subscribed. If set to NOT_BAD, TM data
+with GOOD and UNKNOWN quality is subscribed.
+- _only-live-processing_ (optional, boolean, default: false): if true, the TM packet processor subscribes only to live
+TM packets, VC units and raw TM units. If false, both live and repatriated TM data are subscribed.
 
 Sub-element *<tm-packet><default-pus-configuration>* (optional): if this element is not provided, and no APID-specific configuration
 is provided, then no PUS secondary header will be attempted to be extracted and processed, in case the TM packet
@@ -628,6 +661,8 @@ be registered as exposed Java service in the corresponding module-info file. The
 service. Typically, it is a path to a file, but it is implementation-dependant.
 - _data-unit-type_ (mandatory, enumeration: CLTU, TC_FRAME, TC_PACKET, NONE): the telecommand type that the connector handles.
 It must match with the interface implemented by the connector.
+- _live_ (optional, boolean, default: true): if true, raw data generated by the connector is reported as live data. If
+false, the connector reports generated raw data as repatriated data.
 
 ===== TM/TC Structure Definition File
 The TC and TM packet structures are defined inside the tmtc.xml file. Such file uses the format defined by the

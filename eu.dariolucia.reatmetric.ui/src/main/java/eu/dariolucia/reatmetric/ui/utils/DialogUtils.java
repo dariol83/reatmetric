@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.ui.utils;
 import eu.dariolucia.reatmetric.ui.CssHandler;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.TextInputDialog;
@@ -28,6 +29,12 @@ import javafx.stage.Window;
 import java.util.Optional;
 
 public class DialogUtils {
+
+    public enum SaveDiscardCancelResult {
+        CANCEL,
+        SAVE_AND_CLOSE,
+        DISCARD_AND_CLOSE
+    }
 
     public static Optional<String> input(String defaultValue, String title, String headerText, String contentText) {
         TextInputDialog dialog = new TextInputDialog(defaultValue);
@@ -47,6 +54,26 @@ public class DialogUtils {
         CssHandler.applyTo(alert.getDialogPane());
         Optional<ButtonType> result = alert.showAndWait();
         return result.isPresent() && result.get() == ButtonType.OK;
+    }
+
+    public static SaveDiscardCancelResult saveDiscardCancel(String title, String headerText, String contentText) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        ButtonType cancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType saveAndClose = new ButtonType("Save and Close", ButtonBar.ButtonData.OK_DONE);
+        ButtonType discardAndClose = new ButtonType("Discard and Close", ButtonBar.ButtonData.NO);
+        alert.getButtonTypes().setAll(cancel, saveAndClose, discardAndClose);
+        CssHandler.applyTo(alert.getDialogPane());
+        Optional<ButtonType> result = alert.showAndWait();
+        if(result.isEmpty() || result.get() == cancel) {
+            return SaveDiscardCancelResult.CANCEL;
+        } else if(result.get() == saveAndClose) {
+            return SaveDiscardCancelResult.SAVE_AND_CLOSE;
+        } else {
+            return SaveDiscardCancelResult.DISCARD_AND_CLOSE;
+        }
     }
 
     public static boolean alert(String title, String headerText, String contentText) {

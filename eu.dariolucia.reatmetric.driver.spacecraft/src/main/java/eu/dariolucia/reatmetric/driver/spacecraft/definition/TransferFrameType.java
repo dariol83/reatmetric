@@ -18,5 +18,6 @@ package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
 public enum TransferFrameType {
     TM,
-    AOS
+    AOS,
+    RAW
 }

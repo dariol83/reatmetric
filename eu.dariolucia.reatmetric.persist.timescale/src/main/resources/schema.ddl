@@ -53,6 +53,7 @@ CREATE TABLE RAW_DATA_TABLE (
    Source TEXT,
    Handler TEXT NOT NULL,
    Quality SMALLINT NOT NULL,
+   Live BOOLEAN NOT NULL DEFAULT TRUE,
    RelatedItem BIGINT,
    Contents BYTEA,
    AdditionalData BYTEA,

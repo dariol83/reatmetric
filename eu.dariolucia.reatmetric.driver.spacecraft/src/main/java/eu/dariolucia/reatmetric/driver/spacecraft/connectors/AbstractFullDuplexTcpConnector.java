@@ -65,6 +65,7 @@ public abstract class AbstractFullDuplexTcpConnector extends AbstractTransportCo
     private IServiceCoreContext context;
     private String host;
     private int port;
+    private boolean live = true;
     private volatile Socket socket;
     private volatile boolean closing;
 
@@ -195,6 +196,7 @@ public abstract class AbstractFullDuplexTcpConnector extends AbstractTransportCo
                 contents,
                 receptionTime,
                 driverName,
+                live,
                 extension);
     }
 
@@ -257,10 +259,11 @@ public abstract class AbstractFullDuplexTcpConnector extends AbstractTransportCo
         disconnect();
     }
 
-    protected void internalConfigure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context) {
+    protected void internalConfigure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, boolean live) {
         this.driverName = driverName;
         this.spacecraftConfig = configuration;
         this.context = context;
+        this.live = live;
     }
 
     /**

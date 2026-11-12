@@ -23,6 +23,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import org.controlsfx.control.ToggleSwitch;
 
 import java.net.URL;
 import java.util.Arrays;
@@ -57,6 +58,10 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
     private CheckBox typeCheckbox;
     @FXML
     private TextField typeText;
+    @FXML
+    private CheckBox liveCheckbox;
+    @FXML
+    private ToggleSwitch liveToggleSwitch;
 
     @FXML
     private Button selectBtn;
@@ -76,6 +81,7 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
         this.nameText.disableProperty().bind(this.nameCheckbox.selectedProperty().not());
         this.typeText.disableProperty().bind(this.typeCheckbox.selectedProperty().not());
         this.routeText.disableProperty().bind(this.routeCheckbox.selectedProperty().not());
+        this.liveToggleSwitch.disableProperty().bind(this.liveCheckbox.selectedProperty().not());
 
         this.qualityList.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         this.qualityList.getItems().addAll(Arrays.asList(Quality.values()));
@@ -112,17 +118,20 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
             this.nameCheckbox.setSelected(false);
             this.routeCheckbox.setSelected(false);
             this.typeCheckbox.setSelected(false);
+            this.liveCheckbox.setSelected(false);
             this.sourceText.setText("");
             this.nameText.setText("");
             this.routeText.setText("");
             this.typeText.setText("");
             this.qualityList.getSelectionModel().clearSelection();
+            this.liveToggleSwitch.setSelected(false);
         } else {
             this.qualityCheckbox.setSelected(this.selectedFilter.getQualityList() != null);
             this.sourceCheckbox.setSelected(this.selectedFilter.getSourceList() != null);
             this.nameCheckbox.setSelected(this.selectedFilter.getNameContains() != null);
             this.routeCheckbox.setSelected(this.selectedFilter.getRouteList() != null);
             this.typeCheckbox.setSelected(this.selectedFilter.getTypeList() != null);
+            this.liveCheckbox.setSelected(this.selectedFilter.getLive() != null);
 
             this.sourceText.setText(IFilterController.toStringList(this.selectedFilter.getSourceList()));
             this.routeText.setText(IFilterController.toStringList(this.selectedFilter.getRouteList()));
@@ -132,6 +141,7 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
             if (this.selectedFilter.getQualityList() != null) {
                 this.selectedFilter.getQualityList().stream().forEach((s) -> this.qualityList.getSelectionModel().select(s));
             }
+            this.liveToggleSwitch.setSelected(this.selectedFilter.getLive() != null ? this.selectedFilter.getLive() : false);
         }
     }
 
@@ -141,7 +151,16 @@ public class RawDataFilterWidgetController implements Initializable, IFilterCont
         List<String> typeList = deriveSelectedType();
         List<String> routeList = deriveSelectedRoute();
         String nameRegExp = deriveRegExpName();
-        return new RawDataFilter(false, nameRegExp, routeList, typeList, sourceList, qList);
+        Boolean isLiveSet = deriveLive();
+        return new RawDataFilter(false, nameRegExp, routeList, typeList, sourceList, qList, isLiveSet);
+    }
+
+    private Boolean deriveLive() {
+        if (this.liveCheckbox.isSelected()) {
+            return this.liveToggleSwitch.isSelected();
+        } else {
+            return null;
+        }
     }
 
     private List<String> deriveSelectedSource() {

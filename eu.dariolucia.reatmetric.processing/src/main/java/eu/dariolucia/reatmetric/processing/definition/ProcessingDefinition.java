@@ -167,6 +167,15 @@ public class ProcessingDefinition implements Serializable {
     }
 
     /**
+     * Validate this processing definition and collect all detected model definition issues.
+     *
+     * @return the list of validation issues, empty if no issue is detected
+     */
+    public List<ProcessingModelValidationIssue> validate() {
+        return ProcessingModelValidator.validate(this);
+    }
+
+    /**
      * The list of defined {@link ParameterProcessingDefinition} objects.
      * <p></p>
      * Element name: parameters/parameter

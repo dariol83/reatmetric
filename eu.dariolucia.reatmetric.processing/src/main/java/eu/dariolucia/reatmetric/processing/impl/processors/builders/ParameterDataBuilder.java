@@ -108,6 +108,7 @@ public class ParameterDataBuilder extends AbstractDataItemBuilder<ParameterData>
 
     @Override
     public ParameterData build(IUniqueId updateId) {
+        this.changedSinceLastBuild = false;
         return new ParameterData(updateId, generationTime, id, path.getLastPathElement(), path, engValue, sourceValue, route, validity, alarmState, containerId, receptionTime, null);
     }
 
@@ -121,5 +122,6 @@ public class ParameterDataBuilder extends AbstractDataItemBuilder<ParameterData>
         this.alarmState = item.getAlarmState();
         this.route = item.getRoute();
         this.containerId = item.getRawDataContainerId();
+        this.changedSinceLastBuild = false;
     }
 }

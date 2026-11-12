@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.ui.controller;
 
 import eu.dariolucia.reatmetric.api.IReatmetricSystem;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
+import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
@@ -33,22 +34,28 @@ import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.ui.CssHandler;
 import eu.dariolucia.reatmetric.ui.ReatmetricUI;
 import eu.dariolucia.reatmetric.ui.utils.*;
+import eu.dariolucia.reatmetric.ui.widgets.DetachedTabUtil;
+import eu.dariolucia.reatmetric.ui.widgets.EnhancedTitledPane;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
+import javafx.geometry.Point2D;
 import javafx.scene.Group;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.input.TransferMode;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
@@ -62,6 +69,9 @@ import java.net.URL;
 import java.rmi.RemoteException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 /**
@@ -70,6 +80,23 @@ import java.util.stream.Collectors;
  * @author dario
  */
 public class ParameterDisplayTabWidgetController extends AbstractDisplayController {
+
+    private static final Logger LOG = Logger.getLogger(ParameterDisplayTabWidgetController.class.getName());
+
+    @FXML
+    protected TitledPane displayTitledPane;
+    @FXML
+    protected ToolBar toolbar;
+    @FXML
+    protected CheckMenuItem toggleShowToolbarItem;
+    @FXML
+    protected Menu loadMenu;
+    @FXML
+    protected MenuItem detachMenuItem;
+    @FXML
+    protected Button renameButton;
+    @FXML
+    protected Button saveButton;
 
     // Live/retrieval controls
     @FXML
@@ -121,14 +148,31 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
     // Popup selector for date/time
     protected final Popup dateTimePopup = new Popup();
 
+    private static final String CSS_PARAMETER_DISPLAY_DROP_BEFORE = "parameter-display-drop-before";
+    private static final String CSS_PARAMETER_DISPLAY_DROP_AFTER = "parameter-display-drop-after";
+    private static final String PARAMETER_DISPLAY_ROW_DRAG_KEY = "reatmetric-parameter-display-row-drag";
+
+    private int dragDropInsertionIndex = -1;
+    private TableRow<ParameterDataWrapper> dragDropTargetRow;
+    private boolean dragDropBeforeRow;
+    private List<ParameterDataWrapper> dragCandidateRows = Collections.emptyList();
+    private List<ParameterDataWrapper> draggedRows = Collections.emptyList();
+
     // Time selector controller
     protected DateTimePickerWidgetController dateTimePickerController;
 
     // Model map
-    private final Map<SystemEntityPath, ParameterDataWrapper> path2wrapper = new TreeMap<>();
+    private final Map<SystemEntityPath, ParameterDataWrapper> path2wrapper = new ConcurrentHashMap<>();
+    // Buffer map
+    private final Map<SystemEntityPath, ParameterDataBuffer> path2buffer = new ConcurrentHashMap<>();
+    private final PresetStorageManager presetManager = new PresetStorageManager();
 
     private volatile boolean live = false;
     private Stage independentStage;
+    private Tab mainTab;
+    private String displayName;
+    private String presetName;
+    private boolean dirty;
 
     private double zoomFactor = Font.getDefault().getSize() * 10;
 
@@ -140,6 +184,8 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
     @Override
     protected void doInitialize(URL url, ResourceBundle rb) {
         this.dataItemTableView.setPlaceholder(new Label(""));
+        this.dataItemTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        initialiseParameterDisplayDragAndDrop();
 
         this.goToStartBtn.disableProperty().bind(this.liveTgl.selectedProperty());
         this.goBackOneBtn.disableProperty().bind(this.liveTgl.selectedProperty());
@@ -280,7 +326,263 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
 
         ParameterDisplayCoordinator.instance().register(this);
 
+        if(this.loadMenu != null) {
+            this.loadMenu.setOnShowing(this::onShowingPresetMenu);
+        }
+        if(this.displayTitledPane != null && this.toolbar != null && this.toggleShowToolbarItem != null) {
+            initialiseToolbarVisibility(this.displayTitledPane, this.toolbar, this.toggleShowToolbarItem);
+            if(this.displayTitledPane instanceof EnhancedTitledPane &&
+                    ((EnhancedTitledPane) this.displayTitledPane).getTitleContextMenu() != null) {
+                ((EnhancedTitledPane) this.displayTitledPane).getTitleContextMenu().setOnShowing(this::onShowingPresetMenu);
+            }
+        }
+        if(this.detachMenuItem != null) {
+            this.detachMenuItem.setDisable(true);
+        }
+
         Platform.runLater(() -> updateZoomFactor(0));
+    }
+
+    @Override
+    protected void mainTabConfigured(Tab tab) {
+        this.mainTab = tab;
+        setDisplayName(tab.getText());
+    }
+
+    @FXML
+    public void detachAttachItemAction(ActionEvent actionEvent) {
+        Window window = retrieveWindow();
+        if(window instanceof Stage && DetachedTabUtil.isDetached((Stage) window)) {
+            DetachedTabUtil.attachTab((Stage) window);
+            informDisplayAttached();
+        }
+    }
+
+    @Override
+    protected void informDisplayAttached() {
+        if(this.detachMenuItem != null) {
+            this.detachMenuItem.setDisable(true);
+        }
+    }
+
+    @Override
+    protected void informDisplayDetached() {
+        if(this.detachMenuItem != null) {
+            this.detachMenuItem.setDisable(false);
+        }
+    }
+
+    private void onShowingPresetMenu(Event event) {
+        IReatmetricSystem currentSystem = getActiveSystem();
+        if(this.loadMenu == null || currentSystem == null) {
+            if(this.loadMenu != null) {
+                this.loadMenu.getItems().clear();
+                MenuItem noSystem = new MenuItem("No system connected");
+                noSystem.setDisable(true);
+                this.loadMenu.getItems().add(noSystem);
+            }
+            return;
+        }
+        String systemName;
+        try {
+            systemName = currentSystem.getName();
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
+            return;
+        }
+
+        this.loadMenu.getItems().clear();
+        List<String> presets = this.presetManager.getAvailablePresets(systemName, user, doGetComponentId());
+        if(presets.isEmpty()) {
+            MenuItem noPresets = new MenuItem("No ANDs available");
+            noPresets.setDisable(true);
+            this.loadMenu.getItems().add(noPresets);
+            return;
+        }
+        for(String preset : presets) {
+            MenuItem mi = new MenuItem(preset);
+            mi.setOnAction(actionEvent -> openPresetFromMenu(preset));
+            this.loadMenu.getItems().add(mi);
+        }
+    }
+
+    private void openPresetFromMenu(String preset) {
+        if(isPristineDisplay()) {
+            open(preset);
+        } else {
+            AbstractDisplayController controller = MainViewController.instance().openPerspective("Monitoring AND");
+            if(controller instanceof ParameterDisplayTabWidgetController) {
+                ((ParameterDisplayTabWidgetController) controller).open(preset);
+            }
+        }
+    }
+
+    public void open(String preset) {
+        FxUtils.runLater(() -> ReatmetricUI.threadPool(getClass()).submit(() -> {
+            IReatmetricSystem currentSystem = getActiveSystem();
+            if(currentSystem == null) {
+                return;
+            }
+            String systemName;
+            try {
+                systemName = currentSystem.getName();
+            } catch (Exception e) {
+                LOG.log(Level.SEVERE, "Cannot show presets, error contacting system", e);
+                return;
+            }
+            AndPreset loadedPreset = this.presetManager.load(systemName, user, preset, doGetComponentId(), AndPreset.class);
+            if(loadedPreset != null) {
+                FxUtils.runLater(() -> loadPresetIntoDisplay(preset, loadedPreset));
+            }
+        }));
+    }
+
+    private void loadPresetIntoDisplay(String name, AndPreset loadedPreset) {
+        addItemsFromPreset(loadedPreset, false);
+        this.presetName = name;
+        setDisplayName(name);
+        setDirty(false);
+    }
+
+    @FXML
+    public void saveButtonClicked(ActionEvent actionEvent) {
+        saveCurrentDisplay();
+    }
+
+    @FXML
+    public void renameButtonClicked(ActionEvent actionEvent) {
+        Optional<String> result = DialogUtils.input(getDisplayName(), "Rename AND", "Change name of the AND", "Please provide the name of the AND:");
+        result.map(String::trim).filter(s -> !s.isEmpty()).ifPresent(s -> {
+            this.presetName = s;
+            setDisplayName(s);
+        });
+    }
+
+    private boolean saveCurrentDisplay() {
+        String nameToSave = this.presetName;
+        if(nameToSave == null || nameToSave.trim().isEmpty()) {
+            Optional<String> result = DialogUtils.input(getDisplayName(), "Save AND", "AND name", "Please provide the name of the AND:");
+            if(result.isEmpty()) {
+                return false;
+            }
+            nameToSave = result.get().trim();
+            if(nameToSave.isEmpty()) {
+                return false;
+            }
+        }
+
+        IReatmetricSystem currentSystem = getActiveSystem();
+        if(currentSystem == null) {
+            DialogUtils.alert("Save AND", null, "Cannot save AND: no system connected");
+            return false;
+        }
+
+        try {
+            this.presetManager.save(currentSystem.getName(), user, nameToSave, doGetComponentId(), getParameterDisplayDescription());
+            this.presetName = nameToSave;
+            setDisplayName(nameToSave);
+            setDirty(false);
+            return true;
+        } catch (RemoteException e) {
+            LOG.log(Level.SEVERE, "Cannot save preset, system not responding", e);
+            DialogUtils.alert("Save AND", null, "Cannot save AND: system not responding");
+            return false;
+        }
+    }
+
+    @Override
+    protected boolean closeRequested() {
+        if(!this.dirty) {
+            return true;
+        }
+        DialogUtils.SaveDiscardCancelResult result = DialogUtils.saveDiscardCancel(
+                "Close AND",
+                "About to close " + getDisplayName(),
+                "The AND has unsaved changes."
+        );
+        switch (result) {
+            case SAVE_AND_CLOSE:
+                return saveCurrentDisplay();
+            case DISCARD_AND_CLOSE:
+                return true;
+            case CANCEL:
+            default:
+                return false;
+        }
+    }
+
+    private String getDisplayName() {
+        return this.displayName == null ? "AND" : this.displayName;
+    }
+
+    private void setDisplayName(String name) {
+        this.displayName = name;
+        if(this.mainTab != null) {
+            this.mainTab.setText(name);
+        }
+        if(this.displayTitledPane != null) {
+            this.displayTitledPane.setText(name);
+        }
+        Window window = this.liveTgl != null && this.liveTgl.getScene() != null ? this.liveTgl.getScene().getWindow() : null;
+        if(window instanceof Stage && DetachedTabUtil.isDetached((Stage) window)) {
+            ((Stage) window).setTitle(name);
+        }
+    }
+
+    private void setDirty(boolean dirty) {
+        this.dirty = dirty;
+    }
+
+    private IReatmetricSystem getActiveSystem() {
+        return this.system != null ? this.system : ReatmetricUI.selectedSystem().getSystem();
+    }
+
+    private boolean isPristineDisplay() {
+        return !this.dirty && this.presetName == null && this.dataItemTableView.getItems().isEmpty();
+    }
+
+    private void initialiseParameterDisplayDragAndDrop() {
+        this.dataItemTableView.setRowFactory(tv -> {
+            TableRow<ParameterDataWrapper> row = new TableRow<>();
+            row.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+                if (!row.isEmpty() && row.isSelected()) {
+                    this.dragCandidateRows = getSelectedRowsInTableOrder();
+                } else {
+                    this.dragCandidateRows = Collections.emptyList();
+                }
+            });
+            row.setOnDragDetected(event -> {
+                if (row.isEmpty()) {
+                    return;
+                }
+                if (!row.isSelected()) {
+                    this.dataItemTableView.getSelectionModel().clearSelection();
+                    this.dataItemTableView.getSelectionModel().select(row.getIndex());
+                }
+                this.draggedRows = this.dragCandidateRows.contains(row.getItem()) ? this.dragCandidateRows : getSelectedRowsInTableOrder();
+                if (this.draggedRows.isEmpty()) {
+                    return;
+                }
+                Dragboard db = row.startDragAndDrop(TransferMode.MOVE);
+                ClipboardContent content = new ClipboardContent();
+                content.putString(PARAMETER_DISPLAY_ROW_DRAG_KEY);
+                db.setContent(content);
+                event.consume();
+            });
+            row.setOnDragDone(event -> {
+                clearDropTarget();
+                this.dragCandidateRows = Collections.emptyList();
+                this.draggedRows = Collections.emptyList();
+                event.consume();
+            });
+            return row;
+        });
+    }
+
+    private List<ParameterDataWrapper> getSelectedRowsInTableOrder() {
+        return this.dataItemTableView.getSelectionModel().getSelectedItems().stream()
+                .sorted(Comparator.comparingInt(this.dataItemTableView.getItems()::indexOf))
+                .collect(Collectors.toList());
     }
 
     private Callback<TableColumn<ParameterDataWrapper, String>, TableCell<ParameterDataWrapper, String>> getNormalTextCellCallback() {
@@ -363,34 +665,56 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
     @FXML
     protected void goBackOne(ActionEvent e) {
         if (!isProgressBusy()) {
-            // We need to do the following: find the parameter with the latest generation time (LGT) among all displayed parameters.
-            // We request the retrieval of the state of the parameter linked to the LGT at the time LGT - 1 picosec, i.e. the first change going to the past.
-            // But only of this parameter.
-            // This retrieval will retrieve the previous state, which overrides the current one.
+            // We need to do the following: find the parameters with the latest generation time (LGT) among all displayed parameters.
+            // We request the retrieval of the state of those parameter linked to the LGT at the time LGT - 1 picosec, i.e. the first change going to the past.
+            // But only of these parameter.
+            // This retrieval will retrieve the previous state, which overrides the current one for those parameters
             fetchPreviousStateChange();
         }
     }
 
     protected void fetchNextStateChange() {
         markProgressBusy();
-        // Retrieve the parameters sorted with the oldest generation time: this is a list sorted from oldest to latest
-        List<ParameterData> oms = getParameterSamplesSortedByGenerationTimeAscending();
+        // For all parameters, check the next one
+        List<ParameterData> oms = this.path2wrapper.values().stream().map(ParameterDataWrapper::get).collect(Collectors.toList());
         if (oms.isEmpty()) {
             markProgressReady();
             return;
         }
         ReatmetricUI.threadPool(getClass()).execute(() -> {
-            // Keep looking for all parameters: as soon as one is returning a result, stop
+            // For each parameter, retrieve the next sample. Render all parameters with the earliest generation time.
+            List<ParameterDataBuffer> toPop = new LinkedList<>();
+            Instant earliestGenerationTime = null;
             for (ParameterData om : oms) {
+                ParameterDataBuffer pdb = path2buffer.get(om.getPath());
                 try {
-                    List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_FUTURE, new ParameterDataFilter(null, Collections.singletonList(om.getPath()), null, null, null, null));
-                    if (!messages.isEmpty()) {
-                        updateDataItems(messages);
-                        break;
+                    // Next call might hit the archive
+                    ParameterData nextSample = pdb.evaluateNext(om, RetrievalDirection.TO_FUTURE);
+                    // End of stream
+                    if(nextSample == null) {
+                        continue;
+                    }
+                    if(earliestGenerationTime == null) {
+                        earliestGenerationTime = nextSample.getGenerationTime();
+                        toPop.add(pdb);
+                    } else {
+                        int compareResult = earliestGenerationTime.compareTo(nextSample.getGenerationTime());
+                        if (compareResult > 0) {
+                            // Reset list and update generation time
+                            toPop.clear();
+                            earliestGenerationTime = nextSample.getGenerationTime();
+                            toPop.add(pdb);
+                        } else if(compareResult == 0) {
+                            // Same generation time, add to list
+                            toPop.add(pdb);
+                        }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            }
+            if(!toPop.isEmpty()) {
+                updateDataItems(toPop.stream().map(ParameterDataBuffer::pop).collect(Collectors.toList()));
             }
             markProgressReady();
         });
@@ -412,15 +736,27 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
 
     protected void fetchPreviousStateChange() {
         markProgressBusy();
-        // Retrieve the parameter with the latest generation time
-        ParameterData om = findOutLatestParameterSample();
-        if (om == null) {
+        // Retrieve the parameters with the latest generation time
+        List<ParameterData> oms = findOutLatestParameterSamples();
+        // Nothing to do
+        if (oms.isEmpty()) {
             markProgressReady();
             return;
         }
+        // The parameters you found must be removed from the AND, maybe there is no other sample available
         ReatmetricUI.threadPool(getClass()).execute(() -> {
             try {
-                List<ParameterData> messages = doRetrieve(om, 1, RetrievalDirection.TO_PAST, new ParameterDataFilter(null, Collections.singletonList(om.getPath()), null, null, null, null));
+                List<ParameterData> messages = new LinkedList<>();
+                for(ParameterData om : oms) {
+                    ParameterDataBuffer pdb = path2buffer.get(om.getPath());
+                    // If there is one parameter, then a sample was found, add it. If not, add an empty ParameterData sample for om
+                    if(pdb.evaluateNext(om, RetrievalDirection.TO_PAST) != null) {
+                        messages.add(pdb.pop());
+                    } else {
+                        // Use last internal ID in the archive, so it can be moved again forward
+                        messages.add(buildNullParameter(om.getInternalId(), om.getName(), om.getPath(), om.getExternalId()));
+                    }
+                }
                 updateDataItems(messages);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -436,6 +772,8 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
             try {
                 List<ParameterData> messages = doRetrieve(selectedTime, new ParameterDataFilter(null, new ArrayList<>(this.path2wrapper.keySet()), null, null, null, null));
                 updateDataItems(messages);
+                // Reset buffers
+                path2buffer.values().forEach(ParameterDataBuffer::reset);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -470,33 +808,18 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         this.dataItemTableView.getItems().removeAll(selected);
         for (ParameterDataWrapper pdw : selected) {
             this.path2wrapper.remove(pdw.getPath());
+            ParameterDataBuffer removed = this.path2buffer.remove(pdw.getPath());
+            if(removed != null) {
+                removed.reset();
+            }
         }
         updateFilter();
+        // At this stage, clear selection to avoid false actual selection (the parameters are gone)
+        this.dataItemTableView.getSelectionModel().clearSelection();
         if(this.liveTgl.isSelected()) {
             startSubscription();
         }
-    }
-
-    @FXML
-    protected void onActionMoveUpMenuItem(ActionEvent e) {
-        int selected = this.dataItemTableView.getSelectionModel().getSelectedIndex();
-        if (selected >= 1) {
-            ParameterDataWrapper pdw = this.dataItemTableView.getItems().get(selected);
-            this.dataItemTableView.getItems().remove(selected);
-            this.dataItemTableView.getItems().add(--selected, pdw);
-            this.dataItemTableView.getSelectionModel().select(selected);
-        }
-    }
-
-    @FXML
-    protected void onActionMoveDownMenuItem(ActionEvent e) {
-        int selected = this.dataItemTableView.getSelectionModel().getSelectedIndex();
-        if (selected >= 0 && selected < this.dataItemTableView.getItems().size() - 1) {
-            ParameterDataWrapper pdw = this.dataItemTableView.getItems().get(selected);
-            this.dataItemTableView.getItems().remove(selected);
-            this.dataItemTableView.getItems().add(++selected, pdw);
-            this.dataItemTableView.getSelectionModel().select(selected);
-        }
+        setDirty(true);
     }
 
     private void restoreColumnConfiguration() {
@@ -540,11 +863,12 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         if (this.dataItemTableView.getItems().isEmpty()) {
             this.selectTimeBtn.setText("---");
         } else {
-            ParameterData pd = findOutLatestParameterSample();
-            if (pd == null || pd.getGenerationTime() == null) {
+            List<ParameterData> pds = findOutLatestParameterSamples();
+            if (pds.isEmpty()) {
                 this.selectTimeBtn.setText("---");
             } else {
-                this.selectTimeBtn.setText(formatTime(pd.getGenerationTime()));
+                // Use the first item
+                this.selectTimeBtn.setText(formatTime(pds.get(0).getGenerationTime()));
             }
         }
     }
@@ -620,39 +944,35 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         return "ParameterDataView";
     }
 
-    private List<ParameterData> getParameterSamplesSortedByGenerationTimeAscending() {
-        return this.path2wrapper.values().stream().map(ParameterDataWrapper::get).sorted((a, b) -> {
-            int timeComparison = a.getGenerationTime().compareTo(b.getGenerationTime());
-            if (timeComparison == 0) {
-                if (a.getInternalId() != null && b.getInternalId() != null) {
-                    return (int) (a.getInternalId().asLong() - b.getInternalId().asLong());
-                } else if (a.getInternalId() != null) {
-                    return 1;
-                } else if (b.getInternalId() != null) {
-                    return -1;
-                } else {
-                    return 0;
-                }
-            } else {
-                return timeComparison;
-            }
-        }).collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    private ParameterData findOutLatestParameterSample() {
-        ParameterData latest = null;
+    private List<ParameterData> findOutLatestParameterSamples() {
+        List<ParameterData> latest = new LinkedList<>();
+        Instant generationTime = null;
         for (ParameterDataWrapper pdw : this.path2wrapper.values()) {
-            if (latest == null) {
-                latest = pdw.get();
-            } else if (pdw.get() != null) {
-                if (latest.getGenerationTime() != null && pdw.get().getGenerationTime() != null) {
-                    if (latest.getGenerationTime().isBefore(pdw.get().getGenerationTime()) ||
-                            (latest.getInternalId() != null && pdw.get().getInternalId() != null && latest.getGenerationTime().equals(pdw.get().getGenerationTime()) && latest.getInternalId().asLong() < pdw.get().getInternalId().asLong())) {
-                        latest = pdw.get();
+            if(pdw.get() == null) {
+                continue;
+            }
+            if(pdw.get().getGenerationTime() == null) {
+                continue;
+            }
+            if (generationTime == null) {
+                generationTime = pdw.get().getGenerationTime();
+                latest.add(pdw.get());
+            } else {
+                if (pdw.get().getGenerationTime() != null) {
+                    int compareResult = generationTime.compareTo(pdw.get().getGenerationTime());
+                    if (compareResult < 0) {
+                        // Reset list and update generation time
+                        latest.clear();
+                        generationTime = pdw.get().getGenerationTime();
+                        latest.add(pdw.get());
+                    } else if(compareResult == 0) {
+                        // Same generation time, add to list
+                        latest.add(pdw.get());
                     }
                 }
             }
         }
+        // Can be empty, callers must check
         return latest;
     }
 
@@ -670,12 +990,13 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
 
     @FXML
     protected void onDragOver(DragEvent event) {
-        if (event.getGestureSource() != this.dataItemTableView &&
-                (
-                        event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.PARAMETER)) ||
-                                event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.CONTAINER))
-                )) {
-            event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+        if (canAcceptParameterDisplayDrop(event)) {
+            if (isInternalRowMove(event)) {
+                event.acceptTransferModes(TransferMode.MOVE);
+            } else {
+                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+            }
+            updateDropTarget(event);
         }
         event.consume();
     }
@@ -687,6 +1008,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
 
     @FXML
     private void onDragExited(DragEvent event) {
+        clearDropTarget();
         event.consume();
     }
 
@@ -694,11 +1016,16 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
     private void onDragDropped(DragEvent event) {
         Dragboard db = event.getDragboard();
         boolean success = false;
-        if (db.hasContent(SystemEntityDataFormats.PARAMETER)) {
-            addParameters((SystemEntity) db.getContent(SystemEntityDataFormats.PARAMETER));
+        int insertionIndex = this.dragDropInsertionIndex >= 0 ? this.dragDropInsertionIndex : resolveDropInsertionIndex(event);
+        clearDropTarget();
+        if (isInternalRowMove(event)) {
+            moveSelectedRows(insertionIndex);
+            success = true;
+        } else if (db.hasContent(SystemEntityDataFormats.PARAMETER)) {
+            addParameters(insertionIndex, (SystemEntity) db.getContent(SystemEntityDataFormats.PARAMETER));
             success = true;
         } else if (db.hasContent(SystemEntityDataFormats.CONTAINER)) {
-            addContainer((List<SystemEntity>) db.getContent(SystemEntityDataFormats.CONTAINER));
+            addContainer(insertionIndex, (List<SystemEntity>) db.getContent(SystemEntityDataFormats.CONTAINER));
             success = true;
         }
 
@@ -707,7 +1034,154 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         event.consume();
     }
 
+    private boolean canAcceptParameterDisplayDrop(DragEvent event) {
+        return isInternalRowMove(event) || event.getGestureSource() != this.dataItemTableView &&
+                (
+                        event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.PARAMETER)) ||
+                                event.getDragboard().hasContent(SystemEntityDataFormats.getByType(SystemEntityType.CONTAINER))
+                );
+    }
+
+    private boolean isInternalRowMove(DragEvent event) {
+        return event.getDragboard().hasString() &&
+                PARAMETER_DISPLAY_ROW_DRAG_KEY.equals(event.getDragboard().getString()) &&
+                !this.draggedRows.isEmpty();
+    }
+
+    private void updateDropTarget(DragEvent event) {
+        int insertionIndex = resolveDropInsertionIndex(event);
+        TableRow<ParameterDataWrapper> targetRow = findDropTargetRow(event);
+        if (targetRow != null && targetRow.isEmpty()) {
+            targetRow = findVisibleBoundaryDropTargetRow(insertionIndex);
+        } else if (targetRow == null) {
+            targetRow = findVisibleBoundaryDropTargetRow(insertionIndex);
+        }
+
+        boolean beforeRow = targetRow != null && insertionIndex == targetRow.getIndex();
+        if (this.dragDropTargetRow != targetRow || this.dragDropBeforeRow != beforeRow) {
+            clearDropTargetStyle();
+            this.dragDropTargetRow = targetRow;
+            this.dragDropBeforeRow = beforeRow;
+            if (this.dragDropTargetRow != null) {
+                this.dragDropTargetRow.getStyleClass().add(beforeRow ? CSS_PARAMETER_DISPLAY_DROP_BEFORE : CSS_PARAMETER_DISPLAY_DROP_AFTER);
+            }
+        }
+        this.dragDropInsertionIndex = insertionIndex;
+    }
+
+    private int resolveDropInsertionIndex(DragEvent event) {
+        TableRow<ParameterDataWrapper> row = findDropTargetRow(event);
+        if (row == null || row.isEmpty()) {
+            return resolveDropInsertionIndexOutsideRow(event);
+        }
+        int rowIndex = Math.max(0, Math.min(row.getIndex(), this.dataItemTableView.getItems().size()));
+        Point2D rowPoint = row.sceneToLocal(event.getSceneX(), event.getSceneY());
+        return rowPoint.getY() < row.getHeight() / 2 ? rowIndex : Math.min(rowIndex + 1, this.dataItemTableView.getItems().size());
+    }
+
+    private TableRow<ParameterDataWrapper> findDropTargetRow(DragEvent event) {
+        Node node = event.getPickResult().getIntersectedNode();
+        while (node != null && node != this.dataItemTableView) {
+            if (node instanceof TableRow) {
+                return (TableRow<ParameterDataWrapper>) node;
+            }
+            node = node.getParent();
+        }
+        return null;
+    }
+
+    private int resolveDropInsertionIndexOutsideRow(DragEvent event) {
+        List<TableRow<ParameterDataWrapper>> visibleRows = getVisibleDropRows();
+        if (visibleRows.isEmpty()) {
+            return this.dataItemTableView.getItems().size();
+        }
+        for (TableRow<ParameterDataWrapper> row : visibleRows) {
+            Bounds rowBounds = row.localToScene(row.getBoundsInLocal());
+            if (event.getSceneY() < rowBounds.getMinY() + rowBounds.getHeight() / 2) {
+                return row.getIndex();
+            }
+        }
+        return this.dataItemTableView.getItems().size();
+    }
+
+    private TableRow<ParameterDataWrapper> findVisibleBoundaryDropTargetRow(int insertionIndex) {
+        List<TableRow<ParameterDataWrapper>> visibleRows = getVisibleDropRows();
+        if (visibleRows.isEmpty()) {
+            return null;
+        }
+        if (insertionIndex <= visibleRows.get(0).getIndex()) {
+            return visibleRows.get(0);
+        }
+        if (insertionIndex >= visibleRows.get(visibleRows.size() - 1).getIndex() + 1) {
+            return visibleRows.get(visibleRows.size() - 1);
+        }
+        return visibleRows.stream()
+                .filter(row -> row.getIndex() == insertionIndex)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private List<TableRow<ParameterDataWrapper>> getVisibleDropRows() {
+        return this.dataItemTableView.lookupAll(".table-row-cell").stream()
+                .filter(node -> node instanceof TableRow)
+                .map(node -> (TableRow<ParameterDataWrapper>) node)
+                .filter(row -> !row.isEmpty() && row.getIndex() >= 0 && row.getIndex() < this.dataItemTableView.getItems().size())
+                .sorted(Comparator.comparingInt(TableRow::getIndex))
+                .collect(Collectors.toList());
+    }
+
+    private void clearDropTarget() {
+        clearDropTargetStyle();
+        this.dragDropInsertionIndex = -1;
+    }
+
+    private void clearDropTargetStyle() {
+        if (this.dragDropTargetRow != null) {
+            this.dragDropTargetRow.getStyleClass().remove(CSS_PARAMETER_DISPLAY_DROP_BEFORE);
+            this.dragDropTargetRow.getStyleClass().remove(CSS_PARAMETER_DISPLAY_DROP_AFTER);
+            this.dragDropTargetRow = null;
+        }
+        this.dragDropBeforeRow = false;
+    }
+
+    private void moveSelectedRows(int insertionIndex) {
+        if (this.draggedRows.isEmpty()) {
+            return;
+        }
+        List<ParameterDataWrapper> items = this.dataItemTableView.getItems();
+        List<ParameterDataWrapper> rowsToMove = this.draggedRows.stream()
+                .filter(items::contains)
+                .sorted(Comparator.comparingInt(items::indexOf))
+                .collect(Collectors.toList());
+        if (rowsToMove.isEmpty()) {
+            return;
+        }
+
+        int boundedInsertionIndex = Math.max(0, Math.min(insertionIndex, items.size()));
+        int rowsBeforeInsertionIndex = (int) rowsToMove.stream()
+                .mapToInt(items::indexOf)
+                .filter(index -> index >= 0 && index < boundedInsertionIndex)
+                .count();
+        int effectiveInsertionIndex = boundedInsertionIndex - rowsBeforeInsertionIndex;
+
+        items.removeAll(rowsToMove);
+        effectiveInsertionIndex = Math.max(0, Math.min(effectiveInsertionIndex, items.size()));
+        items.addAll(effectiveInsertionIndex, rowsToMove);
+
+        this.dataItemTableView.getSelectionModel().clearSelection();
+        for (int i = 0; i < rowsToMove.size(); ++i) {
+            this.dataItemTableView.getSelectionModel().select(effectiveInsertionIndex + i);
+        }
+        setDirty(true);
+    }
+
     private void addParameters(SystemEntity... systemEntities) {
+        addParameters(this.dataItemTableView.getItems().size(), systemEntities);
+    }
+
+    private void addParameters(int insertionIndex, SystemEntity... systemEntities) {
+        int effectiveInsertionIndex = Math.max(0, Math.min(insertionIndex, this.dataItemTableView.getItems().size()));
+        boolean added = false;
         for (SystemEntity systemEntity : systemEntities) {
             if (systemEntity.getType() == SystemEntityType.PARAMETER) {
                 if (!this.path2wrapper.containsKey(systemEntity.getPath())) {
@@ -727,7 +1201,9 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                             systemEntity.getPath()
                     );
                     this.path2wrapper.put(systemEntity.getPath(), pdw);
-                    this.dataItemTableView.getItems().add(pdw);
+                    this.path2buffer.put(systemEntity.getPath(), new ParameterDataBuffer(systemEntity.getPath(), 10));
+                    this.dataItemTableView.getItems().add(effectiveInsertionIndex++, pdw);
+                    added = true;
                 }
             }
         }
@@ -735,14 +1211,26 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         if (this.liveTgl.isSelected()) {
             startSubscription();
         }
+        if(added) {
+            setDirty(true);
+        }
     }
 
     private void addContainer(List<SystemEntity> list) {
         addParameters(list.toArray(new SystemEntity[list.size()]));
     }
 
+    private void addContainer(int insertionIndex, List<SystemEntity> list) {
+        addParameters(insertionIndex, list.toArray(new SystemEntity[list.size()]));
+    }
+
     public void addItemsFromPreset(AndPreset p) {
+        addItemsFromPreset(p, false);
+    }
+
+    private void addItemsFromPreset(AndPreset p, boolean dirtyAfterLoad) {
         this.path2wrapper.clear();
+        this.path2buffer.clear();
         this.dataItemTableView.getItems().clear();
         for (AndPreset.Element systemEntity : p.getElements()) {
             SystemEntityPath sep = SystemEntityPath.fromString(systemEntity.getPath());
@@ -768,6 +1256,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                         sep
                 );
                 this.path2wrapper.put(sep, pdw);
+                this.path2buffer.put(sep, new ParameterDataBuffer(sep, 10));
                 this.dataItemTableView.getItems().add(pdw);
             }
         }
@@ -775,6 +1264,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         if (this.liveTgl.isSelected()) {
             startSubscription();
         }
+        setDirty(dirtyAfterLoad);
     }
 
     public boolean isLive() {
@@ -784,6 +1274,9 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
     @Override
     public void dispose() {
         stopSubscription();
+        path2buffer.values().forEach(ParameterDataBuffer::reset);
+        path2buffer.clear();
+        path2wrapper.clear();
         ParameterDisplayCoordinator.instance().deregister(this);
         super.dispose();
     }
@@ -811,6 +1304,7 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
                 this.dataItemTableView.getItems().add(selected, row);
                 this.dataItemTableView.getSelectionModel().select(selected + 1);
             }
+            setDirty(true);
         }
     }
 
@@ -937,10 +1431,13 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
             super(buildNullParameter(name), SystemEntityPath.fromString(name));
             generationTimeProperty().set(null);
         }
-
-        private static ParameterData buildNullParameter(String name) {
-            return new ParameterData(null, Instant.EPOCH, -1, name, null, "", "", null, null, null, null, null, null);
-        }
     }
 
+    private static ParameterData buildNullParameter(String name) {
+        return new ParameterData(null, Instant.EPOCH, -1, name, null, "", "", null, null, null, null, null, null);
+    }
+
+    private static ParameterData buildNullParameter(IUniqueId internalId, String name, SystemEntityPath path, int externalId) {
+        return new ParameterData(internalId, Instant.EPOCH, externalId, name, path, null, null, null, null, null, null, null, null);
+    }
 }

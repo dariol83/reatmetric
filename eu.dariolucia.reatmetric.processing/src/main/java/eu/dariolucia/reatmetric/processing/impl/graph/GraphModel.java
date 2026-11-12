@@ -53,7 +53,18 @@ public class GraphModel {
         this.processingModel = processingModel;
     }
 
+    /**
+     * Build the processing graph from the configured processing definitions after validating the model.
+     *
+     * @throws ProcessingModelException if validation fails, references cannot be resolved, or the graph cannot be ordered
+     */
     public void build() throws ProcessingModelException {
+        List<ProcessingModelValidationIssue> validationIssues = definition.validate();
+        if(!validationIssues.isEmpty()) {
+            StringJoiner joiner = new StringJoiner(System.lineSeparator());
+            validationIssues.forEach(issue -> joiner.add(issue.toString()));
+            throw new ProcessingModelException(joiner.toString());
+        }
         // Navigate the model and add all the system entity nodes:
         // - parameters
         // - events
@@ -188,7 +199,7 @@ public class GraphModel {
         }
 
         // If you reach this point, it means that you have to compute the topological sort yourself
-        List<EntityVertex> result = new LinkedList<>();
+        List<EntityVertex> result = new ArrayList<>(idMap.size());
         Set<EntityVertex> alreadyProcessed = new HashSet<>();
         List<EntityVertex> toProcess = new LinkedList<>(this.idMap.values());
         while(!toProcess.isEmpty()) {
@@ -244,13 +255,30 @@ public class GraphModel {
     private void applyCache(File cache) throws IOException {
         LOG.info("Loading orderings from cache file " + cache.getAbsolutePath());
         int couplesToApply = idMap.size();
+        Set<Integer> appliedVertices = new HashSet<>();
+        Set<Integer> appliedOrderings = new HashSet<>();
         try (DataInputStream dis = new DataInputStream(new FileInputStream(cache))) {
             while (true) {
                 int evId = dis.readInt();
-                int ordening = dis.readInt();
+                int ordering = dis.readInt();
+                // If you already encountered this vertex, error - cache corrupted
+                if(appliedVertices.contains(evId)) {
+                    throw new IOException("Duplicate evId in processing model definition cache: " + evId);
+                }
+                appliedVertices.add(evId);
+                // If you already encountered this ordering, error - cannot be, cache corrupted
+                if(appliedOrderings.contains(ordering)) {
+                    throw new IOException("Duplicate ordering in processing model definition cache: " + ordering);
+                }
+                appliedOrderings.add(ordering);
+                // If ordering is < 0 or > idMap.size(), you have a problem
+                if(ordering < 0 || ordering >= idMap.size()) {
+                    throw new IOException("Ordering invalid: " + ordering + " - definition size: " + idMap.size());
+                }
+                // Set the ordering
                 EntityVertex ev = idMap.get(evId);
                 if (ev != null) {
-                    ev.setOrderingId(ordening);
+                    ev.setOrderingId(ordering);
                     --couplesToApply;
                 } else {
                     throw new IOException("System Entity ID " + evId + " not found in the definition map, cache file might be outdated or corrupted");
@@ -316,6 +344,9 @@ public class GraphModel {
         // Add the parameter
         AbstractSystemEntityProcessor definitionProcessor = processorBuilder.get();
         EntityVertex v = new EntityVertex(definitionProcessor);
+        if(pathMap.containsKey(location) || idMap.containsKey(param.getId())) {
+            throw new ProcessingModelException("Duplicated path/ID: " + location.asString() + "/" + param.getId());
+        }
         pathMap.put(location, v);
         idMap.put(param.getId(), v);
         // Add the containers, recursively
@@ -374,7 +405,7 @@ public class GraphModel {
      */
     public List<AbstractModelOperation<?>> finalizeOperationList(List<AbstractModelOperation<?>> operations, boolean includeWeaklyConsistent) {
         Set<Integer> alreadyPresent = new HashSet<>();
-        List<AbstractModelOperation<?>> extendedOperations = new LinkedList<>();
+        List<AbstractModelOperation<?>> extendedOperations = new ArrayList<>(operations.size() * 4); // 4 is the assumed expansion factor
         // Add the entity IDs to the alreadyPresent set
         operations.forEach(o -> alreadyPresent.add(o.getSystemEntityId()));
         for(AbstractModelOperation<?> operation : operations) {

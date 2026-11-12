@@ -31,5 +31,7 @@ public interface IServicePacketSubscriber {
 
     void onTmVcUnit(RawData packetRawData, VirtualChannelUnit unit, DecodingResult decoded);
 
+    void onTmRawUnit(RawData rawData, DecodingResult decoded);
+
     void onTcUpdate(TcPhase phase, Instant phaseTime, AbstractTcTracker tcTracker);
 }

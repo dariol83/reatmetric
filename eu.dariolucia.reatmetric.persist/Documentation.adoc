@@ -18,6 +18,13 @@ Including this module in a ReatMetric system is not mandatory: if not present, t
 not store any data. In the same way, it will not be possible to retrieve any historical data, but only monitor the live
 state of the external devices/systems.
 
+The raw data archive stores the raw data live/repatriated flag in the RAW_DATA_TABLE Live column. Existing deployments
+upgrading from a schema without this column shall add it before using this version, for example:
+
+----
+ALTER TABLE RAW_DATA_TABLE ADD COLUMN Live BOOLEAN NOT NULL DEFAULT TRUE;
+----
+
 This module can be deployed outside a ReatMetric system, if a means to access the stored data outside the ReatMetric
 system is desirable, keeping in mind that:
 

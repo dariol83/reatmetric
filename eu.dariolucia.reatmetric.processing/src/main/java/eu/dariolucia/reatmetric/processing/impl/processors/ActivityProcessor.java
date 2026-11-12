@@ -103,7 +103,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     private ActivityArrayArgumentDescriptor createArrayArgumentDescriptor(boolean stopOnReferenceDefaultValue, ArrayArgumentDefinition agd) {
-        List<AbstractActivityArgumentDescriptor> elements = new LinkedList<>();
+        List<AbstractActivityArgumentDescriptor> elements = new ArrayList<>(Math.max(4, agd.getElements().size()));
         for(AbstractArgumentDefinition aad : agd.getElements()) {
             if(aad instanceof PlainArgumentDefinition) {
                 PlainArgumentDefinition aa = (PlainArgumentDefinition) aad;
@@ -179,7 +179,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                     }
                 }
             }
-            // At this stage, the map name2value is complete and everything is setup according to definition, but we create a LinkedHashMap that follows the definition order
+            // At this stage, the map name2value is complete and everything is set up according to definition, but we create a LinkedHashMap that follows the definition order
             Map<String, Object> finalName2value = new LinkedHashMap<>();
             for (AbstractArgumentDefinition ad : definition.getArguments()) {
                 finalName2value.put(ad.getName(), name2value.get(ad.getName()));
@@ -384,6 +384,11 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
     }
 
     private List<AbstractDataItem> removeActivityOccurrenceIfCompleted(IUniqueId occurrenceId, List<AbstractDataItem> result) {
+        return removeActivityOccurrenceIfCompleted(occurrenceId, result, null);
+    }
+
+    private List<AbstractDataItem> removeActivityOccurrenceIfCompleted(IUniqueId occurrenceId, List<AbstractDataItem> result, IUniqueId mirroredOccurrenceId) {
+        // mirroredOccurrenceId can be null: it is not null only if called following a mirror(...) request
         for(AbstractDataItem adi : result) {
             if(adi instanceof ActivityOccurrenceData) {
                 ActivityOccurrenceState theState = ((ActivityOccurrenceData) adi).getCurrentState();
@@ -392,6 +397,10 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                         LOG.finer("Removing activity occurrence " + adi.getInternalId() + " of activity " + getSystemEntityId() + ", since completed");
                     }
                     id2occurrence.remove(occurrenceId);
+                    // Let's get rid of the mirror mapping entry
+                    if(mirroredOccurrenceId != null) {
+                        mirroredId2localId.remove(mirroredOccurrenceId);
+                    }
                     break;
                 }
             }
@@ -570,20 +579,18 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
                 if (LOG.isLoggable(Level.WARNING)) {
                     LOG.warning("No activity occurrence with ID " + occurrenceId + " found, abort request not processed");
                 }
-                return Collections.emptyList();
             } else {
                 // Abort is simply forwarded and handled by the implementor: the processing model does not take any initiative here, because
                 // it might be that the activity CANNOT be aborted
                 aop.abort();
-                return Collections.emptyList();
             }
         } else {
             // Completely ignore the processing
             if(LOG.isLoggable(Level.FINE)) {
                 LOG.log(Level.FINE, "Activity abort request not processed for activity " + getPath() + ": activity processing is disabled");
             }
-            return Collections.emptyList();
         }
+        return Collections.emptyList();
     }
 
     @Override
@@ -632,7 +639,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
         if(entityStatus == Status.ENABLED || entityStatus == Status.IGNORED) {
             // Check if a local internal ID is already present for this state
             IUniqueId localId = this.mirroredId2localId.get(input.getInternalId());
-            ActivityOccurrenceProcessor activityOccurrence = null;
+            ActivityOccurrenceProcessor activityOccurrence;
             if(localId == null) {
                 // Not present - create new ActivityOccurrenceProcessor
                 activityOccurrence = new ActivityOccurrenceProcessor(this, new LongUniqueId(processor.getNextId(ActivityOccurrenceData.class)), input.getGenerationTime(), input.getArguments(), input.getProperties(), new LinkedList<>(), input.getRoute(), input.getSource(), input.getInternalId());
@@ -645,7 +652,7 @@ public class ActivityProcessor extends AbstractSystemEntityProcessor<ActivityPro
             } else {
                 activityOccurrence = id2occurrence.get(localId);
             }
-            return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.mirror(input));
+            return removeActivityOccurrenceIfCompleted(activityOccurrence.getOccurrenceId(), activityOccurrence.mirror(input), input.getInternalId());
         } else {
             // Completely ignore the processing
             if(LOG.isLoggable(Level.WARNING)) {

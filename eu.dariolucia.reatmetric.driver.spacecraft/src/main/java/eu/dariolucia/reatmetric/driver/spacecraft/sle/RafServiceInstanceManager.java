@@ -21,6 +21,7 @@ import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.outgoing
 import eu.dariolucia.ccsds.sle.generated.ccsds.sle.transfer.service.raf.structures.AntennaId;
 import eu.dariolucia.ccsds.sle.utl.config.PeerConfiguration;
 import eu.dariolucia.ccsds.sle.utl.config.raf.RafServiceInstanceConfiguration;
+import eu.dariolucia.ccsds.sle.utl.si.DeliveryModeEnum;
 import eu.dariolucia.ccsds.sle.utl.si.LockStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ProductionStatusEnum;
 import eu.dariolucia.ccsds.sle.utl.si.ServiceInstanceBindingStateEnum;
@@ -48,6 +49,11 @@ public class RafServiceInstanceManager extends SleServiceInstanceManager<RafServ
     @Override
     protected RafServiceInstance createServiceInstance(PeerConfiguration peerConfiguration, RafServiceInstanceConfiguration siConfiguration) {
         return new RafServiceInstance(peerConfiguration, siConfiguration);
+    }
+
+    @Override
+    protected boolean isLive() {
+        return !super.siConfiguration.getDeliveryMode().equals(DeliveryModeEnum.OFFLINE);
     }
 
     @Override

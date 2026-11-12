@@ -143,9 +143,9 @@ public class SpacePacketTcpConnector extends AbstractFullDuplexTcpConnector impl
     }
 
     @Override
-    public void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, IPacketIdentifier packetIdentifier, String connectorInformation) throws RemoteException {
+    public void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, IPacketIdentifier packetIdentifier, String connectorInformation, boolean live) throws RemoteException {
         // Call configuration for parent class
-        internalConfigure(driverName, configuration, context);
+        internalConfigure(driverName, configuration, context, live);
         // Parse configuration for this class
         String[] infoSpl = connectorInformation.split(":", -1); // String with format: "<ip>:<port>"
         // Set host and port in parent class

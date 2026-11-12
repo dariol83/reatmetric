@@ -285,7 +285,7 @@ public class TcPacketProcessor implements IActivityExecutor, ITcPacketInjector {
     private RawData distributeAsRawData(IActivityHandler.ActivityInvocation activityInvocation, Object dataItem, byte[] contents, String type, String packetName, Instant buildTime, TcPacketInfo packetInfo) {
         RawData rd = new RawData(context.getRawDataBroker().nextRawDataId(), activityInvocation.getGenerationTime(), packetName, type,
                 activityInvocation.getRoute(), activityInvocation.getSource(), Quality.GOOD, activityInvocation.getActivityOccurrenceId(), contents,
-                buildTime, driverName, packetInfo);
+                buildTime, driverName, true, packetInfo);
         rd.setData(dataItem);
         try {
             context.getRawDataBroker().distribute(Collections.singletonList(rd));

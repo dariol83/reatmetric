@@ -58,6 +58,6 @@ public class SystemEntityBuilder extends AbstractDataItemBuilder<SystemEntity> {
 
     @Override
     public void setInitialisation(SystemEntity item) {
-        // Nothing to do here
+        this.changedSinceLastBuild = false;
     }
 }

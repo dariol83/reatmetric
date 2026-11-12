@@ -29,6 +29,12 @@ public class TmVcConfiguration {
     @XmlAttribute(name = "process-type")
     private VirtualChannelType processType = VirtualChannelType.PACKET;
 
+    @XmlAttribute(name = "override-live")
+    private OverrideLiveEnum overrideLive = OverrideLiveEnum.INHERIT;
+
+    @XmlAttribute(name = "enable-gap-warning")
+    private boolean enableGapWarning = true;
+
     public int getId() {
         return id;
     }
@@ -43,5 +49,21 @@ public class TmVcConfiguration {
 
     public void setProcessType(VirtualChannelType processType) {
         this.processType = processType;
+    }
+
+    public OverrideLiveEnum getOverrideLive() {
+        return overrideLive;
+    }
+
+    public void setOverrideLive(OverrideLiveEnum overrideLive) {
+        this.overrideLive = overrideLive;
+    }
+
+    public boolean isEnableGapWarning() {
+        return enableGapWarning;
+    }
+
+    public void setEnableGapWarning(boolean enableGapWarning) {
+        this.enableGapWarning = enableGapWarning;
     }
 }

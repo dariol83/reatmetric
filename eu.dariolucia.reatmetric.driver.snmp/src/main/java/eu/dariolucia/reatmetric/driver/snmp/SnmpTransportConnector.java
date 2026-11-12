@@ -179,7 +179,7 @@ public class SnmpTransportConnector extends AbstractTransportConnector {
             byte[] serialize = bos.toByteArray();
             RawData rd = new RawData(rawDataBroker.nextRawDataId(), generationTime, group.getName(),
                     SnmpDriver.SNMP_MESSAGE_TYPE, device.getName(), device.getName(), Quality.GOOD, null, serialize,
-                    generationTime, driverName, null);
+                    generationTime, driverName, true, null);
             rd.setData(response);
             rawDataBroker.distribute(Collections.singletonList(rd));
         } catch (ReatmetricException e) {

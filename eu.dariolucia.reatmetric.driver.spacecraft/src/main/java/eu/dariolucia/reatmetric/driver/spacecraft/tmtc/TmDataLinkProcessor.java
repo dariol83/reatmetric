@@ -38,11 +38,9 @@ import eu.dariolucia.reatmetric.api.value.StringUtil;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
+import eu.dariolucia.reatmetric.driver.spacecraft.common.RawTransferFrame;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.VirtualChannelUnit;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmDataLinkConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.TmVcConfiguration;
-import eu.dariolucia.reatmetric.driver.spacecraft.definition.TransferFrameType;
+import eu.dariolucia.reatmetric.driver.spacecraft.definition.*;
 import eu.dariolucia.reatmetric.driver.spacecraft.security.DataLinkSecurityManager;
 
 import java.time.Instant;
@@ -70,6 +68,9 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     private final String driverName;
     private final DataLinkSecurityManager securityManager;
     private final long propagationDelay;
+    private final boolean[] vcToRawProcessingMapping; // A 64 boolean array that marks whether a TM/AOS frame must be processed as RAW frame for identification and parameter extraction purposes
+    private final OverrideLiveEnum[] vcToLiveOverrideMapping;
+    private final boolean[] vcToGapWarningMapping;
     private VirtualChannelReceiverDemux demultiplexer;
 
     private final Timer performanceSampler = new Timer("TM Data Link Processor - Sampler", true);
@@ -93,8 +94,13 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         this.generationTimeResolver = generationTimeResolver;
         this.packetQualityChecker = packetQualityChecker;
         this.securityManager = securityManager;
+        this.vcToRawProcessingMapping = new boolean[64];
+        this.vcToLiveOverrideMapping = new OverrideLiveEnum[64];
+        this.vcToGapWarningMapping = new boolean[64];
+        Arrays.fill(this.vcToLiveOverrideMapping, OverrideLiveEnum.INHERIT);
+        Arrays.fill(this.vcToGapWarningMapping, true);
         // Create performance samples
-        performanceSampler.schedule(new TimerTask() {
+        this.performanceSampler.schedule(new TimerTask() {
             @Override
             public void run() {
                 sample();
@@ -137,6 +143,8 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                 vcToBuild.stream().map(i -> new TmReceiverVirtualChannel(i, VirtualChannelAccessMode.PACKET, false)).forEach(virtualChannels::add);
             } else {
                 for(TmVcConfiguration vcConf : configuration.getTmVcConfigurations()) {
+                    vcToLiveOverrideMapping[vcConf.getId()] = getConfiguredLiveOverride(vcConf);
+                    vcToGapWarningMapping[vcConf.getId()] = vcConf.isEnableGapWarning();
                     switch (vcConf.getProcessType()) {
                         case PACKET: {
                             vcToBuild.add(vcConf.getId());
@@ -144,10 +152,14 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                             virtualChannels.add(vc);
                         }
                         break;
+                        case RAW:
                         case VCA: {
                             vcToBuild.add(vcConf.getId());
                             TmReceiverVirtualChannel vc = new TmReceiverVirtualChannel(vcConf.getId(), VirtualChannelAccessMode.DATA, false);
                             virtualChannels.add(vc);
+                            if(vcConf.getProcessType() == VirtualChannelType.RAW) {
+                                vcToRawProcessingMapping[vcConf.getId()] = true;
+                            }
                         }
                         break;
                     }
@@ -155,10 +167,12 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
             }
         } else if(configuration.getType() == TransferFrameType.AOS) {
             if(configuration.getTmVcConfigurations() == null) {
-                vcToBuild.addAll(IntStream.rangeClosed(0, 64).boxed().collect(Collectors.toList()));
+                vcToBuild.addAll(IntStream.rangeClosed(0, 63).boxed().collect(Collectors.toList()));
                 vcToBuild.stream().map(i -> new AosReceiverVirtualChannel(i, VirtualChannelAccessMode.PACKET, false)).forEach(virtualChannels::add);
             } else {
                 for(TmVcConfiguration vcConf : configuration.getTmVcConfigurations()) {
+                    vcToLiveOverrideMapping[vcConf.getId()] = getConfiguredLiveOverride(vcConf);
+                    vcToGapWarningMapping[vcConf.getId()] = vcConf.isEnableGapWarning();
                     switch (vcConf.getProcessType()) {
                         case PACKET: {
                             vcToBuild.add(vcConf.getId());
@@ -166,16 +180,25 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                             virtualChannels.add(vc);
                         }
                         break;
+                        case RAW:
                         case VCA: {
                             vcToBuild.add(vcConf.getId());
                             AosReceiverVirtualChannel vc = new AosReceiverVirtualChannel(vcConf.getId(), VirtualChannelAccessMode.DATA, false);
                             virtualChannels.add(vc);
+                            if(vcConf.getProcessType() == VirtualChannelType.RAW) {
+                                vcToRawProcessingMapping[vcConf.getId()] = true;
+                            }
                         }
                         break;
                     }
                 }
             }
+        } else if(configuration.getType() == TransferFrameType.RAW) {
+            // Support for RAW transfer frames (distributed directly as VCA after identification), which are basically no CCSDS frames
+            // Ignore the VC configuration, there are no VCs supported in raw frames
+            Arrays.fill(vcToRawProcessingMapping, true);
         }
+
         // Remember VCs to process
         for(Integer i : vcToBuild) {
             processedVCs[i] = true;
@@ -188,6 +211,10 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         subscribeToBroker();
     }
 
+    private OverrideLiveEnum getConfiguredLiveOverride(TmVcConfiguration vcConf) {
+        return vcConf.getOverrideLive() != null ? vcConf.getOverrideLive() : OverrideLiveEnum.INHERIT;
+    }
+
     private void subscribeToBroker() {
         // We want to receive only good frames of the configured type, from the configured spacecraft, from the processed VCs, not idle
         String typeName = null;
@@ -198,11 +225,23 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
             case AOS:
                 typeName = Constants.T_AOS_FRAME;
                 break;
+            case RAW:
+                typeName = Constants.T_RAW_FRAME;
+                break;
         }
-        RawDataFilter filter = new RawDataFilter(true, null, null, Collections.singletonList(typeName), null, Collections.singletonList(Quality.GOOD));
+        RawDataFilter filter = new RawDataFilter(true, null, null,
+                Collections.singletonList(typeName),
+                null,
+                configuration.getRequiredQuality().getRequiredQualities(),
+                null); // Do not make any difference at this stage between live and not live frames, no configurability expected
         Predicate<RawData> postFilter = o -> {
             AbstractTransferFrame atf = (AbstractTransferFrame) o.getData();
-            return atf != null && !atf.isIdleFrame() && atf.getSpacecraftId() == this.spacecraftId && this.processedVCs[atf.getVirtualChannelId()];
+            if(o.getType().equals(Constants.T_AOS_FRAME) || o.getType().equals(Constants.T_TM_FRAME)) {
+                return atf != null && !atf.isIdleFrame() && atf.getSpacecraftId() == this.spacecraftId && this.processedVCs[atf.getVirtualChannelId()];
+            } else {
+                // Raw frame: no idea about the format
+                return atf != null && !atf.isIdleFrame() && atf.getSpacecraftId() == this.spacecraftId;
+            }
         };
         broker.subscribe(this, null, filter, postFilter);
     }
@@ -258,7 +297,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         String source = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_SOURCE);
         // Now we distribute it and store it as well
         // Provide also the frame information, needed for time correlation ... they go as extension
-        distributeSpacePacket(sp, packetName, generationTime, receptionTime, route, source, packetType, quality, new TmFrameDescriptor(firstFrame.getVirtualChannelId(), firstFrame.getVirtualChannelFrameCount(), (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME)));
+        distributeSpacePacket(sp, packetName, generationTime, receptionTime, route, source, packetType, quality, resolveLiveFlag(firstFrame), new TmFrameDescriptor(firstFrame.getVirtualChannelId(), firstFrame.getVirtualChannelFrameCount(), (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME)));
     }
 
     private String identifyPacket(AbstractReceiverVirtualChannel vc, byte[] packet, SpacePacket sp, String packetName) {
@@ -274,8 +313,8 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         return packetName;
     }
 
-    private void distributeSpacePacket(SpacePacket sp, String packetName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality, TmFrameDescriptor frameDescriptor) {
-        RawData rd = new RawData(broker.nextRawDataId(), generationTime, packetName, type, route, source, quality, null, sp.getPacket(), receptionTime, driverName, frameDescriptor);
+    private void distributeSpacePacket(SpacePacket sp, String packetName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality, boolean live, TmFrameDescriptor frameDescriptor) {
+        RawData rd = new RawData(broker.nextRawDataId(), generationTime, packetName, type, route, source, quality, null, sp.getPacket(), receptionTime, driverName, live, frameDescriptor);
         rd.setData(sp);
         try {
             broker.distribute(Collections.singletonList(rd));
@@ -290,6 +329,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         synchronized (performanceSampler) {
             ++packetOutput;
         }
+        boolean toBeRawProcessed = vcToRawProcessingMapping[vc.getVirtualChannelId()];
         // Read route from the frame annotated map
         Instant receptionTime = (Instant) frame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME);
         if(receptionTime == null) {
@@ -297,27 +337,29 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         }
         // Generation time is reception time minus propagation delay
         Instant generationTime = receptionTime.minus(this.propagationDelay, ChronoUnit.MICROS);
-        VirtualChannelUnit sp = new VirtualChannelUnit(data);
+        byte[] dataToUse = toBeRawProcessed ? frame.getFrame() : data;
+        VirtualChannelUnit vcaUnit = new VirtualChannelUnit(dataToUse);
         // Annotate with reception time
-        sp.setAnnotationValue(Constants.ANNOTATION_RCP_TIME, receptionTime);
+        vcaUnit.setAnnotationValue(Constants.ANNOTATION_RCP_TIME, receptionTime);
         // Annotate with the VC ID
-        sp.setAnnotationValue(Constants.ANNOTATION_VCID, (int) frame.getVirtualChannelId());
+        vcaUnit.setAnnotationValue(Constants.ANNOTATION_VCID, (int) frame.getVirtualChannelId());
         String route = (String) frame.getAnnotationValue(Constants.ANNOTATION_ROUTE);
         // Make an attempt to identify the virtual channel unit
         String vcaName = Constants.N_UNKNOWN_VCA;
-        String rawDataType = Constants.T_TM_VCA;
-        vcaName = identifyVca(vc, data, vcaName);
-
+        String rawDataType = toBeRawProcessed ? Constants.T_TM_RAW : Constants.T_TM_VCA;
+        vcaName = identifyVca(vc, dataToUse, vcaName);
         String source = (String) frame.getAnnotationValue(Constants.ANNOTATION_SOURCE);
+        Quality identifiedDataQuality = deriveQuality(frame, vcaName);
         // Now we distribute it and store it as well
         // Provide also the frame information, needed for time correlation ... they go as extension
-        distributeVca(sp, vcaName, generationTime, receptionTime, route, source, rawDataType, Quality.GOOD, new TmFrameDescriptor(frame.getVirtualChannelId(), frame.getVirtualChannelFrameCount(), (Instant) frame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME)));
+        distributeVca(vcaUnit, vcaName, generationTime, receptionTime, route, source, rawDataType, identifiedDataQuality, resolveLiveFlag(frame), new TmFrameDescriptor(frame.getVirtualChannelId(), frame.getVirtualChannelFrameCount(), (Instant) frame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME)));
     }
 
     private String identifyVca(AbstractReceiverVirtualChannel vc, byte[] packet, String vcaName) {
         try {
             vcaName = packetIdentifier.identify(packet);
         } catch (PacketNotIdentifiedException e) {
+            System.out.println(StringUtil.toHexDump(packet));
             LOG.log(Level.WARNING, "VCA from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + " not identified: " + e.getMessage(), e);
         } catch (PacketAmbiguityException e) {
             LOG.log(Level.WARNING, "VCA from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.length + " ambiguous: " + e.getMessage(), e);
@@ -327,8 +369,8 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         return vcaName;
     }
 
-    private void distributeVca(VirtualChannelUnit vcaUnit, String vcaName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality, TmFrameDescriptor frameDescriptor) {
-        RawData rd = new RawData(broker.nextRawDataId(), generationTime, vcaName, type, route, source, quality, null, vcaUnit.getData(), receptionTime, driverName, frameDescriptor);
+    private void distributeVca(VirtualChannelUnit vcaUnit, String vcaName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality, boolean live, TmFrameDescriptor frameDescriptor) {
+        RawData rd = new RawData(broker.nextRawDataId(), generationTime, vcaName, type, route, source, quality, null, vcaUnit.getData(), receptionTime, driverName, live, frameDescriptor);
         rd.setData(vcaUnit);
         try {
             broker.distribute(Collections.singletonList(rd));
@@ -339,7 +381,22 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
 
     @Override
     public void gapDetected(AbstractReceiverVirtualChannel vc, int expectedVc, int receivedVc, int missingFrames) {
-        LOG.warning("Telemetry gap detected for spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ": expected VCC " + expectedVc + ", actual VCC " + receivedVc + ", missing frames: " + missingFrames);
+        if(vcToGapWarningMapping[vc.getVirtualChannelId()]) {
+            LOG.warning("Telemetry gap detected for spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ": expected VCC " + expectedVc + ", actual VCC " + receivedVc + ", missing frames: " + missingFrames);
+        }
+    }
+
+    private boolean resolveLiveFlag(AbstractTransferFrame frame) {
+        switch (vcToLiveOverrideMapping[frame.getVirtualChannelId()]) {
+            case LIVE:
+                return true;
+            case NOT_LIVE:
+                return false;
+            case INHERIT:
+            default:
+                Boolean live = (Boolean) frame.getAnnotationValue(Constants.ANNOTATION_LIVE);
+                return live != null ? live : true;
+        }
     }
 
     @Override
@@ -362,9 +419,80 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                 LOG.log(Level.SEVERE, "Cannot decrypt transfer frame: " + e.getMessage(), e);
                 continue;
             }
-            // Send to the demultiplexer
-            demultiplexer.accept(atf);
+            // Repatriate liveness flag in frame, to be used down in the chain
+            if(!atf.isAnnotationPresent(Constants.ANNOTATION_LIVE)) {
+                atf.setAnnotationValue(Constants.ANNOTATION_LIVE, rd.isLive());
+            }
+            // Send to the demultiplexer if not a RawTransferFrame
+            if(atf instanceof RawTransferFrame) {
+                processRawTransferFrame((RawTransferFrame) atf);
+            } else {
+                demultiplexer.accept(atf);
+            }
         }
+    }
+
+    private void processRawTransferFrame(RawTransferFrame frame) {
+        // Add performance indicator
+        synchronized (performanceSampler) {
+            ++packetOutput;
+        }
+        // Read route from the frame annotated map
+        Instant receptionTime = (Instant) frame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME);
+        if(receptionTime == null) {
+            receptionTime = Instant.now();
+        }
+        // Generation time is reception time minus propagation delay
+        Instant generationTime = receptionTime.minus(this.propagationDelay, ChronoUnit.MICROS);
+        String route = (String) frame.getAnnotationValue(Constants.ANNOTATION_ROUTE);
+        // Make an attempt to identify the virtual channel unit
+        String vcaName = Constants.N_UNKNOWN_VCA;
+        String rawDataType = Constants.T_TM_RAW;
+        vcaName = identifyRawFrame(frame.getFrame(), vcaName);
+        String source = (String) frame.getAnnotationValue(Constants.ANNOTATION_SOURCE);
+        // Quality flag derivation
+        Quality identifiedDataQuality = deriveQuality(frame, vcaName);
+        // Now we distribute it and store it as well
+        // Provide also the frame information, needed for time correlation ... they go as extension
+        distributeRawFrame(frame, vcaName, generationTime, receptionTime, route, source, rawDataType, identifiedDataQuality);
+    }
+
+    private Quality deriveQuality(AbstractTransferFrame frame, String identifiedName) {
+        Quality identifiedDataQuality = Quality.UNKNOWN;
+        if(identifiedName.equals(Constants.N_UNKNOWN_VCA)) {
+            // If you cannot identify the data --> identifiedDataQuality = BAD
+            identifiedDataQuality = Quality.BAD;
+        } else {
+            // If you can identify the data --> identifiedDataQuality = originalDataQuality (if present, otherwise UNKNOWN)
+            Integer originalQualityInt = (Integer) frame.getAnnotationValue(Constants.ANNOTATION_FRAME_QUALITY);
+            if(originalQualityInt != null) {
+                identifiedDataQuality = Quality.values()[originalQualityInt];
+            }
+        }
+        return identifiedDataQuality;
+    }
+
+    private void distributeRawFrame(RawTransferFrame frame, String identifiedRawFrameName, Instant generationTime, Instant receptionTime, String route, String source, String rawDataType, Quality quality) {
+        RawData rd = new RawData(broker.nextRawDataId(), generationTime, identifiedRawFrameName, rawDataType, route, source, quality, null, frame.getFrame(), receptionTime, driverName, (boolean) frame.getAnnotationValue(Constants.ANNOTATION_LIVE), frame.getExternalTmType());
+        rd.setData(frame);
+        try {
+            broker.distribute(Collections.singletonList(rd));
+        } catch (ReatmetricException e) {
+            LOG.log(Level.SEVERE, "Error while distributing raw transfer frame " + identifiedRawFrameName + " from route " + rd.getRoute(), e);
+        }
+    }
+
+    private String identifyRawFrame(byte[] rawFrame, String vcaName) {
+        try {
+            vcaName = packetIdentifier.identify(rawFrame);
+        } catch (PacketNotIdentifiedException e) {
+            LOG.log(Level.WARNING, "Raw frame from spacecraft ID " + spacecraftId + ", length " + rawFrame.length + " not identified: " + e.getMessage(), e);
+        } catch (PacketAmbiguityException e) {
+            LOG.log(Level.WARNING, "Raw frame from spacecraft ID " + spacecraftId + ", length " + rawFrame.length + " ambiguous: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Raw frame from spacecraft ID " + spacecraftId + ", length " + rawFrame.length + " error during identification: " + e.getMessage(), e);
+        }
+        return vcaName;
     }
 
     public void dispose() {
@@ -389,6 +517,19 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         toReturn.put("Secondary Header Present", String.valueOf(frame.isSecondaryHeaderPresent()));
         toReturn.put("First Header Pointer", String.valueOf(frame.getFirstHeaderPointer()));
         toReturn.put("Idle Frame", String.valueOf(frame.isIdleFrame()));
+        renderClcwIfPresent(frame, toReturn);
+        renderFecfIfPresent(frame, toReturn);
+        return toReturn;
+    }
+
+    private void renderFecfIfPresent(AbstractTransferFrame frame, LinkedHashMap<String, String> toReturn) {
+        if(frame.isFecfPresent()) {
+            toReturn.put("FECF", null);
+            toReturn.put("Validity FECF", String.valueOf(frame.isValid()));
+        }
+    }
+
+    private void renderClcwIfPresent(AbstractTransferFrame frame, LinkedHashMap<String, String> toReturn) {
         if(frame.isOcfPresent()) {
             Clcw clcw = new Clcw(frame.getOcfCopy());
             toReturn.put("CLCW", null);
@@ -403,11 +544,6 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
             toReturn.put("CLCW FARM-B Counter", String.valueOf(clcw.getFarmBCounter()));
             toReturn.put("CLCW Report Value", String.valueOf(clcw.getReportValue()));
         }
-        if(frame.isFecfPresent()) {
-            toReturn.put("FECF", null);
-            toReturn.put("Validity FECF", String.valueOf(frame.isValid()));
-        }
-        return toReturn;
     }
 
     public LinkedHashMap<String, String> renderBadTm(RawData rawData) {
@@ -431,24 +567,22 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         toReturn.put("AOS Type", frame.getUserDataType().name());
         toReturn.put("First Header Pointer", String.valueOf(frame.getFirstHeaderPointer()));
         toReturn.put("Idle Frame", String.valueOf(frame.isIdleFrame()));
-        if(frame.isOcfPresent()) {
-            Clcw clcw = new Clcw(frame.getOcfCopy());
-            toReturn.put("CLCW", null);
-            toReturn.put("CLCW TC VC ID", String.valueOf(clcw.getVirtualChannelId()));
-            toReturn.put("CLCW Status Field", String.valueOf(clcw.getStatusField()));
-            toReturn.put("CLCW COP in Effect", String.valueOf(clcw.getCopInEffect()));
-            toReturn.put("CLCW Lockout Flag", String.valueOf(clcw.isLockoutFlag()));
-            toReturn.put("CLCW No Bitlock Flag", String.valueOf(clcw.isNoBitlockFlag()));
-            toReturn.put("CLCW No RF Available Flag", String.valueOf(clcw.isNoRfAvailableFlag()));
-            toReturn.put("CLCW Retransmit Flag", String.valueOf(clcw.isRetransmitFlag()));
-            toReturn.put("CLCW Wait Flag", String.valueOf(clcw.isWaitFlag()));
-            toReturn.put("CLCW FARM-B Counter", String.valueOf(clcw.getFarmBCounter()));
-            toReturn.put("CLCW Report Value", String.valueOf(clcw.getReportValue()));
+        renderClcwIfPresent(frame, toReturn);
+        renderFecfIfPresent(frame, toReturn);
+        return toReturn;
+    }
+
+    public LinkedHashMap<String, String> renderTmRawTransferFrame(RawData rawData) {
+        LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
+        RawTransferFrame frame = (RawTransferFrame) rawData.getData();
+        if(frame == null) {
+            // As for the SatDecodeConnector: without further indications, a GOOD or UNKNOWN raw frame is considered a valid one
+            frame = new RawTransferFrame((short) spacecraftId, Objects.toString(rawData.getExtension()), rawData.getContents(), false,
+                    rawData.getQuality() != Quality.BAD);
         }
-        if(frame.isFecfPresent()) {
-            toReturn.put("FECF", null);
-            toReturn.put("Validity FECF", String.valueOf(frame.isValid()));
-        }
+        toReturn.put("Frame Information", null);
+        toReturn.put("Spacecraft ID", String.valueOf(frame.getSpacecraftId()));
+        toReturn.put("External Type", frame.getExternalTmType());
         return toReturn;
     }
 
@@ -461,4 +595,5 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     public String toString() {
         return "TM Data Link Processor";
     }
+
 }
