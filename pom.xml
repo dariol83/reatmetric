@@ -56,7 +56,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <!-- Java version -->
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <!-- External libraries versions -->
         <junit.version>5.10.0-M1</junit.version>
         <openjfx.version>19.0.2.1</openjfx.version>
