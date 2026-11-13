@@ -21,19 +21,38 @@ import eu.dariolucia.reatmetric.api.common.Pair;
 import java.io.Serializable;
 import java.util.List;
 
+/**
+ * Represents an array value containing multiple records.
+ */
 public class Array implements Serializable {
 
+    /** The list of records in this array. */
     private final List<Record> records;
 
+    /**
+     * Constructs an Array with the specified records.
+     *
+     * @param records the list of records
+     */
     public Array(List<Record> records) {
         this.records = List.copyOf(records);
     }
 
+    /**
+     * Returns the list of records.
+     *
+     * @return an unmodifiable list of records
+     */
     public List<Record> getRecords() {
         return records;
     }
 
     @Override
+    /**
+     * Returns a string representation of this array.
+     *
+     * @return a string representation
+     */
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("[ ");
@@ -44,23 +63,50 @@ public class Array implements Serializable {
         return sb.toString();
     }
 
+    /**
+     * Parses a string to create an Array.
+     * Currently not implemented.
+     *
+     * @param s the string to parse
+     * @return the parsed Array
+     * @throws UnsupportedOperationException always, as parsing is not yet implemented
+     */
     public static Array parse(String s) {
         throw new UnsupportedOperationException("Cannot parse Array yet: " + s);
     }
 
+    /**
+     * Represents a single record within an Array, containing key-value pairs.
+     */
     public static class Record implements Serializable {
 
+        /** The list of key-value pairs in this record. */
         private final List<Pair<String, Object>> elements;
 
+        /**
+         * Constructs a Record with the specified elements.
+         *
+         * @param elements the list of key-value pairs
+         */
         public Record(List<Pair<String, Object>> elements) {
             this.elements = List.copyOf(elements);
         }
 
+        /**
+         * Returns the list of key-value pairs.
+         *
+         * @return an unmodifiable list of key-value pairs
+         */
         public List<Pair<String, Object>> getElements() {
             return elements;
         }
 
         @Override
+        /**
+         * Returns a string representation of this record.
+         *
+         * @return a string representation in the format "{ key1 : value1 | key2 : value2 }"
+         */
         public String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append("{ ");

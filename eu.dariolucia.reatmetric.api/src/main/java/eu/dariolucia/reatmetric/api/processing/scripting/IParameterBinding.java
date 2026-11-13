@@ -19,22 +19,66 @@ package eu.dariolucia.reatmetric.api.processing.scripting;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
 import eu.dariolucia.reatmetric.api.parameters.Validity;
 
+/**
+ * Interface representing a binding to a parameter entity.
+ * Extends IEntityBinding with parameter-specific metadata and values.
+ */
 public interface IParameterBinding extends IEntityBinding {
 
+    /**
+     * Returns the raw value of the parameter.
+     *
+     * @return the raw parameter value
+     */
     Object rawValue();
 
+    /**
+     * Returns the engineering value of the parameter.
+     *
+     * @return the engineering parameter value
+     */
     Object value();
 
+    /**
+     * Returns the alarm state of the parameter.
+     *
+     * @return the alarm state
+     */
     AlarmState alarmState();
 
+    /**
+     * Returns whether the parameter is in alarm.
+     *
+     * @return true if the parameter is in alarm, false otherwise
+     */
     boolean inAlarm();
 
+    /**
+     * Returns whether the parameter value is valid.
+     *
+     * @return true if the value is valid, false otherwise
+     */
     boolean valid();
 
+    /**
+     * Returns the validity of the parameter value.
+     *
+     * @return the validity
+     */
     Validity validity();
 
+    /**
+     * Returns the container ID of the parameter.
+     *
+     * @return the container ID, may be null
+     */
     Long containerId();
 
+    /**
+     * Returns the route of the parameter.
+     *
+     * @return the route, may be null
+     */
     String route();
 
 }

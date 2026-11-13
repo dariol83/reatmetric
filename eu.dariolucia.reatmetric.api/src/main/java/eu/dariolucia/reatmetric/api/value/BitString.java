@@ -25,7 +25,9 @@ import java.util.Objects;
  */
 public class BitString implements Serializable {
 
+    /** The byte array containing the bit string data. */
     private final byte[] data;
+    /** The length of the bit string in bits. */
     private final int length;
 
     /**
@@ -68,6 +70,12 @@ public class BitString implements Serializable {
     }
 
     @Override
+    /**
+     * Checks if this bit string is equal to another object.
+     *
+     * @param o the object to compare with
+     * @return true if the objects are equal, false otherwise
+     */
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -77,6 +85,11 @@ public class BitString implements Serializable {
     }
 
     @Override
+    /**
+     * Returns a hash code for this bit string.
+     *
+     * @return a hash code value
+     */
     public int hashCode() {
         int result = Objects.hash(length);
         result = 31 * result + Arrays.hashCode(data);
@@ -84,6 +97,12 @@ public class BitString implements Serializable {
     }
 
     @Override
+    /**
+     * Returns a string representation of this bit string.
+     * The format is an underscore followed by a sequence of 0s and 1s.
+     *
+     * @return a string representation
+     */
     public String toString() {
         StringBuilder sb = new StringBuilder("_");
         for(int i = 0; i < length; ++i) {

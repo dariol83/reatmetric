@@ -18,13 +18,34 @@
 package eu.dariolucia.reatmetric.api.model;
 
 /**
+ * Enumeration of system entity types in the ReatMetric system.
+ * System entities represent the different types of elements that can be monitored and controlled.
  *
  * @author dario
  */
 public enum SystemEntityType {
+    /**
+     * A container entity that can contain other system entities.
+     */
     CONTAINER,
+    
+    /**
+     * A parameter entity that represents a telemetry or control parameter.
+     */
     PARAMETER,
+    
+    /**
+     * An event entity that represents an event occurrence.
+     */
     EVENT,
+    
+    /**
+     * An activity entity that represents an activity that can be executed.
+     */
     ACTIVITY,
-    REPORT // Future evolution (to be assessed)
+    
+    /**
+     * A report entity for future evolution (to be assessed).
+     */
+    REPORT
 }

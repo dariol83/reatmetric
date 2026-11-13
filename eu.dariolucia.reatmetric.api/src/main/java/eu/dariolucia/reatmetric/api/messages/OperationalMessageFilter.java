@@ -30,17 +30,19 @@ import java.util.*;
  */
 public final class OperationalMessageFilter extends AbstractDataItemFilter<OperationalMessage> implements Serializable {
     
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+    /** Serial version UID for serialization. */
+    private static final long serialVersionUID = 1L;
 
-	private final String messageTextContains;
+    /** The text that must be contained in the message. */
+    private final String messageTextContains;
 
-	private final Set<String> idList;
+    /** The set of message IDs to filter by. */
+    private final Set<String> idList;
 
+    /** The set of sources to filter by. */
     private final Set<String> sourceList;
     
+    /** The set of severities to filter by. */
     private final Set<Severity> severityList;
 
     /**
@@ -118,11 +120,22 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter<Opera
     }
     
     @Override
+    /**
+     * Checks if this filter is clear (no filtering criteria).
+     *
+     * @return true if all filter criteria are null, false otherwise
+     */
     public boolean isClear() {
         return this.messageTextContains == null && this.idList == null && this.severityList == null && this.sourceList == null;
     }
 
     @Override
+    /**
+     * Tests if the specified operational message matches this filter.
+     *
+     * @param item the operational message to test
+     * @return true if the item matches the filter, false otherwise
+     */
     public boolean test(OperationalMessage item) {
         if(messageTextContains != null && !item.getMessage().contains(messageTextContains)) {
             return false;
@@ -140,11 +153,23 @@ public final class OperationalMessageFilter extends AbstractDataItemFilter<Opera
     }
 
     @Override
+    /**
+     * Checks if the specified system entity should be selected.
+     * Always returns true for operational message filters.
+     *
+     * @param entity the system entity to check
+     * @return always true
+     */
     public boolean select(SystemEntity entity) {
         return true;
     }
 
     @Override
+    /**
+     * Returns the data item type this filter applies to.
+     *
+     * @return the OperationalMessage class
+     */
     public Class<OperationalMessage> getDataItemType() {
         return OperationalMessage.class;
     }

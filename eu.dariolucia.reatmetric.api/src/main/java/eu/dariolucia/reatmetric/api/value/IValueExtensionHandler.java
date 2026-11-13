@@ -16,27 +16,57 @@
 
 package eu.dariolucia.reatmetric.api.value;
 
+/**
+ * Handler interface for extending value type support.
+ */
 public interface IValueExtensionHandler {
 
     /**
-     * The class that matches with the object type.
+     * Returns the class that matches with the object type.
      *
      * @return the type class
      */
     Class<?> typeClass();
 
     /**
-     * The ID that identifies the type: negative values are reserved and shall not be used.
+     * Returns the ID that identifies the type.
+     * Negative values are reserved and shall not be used.
      *
      * @return the type ID (positive value only)
      */
     short typeId();
 
+    /**
+     * Converts the value to its string representation.
+     *
+     * @param v the value to convert
+     * @return the string representation of the value
+     */
     String toString(Object v);
 
+    /**
+     * Parses a string to create a value.
+     *
+     * @param s the string to parse
+     * @return the parsed value
+     */
     Object parse(String s);
 
+    /**
+     * Serializes a value to a byte array.
+     *
+     * @param v the value to serialize
+     * @return the serialized byte array
+     */
     byte[] serialize(Object v);
 
+    /**
+     * Deserializes a value from a byte array.
+     *
+     * @param b the byte array containing the serialized data
+     * @param offset the offset into the byte array where the data starts
+     * @param length the length of the data to deserialize
+     * @return the deserialized value
+     */
     Object deserialize(byte[] b, int offset, int length);
 }

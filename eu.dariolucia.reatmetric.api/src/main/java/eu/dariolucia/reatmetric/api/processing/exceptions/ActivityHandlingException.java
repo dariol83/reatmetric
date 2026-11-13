@@ -18,12 +18,26 @@ package eu.dariolucia.reatmetric.api.processing.exceptions;
 
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+/**
+ * Exception thrown when an error occurs during activity handling.
+ */
 public class ActivityHandlingException extends ReatmetricException {
 
+    /**
+     * Constructs a new ActivityHandlingException with the specified message.
+     *
+     * @param message the detail message
+     */
     public ActivityHandlingException(String message) {
         super(message);
     }
 
+    /**
+     * Constructs a new ActivityHandlingException with the specified message and cause.
+     *
+     * @param message the detail message
+     * @param cause the cause of the exception
+     */
     public ActivityHandlingException(String message, Throwable cause) {
         super(message, cause);
     }

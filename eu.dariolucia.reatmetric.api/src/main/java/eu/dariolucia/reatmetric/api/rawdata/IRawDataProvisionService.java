@@ -26,13 +26,28 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- *
- * @author dario
+ * Service interface for provisioning raw data items.
  */
 public interface IRawDataProvisionService extends IDataItemProvisionService<IRawDataSubscriber, RawDataFilter, RawData> {
 
+    /**
+     * Retrieves the raw data contents for the specified unique ID.
+     *
+     * @param uniqueId the unique identifier of the raw data
+     * @return the raw data contents
+     * @throws ReatmetricException if a Reatmetric error occurs
+     * @throws RemoteException if a remote communication error occurs
+     */
     RawData getRawDataContents(IUniqueId uniqueId) throws ReatmetricException, RemoteException;
 
+    /**
+     * Retrieves rendered information for the specified raw data.
+     *
+     * @param rawData the raw data to render
+     * @return a map of rendered information key-value pairs
+     * @throws ReatmetricException if a Reatmetric error occurs
+     * @throws RemoteException if a remote communication error occurs
+     */
     LinkedHashMap<String, String> getRenderedInformation(RawData rawData) throws ReatmetricException, RemoteException;
 
 }

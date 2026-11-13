@@ -18,16 +18,35 @@ package eu.dariolucia.reatmetric.api.processing.exceptions;
 
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+/**
+ * Exception thrown when an error occurs in a processing model.
+ */
 public class ProcessingModelException extends ReatmetricException {
 
+    /**
+     * Constructs a new ProcessingModelException with the specified message.
+     *
+     * @param s the detail message
+     */
     public ProcessingModelException(String s) {
         super(s);
     }
 
+    /**
+     * Constructs a new ProcessingModelException with the specified cause.
+     *
+     * @param cause the cause of the exception
+     */
     public ProcessingModelException(Throwable cause) {
         super(cause);
     }
 
+    /**
+     * Constructs a new ProcessingModelException with the specified message and cause.
+     *
+     * @param message the detail message
+     * @param cause the cause of the exception
+     */
     public ProcessingModelException(String message, Throwable cause) {
         super(message, cause);
     }

@@ -30,16 +30,20 @@ import java.time.Instant;
 public class AcknowledgedMessage extends AbstractDataItem implements Serializable {
 
     /**
-     *
+     * Serial version UID for serialization.
      */
     private static final long serialVersionUID = 1L;
 
+    /** The operational message linked to this acknowledged message. */
     private final OperationalMessage message;
 
+    /** The acknowledgement status. */
     private final AcknowledgementState state;
 
+    /** The time when the message was acknowledged. */
     private final Instant acknowledgementTime;
 
+    /** The user who acknowledged the message. */
     private final String user;
 
     /**
@@ -61,18 +65,38 @@ public class AcknowledgedMessage extends AbstractDataItem implements Serializabl
         this.user = user;
     }
 
+    /**
+     * Returns the operational message linked to this acknowledged message.
+     *
+     * @return the operational message
+     */
     public OperationalMessage getMessage() {
         return message;
     }
 
+    /**
+     * Returns the acknowledgement status.
+     *
+     * @return the acknowledgement state
+     */
     public AcknowledgementState getState() {
         return state;
     }
 
+    /**
+     * Returns the time when the message was acknowledged.
+     *
+     * @return the acknowledgement time, or null if not yet acknowledged
+     */
     public Instant getAcknowledgementTime() {
         return acknowledgementTime;
     }
 
+    /**
+     * Returns the user who acknowledged the message.
+     *
+     * @return the user, or null if not yet acknowledged
+     */
     public String getUser() {
         return user;
     }
@@ -88,6 +112,11 @@ public class AcknowledgedMessage extends AbstractDataItem implements Serializabl
     }
 
     @Override
+    /**
+     * Returns a string representation of this acknowledged message.
+     *
+     * @return a string representation
+     */
     public String toString() {
         return "AcknowledgedMessage{" +
                 "message=" + message +

@@ -16,11 +16,25 @@
 
 package eu.dariolucia.reatmetric.api.value;
 
+/**
+ * Exception class for value-related errors.
+ */
 public class ValueException extends Exception {
+    /**
+     * Constructs a new ValueException with the specified detail message.
+     *
+     * @param message the detail message
+     */
     public ValueException(String message) {
         super(message);
     }
 
+    /**
+     * Constructs a new ValueException with the specified detail message and cause.
+     *
+     * @param message the detail message
+     * @param cause the cause of this exception
+     */
     public ValueException(String message, Throwable cause) {
         super(message, cause);
     }

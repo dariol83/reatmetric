@@ -22,6 +22,9 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.events.EventData;
 import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 
+/**
+ * Archive interface for raw data items.
+ */
 public interface IRawDataArchive extends IDataItemArchive<RawData, RawDataFilter> {
 
 }

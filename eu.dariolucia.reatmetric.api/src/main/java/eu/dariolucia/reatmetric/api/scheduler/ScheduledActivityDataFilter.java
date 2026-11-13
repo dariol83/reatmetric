@@ -33,21 +33,24 @@ import java.util.Set;
  */
 public final class ScheduledActivityDataFilter extends AbstractDataItemFilter<ScheduledActivityData> implements Serializable {
 
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = 1L;
 
+	/** The parent path to select. */
 	private final SystemEntityPath parentPath;
 
+    /** The set of exact paths to select. */
     private final Set<SystemEntityPath> activityPathList;
 
+    /** The set of resources to select. */
     private final Set<String> resourceList;
 
+    /** The set of sources to select. */
     private final Set<String> sourceList;
 
+    /** The set of scheduling states to select. */
     private final Set<SchedulingState> schedulingStateList;
 
+    /** The set of external IDs to select. */
     private final Set<String> externalIdList;
 
     /**

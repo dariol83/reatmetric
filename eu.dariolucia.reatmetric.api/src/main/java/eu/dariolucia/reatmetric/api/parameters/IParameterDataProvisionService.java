@@ -24,12 +24,31 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import java.rmi.RemoteException;
 
 /**
+ * Provision service interface for parameter data.
+ * This interface extends the data item state provision service to provide access to parameter data
+ * and parameter descriptors.
  *
  * @author dario
  */
 public interface IParameterDataProvisionService extends IDataItemStateProvisionService<IParameterDataSubscriber, ParameterDataFilter, ParameterData> {
 
+    /**
+     * Returns the parameter descriptor for the parameter at the specified path.
+     *
+     * @param path the system entity path of the parameter, cannot be null
+     * @return the parameter descriptor
+     * @throws ReatmetricException if a problem arises with the retrieval operation
+     * @throws RemoteException in case of remoting problem
+     */
     ParameterDescriptor getDescriptor(SystemEntityPath path) throws ReatmetricException, RemoteException;
 
+    /**
+     * Returns the parameter descriptor for the parameter with the specified external ID.
+     *
+     * @param externalId the external ID of the parameter
+     * @return the parameter descriptor
+     * @throws ReatmetricException if a problem arises with the retrieval operation
+     * @throws RemoteException in case of remoting problem
+     */
     ParameterDescriptor getDescriptor(int externalId) throws ReatmetricException, RemoteException;
 }

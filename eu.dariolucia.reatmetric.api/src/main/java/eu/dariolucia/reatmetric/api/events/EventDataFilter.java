@@ -34,22 +34,29 @@ import java.util.*;
 public final class EventDataFilter extends AbstractDataItemFilter<EventData> implements Serializable {
     
 	/**
-	 * 
+	 * Serial version UID for serialization.
 	 */
 	private static final long serialVersionUID = 1L;
 
+	/** The parent path to select. */
 	private final SystemEntityPath parentPath;
 
+    /** The set of exact event paths to select. */
     private final Set<SystemEntityPath> eventPathList;
 
+    /** The set of routes to select. */
     private final Set<String> routeList;
     
+    /** The set of types to select. */
     private final Set<String> typeList;
     
+    /** The set of sources to select. */
     private final Set<String> sourceList;
     
+    /** The set of severities to select. */
     private final Set<Severity> severityList;
 
+    /** The set of external IDs to select. */
     private final Set<Integer> externalIdList;
 
     /**
@@ -182,11 +189,22 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
     }
 
     @Override
+    /**
+     * Checks if this filter is clear (no filtering criteria).
+     *
+     * @return true if all filter criteria are null, false otherwise
+     */
     public boolean isClear() {
         return this.parentPath == null && this.eventPathList == null &&this.severityList == null && this.sourceList == null && this.routeList == null && this.typeList == null && this.externalIdList == null;
     }
 
     @Override
+    /**
+     * Tests if the specified event data matches this filter.
+     *
+     * @param item the event data to test
+     * @return true if the item matches the filter, false otherwise
+     */
     public boolean test(EventData item) {
         if(parentPath != null && !parentPath.isParentOf(item.getPath())) {
             return false;
@@ -213,11 +231,22 @@ public final class EventDataFilter extends AbstractDataItemFilter<EventData> imp
     }
 
     @Override
+    /**
+     * Checks if the specified system entity should be selected.
+     *
+     * @param entity the system entity to check
+     * @return true if the entity should be selected, false otherwise
+     */
     public boolean select(SystemEntity entity) {
         return (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
     }
 
     @Override
+    /**
+     * Returns the data item type this filter applies to.
+     *
+     * @return the EventData class
+     */
     public Class<EventData> getDataItemType() {
         return EventData.class;
     }

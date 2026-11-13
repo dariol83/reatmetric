@@ -24,10 +24,18 @@ public final class VoidInputDataItem extends AbstractInputDataItem {
 
     private static final VoidInputDataItem INSTANCE = new VoidInputDataItem();
 
+    /**
+     * Returns the singleton instance of VoidInputDataItem.
+     *
+     * @return the singleton instance
+     */
     public static VoidInputDataItem instance() {
         return INSTANCE;
     }
 
+    /**
+     * Private constructor to enforce singleton pattern.
+     */
     private VoidInputDataItem() {
         // private constructor, nothing to do here
     }

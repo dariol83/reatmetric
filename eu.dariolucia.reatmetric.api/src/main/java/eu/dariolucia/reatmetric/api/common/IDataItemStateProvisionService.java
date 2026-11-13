@@ -40,6 +40,7 @@ public interface IDataItemStateProvisionService<T extends IDataItemSubscriber<K>
      * @param filter the filter
      * @return the list of data items matching the filter, with their state at the specified time
      * @throws ReatmetricException if a problem arises with the retrieval operation
+     * @throws RemoteException in case of remoting problem
      */
     List<K> retrieve(Instant time, R filter) throws ReatmetricException, RemoteException;
     

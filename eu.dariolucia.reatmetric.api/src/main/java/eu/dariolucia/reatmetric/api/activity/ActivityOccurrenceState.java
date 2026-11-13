@@ -67,8 +67,14 @@ public enum ActivityOccurrenceState {
      */
     COMPLETED("Completed");
 
+    /** The human-readable string representation of this state. */
     String formatString;
 
+    /**
+     * Constructs an activity occurrence state with the specified format string.
+     *
+     * @param formatString the human-readable string representation of this state
+     */
     ActivityOccurrenceState(String formatString) {
         this.formatString = formatString;
     }

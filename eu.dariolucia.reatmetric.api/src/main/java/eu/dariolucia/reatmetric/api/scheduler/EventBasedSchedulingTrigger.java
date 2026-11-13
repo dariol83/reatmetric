@@ -24,18 +24,33 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
  */
 public class EventBasedSchedulingTrigger extends AbstractSchedulingTrigger {
 
+    /** The event path. */
     private final SystemEntityPath event;
 
+    /** The protection time in milliseconds. */
     private final int protectionTime;
 
+    /** Whether this trigger is enabled. */
     private final boolean enabled;
 
+    /**
+     * Constructs a new EventBasedSchedulingTrigger.
+     *
+     * @param event the event path
+     * @param protectionTime the protection time in milliseconds
+     * @param enabled whether this trigger is enabled
+     */
     public EventBasedSchedulingTrigger(SystemEntityPath event, int protectionTime, boolean enabled) {
         this.event = event;
         this.protectionTime = protectionTime;
         this.enabled = enabled;
     }
 
+    /**
+     * Returns the event path.
+     *
+     * @return the event path
+     */
     public SystemEntityPath getEvent() {
         return event;
     }
@@ -52,11 +67,21 @@ public class EventBasedSchedulingTrigger extends AbstractSchedulingTrigger {
         return protectionTime;
     }
 
+    /**
+     * Returns whether this trigger is enabled.
+     *
+     * @return true if enabled, false otherwise
+     */
     public boolean isEnabled() {
         return enabled;
     }
 
     @Override
+    /**
+     * Returns a string representation of this EventBasedSchedulingTrigger.
+     *
+     * @return the string representation
+     */
     public String toString() {
         return "[event " + event +
                 ", protection-time " + protectionTime + " ms" +

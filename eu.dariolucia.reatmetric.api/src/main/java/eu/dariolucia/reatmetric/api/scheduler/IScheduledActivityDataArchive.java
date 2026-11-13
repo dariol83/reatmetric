@@ -21,7 +21,8 @@ import eu.dariolucia.reatmetric.api.messages.AcknowledgedMessage;
 import eu.dariolucia.reatmetric.api.messages.AcknowledgedMessageFilter;
 
 /**
- *
+ * Archive interface for scheduled activity data.
+ * Extends IDataItemArchive for ScheduledActivityData with ScheduledActivityDataFilter.
  */
 public interface IScheduledActivityDataArchive extends IDataItemArchive<ScheduledActivityData, ScheduledActivityDataFilter> {
 

@@ -24,12 +24,23 @@ import java.util.List;
  */
 public class ArrayActivityArgumentRecord implements Serializable {
 
+    /** The list of activity arguments in this record. */
     private final List<AbstractActivityArgument> elements;
 
+    /**
+     * Constructs a new ArrayActivityArgumentRecord.
+     *
+     * @param elements the list of activity arguments
+     */
     public ArrayActivityArgumentRecord(List<AbstractActivityArgument> elements) {
         this.elements = List.copyOf(elements);
     }
 
+    /**
+     * Returns an unmodifiable list of the activity arguments in this record.
+     *
+     * @return the list of activity arguments
+     */
     public List<AbstractActivityArgument> getElements() {
         return elements;
     }

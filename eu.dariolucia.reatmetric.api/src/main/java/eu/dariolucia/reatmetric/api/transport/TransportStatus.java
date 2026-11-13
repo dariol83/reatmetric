@@ -25,13 +25,29 @@ import java.io.Serializable;
  */
 public final class TransportStatus implements Serializable {
 
+    /** The name of the transport connector. */
     private final String name;
+    /** The connection status. */
     private final TransportConnectionStatus status;
+    /** The alarm state. */
     private final AlarmState alarmState;
+    /** The transmission rate in bits per second. */
     private final long txRate;
+    /** The reception rate in bits per second. */
     private final long rxRate;
+    /** Whether auto-reconnect is enabled. */
     private final boolean autoReconnect;
 
+    /**
+     * Constructs a new TransportStatus.
+     *
+     * @param name the name of the transport connector
+     * @param status the connection status
+     * @param txRate the transmission rate in bits per second
+     * @param rxRate the reception rate in bits per second
+     * @param alarmState the alarm state
+     * @param autoReconnect whether auto-reconnect is enabled
+     */
     public TransportStatus(String name, TransportConnectionStatus status, long txRate, long rxRate, AlarmState alarmState, boolean autoReconnect) {
         this.name = name;
         this.status = status;
@@ -97,6 +113,11 @@ public final class TransportStatus implements Serializable {
     }
 
     @Override
+    /**
+     * Returns a string representation of this TransportStatus.
+     *
+     * @return the string representation
+     */
     public String toString() {
         return "TransportStatus{" +
                 "name='" + name + '\'' +

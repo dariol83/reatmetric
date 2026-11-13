@@ -37,24 +37,32 @@ import java.time.Instant;
 public final class AlarmParameterData extends AbstractDataItem implements Serializable {
 
 	/**
-	 * 
+	 * Serial version UID for serialization.
 	 */
 	private static final long serialVersionUID = 1L;
 
+	/** The external ID of the parameter in the system entity model. */
 	private final int externalId;
 
+	/** The name of the parameter. */
 	private final String name;
 
+	/** The path of the parameter in the system entity model. */
 	private final SystemEntityPath path;
 
+	/** The current alarm state of the parameter. */
 	private final AlarmState currentAlarmState;
 
+	/** The current engineering value of the parameter. */
 	private final Object currentValue;
 
+	/** The detection time when this alarm object was received by the ReatMetric system. */
 	private final Instant receptionTime;
 
+	/** The last nominal value of the parameter. */
 	private final Object lastNominalValue;
 
+	/** The generation time of the last nominal value. */
 	private final Instant lastNominalValueTime;
 
 	/**
@@ -162,6 +170,11 @@ public final class AlarmParameterData extends AbstractDataItem implements Serial
 	}
 
 	@Override
+	/**
+	 * Returns a string representation of this alarm parameter data.
+	 *
+	 * @return a string representation
+	 */
 	public String toString() {
 		return "AlarmParameterData{" +
 				"internalId=" + internalId +

@@ -27,14 +27,32 @@ import java.io.Serializable;
 public abstract class AbstractSystemEntityDescriptor implements Serializable {
 
     /**
-     *
+     * The serial version UID for serialization compatibility.
      */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * The system entity path this descriptor refers to.
+     */
     private final SystemEntityPath path;
+    
+    /**
+     * The external ID of the system entity.
+     */
     private final int externalId;
+    
+    /**
+     * The type of the system entity.
+     */
     private final SystemEntityType type;
 
+    /**
+     * Constructor for the system entity descriptor.
+     *
+     * @param path the system entity path, cannot be null
+     * @param externalId the external ID of the system entity
+     * @param type the type of the system entity, cannot be null
+     */
     protected AbstractSystemEntityDescriptor(SystemEntityPath path, int externalId, SystemEntityType type) {
         this.path = path;
         this.externalId = externalId;
@@ -68,6 +86,11 @@ public abstract class AbstractSystemEntityDescriptor implements Serializable {
         return type;
     }
 
+    /**
+     * Returns a string representation of this system entity descriptor.
+     *
+     * @return a string representation of this descriptor
+     */
     @Override
     public String toString() {
         return "{" +

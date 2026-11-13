@@ -27,16 +27,27 @@ import java.util.List;
  */
 public class ActivityPlainArgumentDescriptor extends AbstractActivityArgumentDescriptor {
 
+    /** The raw data type. */
     private final ValueTypeEnum rawDataType;
+    /** The engineering data type. */
     private final ValueTypeEnum engineeringDataType;
+    /** The unit of the argument. */
     private final String unit;
+    /** Whether the argument is fixed and cannot be modified. */
     private final boolean fixed;
+    /** Whether a default value is present. */
     private final boolean defaultValuePresent;
+    /** The engineering default value. */
     private final Object engineeringDefaultValue;
+    /** The raw default value. */
     private final Object rawDefaultValue;
+    /** Whether a decalibration is provided. */
     private final boolean decalibrationSet;
+    /** Whether check conditions are defined. */
     private final boolean checkSet;
+    /** The list of acceptable raw values. */
     private final List<Object> expectedRawValues;
+    /** The list of acceptable engineering values. */
     private final List<Object> expectedEngineeringValues;
 
     /**
@@ -79,46 +90,101 @@ public class ActivityPlainArgumentDescriptor extends AbstractActivityArgumentDes
         }
     }
 
+    /**
+     * Returns the raw data type.
+     *
+     * @return the raw data type
+     */
     public ValueTypeEnum getRawDataType() {
         return rawDataType;
     }
 
+    /**
+     * Returns the engineering data type.
+     *
+     * @return the engineering data type
+     */
     public ValueTypeEnum getEngineeringDataType() {
         return engineeringDataType;
     }
 
+    /**
+     * Returns the unit of the argument.
+     *
+     * @return the unit, may be null
+     */
     public String getUnit() {
         return unit;
     }
 
+    /**
+     * Returns whether the argument is fixed and cannot be modified.
+     *
+     * @return true if fixed, false otherwise
+     */
     public boolean isFixed() {
         return fixed;
     }
 
+    /**
+     * Returns whether a default value is present.
+     *
+     * @return true if a default value is present, false otherwise
+     */
     public boolean isDefaultValuePresent() {
         return defaultValuePresent;
     }
 
+    /**
+     * Returns the engineering default value.
+     *
+     * @return the engineering default value, may be null
+     */
     public Object getEngineeringDefaultValue() {
         return engineeringDefaultValue;
     }
 
+    /**
+     * Returns the raw default value.
+     *
+     * @return the raw default value, may be null
+     */
     public Object getRawDefaultValue() {
         return rawDefaultValue;
     }
 
+    /**
+     * Returns whether a decalibration is provided.
+     *
+     * @return true if decalibration is set, false otherwise
+     */
     public boolean isDecalibrationSet() {
         return decalibrationSet;
     }
 
+    /**
+     * Returns whether check conditions are defined.
+     *
+     * @return true if check conditions are set, false otherwise
+     */
     public boolean isCheckSet() {
         return checkSet;
     }
 
+    /**
+     * Returns the list of acceptable raw values.
+     *
+     * @return the list of expected raw values, may be null
+     */
     public List<Object> getExpectedRawValues() {
         return expectedRawValues;
     }
 
+    /**
+     * Returns the list of acceptable engineering values.
+     *
+     * @return the list of expected engineering values, may be null
+     */
     public List<Object> getExpectedEngineeringValues() {
         return expectedEngineeringValues;
     }

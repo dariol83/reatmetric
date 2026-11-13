@@ -18,22 +18,56 @@
 package eu.dariolucia.reatmetric.api.parameters;
 
 /**
+ * Enumeration of validity states for parameter data.
+ * The validity indicates the quality or reliability of the parameter value.
  *
  * @author dario
  */
 public enum Validity {
+    /**
+     * The parameter value is valid and reliable.
+     */
     VALID("Valid"),
+    
+    /**
+     * The parameter value is invalid and should not be used.
+     */
     INVALID("Invalid"),
+    
+    /**
+     * The parameter is disabled and not providing valid data.
+     */
     DISABLED("Disabled"),
+    
+    /**
+     * The validity of the parameter value is unknown.
+     */
     UNKNOWN("Unknown"),
+    
+    /**
+     * An error occurred while determining the validity.
+     */
     ERROR("Error");
 
+    /**
+     * The printable name of this validity state.
+     */
     private final String printableName;
 
+    /**
+     * Constructor for a validity state.
+     *
+     * @param printableName the printable name of this validity state, cannot be null
+     */
     Validity(String printableName) {
         this.printableName = printableName;
     }
 
+    /**
+     * Returns the printable name of this validity state.
+     *
+     * @return the printable name (cannot be null)
+     */
     public String getPrintableName() {
         return printableName;
     }

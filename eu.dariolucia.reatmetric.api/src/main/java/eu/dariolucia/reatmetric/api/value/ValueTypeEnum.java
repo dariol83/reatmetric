@@ -79,11 +79,24 @@ public enum ValueTypeEnum {
      */
     DERIVED(13, Object.class, null, null);
 
+    /** The numeric code for this value type. */
     private final int code;
+    /** The Java class assigned to this value type. */
     private final Class<?> assignedClass;
+    /** The function to convert a value to string. */
     private final Function<?, String> toString;
+    /** The function to parse a string into a value. */
     private final Function<String, ?> toObject;
 
+    /**
+     * Constructs a value type enum with the specified parameters.
+     *
+     * @param code the numeric code
+     * @param assignedClass the Java class
+     * @param toString the function to convert a value to string
+     * @param toObject the function to parse a string into a value
+     * @param <T> the type of the value
+     */
     <T> ValueTypeEnum(int code, Class<T> assignedClass, Function<T, String> toString, Function<String, T> toObject) {
         this.code = code;
         this.assignedClass = assignedClass;
@@ -109,6 +122,14 @@ public enum ValueTypeEnum {
         return assignedClass;
     }
 
+    /**
+     * Parses a string to create a value of this type.
+     *
+     * @param <T> the type of the value
+     * @param s the string to parse
+     * @return the parsed value
+     * @throws IllegalStateException if this type is EXTENSION or DERIVED
+     */
     @SuppressWarnings("unchecked")
     public <T> T parse(String s) {
         if (this == EXTENSION || this == DERIVED) {
@@ -117,6 +138,13 @@ public enum ValueTypeEnum {
         return (T) toObject.apply(s);
     }
 
+    /**
+     * Converts a value to its string representation.
+     *
+     * @param object the value to convert
+     * @return the string representation
+     * @throws IllegalStateException if this type is EXTENSION or DERIVED
+     */
     @SuppressWarnings("unchecked")
     public String toString(Object object) {
         if (this == EXTENSION || this == DERIVED) {
@@ -125,6 +153,12 @@ public enum ValueTypeEnum {
         return ((Function<Object, String>) toString).apply(object);
     }
 
+    /**
+     * Maps a Java class to the corresponding value type enum.
+     *
+     * @param assignedClass the Java class to map
+     * @return the corresponding value type enum, or EXTENSION if no match is found
+     */
     public static ValueTypeEnum fromClass(Class<?> assignedClass) {
         for(ValueTypeEnum vte : values()) {
             if(vte.getAssignedClass().isAssignableFrom(assignedClass)) {
@@ -148,6 +182,11 @@ public enum ValueTypeEnum {
         return ValueTypeEnum.values()[code - 1];
     }
 
+    /**
+     * Returns a human-readable string representation of this value type.
+     *
+     * @return the value type name with underscores replaced by spaces
+     */
     public String asBeautyString() {
         return name().replace('_', ' ');
     }

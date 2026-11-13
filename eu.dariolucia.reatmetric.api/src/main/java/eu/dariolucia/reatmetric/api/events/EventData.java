@@ -42,28 +42,40 @@ public final class EventData extends AbstractDataItem implements Serializable {
     /**
 	 * 
 	 */
+	/** Serial version UID for serialization. */
 	private static final long serialVersionUID = 1L;
 
+	/** The event ID as specified in the processing model definition. */
 	private final int externalId;
 
+	/** The name of the event. */
 	private final String name;
 
+    /** The path of the event in the processing model tree. */
     private final SystemEntityPath path;
     
+    /** The event qualifier, a string characterizing the event occurrence. */
     private final String qualifier;
     
+    /** The reception time of the event. */
     private final Instant receptionTime;
 
+    /** The event type as specified in the processing model definition. */
     private final String type;
     
+    /** The reception route of the event. */
     private final String route;
 
+    /** The event source. */
     private final String source;
     
+    /** The severity of the event. */
     private final Severity severity;
 
+    /** The event report object. */
     private final Object report;
 
+    /** The unique ID of the RawData delivering the event. */
     private final IUniqueId rawDataContainerId;
 
 	/**
@@ -213,6 +225,11 @@ public final class EventData extends AbstractDataItem implements Serializable {
     }
 
     @Override
+    /**
+     * Returns a string representation of this event data.
+     *
+     * @return a string representation
+     */
     public String toString() {
         return "EventData{" +
 				"internalId=" + internalId +

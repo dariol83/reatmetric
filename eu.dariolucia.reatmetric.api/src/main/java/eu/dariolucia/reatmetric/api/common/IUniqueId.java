@@ -24,10 +24,26 @@ import java.io.Serializable;
  */
 public interface IUniqueId extends Serializable {
 
+    /**
+     * Indicates whether some other object is "equal to" this one.
+     *
+     * @param o the reference object with which to compare
+     * @return true if this object is the same as the obj argument; false otherwise
+     */
     boolean equals(Object o);
 
+    /**
+     * Returns a hash code value for this unique identifier.
+     *
+     * @return a hash code value for this object
+     */
     int hashCode();
 
+    /**
+     * Returns a string representation of this unique identifier.
+     *
+     * @return a string representation of this object
+     */
     String toString();
 
     /**

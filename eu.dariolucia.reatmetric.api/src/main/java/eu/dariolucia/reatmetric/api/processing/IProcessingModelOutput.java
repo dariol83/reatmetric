@@ -20,8 +20,17 @@ import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 
 import java.util.List;
 
+/**
+ * Interface for receiving output notifications from a processing model.
+ * Implementations are notified when data items are updated in the model.
+ */
 public interface IProcessingModelOutput {
 
+    /**
+     * Notifies that the specified data items have been updated.
+     *
+     * @param items the list of updated data items
+     */
     void notifyUpdate(List<AbstractDataItem> items);
 
 }

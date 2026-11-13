@@ -32,17 +32,21 @@ import java.util.*;
 public final class AlarmParameterDataFilter extends AbstractDataItemFilter<AlarmParameterData> implements Serializable {
 
 	/**
-	 * 
+	 * Serial version UID for serialization.
 	 */
 	private static final long serialVersionUID = 1L;
 
+	/** The parent path to select. */
 	private final SystemEntityPath parentPath;
 
-    private final Set<SystemEntityPath> parameterPathList;
+	/** The set of exact parameter paths to select. */
+	private final Set<SystemEntityPath> parameterPathList;
 
-    private final Set<AlarmState> alarmStateList;
+	/** The set of alarm states to select. */
+	private final Set<AlarmState> alarmStateList;
 
-    private final Set<Integer> externalIdList;
+	/** The set of parameter IDs to select. */
+	private final Set<Integer> externalIdList;
 
     /**
      * The constructor of the alarm parameter filter.
@@ -120,11 +124,22 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
     }
 
     @Override
+    /**
+     * Checks if this filter is clear (no filtering criteria).
+     *
+     * @return true if all filter criteria are null, false otherwise
+     */
     public boolean isClear() {
         return this.parentPath == null && this.parameterPathList == null && this.alarmStateList == null && this.externalIdList == null;
     }
 
     @Override
+    /**
+     * Tests if the specified alarm parameter data matches this filter.
+     *
+     * @param item the alarm parameter data to test
+     * @return true if the item matches the filter, false otherwise
+     */
     public boolean test(AlarmParameterData item) {
         if(parentPath != null && !parentPath.isParentOf(item.getPath())) {
             return false;
@@ -142,11 +157,22 @@ public final class AlarmParameterDataFilter extends AbstractDataItemFilter<Alarm
     }
 
     @Override
+    /**
+     * Checks if the specified system entity should be selected.
+     *
+     * @param entity the system entity to check
+     * @return true if the entity should be selected, false otherwise
+     */
     public boolean select(SystemEntity entity) {
         return (parentPath == null || parentPath.isParentOf(entity.getPath()) || entity.getPath().isParentOf(parentPath));
     }
 
     @Override
+    /**
+     * Returns the data item type this filter applies to.
+     *
+     * @return the AlarmParameterData class
+     */
     public Class<AlarmParameterData> getDataItemType() {
         return AlarmParameterData.class;
     }

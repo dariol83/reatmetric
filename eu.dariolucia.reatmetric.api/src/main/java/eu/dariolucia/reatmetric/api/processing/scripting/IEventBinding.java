@@ -18,19 +18,58 @@ package eu.dariolucia.reatmetric.api.processing.scripting;
 
 import eu.dariolucia.reatmetric.api.messages.Severity;
 
+/**
+ * Interface representing a binding to an event entity.
+ * Extends IEntityBinding with event-specific metadata.
+ */
 public interface IEventBinding extends IEntityBinding {
 
+    /**
+     * Returns the severity of the event.
+     *
+     * @return the event severity
+     */
     Severity severity();
 
+    /**
+     * Returns the route of the event.
+     *
+     * @return the event route
+     */
     String route();
 
+    /**
+     * Returns the source of the event.
+     *
+     * @return the event source
+     */
     String source();
 
+    /**
+     * Returns the type of the event.
+     *
+     * @return the event type
+     */
     String type();
 
+    /**
+     * Returns the qualifier of the event.
+     *
+     * @return the event qualifier
+     */
     String qualifier();
 
+    /**
+     * Returns the report of the event.
+     *
+     * @return the event report
+     */
     Object report();
 
+    /**
+     * Returns the container ID of the event.
+     *
+     * @return the container ID, may be null
+     */
     Long containerId();
 }

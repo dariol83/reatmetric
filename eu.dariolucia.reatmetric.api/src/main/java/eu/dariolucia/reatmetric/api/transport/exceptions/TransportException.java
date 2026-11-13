@@ -18,16 +18,35 @@ package eu.dariolucia.reatmetric.api.transport.exceptions;
 
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+/**
+ * Exception thrown when an error occurs in a transport connector.
+ */
 public class TransportException extends ReatmetricException {
 
+    /**
+     * Constructs a new TransportException with the specified message.
+     *
+     * @param message the detail message
+     */
     public TransportException(String message) {
         super(message);
     }
 
+    /**
+     * Constructs a new TransportException with the specified message and cause.
+     *
+     * @param message the detail message
+     * @param cause the cause of the exception
+     */
     public TransportException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Constructs a new TransportException with the specified cause.
+     *
+     * @param cause the cause of the exception
+     */
     public TransportException(Throwable cause) {
         super(cause);
     }

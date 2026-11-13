@@ -24,5 +24,9 @@ package eu.dariolucia.reatmetric.api.common;
  */
 public interface IDisposable {
 
+    /**
+     * Release the resources owned by the implemented object.
+     * After this method is called, the object should not be used anymore.
+     */
     void dispose();
 }

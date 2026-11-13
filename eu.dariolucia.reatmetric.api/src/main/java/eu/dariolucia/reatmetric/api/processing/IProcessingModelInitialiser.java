@@ -22,8 +22,20 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 
 import java.util.List;
 
+/**
+ * Interface for initializing the state of a processing model.
+ * Implementations provide initial state for system entities.
+ */
 public interface IProcessingModelInitialiser {
 
+    /**
+     * Returns the initial state for a system entity.
+     *
+     * @param externalId the external ID of the system entity
+     * @param type the type of the system entity
+     * @return the list of data items representing the initial state
+     * @throws ReatmetricException if the initial state cannot be retrieved
+     */
     List<AbstractDataItem> getState(int externalId, SystemEntityType type) throws ReatmetricException;
 
 }

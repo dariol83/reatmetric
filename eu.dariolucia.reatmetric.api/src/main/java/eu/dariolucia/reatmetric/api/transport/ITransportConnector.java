@@ -111,7 +111,8 @@ public interface ITransportConnector extends Remote {
     void disconnect() throws TransportException, RemoteException;
 
     /**
-     * Ask the connector to abort the connection to the external system.
+     * Ask the connector to abort the connection to the external system immediately.
+     * Unlike disconnect(), abort() performs an immediate termination without cleanup.
      *
      * @throws TransportException in case of problems
      * @throws RemoteException in case of issues on the remote side

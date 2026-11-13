@@ -34,6 +34,7 @@ public interface IOperationalMessageCollectorService extends Remote {
      * @param request the message request
      * @return the ID of the operational message created by this request
      * @throws ReatmetricException in case of problems during the creation of the message
+     * @throws RemoteException if a remote communication error occurs
      */
     IUniqueId logMessage(OperationalMessageRequest request) throws ReatmetricException, RemoteException;
 

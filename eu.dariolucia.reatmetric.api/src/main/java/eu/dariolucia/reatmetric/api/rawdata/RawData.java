@@ -42,29 +42,37 @@ import java.time.Instant;
  */
 public final class RawData extends AbstractDataItem implements Serializable {
 
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+    /** Serial version UID for serialization. */
+    private static final long serialVersionUID = 1L;
 
-	private final String name;
+    /** The raw data name. */
+    private final String name;
 
+    /** The raw data type. */
     private final String type;
     
+    /** The route associated to the raw data item. */
     private final String route;
 
+    /** The reception time of the raw data item. */
     private final Instant receptionTime;
 
+    /** The source associated to the raw data item. */
     private final String source;
 
+    /** The quality of the raw data item. */
     private final Quality quality;
 
+    /** The unique ID of a related item. */
     private final IUniqueId relatedItem;
 
+    /** The raw data binary contents. */
     private final byte[] contents;
 
+    /** The function that handled or created this raw data item. */
     private final String handler;
 
+    /** Whether the raw data item belongs to the live processing flow. */
     private final boolean live;
 
     /**
@@ -224,6 +232,11 @@ public final class RawData extends AbstractDataItem implements Serializable {
     }
 
     @Override
+    /**
+     * Returns a string representation of this raw data.
+     *
+     * @return a string representation
+     */
     public String toString() {
         return "RawData{" +
                 "name='" + name + '\'' +

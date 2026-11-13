@@ -27,28 +27,58 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
+ * Filter for parameter data items.
+ * This filter allows selecting parameter data based on various criteria such as path, route, validity, alarm state, and external ID.
  *
  * @author dario
  */
 public final class ParameterDataFilter extends AbstractDataItemFilter<ParameterData> implements Serializable {
    
     /**
-	 * 
-	 */
+     * The serial version UID for serialization compatibility.
+     */
 	private static final long serialVersionUID = 1L;
 
+    /**
+     * The parent path for filtering. If set, only parameters under this path will be selected.
+     */
     private final SystemEntityPath parentPath;
 
+	/**
+     * The set of specific parameter paths to filter by.
+     */
 	private final Set<SystemEntityPath> parameterPathList;
 
+    /**
+     * The set of routes to filter by.
+     */
     private final Set<String> routeList;
 
+    /**
+     * The set of validity states to filter by.
+     */
     private final Set<Validity> validityList;
 
+    /**
+     * The set of alarm states to filter by.
+     */
     private final Set<AlarmState> alarmStateList;
 
+    /**
+     * The set of external IDs to filter by.
+     */
     private final Set<Integer> externalIdList;
 
+    /**
+     * Constructor for a parameter data filter.
+     *
+     * @param parentPath the parent path for filtering, can be null
+     * @param pathList the collection of specific parameter paths to filter by, can be null
+     * @param routeList the collection of routes to filter by, can be null
+     * @param validityList the collection of validity states to filter by, can be null
+     * @param alarmStateList the collection of alarm states to filter by, can be null
+     * @param externalIdList the collection of external IDs to filter by, can be null
+     */
     public ParameterDataFilter(SystemEntityPath parentPath, Collection<SystemEntityPath> pathList, Collection<String> routeList, Collection<Validity> validityList, Collection<AlarmState> alarmStateList, Collection<Integer> externalIdList) {
         this.parentPath = parentPath;
         if(pathList != null) {
@@ -78,26 +108,56 @@ public final class ParameterDataFilter extends AbstractDataItemFilter<ParameterD
         }
     }
 
+    /**
+     * Returns the parent path for filtering.
+     *
+     * @return the parent path (can be null)
+     */
     public SystemEntityPath getParentPath() {
         return parentPath;
     }
 
+    /**
+     * Returns the set of specific parameter paths to filter by.
+     *
+     * @return the set of parameter paths (can be null)
+     */
     public Set<SystemEntityPath> getParameterPathList() {
         return parameterPathList;
     }
 
+    /**
+     * Returns the set of alarm states to filter by.
+     *
+     * @return the set of alarm states (can be null)
+     */
     public Set<AlarmState> getAlarmStateList() {
         return alarmStateList;
     }
 
+    /**
+     * Returns the set of validity states to filter by.
+     *
+     * @return the set of validity states (can be null)
+     */
     public Set<Validity> getValidityList() {
         return validityList;
     }
 
+    /**
+     * Returns the set of routes to filter by.
+     *
+     * @return the set of routes (can be null)
+     */
     public Set<String> getRouteList() {
         return routeList;
     }
 
+    /**
+     * Returns the set of external IDs to filter by.
+     *
+     * @return the set of external IDs (can be null)
+     */
     public Set<Integer> getExternalIdList() {
         return externalIdList;
     }

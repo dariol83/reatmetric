@@ -23,16 +23,34 @@ import java.time.Instant;
  */
 public class AbsoluteTimeSchedulingTrigger extends AbstractSchedulingTrigger {
 
+    /**
+     * The release time at which the scheduled activity should be triggered.
+     */
     private final Instant releaseTime;
 
+    /**
+     * Constructor for an absolute time scheduling trigger.
+     *
+     * @param releaseTime the release time for the scheduled activity, cannot be null
+     */
     public AbsoluteTimeSchedulingTrigger(Instant releaseTime) {
         this.releaseTime = releaseTime;
     }
 
+    /**
+     * Returns the release time at which the scheduled activity should be triggered.
+     *
+     * @return the release time (cannot be null)
+     */
     public Instant getReleaseTime() {
         return releaseTime;
     }
 
+    /**
+     * Returns a string representation of this scheduling trigger.
+     *
+     * @return a string representation of this object
+     */
     @Override
     public String toString() {
         return "[absolute-time " + releaseTime + "]";

@@ -60,18 +60,41 @@ public enum AlarmState {
      */
     UNKNOWN(false, "Unknown");
 
+    /**
+     * Whether this alarm state represents an actual alarm condition.
+     */
     private final boolean alarm;
+    
+    /**
+     * The printable name of this alarm state.
+     */
     private final String printableName;
 
+    /**
+     * Constructor for an alarm state.
+     *
+     * @param alarm whether this state represents an alarm condition
+     * @param printableName the printable name of this state, cannot be null
+     */
     AlarmState(boolean alarm, String printableName) {
         this.alarm = alarm;
         this.printableName = printableName;
     }
 
+    /**
+     * Returns whether this alarm state represents an actual alarm condition.
+     *
+     * @return true if this is an alarm condition, false otherwise
+     */
     public boolean isAlarm() {
         return alarm;
     }
 
+    /**
+     * Returns the printable name of this alarm state.
+     *
+     * @return the printable name (cannot be null)
+     */
     public String getPrintableName() {
         return printableName;
     }

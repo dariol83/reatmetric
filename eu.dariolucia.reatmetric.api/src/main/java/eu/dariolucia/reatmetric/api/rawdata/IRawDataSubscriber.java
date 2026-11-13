@@ -20,8 +20,7 @@ package eu.dariolucia.reatmetric.api.rawdata;
 import eu.dariolucia.reatmetric.api.common.IDataItemSubscriber;
 
 /**
- *
- * @author dario
+ * Subscriber interface for raw data notifications.
  */
 public interface IRawDataSubscriber extends IDataItemSubscriber<RawData> {
     

@@ -33,16 +33,22 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
     /**
 	 * 
 	 */
+	/** Serial version UID for serialization. */
 	private static final long serialVersionUID = 1L;
 
+	/** The message ID. */
 	private final String id;
 
+    /** The message text. */
     private final String message;
 
+    /** The message source. */
     private final String source;
 
+    /** The message severity. */
     private final Severity severity;
 
+    /** The linked system entity ID. */
     private final Integer linkedEntityId;
 
     /**
@@ -112,6 +118,11 @@ public final class OperationalMessage extends AbstractDataItem implements Serial
     }
 
     @Override
+    /**
+     * Returns a string representation of this operational message.
+     *
+     * @return a string representation
+     */
     public String toString() {
         return "OperationalMessage{" +
                 "id='" + id + '\'' +

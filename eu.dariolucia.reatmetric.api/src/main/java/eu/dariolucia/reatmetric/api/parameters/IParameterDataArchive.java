@@ -17,9 +17,11 @@
 package eu.dariolucia.reatmetric.api.parameters;
 
 import eu.dariolucia.reatmetric.api.archive.IDataItemArchive;
-import eu.dariolucia.reatmetric.api.events.EventData;
-import eu.dariolucia.reatmetric.api.events.EventDataFilter;
 
+/**
+ * Archive interface for parameter data.
+ * This interface provides archiving capabilities for parameter data items.
+ */
 public interface IParameterDataArchive extends IDataItemArchive<ParameterData, ParameterDataFilter> {
 
 }

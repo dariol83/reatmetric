@@ -18,6 +18,16 @@ package eu.dariolucia.reatmetric.api.processing.input;
 
 import java.io.Serializable;
 
+/**
+ * Abstract base class for all input data items in the processing model.
+ * This is a marker class that serves as the parent class for all processing input data types.
+ */
 public abstract class AbstractInputDataItem implements Serializable {
+    /**
+     * Protected constructor for subclasses.
+     */
+    protected AbstractInputDataItem() {
+    }
+    
     // Marker class
 }

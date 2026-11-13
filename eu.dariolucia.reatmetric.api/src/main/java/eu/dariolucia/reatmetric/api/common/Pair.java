@@ -43,9 +43,23 @@ public final class Pair<T, K> implements Serializable {
         return new Pair<>(first, second);
     }
 
+    /**
+     * The first value of the pair.
+     */
     private final T first;
+    
+    /**
+     * The second value of the pair.
+     */
     private final K second;
 
+    /**
+     * Private constructor for creating a Pair.
+     * Use the factory method {@link #of(Object, Object)} instead.
+     *
+     * @param first the first value, can be null
+     * @param second the second value, can be null
+     */
     private Pair(T first, K second) {
         this.first = first;
         this.second = second;
@@ -84,11 +98,21 @@ public final class Pair<T, K> implements Serializable {
                 Objects.equals(second, pair.second);
     }
 
+    /**
+     * Returns a hash code value for this pair.
+     *
+     * @return a hash code value for this object
+     */
     @Override
     public int hashCode() {
         return Objects.hash(first, second);
     }
 
+    /**
+     * Returns a string representation of this pair.
+     *
+     * @return a string representation of this object
+     */
     @Override
     public String toString() {
         return "Pair[" +

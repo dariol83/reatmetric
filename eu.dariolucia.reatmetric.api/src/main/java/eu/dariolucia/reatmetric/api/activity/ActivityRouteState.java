@@ -26,7 +26,9 @@ import java.util.Objects;
  */
 public class ActivityRouteState implements Serializable {
 
+    /** The route name. */
     private final String route;
+    /** The route availability. */
     private final ActivityRouteAvailability availability;
 
     /**
@@ -59,6 +61,13 @@ public class ActivityRouteState implements Serializable {
     }
 
     @Override
+    /**
+     * Checks if this ActivityRouteState is equal to another object.
+     * Two states are considered equal if they have the same route.
+     *
+     * @param o the object to compare with
+     * @return true if the objects are equal, false otherwise
+     */
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -67,11 +76,21 @@ public class ActivityRouteState implements Serializable {
     }
 
     @Override
+    /**
+     * Returns a hash code for this ActivityRouteState.
+     *
+     * @return the hash code
+     */
     public int hashCode() {
         return Objects.hash(getRoute());
     }
 
     @Override
+    /**
+     * Returns a string representation of this ActivityRouteState.
+     *
+     * @return the string representation
+     */
     public String toString() {
         return route + " [" + availability + "]";
     }

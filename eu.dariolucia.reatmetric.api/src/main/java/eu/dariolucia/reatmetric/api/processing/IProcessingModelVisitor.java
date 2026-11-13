@@ -19,14 +19,39 @@ package eu.dariolucia.reatmetric.api.processing;
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.model.SystemEntity;
 
+/**
+ * Interface for visiting the elements of a processing model.
+ * Implementations can traverse the model and receive notifications for system entities and data items.
+ */
 public interface IProcessingModelVisitor {
 
+    /**
+     * Determines whether the visitor should descend into the specified system entity.
+     *
+     * @param path the system entity to potentially descend into
+     * @return true if the visitor should descend, false otherwise
+     */
     boolean shouldDescend(SystemEntity path);
 
+    /**
+     * Called when starting to visit a system entity.
+     *
+     * @param path the system entity being visited
+     */
     void startVisit(SystemEntity path);
 
+    /**
+     * Called when visiting a data item.
+     *
+     * @param item the data item being visited
+     */
     void onVisit(AbstractDataItem item);
 
+    /**
+     * Called when finishing the visit of a system entity.
+     *
+     * @param path the system entity that was visited
+     */
     void endVisit(SystemEntity path);
 
 }

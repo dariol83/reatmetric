@@ -32,6 +32,8 @@ public interface IAcknowledgementService extends Remote {
      *
      * @param message the message to acknowledge
      * @param user the user that acknowledged the message
+     * @throws ReatmetricException if a Reatmetric error occurs
+     * @throws RemoteException if a remote communication error occurs
      */
     void acknowledgeMessage(AcknowledgedMessage message, String user) throws ReatmetricException, RemoteException;
 
@@ -40,6 +42,8 @@ public interface IAcknowledgementService extends Remote {
      *
      * @param messages the messages to acknowledge
      * @param user the user that acknowledged the message
+     * @throws ReatmetricException if a Reatmetric error occurs
+     * @throws RemoteException if a remote communication error occurs
      */
     void acknowledgeMessages(Collection<AcknowledgedMessage> messages, String user) throws ReatmetricException, RemoteException;
 
@@ -47,6 +51,8 @@ public interface IAcknowledgementService extends Remote {
      * Acknowledge all pending messages by the specified user.
      *
      * @param user the user that acknowledged the message
+     * @throws ReatmetricException if a Reatmetric error occurs
+     * @throws RemoteException if a remote communication error occurs
      */
     void acknowledgeAllMessages(String user) throws ReatmetricException, RemoteException;
 }

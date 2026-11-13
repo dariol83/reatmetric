@@ -22,21 +22,45 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Filter for system entity data items.
+ * This filter allows selecting system entities based on various criteria such as parent path, type, status, and alarm state.
+ */
 public class SystemEntityFilter extends AbstractDataItemFilter<SystemEntity> implements Serializable {
 
     /**
-     *
+     * The serial version UID for serialization compatibility.
      */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * The parent path for filtering. If set, only entities under this path will be selected.
+     */
     private final SystemEntityPath parentPath;
 
+    /**
+     * The list of system entity types to filter by.
+     */
     private final List<SystemEntityType> typeList;
 
+    /**
+     * The list of status values to filter by.
+     */
     private final List<Status> statusList;
 
+    /**
+     * The list of alarm states to filter by.
+     */
     private final List<AlarmState> alarmStateList;
 
+    /**
+     * Constructor for a system entity filter.
+     *
+     * @param parentPath the parent path for filtering, can be null
+     * @param typeList the list of system entity types to filter by, can be null
+     * @param statusList the list of status values to filter by, can be null
+     * @param alarmStateList the list of alarm states to filter by, can be null
+     */
     public SystemEntityFilter(SystemEntityPath parentPath, List<SystemEntityType> typeList, List<Status> statusList, List<AlarmState> alarmStateList) {
         this.parentPath = parentPath;
         if(typeList != null) {
@@ -56,18 +80,38 @@ public class SystemEntityFilter extends AbstractDataItemFilter<SystemEntity> imp
         }
     }
 
+    /**
+     * Returns the parent path for filtering.
+     *
+     * @return the parent path (can be null)
+     */
     public SystemEntityPath getParentPath() {
         return parentPath;
     }
 
+    /**
+     * Returns the list of status values to filter by.
+     *
+     * @return the list of status values (can be null)
+     */
     public List<Status> getStatusList() {
         return statusList;
     }
 
+    /**
+     * Returns the list of alarm states to filter by.
+     *
+     * @return the list of alarm states (can be null)
+     */
     public List<AlarmState> getAlarmStateList() {
         return alarmStateList;
     }
 
+    /**
+     * Returns the list of system entity types to filter by.
+     *
+     * @return the list of system entity types (can be null)
+     */
     public List<SystemEntityType> getTypeList() {
         return typeList;
     }

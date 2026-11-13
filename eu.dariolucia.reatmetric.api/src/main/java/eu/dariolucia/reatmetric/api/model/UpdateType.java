@@ -18,11 +18,24 @@
 package eu.dariolucia.reatmetric.api.model;
 
 /**
+ * Enumeration of update types that can occur in the system model.
+ * These types indicate the nature of changes to system entities.
  *
  * @author dario
  */
 public enum UpdateType {
+    /**
+     * Indicates that a system entity has been added.
+     */
     ADDITION,
+    
+    /**
+     * Indicates that a system entity has been deleted.
+     */
     DELETION,
+    
+    /**
+     * Indicates that a system entity has been updated.
+     */
     UPDATE
 }

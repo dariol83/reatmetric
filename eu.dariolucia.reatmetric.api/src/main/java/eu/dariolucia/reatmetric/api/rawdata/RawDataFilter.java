@@ -37,23 +37,28 @@ import java.util.*;
  */
 public final class RawDataFilter extends AbstractDataItemFilter<RawData> implements Serializable {
     
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = -3381513283926701964L;
+    /** Serial version UID for serialization. */
+    private static final long serialVersionUID = -3381513283926701964L;
 
-	private final boolean withData;
+    /** Whether retrieved raw data shall include binary contents. */
+    private final boolean withData;
 
+    /** The live/repatriated selection criterion. */
     private final Boolean live;
 
-	private final String nameContains;
+    /** The raw data name substring to select. */
+    private final String nameContains;
     
+    /** The set of routes to select. */
     private final Set<String> routeList;
     
+    /** The set of types to select. */
     private final Set<String> typeList;
     
+    /** The set of sources to select. */
     private final Set<String> sourceList;
     
+    /** The set of qualities to select. */
     private final Set<Quality> qualityList;
 
     /**
@@ -179,11 +184,22 @@ public final class RawDataFilter extends AbstractDataItemFilter<RawData> impleme
     }
 
     @Override
+    /**
+     * Checks if this filter is clear (no filtering criteria).
+     *
+     * @return true if all filter criteria are null, false otherwise
+     */
     public boolean isClear() {
         return this.qualityList == null && this.nameContains == null && this.sourceList == null && this.typeList == null && this.routeList == null && this.live == null;
     }
 
     @Override
+    /**
+     * Tests if the specified raw data matches this filter.
+     *
+     * @param item the raw data to test
+     * @return true if the item matches the filter, false otherwise
+     */
     public boolean test(RawData item) {
         if(live != null && live != item.isLive()) {
             return false;
@@ -207,11 +223,23 @@ public final class RawDataFilter extends AbstractDataItemFilter<RawData> impleme
     }
 
     @Override
+    /**
+     * Checks if the specified system entity should be selected.
+     * Always returns true for raw data filters.
+     *
+     * @param entity the system entity to check
+     * @return always true
+     */
     public boolean select(SystemEntity entity) {
         return true;
     }
 
     @Override
+    /**
+     * Returns the data item type this filter applies to.
+     *
+     * @return the RawData class
+     */
     public Class<RawData> getDataItemType() {
         return RawData.class;
     }

@@ -29,14 +29,28 @@ import java.util.Set;
  */
 public class RelativeTimeSchedulingTrigger extends AbstractSchedulingTrigger {
 
+    /** The set of predecessor activity names. */
     private final Set<String> predecessors;
 
+    /** The delay time in seconds. */
     private final int delayTime;
 
+    /**
+     * Constructs a new RelativeTimeSchedulingTrigger with the specified predecessors and no delay.
+     *
+     * @param predecessors the set of predecessor activity names
+     */
     public RelativeTimeSchedulingTrigger(Set<String> predecessors) {
         this(predecessors, 0);
     }
 
+    /**
+     * Constructs a new RelativeTimeSchedulingTrigger.
+     *
+     * @param predecessors the set of predecessor activity names
+     * @param delayTime the delay time in seconds (must be >= 0)
+     * @throws IllegalArgumentException if delayTime is negative
+     */
     public RelativeTimeSchedulingTrigger(Set<String> predecessors, int delayTime) {
         if(delayTime < 0) {
             throw new IllegalArgumentException("Delay time is less than 0");
@@ -45,15 +59,30 @@ public class RelativeTimeSchedulingTrigger extends AbstractSchedulingTrigger {
         this.delayTime = delayTime;
     }
 
+    /**
+     * Returns the delay time in seconds.
+     *
+     * @return the delay time in seconds
+     */
     public int getDelayTime() {
         return delayTime;
     }
 
+    /**
+     * Returns the set of predecessor activity names.
+     *
+     * @return the set of predecessor activity names
+     */
     public Set<String> getPredecessors() {
         return predecessors;
     }
 
     @Override
+    /**
+     * Returns a string representation of this RelativeTimeSchedulingTrigger.
+     *
+     * @return the string representation
+     */
     public String toString() {
         return "[relative-time " +
                 "predecessors " + predecessors +

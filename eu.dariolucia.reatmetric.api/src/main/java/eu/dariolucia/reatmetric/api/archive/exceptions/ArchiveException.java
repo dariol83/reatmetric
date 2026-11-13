@@ -24,21 +24,40 @@ import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 public class ArchiveException extends ReatmetricException {
 
     /**
-     *
+     * Serial version UID for serialization.
      */
     private static final long serialVersionUID = 1L;
 
+    /**
+     * Constructs a new ArchiveException with no detail message.
+     */
     public ArchiveException() {
     }
 
+    /**
+     * Constructs a new ArchiveException with the specified detail message.
+     *
+     * @param message the detail message
+     */
     public ArchiveException(String message) {
         super(message);
     }
 
+    /**
+     * Constructs a new ArchiveException with the specified detail message and cause.
+     *
+     * @param message the detail message
+     * @param cause the cause of this exception
+     */
     public ArchiveException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Constructs a new ArchiveException with the specified cause.
+     *
+     * @param cause the cause of this exception
+     */
     public ArchiveException(Throwable cause) {
         super(cause);
     }

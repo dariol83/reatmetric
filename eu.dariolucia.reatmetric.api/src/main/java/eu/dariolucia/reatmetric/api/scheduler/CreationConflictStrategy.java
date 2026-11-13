@@ -16,6 +16,9 @@
 
 package eu.dariolucia.reatmetric.api.scheduler;
 
+/**
+ * Strategy for handling conflicts when creating scheduled activities.
+ */
 public enum CreationConflictStrategy {
     /**
      * Abort the complete operation if there is a resource conflict: the schedule is unmodified

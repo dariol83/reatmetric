@@ -18,14 +18,31 @@ package eu.dariolucia.reatmetric.api.processing.input;
 
 import java.io.Serializable;
 
+/**
+ * Abstract base class for activity arguments.
+ * Activity arguments are used to pass data to activities during their execution.
+ */
 public abstract class AbstractActivityArgument implements Serializable {
 
+    /**
+     * The name of the activity argument.
+     */
     private final String name;
 
+    /**
+     * Constructor for an activity argument.
+     *
+     * @param name the name of the argument, cannot be null
+     */
     public AbstractActivityArgument(String name) {
         this.name = name;
     }
 
+    /**
+     * Returns the name of the activity argument.
+     *
+     * @return the name (cannot be null)
+     */
     public String getName() {
         return name;
     }

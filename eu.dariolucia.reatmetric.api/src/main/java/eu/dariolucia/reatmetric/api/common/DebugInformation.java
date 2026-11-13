@@ -39,16 +39,41 @@ public final class DebugInformation implements Serializable {
         return new DebugInformation(element, name, measure, maximum, unit);
     }
 
+    /**
+     * The name of the element for which the debug information is provided.
+     */
     private final String element;
 
+    /**
+     * The name of the property.
+     */
     private final String name;
 
+    /**
+     * The object of the measurement: it can be null, a {@link Number}, a {@link String} or an {@link Enum} value.
+     */
     private final Object measure;
 
+    /**
+     * The maximum value that the property can have: it can be null or a {@link Number}.
+     */
     private final Object maximum;
 
+    /**
+     * The unit of the measurement, it can be null.
+     */
     private final String unit;
 
+    /**
+     * Private constructor for creating DebugInformation objects.
+     * Use the factory method {@link #of(String, String, Object, Object, String)} instead.
+     *
+     * @param element the name of the element, for which the debug information is provided
+     * @param name the name of the property
+     * @param measure the object of the measurement
+     * @param maximum the maximum value that the property can have
+     * @param unit the unit of the measurement
+     */
     private DebugInformation(String element, String name, Object measure, Object maximum, String unit) {
         if(measure != null) {
             if(!(measure instanceof Number || measure instanceof String || measure instanceof Enum<?>)) {
@@ -67,26 +92,56 @@ public final class DebugInformation implements Serializable {
         this.unit = unit;
     }
 
+    /**
+     * Returns the name of the element for which the debug information is provided.
+     *
+     * @return the element name (cannot be null)
+     */
     public String getElement() {
         return element;
     }
 
+    /**
+     * Returns the name of the property.
+     *
+     * @return the property name (cannot be null)
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Returns the measurement value. Can be null, a {@link Number}, a {@link String} or an {@link Enum} value.
+     *
+     * @return the measurement value (can be null)
+     */
     public Object getMeasure() {
         return measure;
     }
 
+    /**
+     * Returns the maximum value that the property can have. Can be null or a {@link Number}.
+     *
+     * @return the maximum value (can be null)
+     */
     public Object getMaximum() {
         return maximum;
     }
 
+    /**
+     * Returns the unit of the measurement. Can be null.
+     *
+     * @return the unit (can be null)
+     */
     public String getUnit() {
         return unit;
     }
 
+    /**
+     * Returns a string representation of this debug information object.
+     *
+     * @return a string representation of this debug information
+     */
     @Override
     public String toString() {
         return "[" +

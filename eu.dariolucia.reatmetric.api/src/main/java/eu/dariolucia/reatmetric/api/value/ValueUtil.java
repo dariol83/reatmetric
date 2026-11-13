@@ -25,8 +25,24 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 
+/**
+ * Utility class for value type operations including serialization, deserialization, parsing, and conversion.
+ */
 public class ValueUtil {
 
+    /**
+     * Private constructor to prevent instantiation of this utility class.
+     */
+    private ValueUtil() {
+    }
+
+    /**
+     * Converts a value to its string representation.
+     * For byte arrays, uses hex dump formatting.
+     *
+     * @param valueObject the value to convert
+     * @return the string representation of the value
+     */
     public static String toString(Object valueObject) {
         if(valueObject instanceof byte[]) {
             return StringUtil.toHexDump((byte[]) valueObject);
@@ -35,6 +51,13 @@ public class ValueUtil {
         }
     }
 
+    /**
+     * Converts a value to its string representation using the specified type.
+     *
+     * @param type the value type to use for conversion
+     * @param valueObject the value to convert
+     * @return the string representation of the value, or null if the value is null
+     */
     public static String toString(ValueTypeEnum type, Object valueObject) {
         if(valueObject == null) {
             return null;
@@ -146,6 +169,14 @@ public class ValueUtil {
         return Pair.of(s, ValueTypeEnum.CHARACTER_STRING);
     }
 
+    /**
+     * Parses a string value using the specified type.
+     *
+     * @param type the value type to parse as
+     * @param valueAsString the string to parse
+     * @return the parsed value, or null if the string is null
+     * @throws IllegalArgumentException if type is EXTENSION or DERIVED
+     */
     public static Object parse(ValueTypeEnum type, String valueAsString) {
         if(type == ValueTypeEnum.EXTENSION) {
             throw new IllegalArgumentException("Cannot parse an extension using this method, use parseExtension(Class<?>,String)");
@@ -158,6 +189,15 @@ public class ValueUtil {
         }
     }
 
+    /**
+     * Parses a string value as an extension type.
+     *
+     * @param type the extension type class
+     * @param valueAsString the string to parse
+     * @return the parsed value, or null if the string is null
+     * @param <T> the extension type
+     * @throws IllegalStateException if no handler is registered for the type
+     */
     public static <T> Object parseExtension(Class<T> type, String valueAsString) {
         if(valueAsString == null) {
             return null;
@@ -171,6 +211,15 @@ public class ValueUtil {
         }
     }
 
+    /**
+     * Deserializes a value from its byte array representation.
+     * The first byte contains the type code and null flag.
+     *
+     * @param dump the byte array containing the serialized value
+     * @return the deserialized value, or null if the null flag is set
+     * @throws IllegalStateException if deserialization fails
+     * @throws IllegalAccessError if the type code is not recognized
+     */
     public static Object deserialize(byte[] dump) {
         // DERIVED cannot be returned/used
         // Type
@@ -248,6 +297,13 @@ public class ValueUtil {
         }
     }
 
+    /**
+     * Serializes a value to a byte array.
+     * Automatically detects the value type from its class.
+     *
+     * @param valueObject the value to serialize
+     * @return the serialized byte array, or a null indicator if the value is null
+     */
     public static byte[] serialize(Object valueObject) {
         // DERIVED cannot be returned/used
         if(valueObject == null) {
@@ -262,7 +318,7 @@ public class ValueUtil {
     }
 
     /**
-     * The serialisation is based on the 'type'-'value' approach:
+     * The serialization is based on the 'type'-'value' approach:
      * <ul>
      *     <li>'type' is encoded in 1 byte, whose value encodes the {@link ValueTypeEnum} code: the MSB bit, if set, indicates a null value</li>
      *     <li>'value' is the encoded value, depending on the type</li>
@@ -272,9 +328,12 @@ public class ValueUtil {
      *     <li>a 2 bytes prefix, identifying the type ID of the {@link IValueExtensionHandler} (-1 if Java Serialization is used)</li>
      *     <li>the serialized value provided by the corresponding {@link IValueExtensionHandler}</li>
      * </ul>
+     *
      * @param type the type
      * @param valueObject the value
-     * @return the serialized Value
+     * @return the serialized byte array, or a null indicator if the value is null
+     * @throws IllegalStateException if serialization fails
+     * @throws IllegalAccessError if the type is not recognized
      */
     public static byte[] serialize(ValueTypeEnum type, Object valueObject) {
         if(valueObject == null) {
@@ -445,7 +504,9 @@ public class ValueUtil {
     }
 
 
+    /** Maps Java classes to their corresponding value extension handlers. */
     private static final Map<Class<?>, IValueExtensionHandler> CLASS2HANDLER = new HashMap<>();
+    /** Maps type IDs to their corresponding value extension handlers. */
     private static final Map<Integer, IValueExtensionHandler> TYPE2HANDLER = new HashMap<>();
 
     static {
@@ -465,6 +526,15 @@ public class ValueUtil {
         }
     }
 
+    /**
+     * Compares two objects using their natural ordering.
+     * Null values are always considered less than non-null values.
+     *
+     * @param o1 the first object to compare
+     * @param o2 the second object to compare
+     * @return a negative integer, zero, or a positive integer as the first object is less than, equal to, or greater than the second
+     * @throws ClassCastException if the objects are not mutually comparable
+     */
     public static int compare(Object o1, Object o2) {
         // Null always less than anything else
         if(o1 == null && o2 == null) {
@@ -478,6 +548,14 @@ public class ValueUtil {
         }
     }
 
+    /**
+     * Converts a value to the specified target type.
+     *
+     * @param result the value to convert
+     * @param type the target value type
+     * @return the converted value, or null if the input is null
+     * @throws ValueException if the conversion cannot be performed
+     */
     public static Object convert(Object result, ValueTypeEnum type) throws ValueException {
         if(result == null) {
             return null;
@@ -548,6 +626,15 @@ public class ValueUtil {
         throw new ValueException("Object " + result + " cannot be converted to " + type);
     }
 
+    /**
+     * Checks if a value matches the specified type.
+     *
+     * @param type the value type to check against
+     * @param value the value to check
+     * @return true if the value matches the type, false otherwise.
+     *         For EXTENSION and DERIVED types, always returns true.
+     *         For null values, returns true.
+     */
     public static boolean typeMatch(ValueTypeEnum type, Object value) {
         if(value == null) {
             // Absence of value is considered a type match

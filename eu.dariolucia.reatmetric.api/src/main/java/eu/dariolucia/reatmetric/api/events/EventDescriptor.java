@@ -28,9 +28,13 @@ import eu.dariolucia.reatmetric.api.model.SystemEntityType;
  */
 public class EventDescriptor extends AbstractSystemEntityDescriptor {
 
+    /** The event description. */
     private final String description;
+    /** The event severity. */
     private final Severity severity;
+    /** The event type. */
     private final String eventType;
+    /** Whether the event is driven by a condition. */
     private final boolean conditionDriven;
 
     /**

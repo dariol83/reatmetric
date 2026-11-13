@@ -34,12 +34,18 @@ import java.util.Objects;
 public abstract class AbstractDataItem extends UniqueItem implements Serializable {
     
     /**
-	 * 
-	 */
+     * The serial version UID for serialization compatibility.
+     */
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * The extension object associated with this data item (can be null).
+	 */
 	protected final Object extension;
     
+	/**
+	 * The generation time of this data item.
+	 */
     protected final Instant generationTime;
 
     /**
@@ -112,6 +118,11 @@ public abstract class AbstractDataItem extends UniqueItem implements Serializabl
         return Objects.equals(this.generationTime, other.generationTime);
     }
 
+    /**
+     * Returns a string representation of this data item including its internal ID, extension, and generation time.
+     *
+     * @return a string representation of this data item
+     */
     @Override
     public String toString() {
         return "AbstractDataItem [" + "internalId=" + internalId + ", extension=" + extension + ", generationTime=" + generationTime + ']';

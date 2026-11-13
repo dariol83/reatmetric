@@ -25,12 +25,26 @@ import java.util.Objects;
  */
 public class LongUniqueId implements IUniqueId {
 
+    /**
+     * The unique identifier value.
+     */
     private final long id;
 
+    /**
+     * Constructor for a LongUniqueId.
+     *
+     * @param id the unique identifier value
+     */
     public LongUniqueId(long id) {
         this.id = id;
     }
 
+    /**
+     * Indicates whether some other object is "equal to" this one.
+     *
+     * @param o the reference object with which to compare
+     * @return true if this object is the same as the obj argument; false otherwise
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -39,16 +53,31 @@ public class LongUniqueId implements IUniqueId {
         return id == that.id;
     }
 
+    /**
+     * Returns a hash code value for this unique ID.
+     *
+     * @return a hash code value for this object
+     */
     @Override
     public int hashCode() {
         return Objects.hash(id);
     }
 
+    /**
+     * Returns a string representation of this unique ID.
+     *
+     * @return a string representation of this object
+     */
     @Override
     public String toString() {
         return String.valueOf(id);
     }
 
+    /**
+     * Returns the long representation of this identifier.
+     *
+     * @return the long value of this identifier
+     */
     @Override
     public long asLong() {
         return id;

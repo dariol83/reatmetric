@@ -20,6 +20,8 @@ package eu.dariolucia.reatmetric.api.parameters;
 import eu.dariolucia.reatmetric.api.common.IDataItemSubscriber;
 
 /**
+ * Subscriber interface for parameter data.
+ * Implementations of this interface receive notifications when new parameter data items are available.
  *
  * @author dario
  */

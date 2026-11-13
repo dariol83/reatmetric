@@ -32,18 +32,33 @@ import eu.dariolucia.reatmetric.api.common.UniqueItem;
 public final class SystemEntity extends AbstractDataItem implements Serializable {
     
     /**
-	 * 
-	 */
+     * The serial version UID for serialization compatibility.
+     */
 	private static final long serialVersionUID = 1L;
 
+	/**
+     * The external ID of the system entity.
+     */
 	private final int externalId;
 
+	/**
+     * The path of the system entity.
+     */
 	private final SystemEntityPath path;
 
+    /**
+     * The status of the system entity.
+     */
     private final Status status;
     
+    /**
+     * The alarm state of the system entity.
+     */
     private final AlarmState alarmState;
     
+    /**
+     * The type of the system entity.
+     */
     private final SystemEntityType type;
 
     /**
@@ -119,6 +134,13 @@ public final class SystemEntity extends AbstractDataItem implements Serializable
         return externalId;
     }
 
+    /**
+     * Indicates whether some other object is "equal to" this one.
+     * Two system entities are equal if they have the same external ID, path, status, alarm state, and type.
+     *
+     * @param o the reference object with which to compare
+     * @return true if this object is the same as the obj argument; false otherwise
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -131,11 +153,21 @@ public final class SystemEntity extends AbstractDataItem implements Serializable
                 getType() == that.getType();
     }
 
+    /**
+     * Returns a hash code value for this system entity.
+     *
+     * @return a hash code value for this object
+     */
     @Override
     public int hashCode() {
         return Objects.hash(externalId, getPath(), getStatus(), getAlarmState(), getType());
     }
 
+    /**
+     * Returns a string representation of this system entity.
+     *
+     * @return a string representation of this object
+     */
     @Override
     public String toString() {
         return "SystemEntity{" + "path=" + path + ", status=" + status + ", alarmState=" + alarmState + ", type=" + type + '}';

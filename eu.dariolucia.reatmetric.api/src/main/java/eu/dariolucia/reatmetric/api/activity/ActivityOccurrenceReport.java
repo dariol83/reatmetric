@@ -29,9 +29,6 @@ import java.time.Instant;
  */
 public final class ActivityOccurrenceReport extends AbstractDataItem {
 
-    /**
-     *
-     */
     private static final long serialVersionUID = 1L;
 
     /**
@@ -60,11 +57,17 @@ public final class ActivityOccurrenceReport extends AbstractDataItem {
      */
     public static final String PURGE_REPORT_NAME = "Purge";
 
+    /** The name of the stage. */
     private final String name; // Always set
+    /** The activity state. */
     private final ActivityOccurrenceState state; // Always set
+    /** The execution time. */
     private final Instant executionTime; // If not null, this report provides the activity occurrence execution time (estimated or final)
+    /** The status of the verification stage. */
     private final ActivityReportState status;
+    /** The new progressive activity occurrence state. */
     private final ActivityOccurrenceState stateTransition; // Always set, can be equal to state
+    /** The result of the activity occurrence. */
     private final Object result; // If not null, this report provides the activity occurrence execution result (partial or final)
 
     /**
@@ -151,6 +154,11 @@ public final class ActivityOccurrenceReport extends AbstractDataItem {
     }
 
     @Override
+    /**
+     * Returns a string representation of this ActivityOccurrenceReport.
+     *
+     * @return the string representation
+     */
     public String toString() {
         return "ActivityOccurrenceReport{" +
                 "name='" + name + '\'' +

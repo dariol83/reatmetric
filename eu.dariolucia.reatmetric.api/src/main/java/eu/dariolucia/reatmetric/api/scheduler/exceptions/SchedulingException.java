@@ -18,19 +18,41 @@ package eu.dariolucia.reatmetric.api.scheduler.exceptions;
 
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 
+/**
+ * Exception thrown when an error occurs in the scheduler.
+ */
 public class SchedulingException extends ReatmetricException {
 
+    /**
+     * Constructs a new SchedulingException with no detail message.
+     */
     public SchedulingException() {
     }
 
+    /**
+     * Constructs a new SchedulingException with the specified message.
+     *
+     * @param message the detail message
+     */
     public SchedulingException(String message) {
         super(message);
     }
 
+    /**
+     * Constructs a new SchedulingException with the specified message and cause.
+     *
+     * @param message the detail message
+     * @param cause the cause of the exception
+     */
     public SchedulingException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    /**
+     * Constructs a new SchedulingException with the specified cause.
+     *
+     * @param cause the cause of the exception
+     */
     public SchedulingException(Throwable cause) {
         super(cause);
     }

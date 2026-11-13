@@ -34,23 +34,27 @@ import java.util.Set;
  */
 public final class ActivityOccurrenceDataFilter extends AbstractDataItemFilter<ActivityOccurrenceData> implements Serializable {
 
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = 1L;
 
+	/** The parent path to select. */
 	private final SystemEntityPath parentPath;
 
+    /** The set of exact paths to select. */
     private final Set<SystemEntityPath> activityPathList;
 
+    /** The set of routes to select. */
     private final Set<String> routeList;
 
+    /** The set of sources to select. */
     private final Set<String> sourceList;
 
+    /** The set of types to select. */
     private final Set<String> typeList;
 
+    /** The set of states to select. */
     private final Set<ActivityOccurrenceState> stateList;
 
+    /** The set of external IDs to select. */
     private final Set<Integer> externalIdList;
 
     /**

@@ -18,6 +18,15 @@ package eu.dariolucia.reatmetric.api.scheduler;
 
 import java.io.Serializable;
 
+/**
+ * Abstract base class for all scheduling triggers in the ReatMetric system.
+ * Scheduling triggers determine when scheduled activities should be released for execution.
+ */
 public abstract class AbstractSchedulingTrigger implements Serializable {
+    /**
+     * Protected constructor for subclasses.
+     */
+    protected AbstractSchedulingTrigger() {
+    }
 
 }

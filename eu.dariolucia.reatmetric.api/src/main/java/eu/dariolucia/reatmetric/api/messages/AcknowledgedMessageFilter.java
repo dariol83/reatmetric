@@ -33,13 +33,13 @@ import java.util.Set;
  */
 public final class AcknowledgedMessageFilter extends AbstractDataItemFilter<AcknowledgedMessage> implements Serializable {
 
-    /**
-	 *
-	 */
-	private static final long serialVersionUID = 1L;
+    /** Serial version UID for serialization. */
+    private static final long serialVersionUID = 1L;
 
+    /** The set of users to filter by. */
     private final Set<String> userList;
 
+    /** The set of acknowledgement states to filter by. */
     private final Set<AcknowledgementState> stateList;
 
     /**

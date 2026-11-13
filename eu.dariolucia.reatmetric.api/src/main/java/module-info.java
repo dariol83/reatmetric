@@ -1,3 +1,7 @@
+/**
+ * The REATMETRIC API module.
+ * This module provides the core interfaces and classes for the ReatMetric monitoring and control framework.
+ */
 open module eu.dariolucia.reatmetric.api {
     uses eu.dariolucia.reatmetric.api.value.IValueExtensionHandler;
 

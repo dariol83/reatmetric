@@ -29,31 +29,65 @@ import java.io.Serializable;
 public abstract class UniqueItem implements Serializable {
     
     /**
-	 * 
-	 */
+     * The serial version UID for serialization compatibility.
+     */
 	private static final long serialVersionUID = -4265552582009003032L;
 
+	/**
+	 * The unique identifier for this item.
+	 */
 	protected final IUniqueId internalId;
 
+    /**
+     * Transient volatile field provided as a convenience placeholder to store volatile user data.
+     * This field is not considered in hashCode and equals methods.
+     */
     protected transient volatile Object data;
     
+    /**
+     * Constructor for a unique item.
+     *
+     * @param internalId the unique identifier for this item, cannot be null
+     * @param data the volatile user data (can be null)
+     */
     public UniqueItem(IUniqueId internalId, Object data) {
         this.internalId = internalId;
         this.data = data;
     }
 
+    /**
+     * Returns the unique identifier for this item.
+     *
+     * @return the unique identifier (cannot be null)
+     */
     public IUniqueId getInternalId() {
         return internalId;
     }
     
+    /**
+     * Returns the volatile user data associated with this item.
+     *
+     * @return the volatile user data (can be null)
+     */
     public Object getData() {
         return data;
     }
     
+    /**
+     * Sets the volatile user data for this item.
+     *
+     * @param o the volatile user data to set (can be null)
+     */
     public void setData(Object o) {
         this.data = o;
     }
     
+    /**
+     * Returns a hash code value for this unique item.
+     * The hash code is based only on the internal ID.
+     *
+     * @return a hash code value for this object
+     */
     @Override
     public int hashCode() {
         int hash = 5;
@@ -61,6 +95,13 @@ public abstract class UniqueItem implements Serializable {
         return hash;
     }
 
+    /**
+     * Indicates whether some other object is "equal to" this one.
+     * Two unique items are equal if they have the same class and the same internal ID.
+     *
+     * @param obj the reference object with which to compare
+     * @return true if this object is the same as the obj argument; false otherwise
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -76,6 +117,11 @@ public abstract class UniqueItem implements Serializable {
         return this.internalId == other.internalId;
     }
 
+    /**
+     * Returns a string representation of this unique item.
+     *
+     * @return a string representation of this object
+     */
     @Override
     public String toString() {
         return "UniqueItem [" + "internalId=" + internalId + ']';

@@ -26,22 +26,75 @@ import eu.dariolucia.reatmetric.api.processing.input.*;
 
 import java.util.List;
 
+/**
+ * Interface representing a processing model in the ReatMetric system.
+ * A processing model manages system entities, parameters, events, and activities,
+ * and provides operations for querying and manipulating the model state.
+ */
 public interface IProcessingModel extends IDebugInfoProvider {
 
+    /**
+     * Injects parameter samples into the processing model.
+     *
+     * @param sampleList the list of parameter samples to inject
+     */
     void injectParameters(List<ParameterSample> sampleList);
 
+    /**
+     * Raises an event occurrence in the processing model.
+     *
+     * @param event the event occurrence to raise
+     */
     void raiseEvent(EventOccurrence event);
 
+    /**
+     * Starts an activity based on the request.
+     *
+     * @param request the activity request
+     * @return the unique ID of the started activity occurrence
+     * @throws ProcessingModelException if the activity cannot be started
+     */
     IUniqueId startActivity(ActivityRequest request) throws ProcessingModelException;
 
+    /**
+     * Creates an activity with the specified request and initial progress.
+     *
+     * @param request the activity request
+     * @param currentProgress the initial progress of the activity
+     * @return the unique ID of the created activity occurrence
+     * @throws ProcessingModelException if the activity cannot be created
+     */
     IUniqueId createActivity(ActivityRequest request, ActivityProgress currentProgress) throws ProcessingModelException;
 
+    /**
+     * Reports progress for an activity.
+     *
+     * @param progress the activity progress to report
+     */
     void reportActivityProgress(ActivityProgress progress);
 
+    /**
+     * Purges the specified activities from the model.
+     *
+     * @param activityOccurrenceIds the list of activity IDs and occurrence IDs to purge
+     * @throws ProcessingModelException if the activities cannot be purged
+     */
     void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) throws ProcessingModelException;
 
+    /**
+     * Aborts an activity.
+     *
+     * @param activityId the ID of the activity to abort
+     * @param activityOccurrenceId the occurrence ID of the activity to abort
+     * @throws ProcessingModelException if the activity cannot be aborted
+     */
     void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ProcessingModelException;
 
+    /**
+     * Returns the list of active activity occurrences.
+     *
+     * @return the list of active activity occurrences
+     */
     List<ActivityOccurrenceData> getActiveActivityOccurrences();
 
     /**
@@ -58,42 +111,165 @@ public interface IProcessingModel extends IDebugInfoProvider {
      */
     IUniqueId setParameterValue(SetParameterRequest request) throws ProcessingModelException;
 
+    /**
+     * Accepts a visitor to traverse the processing model.
+     *
+     * @param visitor the visitor to accept
+     */
     void visit(IProcessingModelVisitor visitor);
 
+    /**
+     * Gets data items matching the specified filter.
+     *
+     * @param filter the filter to apply
+     * @return the list of matching data items
+     */
     List<AbstractDataItem> get(AbstractDataItemFilter<?> filter);
 
+    /**
+     * Gets data items by their paths.
+     *
+     * @param paths the list of system entity paths
+     * @return the list of data items at the specified paths
+     * @throws ProcessingModelException if the items cannot be retrieved
+     */
     List<AbstractDataItem> getByPath(List<SystemEntityPath> paths) throws ProcessingModelException;
 
+    /**
+     * Gets data items by their IDs.
+     *
+     * @param ids the list of IDs
+     * @return the list of data items with the specified IDs
+     * @throws ProcessingModelException if the items cannot be retrieved
+     */
     List<AbstractDataItem> getById(List<Integer> ids) throws ProcessingModelException;
 
+    /**
+     * Enables the system entity at the specified path.
+     *
+     * @param path the path to the system entity to enable
+     * @throws ProcessingModelException if the entity cannot be enabled
+     */
     void enable(SystemEntityPath path) throws ProcessingModelException;
 
+    /**
+     * Disables the system entity at the specified path.
+     *
+     * @param path the path to the system entity to disable
+     * @throws ProcessingModelException if the entity cannot be disabled
+     */
     void disable(SystemEntityPath path) throws ProcessingModelException;
 
+    /**
+     * Ignores the system entity at the specified path.
+     *
+     * @param path the path to the system entity to ignore
+     * @throws ProcessingModelException if the entity cannot be ignored
+     */
     void ignore(SystemEntityPath path) throws ProcessingModelException;
 
+    /**
+     * Returns the root system entity of the processing model.
+     *
+     * @return the root system entity
+     * @throws ProcessingModelException if the root entity cannot be retrieved
+     */
     SystemEntity getRoot() throws ProcessingModelException;
 
+    /**
+     * Returns the list of system entities contained at the specified path.
+     *
+     * @param path the path to query
+     * @return the list of contained system entities
+     * @throws ProcessingModelException if the entities cannot be retrieved
+     */
     List<SystemEntity> getContainedEntities(SystemEntityPath path) throws ProcessingModelException;
 
+    /**
+     * Returns the system entity at the specified path.
+     *
+     * @param path the path to the system entity
+     * @return the system entity at the specified path
+     * @throws ProcessingModelException if the entity cannot be retrieved
+     */
     SystemEntity getSystemEntityAt(SystemEntityPath path) throws ProcessingModelException;
 
+    /**
+     * Returns the system entity with the specified ID.
+     *
+     * @param id the ID of the system entity
+     * @return the system entity with the specified ID
+     * @throws ProcessingModelException if the entity cannot be retrieved
+     */
     SystemEntity getSystemEntityOf(int id) throws ProcessingModelException;
 
+    /**
+     * Returns the external ID of the system entity at the specified path.
+     *
+     * @param path the path to the system entity
+     * @return the external ID
+     * @throws ProcessingModelException if the external ID cannot be retrieved
+     */
     int getExternalIdOf(SystemEntityPath path) throws ProcessingModelException;
 
+    /**
+     * Returns the path of the system entity with the specified ID.
+     *
+     * @param id the ID of the system entity
+     * @return the path to the system entity
+     * @throws ProcessingModelException if the path cannot be retrieved
+     */
     SystemEntityPath getPathOf(int id) throws ProcessingModelException;
 
+    /**
+     * Returns the descriptor of the system entity with the specified ID.
+     *
+     * @param id the ID of the system entity
+     * @return the system entity descriptor
+     * @throws ProcessingModelException if the descriptor cannot be retrieved
+     */
     AbstractSystemEntityDescriptor getDescriptorOf(int id) throws ProcessingModelException;
 
+    /**
+     * Returns the descriptor of the system entity at the specified path.
+     *
+     * @param path the path to the system entity
+     * @return the system entity descriptor
+     * @throws ProcessingModelException if the descriptor cannot be retrieved
+     */
     AbstractSystemEntityDescriptor getDescriptorOf(SystemEntityPath path) throws ProcessingModelException;
 
+    /**
+     * Registers an activity handler with this processing model.
+     *
+     * @param handler the activity handler to register
+     * @throws ProcessingModelException if the handler cannot be registered
+     */
     void registerActivityHandler(IActivityHandler handler) throws ProcessingModelException;
 
+    /**
+     * Deregisters an activity handler from this processing model.
+     *
+     * @param handler the activity handler to deregister
+     * @throws ProcessingModelException if the handler cannot be deregistered
+     */
     void deregisterActivityHandler(IActivityHandler handler) throws ProcessingModelException;
 
+    /**
+     * Returns the availability state of all routes.
+     *
+     * @return the list of route availability states
+     * @throws ProcessingModelException if the route availability cannot be determined
+     */
     List<ActivityRouteState> getRouteAvailability() throws ProcessingModelException;
 
+    /**
+     * Returns the availability state of routes for a specific type.
+     *
+     * @param type the activity type to filter by
+     * @return the list of route availability states for the specified type
+     * @throws ProcessingModelException if the route availability cannot be determined
+     */
     List<ActivityRouteState> getRouteAvailability(String type) throws ProcessingModelException;
 
     /**

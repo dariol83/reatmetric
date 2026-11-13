@@ -16,7 +16,17 @@
 
 package eu.dariolucia.reatmetric.api.processing.scripting;
 
+/**
+ * Interface for resolving bindings for system entities.
+ * Implementations map system entity IDs to their corresponding bindings.
+ */
 public interface IBindingResolver {
 
+    /**
+     * Resolves the binding for a system entity.
+     *
+     * @param systemEntityId the ID of the system entity
+     * @return the entity binding for the specified system entity ID
+     */
     IEntityBinding resolve(int systemEntityId);
 }

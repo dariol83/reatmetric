@@ -23,6 +23,8 @@ import java.util.List;
 
 /**
  * This interface is the parent interface of the data item type-specific subscription interfaces.
+ *
+ * @param <T> the type of unique item this subscriber can receive, must extend {@link UniqueItem}
  */
 public interface IDataItemSubscriber<T extends UniqueItem> extends Remote {
 
@@ -30,6 +32,7 @@ public interface IDataItemSubscriber<T extends UniqueItem> extends Remote {
      * Inform the subscriber the given list of data items is available according to the specified filter at subscription time.
      *
      * @param dataItems the new available data items
+     * @throws RemoteException in case of remoting problem
      */
     void dataItemsReceived(List<T> dataItems) throws RemoteException;
     

@@ -40,6 +40,7 @@ public interface IActivityExecutionService extends Remote {
      * @param request the activity request
      * @return the ID of the activity occurrence created by this request
      * @throws ReatmetricException in case of problems during the creation of the activity occurrence
+     * @throws RemoteException in case of issues on the remote side
      */
     IUniqueId startActivity(ActivityRequest request) throws ReatmetricException, RemoteException;
 
@@ -52,6 +53,7 @@ public interface IActivityExecutionService extends Remote {
      * @param currentProgress the current status of the occurrence
      * @return the ID of the activity occurrence as created in the processing model
      * @throws ReatmetricException in case of problems during the creation of the activity occurrence
+     * @throws RemoteException in case of issues on the remote side
      */
     IUniqueId createActivity(ActivityRequest request, ActivityProgress currentProgress) throws ReatmetricException, RemoteException;
 
@@ -62,20 +64,26 @@ public interface IActivityExecutionService extends Remote {
      *
      * @param activityOccurrenceIds the list of {@link Pair} identifying the activity occurrences to purge
      * @throws ReatmetricException in case of problems purging the provided list of activity occurrences
+     * @throws RemoteException in case of issues on the remote side
      */
     void purgeActivities(List<Pair<Integer, IUniqueId>> activityOccurrenceIds) throws ReatmetricException, RemoteException;
 
     /**
      * Retrieve the list of all defined activity routes in the system and return them together with the current availability state.
      *
-     * @return the availability state
+     * @return the list of route availability states
+     * @throws ReatmetricException in case of problems retrieving route availability
+     * @throws RemoteException in case of issues on the remote side
      */
     List<ActivityRouteState> getRouteAvailability() throws ReatmetricException, RemoteException;
 
     /**
      * Retrieve the list of defined activity routes in the system for the provided type and return them together with the current availability state.
      *
-     * @return the availability state
+     * @param type the activity type to filter by
+     * @return the list of route availability states for the specified type
+     * @throws ReatmetricException in case of problems retrieving route availability
+     * @throws RemoteException in case of issues on the remote side
      */
     List<ActivityRouteState> getRouteAvailability(String type) throws ReatmetricException, RemoteException;
 
@@ -86,6 +94,7 @@ public interface IActivityExecutionService extends Remote {
      * @param request the parameter set request
      * @return the {@link IUniqueId} of the activity occurrence linked to the set operation
      * @throws ReatmetricException in case of problems during the creation of the activity occurrence
+     * @throws RemoteException in case of issues on the remote side
      */
     IUniqueId setParameterValue(SetParameterRequest request) throws ReatmetricException, RemoteException;
 
@@ -96,6 +105,7 @@ public interface IActivityExecutionService extends Remote {
      * @param activityId the activity ID
      * @param activityOccurrenceId the activity occurrence to abort
      * @throws ReatmetricException in case of problems during the activity abort
+     * @throws RemoteException in case of issues on the remote side
      */
     void abortActivity(int activityId, IUniqueId activityOccurrenceId) throws ReatmetricException, RemoteException;
 }

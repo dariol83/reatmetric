@@ -31,11 +31,17 @@ import java.util.List;
  */
 public class ActivityDescriptor extends AbstractSystemEntityDescriptor {
 
+    /** The activity description. */
     private final String description;
+    /** The default route. */
     private final String defaultRoute;
+    /** The activity type. */
     private final String activityType;
+    /** The list of argument descriptors. */
     private final List<AbstractActivityArgumentDescriptor> argumentDescriptors;
+    /** The list of properties. */
     private final List<Pair<String, String>> properties;
+    /** The expected duration. */
     private final Duration expectedDuration;
 
     /**

@@ -24,13 +24,21 @@ import java.util.function.Predicate;
  * Abstract filter definition for {@link AbstractDataItem} derived filters.
  *
  * The filter implements the {@link Predicate} interface to allow its easy usage in stream operations.
+ *
+ * @param <T> the type of data item this filter can select, must extend {@link AbstractDataItem}
  */
 public abstract class AbstractDataItemFilter<T extends AbstractDataItem> implements Serializable, Predicate<T> {
     
     /**
-	 * 
-	 */
+     * The serial version UID for serialization compatibility.
+     */
 	private static final long serialVersionUID = 1L;
+
+    /**
+     * Protected constructor for subclasses.
+     */
+    protected AbstractDataItemFilter() {
+    }
 
 	/**
 	 * If the filter specifies no selection, this method returns true.

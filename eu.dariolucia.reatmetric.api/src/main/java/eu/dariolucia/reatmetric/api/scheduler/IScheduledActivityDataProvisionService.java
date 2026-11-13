@@ -18,6 +18,10 @@ package eu.dariolucia.reatmetric.api.scheduler;
 
 import eu.dariolucia.reatmetric.api.common.IDataItemStateProvisionService;
 
+/**
+ * Provision service interface for scheduled activity data.
+ * Extends IDataItemStateProvisionService for IScheduledActivityDataSubscriber, ScheduledActivityDataFilter, and ScheduledActivityData.
+ */
 public interface IScheduledActivityDataProvisionService extends IDataItemStateProvisionService<IScheduledActivityDataSubscriber, ScheduledActivityDataFilter, ScheduledActivityData> {
 
 }

@@ -18,13 +18,37 @@ package eu.dariolucia.reatmetric.api.processing.scripting;
 
 import java.time.Instant;
 
+/**
+ * Interface representing a binding to a system entity.
+ * Provides access to entity metadata such as ID, path, and timestamps.
+ */
 public interface IEntityBinding {
 
+    /**
+     * Returns the ID of the entity.
+     *
+     * @return the entity ID
+     */
     long id();
 
+    /**
+     * Returns the path of the entity.
+     *
+     * @return the entity path
+     */
     String path();
 
+    /**
+     * Returns the generation time of the entity.
+     *
+     * @return the generation time
+     */
     Instant generationTime();
 
+    /**
+     * Returns the reception time of the entity.
+     *
+     * @return the reception time
+     */
     Instant receptionTime();
 }

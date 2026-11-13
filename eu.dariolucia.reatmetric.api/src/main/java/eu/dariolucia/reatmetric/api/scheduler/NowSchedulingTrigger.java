@@ -21,7 +21,19 @@ package eu.dariolucia.reatmetric.api.scheduler;
  */
 public class NowSchedulingTrigger extends AbstractSchedulingTrigger {
 
+    /**
+     * Constructs a new NowSchedulingTrigger.
+     */
+    public NowSchedulingTrigger() {
+        // Default constructor
+    }
+
     @Override
+    /**
+     * Returns a string representation of this NowSchedulingTrigger.
+     *
+     * @return the string representation
+     */
     public String toString() {
         return "[now]";
     }

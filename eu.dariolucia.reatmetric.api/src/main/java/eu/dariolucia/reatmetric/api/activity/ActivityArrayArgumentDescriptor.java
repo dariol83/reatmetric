@@ -25,7 +25,9 @@ import java.util.List;
  */
 public class ActivityArrayArgumentDescriptor extends AbstractActivityArgumentDescriptor {
 
+    /** The name of the expansion argument. */
     private final String expansionArgument;
+    /** The list of element descriptors. */
     private final List<AbstractActivityArgumentDescriptor> elements;
 
     /**

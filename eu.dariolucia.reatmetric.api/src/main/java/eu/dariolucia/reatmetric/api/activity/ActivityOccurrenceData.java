@@ -40,38 +40,48 @@ import java.util.Map;
  */
 public final class ActivityOccurrenceData extends AbstractDataItem {
 
-    /**
-     *
-     */
     private static final long serialVersionUID = 1L;
 
+    /** Property key for mirrored activity occurrence ID. */
     public static final String MIRRORED_ACTIVITY_OCCURRENCE_ID_PROPERTY_KEY = "mirrored_activity_occurrence_id";
 
+    /** The external ID of the activity. */
     private final int externalId;
 
+    /** The name of the activity. */
     private final String name;
 
+    /** The path of the activity in the system entity model. */
     private final SystemEntityPath path;
 
+    /** The type of the activity. */
     private final String type;
 
+    /** The activity arguments. */
     private final Map<String, Object> arguments;
 
+    /** The activity properties. */
     private final Map<String, String> properties;
 
+    /** The list of progress reports. */
     private final List<ActivityOccurrenceReport> progressReports;
 
+    /** The route of the activity occurrence. */
     private final String route;
 
+    /** The source that created the activity occurrence. */
     private final String source;
 
     // Derived
+    /** The execution time, derived from progress reports. */
     private final Instant executionTime;
 
     // Derived
+    /** The current state, derived from progress reports. */
     private final ActivityOccurrenceState currentState;
 
     // Derived
+    /** The result, derived from progress reports. */
     private final Object result;
 
     /**
@@ -232,6 +242,11 @@ public final class ActivityOccurrenceData extends AbstractDataItem {
     }
 
     @Override
+    /**
+     * Returns a string representation of this ActivityOccurrenceData.
+     *
+     * @return the string representation
+     */
     public String toString() {
         StringBuilder sb = new StringBuilder("ActivityOccurrenceData{" +
                 "externalId=" + externalId +

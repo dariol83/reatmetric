@@ -18,11 +18,13 @@
 package eu.dariolucia.reatmetric.api.rawdata;
 
 /**
- *
- * @author dario
+ * Enum representing the quality of raw data.
  */
 public enum Quality {
+    /** Data is valid and of good quality. */
     GOOD,
+    /** Data is invalid or of bad quality. */
     BAD,
+    /** Data quality is unknown. */
     UNKNOWN
 }

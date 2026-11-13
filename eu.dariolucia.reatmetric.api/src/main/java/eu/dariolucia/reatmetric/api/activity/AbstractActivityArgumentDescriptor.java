@@ -25,7 +25,9 @@ import java.io.Serializable;
  */
 public class AbstractActivityArgumentDescriptor implements Serializable {
 
+    /** The name of the argument. */
     private final String name;
+    /** The description of the argument. */
     private final String description;
 
     /**
