@@ -6,7 +6,7 @@ open module eu.dariolucia.reatmetric.driver.automation.groovy {
     requires java.scripting;
     requires java.rmi;
 
-    requires org.codehaus.groovy;
+    requires org.apache.groovy;
 
     requires eu.dariolucia.reatmetric.api;
     requires eu.dariolucia.reatmetric.core;

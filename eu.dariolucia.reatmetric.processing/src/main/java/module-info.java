@@ -22,7 +22,7 @@ open module eu.dariolucia.reatmetric.processing {
     requires java.scripting;
 
     requires eu.dariolucia.reatmetric.api;
-    requires org.codehaus.groovy;
+    requires org.apache.groovy;
 
     exports eu.dariolucia.reatmetric.processing.extension;
     exports eu.dariolucia.reatmetric.processing.definition;
