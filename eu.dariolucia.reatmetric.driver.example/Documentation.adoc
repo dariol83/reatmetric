@@ -38,18 +38,18 @@ src/main/java needs to exist. The pom file must contain as a minimum the depende
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
-                <version>2.5</version>
+                <version>2.25.1</version>
                 <configuration>
                     <generateBackupPoms>false</generateBackupPoms>
                 </configuration>
             </plugin>
-            <!-- Set the source file version to Java 11-->
+            <!-- Set the source file version to Java 21-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>3.16.0</version>
                 <configuration>
-                    <release>11</release>
+                    <release>21</release>
                 </configuration>
             </plugin>
         </plugins>

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /reatmetric
 COPY target/deps .
 CMD ["java", "-Djava.rmi.server.hostname=127.0.0.1", "-Dreatmetric.core.config=/etc/reatmetric/configuration.xml", "-Dreatmetric.remoting.rmi.export.port=4000", "--module-path=/reatmetric",  "-m", "eu.dariolucia.reatmetric.remoting/eu.dariolucia.reatmetric.remoting.ReatmetricRemotingServer", "3000"]
