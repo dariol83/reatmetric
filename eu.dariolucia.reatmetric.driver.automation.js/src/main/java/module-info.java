@@ -6,9 +6,7 @@ open module eu.dariolucia.reatmetric.driver.automation.js {
     requires java.scripting;
     requires java.rmi;
 
-    requires org.graalvm.sdk;
-    requires org.graalvm.js.scriptengine;
-    requires org.graalvm.js;
+    requires org.graalvm.polyglot;
 
     requires eu.dariolucia.reatmetric.api;
     requires eu.dariolucia.reatmetric.core;

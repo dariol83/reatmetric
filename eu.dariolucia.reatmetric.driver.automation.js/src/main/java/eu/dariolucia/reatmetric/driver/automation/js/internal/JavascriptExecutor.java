@@ -46,7 +46,7 @@ public class JavascriptExecutor implements IScriptExecutor {
 
     private volatile Engine jsEngine = null;
     private volatile boolean aborted = false;
-    private ScriptExecutionManager manager;
+    private volatile ScriptExecutionManager manager;
 
     public JavascriptExecutor(DataSubscriptionManager dataSubscriptionManager, IServiceCoreContext context, String initData, String contents, IActivityHandler.ActivityInvocation activityInvocation, String fileName) {
         this.dataSubscriptionManager = dataSubscriptionManager;
@@ -106,9 +106,15 @@ public class JavascriptExecutor implements IScriptExecutor {
             LOG.log(Level.SEVERE, "Unexpected error when executing script " + fileName + ": " + e.getMessage(), e);
             throw new ScriptException(e.getMessage());
         } finally {
-            jsEngine.close();
-            jsEngine = null;
-            manager = null;
+            Engine toClose = jsEngine;
+            try {
+                if(toClose != null) {
+                    toClose.close();
+                }
+            } finally {
+                jsEngine = null;
+                manager = null;
+            }
         }
     }
 
@@ -122,7 +128,7 @@ public class JavascriptExecutor implements IScriptExecutor {
         Engine toAbort = jsEngine;
         if(toAbort != null) {
             try {
-                jsEngine.close(true);
+                toAbort.close(true);
             } catch (Throwable e) {
                 // Ignore!
             }

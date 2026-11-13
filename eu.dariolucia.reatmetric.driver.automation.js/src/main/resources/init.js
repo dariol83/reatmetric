@@ -27,7 +27,7 @@ function wait_for_parameter(parameterPath, timeoutSeconds) {
 }
 
 function inject_parameter(paramPath, value) {
-    return _scriptManager.inject_parameter(paramPath, value, false);
+    return _scriptManager.inject_parameter(paramPath, value);
 }
 
 function raise_event(eventPath) {
