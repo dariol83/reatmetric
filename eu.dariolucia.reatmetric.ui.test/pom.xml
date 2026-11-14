@@ -102,6 +102,26 @@
             <artifactId>eu.dariolucia.reatmetric.driver.automation.groovy</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.automation.js</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.automation.python</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.snmp</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.dariolucia.reatmetric</groupId>
+            <artifactId>eu.dariolucia.reatmetric.driver.socket</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
 	    <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
             <artifactId>eu.dariolucia.reatmetric.driver.test</artifactId>
