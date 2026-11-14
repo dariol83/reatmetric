@@ -71,10 +71,10 @@
         <timeline.version>0.7.0</timeline.version>
         <controlsfx.version>11.0.1</controlsfx.version>
         <usb4java.version>1.3.0</usb4java.version>
-        <jserialcomm.version>2.8.0</jserialcomm.version>
-        <jsonpath.version>2.7.0</jsonpath.version>
-        <snmp4j.version>3.8.2</snmp4j.version>
-        <postgresql.version>42.7.3</postgresql.version>
+        <jserialcomm.version>2.11.4</jserialcomm.version>
+        <jsonpath.version>3.0.0</jsonpath.version>
+        <snmp4j.version>3.13.2</snmp4j.version>
+        <postgresql.version>42.7.14</postgresql.version>
         <!--
         <tiwulf.version>0.1</tiwulf.version>
         -->
