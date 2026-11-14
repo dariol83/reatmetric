@@ -109,7 +109,7 @@
         </dependency>
         <dependency>
             <groupId>eu.dariolucia.reatmetric</groupId>
-            <artifactId>eu.dariolucia.reatmetric.persist.timescale</artifactId>
+            <artifactId>eu.dariolucia.reatmetric.persist</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 	    <dependency>
