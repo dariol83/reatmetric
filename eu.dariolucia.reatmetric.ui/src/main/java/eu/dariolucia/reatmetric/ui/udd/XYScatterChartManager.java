@@ -19,7 +19,6 @@ package eu.dariolucia.reatmetric.ui.udd;
 
 import eu.dariolucia.reatmetric.api.common.AbstractDataItem;
 import eu.dariolucia.reatmetric.api.events.EventData;
-import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.ui.utils.SystemEntityDataFormats;
@@ -79,15 +78,14 @@ public class XYScatterChartManager extends AbstractChartManager<Instant, Number>
     }
     
     private void onDragDropped(DragEvent event) {
-        // TODO: Before removing javafx.dnd.deserializeObjectGraph=true, resolve an event
-        // ID/path string payload instead of casting EVENT to a serialized SystemEntity.
 		if(deleted) {
 			return;
 		}
         Dragboard db = event.getDragboard();
         boolean success = false;
-        if (db.hasContent(SystemEntityDataFormats.EVENT)) {
-            addEvent(((SystemEntity)db.getContent(SystemEntityDataFormats.EVENT)).getPath());
+        List<SystemEntityDataFormats.EntityReference> entities = SystemEntityDataFormats.read(db, SystemEntityType.EVENT);
+        if (!entities.isEmpty()) {
+            addEvent(entities.get(0).path());
             success = true;
         }
         event.setDropCompleted(success);

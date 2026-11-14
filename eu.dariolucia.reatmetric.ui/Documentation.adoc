@@ -54,15 +54,13 @@ This module has the following external dependencies:
 It is assumed that all depending modules are located inside the "deps" folder in the current working directory, from
 where the ReatMetric UI is started.
 
-The migrated UI requires Java 25 or later. Every UI launch must include `-Djavafx.dnd.deserializeObjectGraph=true` as a JVM option, before `-m`. JavaFX 27 disables
-automatic deserialization of drag-and-drop object graphs by default. ReatMetric currently relies on serialized model
-objects for drag-and-drop from the model browser into parameter displays, charts and filters. The property temporarily
-restores that behavior for the migrated UI. It opts the UI process into deserializing object payloads, so use trusted
-drag sources.
+The UI requires Java 25 or later. Model browser drag-and-drop works with JavaFX 27's default settings; no additional
+drag-and-drop JVM option is required.
 
-Before removing this compatibility property, migrate every custom drag payload producer and consumer to an explicit
-payload format and decoding scheme; TODO comments identify the affected code. Then remove the property from the UI
-launchers and examples, and verify parameter, event and container drag-and-drop.
+Drag payloads use an explicit, versioned UTF-8 format carried in a `ByteBuffer`. Each record contains the entity type,
+external ID and Base64-encoded path. The UI decodes and validates these records without deserializing Java object graphs
+or performing remote model lookups. Container payloads retain the selected container followed by its visible direct
+children, so dropping a container into parameter displays and filters preserves the existing behavior.
 
 In case of ReatMetric system embedded in the UI, the command line to start the UI are the followings:
 
@@ -71,7 +69,6 @@ In case of ReatMetric system embedded in the UI, the command line to start the U
 ----
     java
     --module-path="deps"
-    -Djavafx.dnd.deserializeObjectGraph=true
     -Dreatmetric.core.config=<path to ReatMetric>\configuration.xml
     --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls
     -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
@@ -82,7 +79,6 @@ In case of ReatMetric system embedded in the UI, the command line to start the U
 ----
     java
     --module-path="deps"
-    -Djavafx.dnd.deserializeObjectGraph=true
     -Dreatmetric.core.config=<path to ReatMetric>/configuration.xml
     --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls
     -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
@@ -95,7 +91,6 @@ In case of ReatMetric system running on a separate host, the command line to sta
 ----
     java
     --module-path="deps"
-    -Djavafx.dnd.deserializeObjectGraph=true
     -Djava.rmi.server.hostname=<server IP to use for local connections>
     -Dreatmetric.remoting.connector.config=<path to ReatMetric remoting>\configuration.xml
     --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls
@@ -107,7 +102,6 @@ In case of ReatMetric system running on a separate host, the command line to sta
 ----
     java
     --module-path="deps"
-    -Djavafx.dnd.deserializeObjectGraph=true
     -Djava.rmi.server.hostname=<server IP to use for local connections>
     -Dreatmetric.remoting.connector.config=<path to ReatMetric remoting>/configuration.xml
     --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls

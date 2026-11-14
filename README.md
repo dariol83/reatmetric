@@ -34,9 +34,8 @@ on the needs, since some drivers and related dependencies might not be needed.
 
 ## Getting Started
 
-Start every ReatMetric UI process with `-Djavafx.dnd.deserializeObjectGraph=true`. This temporary JavaFX 27 compatibility
-setting preserves object drag-and-drop from the model browser to displays. See the
-[UI start-up documentation](eu.dariolucia.reatmetric.ui/Documentation.adoc) for the migration details.
+The ReatMetric UI requires Java 25 or later and supports JavaFX 27 drag-and-drop with its default settings. See the
+[UI start-up documentation](eu.dariolucia.reatmetric.ui/Documentation.adoc) for details.
 
 ### All-in-one
 If you want to quickly try ReatMetric out, use the following approach:
@@ -47,11 +46,11 @@ If you want to quickly try ReatMetric out, use the following approach:
 
 (Windows)
 
-    java --module-path="deps" -Djavafx.dnd.deserializeObjectGraph=true -Dreatmetric.core.config=<path to ReatMetric>\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+    java --module-path="deps" -Dreatmetric.core.config=<path to ReatMetric>\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
 
 (Linux)  
 
-    java --module-path="deps" -Djavafx.dnd.deserializeObjectGraph=true -Dreatmetric.core.config=<path to ReatMetric>/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+    java --module-path="deps" -Dreatmetric.core.config=<path to ReatMetric>/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
 
 ### With remoting
 If you want to try ReatMetric using a client-server deployment, I suggest the following approach:
@@ -74,11 +73,11 @@ If you want to try ReatMetric using a client-server deployment, I suggest the fo
 
 (Windows)
 
-    java --module-path="deps" -Djavafx.dnd.deserializeObjectGraph=true -Djava.rmi.server.hostname=<server IP to use for local connections> -Dreatmetric.remoting.connector.config=<path to ReatMetric remoting>\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+    java --module-path="deps" -Djava.rmi.server.hostname=<server IP to use for local connections> -Dreatmetric.remoting.connector.config=<path to ReatMetric remoting>\configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
 
 (Linux) 
  
-    java --module-path="deps" -Djavafx.dnd.deserializeObjectGraph=true -Djava.rmi.server.hostname=<server IP to use for local connections> -Dreatmetric.remoting.connector.config=<path to ReatMetric remoting>/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
+    java --module-path="deps" -Djava.rmi.server.hostname=<server IP to use for local connections> -Dreatmetric.remoting.connector.config=<path to ReatMetric remoting>/configuration.xml --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
 
 Example of remoting configuration:
 

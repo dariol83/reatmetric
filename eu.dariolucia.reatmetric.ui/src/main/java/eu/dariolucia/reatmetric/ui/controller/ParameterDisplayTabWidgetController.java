@@ -23,7 +23,6 @@ import eu.dariolucia.reatmetric.api.common.IUniqueId;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityPath;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
@@ -1014,8 +1013,6 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
 
     @FXML
     private void onDragDropped(DragEvent event) {
-        // TODO: Before removing javafx.dnd.deserializeObjectGraph=true, resolve model-browser
-        // ID/path string payloads instead of casting PARAMETER/CONTAINER to SystemEntity/List.
         Dragboard db = event.getDragboard();
         boolean success = false;
         int insertionIndex = this.dragDropInsertionIndex >= 0 ? this.dragDropInsertionIndex : resolveDropInsertionIndex(event);
@@ -1023,12 +1020,13 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         if (isInternalRowMove(event)) {
             moveSelectedRows(insertionIndex);
             success = true;
-        } else if (db.hasContent(SystemEntityDataFormats.PARAMETER)) {
-            addParameters(insertionIndex, (SystemEntity) db.getContent(SystemEntityDataFormats.PARAMETER));
-            success = true;
-        } else if (db.hasContent(SystemEntityDataFormats.CONTAINER)) {
-            addContainer(insertionIndex, (List<SystemEntity>) db.getContent(SystemEntityDataFormats.CONTAINER));
-            success = true;
+        } else {
+            SystemEntityType type = db.hasContent(SystemEntityDataFormats.PARAMETER) ? SystemEntityType.PARAMETER : SystemEntityType.CONTAINER;
+            List<SystemEntityDataFormats.EntityReference> entities = SystemEntityDataFormats.read(db, type);
+            if (!entities.isEmpty()) {
+                addParameters(insertionIndex, entities);
+                success = true;
+            }
         }
 
         event.setDropCompleted(success);
@@ -1177,33 +1175,29 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         setDirty(true);
     }
 
-    private void addParameters(SystemEntity... systemEntities) {
-        addParameters(this.dataItemTableView.getItems().size(), systemEntities);
-    }
-
-    private void addParameters(int insertionIndex, SystemEntity... systemEntities) {
+    private void addParameters(int insertionIndex, List<SystemEntityDataFormats.EntityReference> systemEntities) {
         int effectiveInsertionIndex = Math.max(0, Math.min(insertionIndex, this.dataItemTableView.getItems().size()));
         boolean added = false;
-        for (SystemEntity systemEntity : systemEntities) {
-            if (systemEntity.getType() == SystemEntityType.PARAMETER) {
-                if (!this.path2wrapper.containsKey(systemEntity.getPath())) {
+        for (SystemEntityDataFormats.EntityReference systemEntity : systemEntities) {
+            if (systemEntity.type() == SystemEntityType.PARAMETER) {
+                if (!this.path2wrapper.containsKey(systemEntity.path())) {
                     // Add a fake item to initialise the entry
                     ParameterDataWrapper pdw = new ParameterDataWrapper(
                             new ParameterData(
                                     null,
                                     Instant.EPOCH,
-                                    systemEntity.getExternalId(),
-                                    systemEntity.getName(),
-                                    systemEntity.getPath(),
+                                    systemEntity.externalId(),
+                                    systemEntity.path().getLastPathElement(),
+                                    systemEntity.path(),
                                     null,
                                     null,
                                     null,
                                     Validity.UNKNOWN, AlarmState.UNKNOWN, null,
                                     null, null),
-                            systemEntity.getPath()
+                            systemEntity.path()
                     );
-                    this.path2wrapper.put(systemEntity.getPath(), pdw);
-                    this.path2buffer.put(systemEntity.getPath(), new ParameterDataBuffer(systemEntity.getPath(), 10));
+                    this.path2wrapper.put(systemEntity.path(), pdw);
+                    this.path2buffer.put(systemEntity.path(), new ParameterDataBuffer(systemEntity.path(), 10));
                     this.dataItemTableView.getItems().add(effectiveInsertionIndex++, pdw);
                     added = true;
                 }
@@ -1216,14 +1210,6 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
         if(added) {
             setDirty(true);
         }
-    }
-
-    private void addContainer(List<SystemEntity> list) {
-        addParameters(list.toArray(new SystemEntity[list.size()]));
-    }
-
-    private void addContainer(int insertionIndex, List<SystemEntity> list) {
-        addParameters(insertionIndex, list.toArray(new SystemEntity[list.size()]));
     }
 
     public void addItemsFromPreset(AndPreset p) {

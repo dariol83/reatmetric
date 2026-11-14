@@ -54,7 +54,7 @@ public class Archive implements IArchive {
     private static final String SCHEMA_INSTRUCTION_SEPARATOR = "-- SEPARATOR";
 
     // H2 error codes (in Derby compatibility mode)
-    private static final String ERROR_CODE_TABLE_ALREADY_EXIST = "X0Y32";
+    private static final String ERROR_CODE_TABLE_ALREADY_EXIST = "42S01";
     private static final String ERROR_CODE_DATABASE_NOT_FOUND = "90036";
 
     private final String archiveFolder;

@@ -188,18 +188,15 @@ public class ModelBrowserViewController extends AbstractDisplayController implem
         if (selectedItem != null && selectedItem.getValue() != null) {
             SystemEntity item = selectedItem.getValue();
             ClipboardContent content = new ClipboardContent();
-            // TODO: Before removing javafx.dnd.deserializeObjectGraph=true, publish entity
-            // IDs/paths as strings instead of serialized SystemEntity/List payloads and
-            // update every consumer of SystemEntityDataFormats to resolve those IDs/paths.
             if (item.getType() == SystemEntityType.CONTAINER) {
                 List<SystemEntity> list = new ArrayList<>();
                 list.add(item);
                 for (TreeItem<SystemEntity> child : selectedItem.getChildren()) {
                     list.add(child.getValue());
                 }
-                content.put(SystemEntityDataFormats.CONTAINER, list);
+                content.put(SystemEntityDataFormats.CONTAINER, SystemEntityDataFormats.serialize(list));
             } else {
-                content.put(SystemEntityDataFormats.getByType(item.getType()), item);
+                content.put(SystemEntityDataFormats.getByType(item.getType()), SystemEntityDataFormats.serialize(List.of(item)));
             }
             db.setContent(content);
         }

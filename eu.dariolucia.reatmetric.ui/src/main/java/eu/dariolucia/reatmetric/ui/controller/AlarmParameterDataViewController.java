@@ -23,7 +23,6 @@ import eu.dariolucia.reatmetric.api.alarms.IAlarmParameterDataSubscriber;
 import eu.dariolucia.reatmetric.api.common.RetrievalDirection;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.model.AlarmState;
-import eu.dariolucia.reatmetric.api.model.SystemEntity;
 import eu.dariolucia.reatmetric.api.model.SystemEntityType;
 import eu.dariolucia.reatmetric.api.parameters.ParameterData;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
@@ -173,18 +172,15 @@ public class AlarmParameterDataViewController
 
 	@FXML
 	private void onDragDropped(DragEvent event) {
-		// TODO: Before removing javafx.dnd.deserializeObjectGraph=true, resolve a container
-		// ID/path string payload instead of casting CONTAINER to a serialized SystemEntity list.
 		Dragboard db = event.getDragboard();
 		boolean success = false;
-		if (db.hasContent(SystemEntityDataFormats.CONTAINER)) {
-			List<SystemEntity> entities = (List<SystemEntity>) db.getContent(SystemEntityDataFormats.CONTAINER);
-			// Get the first
+		List<SystemEntityDataFormats.EntityReference> entities = SystemEntityDataFormats.read(db, SystemEntityType.CONTAINER);
+		if (!entities.isEmpty()) {
 			AlarmParameterDataFilter filter = getCurrentFilter();
 			if (filter == null) {
 				filter = new AlarmParameterDataFilter(null, null,null, null);
 			}
-			AlarmParameterDataFilter newFilter = new AlarmParameterDataFilter(entities.get(0).getPath(), null,
+			AlarmParameterDataFilter newFilter = new AlarmParameterDataFilter(entities.get(0).path(), null,
 					filter.getAlarmStateList(), null);
 			applyFilter(newFilter);
 			success = true;

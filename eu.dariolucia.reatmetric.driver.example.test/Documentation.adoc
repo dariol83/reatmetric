@@ -205,14 +205,11 @@ Copy the example_model.xml of the driver into the $HOME\reatmetric_example\model
 Create a launcher script inside the $HOME\reatmetric_example folder. The script assumes that the java executable is in
 the path.
 
-The `javafx.dnd.deserializeObjectGraph` property temporarily preserves the UI's model-object drag-and-drop behavior
-with JavaFX 27. Include it in the launch command until the custom drag payloads have been migrated, as described in
-the ReatMetric UI start-up documentation.
+Model browser drag-and-drop supports JavaFX 27's default settings; no additional drag-and-drop JVM option is required.
 
 ----
     java
     --module-path="bin"
-    -Djavafx.dnd.deserializeObjectGraph=true
     -Dreatmetric.core.config=<path to reatmetric_example folder>\configuration.xml
     --add-exports javafx.base/com.sun.javafx.event=org.controlsfx.controls
     -m eu.dariolucia.reatmetric.ui/eu.dariolucia.reatmetric.ui.ReatmetricUI
