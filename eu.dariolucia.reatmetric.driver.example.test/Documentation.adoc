@@ -5,7 +5,7 @@ The example deployment presented here is very simple, it generates a ReatMetric 
 
 - The example driver implemented in the previous section;
 - The automation, HTTP driver and scheduler;
-- The persist implementation based on Apache Derby;
+- The persist implementation based on H2 Database;
 - The UI module.
 
 The deployment is assumed to be on Windows systems. In case it is done on Unix systems, obviously the Unix path separator

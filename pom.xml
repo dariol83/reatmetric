@@ -62,7 +62,7 @@
         <openjfx.version>27.0.1</openjfx.version>
         <jakarta.version>4.0.5</jakarta.version>
         <jaxb.version>4.0.9</jaxb.version>
-        <derby.version>10.17.1.0</derby.version>
+        <h2.version>2.5.252</h2.version>
         <jdbc.version>19.3.0.0</jdbc.version>
         <graalvm.version>25.5.5.0.3</graalvm.version>
         <groovy.version>6.0.0</groovy.version>

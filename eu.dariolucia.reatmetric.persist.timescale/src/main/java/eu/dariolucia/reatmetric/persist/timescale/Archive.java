@@ -53,7 +53,7 @@ public class Archive implements IArchive {
     private static final String SCHEMA_FILE_NAME = "/schema.ddl";
     private static final String SCHEMA_INSTRUCTION_SEPARATOR = "-- SEPARATOR";
 
-    // Derby error codes
+    // PostgreSQL error codes
     private static final String ERROR_CODE_TABLE_ALREADY_EXIST = "42P07";
 
     private final String connectionString;

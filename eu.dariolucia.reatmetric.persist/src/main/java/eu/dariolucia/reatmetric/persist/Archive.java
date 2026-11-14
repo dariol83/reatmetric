@@ -53,9 +53,9 @@ public class Archive implements IArchive {
     private static final String SCHEMA_FILE_NAME = "/schema.ddl";
     private static final String SCHEMA_INSTRUCTION_SEPARATOR = "-- SEPARATOR";
 
-    // Derby error codes
+    // H2 error codes (in Derby compatibility mode)
     private static final String ERROR_CODE_TABLE_ALREADY_EXIST = "X0Y32";
-    private static final String ERROR_CODE_DATABASE_NOT_FOUND = "XJ004";
+    private static final String ERROR_CODE_DATABASE_NOT_FOUND = "90036";
 
     private final String archiveFolder;
 
@@ -199,19 +199,19 @@ public class Archive implements IArchive {
     public Connection createConnection(boolean isWriter) throws SQLException {
         // get a connection
         Connection conn = null;
-        String jdbcConnectionString = "jdbc:derby:" + archiveFolder;
+        String jdbcConnectionString = "jdbc:h2:file:" + archiveFolder + ";MODE=Derby";
         if(LOG.isLoggable(Level.FINE)) {
             LOG.fine("Trying to open database at location " + archiveFolder);
         }
         try {
             conn = DriverManager.getConnection(jdbcConnectionString); // NOSONAR: it is expected to work in this way
         } catch (SQLException e) {
-            if (e.getSQLState().equals(ERROR_CODE_DATABASE_NOT_FOUND)) {
+            if (e.getSQLState() != null && e.getSQLState().equals(ERROR_CODE_DATABASE_NOT_FOUND)) {
                 if(LOG.isLoggable(Level.FINE)) {
                     LOG.fine("No database found at location " + archiveFolder + ": creating one");
                 }
-                // database does not exist
-                conn = DriverManager.getConnection("jdbc:derby:" + archiveFolder + ";create=true"); // NOSONAR: it is expected to work in this way
+                // database does not exist - H2 auto-creates the database file
+                conn = DriverManager.getConnection(jdbcConnectionString); // NOSONAR: it is expected to work in this way
             } else {
                 throw e;
             }

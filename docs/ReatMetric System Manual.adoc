@@ -283,7 +283,7 @@ include::../eu.dariolucia.reatmetric.api/Documentation.adoc[]
 === Processing
 include::../eu.dariolucia.reatmetric.processing/Documentation.adoc[]
 
-=== Persist with Apache Derby
+=== Persist with H2 Database
 include::../eu.dariolucia.reatmetric.persist/Documentation.adoc[]
 
 === Persist with PostgreSQL/Timescaledb

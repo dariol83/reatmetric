@@ -1,6 +1,6 @@
 ==== Overview
 The eu.dariolucia.reatmetric.persist module is the implementation of a storage system for ReatMetric data such as parameters,
-events, activity occurrences, raw data and operational messages. The implementation is based on the Apache Derby RDBMS,
+events, activity occurrences, raw data and operational messages. The implementation is based on the H2 RDBMS,
 and it can be used in file-based and client-server deployments, depending on the way the argument "archiveLocation" is
 provided:
 
@@ -10,8 +10,8 @@ connection to the server is established. The server must have been already start
 
 In case the path to a folder is provided:
 
-* If the folder exists, it is expected to contain an Apache Derby database. If not, an error is returned;
-* If the folder does not exist, an Apache Derby database is created and configured according to the database schema defined
+* If the folder exists, it is expected to contain an H2 database. If not, an error is returned;
+* If the folder does not exist, an H2 database is created and configured according to the database schema defined
 by this module.
 
 Including this module in a ReatMetric system is not mandatory: if not present, the system will work as usual, but it will
@@ -37,7 +37,7 @@ This module has one internal dependency:
 
 This module has one external dependency:
 
-* On Apache Derby.
+* On H2 Database.
 
 ==== Configuration
 None.

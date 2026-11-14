@@ -17,7 +17,7 @@ ReatMetric is based on a very limited set of dependencies:
 - [openJFX](https://openjfx.io): for the graphical user interface of the _ui_ module;
 - [ControlsFX](https://github.com/controlsfx/controlsfx): advanced UI controls for the _ui_ module;
 - [eu.dariolucia.jfx.timeline](https://www.github.com/dariol83/timeline): providing support for schedule rendering in the _ui_ module;
-- [Apache Derby](http://db.apache.org/derby): providing the storage backend of the _persist_ module;
+- [H2 Database](https://www.h2database.com): providing the storage backend of the _persist_ module;
 - [JAXB](https://javaee.github.io/jaxb-v2): for the configuration of all modules;
 - [Groovy](https://groovy-lang.org): for the Groovy language support in the _processing_ and _automation_ modules (best choice);
 - [GraalVM](https://www.graalvm.org): for the Javascript language support in the _automation_ modules;

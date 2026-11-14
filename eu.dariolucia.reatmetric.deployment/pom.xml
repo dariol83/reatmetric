@@ -27,7 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>eu.dariolucia.reatmetric.deployment</artifactId>
     <name>REATMETRIC DEPLOYMENT</name>
-    <description>REATMETRIC full backend deployment (no UI, with Apache Derby)</description>
+    <description>REATMETRIC full backend deployment (no UI, with H2 database)</description>
 
     <build>
         <plugins>
