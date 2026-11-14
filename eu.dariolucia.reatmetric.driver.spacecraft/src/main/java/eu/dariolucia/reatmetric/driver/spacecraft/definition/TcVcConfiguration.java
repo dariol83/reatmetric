@@ -16,6 +16,7 @@
 
 package eu.dariolucia.reatmetric.driver.spacecraft.definition;
 
+import jakarta.xml.bind.Unmarshaller;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlAttribute;
@@ -82,10 +83,22 @@ public class TcVcConfiguration {
     }
 
     public VirtualChannelType getAccessMode() {
+        validateAccessMode(accessMode);
         return accessMode;
     }
 
     public void setAccessMode(VirtualChannelType accessMode) {
+        validateAccessMode(accessMode);
         this.accessMode = accessMode;
+    }
+
+    private void afterUnmarshal(Unmarshaller unmarshaller, Object parent) {
+        validateAccessMode(accessMode);
+    }
+
+    private void validateAccessMode(VirtualChannelType mode) {
+        if (mode == VirtualChannelType.ENCAPSULATION) {
+            throw new IllegalArgumentException("TC virtual channel " + tcVc + " does not support ENCAPSULATION: encapsulation packets are supported only for telemetry");
+        }
     }
 }

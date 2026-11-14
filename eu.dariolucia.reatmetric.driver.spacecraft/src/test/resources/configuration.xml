@@ -33,6 +33,7 @@
 		<tm-vc-descriptor id="0" process-type="PACKET" />
 		<tm-vc-descriptor id="1" process-type="PACKET" />
 		<tm-vc-descriptor id="2" process-type="VCA" />
+		<tm-vc-descriptor id="3" process-type="ENCAPSULATION" />
 		<tm-vc-descriptor id="7" process-type="IGNORE" />
 		<type>TM</type>
 	</tm>

@@ -20,5 +20,9 @@ public enum VirtualChannelType {
     PACKET,
     VCA,
     RAW,
-    IGNORE
+    IGNORE,
+    /**
+     * CCSDS Encapsulation Packets, currently supported for telemetry only.
+     */
+    ENCAPSULATION
 }

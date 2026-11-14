@@ -127,9 +127,13 @@ public class TcDataLinkProcessor implements IRawDataSubscriber, IVirtualChannelS
         for(int i = 0; i < tcChannels.length; ++i) {
             TcVcConfiguration tcConf = getTcVcConfiguration(i, configuration.getTcDataLinkConfiguration().getTcVcDescriptors());
             if(tcConf != null && tcConf.getAccessMode() != VirtualChannelType.IGNORE) {
-                // PACKET or DATA depending on configuration
+                VirtualChannelAccessMode accessMode = switch (tcConf.getAccessMode()) {
+                    case PACKET -> VirtualChannelAccessMode.PACKET;
+                    case VCA, RAW -> VirtualChannelAccessMode.DATA;
+                    case ENCAPSULATION, IGNORE -> throw new IllegalArgumentException("TC virtual channel " + i + " does not support access mode " + tcConf.getAccessMode());
+                };
                 tcChannels[i] = Pair.of(tcConf, new TcSenderVirtualChannel(configuration.getId(), i,
-                        tcConf.getAccessMode() == VirtualChannelType.PACKET ? VirtualChannelAccessMode.PACKET : VirtualChannelAccessMode.DATA,
+                        accessMode,
                         configuration.getTcDataLinkConfiguration().isFecf(), tcConf.isSegmentation(),
                         securityManager.getSecurityHeaderLength(configuration.getId(), i, TcTransferFrame.class), securityManager.getSecurityTrailerLength(configuration.getId(), i, TcTransferFrame.class),
                         securityManager.getSecurityHeaderSupplier(configuration.getId(), i, TcTransferFrame.class),

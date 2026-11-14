@@ -58,7 +58,9 @@ import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TcTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.ccsds.tmtc.ocf.pdu.AbstractOcf;
+import eu.dariolucia.ccsds.tmtc.transport.builder.EncapsulationPacketBuilder;
 import eu.dariolucia.ccsds.tmtc.transport.builder.SpacePacketBuilder;
+import eu.dariolucia.ccsds.tmtc.transport.pdu.EncapsulationPacket;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
 import eu.dariolucia.reatmetric.api.value.StringUtil;
@@ -102,7 +104,8 @@ import java.util.logging.Logger;
  *     <li>TM idle packets in case the remaining length inside a TM frame is less than 10 bytes</li>
  * </ul>
  *
- * All TM data is delivered on VC 0.
+ * TM space packets are delivered on VC 0, or the first configured PACKET channel.
+ * Configured ENCAPSULATION channels carry copies wrapped in mission-specific encapsulation packets.
  *
  * The application processes:
  * <ul>
@@ -355,7 +358,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         // Look for all packets 5,x and generate them from time to time
         for (PacketDefinition pd : encDecDefs.getPacketDefinitions()) {
             if (pd.getType().equals(Constants.ENCDEC_TM_PACKET_TYPE)) {
-                int apid = 0;
+                int apid = -1;
                 int type = 0;
                 int subtype = 0;
                 for (IdentFieldMatcher md : pd.getMatchers()) {
@@ -368,6 +371,10 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     if (md.getField().getId().equals(PUS_SUBTYPE_FIELD_NAME)) {
                         subtype = md.getValue();
                     }
+                }
+                if (apid == -1) {
+                    // Identification-only encapsulation definitions are not space-packet templates.
+                    continue;
                 }
                 if (type == 3 && subtype == 25) {
                     registerPeriodic(pd, apid, type, subtype);
@@ -407,27 +414,24 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
             this.id2tmvc.put(0, vc);
         } else {
             for (TmVcConfiguration vcId : spacecraftConfiguration.getTmDataLinkConfigurations().getTmVcConfigurations()) {
-                if(vcId.getProcessType() == VirtualChannelType.PACKET) {
-                    TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), vcId.getId(), VirtualChannelAccessMode.PACKET,
-                            spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf,
-                            0, null, null,
-                            securityHandlerConfiguration != null ? 18 : 0,
-                            securityHandlerConfiguration != null ? 8 : 0,
-                            securityHandlerConfiguration != null ? () -> new byte[18] : null,
-                            securityHandlerConfiguration != null ? () -> new byte[8] : null);
-                    vc.register(tmMux);
-                    this.id2tmvc.put(vcId.getId(), vc);
-                } else if(vcId.getProcessType() == VirtualChannelType.VCA) {
-                    TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), vcId.getId(), VirtualChannelAccessMode.DATA,
-                            spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf,
-                            0, null, null,
-                            securityHandlerConfiguration != null ? 18 : 0,
-                            securityHandlerConfiguration != null ? 8 : 0,
-                            securityHandlerConfiguration != null ? () -> new byte[18] : null,
-                            securityHandlerConfiguration != null ? () -> new byte[8] : null);
-                    vc.register(tmMux);
-                    this.id2tmvc.put(vcId.getId(), vc);
+                VirtualChannelAccessMode accessMode = switch (vcId.getProcessType()) {
+                    case PACKET -> VirtualChannelAccessMode.PACKET;
+                    case ENCAPSULATION -> VirtualChannelAccessMode.ENCAPSULATION;
+                    case VCA -> VirtualChannelAccessMode.DATA;
+                    case RAW, IGNORE -> null;
+                };
+                if (accessMode == null) {
+                    continue;
                 }
+                TmSenderVirtualChannel vc = new TmSenderVirtualChannel(spacecraftConfiguration.getId(), vcId.getId(), accessMode,
+                        spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent(), TM_FRAME_LENGTH, tmMux::getNextCounter, this::provideOcf,
+                        0, null, null,
+                        securityHandlerConfiguration != null ? 18 : 0,
+                        securityHandlerConfiguration != null ? 8 : 0,
+                        securityHandlerConfiguration != null ? () -> new byte[18] : null,
+                        securityHandlerConfiguration != null ? () -> new byte[8] : null);
+                vc.register(tmMux);
+                this.id2tmvc.put(vcId.getId(), vc);
             }
         }
     }
@@ -718,16 +722,29 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
                     sp = packetsToSend.take();
                     packetsToSend.notifyAll();
                 }
-                // Get the TM VC to use: 0 if configured, otherwise the first
+                // Keep space-packet routing on VC 0, or the first PACKET channel.
                 TmSenderVirtualChannel vcToUse = this.id2tmvc.get(0);
-                if (vcToUse == null) {
-                    vcToUse = id2tmvc.entrySet().iterator().next().getValue();
+                if (vcToUse == null || vcToUse.getMode() != VirtualChannelAccessMode.PACKET) {
+                    vcToUse = id2tmvc.values().stream()
+                            .filter(vc -> vc.getMode() == VirtualChannelAccessMode.PACKET).findFirst().orElse(null);
                 }
-                // Send packet
-                vcToUse.dispatch(sp);
-                // From time to time, send an idle packet (1% average)
-                if (Math.random() < 0.01) {
-                    sendIdlePacket(vcToUse);
+                if (vcToUse != null) {
+                    vcToUse.dispatch(sp);
+                    // From time to time, send an idle packet (1% average).
+                    if (Math.random() < 0.01) {
+                        sendIdlePacket(vcToUse);
+                    }
+                }
+                // Exercise each configured encapsulation VC with the same generated telemetry.
+                for (TmSenderVirtualChannel vc : id2tmvc.values()) {
+                    if (vc.getMode() == VirtualChannelAccessMode.ENCAPSULATION) {
+                        vc.dispatch(EncapsulationPacketBuilder.create(sp.isQualityIndicator())
+                                .setEncapsulationProtocolId(EncapsulationPacket.ProtocolIdType.PROTOCOL_ID_MISSION_SPECIFIC)
+                                .setData(sp.getPacket()).build());
+                        if (Math.random() < 0.01) {
+                            sendIdlePacket(vc);
+                        }
+                    }
                 }
                 // Send the packet on the packetConnection, if any
                 try {
@@ -746,12 +763,19 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
         }
     }
 
-    private void sendIdlePacket(TmSenderVirtualChannel vcToUse) {
+    private static void sendIdlePacket(TmSenderVirtualChannel vcToUse) {
         int free = vcToUse.getRemainingFreeSpace();
         if (free > 10) {
-            SpacePacketBuilder builder = SpacePacketBuilder.create().setTelemetryPacket().setIdle().setPacketSequenceCount(0).setSecondaryHeaderFlag(false).setSequenceFlag(SpacePacket.SequenceFlagType.UNSEGMENTED).setQualityIndicator(true);
-            builder.addData(new byte[free - SpacePacket.SP_PRIMARY_HEADER_LENGTH]);
-            vcToUse.dispatch(builder.build());
+            if (vcToUse.getMode() == VirtualChannelAccessMode.ENCAPSULATION) {
+                int lengthOfLength = free <= 255 ? 1 : 2;
+                int headerLength = free <= 255 ? 2 : 4;
+                vcToUse.dispatch(EncapsulationPacketBuilder.create().setIdle().setLengthOfLength(lengthOfLength)
+                        .setData(new byte[free - headerLength]).build());
+            } else {
+                SpacePacketBuilder builder = SpacePacketBuilder.create().setTelemetryPacket().setIdle().setPacketSequenceCount(0).setSecondaryHeaderFlag(false).setSequenceFlag(SpacePacket.SequenceFlagType.UNSEGMENTED).setQualityIndicator(true);
+                builder.addData(new byte[free - SpacePacket.SP_PRIMARY_HEADER_LENGTH]);
+                vcToUse.dispatch(builder.build());
+            }
         }
     }
 
@@ -957,7 +981,7 @@ public class SpacecraftModel implements IVirtualChannelReceiverOutput, IServiceI
     private void generateVc2Frame(byte[] response) {
         // You always send a full TM frame, immediately
         TmSenderVirtualChannel sender = this.id2tmvc.get(2);
-        if(sender != null) {
+        if(sender != null && sender.getMode() == VirtualChannelAccessMode.DATA) {
             sender.dispatch(response);
             int stillToSend = sender.getRemainingFreeSpace();
             sender.dispatch(new byte[stillToSend]); // You achieve emission

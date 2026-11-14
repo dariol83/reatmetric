@@ -26,6 +26,8 @@ import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
 import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.ccsds.tmtc.ocf.pdu.Clcw;
+import eu.dariolucia.ccsds.tmtc.transport.pdu.EncapsulationPacket;
+import eu.dariolucia.ccsds.tmtc.transport.pdu.IPacket;
 import eu.dariolucia.ccsds.tmtc.transport.pdu.SpacePacket;
 import eu.dariolucia.reatmetric.api.common.DebugInformation;
 import eu.dariolucia.reatmetric.api.common.IDebugInfoProvider;
@@ -76,7 +78,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     private final Timer performanceSampler = new Timer("TM Data Link Processor - Sampler", true);
     private final AtomicReference<List<DebugInformation>> lastStats = new AtomicReference<>(Arrays.asList(
             DebugInformation.of("TM Data Link Processor", "Transfer frames", 0, null, "frames/second"),
-            DebugInformation.of("TM Data Link Processor", "Space packets/VCA units", 0, null, "packets/second")
+            DebugInformation.of("TM Data Link Processor", "Space/encapsulation packets/VCA units", 0, null, "packets/second")
     ));
     private Instant lastSampleGenerationTime;
     private long frameInput = 0;
@@ -126,14 +128,13 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                 double packetsPerSecond = (packetOutputCurr / (millis/1000.0));
                 List<DebugInformation> toSet = Arrays.asList(
                         DebugInformation.of("TM Data Link Processor", "Transfer frames", (int) framesPerSecond, null, "frames/second"),
-                        DebugInformation.of("TM Data Link Processor", "Space packets", (int) packetsPerSecond, null, "packets/second")
+                        DebugInformation.of("TM Data Link Processor", "Space/encapsulation packets/VCA units", (int) packetsPerSecond, null, "packets/second")
                 );
                 lastStats.set(toSet);
             }
         }
     }
 
-    // TODO: add support for encapsulation packets
     public void initialise() {
         List<AbstractReceiverVirtualChannel<?>> virtualChannels = new ArrayList<>();
         // Build the VCs to process
@@ -153,6 +154,11 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                             virtualChannels.add(vc);
                         }
                         break;
+                        case ENCAPSULATION: {
+                            vcToBuild.add(vcConf.getId());
+                            virtualChannels.add(new TmReceiverVirtualChannel(vcConf.getId(), VirtualChannelAccessMode.ENCAPSULATION, false));
+                        }
+                        break;
                         case RAW:
                         case VCA: {
                             vcToBuild.add(vcConf.getId());
@@ -163,6 +169,8 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                             }
                         }
                         break;
+                        case IGNORE:
+                            break;
                     }
                 }
             }
@@ -181,6 +189,11 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                             virtualChannels.add(vc);
                         }
                         break;
+                        case ENCAPSULATION: {
+                            vcToBuild.add(vcConf.getId());
+                            virtualChannels.add(new AosReceiverVirtualChannel(vcConf.getId(), VirtualChannelAccessMode.ENCAPSULATION, false));
+                        }
+                        break;
                         case RAW:
                         case VCA: {
                             vcToBuild.add(vcConf.getId());
@@ -191,6 +204,8 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
                             }
                         }
                         break;
+                        case IGNORE:
+                            break;
                     }
                 }
             }
@@ -298,7 +313,56 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         String source = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_SOURCE);
         // Now we distribute it and store it as well
         // Provide also the frame information, needed for time correlation ... they go as extension
-        distributeSpacePacket(sp, packetName, generationTime, receptionTime, route, source, packetType, quality, resolveLiveFlag(firstFrame), new TmFrameDescriptor(firstFrame.getVirtualChannelId(), firstFrame.getVirtualChannelFrameCount(), (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME)));
+        distributePacket(sp, packetName, generationTime, receptionTime, route, source, packetType, quality, resolveLiveFlag(firstFrame), new TmFrameDescriptor(firstFrame.getVirtualChannelId(), firstFrame.getVirtualChannelFrameCount(), (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME)));
+    }
+
+    @Override
+    public void encapsulationPacketExtracted(AbstractReceiverVirtualChannel vc, AbstractTransferFrame firstFrame, byte[] packet, boolean qualityIndicator, List<PacketGap> gaps) {
+        synchronized (performanceSampler) {
+            ++packetOutput;
+        }
+        Instant receptionTime = (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_RCP_TIME);
+        if(receptionTime == null) {
+            receptionTime = Instant.now();
+        }
+        // Frame generation time is already corrected for propagation delay by the receiver.
+        Instant generationTime = (Instant) firstFrame.getAnnotationValue(Constants.ANNOTATION_GEN_TIME);
+        if(generationTime == null) {
+            generationTime = receptionTime.minus(this.propagationDelay, ChronoUnit.MICROS);
+        }
+        EncapsulationPacket ep = new EncapsulationPacket(packet, qualityIndicator);
+        ep.setAnnotationValue(Constants.ANNOTATION_RCP_TIME, receptionTime);
+        ep.setAnnotationValue(Constants.ANNOTATION_VCID, (int) firstFrame.getVirtualChannelId());
+        String route = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_ROUTE);
+        if(!qualityIndicator) {
+            LOG.warning(String.format("Quality indicator of encapsulation packet from spacecraft ID %d, VC %d, route %s is negative, gaps: %d, encapsulation packet marked as bad packet", spacecraftId, vc.getVirtualChannelId(), route, gaps.size()));
+        }
+        String packetName = Constants.N_UNKNOWN_ENC_PACKET;
+        String packetType = Constants.T_ENC_PACKET;
+        if(ep.isIdle()) {
+            packetName = Constants.N_IDLE_ENC_PACKET;
+            packetType = Constants.T_IDLE_ENC_PACKET;
+        } else {
+            packetName = identifyEncapsulationPacket(vc, ep, packetName);
+        }
+        String source = (String) firstFrame.getAnnotationValue(Constants.ANNOTATION_SOURCE);
+        // Encapsulation packets are published as raw data; Space Packet/PUS processing does not apply.
+        distributePacket(ep, packetName, generationTime, receptionTime, route, source, packetType,
+                qualityIndicator ? Quality.GOOD : Quality.BAD, resolveLiveFlag(firstFrame),
+                new TmFrameDescriptor(firstFrame.getVirtualChannelId(), firstFrame.getVirtualChannelFrameCount(), receptionTime));
+    }
+
+    private String identifyEncapsulationPacket(AbstractReceiverVirtualChannel vc, EncapsulationPacket packet, String packetName) {
+        try {
+            packetName = packetIdentifier.identify(packet.getPacket());
+        } catch (PacketNotIdentifiedException e) {
+            LOG.log(Level.WARNING, "Encapsulation packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.getLength() + ", protocol ID " + packet.getEncapsulationProtocolId() + " not identified: " + e.getMessage(), e);
+        } catch (PacketAmbiguityException e) {
+            LOG.log(Level.WARNING, "Encapsulation packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.getLength() + ", protocol ID " + packet.getEncapsulationProtocolId() + " ambiguous: " + e.getMessage(), e);
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Encapsulation packet from spacecraft ID " + spacecraftId + ", VC " + vc.getVirtualChannelId() + ", length " + packet.getLength() + ", protocol ID " + packet.getEncapsulationProtocolId() + " error during identification: " + e.getMessage(), e);
+        }
+        return packetName;
     }
 
     private String identifyPacket(AbstractReceiverVirtualChannel vc, byte[] packet, SpacePacket sp, String packetName) {
@@ -314,9 +378,9 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         return packetName;
     }
 
-    private void distributeSpacePacket(SpacePacket sp, String packetName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality, boolean live, TmFrameDescriptor frameDescriptor) {
-        RawData rd = new RawData(broker.nextRawDataId(), generationTime, packetName, type, route, source, quality, null, sp.getPacket(), receptionTime, driverName, live, frameDescriptor);
-        rd.setData(sp);
+    private void distributePacket(IPacket packet, String packetName, Instant generationTime, Instant receptionTime, String route, String source, String type, Quality quality, boolean live, TmFrameDescriptor frameDescriptor) {
+        RawData rd = new RawData(broker.nextRawDataId(), generationTime, packetName, type, route, source, quality, null, packet.getPacket(), receptionTime, driverName, live, frameDescriptor);
+        rd.setData(packet);
         try {
             broker.distribute(Collections.singletonList(rd));
         } catch (ReatmetricException e) {
@@ -499,6 +563,36 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
     public void dispose() {
         performanceSampler.cancel();
         broker.unsubscribe(this);
+    }
+
+    public LinkedHashMap<String, String> renderEncapsulationPacket(RawData rawData) {
+        EncapsulationPacket packet = (EncapsulationPacket) rawData.getData();
+        if(packet == null) {
+            packet = new EncapsulationPacket(rawData.getContents(), rawData.getQuality() == Quality.GOOD);
+        }
+        LinkedHashMap<String, String> toReturn = new LinkedHashMap<>();
+        toReturn.put("Encapsulation Packet", null);
+        toReturn.put("Protocol ID", String.valueOf(packet.getEncapsulationProtocolId()));
+        toReturn.put("Idle Packet", String.valueOf(packet.isIdle()));
+        toReturn.put("Length", String.valueOf(packet.getLength()));
+        toReturn.put("Primary Header Length", String.valueOf(packet.getPrimaryHeaderLength()));
+        toReturn.put("Data Field Length", String.valueOf(packet.getEncapsulatedDataFieldLength()));
+        if(packet.isEncapsulationProtocolIdExtensionPresent()) {
+            toReturn.put("Protocol ID Extension", String.valueOf(packet.getEncapsulationProtocolIdExtension()));
+        }
+        if(packet.isUserDefinedFieldPresent()) {
+            toReturn.put("User Defined Field", String.valueOf(packet.getUserDefinedField()));
+        }
+        if(packet.isCcsdsDefinedFieldPresent()) {
+            toReturn.put("CCSDS Defined Field", StringUtil.toHexDump(packet.getCcsdsDefinedField()));
+        }
+        if(rawData.getExtension() instanceof TmFrameDescriptor descriptor) {
+            toReturn.put("Parent (first) TM Frame", null);
+            toReturn.put("Virtual Channel ID", String.valueOf(descriptor.getVirtualChannelId()));
+            toReturn.put("Virtual Channel Counter", String.valueOf(descriptor.getVirtualChannelFrameCounter()));
+            toReturn.put("Earth-Reception Time", String.valueOf(descriptor.getEarthReceptionTime()));
+        }
+        return toReturn;
     }
 
     public LinkedHashMap<String, String> renderTmFrame(RawData rawData) {

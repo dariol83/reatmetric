@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  * </ul>
  *
  * Specific PUS 1 report packets, PUS 11,4 TC and setter TCs (which are processed by the {@link SpacecraftSimulator} accordingly to change
- * parameter values) are also generated.
+ * parameter values) are also generated. A generic mission-specific Encapsulation Packet definition is included for identification only.
  */
 public class TestDefinitionGenerator {
 
@@ -92,8 +92,9 @@ public class TestDefinitionGenerator {
         IdentField ifPType = new IdentField("I-PUS-TYPE", 7, 1, -1, 0, 0, 0);
         IdentField ifPSubtype = new IdentField("I-PUS-SUBTYPE", 8, 1, -1, 0, 0, 0);
         IdentField ifP1 = new IdentField("I-P1", 16, 1, -1, 0, 0, 0);
+        IdentField ifEncProtocol = new IdentField("I-ENC-VERSION-PROTOCOL", 0, 1, 0xFC, 0, 0, 0);
 
-        d.getIdentificationFields().addAll(Arrays.asList(ifApid, ifPType, ifPSubtype, ifP1));
+        d.getIdentificationFields().addAll(Arrays.asList(ifApid, ifPType, ifPSubtype, ifP1, ifEncProtocol));
 
         Queue<ParameterProcessingDefinition> parametersToAdd = new LinkedList<>();
         System.out.println("Processing " + defs.getParameterDefinitions().size() + " parameters");
@@ -278,6 +279,16 @@ public class TestDefinitionGenerator {
         timepkt.getMatchers().add(new IdentFieldMatcher(ifApid, 0));
         timepkt.setStructure(new PacketStructure());
         d.getPacketDefinitions().add(timepkt);
+
+        // Match version 7 and mission-specific protocol ID 7, independently of the header length bits.
+        PacketDefinition encapsulationPacket = new PacketDefinition();
+        encapsulationPacket.setExternalId(packetId++);
+        encapsulationPacket.setId("TM-ENCAPSULATION-MISSION-SPECIFIC");
+        encapsulationPacket.setDescription("Mission-specific CCSDS Encapsulation Packet");
+        encapsulationPacket.setType("TM");
+        encapsulationPacket.getMatchers().add(new IdentFieldMatcher(ifEncProtocol, 0xFC));
+        encapsulationPacket.setStructure(new PacketStructure());
+        d.getPacketDefinitions().add(encapsulationPacket);
 
         // Generate packets for PUS 5 events
         apid = 100;

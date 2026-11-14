@@ -49,6 +49,7 @@ class SpacecraftConfigurationTest {
                     aos-insert-zone-length="8" frame-length="2048" required-quality="ALL">
                     <tm-vc-descriptor id="2" process-type="VCA" override-live="NOT_LIVE" enable-gap-warning="false"/>
                     <tm-vc-descriptor id="7" process-type="IGNORE"/>
+                    <tm-vc-descriptor id="4" process-type="ENCAPSULATION" override-live="LIVE"/>
                     <type>AOS</type>
                 </tm>
                 <tm-packet parameter-id-offset="123456" required-quality="GOOD_ONLY" only-live-processing="true">
@@ -93,7 +94,9 @@ class SpacecraftConfigurationTest {
         assertEquals(VirtualChannelType.VCA,
                 configuration.getTcDataLinkConfiguration().getTcVcDescriptors().get(1).getAccessMode());
         assertEquals(1115, configuration.getTmDataLinkConfigurations().getFrameLength());
-        assertEquals(4, configuration.getTmDataLinkConfigurations().getTmVcConfigurations().size());
+        assertEquals(5, configuration.getTmDataLinkConfigurations().getTmVcConfigurations().size());
+        assertEquals(VirtualChannelType.ENCAPSULATION,
+                configuration.getTmDataLinkConfigurations().getTmVcConfigurations().get(3).getProcessType());
         assertEquals(TransferFrameType.TM, configuration.getTmDataLinkConfigurations().getType());
         assertEquals(100000, configuration.getTmPacketConfiguration().getParameterIdOffset());
         CucConfiguration obt = assertInstanceOf(CucConfiguration.class,
@@ -176,12 +179,31 @@ class SpacecraftConfigurationTest {
         assertEquals(8, tm.getAosTransferFrameInsertZoneLength());
         assertEquals(2048, tm.getFrameLength());
         assertEquals(RequiredTmQuality.ALL, tm.getRequiredQuality());
-        assertEquals(2, tm.getTmVcConfigurations().size());
+        assertEquals(3, tm.getTmVcConfigurations().size());
         assertEquals(2, tm.getTmVcConfigurations().get(0).getId());
         assertEquals(VirtualChannelType.VCA, tm.getTmVcConfigurations().get(0).getProcessType());
         assertEquals(OverrideLiveEnum.NOT_LIVE, tm.getTmVcConfigurations().get(0).getOverrideLive());
         assertFalse(tm.getTmVcConfigurations().get(0).isEnableGapWarning());
         assertEquals(VirtualChannelType.IGNORE, tm.getTmVcConfigurations().get(1).getProcessType());
+        assertEquals(VirtualChannelType.ENCAPSULATION, tm.getTmVcConfigurations().get(2).getProcessType());
+        assertEquals(4, tm.getTmVcConfigurations().get(2).getId());
+        assertEquals(OverrideLiveEnum.LIVE, tm.getTmVcConfigurations().get(2).getOverrideLive());
+    }
+
+    @Test
+    void rejectsEncapsulationOnTelecommandVirtualChannels() {
+        TcVcConfiguration vc = new TcVcConfiguration();
+        assertThrows(IllegalArgumentException.class, () -> vc.setAccessMode(VirtualChannelType.ENCAPSULATION));
+        assertEquals(VirtualChannelType.PACKET, vc.getAccessMode());
+
+        IOException invalidTcMode = assertThrows(IOException.class, () -> load("""
+                <s:spacecraft xmlns:s="http://dariolucia.eu/reatmetric/driver/spacecraft">
+                    <name>Invalid TC</name><id>1</id>
+                    <tc><tc-vc-descriptor tc-vc="2" access-mode="ENCAPSULATION"/></tc>
+                    <tm-packet/><tc-packet/>
+                </s:spacecraft>
+                """));
+        assertInstanceOf(JAXBException.class, invalidTcMode.getCause());
     }
 
     @Test

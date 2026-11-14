@@ -305,6 +305,8 @@ public class SpacecraftDriver implements IDriver, IRawDataRenderer, IActivityHan
         this.rawDataRenderers.put(Constants.T_AOS_FRAME, tmDataLinkProcessor::renderAosFrame);
         this.rawDataRenderers.put(Constants.T_RAW_FRAME, tmDataLinkProcessor::renderTmRawTransferFrame);
         this.rawDataRenderers.put(Constants.T_TM_PACKET, tmPacketProcessor::renderTmPacket);
+        this.rawDataRenderers.put(Constants.T_ENC_PACKET, tmDataLinkProcessor::renderEncapsulationPacket);
+        this.rawDataRenderers.put(Constants.T_IDLE_ENC_PACKET, tmDataLinkProcessor::renderEncapsulationPacket);
         this.rawDataRenderers.put(Constants.T_TM_VCA, tmPacketProcessor::renderTmVca);
         this.rawDataRenderers.put(Constants.T_TM_RAW, tmPacketProcessor::renderTmRaw);
         this.rawDataRenderers.put(Constants.T_IDLE_PACKET, tmPacketProcessor::renderTmPacket);

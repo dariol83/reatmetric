@@ -20,8 +20,10 @@ public class Constants {
     // RawData Names
     public static final String N_TM_TRANSFER_FRAME = "TRANSFER FRAME";
     public static final String N_UNKNOWN_PACKET = "UNKNOWN";
+    public static final String N_UNKNOWN_ENC_PACKET = "UNKNOWN";
     public static final String N_UNKNOWN_VCA = "UNKNOWN";
     public static final String N_IDLE_PACKET = "IDLE PACKET";
+    public static final String N_IDLE_ENC_PACKET = "IDLE ENC PACKET";
     public static final String N_TIME_COEFFICIENTS = "TIME COEFFICIENT";
     public static final String N_TC_VERIFICATION_MAP = "TC VERIFICATION MAP";
     public static final String N_SCHEDULE_MODEL_STATE = "ONBOARD SCHEDULE";
@@ -31,9 +33,11 @@ public class Constants {
     public static final String T_AOS_FRAME = "AOS FRAME";
     public static final String T_RAW_FRAME = "RAW FRAME"; // This is for raw data distribution
     public static final String T_TM_PACKET = "TM PACKET";
+    public static final String T_ENC_PACKET = "ENC PACKET";
     public static final String T_TM_VCA = "TM VCA";
     public static final String T_TM_RAW = "TM RAW"; // This is for processing at TM packet processing level (parameter extraction)
     public static final String T_IDLE_PACKET = "IDLE PACKET";
+    public static final String T_IDLE_ENC_PACKET = "IDLE ENC PACKET";
     public static final String T_TC_PACKET = "TC PACKET";
     public static final String T_TC_VCA = "TC VCA";
     public static final String T_BAD_TM = "BAD TM";

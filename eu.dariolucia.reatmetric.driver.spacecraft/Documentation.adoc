@@ -20,10 +20,12 @@ protocols deliver TM or AOS Transfer Frames to the ReatMetric Raw Data Broker, f
 Additional interfaces can be added by leveraging the driver extensions (see <<_command_connectors>>). De-randomisation is also
 performed by this entity, if configured.
 . A _TM Data Link Processor_ that is subscribed to the Raw Data Broker for TM or AOS transfer frames (as defined in the driver
-configuration) and extracts TM packets from the transfer frames. If the security layer is configured, this entity also
-makes sure to decrypt the frame before extracting the TM packets. Extracted TM packets are identified according to the
-packet definitions defined as part of the driver configuration, time-correlated with the currently availabile time correlation
-coefficients, and forwarded to the Raw Data Broker for further dissemination and processing.
+configuration) and extracts Space Packets, Encapsulation Packets or VC data units according to the virtual channel configuration.
+If the security layer is configured, this entity also makes sure to decrypt the frame before extracting the data.
+Extracted Space Packets are identified according to the packet definitions defined as part of the driver configuration,
+time-correlated with the currently available time correlation coefficients, and forwarded to the Raw Data Broker for further
+dissemination and processing. Encapsulation Packets are reconstructed, identified and forwarded to the Raw Data Broker as
+described below.
 . A _TM Packet Processor_ that is subscribed to the Raw Data Broker to TM packets and decodes the TM parameters contained
 in each packet according to the packet structure definition defined as part of the driver configuration. The extracted
 TM parameters are time-correlated (depending on the structure definition of the packet) and mapped to ReatMetric's
@@ -41,6 +43,37 @@ no support for (11,1), (11,2) and status reports;
 .. Command verification service (PUS service 1).
 
 image::../docs/docimg/Drawings-Spacecraft Driver - Telemetry.drawio.png[Telemetry Processing - Design]
+
+====== Encapsulation Packets
+Telemetry virtual channels configured with _process-type="ENCAPSULATION"_ carry CCSDS Encapsulation Packets instead of
+Space Packets. This mode is supported for both TM and AOS transfer frames, including packets that span multiple frames.
+Each virtual channel can select its processing mode independently, so Space Packets and Encapsulation Packets can be
+received on different virtual channels of the same spacecraft.
+
+For each extracted non-idle Encapsulation Packet, the driver attempts identification using the configured packet
+definitions. It publishes the complete packet to the Raw Data Broker with type _ENC PACKET_ and the identified packet
+name, or _UNKNOWN_ if identification fails. Idle Encapsulation Packets, identified by protocol ID 0, are published with
+both name and type _IDLE ENC PACKET_. The generation time is taken from the first frame's generation time; if unavailable,
+the first frame's reception time minus the configured propagation delay is used. The virtual channel's _override-live_
+setting applies to these packets.
+
+Identification definitions for Encapsulation Packets must use _type="TM"_ in _tmtc.xml_. The identifier receives the complete
+Encapsulation Packet, including its header, so identification field offsets start at the first header byte. These
+definitions share the identifier with Space Packet definitions: use packet version 7 for Encapsulation Packets and
+version 0 for Space Packets to distinguish them. For example, masking the first byte with 252 (0xFC) and matching 252
+selects version 7 and mission-specific protocol ID 7 while allowing any header length indicator. An empty packet
+structure is sufficient because the driver uses these definitions for identification only.
+
+Encapsulation Packets are available as raw data. They are not processed by the TM Packet Processor, do not undergo PUS
+header or checksum processing, and do not trigger time correlation, parameter extraction or PUS services. Telecommand
+delivery of Encapsulation Packets is not supported.
+
+The CCSDS 1.0.7 library used by the driver has a receiver limitation at frame boundaries. A one-byte idle packet in
+the final byte of a frame's packet data field can cause an extraction exception when the following frame arrives.
+The same limitation affects packets shorter than eight bytes when their primary header spans frames or ends exactly
+at a frame data boundary. Avoid these layouts when generating telemetry; use idle packets with an explicit length and
+arrange short packets so that their complete header is followed by at least one byte in the same frame. This constraint
+belongs to the library's shared TM/AOS packet reconstruction and applies to both transfer frame types.
 
 ===== Telecommand
 The telecommand processing chain is composed by the following processing entities:
@@ -413,6 +446,7 @@ following example provide extensive comments covering all elements and configura
         <tm-vc-descriptor id="0" process-type="PACKET" override-live="INHERIT" />
         <tm-vc-descriptor id="1" process-type="PACKET" enable-gap-warning="false" />
         <tm-vc-descriptor id="2" process-type="VCA" />
+        <tm-vc-descriptor id="3" process-type="ENCAPSULATION" />
         <tm-vc-descriptor id="7" process-type="IGNORE" />
         <!-- Protocol type -->
 		<type>TM</type>
@@ -519,7 +553,8 @@ channel will be encrypted using the registered ISecurityHandler service.
 - _access-mode_ (optional, enumeration: PACKET, VCA, default: PACKET): access mode of the virtual channel. If PACKET
 is selected, then only TC space packets can be delivered on the virtual channel. If VCA is selected, then only
 raw VC data units can be delivered on the virtual channel. Attempting to send the wrong data unit to the virtual channel
-will cause the telecommand to fail upon release.
+will cause the telecommand to fail upon release. ENCAPSULATION is supported only for telemetry and is rejected as a TC
+access mode.
 
 Element *<tm>* (mandatory). This element configures TM data link properties and their characteristics. All VCs possibly
 defined by the selected protocol (see type element below) are processed with the default configuration, unless the
@@ -550,14 +585,15 @@ Sub-element *<tm><tm-vc-descriptor>* (optional). This element defines the charac
 The following attributes are defined:
 
 - _id_ (mandatory, integer): the virtual channel id.
-- _process-type_ (optional, enumeration: PACKET, VCA, RAW, IGNORE, default: PACKET): the data delivered by the virtual
-channel. If PACKET is set, then space packets are assumed to be delivered by the virtual channel. If VCA is
+- _process-type_ (optional, enumeration: PACKET, ENCAPSULATION, VCA, RAW, IGNORE, default: PACKET): the data delivered by the virtual
+channel. If PACKET is set, then space packets are assumed to be delivered by the virtual channel. If ENCAPSULATION is set,
+then CCSDS Encapsulation Packets are reconstructed and published as raw data (see <<_encapsulation_packets>>). If VCA is
 set, then it is assumed that raw data is written in each transfer frame, not encapsulated in space packets.
 If RAW is set, then the complete transfer frame is processed and distributed as a raw TM unit for the configured
 virtual channel.
 If IGNORE is set, then transfer frames are not further processed.
 - _override-live_ (optional, enumeration: LIVE, NOT_LIVE, INHERIT, default: INHERIT): controls the live flag assigned
-to space packets, VC access units and raw TM units extracted from TM or AOS frames on this virtual channel. LIVE forces
+to space packets, Encapsulation Packets, VC access units and raw TM units extracted from TM or AOS frames on this virtual channel. LIVE forces
 the generated raw data items to be live, NOT_LIVE forces them to be repatriated, and INHERIT copies the live flag from
 the originating transfer frame raw data item. If no specific VC processing is configured, INHERIT is used for all
 virtual channels. Raw transfer frames are not affected by this setting because they do not carry virtual channel
@@ -677,15 +713,18 @@ For further information, it is advised to check the Javadoc of the classes of th
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ns2:packet_definitions xmlns:ns2="http://dariolucia.eu/ccsds/encdec">
     <id_fields>
+        <field id="I-VERSION" offset="0" len="1" and="224" or="0" lshift="0" rshift="5"/>
         <field id="I-APID" offset="0" len="2" and="2047" or="0" lshift="0" rshift="0"/>
         <field id="I-PUS-TYPE" offset="7" len="1" and="-1" or="0" lshift="0" rshift="0"/>
         <field id="I-PUS-SUBTYPE" offset="8" len="1" and="-1" or="0" lshift="0" rshift="0"/>
         <field id="I-18-32" offset="18" len="4" and="-1" or="0" lshift="0" rshift="0"/>
         <field id="I-22-24" offset="22" len="3" and="16777215" or="0" lshift="0" rshift="0"/>
+        <field id="I-ENC-VERSION-PROTOCOL" offset="0" len="1" and="252" or="0" lshift="0" rshift="0"/>
     </id_fields>
     <packets>
         <packet id="TMPACKET1" external_id="114001" description="Service Packet (106,12)" type="TM">
             <identification>
+                <match field="I-VERSION" value="0"/>
                 <match field="I-APID" value="33"/>
                 <match field="I-PUS-TYPE" value="106"/>
                 <match field="I-PUS-SUBTYPE" value="12"/>
@@ -724,6 +763,12 @@ For further information, it is advised to check the Javadoc of the classes of th
                     <parameter_fixed parameter="YFTRW107"/>
                 </parameter>
             </structure>
+        </packet>
+        <packet id="TM-ENCAPSULATION-MISSION-SPECIFIC" external_id="114002" description="Mission-specific CCSDS Encapsulation Packet" type="TM">
+            <identification>
+                <match field="I-ENC-VERSION-PROTOCOL" value="252"/>
+            </identification>
+            <structure/>
         </packet>
         [...]
         <packet id="TCPACKET1" external_id="116873" description="(102,17) Modify Limit Monitoring Check Def for float parameter" type="TC">
@@ -775,7 +820,8 @@ The second element *<packets>* contains the list of packets (TM and TC). For eac
 is equal to the event object in the ReatMetric processing model mapped to such on-board event; in case of TC packets, this value
 must match the value of the ID of the corresponding activity plus offset, as defined in the configuration.xml file);
 - attribute _description_ (optional, string, default: ): description of the packet
-- attribute _type_ (mandatory, string): ReatMetric uses the following hardcoded convention: "TM" for TM packets,
+- attribute _type_ (mandatory, string): ReatMetric uses the following hardcoded convention: "TM" for telemetry Space Packet
+and Encapsulation Packet definitions,
 "TC" for TC packets.
 
 Each *<packet>* element contains:
