@@ -133,6 +133,7 @@ public class TmDataLinkProcessor implements IVirtualChannelReceiverOutput, IRawD
         }
     }
 
+    // TODO: add support for encapsulation packets
     public void initialise() {
         List<AbstractReceiverVirtualChannel<?>> virtualChannels = new ArrayList<>();
         // Build the VCs to process

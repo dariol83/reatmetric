@@ -62,7 +62,7 @@
         <openjfx.version>27.0.1</openjfx.version>
         <jakarta.version>4.0.5</jakarta.version>
         <jaxb.version>4.0.9</jaxb.version>
-        <derby.version>10.15.1.3</derby.version>
+        <derby.version>10.17.1.0</derby.version>
         <jdbc.version>19.3.0.0</jdbc.version>
         <graalvm.version>25.5.5.0.3</graalvm.version>
         <groovy.version>6.0.0</groovy.version>
@@ -86,9 +86,12 @@
         <maven.assembly.version>3.8.0</maven.assembly.version>
         <maven.surefire.version>3.6.1</maven.surefire.version>
         <maven.compiler.version>3.16.0</maven.compiler.version>
+        <maven.dependency.version>3.11.0</maven.dependency.version>
         <maven.gpg.version>3.2.8</maven.gpg.version>
         <maven.version>2.25.1</maven.version>
         <maven.sonatype.version>0.12.0</maven.sonatype.version>
+        <jeromq.version>0.6.0</jeromq.version>
+        <jackson.cbor.version>2.23.0</jackson.cbor.version>
     </properties>
 
     <modules>
