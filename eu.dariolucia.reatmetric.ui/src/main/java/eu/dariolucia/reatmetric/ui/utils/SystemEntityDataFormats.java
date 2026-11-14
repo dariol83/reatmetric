@@ -25,6 +25,9 @@ import javafx.scene.input.DataFormat;
  * @author dario
  */
 public class SystemEntityDataFormats {
+    // TODO: Before removing javafx.dnd.deserializeObjectGraph=true, replace the serialized
+    // SystemEntity/List payloads with ID/path string formats, updating the model browser
+    // producer and all chart, parameter display and filter drop handlers together.
     public final static DataFormat CONTAINER = new DataFormat(SystemEntityType.CONTAINER.name());
     public final static DataFormat PARAMETER = new DataFormat(SystemEntityType.PARAMETER.name());
     public final static DataFormat EVENT = new DataFormat(SystemEntityType.EVENT.name());

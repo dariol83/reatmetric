@@ -6,7 +6,7 @@ open module eu.dariolucia.reatmetric.driver.automation.python {
     requires java.scripting;
     requires java.rmi;
 
-    requires jython.slim;
+    requires org.python.jython2;
 
     requires eu.dariolucia.reatmetric.api;
     requires eu.dariolucia.reatmetric.core;

@@ -67,6 +67,8 @@ public class XYBarChartManager extends AbstractChartManager<String, Number> {
     }
     
     private void onDragDropped(DragEvent event) {
+        // TODO: Before removing javafx.dnd.deserializeObjectGraph=true, resolve a parameter
+        // ID/path string payload instead of casting PARAMETER to a serialized SystemEntity.
 		if(deleted) {
 			return;
 		}

@@ -1014,6 +1014,8 @@ public class ParameterDisplayTabWidgetController extends AbstractDisplayControll
 
     @FXML
     private void onDragDropped(DragEvent event) {
+        // TODO: Before removing javafx.dnd.deserializeObjectGraph=true, resolve model-browser
+        // ID/path string payloads instead of casting PARAMETER/CONTAINER to SystemEntity/List.
         Dragboard db = event.getDragboard();
         boolean success = false;
         int insertionIndex = this.dragDropInsertionIndex >= 0 ? this.dragDropInsertionIndex : resolveDropInsertionIndex(event);

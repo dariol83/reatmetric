@@ -79,6 +79,8 @@ public class XYScatterChartManager extends AbstractChartManager<Instant, Number>
     }
     
     private void onDragDropped(DragEvent event) {
+        // TODO: Before removing javafx.dnd.deserializeObjectGraph=true, resolve an event
+        // ID/path string payload instead of casting EVENT to a serialized SystemEntity.
 		if(deleted) {
 			return;
 		}

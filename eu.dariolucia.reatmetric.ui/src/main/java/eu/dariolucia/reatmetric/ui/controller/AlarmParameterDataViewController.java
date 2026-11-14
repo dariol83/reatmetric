@@ -173,6 +173,8 @@ public class AlarmParameterDataViewController
 
 	@FXML
 	private void onDragDropped(DragEvent event) {
+		// TODO: Before removing javafx.dnd.deserializeObjectGraph=true, resolve a container
+		// ID/path string payload instead of casting CONTAINER to a serialized SystemEntity list.
 		Dragboard db = event.getDragboard();
 		boolean success = false;
 		if (db.hasContent(SystemEntityDataFormats.CONTAINER)) {
