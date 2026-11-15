@@ -68,13 +68,6 @@ Encapsulation Packets are available as raw data. They are not processed by the T
 header or checksum processing, and do not trigger time correlation, parameter extraction or PUS services. Telecommand
 delivery of Encapsulation Packets is not supported.
 
-The CCSDS 1.0.7 library used by the driver has a receiver limitation at frame boundaries. A one-byte idle packet in
-the final byte of a frame's packet data field can cause an extraction exception when the following frame arrives.
-The same limitation affects packets shorter than eight bytes when their primary header spans frames or ends exactly
-at a frame data boundary. Avoid these layouts when generating telemetry; use idle packets with an explicit length and
-arrange short packets so that their complete header is followed by at least one byte in the same frame. This constraint
-belongs to the library's shared TM/AOS packet reconstruction and applies to both transfer frame types.
-
 ===== Telecommand
 The telecommand processing chain is composed by the following processing entities:
 

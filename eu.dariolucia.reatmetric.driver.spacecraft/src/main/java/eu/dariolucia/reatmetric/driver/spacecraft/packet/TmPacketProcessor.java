@@ -254,7 +254,7 @@ public class TmPacketProcessor implements IRawDataSubscriber, IDebugInfoProvider
         }
     }
 
-    // TODO: add support for encapsulation packets
+    // TODO: add support for encapsulation packets, currently reconstructed and published as raw data only.
     private void processItems(List<RawData> itemsToProcess) {
         List<Future<ItemDecodingResult>> results = new ArrayList<>(itemsToProcess.size());
         for(RawData rd : itemsToProcess) {

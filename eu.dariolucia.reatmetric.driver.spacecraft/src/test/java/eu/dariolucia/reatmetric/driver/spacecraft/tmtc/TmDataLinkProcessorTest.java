@@ -221,6 +221,66 @@ class TmDataLinkProcessorTest {
         }
     }
 
+    @ParameterizedTest
+    @EnumSource(value = TransferFrameType.class, names = {"TM", "AOS"})
+    void decodesOneByteIdlePacketInTheFinalFrameDataByte(TransferFrameType type) {
+        int frameDataLength = sender(type, VirtualChannelAccessMode.ENCAPSULATION).getMaxUserDataLength();
+        EncapsulationPacket packet = packet(frameDataLength - 3);
+        EncapsulationPacket idle = EncapsulationPacketBuilder.create().setIdle().build();
+        List<AbstractTransferFrame> frames = frames(type, packet, idle);
+        assertEquals(1, frames.size());
+
+        try (Fixture fixture = new Fixture(type, bytes -> {
+            assertArrayEquals(packet.getPacket(), bytes);
+            return "CFDP_DATA";
+        }, OverrideLiveEnum.INHERIT)) {
+            fixture.receive(frames.get(0), true);
+
+            assertEquals(2, fixture.broker.published.size());
+            assertEquals(1, fixture.identifications);
+            RawData raw = fixture.broker.published.get(1);
+            assertEquals(Constants.N_IDLE_ENC_PACKET, raw.getName());
+            assertEquals(Constants.T_IDLE_ENC_PACKET, raw.getType());
+            assertEquals(Quality.GOOD, raw.getQuality());
+            assertArrayEquals(idle.getPacket(), raw.getContents());
+            assertEquals(1, assertInstanceOf(EncapsulationPacket.class, raw.getData()).getPrimaryHeaderLength());
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TransferFrameType.class, names = {"TM", "AOS"})
+    void decodesShortEncapsulationPacketsWithHeadersSpanningFrames(TransferFrameType type) {
+        int frameDataLength = sender(type, VirtualChannelAccessMode.ENCAPSULATION).getMaxUserDataLength();
+        for (int headerLength : new int[] {2, 4}) {
+            for (int packetLength = headerLength; packetLength < 8; ++packetLength) {
+                EncapsulationPacket packet = shortPacket(headerLength, packetLength);
+                for (int firstHeaderBytes = 1; firstHeaderBytes < headerLength; ++firstHeaderBytes) {
+                    List<AbstractTransferFrame> frames = frames(type,
+                            idlePacket(frameDataLength - firstHeaderBytes), packet);
+                    assertEquals(2, frames.size());
+                    assertShortPacketDecoded(type, packet, frames,
+                            "Header length " + headerLength + ", packet length " + packetLength
+                                    + ", header bytes in first frame " + firstHeaderBytes);
+                }
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TransferFrameType.class, names = {"TM", "AOS"})
+    void decodesShortEncapsulationPacketsWithHeadersEndingAtTheFrameDataBoundary(TransferFrameType type) {
+        int frameDataLength = sender(type, VirtualChannelAccessMode.ENCAPSULATION).getMaxUserDataLength();
+        for (int headerLength : new int[] {2, 4}) {
+            for (int packetLength = headerLength; packetLength < 8; ++packetLength) {
+                EncapsulationPacket packet = shortPacket(headerLength, packetLength);
+                List<AbstractTransferFrame> frames = frames(type, idlePacket(frameDataLength - headerLength), packet);
+                assertEquals(packetLength == headerLength ? 1 : 2, frames.size());
+                assertShortPacketDecoded(type, packet, frames,
+                        "Header length " + headerLength + ", packet length " + packetLength);
+            }
+        }
+    }
+
     @Test
     void missingGenerationAnnotationUsesReceptionTimeAndPropagationDelay() {
         try (Fixture fixture = new Fixture(TransferFrameType.TM, bytes -> "CFDP", OverrideLiveEnum.INHERIT)) {
@@ -282,11 +342,47 @@ class TmDataLinkProcessorTest {
                 .setEncapsulationProtocolId(EncapsulationPacket.ProtocolIdType.PROTOCOL_ID_CFDP).setData(data).build();
     }
 
-    private static List<AbstractTransferFrame> frames(TransferFrameType type, EncapsulationPacket packet) {
+    private static EncapsulationPacket shortPacket(int headerLength, int packetLength) {
+        return EncapsulationPacketBuilder.create()
+                .setEncapsulationProtocolId(EncapsulationPacket.ProtocolIdType.PROTOCOL_ID_CFDP)
+                .setLengthOfLength(headerLength == 2 ? 1 : 2)
+                .setData(new byte[packetLength - headerLength]).build();
+    }
+
+    private static EncapsulationPacket idlePacket(int packetLength) {
+        return EncapsulationPacketBuilder.create().setIdle().setLengthOfLength(1)
+                .setData(new byte[packetLength - 2]).build();
+    }
+
+    private static void assertShortPacketDecoded(TransferFrameType type, EncapsulationPacket packet,
+                                                 List<AbstractTransferFrame> frames, String scenario) {
+        try (Fixture fixture = new Fixture(type, bytes -> {
+            assertArrayEquals(packet.getPacket(), bytes, scenario);
+            return "CFDP_DATA";
+        }, OverrideLiveEnum.INHERIT)) {
+            frames.forEach(frame -> fixture.receive(frame, true));
+
+            assertEquals(1, fixture.nonIdlePackets().size(), scenario);
+            assertEquals(1, fixture.identifications, scenario);
+            RawData raw = fixture.nonIdlePackets().get(0);
+            assertEquals("CFDP_DATA", raw.getName(), scenario);
+            assertEquals(Quality.GOOD, raw.getQuality(), scenario);
+            assertArrayEquals(packet.getPacket(), raw.getContents(), scenario);
+            EncapsulationPacket decoded = assertInstanceOf(EncapsulationPacket.class, raw.getData());
+            assertTrue(decoded.isQualityIndicator(), scenario);
+            assertEquals(packet.getPrimaryHeaderLength(), decoded.getPrimaryHeaderLength(), scenario);
+            assertEquals(GENERATION_TIME, raw.getGenerationTime(), scenario);
+            assertEquals(RECEPTION_TIME, raw.getReceptionTime(), scenario);
+        }
+    }
+
+    private static List<AbstractTransferFrame> frames(TransferFrameType type, EncapsulationPacket... packets) {
         AbstractSenderVirtualChannel<?> sender = sender(type, VirtualChannelAccessMode.ENCAPSULATION);
         List<AbstractTransferFrame> frames = new ArrayList<>();
         sender.register((vc, frame, bufferedBytes) -> frames.add(frame));
-        sender.dispatch(packet);
+        for (EncapsulationPacket packet : packets) {
+            sender.dispatch(packet);
+        }
         int remaining = sender.getRemainingFreeSpace();
         if (remaining < sender.getMaxUserDataLength()) {
             EncapsulationPacketBuilder padding = EncapsulationPacketBuilder.create().setIdle();
