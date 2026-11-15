@@ -21,9 +21,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
-import eu.dariolucia.ccsds.tmtc.datalink.pdu.AbstractTransferFrame;
-import eu.dariolucia.ccsds.tmtc.datalink.pdu.AosTransferFrame;
-import eu.dariolucia.ccsds.tmtc.datalink.pdu.TmTransferFrame;
 import eu.dariolucia.reatmetric.api.common.AbstractSystemEntityDescriptor;
 import eu.dariolucia.reatmetric.api.common.Pair;
 import eu.dariolucia.reatmetric.api.common.exceptions.ReatmetricException;
@@ -41,9 +38,7 @@ import eu.dariolucia.reatmetric.api.value.ValueTypeEnum;
 import eu.dariolucia.reatmetric.api.value.ValueUtil;
 import eu.dariolucia.reatmetric.core.api.IRawDataBroker;
 import eu.dariolucia.reatmetric.core.api.IServiceCoreContext;
-import eu.dariolucia.reatmetric.driver.spacecraft.common.Constants;
 import eu.dariolucia.reatmetric.driver.spacecraft.common.IReceptionOnlyConnector;
-import eu.dariolucia.reatmetric.driver.spacecraft.common.RawTransferFrame;
 import eu.dariolucia.reatmetric.driver.spacecraft.definition.SpacecraftConfiguration;
 import eu.dariolucia.reatmetric.driver.spacecraft.services.IServiceBroker;
 import org.zeromq.*;
@@ -55,7 +50,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.rmi.RemoteException;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -100,13 +94,6 @@ public class SatDecodeConnector extends AbstractTransportConnector implements IR
     private static final String METRIC_FRAME_LOCK_KEY = "frame.lock";
     private static final String METRIC_FRAME_LOCK_LOCKED_VALUE = "LOCKED";
 
-    private static final String METADATA_SPACECRAFT_ID_KEY = "spacecraft_id";
-    private static final String METADATA_VCID_KEY = "vcid";
-    private static final String METADATA_VIRTUAL_CHANNEL_ID_KEY = "virtual_channel_id";
-    private static final String METADATA_NAME_KEY = "name";
-    private static final String METADATA_VCA_NAME_KEY = "vca_name";
-    private static final String METADATA_PACKET_NAME_KEY = "packet_name";
-
     private static final String FALLBACK_RECEIVER_ID = "unknown-receiver";
     private static final String FALLBACK_DECODER = "unknown-decoder";
 
@@ -128,11 +115,9 @@ public class SatDecodeConnector extends AbstractTransportConnector implements IR
     private final Set<String> missingStatusParametersLogged = Collections.synchronizedSet(new HashSet<>());
 
     private volatile Instant lastSamplingTime;
-    private volatile SpacecraftConfiguration spacecraftConfiguration;
     private volatile IServiceCoreContext context;
     private volatile IRawDataBroker broker;
-    private volatile String driverName;
-    private volatile boolean live = true;
+    private volatile ReceptionFrameMapper frameMapper;
     private volatile boolean running;
     private volatile Thread dataThread;
     private volatile Thread statusThread;
@@ -149,9 +134,9 @@ public class SatDecodeConnector extends AbstractTransportConnector implements IR
 
     @Override
     protected void addToInitialisationMap(Map<String, Object> initialisationMap, Map<String, Pair<String, ValueTypeEnum>> initialisationDescriptionMap) {
-        initialisationDescriptionMap.put(DATA_URL_KEY, Pair.of("SatDecode data URL: zmq://<host>:<port> or file://<file path>", ValueTypeEnum.CHARACTER_STRING));
-        initialisationDescriptionMap.put(DATA_TYPE_KEY, Pair.of("SatDecode data type: TM_FRAME, AOS_FRAME or VCA", ValueTypeEnum.CHARACTER_STRING));
-        initialisationDescriptionMap.put(STATUS_URL_KEY, Pair.of("SatDecode status URL: zmq://<host>:<port> or empty", ValueTypeEnum.CHARACTER_STRING));
+        initialisationDescriptionMap.put(DATA_URL_KEY, Pair.of("SatDecode data URL: tcp://<host>:<port> or file://<file path>", ValueTypeEnum.CHARACTER_STRING));
+        initialisationDescriptionMap.put(DATA_TYPE_KEY, Pair.of("SatDecode data type: TM_FRAME, AOS_FRAME or RAW", ValueTypeEnum.CHARACTER_STRING));
+        initialisationDescriptionMap.put(STATUS_URL_KEY, Pair.of("SatDecode status URL: tcp://<host>:<port> or empty", ValueTypeEnum.CHARACTER_STRING));
         initialisationDescriptionMap.put(STATUS_PARENT_PATH_KEY, Pair.of("Processing model parent path for SatDecode status metrics", ValueTypeEnum.CHARACTER_STRING));
         initialisationDescriptionMap.put(DATA_THROTTLE_KEY, Pair.of("File replay throttle in data units per second, 0 disabled", ValueTypeEnum.UNSIGNED_INTEGER));
 
@@ -470,93 +455,13 @@ public class SatDecodeConnector extends AbstractTransportConnector implements IR
         Map<String, Object> envelope = message.envelope();
         Map<String, Object> metadata = metadata(envelope);
         Instant receptionTime = instantFromNs(envelope.get(ENVELOPE_RX_TIME_NS_KEY), localReceptionTime);
-        Instant generationTime = receptionTime.minus(spacecraftConfiguration.getPropagationDelay(), ChronoUnit.MICROS);
         Quality quality = mapQuality(envelope.get(ENVELOPE_QUALITY_KEY));
         String receiver = stringOrDefault(envelope.get(ENVELOPE_RECEIVER_ID_KEY), FALLBACK_RECEIVER_ID);
         String decoder = stringOrDefault(envelope.get(ENVELOPE_DECODER_KEY), FALLBACK_DECODER);
 
-        switch (configuration.dataType()) {
-            case TM_FRAME:
-                return mapTmFrame(message.payload(), metadata, generationTime, receptionTime, quality, receiver, decoder);
-            case AOS_FRAME:
-                return mapAosFrame(message.payload(), metadata, generationTime, receptionTime, quality, receiver, decoder);
-            case RAW:
-                return mapRaw(envelope, message.payload(), metadata, generationTime, receptionTime, quality, receiver, decoder);
-            default:
-                throw new IllegalStateException("Unsupported data type " + configuration.dataType());
-        }
-    }
-
-    private RawData mapTmFrame(byte[] payload, Map<String, Object> metadata, Instant generationTime, Instant receptionTime,
-                               Quality quality, String receiver, String decoder) {
-        TmTransferFrame frame = new TmTransferFrame(payload, spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
-        if (frame.isFecfPresent() && !frame.isValid()) {
-            quality = Quality.BAD;
-        }
-        String source = String.valueOf(numberFromMetadata(metadata, METADATA_SPACECRAFT_ID_KEY, frame.getSpacecraftId()).intValue());
-        String route = buildRoute(source, frame.getVirtualChannelId(), receiver, decoder);
-        String type = quality == Quality.BAD ? Constants.T_BAD_TM : Constants.T_TM_FRAME;
-        RawData rawData = newRawData(generationTime, Constants.N_TM_TRANSFER_FRAME, type, route, source, quality, payload, receptionTime, null);
-        annotateFrame(frame, rawData, quality);
-        rawData.setData(frame);
-        return rawData;
-    }
-
-    private RawData mapAosFrame(byte[] payload, Map<String, Object> metadata, Instant generationTime, Instant receptionTime,
-                                Quality quality, String receiver, String decoder) {
-        AosTransferFrame frame = new AosTransferFrame(payload,
-                spacecraftConfiguration.getTmDataLinkConfigurations().isAosFrameHeaderErrorControlPresent(),
-                spacecraftConfiguration.getTmDataLinkConfigurations().getAosTransferFrameInsertZoneLength(),
-                AosTransferFrame.UserDataType.M_PDU,
-                spacecraftConfiguration.getTmDataLinkConfigurations().isOcfPresent(),
-                spacecraftConfiguration.getTmDataLinkConfigurations().isFecfPresent());
-        if (frame.isFecfPresent() && !frame.isValid()) {
-            quality = Quality.BAD;
-        }
-        String source = String.valueOf(numberFromMetadata(metadata, METADATA_SPACECRAFT_ID_KEY, frame.getSpacecraftId()).intValue());
-        String route = buildRoute(source, frame.getVirtualChannelId(), receiver, decoder);
-        String type = quality == Quality.BAD ? Constants.T_BAD_TM : Constants.T_AOS_FRAME;
-        RawData rawData = newRawData(generationTime, Constants.N_TM_TRANSFER_FRAME, type, route, source, quality, payload, receptionTime, null);
-        annotateFrame(frame, rawData, quality);
-        rawData.setData(frame);
-        return rawData;
-    }
-
-    private RawData mapRaw(Map<String, Object> envelope, byte[] payload, Map<String, Object> metadata, Instant generationTime, Instant receptionTime,
-                           Quality quality, String receiver, String decoder) {
-        int spacecraftId = numberFromMetadata(metadata, METADATA_SPACECRAFT_ID_KEY, spacecraftConfiguration.getId()).intValue();
-        Number vcid = numberFromMetadata(metadata, METADATA_VCID_KEY, null);
-        if (vcid == null) {
-            vcid = numberFromMetadata(metadata, METADATA_VIRTUAL_CHANNEL_ID_KEY, null);
-        }
-        String source = String.valueOf(spacecraftId);
-        String route = vcid != null ? buildRoute(source, vcid.intValue(), receiver, decoder) : buildRoute(source, null, receiver, decoder);
-        String name = firstString(metadata, Constants.N_UNKNOWN_VCA, METADATA_NAME_KEY, METADATA_VCA_NAME_KEY, METADATA_PACKET_NAME_KEY);
-        // A raw transfer frame is assumed valid if the reported quality is GOOD or UNKNOWN, as we have no information in relation to the protocol
-        RawTransferFrame unit = new RawTransferFrame((short) spacecraftId, envelope.getOrDefault(ENVELOPE_FRAME_TYPE_KEY, Constants.N_UNKNOWN_VCA).toString(), payload, false, quality != Quality.BAD);
-        if (vcid != null) {
-            unit.setAnnotationValue(Constants.ANNOTATION_VCID, vcid.intValue());
-        }
-        RawData rawData = newRawData(generationTime, name, Constants.T_RAW_FRAME, route, source, quality, payload, receptionTime, metadata.getOrDefault(ENVELOPE_FRAME_TYPE_KEY, Constants.N_UNKNOWN_VCA).toString());
-        annotateFrame(unit, rawData, quality);
-        rawData.setData(unit);
-        return rawData;
-    }
-
-    private void annotateFrame(AbstractTransferFrame frame, RawData rawData, Quality frameQuality) {
-        frame.setAnnotationValue(Constants.ANNOTATION_ROUTE, rawData.getRoute());
-        frame.setAnnotationValue(Constants.ANNOTATION_SOURCE, rawData.getSource());
-        frame.setAnnotationValue(Constants.ANNOTATION_GEN_TIME, rawData.getGenerationTime());
-        frame.setAnnotationValue(Constants.ANNOTATION_RCP_TIME, rawData.getReceptionTime());
-        frame.setAnnotationValue(Constants.ANNOTATION_UNIQUE_ID, rawData.getInternalId());
-        // Remember the original frame quality as reported by the decoder or derived/overridden from FECF presence (if any)
-        frame.setAnnotationValue(Constants.ANNOTATION_FRAME_QUALITY, frameQuality.ordinal());
-    }
-
-    private RawData newRawData(Instant generationTime, String name, String type, String route, String source,
-                               Quality quality, byte[] contents, Instant receptionTime, Object extension) {
-        return new RawData(broker.nextRawDataId(), generationTime, name, type, route, source, quality, null,
-                contents, receptionTime, driverName, live, extension);
+        ReceptionFrameMapper.DataType dataType = ReceptionFrameMapper.DataType.valueOf(configuration.dataType().name());
+        return frameMapper.map(dataType, message.payload(), receptionTime, quality, receiver + "." + decoder, metadata,
+                envelope.get(ENVELOPE_FRAME_TYPE_KEY).toString());
     }
 
     private void processStatusMessage(SatDecodeRuntimeConfiguration configuration, Map<String, Object> envelope) {
@@ -695,11 +600,9 @@ public class SatDecodeConnector extends AbstractTransportConnector implements IR
 
     @Override
     public void configure(String driverName, SpacecraftConfiguration configuration, IServiceCoreContext context, IServiceBroker serviceBroker, String connectorInformation, boolean live) {
-        this.driverName = driverName;
-        this.spacecraftConfiguration = configuration;
         this.context = context;
         this.broker = context.getRawDataBroker();
-        this.live = live;
+        this.frameMapper = new ReceptionFrameMapper(configuration, broker, driverName, live);
         this.configurationDefaults.clear();
         this.configurationDefaults.putAll(parseConnectorInformation(connectorInformation));
     }
@@ -835,29 +738,6 @@ public class SatDecodeConnector extends AbstractTransportConnector implements IR
             return converted;
         }
         return Collections.emptyMap();
-    }
-
-    private Number numberFromMetadata(Map<String, Object> metadata, String key, Number fallback) {
-        Object value = metadata.get(key);
-        return value instanceof Number ? (Number) value : fallback;
-    }
-
-    private String firstString(Map<String, Object> metadata, String fallback, String... keys) {
-        for (String key : keys) {
-            Object value = metadata.get(key);
-            if (value instanceof String) {
-                String string = (String) value;
-                if (!string.isBlank()) {
-                    return string;
-                }
-            }
-        }
-        return fallback;
-    }
-
-    private String buildRoute(String source, Number vcid, String receiver, String decoder) {
-        // SC ID and VC ID not needed: receiver + decoder is enough
-        return receiver + "." + decoder;
     }
 
     private Quality mapQuality(Object quality) {

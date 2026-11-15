@@ -287,12 +287,105 @@ a ZeroMQ subscription or from a SatDecode frame-store file. When a monitoring en
 mapped to ReatMetric parameters below the configured parent path.
 
 Type: _eu.dariolucia.reatmetric.driver.spacecraft.connectors.SatDecodeConnector_
-Configuration: semicolon-separated properties: _dataUrl=zmq://<host>:<port>|file://<file path>;dataType=TM_FRAME|AOS_FRAME|RAW;statusUrl=zmq://<host>:<port>|;statusParentPath=<path>|;dataThrottle=<units per second>_
+Configuration: semicolon-separated properties: _dataUrl=tcp://<host>:<port>|file://<file path>;dataType=TM_FRAME|AOS_FRAME|RAW;statusUrl=tcp://<host>:<port>|;statusParentPath=<path>|;dataThrottle=<units per second>_
 
 Example:
 ----
-dataUrl=zmq://192.168.4.35:5555;dataType=RAW;statusUrl=zmq://192.168.4.35:5556;statusParentPath=TEST.DECODER;dataThrottle=0
+dataUrl=tcp://192.168.4.35:5555;dataType=RAW;statusUrl=tcp://192.168.4.35:5556;statusParentPath=TEST.DECODER;dataThrottle=0
 ----
+
+The _tcp://_ endpoints above carry ZeroMQ traffic.
+
+====== JTDP reception
+
+The Java-only JTDP connector receives frames, decoder monitoring and events over one TCP connection to a
+https://github.com/dariol83/jsatdecode/blob/master/core/docs/tcp-distribution-interface.md[JSatDecode TCP Binary Distribution Protocol (JTDP) version 1]
+server. It implements _IReceptionOnlyConnector_ and requires no native libraries or JSatDecode installation on the client.
+
+Type: _eu.dariolucia.reatmetric.driver.spacecraft.connectors.JtdpConnector_
+
+Configure the connector with semicolon-separated properties:
+
+[cols="1,3",options="header"]
+|===
+|Property |Meaning
+|dataUrl |Required TCP server URL, _tcp://<host>:<port>_.
+|dataType |Frame interpretation: _TM_FRAME_, _AOS_FRAME_ or _RAW_. The default is _TM_FRAME_.
+|statusParentPath |Processing model container for decoder status and events. Empty or omitted disables model injection.
+|antenna.<id> |Frame route string for the unsigned decimal antenna/decoder ID (0 to 65535). Repeat with distinct IDs to map multiple sources. An unmapped ID uses its decimal representation as the route and generates a warning once.
+|===
+
+Example external connector configuration, using the sample model described below:
+
+[source,xml]
+----
+<external-connector type="eu.dariolucia.reatmetric.driver.spacecraft.connectors.JtdpConnector"
+                    configuration="dataUrl=tcp://192.168.4.35:6001;dataType=TM_FRAME;statusParentPath=SPACE.JTDP;antenna.1=ANTENNA1"
+                    data-unit-type="NONE" live="true"/>
+----
+
+The _antenna.<id>_ mapping affects the published route only. Monitoring parameters and events always resolve to
+_<statusParentPath>.<decimal wire id>.<name>_; for example, _SPACE.JTDP.1.CARRIER_LOCK_. The sample
+_src/main/resources/jtdp_model.xml_ defines all parameters and events for antenna/decoder ID 1 under _SPACE.JTDP_.
+Copy its definitions with distinct entity IDs and updated locations to add further decoders or change the parent path.
+
+Monitoring snapshots update the following parameters. Their generation and reception times are the local message
+reception time because JTDP monitoring messages do not contain a timestamp.
+
+[cols="1,1,3",options="header"]
+|===
+|Name |Raw type |Meaning
+|CARRIER_LOCK |UNSIGNED_INTEGER |Carrier state: 0 searching, 1 locked, 2 unlocked, 3 unknown.
+|SYMBOL_LOCK |UNSIGNED_INTEGER |Symbol state, using the same encoding.
+|FRAME_LOCK |UNSIGNED_INTEGER |Frame state, using the same encoding.
+|SNR_AVAILABLE |BOOLEAN |True when the SNR availability bits equal 1; reserved values are treated as unavailable.
+|CENTER_FREQUENCY |UNSIGNED_INTEGER |Unsigned 56-bit center frequency in Hz.
+|CARRIER_OFFSET |SIGNED_INTEGER |Signed carrier offset in Hz; the unavailable sentinel is injected as null.
+|SNR |REAL |SNR in dB; null when availability is false or the wire value is NaN or infinite.
+|TOTAL_FRAMES |UNSIGNED_INTEGER |Total decoded frames.
+|ERROR_FRAMES |UNSIGNED_INTEGER |Total error frames.
+|GOOD_FRAMES |UNSIGNED_INTEGER |Total good decoded frames.
+|DISTRIBUTED_FRAMES |UNSIGNED_INTEGER |Frames accepted by the producer for TCP distribution; this does not confirm client delivery.
+|===
+
+The four counters preserve unsigned 32-bit values and wrap modulo 2^32. The sample calibrates the three lock states
+to readable strings. A monitoring snapshot also updates connector alarm state: a locked frame state is nominal,
+and other frame states produce a warning, including when model injection is disabled.
+
+JTDP event codes map to the following model events:
+
+[cols="1,2,1",options="header"]
+|===
+|Code |Event name |Sample severity
+|0 |DECODER_STARTED |INFO
+|1 |DECODER_STOPPED |INFO
+|2 |CARRIER_STATE_CHANGED |INFO
+|3 |SYMBOL_STATE_CHANGED |INFO
+|4 |FRAME_STATE_CHANGED |INFO
+|5 |DECODER_ERROR |ALARM
+|6 |DISTRIBUTION_OVERRUN |WARN
+|7 |DATA_DISCARDED |WARN
+|===
+
+Each known event updates _CARRIER_LOCK_, _SYMBOL_LOCK_, _FRAME_LOCK_, _SNR_AVAILABLE_ and _CENTER_FREQUENCY_
+from its event-time snapshot and raises its dedicated model event. The event and these samples use the UTC occurrence
+timestamp carried by JTDP; reception time is local. The event report is a map containing _STATUS_ (the raw status byte),
+_CARRIER_LOCK_, _SYMBOL_LOCK_, _FRAME_LOCK_, _SNR_AVAILABLE_ and _CENTER_FREQUENCY_. Counters, carrier offset and measured
+SNR are updated only by monitoring messages. Unknown event codes are ignored. Event severity and logging behavior
+are selected in the processing model; JTDP error and discard events carry no textual details.
+
+Frame publication uses the same mapping as _SatDecodeConnector_: the wire reception timestamp is retained and
+generation time is reception time minus the configured spacecraft propagation delay. TM and AOS frames provide the
+spacecraft ID, virtual channel ID and parsed frame object, and use the spacecraft data-link configuration for frame
+validation. Failed FECF validation forces bad quality. Wire quality 0, 1 and 2 map to _GOOD_, _BAD_ and _UNKNOWN_.
+_RAW_ publishes a _RawTransferFrame_ with the configured spacecraft ID and the _UNKNOWN_ name and frame type, since
+JTDP carries no additional raw-frame metadata. All modes retain frame bytes, route, source, driver, live/repatriated flag,
+quality and the common frame annotations used by the spacecraft processing chain.
+
+The connector reconstructs fragmented or coalesced TCP messages, skips unknown message types by their length and
+limits each complete message to 1,048,576 bytes, including its header. Invalid magic, malformed known messages,
+oversized messages, EOF or a truncated message close the connection and report a connector error. The connector uses
+the standard ReatMetric connector reconnection setting; JTDP provides no replay or recovery of a disconnected session.
 
 ===== Activity Invocation Properties
 ====== Packet level

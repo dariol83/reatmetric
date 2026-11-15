@@ -18,6 +18,7 @@ import eu.dariolucia.reatmetric.driver.spacecraft.SpacecraftDriver;
 import eu.dariolucia.reatmetric.driver.spacecraft.activity.TcPacketInfoValueExtensionHandler;
 import eu.dariolucia.reatmetric.driver.spacecraft.connectors.CltuCaduTcpConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.connectors.SatDecodeConnector;
+import eu.dariolucia.reatmetric.driver.spacecraft.connectors.JtdpConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.connectors.SpacePacketTcpConnector;
 import eu.dariolucia.reatmetric.driver.spacecraft.encoding.SpacePacketDecodingExtension;
 import eu.dariolucia.reatmetric.driver.spacecraft.encoding.SpacePacketEncodingExtension;
@@ -72,5 +73,5 @@ open module eu.dariolucia.reatmetric.driver.spacecraft {
     provides eu.dariolucia.reatmetric.driver.spacecraft.services.IService with CommandVerificationService, OnboardEventService, OnboardOperationsSchedulingService, TimeCorrelationService, DirectLinkTimeCorrelationService, AesEncryptionService;
     provides eu.dariolucia.reatmetric.driver.spacecraft.activity.cltu.ICltuConnector with CltuCaduTcpConnector;
     provides eu.dariolucia.reatmetric.driver.spacecraft.activity.tcpacket.ITcPacketConnector with SpacePacketTcpConnector;
-    provides eu.dariolucia.reatmetric.driver.spacecraft.common.IReceptionOnlyConnector with TmPacketReplayConnector, SatDecodeConnector;
+    provides eu.dariolucia.reatmetric.driver.spacecraft.common.IReceptionOnlyConnector with TmPacketReplayConnector, SatDecodeConnector, JtdpConnector;
 }

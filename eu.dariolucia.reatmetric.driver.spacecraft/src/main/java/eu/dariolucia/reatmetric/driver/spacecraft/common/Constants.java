@@ -19,6 +19,7 @@ package eu.dariolucia.reatmetric.driver.spacecraft.common;
 public class Constants {
     // RawData Names
     public static final String N_TM_TRANSFER_FRAME = "TRANSFER FRAME";
+    public static final String N_UNKNOWN_FRAME = "UNKNOWN";
     public static final String N_UNKNOWN_PACKET = "UNKNOWN";
     public static final String N_UNKNOWN_ENC_PACKET = "UNKNOWN";
     public static final String N_UNKNOWN_VCA = "UNKNOWN";
