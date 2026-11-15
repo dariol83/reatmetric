@@ -96,8 +96,8 @@ class JtdpModelTest {
         Map<String, Object> result = new LinkedHashMap<>();
         for (Object definition : definitions) {
             String location = (String) property(definition, "getLocation");
-            assertTrue(location.startsWith("SPACE.JTDP.1."), location);
-            assertNull(result.put(location.substring("SPACE.JTDP.1.".length()), definition), location);
+            assertTrue(location.startsWith("SPACE.JTDP.ANTENNA1."), location);
+            assertNull(result.put(location.substring("SPACE.JTDP.ANTENNA1.".length()), definition), location);
         }
         return result;
     }

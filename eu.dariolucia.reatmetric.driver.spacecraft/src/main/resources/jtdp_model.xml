@@ -15,15 +15,15 @@
   -->
 
 <!--
-    Example for statusParentPath=SPACE.JTDP and JTDP antenna/decoder ID 1.
-    Containers SPACE.JTDP and SPACE.JTDP.1 are created from the locations below.
-    The antenna.1 frame-route mapping does not change these model locations.
+    Example for statusParentPath=SPACE.JTDP and antenna.1=ANTENNA1 (JTDP antenna/decoder ID 1).
+    Containers SPACE.JTDP and SPACE.JTDP.ANTENNA1 are created from the locations below.
+    The antenna.1 mapping selects both the frame route and the model path component ANTENNA1.
     Copy the definitions for additional wire IDs, changing their locations and IDs.
     Assign IDs that are unique across the complete processing model.
 -->
 <ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
     <parameters>
-        <parameter id="#21000" location="SPACE.JTDP.1.CARRIER_LOCK" description="Carrier lock state"
+        <parameter id="#21000" location="SPACE.JTDP.ANTENNA1.CARRIER_LOCK" description="Carrier lock state"
                    raw_type="UNSIGNED_INTEGER" eng_type="CHARACTER_STRING">
             <calib_enum default="UNKNOWN">
                 <point x="0" y="SEARCHING"/>
@@ -34,7 +34,7 @@
             <checks/>
             <triggers/>
         </parameter>
-        <parameter id="#21001" location="SPACE.JTDP.1.SYMBOL_LOCK" description="Symbol lock state"
+        <parameter id="#21001" location="SPACE.JTDP.ANTENNA1.SYMBOL_LOCK" description="Symbol lock state"
                    raw_type="UNSIGNED_INTEGER" eng_type="CHARACTER_STRING">
             <calib_enum default="UNKNOWN">
                 <point x="0" y="SEARCHING"/>
@@ -45,7 +45,7 @@
             <checks/>
             <triggers/>
         </parameter>
-        <parameter id="#21002" location="SPACE.JTDP.1.FRAME_LOCK" description="Frame lock state"
+        <parameter id="#21002" location="SPACE.JTDP.ANTENNA1.FRAME_LOCK" description="Frame lock state"
                    raw_type="UNSIGNED_INTEGER" eng_type="CHARACTER_STRING">
             <calib_enum default="UNKNOWN">
                 <point x="0" y="SEARCHING"/>
@@ -56,63 +56,63 @@
             <checks/>
             <triggers/>
         </parameter>
-        <parameter id="#21003" location="SPACE.JTDP.1.SNR_AVAILABLE" description="SNR availability reported in the status byte"
+        <parameter id="#21003" location="SPACE.JTDP.ANTENNA1.SNR_AVAILABLE" description="SNR availability reported in the status byte"
                    raw_type="BOOLEAN" eng_type="BOOLEAN">
             <checks/>
             <triggers/>
         </parameter>
-        <parameter id="#21004" location="SPACE.JTDP.1.CENTER_FREQUENCY" description="Receiver center frequency"
+        <parameter id="#21004" location="SPACE.JTDP.ANTENNA1.CENTER_FREQUENCY" description="Receiver center frequency"
                    raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER" eng_unit="Hz">
             <checks/>
             <triggers/>
         </parameter>
-        <parameter id="#21005" location="SPACE.JTDP.1.CARRIER_OFFSET" description="Signed carrier offset; null when unavailable"
+        <parameter id="#21005" location="SPACE.JTDP.ANTENNA1.CARRIER_OFFSET" description="Signed carrier offset; null when unavailable"
                    raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="Hz">
             <checks/>
             <triggers/>
         </parameter>
-        <parameter id="#21006" location="SPACE.JTDP.1.SNR" description="SNR; null unless reported available and finite"
+        <parameter id="#21006" location="SPACE.JTDP.ANTENNA1.SNR" description="SNR; null unless reported available and finite"
                    raw_type="REAL" eng_type="REAL" eng_unit="dB">
             <checks/>
             <triggers/>
         </parameter>
-        <parameter id="#21007" location="SPACE.JTDP.1.TOTAL_FRAMES" description="Total decoded frames, modulo 2^32"
+        <parameter id="#21007" location="SPACE.JTDP.ANTENNA1.TOTAL_FRAMES" description="Total decoded frames, modulo 2^32"
                    raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER">
             <checks/>
             <triggers/>
         </parameter>
-        <parameter id="#21008" location="SPACE.JTDP.1.ERROR_FRAMES" description="Total error frames, modulo 2^32"
+        <parameter id="#21008" location="SPACE.JTDP.ANTENNA1.ERROR_FRAMES" description="Total error frames, modulo 2^32"
                    raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER">
             <checks/>
             <triggers/>
         </parameter>
-        <parameter id="#21009" location="SPACE.JTDP.1.GOOD_FRAMES" description="Total good decoded frames, modulo 2^32"
+        <parameter id="#21009" location="SPACE.JTDP.ANTENNA1.GOOD_FRAMES" description="Total good decoded frames, modulo 2^32"
                    raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER">
             <checks/>
             <triggers/>
         </parameter>
-        <parameter id="#21010" location="SPACE.JTDP.1.DISTRIBUTED_FRAMES" description="Frames accepted by the producer for TCP distribution, modulo 2^32"
+        <parameter id="#21010" location="SPACE.JTDP.ANTENNA1.DISTRIBUTED_FRAMES" description="Frames accepted by the producer for TCP distribution, modulo 2^32"
                    raw_type="UNSIGNED_INTEGER" eng_type="UNSIGNED_INTEGER">
             <checks/>
             <triggers/>
         </parameter>
     </parameters>
     <events>
-        <event id="#21020" location="SPACE.JTDP.1.DECODER_STARTED" description="Decoder started"
+        <event id="#21020" location="SPACE.JTDP.ANTENNA1.DECODER_STARTED" description="Decoder started"
                severity="INFO" type="JTDP" inhibition_period="0" log_enabled="true"/>
-        <event id="#21021" location="SPACE.JTDP.1.DECODER_STOPPED" description="Decoder stopped"
+        <event id="#21021" location="SPACE.JTDP.ANTENNA1.DECODER_STOPPED" description="Decoder stopped"
                severity="INFO" type="JTDP" inhibition_period="0" log_enabled="true"/>
-        <event id="#21022" location="SPACE.JTDP.1.CARRIER_STATE_CHANGED" description="Carrier state changed"
+        <event id="#21022" location="SPACE.JTDP.ANTENNA1.CARRIER_STATE_CHANGED" description="Carrier state changed"
                severity="INFO" type="JTDP" inhibition_period="0" log_enabled="true"/>
-        <event id="#21023" location="SPACE.JTDP.1.SYMBOL_STATE_CHANGED" description="Symbol state changed"
+        <event id="#21023" location="SPACE.JTDP.ANTENNA1.SYMBOL_STATE_CHANGED" description="Symbol state changed"
                severity="INFO" type="JTDP" inhibition_period="0" log_enabled="true"/>
-        <event id="#21024" location="SPACE.JTDP.1.FRAME_STATE_CHANGED" description="Frame state changed"
+        <event id="#21024" location="SPACE.JTDP.ANTENNA1.FRAME_STATE_CHANGED" description="Frame state changed"
                severity="INFO" type="JTDP" inhibition_period="0" log_enabled="true"/>
-        <event id="#21025" location="SPACE.JTDP.1.DECODER_ERROR" description="Decoder error"
+        <event id="#21025" location="SPACE.JTDP.ANTENNA1.DECODER_ERROR" description="Decoder error"
                severity="ALARM" type="JTDP" inhibition_period="0" log_enabled="true"/>
-        <event id="#21026" location="SPACE.JTDP.1.DISTRIBUTION_OVERRUN" description="Distribution overrun"
+        <event id="#21026" location="SPACE.JTDP.ANTENNA1.DISTRIBUTION_OVERRUN" description="Distribution overrun"
                severity="WARN" type="JTDP" inhibition_period="0" log_enabled="true"/>
-        <event id="#21027" location="SPACE.JTDP.1.DATA_DISCARDED" description="Data discarded"
+        <event id="#21027" location="SPACE.JTDP.ANTENNA1.DATA_DISCARDED" description="Data discarded"
                severity="WARN" type="JTDP" inhibition_period="0" log_enabled="true"/>
     </events>
 </ns1:processing>

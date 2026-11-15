@@ -112,13 +112,13 @@ public class JtdpConnector extends AbstractTransportConnector implements IRecept
     protected void addToInitialisationMap(Map<String, Object> values, Map<String, Pair<String, ValueTypeEnum>> descriptions) {
         descriptions.put(DATA_URL_KEY, Pair.of("JTDP server URL: tcp://<host>:<port>", ValueTypeEnum.CHARACTER_STRING));
         descriptions.put(DATA_TYPE_KEY, Pair.of("JTDP data type: TM_FRAME, AOS_FRAME or RAW", ValueTypeEnum.CHARACTER_STRING));
-        descriptions.put(STATUS_PARENT_PATH_KEY, Pair.of("Processing model parent path containing JTDP antenna IDs; blank disables status/events", ValueTypeEnum.CHARACTER_STRING));
+        descriptions.put(STATUS_PARENT_PATH_KEY, Pair.of("Processing model parent path containing mapped JTDP antenna names; blank disables status/events", ValueTypeEnum.CHARACTER_STRING));
         values.put(DATA_URL_KEY, configurationDefaults.getOrDefault(DATA_URL_KEY, ""));
         values.put(DATA_TYPE_KEY, configurationDefaults.getOrDefault(DATA_TYPE_KEY, ReceptionFrameMapper.DataType.TM_FRAME.name()));
         values.put(STATUS_PARENT_PATH_KEY, configurationDefaults.getOrDefault(STATUS_PARENT_PATH_KEY, ""));
         configurationDefaults.forEach((key, value) -> {
             if (key.startsWith(ANTENNA_PREFIX)) {
-                descriptions.put(key, Pair.of("Publication route for JTDP antenna/decoder " + key.substring(ANTENNA_PREFIX.length()), ValueTypeEnum.CHARACTER_STRING));
+                descriptions.put(key, Pair.of("Antenna name used for publication route and model paths for JTDP antenna/decoder " + key.substring(ANTENNA_PREFIX.length()), ValueTypeEnum.CHARACTER_STRING));
                 values.put(key, value);
             }
         });
@@ -205,18 +205,18 @@ public class JtdpConnector extends AbstractTransportConnector implements IRecept
         if (message instanceof JtdpMessageReader.Event && ((JtdpMessageReader.Event) message).code() >= EVENT_NAMES.size()) {
             return;
         }
-        String route = configuration.antennas().get(message.antennaId());
-        if (route == null) {
-            route = Integer.toString(message.antennaId());
+        String antennaName = configuration.antennas().get(message.antennaId());
+        if (antennaName == null) {
+            antennaName = Integer.toString(message.antennaId());
             if (unmappedAntennas.add(message.antennaId())) {
-                LOG.warning(getName() + ": no antenna mapping for " + message.antennaId() + "; using its decimal ID as publication route");
+                LOG.warning(getName() + ": no antenna mapping for " + message.antennaId() + "; using its decimal ID as publication route and model path component");
             }
         }
         if (message instanceof JtdpMessageReader.FrameBatch) {
             for (JtdpMessageReader.Frame frame : ((JtdpMessageReader.FrameBatch) message).frames()) {
                 try {
                     RawData rawData = frameMapper.map(configuration.dataType(), frame.data(), frame.receptionTime(),
-                            frame.quality(), route, Collections.emptyMap(), Constants.N_UNKNOWN_FRAME);
+                            frame.quality(), antennaName, Collections.emptyMap(), Constants.N_UNKNOWN_FRAME);
                     context.getRawDataBroker().distribute(Collections.singletonList(rawData));
                     rxBytes.addAndGet(frame.data().length);
                 } catch (ReatmetricException | RuntimeException e) {
@@ -233,20 +233,20 @@ public class JtdpConnector extends AbstractTransportConnector implements IRecept
             values.put("ERROR_FRAMES", monitoring.errorFrames());
             values.put("GOOD_FRAMES", monitoring.goodFrames());
             values.put("DISTRIBUTED_FRAMES", monitoring.distributedFrames());
-            injectStatus(configuration, message.antennaId(), values, localReceptionTime, localReceptionTime, route);
+            injectStatus(configuration, values, localReceptionTime, localReceptionTime, antennaName);
             updateFrameLock(monitoring.status());
         } else if (message instanceof JtdpMessageReader.Event) {
             JtdpMessageReader.Event event = (JtdpMessageReader.Event) message;
             Map<String, Object> values = statusValues(event.status(), event.frequency());
-            injectStatus(configuration, message.antennaId(), values, event.time(), localReceptionTime, route);
+            injectStatus(configuration, values, event.time(), localReceptionTime, antennaName);
             updateFrameLock(event.status());
-            String path = entityPath(configuration, message.antennaId(), EVENT_NAMES.get(event.code()));
+            String path = entityPath(configuration, antennaName, EVENT_NAMES.get(event.code()));
             AbstractSystemEntityDescriptor descriptor = resolveDescriptor(path, EventDescriptor.class);
             if (descriptor != null) {
                 Map<String, Object> report = new LinkedHashMap<>(values);
                 report.put("STATUS", (long) event.status());
                 context.getProcessingModel().raiseEvent(EventOccurrence.of(descriptor.getExternalId(), event.time(),
-                        localReceptionTime, null, null, Collections.unmodifiableMap(report), route,
+                        localReceptionTime, null, null, Collections.unmodifiableMap(report), antennaName,
                         Integer.toString(event.antennaId())));
             }
         }
@@ -266,18 +266,18 @@ public class JtdpConnector extends AbstractTransportConnector implements IRecept
         updateAlarmState(((status >>> 2) & 3) == 1 ? AlarmState.NOMINAL : AlarmState.WARNING);
     }
 
-    private void injectStatus(RuntimeConfiguration configuration, int antennaId, Map<String, Object> values,
-                              Instant generationTime, Instant receptionTime, String route) {
+    private void injectStatus(RuntimeConfiguration configuration, Map<String, Object> values,
+                              Instant generationTime, Instant receptionTime, String antennaName) {
         if (configuration.statusParentPath().isEmpty()) {
             return;
         }
         List<ParameterSample> samples = new ArrayList<>();
         values.forEach((name, value) -> {
-            ParameterDescriptor descriptor = (ParameterDescriptor) resolveDescriptor(entityPath(configuration, antennaId, name), ParameterDescriptor.class);
+            ParameterDescriptor descriptor = (ParameterDescriptor) resolveDescriptor(entityPath(configuration, antennaName, name), ParameterDescriptor.class);
             if (descriptor != null) {
                 try {
                     samples.add(ParameterSample.of(descriptor.getExternalId(), generationTime, receptionTime, null,
-                            ValueUtil.convert(value, descriptor.getRawDataType()), route, null));
+                            ValueUtil.convert(value, descriptor.getRawDataType()), antennaName, null));
                 } catch (ValueException e) {
                     LOG.log(Level.WARNING, getName() + ": cannot convert JTDP parameter " + descriptor.getPath(), e);
                 }
@@ -288,8 +288,8 @@ public class JtdpConnector extends AbstractTransportConnector implements IRecept
         }
     }
 
-    private String entityPath(RuntimeConfiguration configuration, int antennaId, String name) {
-        return configuration.statusParentPath().isEmpty() ? null : configuration.statusParentPath() + "." + antennaId + "." + name;
+    private String entityPath(RuntimeConfiguration configuration, String antennaName, String name) {
+        return configuration.statusParentPath().isEmpty() ? null : configuration.statusParentPath() + "." + antennaName + "." + name;
     }
 
     private AbstractSystemEntityDescriptor resolveDescriptor(String path, Class<? extends AbstractSystemEntityDescriptor> type) {
@@ -333,11 +333,11 @@ public class JtdpConnector extends AbstractTransportConnector implements IRecept
             for (Map.Entry<String, Object> entry : values.entrySet()) {
                 validatePropertyKey(entry.getKey());
                 if (entry.getKey().startsWith(ANTENNA_PREFIX)) {
-                    String route = stringValue(entry.getValue());
-                    if (route.isEmpty()) {
+                    String antennaName = stringValue(entry.getValue());
+                    if (antennaName.isEmpty()) {
                         throw new IllegalArgumentException("Empty JTDP antenna mapping: " + entry.getKey());
                     }
-                    antennas.put(Integer.parseInt(entry.getKey().substring(ANTENNA_PREFIX.length())), route);
+                    antennas.put(Integer.parseInt(entry.getKey().substring(ANTENNA_PREFIX.length())), antennaName);
                 }
             }
             return new RuntimeConfiguration(address, dataType, parent, Map.copyOf(antennas));

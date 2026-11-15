@@ -52,7 +52,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -63,7 +65,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class JtdpConnectorTest {
 
     private static final String PARENT = "GROUND.JTDP";
-    private static final String ROUTE = "Antenna North";
+    private static final String ROUTE = "ANTENNA_NORTH";
     private static final int ANTENNA_ID = 65535;
     private static final long TIME_NS = 1_700_000_000_123_456_789L;
     private static final Instant FRAME_TIME = Instant.ofEpochSecond(1_700_000_000L, 123_456_789);
@@ -74,7 +76,7 @@ class JtdpConnectorTest {
             "SYMBOL_STATE_CHANGED", "FRAME_STATE_CHANGED", "DECODER_ERROR", "DISTRIBUTION_OVERRUN", "DATA_DISCARDED");
 
     @Test
-    void publishesFramesAllMonitoringFieldsAndEventsUsingNumericModelPaths() throws Exception {
+    void publishesFramesAllMonitoringFieldsAndEventsUsingMappedAntennaModelPaths() throws Exception {
         try (ServerSocket server = server(); Harness harness = new Harness(server.getLocalPort())) {
             harness.connector.connect();
             try (Socket peer = server.accept()) {
@@ -142,6 +144,11 @@ class JtdpConnectorTest {
                 assertTrue(harness.parameters.isEmpty(), "Reserved message and event codes must not inject status");
                 assertTrue(harness.events.isEmpty());
                 assertTrue(harness.frames.isEmpty());
+                assertEquals(harness.descriptors.keySet(), harness.resolvedPaths,
+                        "All 11 parameters and 8 events must resolve below the configured antenna name");
+                assertTrue(harness.resolvedPaths.stream().allMatch(path -> path.startsWith(PARENT + "." + ROUTE + ".")));
+                assertFalse(harness.resolvedPaths.stream().anyMatch(path -> path.startsWith(PARENT + "." + ANTENNA_ID + ".")),
+                        "The wire antenna ID must not replace its configured model entity name");
                 assertEquals(TransportConnectionStatus.OPEN, harness.connector.getConnectionStatus());
             }
         }
@@ -217,7 +224,7 @@ class JtdpConnectorTest {
     }
 
     private static String path(String name) {
-        return PARENT + "." + ANTENNA_ID + "." + name;
+        return PARENT + "." + ROUTE + "." + name;
     }
 
     private static byte[] frame(int quality, long time, byte[] bytes) throws IOException {
@@ -289,6 +296,7 @@ class JtdpConnectorTest {
         private final BlockingQueue<List<ParameterSample>> parameters = new LinkedBlockingQueue<>();
         private final BlockingQueue<EventOccurrence> events = new LinkedBlockingQueue<>();
         private final Map<String, AbstractSystemEntityDescriptor> descriptors = new LinkedHashMap<>();
+        private final Set<String> resolvedPaths = ConcurrentHashMap.newKeySet();
 
         @SuppressWarnings("unchecked")
         private Harness(int port) {
@@ -307,6 +315,7 @@ class JtdpConnectorTest {
             IProcessingModel model = proxy(IProcessingModel.class, (proxy, method, arguments) -> {
                 switch (method.getName()) {
                     case "getDescriptorOf":
+                        resolvedPaths.add(arguments[0].toString());
                         AbstractSystemEntityDescriptor descriptor = descriptors.get(arguments[0].toString());
                         assertNotNull(descriptor, "Unexpected model path: " + arguments[0]);
                         return descriptor;

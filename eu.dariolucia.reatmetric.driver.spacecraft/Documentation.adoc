@@ -312,7 +312,7 @@ Configure the connector with semicolon-separated properties:
 |dataUrl |Required TCP server URL, _tcp://<host>:<port>_.
 |dataType |Frame interpretation: _TM_FRAME_, _AOS_FRAME_ or _RAW_. The default is _TM_FRAME_.
 |statusParentPath |Processing model container for decoder status and events. Empty or omitted disables model injection.
-|antenna.<id> |Frame route string for the unsigned decimal antenna/decoder ID (0 to 65535). Repeat with distinct IDs to map multiple sources. An unmapped ID uses its decimal representation as the route and generates a warning once.
+|antenna.<id> |Antenna name used as the frame route and processing model path component for the unsigned decimal antenna/decoder ID (0 to 65535). Repeat with distinct IDs to map multiple sources. An unmapped ID uses its decimal representation for both and generates a warning once.
 |===
 
 Example external connector configuration, using the sample model described below:
@@ -324,9 +324,10 @@ Example external connector configuration, using the sample model described below
                     data-unit-type="NONE" live="true"/>
 ----
 
-The _antenna.<id>_ mapping affects the published route only. Monitoring parameters and events always resolve to
-_<statusParentPath>.<decimal wire id>.<name>_; for example, _SPACE.JTDP.1.CARRIER_LOCK_. The sample
-_src/main/resources/jtdp_model.xml_ defines all parameters and events for antenna/decoder ID 1 under _SPACE.JTDP_.
+The _antenna.<id>_ mapping sets both the published route and the antenna name in processing model paths.
+Monitoring parameters and events resolve to _<statusParentPath>.<mapped antenna string>.<name>_; for example,
+_SPACE.JTDP.ANTENNA1.CARRIER_LOCK_. The sample _src/main/resources/jtdp_model.xml_ defines all parameters and events
+under _SPACE.JTDP.ANTENNA1_ for antenna/decoder ID 1 configured as _antenna.1=ANTENNA1_.
 Copy its definitions with distinct entity IDs and updated locations to add further decoders or change the parent path.
 
 Monitoring snapshots update the following parameters. Their generation and reception times are the local message
