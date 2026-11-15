@@ -6,6 +6,9 @@ The reception-only `JtdpConnector` supports the JSatDecode TCP Binary Distributi
 Configuration, status and event mappings are described in [JTDP reception](Documentation.adoc#_jtdp_reception), with a
 complete single-decoder processing model in [jtdp_model.xml](src/main/resources/jtdp_model.xml).
 
+The SatDecode status parameter example [satdecode_model.xml](src/main/resources/satdecode_model.xml) uses
+`statusParentPath=TEST.DECODER`, matching the connector configuration in the documentation.
+
 A conversion service from the SCOS-2000 MIB files to the ReatMetric format suitable for the usage with the ReatMetric
 Spacecraft driver is available at:
 

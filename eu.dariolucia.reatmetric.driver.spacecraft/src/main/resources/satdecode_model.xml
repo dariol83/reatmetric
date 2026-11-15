@@ -1,0 +1,175 @@
+<!--
+  ~ Copyright (c) 2026 Dario Lucia (https://www.dariolucia.eu)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~          http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!--
+    SatDecode v1 standard monitoring metrics, as defined by satdecode.metrics.
+    Configure SatDecodeConnector with statusParentPath=TEST.DECODER and a statusUrl.
+    Each metric key is uppercased and dots are replaced by underscores:
+    frame.lock becomes TEST.DECODER.FRAME_LOCK.
+    The receiver and decoder identify the parameter sample route, not its model path.
+
+    Lock states are strings: UNKNOWN, SEARCHING, LOCKED or UNLOCKED.
+    Integer metrics retain their numeric representation; output.last_frame_time_ns
+    is Unix time in nanoseconds. Missing measurements are omitted by SatDecode.
+    Decoder-specific metrics can be added using the same path conversion rule.
+
+    Change the locations and assign IDs unique across the complete processing model
+    when copying these definitions for another connector.
+    SatDecodeConnector currently injects monitoring status parameters only.
+-->
+<ns1:processing xmlns:ns1="http://dariolucia.eu/reatmetric/processing/definition">
+    <parameters>
+        <!-- source.active -->
+        <parameter id="#22000" location="TEST.DECODER.SOURCE_ACTIVE" description="Source acquisition active"
+                   raw_type="BOOLEAN" eng_type="BOOLEAN">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- source.device -->
+        <parameter id="#22001" location="TEST.DECODER.SOURCE_DEVICE" description="Source device"
+                   raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- source.sample_rate_hz -->
+        <parameter id="#22002" location="TEST.DECODER.SOURCE_SAMPLE_RATE_HZ" description="Source sample rate"
+                   raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="Hz">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- source.center_frequency_hz -->
+        <parameter id="#22003" location="TEST.DECODER.SOURCE_CENTER_FREQUENCY_HZ" description="Source center frequency"
+                   raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="Hz">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- signal.power_dbfs -->
+        <parameter id="#22004" location="TEST.DECODER.SIGNAL_POWER_DBFS" description="Signal power"
+                   raw_type="REAL" eng_type="REAL" eng_unit="dBFS">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- signal.snr_db -->
+        <parameter id="#22005" location="TEST.DECODER.SIGNAL_SNR_DB" description="Signal to noise ratio"
+                   raw_type="REAL" eng_type="REAL" eng_unit="dB">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- carrier.lock -->
+        <parameter id="#22006" location="TEST.DECODER.CARRIER_LOCK" description="Carrier lock state"
+                   raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- carrier.offset_hz -->
+        <parameter id="#22007" location="TEST.DECODER.CARRIER_OFFSET_HZ" description="Carrier frequency offset"
+                   raw_type="REAL" eng_type="REAL" eng_unit="Hz">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- symbol.lock -->
+        <parameter id="#22008" location="TEST.DECODER.SYMBOL_LOCK" description="Symbol lock state"
+                   raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- symbol.rate_baud -->
+        <parameter id="#22009" location="TEST.DECODER.SYMBOL_RATE_BAUD" description="Symbol rate"
+                   raw_type="REAL" eng_type="REAL" eng_unit="baud">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- symbol.timing_error -->
+        <parameter id="#22010" location="TEST.DECODER.SYMBOL_TIMING_ERROR" description="Symbol timing error"
+                   raw_type="REAL" eng_type="REAL">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- frame.lock -->
+        <parameter id="#22011" location="TEST.DECODER.FRAME_LOCK" description="Frame lock state"
+                   raw_type="CHARACTER_STRING" eng_type="CHARACTER_STRING">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- frame.total -->
+        <parameter id="#22012" location="TEST.DECODER.FRAME_TOTAL" description="Total decoded frames"
+                   raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- frame.good -->
+        <parameter id="#22013" location="TEST.DECODER.FRAME_GOOD" description="Good decoded frames"
+                   raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- frame.bad -->
+        <parameter id="#22014" location="TEST.DECODER.FRAME_BAD" description="Bad decoded frames"
+                   raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- frame.rate_hz -->
+        <parameter id="#22015" location="TEST.DECODER.FRAME_RATE_HZ" description="Decoded frame rate"
+                   raw_type="REAL" eng_type="REAL" eng_unit="Hz">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- fec.corrected -->
+        <parameter id="#22016" location="TEST.DECODER.FEC_CORRECTED" description="FEC corrected count"
+                   raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- fec.uncorrectable -->
+        <parameter id="#22017" location="TEST.DECODER.FEC_UNCORRECTABLE" description="FEC uncorrectable count"
+                   raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- fec.viterbi_metric -->
+        <parameter id="#22018" location="TEST.DECODER.FEC_VITERBI_METRIC" description="Viterbi decoder metric"
+                   raw_type="REAL" eng_type="REAL">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- output.frames_sent -->
+        <parameter id="#22019" location="TEST.DECODER.OUTPUT_FRAMES_SENT" description="Output frames sent"
+                   raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- output.frames_dropped -->
+        <parameter id="#22020" location="TEST.DECODER.OUTPUT_FRAMES_DROPPED" description="Output frames dropped"
+                   raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- output.last_frame_time_ns -->
+        <parameter id="#22021" location="TEST.DECODER.OUTPUT_LAST_FRAME_TIME_NS" description="Last output frame Unix timestamp in nanoseconds"
+                   raw_type="SIGNED_INTEGER" eng_type="SIGNED_INTEGER" eng_unit="ns">
+            <checks/>
+            <triggers/>
+        </parameter>
+        <!-- runtime.uptime_s -->
+        <parameter id="#22022" location="TEST.DECODER.RUNTIME_UPTIME_S" description="Decoder runtime uptime"
+                   raw_type="REAL" eng_type="REAL" eng_unit="s">
+            <checks/>
+            <triggers/>
+        </parameter>
+    </parameters>
+    <events/>
+</ns1:processing>

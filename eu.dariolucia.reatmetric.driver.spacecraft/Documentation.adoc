@@ -296,6 +296,14 @@ dataUrl=tcp://192.168.4.35:5555;dataType=RAW;statusUrl=tcp://192.168.4.35:5556;s
 
 The _tcp://_ endpoints above carry ZeroMQ traffic.
 
+The sample _src/main/resources/satdecode_model.xml_ defines SatDecode monitoring parameters for
+_statusParentPath=TEST.DECODER_, matching this configuration. Metric names are converted to uppercase and dots
+are replaced with underscores, then resolved directly under that parent: _frame.lock_ maps to
+_TEST.DECODER.FRAME_LOCK_. Receiver and decoder identifiers are carried in the parameter sample route rather than
+appended to the model path. Adjust the sample locations and entity IDs when integrating it into another processing
+model. This sample covers status parameters; _SatDecodeConnector_ does not inject monitoring event messages into
+processing model events.
+
 ====== JTDP reception
 
 The Java-only JTDP connector receives frames, decoder monitoring and events over one TCP connection to a
